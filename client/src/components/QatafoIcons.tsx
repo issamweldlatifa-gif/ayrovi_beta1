@@ -25,7 +25,7 @@ const createIcon = (name: string, nodes: IconNode) => {
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className={className}
+        className={['qatafo-icon', className].filter(Boolean).join(' ')}
         aria-hidden="true"
         focusable="false"
         {...props}

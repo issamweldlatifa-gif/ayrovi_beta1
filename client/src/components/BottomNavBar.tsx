@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Home, ShoppingBag } from './QatafoIcons';
-import { LensBoxIcon, AiLogoIcon } from './Icons';
+import { AiLogoIcon, LensBoxIcon } from './Icons';
 
 interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
@@ -11,6 +11,10 @@ interface BottomNavBarProps {
   onScrollToTop: () => void;
   onOpenCart: () => void;
 }
+
+const NAV_ITEM =
+  'flex h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-[18px] text-[9px] font-bold leading-none transition-all duration-200 active:scale-[0.96]';
+const NAV_ICON = 'h-[22px] w-[22px]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   isAiDrawerOpen,
@@ -27,14 +31,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-
-      // Auto-hide when scrolling down, auto-show when scrolling up
-      if (currentScrollY > lastScrollY.current && currentScrollY > 80) {
-        setIsVisible(false);
-      } else {
-        setIsVisible(true);
-      }
-
+      setIsVisible(!(currentScrollY > lastScrollY.current && currentScrollY > 80));
       lastScrollY.current = currentScrollY;
     };
 
@@ -44,65 +41,70 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
   return (
     <div
-      className={`fixed left-3 right-3 sm:left-auto sm:right-auto sm:w-[380px] sm:left-1/2 sm:-translate-x-1/2 bottom-4 sm:bottom-6 z-50 transition-all duration-300 ease-in-out ${
+      className={`fixed bottom-[max(1rem,env(safe-area-inset-bottom))] left-1/2 z-50 w-[calc(100%-1.5rem)] -translate-x-1/2 transition-all duration-300 ease-out sm:bottom-6 sm:w-[390px] ${
         isVisible ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-28 opacity-0 pointer-events-none'
       }`}
     >
-      {/* Instagram-Style Transparent White Glass Navbar with Smooth Rounded Edges */}
-      <nav className="h-16 sm:h-[68px] px-3 sm:px-4 flex items-center justify-between bg-white/85 backdrop-blur-2xl border border-slate-200/90 rounded-[34px] shadow-2xl shadow-slate-900/12">
-        
-        {/* FAR LEFT (أقصى اليسار/الشمال): AI Custom Vector Icon Button */}
+      <nav
+        className="flex h-[68px] items-center gap-1 rounded-[34px] border border-slate-200/90 bg-white/90 p-2 shadow-2xl shadow-slate-900/12 backdrop-blur-2xl"
+        aria-label="Navigation principale"
+      >
         <button
+          type="button"
           onClick={onToggleAiDrawer}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+          className={`${NAV_ITEM} ${
             isAiDrawerOpen
-              ? 'bg-[#673de6] text-white border-2 border-[#673de6]'
-              : 'bg-[#f1ebff] hover:bg-[#e4dbff] text-[#673de6] border border-[#e4dbff]'
+              ? 'bg-[#673de6] text-white shadow-sm'
+              : 'text-[#673de6] hover:bg-[#f1ebff]'
           }`}
-          title="Assistant AYROVI"
           aria-label="Assistant AYROVI"
+          aria-pressed={isAiDrawerOpen}
         >
-          <AiLogoIcon className="w-6 h-6" />
+          <AiLogoIcon className={NAV_ICON} />
+          <span>Assistant</span>
         </button>
 
-        {/* CENTER ITEMS: Accueil & Panier */}
         <button
+          type="button"
           onClick={onScrollToTop}
-          className="flex flex-col items-center gap-0.5 text-[#6b7280] hover:text-[#1d2130] transition-colors text-[10px] font-bold px-2 cursor-pointer"
+          className={`${NAV_ITEM} text-[#5f6674] hover:bg-[#f4f5fa] hover:text-[#1d2130]`}
+          aria-label="Accueil"
         >
-          <Home className="w-4 h-4" />
+          <Home className={NAV_ICON} />
           <span>Accueil</span>
         </button>
 
         <button
+          type="button"
           onClick={onOpenCart}
-          className="flex flex-col items-center gap-0.5 text-[#6b7280] hover:text-[#1d2130] transition-colors text-[10px] font-bold px-2 relative cursor-pointer"
+          className={`${NAV_ITEM} relative text-[#5f6674] hover:bg-[#f4f5fa] hover:text-[#1d2130]`}
+          aria-label={`Panier, ${cartCount} article${cartCount > 1 ? 's' : ''}`}
         >
-          <div className="relative">
-            <ShoppingBag className="w-4 h-4" />
+          <span className="relative">
+            <ShoppingBag className={NAV_ICON} />
             {cartCount > 0 && (
-              <span className="absolute -top-1.5 -right-2 w-4 h-4 bg-[#673de6] text-white rounded-full text-[9px] font-black flex items-center justify-center shadow-xs">
-                {cartCount}
+              <span className="absolute -right-2.5 -top-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#673de6] px-1 text-[9px] font-black leading-none text-white shadow-sm">
+                {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}
-          </div>
+          </span>
           <span>Panier</span>
         </button>
 
-        {/* FAR RIGHT (أقصى اليمين): LENS Custom Vector Icon Button */}
         <button
+          type="button"
           onClick={onToggleProductDrawer}
-          className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-xs cursor-pointer ${
+          className={`${NAV_ITEM} ${
             isProductDrawerOpen
-              ? 'bg-[#673de6] text-white border-2 border-[#673de6]'
-              : 'bg-[#f8f9fe] hover:bg-[#eef0f6] text-[#673de6] border border-[#e2e8f0]'
+              ? 'bg-[#673de6] text-white shadow-sm'
+              : 'text-[#673de6] hover:bg-[#f1ebff]'
           }`}
-          title="Ouvrir la Commande / Lens"
-          aria-label="Ouvrir le panneau Lens"
+          aria-label="Ouvrir Lens"
+          aria-pressed={isProductDrawerOpen}
         >
-          <LensBoxIcon className="w-6 h-6" />
+          <LensBoxIcon className={NAV_ICON} />
+          <span>Lens</span>
         </button>
-
       </nav>
     </div>
   );
