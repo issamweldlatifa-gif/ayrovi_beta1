@@ -17,7 +17,7 @@ import {
   ShoppingBag,
   Truck,
   User,
-} from 'lucide-react';
+} from '../QatafoIcons';
 
 interface AssistantSideMenuProps {
   isOpen: boolean;

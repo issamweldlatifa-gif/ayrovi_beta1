@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { MessageSquare, PackageCheck, Copy } from 'lucide-react';
+import { MessageSquare, PackageCheck, Copy } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { OrderResult } from '../types';
 

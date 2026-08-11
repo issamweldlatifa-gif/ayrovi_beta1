@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRightLeft, ShieldCheck, Sparkles, Truck } from 'lucide-react';
+import { ArrowRightLeft, ShieldCheck, Sparkles, Truck } from './QatafoIcons';
 import aboutParallaxImage from '../assets/about-parallax.jpg';
 
 const BENEFITS = [

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Heart } from 'lucide-react';
+import { Heart } from './QatafoIcons';
+import { FigLogoIcon } from './Icons';
 import ratesTransparencyImage from '../assets/rates-transparency.jpg';
 
 const EXCHANGE_RATES = [
@@ -15,8 +16,8 @@ export const Footer: React.FC = () => {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-9 space-y-3 text-xs">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#673de6] text-base font-black text-white shadow-xs">
-              A
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#673de6] text-white shadow-xs">
+              <FigLogoIcon className="h-5 w-5" />
             </div>
             <span className="text-lg font-bold text-[#1d2130]">AYROVI</span>
           </div>

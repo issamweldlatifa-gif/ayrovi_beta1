@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, AlertCircle, CheckCircle2, Truck, Loader2, Phone, MapPin, User, CreditCard } from 'lucide-react';
+import { X, AlertCircle, CheckCircle2, Truck, Loader2, Phone, MapPin, User, CreditCard } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CustomerInfo, OrderResult } from '../types';
 import { getSessionId } from '../utils/session';

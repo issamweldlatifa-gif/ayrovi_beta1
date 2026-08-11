@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, User } from 'lucide-react';
+import { Menu, User } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 
 interface NavbarProps {
@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer }) => {
         </button>
 
         <div className="flex items-center gap-2.5">
-          <span className={`flex rounded-xl p-0.5 transition-colors duration-300 ${hasPassedHero ? 'bg-transparent' : 'bg-white/10 backdrop-blur-sm'}`}>
+          <span className={`flex rounded-xl p-0.5 transition-colors duration-300 ${hasPassedHero ? 'bg-transparent text-[#673de6]' : 'bg-white/10 text-white backdrop-blur-sm'}`}>
             <FigLogoIcon className="h-8 w-8 drop-shadow-sm sm:h-9 sm:w-9" />
           </span>
           <span

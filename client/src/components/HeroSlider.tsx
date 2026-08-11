@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from './QatafoIcons';
 import heroHomme from '../assets/hero-homme.jpg';
 import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Menu, MoreVertical, Pencil, Share2, Trash2, X } from 'lucide-react';
+import { Menu, MoreVertical, Pencil, Share2, Trash2, X } from '../QatafoIcons';
 
 interface AssistantHeaderProps {
   isDark: boolean;

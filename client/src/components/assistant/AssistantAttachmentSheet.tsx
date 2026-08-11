@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ChevronRight, FileText, Globe2, Image, Plug, X } from 'lucide-react';
+import { ChevronRight, FileText, Globe2, Image, Plug, X } from '../QatafoIcons';
 
 interface AssistantAttachmentSheetProps {
   isOpen: boolean;

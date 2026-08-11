@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Home, ShoppingBag } from 'lucide-react';
+import { Home, ShoppingBag } from './QatafoIcons';
 import { LensBoxIcon, AiLogoIcon } from './Icons';
 
 interface BottomNavBarProps {

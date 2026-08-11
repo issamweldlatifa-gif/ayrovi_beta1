@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Calculator, Camera, Link2, ArrowUpRight, ArrowRight, Image as ImageIcon, Loader2, Clipboard, CheckCircle2, User, Phone, MapPin, CreditCard, MessageSquare, Copy, PackageCheck } from 'lucide-react';
+import { X, Calculator, Camera, Link2, ArrowUpRight, ArrowRight, Image as ImageIcon, Loader2, Clipboard, CheckCircle2, User, Phone, MapPin, CreditCard, MessageSquare, Copy, PackageCheck } from './QatafoIcons';
 import confetti from 'canvas-confetti';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct, CustomerInfo, OrderResult } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';

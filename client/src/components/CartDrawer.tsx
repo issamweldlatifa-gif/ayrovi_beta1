@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package } from 'lucide-react';
+import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem } from '../types';
 

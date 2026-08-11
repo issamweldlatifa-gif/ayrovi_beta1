@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowDown, Check, Copy, Mic, RefreshCw, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { ArrowDown, Check, Copy, Mic, RefreshCw, ThumbsDown, ThumbsUp } from '../QatafoIcons';
 import { AiLogoIcon } from '../Icons';
 import { AssistantMessage, FeedbackValue } from './types';
 

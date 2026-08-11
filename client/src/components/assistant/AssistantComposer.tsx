@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUp, FileText, Mic, Pause, Plus, Square, X } from 'lucide-react';
+import { ArrowUp, FileText, Mic, Pause, Plus, Square, X } from '../QatafoIcons';
 import { AssistantAttachment } from './types';
 
 interface AssistantComposerProps {
