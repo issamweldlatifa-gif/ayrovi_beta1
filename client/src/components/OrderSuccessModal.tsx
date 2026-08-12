@@ -7,9 +7,10 @@ import { OrderResult } from '../types';
 interface OrderSuccessModalProps {
   result: OrderResult | null;
   onClose: () => void;
+  onOpenAccount?: () => void;
 }
 
-export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, onClose }) => {
+export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, onClose, onOpenAccount }) => {
   const [copyStatus, setCopyStatus] = useState('');
   useBodyScrollLock(Boolean(result));
 
@@ -111,6 +112,33 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
             <span className="text-[#673de6] text-sm">{result.totalTND.toFixed(2)} DT</span>
           </div>
         </div>
+
+        {/* قسم العربون 20% */}
+        {result.deposit && (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-left space-y-2" role="alert">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-black text-amber-800 uppercase tracking-wide">Acompte de confirmation ({result.deposit.percent}%) :</span>
+              <span className="text-lg font-black text-amber-700">{result.deposit.amountTnd.toFixed(3)} DT</span>
+            </div>
+            <p className="text-[11px] leading-5 text-amber-800">
+              Votre commande est enregistrée mais <strong>pas encore confirmée</strong>. Réglez l’acompte par
+              {' '}<strong>{result.deposit.method === 'CARD' ? 'carte bancaire' : result.deposit.method === 'FLOUCI' ? 'Flouci' : result.deposit.method === 'BANK_TRANSFER' ? 'virement bancaire' : 'mandat postal'}</strong>
+              {result.deposit.method === 'CARD'
+                ? ' : confirmation immédiate, facture électronique par e-mail et code de suivi.'
+                : ' puis envoyez la preuve (capture / reçu) depuis votre espace client pour validation par notre équipe.'}
+            </p>
+            <p className="text-[11px] text-amber-700">Solde restant à la livraison : <strong>{result.deposit.balanceTnd.toFixed(3)} DT</strong></p>
+            {onOpenAccount && (
+              <button
+                type="button"
+                onClick={onOpenAccount}
+                className="w-full bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold py-3 px-4 rounded-2xl text-xs transition-all flex items-center justify-center gap-2"
+              >
+                {result.deposit.method === 'CARD' ? '💳 Payer l’acompte par carte' : '📤 Envoyer ma preuve de paiement'}
+              </button>
+            )}
+          </div>
+        )}
 
         {/* WhatsApp Button */}
         <a

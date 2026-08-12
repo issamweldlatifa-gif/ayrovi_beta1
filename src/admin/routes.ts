@@ -4,6 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
+import { generateInvoicePdf, invoiceEmailHtml, uploadsDir } from '../services/invoice';
+import { sendMail } from '../services/mailer';
 import {
   cleanupExpiredSessions,
   clearAdminCookie,
@@ -515,6 +517,88 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     });
     audit(db, req, 'PAYMENT_STATUS', 'PAYMENTS', payment.id, payment, { status, reference });
     res.json({ success: true, data: db.get<any>('SELECT * FROM payments WHERE order_id=?', req.params.id) });
+  });
+
+  // ===== عرض وصل دفع العربون (للإدارة فقط) =====
+  router.get('/orders/:id/deposit-proof', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const order = db.get<any>('SELECT id,deposit_proof_path FROM orders WHERE id=?', req.params.id);
+    if (!order?.deposit_proof_path || !fs.existsSync(String(order.deposit_proof_path))) {
+      return res.status(404).json({ success: false, error: 'Aucune preuve téléversée pour cette commande.' });
+    }
+    const absolute = path.resolve(String(order.deposit_proof_path));
+    const safeRoot = path.resolve(uploadsDir('deposits'));
+    if (!absolute.startsWith(safeRoot + path.sep)) return res.status(403).json({ success: false, error: 'Chemin de preuve invalide.' });
+    const ext = path.extname(absolute).toLowerCase();
+    const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.pdf' ? 'application/pdf' : 'image/jpeg';
+    res.setHeader('Content-Type', mime);
+    res.setHeader('Cache-Control', 'private, no-store');
+    fs.createReadStream(absolute).pipe(res);
+  });
+
+  // ===== مراجعة العربون: قبول (تأكيد الطلب + فاتورة + كود تتبع) أو رفض =====
+  router.post('/orders/:id/deposit/review', requireAdmin(db, 'payments:write'), async (req, res) => {
+    const decision = String(req.body?.decision || '').trim().toLowerCase();
+    const note = String(req.body?.note || '').trim().slice(0, 500);
+    if (!['approve', 'reject'].includes(decision)) return res.status(400).json({ success: false, error: 'Décision invalide (approve/reject).' });
+    const before = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
+    if (!before) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+
+    if (decision === 'reject') {
+      try {
+        const order = db.rejectOrderDeposit(req.params.id, admin(req).id, note);
+        audit(db, req, 'DEPOSIT_REJECTED', 'ORDERS', order.id, { deposit_status: before.deposit_status }, { deposit_status: 'REJECTED', note });
+        return res.json({ success: true, data: { depositStatus: 'REJECTED' } });
+      } catch (error: any) {
+        return res.status(error?.message === 'DEPOSIT_NOT_REVIEWABLE' ? 409 : 500).json({ success: false, error: 'Cet acompte ne peut plus être refusé.' });
+      }
+    }
+
+    // قبول: يتطلب وجود وصل للطرق اليدوية (بنك/بريد/فلوسي) أو تأكيد بوابة للدفع بالبطاقة
+    if (before.payment_method !== 'CARD' && !before.deposit_proof_path) {
+      return res.status(409).json({ success: false, error: 'Aucune preuve téléversée — attendez le reçu du client.' });
+    }
+    try {
+      const order = db.confirmOrderDeposit(req.params.id, admin(req).id, note);
+      audit(db, req, 'DEPOSIT_APPROVED', 'ORDERS', order.id, { deposit_status: before.deposit_status }, { deposit_status: 'PAID', note });
+
+      // الفاتورة الإلكترونية PDF — يولّدها Chromium (لا تبعيات جديدة)
+      let invoice: { number: string; generated: boolean } = { number: String(order.invoice_number), generated: false };
+      try {
+        await generateInvoicePdf(db, order.id);
+        invoice = { number: String(order.invoice_number), generated: true };
+      } catch (pdfError: any) {
+        console.error('[Invoice] فشل توليد PDF:', pdfError?.message || pdfError);
+      }
+
+      // إرسال الفاتورة بالبريد إن كان العميل لديه بريد والإعداد مفعّل
+      let mail: { delivered: boolean; provider: string } = { delivered: false, provider: 'disabled' };
+      const emailEnabled = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='invoice_email_enabled'")?.setting_value !== 'false';
+      const account = order.account_id ? db.get<any>('SELECT email,display_name FROM customer_accounts WHERE id=?', order.account_id) : null;
+      if (emailEnabled && account?.email && invoice.generated) {
+        const total = Number(order.total_tnd), dep = Number(order.deposit_amount_tnd);
+        const balance = Math.max(0, Math.round((total - dep) * 1000) / 1000);
+        const pdfPath = String(db.get<any>('SELECT invoice_path FROM orders WHERE id=?', order.id)?.invoice_path || '');
+        mail = await sendMail({
+          to: String(account.email),
+          subject: `Facture ${order.invoice_number} — commande ${order.order_number} confirmée`,
+          html: invoiceEmailHtml({
+            customerName: String(account.display_name || 'Client AYROVI'),
+            orderNumber: String(order.order_number),
+            invoiceNumber: String(order.invoice_number),
+            trackingCode: String(order.tracking_code || ''),
+            totalLabel: `${total.toFixed(3)} DT`,
+            depositLabel: `${dep.toFixed(3)} DT`,
+            balanceLabel: `${balance.toFixed(3)} DT`,
+            company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'AYROVI'),
+          }),
+          attachments: pdfPath && fs.existsSync(pdfPath) ? [{ filename: `${order.invoice_number}.pdf`, path: pdfPath }] : [],
+        });
+      }
+      return res.json({ success: true, data: { depositStatus: 'PAID', status: 'CONFIRMED', trackingCode: order.tracking_code, invoice, mail } });
+    } catch (error: any) {
+      return res.status(error?.message === 'DEPOSIT_NOT_REVIEWABLE' || error?.message === 'ORDER_NOT_FOUND' ? 409 : 500)
+        .json({ success: false, error: 'Cet acompte ne peut plus être confirmé.' });
+    }
   });
 
   router.put('/orders/:id/delivery', requireAdmin(db, 'orders:write'), (req, res) => {

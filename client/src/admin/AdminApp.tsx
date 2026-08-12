@@ -266,6 +266,8 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite
   const open = async (row: any) => { setSelected(row); setDetailLoading(true); try { setSelected((await adminApi<any>(`/orders/${row.id}`)).data); } catch (e: any) { setToast({message:e.message,tone:'error'}); } finally { setDetailLoading(false); } };
   const changeStatus = async (next: string) => { if (!selected) return; setBusy(true); try { await adminApi(`/orders/${selected.id}/status`, { method:'PUT', body:JSON.stringify({status:next}) }); await open(selected); await load(pagination.page); setToast({message:'Statut de commande mis à jour.',tone:'success'}); } catch(e:any){setToast({message:e.message,tone:'error'});} finally{setBusy(false);} };
   const changePayment = async (next: string) => { if (!selected) return; setBusy(true); try { await adminApi(`/orders/${selected.id}/payment`, {method:'PUT',body:JSON.stringify({status:next})}); await open(selected); await load(pagination.page); setToast({message:'Paiement mis à jour.',tone:'success'}); }catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);} };
+  const [reviewNote, setReviewNote] = useState('');
+  const reviewDeposit = async (decision: 'approve' | 'reject') => { if (!selected || busy) return; setBusy(true); try { const r = await adminApi<any>(`/orders/${selected.id}/deposit/review`, { method:'POST', body: JSON.stringify({ decision, note: reviewNote }) }); await open(selected); await load(pagination.page); setReviewNote(''); setToast({ message: decision === 'approve' ? `Acompte confirmé — facture ${r.data?.invoice?.number || ''} ${r.data?.mail?.delivered ? 'et e-mail envoyé' : 'générée'}.` : 'Acompte refusé — le client a été notifié.', tone:'success'}); } catch(e:any){setToast({message:e.message,tone:'error'});} finally{setBusy(false);} };
   return <>
     <PageHeader title="Commandes" description="OMS persistant : clients, articles, paiements, livraisons et historique immuable." action={<a className="admin-button admin-button--secondary" href="/api/admin/reports/orders.csv" target="_blank">Exporter CSV</a>} />
     <section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client ou téléphone…"/><Select value={status} onChange={(e)=>setStatus(e.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['NEW','CONFIRMED','PAYMENT_PENDING','PAID','PURCHASING','PURCHASED','IN_TRANSIT','ARRIVED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'])]} /></div>
@@ -273,11 +275,31 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite
         {key:'order_number',label:'Commande',render:(row)=><div><strong>{row.order_number}</strong><small className="admin-block-small">{formatDate(row.created_at,true)}</small></div>},
         {key:'customer_name',label:'Client',render:(row)=><div><strong>{row.customer_name}</strong><small className="admin-block-small">{row.customer_phone}</small></div>},
         {key:'source',label:'Source'}, {key:'status',label:'Statut',render:(row)=><StatusBadge status={row.status}/>}, {key:'payment_status',label:'Paiement',render:(row)=><StatusBadge status={row.payment_status}/>},
+        {key:'deposit_status',label:'Acompte',render:(row)=><div><StatusBadge status={row.deposit_status||'NONE'}/><small className="admin-block-small">{row.deposit_amount_tnd?formatMoney(row.deposit_amount_tnd):''}</small></div>},
         {key:'total_tnd',label:'Total',render:(row)=><strong>{formatMoney(row.total_tnd)}</strong>},
       ]}/><Pagination {...pagination} onChange={load}/></section>
     <Modal open={Boolean(selected)} title={selected?.order_number || 'Commande'} onClose={()=>setSelected(null)} wide>{detailLoading ? <PageLoading/> : selected && <div className="admin-order-detail">
       <div className="admin-order-summary"><article><span>Client</span><strong>{selected.customer_name}</strong><small>{selected.phone}</small></article><article><span>Total</span><strong>{formatMoney(selected.total_tnd)}</strong><small>{selected.payment_method}</small></article><article><span>Livraison</span><strong>{selected.governorate}</strong><small>{selected.address}</small></article></div>
       <div className="admin-order-controls"><Field label="Statut commande"><Select disabled={!canWrite||busy} value={selected.status} onChange={(e)=>changeStatus(e.target.value)} options={options(['NEW','CONFIRMED','PAYMENT_PENDING','PAID','PURCHASING','PURCHASED','IN_TRANSIT','ARRIVED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'])}/></Field><Field label="Paiement"><Select disabled={!canPay||busy} value={selected.payment_status} onChange={(e)=>changePayment(e.target.value)} options={options(['PENDING','PAID','FAILED','REFUNDED','CANCELLED'])}/></Field></div>
+
+      {selected.deposit_status && selected.deposit_status!=='NONE' && <section className="admin-list-card" style={{marginBottom:16}}>
+        <h3>Acompte de confirmation ({Number(selected.deposit_percent||20)}%)</h3>
+        <div className="admin-order-summary">
+          <article><span>Montant de l’acompte</span><strong>{formatMoney(selected.deposit_amount_tnd)}</strong><small>{selected.payment_method}</small></article>
+          <article><span>Statut</span><strong><StatusBadge status={selected.deposit_status}/></strong><small>{selected.deposit_paid_at?`Confirmé le ${formatDate(selected.deposit_paid_at,true)}`:selected.deposit_submitted_at?`Reçu le ${formatDate(selected.deposit_submitted_at,true)}`:'En attente du client'}</small></article>
+          <article><span>Solde à la livraison</span><strong>{formatMoney(Math.max(0,Number(selected.total_tnd)-Number(selected.deposit_amount_tnd||0)))}</strong><small>{selected.tracking_code?`Suivi : ${selected.tracking_code}`:''}</small></article>
+        </div>
+        {selected.deposit_review_note&&<p className="admin-block-small" style={{margin:'8px 0'}}>Note de révision : {selected.deposit_review_note}</p>}
+        {selected.deposit_proof_path
+          ?<a className="admin-button admin-button--secondary" href={`/api/admin/orders/${selected.id}/deposit-proof`} target="_blank" rel="noreferrer">👁 Voir la preuve d’acompte</a>
+          :<p className="admin-block-small" style={{margin:'8px 0'}}>Aucune preuve téléversée{selected.payment_method==='CARD'?' — paiement carte à confirmer après encaissement':''}.</p>}
+        {canPay&&selected.status==='PAYMENT_PENDING'&&['PENDING','SUBMITTED'].includes(selected.deposit_status)&&<div style={{display:'flex',gap:8,alignItems:'flex-end',marginTop:10,flexWrap:'wrap'}}>
+          <Field label="Note (optionnelle)"><input value={reviewNote} onChange={(e)=>setReviewNote(e.target.value)} placeholder="Référence virement, motif du refus…" style={{minWidth:220}}/></Field>
+          <button className="admin-button admin-button--primary" disabled={busy||(selected.payment_method!=='CARD'&&!selected.deposit_proof_path)} onClick={()=>reviewDeposit('approve')}>✓ Confirmer l’acompte{selected.payment_method==='CARD'?' (paiement carte reçu)':''}</button>
+          <button className="admin-button admin-button--danger" disabled={busy} onClick={()=>reviewDeposit('reject')}>✕ Refuser</button>
+        </div>}
+        {selected.deposit_status==='PAID'&&<p className="admin-block-small" style={{marginTop:8}}>Facture : {selected.invoice_number||'—'} {selected.invoice_path?'(PDF généré)':'(génération en cours)'} </p>}
+      </section>}
       <h3>Articles</h3><DataTable<any> rows={selected.items||[]} columns={[{key:'product_name',label:'Produit'},{key:'source_platform',label:'Source'},{key:'quantity',label:'Qté'},{key:'original_price',label:'Prix source',render:(row)=>`${row.original_price} ${row.currency}`},{key:'total_tnd',label:'Total figé',render:(row)=>formatMoney(row.total_tnd)}]}/>
       <h3>Historique</h3><div className="admin-timeline">{(selected.history||[]).map((item:any)=><div key={item.id}><i/><div><StatusBadge status={item.to_status}/><p>{item.note||'Mise à jour du statut'}</p><small>{formatDate(item.created_at,true)}</small></div></div>)}</div>
     </div>}</Modal>{toast&&<Toast {...toast}/>}</>;

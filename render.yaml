@@ -40,3 +40,9 @@ services:
         sync: false
       - key: CUSTOMER_OTP_WEBHOOK_TOKEN
         sync: false
+      - key: MAIL_PROVIDER
+        sync: false
+      - key: MAIL_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false

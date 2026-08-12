@@ -332,7 +332,7 @@ export const App: React.FC = () => {
         onRequireAuthentication={() => {
           setIsCheckoutOpen(false);
           setResumeCheckoutAfterAuth(true);
-          setAccountMessage('Connectez-vous et vérifiez votre téléphone pour confirmer la commande.');
+          setAccountMessage('Connectez-vous pour confirmer la commande.');
           setIsAccountOpen(true);
         }}
         onOrderSuccess={handleOrderSuccess}
@@ -354,6 +354,7 @@ export const App: React.FC = () => {
       <OrderSuccessModal
         result={orderResult}
         onClose={() => setOrderResult(null)}
+        onOpenAccount={() => { setOrderResult(null); setIsAccountOpen(true); }}
       />
 
     </div>

@@ -56,10 +56,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     phone: '',
     city: TUNISIAN_GOVERNORATES_FR[0],
     address: '',
-    paymentMethod: 'cod',
+    paymentMethod: 'card',
   });
   const [governorates, setGovernorates] = useState(TUNISIAN_GOVERNORATES_FR);
-  const [paymentMethods, setPaymentMethods] = useState(['COD', 'D17', 'FLOUCI']);
+  const [paymentMethods, setPaymentMethods] = useState(['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE']);
+  const [depositInfo, setDepositInfo] = useState({ percent: 20, companyName: 'AYROVI', bankRib: '', posteAccount: '', flouciNumber: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
@@ -82,9 +83,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           ? payload.data.governorates.map(String)
           : TUNISIAN_GOVERNORATES_FR;
         const configuredMethods = Array.isArray(payload.data?.paymentMethods)
-          ? payload.data.paymentMethods.map((method: unknown) => String(method).toUpperCase()).filter((method: string) => ['COD', 'D17', 'FLOUCI'].includes(method))
+          ? payload.data.paymentMethods.map((method: unknown) => String(method).toUpperCase()).filter((method: string) => ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'].includes(method))
           : [];
-        const methods = configuredMethods.length ? configuredMethods : ['COD', 'D17', 'FLOUCI'];
+        const methods = configuredMethods.length ? configuredMethods : ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
+        if (payload.data?.deposit && typeof payload.data.deposit === 'object') {
+          const d = payload.data.deposit;
+          setDepositInfo({
+            percent: Number(d.percent) > 0 ? Number(d.percent) : 20,
+            companyName: String(d.companyName || 'AYROVI'),
+            bankRib: String(d.bankRib || ''),
+            posteAccount: String(d.posteAccount || ''),
+            flouciNumber: String(d.flouciNumber || ''),
+          });
+        }
         setGovernorates(configuredGovernorates);
         setPaymentMethods(methods);
         setFormData((current) => ({
@@ -332,34 +343,67 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div>
             <label className="block text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5 text-[#673de6]" />
-              <span>Mode de paiement :</span>
+              <span>Mode de paiement de l’acompte :</span>
             </label>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {paymentMethods.map((method) => {
                 const value = method.toLowerCase();
-                const label = method === 'COD' ? 'À la livraison' : method === 'D17' ? 'D17' : 'Flouci';
+                const META: Record<string, { label: string; hint: string }> = {
+                  CARD: { label: 'Carte bancaire', hint: 'Confirmation immédiate' },
+                  FLOUCI: { label: 'Flouci', hint: 'Puis envoyez la capture' },
+                  BANK_TRANSFER: { label: 'Virement', hint: 'Puis envoyez le reçu' },
+                  POSTE: { label: 'Mandat poste', hint: 'Puis envoyez le reçu' },
+                };
+                const meta = META[method] || { label: method, hint: '' };
                 return (
                   <button
                     key={method}
                     type="button"
                     onClick={() => setFormData({ ...formData, paymentMethod: value })}
-                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                    className={`py-2.5 px-2 rounded-xl border text-center transition-all ${
                       formData.paymentMethod === value
                         ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
                         : 'border-[#e2e8f0] bg-[#f8f9fe] text-[#6b7280]'
                     }`}
                   >
-                    <span>{label}</span>
+                    <span className="block text-xs font-bold">{meta.label}</span>
+                    <span className="mt-0.5 block text-[9px] font-semibold opacity-75">{meta.hint}</span>
                   </button>
                 );
               })}
             </div>
+            {/* تعليمات الطريقة المختارة + العربون */}
+            {(() => {
+              const deposit = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
+              const method = formData.paymentMethod.toUpperCase();
+              const instructions: Record<string, string> = {
+                CARD: `Payez ${deposit.toFixed(3)} DT par carte bancaire : votre commande est confirmée immédiatement, avec facture électronique (e-mail + téléchargement) et code de suivi.`,
+                FLOUCI: `Envoyez ${deposit.toFixed(3)} DT via Flouci au ${depositInfo.flouciNumber || 'numéro communiqué par AYROVI'}, puis téléversez la capture d’écran depuis votre espace client.`,
+                BANK_TRANSFER: `Effectuez un virement de ${deposit.toFixed(3)} DT au nom de ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB : ${depositInfo.bankRib}` : ''}, puis téléversez le reçu depuis votre espace client.`,
+                POSTE: `Versez ${deposit.toFixed(3)} DT par mandat postal au nom de ${depositInfo.companyName}${depositInfo.posteAccount ? ` — compte : ${depositInfo.posteAccount}` : ''}, puis téléversez le reçu depuis votre espace client.`,
+              };
+              return (
+                <p className="mt-2 rounded-xl border border-[#dcd3f7] bg-[#f5f2ff] p-3 text-[11px] leading-5 text-[#4c1d95]">
+                  {instructions[method] || ''} <strong>Votre commande n’est confirmée qu’après réception de l’acompte.</strong>
+                </p>
+              );
+            })()}
           </div>
 
           {/* Summary Box */}
-          <div className="bg-[#f8f9fe] border border-[#eef0f6] rounded-xl p-3.5 flex justify-between items-center text-xs">
-            <span className="text-[#6b7280] font-semibold">Montant total de la commande :</span>
-            <span className="text-base font-extrabold text-[#673de6]">{totalTND.toFixed(2)} DT</span>
+          <div className="bg-[#f8f9fe] border border-[#eef0f6] rounded-xl p-3.5 text-xs space-y-1.5">
+            <div className="flex justify-between items-center">
+              <span className="text-[#6b7280] font-semibold">Montant total de la commande :</span>
+              <span className="text-base font-extrabold text-[#673de6]">{totalTND.toFixed(2)} DT</span>
+            </div>
+            <div className="flex justify-between items-center border-t border-[#e5e2ee] pt-1.5">
+              <span className="text-[#b45309] font-bold">Acompte à régler maintenant ({depositInfo.percent}%) :</span>
+              <span className="text-base font-extrabold text-[#b45309]">{(Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000).toFixed(3)} DT</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[#6b7280] font-semibold">Solde restant à la livraison :</span>
+              <span className="font-extrabold text-[#1d2130]">{(Math.round((totalTND - (totalTND * depositInfo.percent) / 100) * 1000) / 1000).toFixed(3)} DT</span>
+            </div>
           </div>
 
           {/* Submit CTA */}

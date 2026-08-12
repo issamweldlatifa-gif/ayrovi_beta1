@@ -35,7 +35,8 @@ app.use(express.json({ limit: '14mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Database, Scraper & Vision Engine
-const databasePath = process.env.DATABASE_PATH || (process.env.NODE_ENV === 'test' ? ':memory:' : undefined);
+// Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
+const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
 const scraper = new SmartLinkScraper();
 const visionExtractor = new VisualProductExtractor();

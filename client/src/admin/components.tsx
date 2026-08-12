@@ -20,6 +20,8 @@ const statusLabels: Record<string, string> = {
   PURCHASED: 'Achetée', IN_TRANSIT: 'En transit', ARRIVED: 'Arrivée', OUT_FOR_DELIVERY: 'En livraison', DELIVERED: 'Livrée', CANCELLED: 'Annulée',
   PENDING: 'En attente', FAILED: 'Échoué', REFUNDED: 'Remboursé', PREPARING: 'Préparation', SHIPPED: 'Expédié', RETURNED: 'Retourné',
   STANDARD: 'Standard', EXPRESS: 'Express', SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',
+  // حالات العربون (dépôt)
+  NONE: '—', SUBMITTED: 'Preuve reçue', REJECTED: 'Reçu refusé',
 };
 
 export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {

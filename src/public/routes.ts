@@ -53,7 +53,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   const commerceConfig = () => {
     const pricing = db.getPricingRules();
     const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
-      ('delivery_delay','governorates','payment_methods')`);
+      ('delivery_delay','governorates','payment_methods','deposit_percent','company_legal_name','company_name','bank_rib','poste_account','flouci_number')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
     return {
@@ -69,6 +69,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       governorates: Array.isArray(facts.governorates) ? facts.governorates : [],
       paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
       deliveryDelay: String(facts.delivery_delay || ''),
+      // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
+      deposit: {
+        percent: Number(facts.deposit_percent) > 0 ? Number(facts.deposit_percent) : 20,
+        companyName: String(facts.company_legal_name || facts.company_name || 'AYROVI'),
+        bankRib: String(facts.bank_rib || ''),
+        posteAccount: String(facts.poste_account || ''),
+        flouciNumber: String(facts.flouci_number || ''),
+      },
     };
   };
 

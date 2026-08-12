@@ -1,6 +1,10 @@
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
+import path from 'node:path';
+import fs from 'node:fs';
+import multer from 'multer';
 import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
+import { uploadsDir, invoiceAbsolutePath } from '../services/invoice';
 import {
   cleanupCustomerAuth,
   clearCustomerCookie,
@@ -537,11 +541,65 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
     return res.json({ success: true, data: {
       ...order,
+      deposit_proof_path: undefined, // لا نكشف المسار الخام — التحميل عبر المسارات الآمنة فقط
       items: db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', order.id),
       history: db.all<any>('SELECT * FROM order_status_history WHERE order_id=? ORDER BY created_at', order.id),
       payment: db.get<any>('SELECT * FROM payments WHERE order_id=?', order.id),
       delivery: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id),
     } });
+  });
+
+  // ===== وصل دفع العربون (العميل يرفع لقطة شاشة / وصل بنك / وصل بريد) =====
+  const proofUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+  });
+  const PROOF_SIGNATURES: Array<{ ext: string; mime: string; test: (b: Buffer) => boolean }> = [
+    { ext: 'jpg', mime: 'image/jpeg', test: (b) => b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
+    { ext: 'png', mime: 'image/png', test: (b) => b.length > 8 && b.readUInt32BE(0) === 0x89504e47 },
+    { ext: 'webp', mime: 'image/webp', test: (b) => b.length > 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP' },
+    { ext: 'pdf', mime: 'application/pdf', test: (b) => b.length > 5 && b.toString('ascii', 0, 5) === '%PDF-' },
+  ];
+
+  router.post('/account/orders/:id/deposit-proof', requireCustomer(db), proofUpload.single('proof'), (req: Request, res) => {
+    const account = customerFromRequest(req);
+    const order = db.get<any>('SELECT id,account_id,status,deposit_status,order_number FROM orders WHERE id=?', req.params.id);
+    if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    if (order.status !== 'PAYMENT_PENDING' || !['PENDING', 'SUBMITTED', 'REJECTED'].includes(String(order.deposit_status))) {
+      return res.status(409).json({ success: false, error: 'Cette commande n’attend plus de preuve d’acompte.' });
+    }
+    const file = req.file;
+    if (!file || !file.buffer?.length) return res.status(400).json({ success: false, error: 'Fichier de preuve manquant (image ou PDF, 10 Mo max).' });
+    const signature = PROOF_SIGNATURES.find((candidate) => candidate.test(file.buffer));
+    if (!signature) return res.status(415).json({ success: false, error: 'Format non supporté : JPG, PNG, WEBP ou PDF uniquement.' });
+
+    const filename = `${order.id}-${Date.now()}-${randomInt(1000, 9999)}.${signature.ext}`;
+    const absolute = path.join(uploadsDir('deposits'), filename);
+    fs.writeFileSync(absolute, file.buffer);
+    try {
+      const updated = db.attachDepositProof(order.id, absolute);
+      res.json({ success: true, data: { depositStatus: updated.deposit_status, submittedAt: updated.deposit_submitted_at } });
+    } catch (error: any) {
+      fs.rmSync(absolute, { force: true });
+      res.status(error?.message === 'DEPOSIT_NOT_SUBMITTABLE' ? 409 : 500).json({ success: false, error: 'La preuve n’a pas pu être enregistrée.' });
+    }
+  });
+
+  // ===== تحميل الفاتورة الإلكترونية (مالك الطلب فقط) =====
+  router.get('/account/orders/:id/invoice', requireCustomer(db), (req: Request, res) => {
+    const account = customerFromRequest(req);
+    const order = db.get<any>('SELECT id,account_id,invoice_number,invoice_path FROM orders WHERE id=?', req.params.id);
+    if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    if (!order.invoice_number || !order.invoice_path) return res.status(404).json({ success: false, error: 'Facture pas encore disponible — elle est générée après confirmation de l’acompte.' });
+    const absolute = invoiceAbsolutePath(String(order.invoice_number));
+    // تحقق مزدوج: المسار المخزّن يجب أن يطابق المسار المُشتق من رقم الفاتورة (حماية من أي تلاعب بالمسار)
+    if (path.resolve(order.invoice_path) !== path.resolve(absolute) || !fs.existsSync(absolute)) {
+      return res.status(404).json({ success: false, error: 'Fichier de facture indisponible.' });
+    }
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${String(order.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf"`);
+    res.setHeader('Cache-Control', 'private, no-store');
+    fs.createReadStream(absolute).pipe(res);
   });
 
   router.get('/account/favorites', requireCustomer(db), (req, res) => {

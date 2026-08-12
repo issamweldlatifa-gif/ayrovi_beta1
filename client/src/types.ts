@@ -81,6 +81,14 @@ export interface OrderResult {
   totalTND: number;
   itemCount: number;
   message: string;
+  orderId?: string;
+  deposit?: {
+    percent: number;
+    amountTnd: number;
+    balanceTnd: number;
+    method: string;
+    status: string;
+  } | null;
 }
 
 export interface CustomerAccount {
