@@ -4,7 +4,7 @@ AYROVI est une plateforme Express, React et SQLite de shopping international en 
 
 ## Fonctions principales
 
-- Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Produits, Promotions, Stories et Actualités.
+- Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Promotions, Stories et Actualités.
 - Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête AYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
 - Lens pour extraire un prix depuis une image ou un lien, avec prévisualisation tarifaire calculée côté serveur.
 - Panier et checkout pour les 24 gouvernorats tunisiens, avec COD, D17 et Flouci selon la configuration active.

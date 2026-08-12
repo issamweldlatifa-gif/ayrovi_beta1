@@ -25,7 +25,6 @@ const pageDefinitions: Array<{
   description: string;
 }> = [
   { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.' },
-  { id: 'products', label: 'Produits', eyebrow: 'Catalogue', description: 'Les produits disponibles et leurs prix calculés côté serveur.' },
   { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.' },
   { id: 'stories', label: 'Stories', eyebrow: 'À la une', description: 'Les nouveautés AYROVI dans un format visuel.' },
   { id: 'news', label: 'Actualités', eyebrow: 'Journal AYROVI', description: 'Les informations, arrivages et annonces de la plateforme.' },
@@ -166,7 +165,7 @@ export const PublicCmsSections: React.FC = () => {
             <div className="mx-auto grid h-16 max-w-7xl grid-cols-[52px_1fr_52px] items-center px-3 sm:h-20 sm:grid-cols-[70px_1fr_70px] sm:px-8">
               <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label={`Fermer ${activeDefinition.label}`} className="grid h-11 w-11 place-items-center border border-[#ded8eb] bg-white text-[#17131f] transition hover:border-[#673de6] hover:bg-[#673de6] hover:text-white"><X className="h-5 w-5" /></button>
               <div className="flex items-center justify-center gap-2.5 text-[#17131f]"><span className="text-[#673de6]"><FigLogoIcon className="h-8 w-8 sm:h-9 sm:w-9" /></span><strong className="text-2xl font-black tracking-tight sm:text-3xl">AYROVI</strong></div>
-              <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:text-[10px]">{String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / 05</span>
+              <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:text-[10px]">{String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / {String(pageDefinitions.length).padStart(2, '0')}</span>
             </div>
           </header>
           <main className="mx-auto min-h-[calc(100dvh-5rem)] max-w-7xl px-5 py-10 sm:px-8 sm:py-16">
