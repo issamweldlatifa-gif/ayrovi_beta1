@@ -330,12 +330,12 @@ export function createApiRouter(
   /**
    * POST /api/checkout
    */
-  router.post('/checkout', requireCustomer(db, { verifiedPhone: true }), (req: Request, res: Response) => {
+  router.post('/checkout', requireCustomer(db), (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
     const customer = customerFromRequest(req);
-    const { name, city, address, paymentMethod } = req.body ?? {};
+    const { name, phone, city, address, paymentMethod } = req.body ?? {};
 
     if (
       typeof name !== 'string' || !name.trim() || name.length > 160 ||
@@ -345,6 +345,15 @@ export function createApiRouter(
       return res.status(400).json({
         success: false,
         error: 'Veuillez remplir des coordonnées de livraison valides.'
+      });
+    }
+
+    // Le téléphone de livraison vient du formulaire (aucun SMS requis — connexion Google supportée).
+    const deliveryPhone = String(phone ?? '').replace(/\s+/g, ' ').trim();
+    if (!deliveryPhone || deliveryPhone.length > 32 || deliveryPhone.replace(/\D/g, '').length < 8) {
+      return res.status(400).json({
+        success: false,
+        error: 'Veuillez renseigner un numéro de téléphone tunisien valide (8 chiffres minimum).'
       });
     }
 
@@ -382,7 +391,7 @@ export function createApiRouter(
     try {
       const result = db.createOrderFromCart(sessionId, {
         name: name.trim(),
-        phone: customer.phone!,
+        phone: deliveryPhone,
         governorate: city.trim(),
         address: address.trim(),
         paymentMethod: normalizedPaymentMethod,
@@ -394,7 +403,7 @@ export function createApiRouter(
       });
     } catch (error: any) {
       if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });
-      if (error?.message === 'VERIFIED_PHONE_REQUIRED') return res.status(403).json({ success: false, code: 'PHONE_VERIFICATION_REQUIRED', error: 'Vérifiez votre téléphone avant la commande.' });
+      if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support AYROVI.' });
       console.error('[Checkout Error]', error);
       return res.status(500).json({ success: false, error: 'La commande n’a pas pu être enregistrée.' });
     }

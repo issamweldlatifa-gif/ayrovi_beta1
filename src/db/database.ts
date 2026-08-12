@@ -795,10 +795,11 @@ export class QatafoDatabase {
     const normalizedPhone = input.phone.replace(/\s+/g, ' ').trim();
 
     return this.transaction(() => {
-      const account = this.get<any>('SELECT id,phone,phone_verified_at,status FROM customer_accounts WHERE id=?', accountId);
-      if (!account || account.status !== 'ACTIVE' || !account.phone || !account.phone_verified_at || account.phone !== normalizedPhone) {
-        throw new Error('VERIFIED_PHONE_REQUIRED');
+      const account = this.get<any>('SELECT id,status FROM customer_accounts WHERE id=?', accountId);
+      if (!account || account.status !== 'ACTIVE') {
+        throw new Error('ACCOUNT_UNAVAILABLE');
       }
+      // Le téléphone de livraison saisi au checkout fait foi (la vérification SMS est optionnelle).
 
       const accountPhoneDigits = normalizedPhone.replace(/\D/g, '').replace(/^216(?=\d{8}$)/, '');
       let customer = this.all<any>('SELECT * FROM customers ORDER BY updated_at DESC').find((candidate) => {

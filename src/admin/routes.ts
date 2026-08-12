@@ -557,6 +557,43 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { ...customer, account: account || null, orders: db.all<any>('SELECT * FROM orders WHERE customer_id=? ORDER BY created_at DESC', customer.id) } });
   });
 
+  // ===== Comptes clients enregistrés (connexion Google/SMS) — visibles même avant toute commande =====
+
+  router.get('/customer-accounts', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const page = parsePositiveInteger(req.query.page, 1, 100000);
+    const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
+    const search = String(req.query.search || '').trim().slice(0, 100);
+    const params = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
+    const where = search ? 'WHERE a.display_name LIKE ? OR a.email LIKE ? OR a.phone LIKE ?' : '';
+    const count = db.get<any>(`SELECT COUNT(*) count FROM customer_accounts a ${where}`, ...params)?.count || 0;
+    const rows = db.all<any>(`SELECT a.id,a.display_name,a.email,a.phone,a.status,a.locale,a.marketing_opt_in,a.created_at,a.last_login_at,
+      (a.phone_verified_at IS NOT NULL) phone_verified,(a.email_verified_at IS NOT NULL) email_verified,
+      COUNT(DISTINCT o.id) order_count,COALESCE(SUM(CASE WHEN o.status!='CANCELLED' THEN o.total_tnd ELSE 0 END),0) lifetime_value
+      FROM customer_accounts a LEFT JOIN orders o ON o.account_id=a.id
+      ${where} GROUP BY a.id ORDER BY a.created_at DESC LIMIT ? OFFSET ?`,
+      ...params, pageSize, (page - 1) * pageSize);
+    res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
+  });
+
+  router.get('/customer-accounts/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const account = db.get<any>(`SELECT id,display_name,email,phone,avatar_url,status,locale,marketing_opt_in,
+      email_verified_at,phone_verified_at,created_at,updated_at,last_login_at FROM customer_accounts WHERE id=?`, req.params.id);
+    if (!account) return res.status(404).json({ success: false, error: 'Compte client introuvable.' });
+    const orders = db.all<any>('SELECT id,order_number,status,payment_status,total_tnd,created_at FROM orders WHERE account_id=? ORDER BY created_at DESC', account.id);
+    const addresses = db.all<any>('SELECT label,recipient_name,phone,governorate,city,address_line,postal_code,is_default FROM customer_addresses WHERE account_id=? ORDER BY is_default DESC,updated_at DESC', account.id);
+    res.json({ success: true, data: { ...account, orders, addresses } });
+  });
+
+  router.put('/customer-accounts/:id/status', requireAdmin(db, 'orders:write'), (req, res) => {
+    const status = String(req.body?.status || '').trim().toUpperCase();
+    if (!['ACTIVE', 'BLOCKED'].includes(status)) return res.status(400).json({ success: false, error: 'Statut invalide (ACTIVE ou BLOCKED).' });
+    const account = db.get<any>('SELECT id,status FROM customer_accounts WHERE id=?', req.params.id);
+    if (!account) return res.status(404).json({ success: false, error: 'Compte client introuvable.' });
+    db.run('UPDATE customer_accounts SET status=?,updated_at=? WHERE id=?', status, new Date().toISOString(), account.id);
+    audit(db, req, 'UPDATE', 'CUSTOMER_ACCOUNT', account.id, { status: account.status }, { status });
+    res.json({ success: true, data: { id: account.id, status } });
+  });
+
   router.get('/pricing', requireAdmin(db, 'commerce:read'), (_req, res) => res.json({ success: true, data: db.getPricingRules() }));
   router.put('/pricing', requireAdmin(db, 'pricing:write'), (req, res) => {
     const current = db.getPricingRules();

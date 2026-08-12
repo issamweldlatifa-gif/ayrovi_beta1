@@ -104,7 +104,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    if (!customerSession || !customerSession.account.phoneVerified) {
+    if (!customerSession) {
       setAddresses([]);
       setSelectedAddressId('');
       onRequireAuthentication();
@@ -140,7 +140,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       })
       .catch(() => { if (active) setAddresses([]); });
     return () => { active = false; };
-  }, [isOpen, customerSession?.account.id, customerSession?.account.phoneVerified]);
+  }, [isOpen, customerSession?.account.id]);
 
   const chooseAddress = (address: CustomerAddress) => {
     setSelectedAddressId(address.id);
@@ -159,7 +159,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     e.preventDefault();
     setError(null);
 
-    if (!customerSession || !customerSession.account.phoneVerified) {
+    if (!customerSession) {
       onRequireAuthentication();
       return;
     }
@@ -244,7 +244,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
-            Commande liée au compte {customerSession?.account.displayName}. Téléphone vérifié.
+            Commande liée au compte {customerSession?.account.displayName}. Aucune vérification SMS n’est requise.
           </div>
 
           {addresses.length > 0 && (
