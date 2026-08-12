@@ -64,6 +64,6 @@ Variables obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `AD
 
 Pour un autre hébergeur Node.js :
 
-- Build : `npm ci && npm run build`
+- Build : `npm ci --include=dev && npm run build`
 - Start : `npm start`
 - Stockage : montez un volume persistant sur le dossier `data` afin de conserver SQLite et `data/uploads`
