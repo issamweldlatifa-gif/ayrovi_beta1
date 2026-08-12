@@ -140,16 +140,16 @@ export const PublicCmsSections: React.FC = () => {
 
   return (
     <>
-      <section id="arrivages" className="border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
-        <nav className="mx-auto max-w-7xl overflow-x-auto px-5 py-7 [scrollbar-width:none] sm:px-8 sm:py-10 [&::-webkit-scrollbar]:hidden" aria-label="Contenus AYROVI">
-          <div className="flex w-full min-w-[700px] items-center justify-between gap-10">
+      <section id="arrivages" className="w-full border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
+        <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
+          <div className="grid w-full grid-cols-4 items-center">
             {pageDefinitions.map((definition) => (
               <button
                 key={definition.id}
                 type="button"
                 onClick={() => setActivePage(definition.id)}
                 aria-label={`Ouvrir ${definition.label}`}
-                className="shrink-0 bg-transparent p-0 text-2xl font-black tracking-[-0.03em] text-[#050505] [font-weight:950] transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-[#673de6] sm:text-3xl lg:text-[2rem]"
+                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-1 py-2 text-center text-[clamp(0.69rem,3.15vw,2rem)] font-black tracking-[-0.035em] text-[#050505] [font-weight:950] transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#673de6]"
               >
                 {definition.label}
               </button>

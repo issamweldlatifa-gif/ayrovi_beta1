@@ -19,8 +19,19 @@
   }
 
   html {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
     scroll-behavior: smooth;
     background: #ffffff;
+  }
+
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
   }
 
   body {
@@ -89,6 +100,19 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #673de6;
+}
+
+/* Mobile-first viewport: keep the page edge flush with the device while preserving scrolling. */
+@media (max-width: 640px) {
+  html,
+  body {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* Hostinger Purple Gradient Card */
