@@ -8,7 +8,7 @@ Toutes les réponses JSON utilisent la forme générale `{ "success": true, "dat
 
 ## Sécurité et rôles
 
-L’authentification Admin utilise une session opaque stockée en SQLite et un cookie `HttpOnly`, `SameSite=Strict` et `Secure` en production. Toutes les mutations Admin après connexion exigent le jeton CSRF courant dans l’en-tête `x-csrf-token`.
+L’authentification Admin utilise une session opaque stockée en SQLite et un cookie `HttpOnly`, `SameSite=Strict` et `Secure` en production. Toutes les mutations Admin après connexion exigent le jeton CSRF courant dans l’en-tête `x-csrf-token`. Une session absente, invalide ou expirée efface le cookie et ramène immédiatement l’interface à la connexion au lieu de laisser une page Admin obsolète afficher une erreur.
 
 | Rôle | Capacités principales |
 |---|---|

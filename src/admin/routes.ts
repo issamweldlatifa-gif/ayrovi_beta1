@@ -296,7 +296,10 @@ export function createAdminRouter(db: QatafoDatabase): Router {
 
   router.get('/auth/me', (req, res) => {
     const identity = resolveAdmin(db, req);
-    if (!identity) return res.status(401).json({ success: false, error: 'Non authentifié.' });
+    if (!identity) {
+      clearAdminCookie(res);
+      return res.status(401).json({ success: false, error: 'Non authentifié.' });
+    }
     const csrfToken = rotateCsrfToken(db, req);
     res.json({ success: true, data: { user: { id: identity.id, email: identity.email, name: identity.name, role: identity.role, permissions: identity.permissions }, csrfToken } });
   });

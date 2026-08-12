@@ -115,7 +115,10 @@ export function resolveAdmin(db: QatafoDatabase, req: Request): AdminIdentity | 
 export function requireAdmin(db: QatafoDatabase, permission?: AdminPermission) {
   return (req: Request, res: Response, next: NextFunction) => {
     const admin = resolveAdmin(db, req);
-    if (!admin) return res.status(401).json({ success: false, error: 'Session administrateur invalide ou expirée.' });
+    if (!admin) {
+      clearAdminCookie(res);
+      return res.status(401).json({ success: false, error: 'Session administrateur invalide ou expirée.' });
+    }
     if (permission && !hasPermission(admin.role, permission)) {
       return res.status(403).json({ success: false, error: 'Vous ne disposez pas de cette permission.' });
     }

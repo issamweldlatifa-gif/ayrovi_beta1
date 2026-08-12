@@ -234,9 +234,13 @@ describe('AYROVI platform', () => {
     expect(preview.body.data.pricingVersion).toBe(1);
   });
 
-  test('admin routes reject unauthenticated requests and invalid credentials', async () => {
+  test('admin routes reject unauthenticated requests, clear stale cookies and reject invalid credentials', async () => {
     const unauthorized = await request(app).get('/api/admin/dashboard');
     expect(unauthorized.status).toBe(401);
+    expect(unauthorized.headers['set-cookie'][0]).toContain('Max-Age=0');
+    const identity = await request(app).get('/api/admin/auth/me');
+    expect(identity.status).toBe(401);
+    expect(identity.headers['set-cookie'][0]).toContain('Max-Age=0');
     const failedLogin = await request(app).post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'incorrect-password' });
     expect(failedLogin.status).toBe(401);
   });

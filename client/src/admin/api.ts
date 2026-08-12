@@ -1,4 +1,5 @@
 const CSRF_KEY = 'ayrovi_admin_csrf';
+export const ADMIN_SESSION_EXPIRED_EVENT = 'ayrovi:admin-session-expired';
 
 export class ApiError extends Error {
   status: number;
@@ -21,7 +22,13 @@ export async function adminApi<T = any>(endpoint: string, options: RequestInit =
   const response = await fetch(`/api/admin${endpoint}`, { ...options, headers, credentials: 'same-origin' });
   const contentType = response.headers.get('content-type') || '';
   const payload = contentType.includes('application/json') ? await response.json() : await response.text();
-  if (!response.ok) throw new ApiError(payload?.error || `Erreur HTTP ${response.status}`, response.status);
+  if (!response.ok) {
+    if (response.status === 401 && endpoint !== '/auth/login') {
+      setCsrfToken(null);
+      window.dispatchEvent(new Event(ADMIN_SESSION_EXPIRED_EVENT));
+    }
+    throw new ApiError(payload?.error || `Erreur HTTP ${response.status}`, response.status);
+  }
   return payload as T;
 }
 
@@ -38,7 +45,13 @@ export async function loadIdentity() {
 }
 
 export async function logout() {
-  try { await adminApi('/auth/logout', { method: 'POST' }); } finally { setCsrfToken(null); }
+  try {
+    await adminApi('/auth/logout', { method: 'POST' });
+  } catch (error) {
+    if (!(error instanceof ApiError && error.status === 401)) throw error;
+  } finally {
+    setCsrfToken(null);
+  }
 }
 
 export function queryString(values: Record<string, unknown>) {

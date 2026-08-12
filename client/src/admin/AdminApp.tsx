@@ -4,7 +4,7 @@ import {
   History, Home, Image, LogOut, Menu, MessageSquare, Package, Pencil, Percent, Plus, Search as SearchIcon,
   Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,
 } from '../components/QatafoIcons';
-import { adminApi, ApiError, loadIdentity, login, logout, queryString } from './api';
+import { ADMIN_SESSION_EXPIRED_EVENT, adminApi, ApiError, loadIdentity, login, logout, queryString } from './api';
 import {
   Button, ConfirmDialog, DataColumn, DataTable, DatePicker, Field, Filters, Form, ImageUploader, Modal,
   Pagination, Search, Select, StatusBadge, Toast,
@@ -336,7 +336,13 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
 
 export const AdminApp:React.FC=()=>{
   const[user,setUser]=useState<UserIdentity|null>(null);const[loading,setLoading]=useState(true);
-  useEffect(()=>{loadIdentity().then(setUser).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>setLoading(false));},[]);
+  useEffect(()=>{
+    let active=true;
+    const resetExpiredSession=()=>{if(active){setUser(null);setLoading(false);}};
+    window.addEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);
+    loadIdentity().then((identity)=>{if(active)setUser(identity);}).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>{if(active)setLoading(false);});
+    return()=>{active=false;window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);};
+  },[]);
   if(loading)return <div className="admin-boot"><FigLeaf/><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
   return <AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/>;
