@@ -141,7 +141,7 @@ Les mutations demandent `content:write`, sauf `ai-knowledge` qui demande `settin
 - `client/src/admin/components.tsx` : DataTable, Modal, Form, ImageUploader, StatusBadge, DatePicker, ConfirmDialog, Pagination, Search et Filters.
 - `client/src/admin/AdminApp.tsx` : shell Admin et toutes les pages métier.
 - `client/src/admin/admin.css` : design responsive desktop/mobile.
-- `client/src/components/PublicCmsSections.tsx` : cinq lanceurs verticaux adjacents sous le Hero et pages CMS plein écran dédiées; contenu backend, états vides et countdowns basés sur l’heure serveur.
+- `client/src/components/PublicCmsSections.tsx` : navigation CMS en libellés texte sous le Hero et pages plein écran dédiées; contenu backend, états vides et countdowns basés sur l’heure serveur.
 - `client/public/media/` : médias locaux stables pour le Hero et les marques.
 
 ## Fichiers principaux modifiés

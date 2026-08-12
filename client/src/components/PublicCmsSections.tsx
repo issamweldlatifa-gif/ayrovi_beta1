@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import heroHomme from '../assets/hero-homme.jpg';
 import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';
-import { ArrowUpRight, X } from './QatafoIcons';
+import { X } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
@@ -23,14 +23,12 @@ const pageDefinitions: Array<{
   label: string;
   eyebrow: string;
   description: string;
-  image: string;
-  accent: string;
 }> = [
-  { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.', image: heroHomme, accent: '#fbbf24' },
-  { id: 'products', label: 'Produits', eyebrow: 'Catalogue', description: 'Les produits disponibles et leurs prix calculés côté serveur.', image: heroFemme, accent: '#a98cff' },
-  { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.', image: heroEnfants, accent: '#ff7ca8' },
-  { id: 'stories', label: 'Stories', eyebrow: 'À la une', description: 'Les nouveautés AYROVI dans un format visuel.', image: heroFemme, accent: '#67e8f9' },
-  { id: 'news', label: 'Actualités', eyebrow: 'Journal AYROVI', description: 'Les informations, arrivages et annonces de la plateforme.', image: heroHomme, accent: '#fbbf24' },
+  { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.' },
+  { id: 'products', label: 'Produits', eyebrow: 'Catalogue', description: 'Les produits disponibles et leurs prix calculés côté serveur.' },
+  { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.' },
+  { id: 'stories', label: 'Stories', eyebrow: 'À la une', description: 'Les nouveautés AYROVI dans un format visuel.' },
+  { id: 'news', label: 'Actualités', eyebrow: 'Journal AYROVI', description: 'Les informations, arrivages et annonces de la plateforme.' },
 ];
 
 function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
@@ -143,24 +141,22 @@ export const PublicCmsSections: React.FC = () => {
 
   return (
     <>
-      <section id="arrivages" className="border-b border-black/10 bg-[#f7f5fb] px-3 py-12 sm:px-8 sm:py-20" aria-labelledby="discover-ayrovi-title">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 max-w-2xl sm:mb-11"><p className="text-xs font-black uppercase tracking-[0.22em] text-[#673de6]">Explorer AYROVI</p><h2 id="discover-ayrovi-title" className="mt-3 text-3xl font-black leading-tight tracking-[-0.045em] text-[#17131f] sm:text-5xl">Choisissez votre univers.</h2><p className="mt-3 text-sm leading-6 text-slate-600 sm:text-base">Chaque univers s’ouvre dans sa propre page AYROVI, sans interface à onglets.</p></div>
-          <div className="grid grid-cols-5 gap-1.5 sm:gap-3 lg:gap-4" aria-label="Univers AYROVI">
-            {pageDefinitions.map((definition, index) => {
-              const count = definition.id === 'arrivals' ? activeArrivals.length : home[definition.id].length;
-              return (
-                <button key={definition.id} type="button" onClick={() => setActivePage(definition.id)} aria-label={`Ouvrir ${definition.label}`} className="group relative h-[310px] min-w-0 overflow-hidden bg-[#17131f] text-white shadow-[0_22px_55px_-35px_rgba(23,19,31,0.85)] transition duration-500 hover:-translate-y-2 hover:shadow-[0_30px_65px_-30px_rgba(103,61,230,0.7)] focus-visible:z-10 sm:h-[420px]">
-                  <img src={definition.image} alt="" className="absolute inset-0 h-full w-full object-cover opacity-45 transition duration-700 group-hover:scale-105 group-hover:opacity-60" style={{ objectPosition: `${35 + index * 8}% center` }} /><span className="absolute inset-0 bg-gradient-to-b from-black/20 via-[#24104f]/20 to-[#130b25]/95" />
-                  <span className="absolute left-1/2 top-5 -translate-x-1/2 text-[9px] font-black tabular-nums tracking-[0.18em] text-white/60 sm:top-7 sm:text-[11px]">{loaded ? String(count).padStart(2, '0') : '—'}</span>
-                  <span className="absolute left-1/2 top-1/2 block -translate-x-1/2 -translate-y-1/2 text-lg font-black tracking-[-0.025em] sm:text-3xl" style={{ writingMode: 'vertical-rl', transform: 'translate(-50%, -50%) rotate(180deg)' }}>{definition.label}</span>
-                  <span className="absolute bottom-4 left-1/2 grid h-8 w-8 -translate-x-1/2 place-items-center border border-white/25 bg-white/10 transition group-hover:border-transparent group-hover:bg-[#673de6] sm:bottom-6 sm:h-10 sm:w-10"><ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5" /></span>
-                  <span className="absolute inset-x-0 bottom-0 h-1" style={{ backgroundColor: definition.accent }} />
-                </button>
-              );
-            })}
+      <section id="arrivages" className="border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
+        <nav className="mx-auto max-w-7xl overflow-x-auto px-5 py-7 [scrollbar-width:none] sm:px-8 sm:py-10 [&::-webkit-scrollbar]:hidden" aria-label="Contenus AYROVI">
+          <div className="flex w-max items-center gap-6 sm:gap-9 lg:mx-auto lg:gap-11">
+            {pageDefinitions.map((definition) => (
+              <button
+                key={definition.id}
+                type="button"
+                onClick={() => setActivePage(definition.id)}
+                aria-label={`Ouvrir ${definition.label}`}
+                className="shrink-0 bg-transparent p-0 text-2xl font-black tracking-[-0.035em] text-black transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-[#673de6] sm:text-3xl lg:text-[2rem]"
+              >
+                {definition.label}
+              </button>
+            ))}
           </div>
-        </div>
+        </nav>
       </section>
 
       {activePage && activeDefinition && (
