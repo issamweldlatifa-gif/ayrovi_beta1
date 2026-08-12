@@ -142,14 +142,14 @@ export const PublicCmsSections: React.FC = () => {
     <>
       <section id="arrivages" className="border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
         <nav className="mx-auto max-w-7xl overflow-x-auto px-5 py-7 [scrollbar-width:none] sm:px-8 sm:py-10 [&::-webkit-scrollbar]:hidden" aria-label="Contenus AYROVI">
-          <div className="flex w-max items-center gap-6 sm:gap-9 lg:mx-auto lg:gap-11">
+          <div className="flex w-max items-center gap-10 sm:gap-14 lg:mx-auto lg:gap-16">
             {pageDefinitions.map((definition) => (
               <button
                 key={definition.id}
                 type="button"
                 onClick={() => setActivePage(definition.id)}
                 aria-label={`Ouvrir ${definition.label}`}
-                className="shrink-0 bg-transparent p-0 text-2xl font-black tracking-[-0.035em] text-black transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-[#673de6] sm:text-3xl lg:text-[2rem]"
+                className="shrink-0 bg-transparent p-0 text-2xl font-black tracking-[-0.03em] text-[#050505] [font-weight:950] transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-8 focus-visible:outline-[#673de6] sm:text-3xl lg:text-[2rem]"
               >
                 {definition.label}
               </button>
