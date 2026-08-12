@@ -13,6 +13,7 @@ interface ProductDrawerProps {
   onExtracted: (product: ScrapedProduct) => void;
   onNewClientOrder: () => void;
   onOrderComplete: () => void;
+  onCheckoutRequested: () => void;
 }
 
 interface PricingPreview {
@@ -46,6 +47,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   onExtracted,
   onNewClientOrder,
   onOrderComplete,
+  onCheckoutRequested,
 }) => {
   const [step, setStep] = useState<'input' | 'details' | 'checkout' | 'success'>('input');
   
@@ -301,7 +303,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
   const handleProceedToCheckoutForm = async () => {
     if (checkoutSummary) {
-      setStep('checkout');
+      onCheckoutRequested();
       return;
     }
 
@@ -329,7 +331,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setIsAddingToCart(false);
     if (cartSummary) {
       setCheckoutSummary(cartSummary);
-      setStep('checkout');
+      onCheckoutRequested();
     } else {
       setErrorMsg("L'article n'a pas pu être ajouté. Vérifiez votre connexion puis réessayez.");
     }

@@ -1,6 +1,7 @@
-import { afterAll, describe, expect, test } from 'vitest';
+import { afterAll, describe, expect, test, vi } from 'vitest';
 import request from 'supertest';
 import { app, db, scraper } from '../src/server';
+import { createCustomerSession, hashToken } from '../src/customer/auth';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -23,7 +24,12 @@ describe('AYROVI platform', () => {
   const quantitySession = uniqueSession('quantity');
   const repeatSession = uniqueSession('repeat');
   const superAdmin = request.agent(app);
+  const customerAgent = request.agent(app);
+  const secondCustomerAgent = request.agent(app);
   let adminCsrf = '';
+  let customerCsrf = '';
+  let secondCustomerCsrf = '';
+  let primaryAccountId = '';
   let persistedOrderId = '';
   let persistedCustomerId = '';
   let createdArrivalId = '';
@@ -35,6 +41,174 @@ describe('AYROVI platform', () => {
     db.clearCart(isolatedSession);
     db.clearCart(quantitySession);
     db.clearCart(repeatSession);
+  });
+
+  const insertHistoricalOrder = (suffix: string, phone: string) => {
+    const now = new Date().toISOString();
+    const customerId = `historical_customer_${suffix}`;
+    const orderId = `historical_order_${suffix}`;
+    db.run(`INSERT INTO customers (id,name,phone,governorate,address,registered_at,status,updated_at)
+      VALUES (?,?,?,'Tunis','Ancienne adresse',?,'ACTIVE',?)`, customerId, `Client historique ${suffix}`, phone, now, now);
+    db.run(`INSERT INTO orders
+      (id,order_number,customer_id,account_id,source,status,payment_status,payment_method,subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,pricing_snapshot,governorate,address,phone,notes,created_at,updated_at)
+      VALUES (?,?,?,NULL,'OTHER','DELIVERED','PAID','COD',100,0,7,10,0,0,117,?,'Tunis','Ancienne adresse',?,'',?,?)`,
+    orderId, `AYR-81${suffix.padStart(4, '0')}`, customerId, JSON.stringify({ version: 1 }), phone, now, now);
+    return orderId;
+  };
+
+  const otpLogin = async (agent: any, phone: string, cartSessionId?: string, checkInvalidCode = false) => {
+    const requested = await agent.post('/api/customer/auth/otp/request').send({ phone });
+    expect(requested.status).toBe(201);
+    expect(requested.body.data.developmentCode).toMatch(/^\d{6}$/);
+    if (checkInvalidCode) {
+      const rejected = await agent.post('/api/customer/auth/otp/verify').send({
+        challengeId: requested.body.data.challengeId, code: '000000', cartSessionId,
+      });
+      expect(rejected.status).toBe(400);
+      expect(rejected.body.code).toBe('OTP_INVALID');
+    }
+    const verified = await agent.post('/api/customer/auth/otp/verify').send({
+      challengeId: requested.body.data.challengeId,
+      code: requested.body.data.developmentCode,
+      cartSessionId,
+    });
+    expect(verified.status).toBe(200);
+    expect(verified.headers['set-cookie']?.[0]).toContain('ayrovi_customer_session=');
+    expect(verified.headers['set-cookie']?.[0]).toContain('HttpOnly');
+    return verified.body.data;
+  };
+
+  test('customer OTP activates isolated accounts and links only verified historical orders', async () => {
+    const primaryHistoricalOrder = insertHistoricalOrder('1', '98123456');
+    const otherHistoricalOrder = insertHistoricalOrder('2', '97123456');
+
+    expect((await request(app).get('/api/customer/account/orders')).status).toBe(401);
+    const primaryLogin = await otpLogin(customerAgent, '98 123 456', primarySession, true);
+    customerCsrf = primaryLogin.csrfToken;
+    primaryAccountId = primaryLogin.account.id;
+    expect(primaryLogin.account.phone).toBe('+21698123456');
+    expect(primaryLogin.account.phoneVerified).toBe(true);
+    expect(primaryLogin.linkedHistoricalOrders).toBe(1);
+
+    const primaryOrders = await customerAgent.get('/api/customer/account/orders');
+    expect(primaryOrders.status).toBe(200);
+    expect(primaryOrders.body.data.map((order: any) => order.id)).toContain(primaryHistoricalOrder);
+    expect(primaryOrders.body.data.map((order: any) => order.id)).not.toContain(otherHistoricalOrder);
+    expect((await customerAgent.get(`/api/customer/account/orders/${otherHistoricalOrder}`)).status).toBe(404);
+    expect(db.get<any>('SELECT account_id FROM orders WHERE id=?', otherHistoricalOrder).account_id).toBeNull();
+
+    const secondLogin = await otpLogin(secondCustomerAgent, '97123456');
+    secondCustomerCsrf = secondLogin.csrfToken;
+    expect(secondLogin.account.id).not.toBe(primaryAccountId);
+    expect(secondLogin.linkedHistoricalOrders).toBe(1);
+    expect((await secondCustomerAgent.get(`/api/customer/account/orders/${primaryHistoricalOrder}`)).status).toBe(404);
+    expect(db.get<any>('SELECT account_id FROM orders WHERE id=?', primaryHistoricalOrder).account_id).toBe(primaryAccountId);
+  });
+
+  test('Google OAuth state is bound to the initiating browser', async () => {
+    const previous = {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callback: process.env.GOOGLE_CALLBACK_URL,
+    };
+    process.env.GOOGLE_CLIENT_ID = 'test-google-client';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
+    process.env.GOOGLE_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/google/callback';
+    try {
+      const browser = request.agent(app);
+      const started = await browser.get('/api/customer/auth/google/start?returnTo=/compte');
+      expect(started.status).toBe(302);
+      expect(started.headers.location).toContain('https://accounts.google.com/o/oauth2/v2/auth?');
+      expect(started.headers['set-cookie']?.[0]).toContain('ayrovi_customer_oauth=');
+      expect(started.headers['set-cookie']?.[0]).toContain('HttpOnly');
+      const state = new URL(started.headers.location).searchParams.get('state');
+      expect(state).toBeTruthy();
+
+      const foreignBrowser = await request(app)
+        .get('/api/customer/auth/google/callback')
+        .query({ state, code: 'code-that-must-not-be-exchanged' });
+      expect(foreignBrowser.status).toBe(302);
+      expect(foreignBrowser.headers.location).toBe('/?customerAuth=error');
+      expect(foreignBrowser.headers['set-cookie']?.[0]).toContain('Max-Age=0');
+      expect(db.get<any>('SELECT id FROM customer_oauth_states WHERE id=?', hashToken(state!))).toBeTruthy();
+    } finally {
+      if (previous.clientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = previous.clientId;
+      if (previous.clientSecret === undefined) delete process.env.GOOGLE_CLIENT_SECRET;
+      else process.env.GOOGLE_CLIENT_SECRET = previous.clientSecret;
+      if (previous.callback === undefined) delete process.env.GOOGLE_CALLBACK_URL;
+      else process.env.GOOGLE_CALLBACK_URL = previous.callback;
+    }
+  });
+
+  test('Google OAuth safely merges an explicitly linked account and rejects unverified email pre-hijacking', async () => {
+    const previous = {
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callback: process.env.GOOGLE_CALLBACK_URL,
+    };
+    process.env.GOOGLE_CLIENT_ID = 'test-google-client';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
+    process.env.GOOGLE_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/google/callback';
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const mockGoogle = (profile: Record<string, unknown>) => {
+      fetchMock
+        .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'google-access-token' }), { status: 200, headers: { 'Content-Type': 'application/json' } }))
+        .mockResolvedValueOnce(new Response(JSON.stringify(profile), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+    };
+    try {
+      const now = new Date().toISOString();
+      const googleSourceId = `google_source_${Date.now()}`;
+      db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
+        VALUES (?,'Compte Google','google.merge@ayrovi.test',?,'ACTIVE',?,?)`, googleSourceId, now, now, now);
+      db.run(`INSERT INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+        VALUES (?,?, 'GOOGLE','google-merge-subject',?)`, `identity_${Date.now()}`, googleSourceId, now);
+
+      const startedLink = await customerAgent.get('/api/customer/auth/google/start?returnTo=/compte');
+      const linkState = new URL(startedLink.headers.location).searchParams.get('state');
+      mockGoogle({ sub: 'google-merge-subject', email: 'google.merge@ayrovi.test', email_verified: true, name: 'Compte Google', picture: 'https://example.com/avatar.jpg' });
+      const linked = await customerAgent.get('/api/customer/auth/google/callback').query({ state: linkState, code: 'valid-link-code' });
+      expect(linked.status).toBe(302);
+      expect(linked.headers.location).toBe('/compte?customerAuth=success');
+      expect(linked.headers['set-cookie']).toEqual(expect.arrayContaining([
+        expect.stringContaining('ayrovi_customer_oauth='),
+        expect.stringContaining('ayrovi_customer_session='),
+      ]));
+      expect(db.get<any>('SELECT id FROM customer_accounts WHERE id=?', googleSourceId)).toBeUndefined();
+      expect(db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='GOOGLE' AND provider_subject='google-merge-subject'`).account_id).toBe(primaryAccountId);
+      const mergedAccount = db.get<any>('SELECT phone,email,phone_verified_at,email_verified_at FROM customer_accounts WHERE id=?', primaryAccountId);
+      expect(mergedAccount.phone).toBe('+21698123456');
+      expect(mergedAccount.phone_verified_at).toBeTruthy();
+      expect(mergedAccount.email).toBe('google.merge@ayrovi.test');
+      expect(mergedAccount.email_verified_at).toBeTruthy();
+      const refreshedPrimary = await customerAgent.get('/api/customer/auth/me');
+      customerCsrf = refreshedPrimary.body.data.csrfToken;
+
+      const squatterId = `email_squatter_${Date.now()}`;
+      db.run(`INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at)
+        VALUES (?,'Compte non vérifié','victim.google@ayrovi.test','ACTIVE',?,?)`, squatterId, now, now);
+      const victimBrowser = request.agent(app);
+      const startedVictim = await victimBrowser.get('/api/customer/auth/google/start?returnTo=/compte');
+      const victimState = new URL(startedVictim.headers.location).searchParams.get('state');
+      mockGoogle({ sub: 'verified-victim-subject', email: 'victim.google@ayrovi.test', email_verified: true, name: 'Client vérifié', picture: '' });
+      const victimCallback = await victimBrowser.get('/api/customer/auth/google/callback').query({ state: victimState, code: 'valid-victim-code' });
+      expect(victimCallback.status).toBe(302);
+      expect(victimCallback.headers.location).toBe('/compte?customerAuth=success');
+      const victimIdentity = await victimBrowser.get('/api/customer/auth/me');
+      expect(victimIdentity.status).toBe(200);
+      expect(victimIdentity.body.data.account.id).not.toBe(squatterId);
+      expect(victimIdentity.body.data.account.email).toBe('victim.google@ayrovi.test');
+      expect(victimIdentity.body.data.account.emailVerified).toBe(true);
+      expect(db.get<any>('SELECT email FROM customer_accounts WHERE id=?', squatterId).email).toBeNull();
+    } finally {
+      fetchMock.mockRestore();
+      if (previous.clientId === undefined) delete process.env.GOOGLE_CLIENT_ID;
+      else process.env.GOOGLE_CLIENT_ID = previous.clientId;
+      if (previous.clientSecret === undefined) delete process.env.GOOGLE_CLIENT_SECRET;
+      else process.env.GOOGLE_CLIENT_SECRET = previous.clientSecret;
+      if (previous.callback === undefined) delete process.env.GOOGLE_CALLBACK_URL;
+      else process.env.GOOGLE_CALLBACK_URL = previous.callback;
+    }
   });
 
   test('URL cleaner extracts a valid link from pasted text', () => {
@@ -77,9 +251,10 @@ describe('AYROVI platform', () => {
   });
 
   test('cart and checkout remain isolated between client sessions', async () => {
-    const addResponse = await request(app)
+    const addResponse = await customerAgent
       .post('/api/cart/items')
       .set('x-session-id', primarySession)
+      .set('x-csrf-token', customerCsrf)
       .send(createCartItem());
 
     expect(addResponse.status).toBe(201);
@@ -87,7 +262,7 @@ describe('AYROVI platform', () => {
     expect(addResponse.body.cartItem.priceTND).toBe(122.96);
     const itemId = addResponse.body.cartItem.id as string;
 
-    const primaryCart = await request(app)
+    const primaryCart = await customerAgent
       .get('/api/cart/items')
       .set('x-session-id', primarySession);
     expect(primaryCart.status).toBe(200);
@@ -120,15 +295,23 @@ describe('AYROVI platform', () => {
         address: 'Avenue Habib Bourguiba, Tunis',
         paymentMethod: 'cod',
       });
-    expect(emptyCheckout.status).toBe(400);
-    expect(emptyCheckout.body.error).toContain('panier est vide');
+    expect(emptyCheckout.status).toBe(401);
+    expect(emptyCheckout.body.code).toBe('AUTH_REQUIRED');
 
-    const checkoutResponse = await request(app)
+    const withoutCsrf = await customerAgent
+      .patch(`/api/cart/items/${itemId}`)
+      .set('x-session-id', primarySession)
+      .send({ quantity: 2 });
+    expect(withoutCsrf.status).toBe(403);
+    expect(withoutCsrf.body.error).toContain('sécurité');
+
+    const checkoutResponse = await customerAgent
       .post('/api/checkout')
       .set('x-session-id', primarySession)
+      .set('x-csrf-token', customerCsrf)
       .send({
         name: 'Client Test',
-        phone: '98123456',
+        phone: '97123456',
         city: 'Tunis',
         address: 'Avenue Habib Bourguiba, Tunis',
         paymentMethod: 'cod',
@@ -141,9 +324,17 @@ describe('AYROVI platform', () => {
     const order = db.get<any>('SELECT * FROM orders WHERE id=?', persistedOrderId);
     persistedCustomerId = order.customer_id;
     expect(order.pricing_snapshot).toContain('"version":1');
+    expect(order.account_id).toBe(primaryAccountId);
+    expect(order.phone).toBe('+21698123456');
     expect(db.get<any>('SELECT COUNT(*) count FROM order_items WHERE order_id=?', persistedOrderId).count).toBe(1);
     expect(db.get<any>('SELECT status FROM payments WHERE order_id=?', persistedOrderId).status).toBe('PENDING');
     expect(db.get<any>('SELECT status FROM deliveries WHERE order_id=?', persistedOrderId).status).toBe('PENDING');
+
+    const accountDetail = await customerAgent.get(`/api/customer/account/orders/${persistedOrderId}`);
+    expect(accountDetail.status).toBe(200);
+    expect(accountDetail.body.data.items).toHaveLength(1);
+    expect(JSON.parse(accountDetail.body.data.pricing_snapshot).version).toBe(1);
+    expect((await secondCustomerAgent.get(`/api/customer/account/orders/${persistedOrderId}`)).status).toBe(404);
   });
 
   test('invalid cart quantities are rejected', async () => {
@@ -171,8 +362,8 @@ describe('AYROVI platform', () => {
       .post('/api/checkout')
       .set('x-session-id', quantitySession)
       .send({ name: 'Client Test', phone: '98123457', city: 'Tunis', address: 'Tunis', paymentMethod: 'paypal' });
-    expect(unavailablePayment.status).toBe(400);
-    expect(unavailablePayment.body.error).toContain('paiement');
+    expect(unavailablePayment.status).toBe(401);
+    expect(unavailablePayment.body.code).toBe('AUTH_REQUIRED');
 
     const secondResponse = await request(app)
       .post('/api/cart/items')
@@ -182,6 +373,32 @@ describe('AYROVI platform', () => {
     expect(secondResponse.body.error).toContain('99');
   });
 
+  test('email-only accounts cannot checkout before phone verification', async () => {
+    const accountId = `account_google_only_${Date.now()}`;
+    const sessionId = uniqueSession('unverified');
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO customer_accounts
+      (id,display_name,email,email_verified_at,status,created_at,updated_at)
+      VALUES (?,?,?,?,'ACTIVE',?,?)`, accountId, 'Google Client', `google-${Date.now()}@example.com`, now, now, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const added = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', sessionId)
+      .send(createCartItem('Unverified phone checkout'));
+    expect(added.status).toBe(201);
+
+    const checkout = await request(app)
+      .post('/api/checkout')
+      .set('Cookie', `ayrovi_customer_session=${encodeURIComponent(session.token)}`)
+      .set('x-session-id', sessionId)
+      .set('x-csrf-token', session.csrfToken)
+      .send({ name: 'Google Client', city: 'Tunis', address: 'Tunis', paymentMethod: 'cod' });
+    expect(checkout.status).toBe(403);
+    expect(checkout.body.code).toBe('PHONE_VERIFICATION_REQUIRED');
+    expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE account_id=?', accountId).count).toBe(0);
+    db.clearCart(sessionId);
+  });
+
   test('checkout reuses customers while preserving separate orders', async () => {
     const added = await request(app)
       .post('/api/cart/items')
@@ -189,9 +406,10 @@ describe('AYROVI platform', () => {
       .send(createCartItem('Second customer order'));
     expect(added.status).toBe(201);
 
-    const checkout = await request(app)
+    const checkout = await customerAgent
       .post('/api/checkout')
       .set('x-session-id', repeatSession)
+      .set('x-csrf-token', customerCsrf)
       .send({
         name: 'Client Test Updated',
         phone: '98123456',
@@ -201,8 +419,102 @@ describe('AYROVI platform', () => {
       });
     expect(checkout.status).toBe(200);
     expect(db.get<any>('SELECT COUNT(*) count FROM customers WHERE phone=?', '98123456').count).toBe(1);
-    expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE customer_id=?', persistedCustomerId).count).toBe(2);
+    expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE customer_id=?', persistedCustomerId).count).toBe(3);
     expect(db.get<any>('SELECT payment_method FROM orders WHERE id=?', checkout.body.orderId).payment_method).toBe('D17');
+  });
+
+  test('customer profile, addresses, favorites, notifications and ownership boundaries persist', async () => {
+    const profile = await customerAgent
+      .put('/api/customer/account/profile')
+      .set('x-csrf-token', customerCsrf)
+      .send({ displayName: 'Client Test', email: 'client.test@ayrovi.tn', marketingOptIn: true });
+    expect(profile.status).toBe(200);
+    expect(profile.body.data.displayName).toBe('Client Test');
+    expect(profile.body.data.emailVerified).toBe(false);
+
+    const address = await customerAgent
+      .post('/api/customer/account/addresses')
+      .set('x-csrf-token', customerCsrf)
+      .send({ label: 'Bureau', recipientName: 'Client Test', phone: '98123456', governorate: 'Ariana', city: 'Ariana', postalCode: '2080', addressLine: 'Centre Ariana', deliveryNotes: 'Appeler avant', isDefault: true });
+    expect(address.status).toBe(201);
+    expect(address.body.data.is_default).toBe(1);
+
+    const forbiddenAddressUpdate = await secondCustomerAgent
+      .put(`/api/customer/account/addresses/${address.body.data.id}`)
+      .set('x-csrf-token', secondCustomerCsrf)
+      .send({ label: 'Volée', recipientName: 'Autre', phone: '97123456', governorate: 'Tunis', addressLine: 'Inaccessible', isDefault: true });
+    expect(forbiddenAddressUpdate.status).toBe(404);
+
+    const updatedAddress = await customerAgent
+      .put(`/api/customer/account/addresses/${address.body.data.id}`)
+      .set('x-csrf-token', customerCsrf)
+      .send({ label: 'Bureau principal', recipientName: 'Client Test', phone: '98123456', governorate: 'Ariana', city: 'Ariana', postalCode: '2080', addressLine: 'Nouvelle adresse Ariana', deliveryNotes: '', isDefault: false });
+    expect(updatedAddress.status).toBe(200);
+    expect(updatedAddress.body.data.address_line).toBe('Nouvelle adresse Ariana');
+    expect(updatedAddress.body.data.is_default).toBe(1);
+
+    const secondaryAddress = await customerAgent
+      .post('/api/customer/account/addresses')
+      .set('x-csrf-token', customerCsrf)
+      .send({ label: 'Maison', recipientName: 'Client Test', phone: '98123456', governorate: 'Tunis', city: 'Tunis', postalCode: '1000', addressLine: 'Adresse secondaire', deliveryNotes: '', isDefault: false });
+    expect(secondaryAddress.status).toBe(201);
+    expect((await secondCustomerAgent.delete(`/api/customer/account/addresses/${secondaryAddress.body.data.id}`).set('x-csrf-token', secondCustomerCsrf)).status).toBe(404);
+    expect((await customerAgent.delete(`/api/customer/account/addresses/${address.body.data.id}`).set('x-csrf-token', customerCsrf)).status).toBe(200);
+    const remainingAddresses = await customerAgent.get('/api/customer/account/addresses');
+    expect(remainingAddresses.body.data.some((item: any) => item.id === address.body.data.id)).toBe(false);
+    expect(remainingAddresses.body.data.filter((item: any) => item.is_default === 1)).toHaveLength(1);
+
+    const favorite = await customerAgent
+      .post('/api/customer/account/favorites')
+      .set('x-csrf-token', customerCsrf)
+      .send({ sourceUrl: 'https://www.shein.com/example', title: 'Favori test', imageUrl: '/uploads/product.jpg', priceTND: 42 });
+    expect(favorite.status).toBe(201);
+    expect((await customerAgent.get('/api/customer/account/favorites')).body.data).toHaveLength(1);
+    expect((await secondCustomerAgent.delete(`/api/customer/account/favorites/${favorite.body.data.id}`).set('x-csrf-token', secondCustomerCsrf)).status).toBe(404);
+
+    const overview = await customerAgent.get('/api/customer/account/overview');
+    expect(overview.status).toBe(200);
+    expect(overview.body.data.counts.orders).toBeGreaterThanOrEqual(3);
+    expect(overview.body.data.counts.addresses).toBeGreaterThanOrEqual(1);
+    expect(overview.body.data.counts.favorites).toBe(1);
+    expect(overview.body.data.counts.unreadNotifications).toBeGreaterThan(0);
+    expect((await customerAgent.put('/api/customer/account/notifications/read').set('x-csrf-token', customerCsrf).send({})).status).toBe(200);
+    expect(db.get<any>('SELECT COUNT(*) count FROM customer_notifications WHERE account_id=? AND read_at IS NULL', primaryAccountId).count).toBe(0);
+  });
+
+  test('guest carts merge into an account and customer logout and expiry invalidate sessions', async () => {
+    const mergeSession = uniqueSession('merge');
+    const mergeAgent = request.agent(app);
+    const guestItem = await request(app)
+      .post('/api/cart/items')
+      .set('x-session-id', mergeSession)
+      .send(createCartItem('Guest cart merge item'));
+    expect(guestItem.status).toBe(201);
+
+    const login = await otpLogin(mergeAgent, '95123456', mergeSession);
+    const mergedCart = await mergeAgent.get('/api/cart/items').set('x-session-id', mergeSession);
+    expect(mergedCart.status).toBe(200);
+    expect(mergedCart.body.items.map((item: any) => item.title)).toContain('Guest cart merge item');
+    const formerGuestView = await request(app).get('/api/cart/items').set('x-session-id', mergeSession);
+    expect(formerGuestView.body.items).toHaveLength(0);
+
+    const logout = await mergeAgent
+      .post('/api/customer/auth/logout')
+      .set('x-csrf-token', login.csrfToken)
+      .send({});
+    expect(logout.status).toBe(200);
+    const logoutCookies = ([] as string[]).concat(logout.headers['set-cookie'] || []);
+    expect(logoutCookies.some((value) => value.includes('Max-Age=0'))).toBe(true);
+    expect((await mergeAgent.get('/api/customer/auth/me')).status).toBe(401);
+
+    const freshLogin = await otpLogin(mergeAgent, '95123456', mergeSession);
+    db.run('UPDATE customer_sessions SET expires_at=? WHERE account_id=?', '2000-01-01T00:00:00.000Z', freshLogin.account.id);
+    const stale = await mergeAgent.get('/api/customer/auth/me');
+    expect(stale.status).toBe(401);
+    const staleCookies = ([] as string[]).concat(stale.headers['set-cookie'] || []);
+    expect(staleCookies.some((value) => value.includes('Max-Age=0'))).toBe(true);
+    expect(db.get<any>('SELECT COUNT(*) count FROM customer_sessions WHERE account_id=? AND expires_at>?', freshLogin.account.id, new Date().toISOString()).count).toBe(0);
+    db.clearCart(mergeSession, freshLogin.account.id);
   });
 
   test('public CMS and assistant APIs expose backend data without admin secrets', async () => {

@@ -82,3 +82,36 @@ export interface OrderResult {
   itemCount: number;
   message: string;
 }
+
+export interface CustomerAccount {
+  id: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  avatarUrl: string;
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  status: 'ACTIVE' | 'BLOCKED' | 'DELETED';
+  locale: string;
+  marketingOptIn: boolean;
+}
+
+export interface CustomerSession {
+  account: CustomerAccount;
+  csrfToken: string;
+}
+
+export interface CustomerAddress {
+  id: string;
+  label: string;
+  recipient_name: string;
+  phone: string;
+  governorate: string;
+  city: string;
+  postal_code: string;
+  address_line: string;
+  delivery_notes: string;
+  is_default: number;
+  created_at: string;
+  updated_at: string;
+}

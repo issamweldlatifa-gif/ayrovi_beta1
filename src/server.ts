@@ -8,11 +8,13 @@ import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
+import { createCustomerRouter } from './customer/routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.disable('x-powered-by');
+if (process.env.NODE_ENV === 'production' || process.env.RENDER) app.set('trust proxy', 1);
 app.use((_req, res, next) => {
   res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors *; base-uri 'self'; form-action 'self'");
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -62,6 +64,7 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 app.use('/api/admin', createAdminRouter(db));
+app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 

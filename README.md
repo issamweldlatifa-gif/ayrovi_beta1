@@ -7,7 +7,10 @@ AYROVI est une plateforme Express, React et SQLite de shopping international en 
 - Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Promotions, Stories et Actualités.
 - Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête AYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
 - Lens pour extraire un prix depuis une image ou un lien, avec prévisualisation tarifaire calculée côté serveur.
-- Panier et checkout pour les 24 gouvernorats tunisiens, avec COD, D17 et Flouci selon la configuration active.
+- Connexion client séparée de l’Admin par SMS OTP ou Google, avec activation immédiate après vérification.
+- Espace « Mon compte » complet : profil, adresses, historique détaillé, favoris, panier sauvegardé et notifications.
+- Panier et checkout authentifié pour les 24 gouvernorats tunisiens, avec téléphone vérifié, COD, D17 et Flouci selon la configuration active.
+- Rattachement sécurisé des anciennes commandes après vérification du numéro correspondant.
 - Moteur tarifaire centralisé EUR, USD, GBP, JPY et TND incluant douane, transport, service et supplément Express.
 - Snapshot tarifaire immuable enregistré avec chaque commande.
 - OMS persistant pour clients, commandes, articles, paiements, livraisons et historique des statuts.
@@ -49,7 +52,8 @@ Les tarifs, moyens de paiement, gouvernorats et délais affichés publiquement p
 - `src/services/pricing.ts` : source tarifaire centralisée.
 - `src/api/routes.ts` : Lens, panier et checkout.
 - `src/public/routes.ts` : contenu CMS et configuration publique assainie.
-- `src/admin/` : authentification, permissions et API Admin.
+- `src/customer/` : sessions client, CSRF, OTP adaptable, Google OAuth et API du compte.
+- `src/admin/` : authentification, permissions et API Admin, isolées de l’authentification client.
 - `client/src/admin/` : interface Admin responsive.
 - `client/src/components/` : site public, Lens, panier, checkout et Assistant.
 - `tests/ayrovi.test.ts` : tests d’intégration backend.
@@ -60,7 +64,7 @@ La description complète des fichiers, rôles, données et routes se trouve dans
 
 Le projet inclut un Blueprint `render.yaml` prêt pour Render avec Node.js, healthcheck, plan Starter et disque persistant partagé par SQLite et les médias Admin. Consultez [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md) pour la procédure complète.
 
-Variables obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` et `DATABASE_PATH`. Le mot de passe Admin doit être unique et contenir au moins 12 caractères.
+Variables de base obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DATABASE_PATH`, `CUSTOMER_AUTH_SECRET` et `PUBLIC_BASE_URL`. Google nécessite `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL`; l’OTP SMS nécessite les trois variables `CUSTOMER_OTP_*` décrites dans [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md). Aucun secret ne doit être exposé au frontend.
 
 Pour un autre hébergeur Node.js :
 

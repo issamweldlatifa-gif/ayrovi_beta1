@@ -14,8 +14,10 @@ import { CartDrawer } from './components/CartDrawer';
 import { CheckoutModal } from './components/CheckoutModal';
 import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { Footer } from './components/Footer';
-import { AddToCartPayload, AddToCartResult, ScrapedProduct, CartItem, OrderResult } from './types';
+import { CustomerAccountPage } from './components/CustomerAccountPage';
+import { AddToCartPayload, AddToCartResult, ScrapedProduct, CartItem, OrderResult, CustomerSession } from './types';
 import { getSessionId } from './utils/session';
+import { customerApi } from './customer/api';
 
 export const App: React.FC = () => {
   const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
@@ -30,6 +32,13 @@ export const App: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
+
+  // Customer authentication is isolated from the Admin session.
+  const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
+  const [isCustomerSessionLoading, setIsCustomerSessionLoading] = useState(true);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountMessage, setAccountMessage] = useState('');
+  const [resumeCheckoutAfterAuth, setResumeCheckoutAfterAuth] = useState(false);
 
   // Fetch Cart Items
   const fetchCart = async () => {
@@ -49,8 +58,42 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchCart();
+    const restoreCustomer = async () => {
+      const customerAuthResult = new URLSearchParams(window.location.search).get('customerAuth');
+      try {
+        const result = await customerApi<any>('/api/customer/auth/me');
+        const restored = result.data as CustomerSession;
+        setCustomerSession(restored);
+        if (customerAuthResult === 'success') {
+          setIsAccountOpen(true);
+          setAccountMessage(restored.account.phoneVerified
+            ? 'Connexion Google réussie. Votre compte AYROVI est actif.'
+            : 'Connexion Google réussie. Vérifiez maintenant votre téléphone avant de commander.');
+        } else if (customerAuthResult === 'error') {
+          setIsAccountOpen(true);
+          setAccountMessage('Erreur : la connexion Google n’a pas abouti. Réessayez ou utilisez le code SMS.');
+        }
+      } catch {
+        setCustomerSession(null);
+        if (customerAuthResult === 'error') {
+          setIsAccountOpen(true);
+          setAccountMessage('Erreur : la connexion Google n’a pas abouti. Réessayez ou utilisez le code SMS.');
+        }
+      } finally {
+        if (customerAuthResult) {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('customerAuth');
+          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+        }
+        setIsCustomerSessionLoading(false);
+      }
+    };
+    void restoreCustomer();
   }, []);
+
+  useEffect(() => {
+    if (!isCustomerSessionLoading) void fetchCart();
+  }, [isCustomerSessionLoading, customerSession?.account.id]);
 
   const totalCartTND = cartItems.reduce((sum, item) => sum + (item.lineTotalTND ?? item.priceTND * item.quantity), 0);
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -89,6 +132,7 @@ export const App: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           'x-session-id': getSessionId(),
+          ...(customerSession?.csrfToken ? { 'x-csrf-token': customerSession.csrfToken } : {}),
         },
         body: JSON.stringify(itemData),
       });
@@ -118,6 +162,7 @@ export const App: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
           'x-session-id': getSessionId(),
+          ...(customerSession?.csrfToken ? { 'x-csrf-token': customerSession.csrfToken } : {}),
         },
         body: JSON.stringify({ quantity: newQty }),
       });
@@ -133,7 +178,10 @@ export const App: React.FC = () => {
     try {
       const response = await fetch(`/api/cart/items/${id}`, {
         method: 'DELETE',
-        headers: { 'x-session-id': getSessionId() },
+        headers: {
+          'x-session-id': getSessionId(),
+          ...(customerSession?.csrfToken ? { 'x-csrf-token': customerSession.csrfToken } : {}),
+        },
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Suppression impossible.');
@@ -146,7 +194,31 @@ export const App: React.FC = () => {
   const handleProceedToCheckout = () => {
     setIsCartOpen(false);
     setIsProductDrawerOpen(false);
+    if (!customerSession) {
+      setResumeCheckoutAfterAuth(true);
+      setAccountMessage('Connectez-vous pour confirmer votre commande. Votre panier est conservé.');
+      setIsAccountOpen(true);
+      return;
+    }
+    if (!customerSession.account.phoneVerified) {
+      setResumeCheckoutAfterAuth(true);
+      setAccountMessage('Vérifiez votre numéro de téléphone pour confirmer la commande.');
+      setIsAccountOpen(true);
+      return;
+    }
+    setResumeCheckoutAfterAuth(false);
     setIsCheckoutOpen(true);
+  };
+
+  const handleCustomerSession = (nextSession: CustomerSession) => {
+    setCustomerSession(nextSession);
+    void fetchCart();
+    if (nextSession.account.phoneVerified && resumeCheckoutAfterAuth) {
+      setResumeCheckoutAfterAuth(false);
+      setIsAccountOpen(false);
+      setIsCheckoutOpen(true);
+      setAccountMessage('');
+    }
   };
 
   const handleOrderSuccess = (result: OrderResult) => {
@@ -169,6 +241,16 @@ export const App: React.FC = () => {
           setIsCartOpen(false);
           setIsMenuDrawerOpen(true);
         }}
+        onOpenAccount={() => {
+          setIsProductDrawerOpen(false);
+          setIsAiDrawerOpen(false);
+          setIsMenuDrawerOpen(false);
+          setIsCartOpen(false);
+          setResumeCheckoutAfterAuth(false);
+          setAccountMessage('');
+          setIsAccountOpen(true);
+        }}
+        isAuthenticated={Boolean(customerSession)}
       />
 
       {/* Sliding Side Menu Drawer */}
@@ -220,6 +302,7 @@ export const App: React.FC = () => {
         onExtracted={handleExtracted}
         onNewClientOrder={handleNewClientOrder}
         onOrderComplete={() => setCartItems([])}
+        onCheckoutRequested={handleProceedToCheckout}
       />
 
       {/* Modular AYROVI assistant interface */}
@@ -245,7 +328,26 @@ export const App: React.FC = () => {
         onClose={() => setIsCheckoutOpen(false)}
         totalTND={totalCartTND}
         itemCount={totalCartCount}
+        customerSession={customerSession}
+        onRequireAuthentication={() => {
+          setIsCheckoutOpen(false);
+          setResumeCheckoutAfterAuth(true);
+          setAccountMessage('Connectez-vous et vérifiez votre téléphone pour confirmer la commande.');
+          setIsAccountOpen(true);
+        }}
         onOrderSuccess={handleOrderSuccess}
+      />
+
+      <CustomerAccountPage
+        isOpen={isAccountOpen}
+        session={customerSession}
+        loadingSession={isCustomerSessionLoading}
+        initialMessage={accountMessage}
+        onClose={() => { setIsAccountOpen(false); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
+        onSession={handleCustomerSession}
+        onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
+        onCartChanged={() => { void fetchCart(); }}
+        onOpenCart={() => { setIsAccountOpen(false); setIsCartOpen(true); }}
       />
 
       {/* Order Success Confetti Modal */}

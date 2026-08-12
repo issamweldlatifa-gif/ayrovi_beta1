@@ -4,9 +4,11 @@ import { FigLogoIcon } from './Icons';
 
 interface NavbarProps {
   onOpenMenuDrawer: () => void;
+  onOpenAccount: () => void;
+  isAuthenticated?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount, isAuthenticated = false }) => {
   const [hasPassedHero, setHasPassedHero] = useState(false);
 
   useEffect(() => {
@@ -77,14 +79,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer }) => {
 
         <button
           type="button"
-          onClick={() => alert(`Profil Client AYROVI — ID: ${localStorage.getItem('ayrovi_session_id') || 'Client'}`)}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#ffc24b] to-[#ff6b9a] p-0.5 shadow-md transition hover:scale-105 active:scale-95 sm:h-11 sm:w-11"
-          title="Mon Profil AYROVI"
-          aria-label="Profil"
+          onClick={onOpenAccount}
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#ffc24b] to-[#ff6b9a] p-0.5 shadow-md transition hover:scale-105 active:scale-95 sm:h-11 sm:w-11"
+          title={isAuthenticated ? 'Mon compte AYROVI' : 'Se connecter'}
+          aria-label={isAuthenticated ? 'Mon compte AYROVI' : 'Se connecter'}
         >
           <span className={`flex h-full w-full items-center justify-center rounded-full transition-colors duration-300 ${hasPassedHero ? 'bg-[#673de6]' : 'bg-[#1e0b4b]/90 backdrop-blur-sm'}`}>
             <User className="h-5 w-5 text-[#ffc24b]" />
           </span>
+          {isAuthenticated && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />}
+
         </button>
       </div>
     </header>

@@ -487,6 +487,11 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         db.run("UPDATE payments SET status=CASE WHEN status='PAID' THEN 'REFUNDED' ELSE 'CANCELLED' END,updated_at=? WHERE order_id=?", now, existing.id);
         db.run("UPDATE orders SET payment_status=CASE WHEN payment_status='PAID' THEN 'REFUNDED' ELSE 'CANCELLED' END WHERE id=?", existing.id);
       }
+      if (existing.account_id && status !== existing.status) {
+        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'ORDER','Mise à jour de commande',?,?,?)`, `notification_${randomUUID()}`, existing.account_id,
+        `La commande ${existing.order_number} est maintenant au statut ${status}.`, `/compte/commandes/${existing.id}`, now);
+      }
     });
     audit(db, req, 'STATUS_CHANGE', 'ORDERS', existing.id, { status: existing.status }, { status, note });
     res.json({ success: true, data: db.get<any>('SELECT * FROM orders WHERE id=?', existing.id) });
@@ -503,6 +508,10 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       db.run(`UPDATE payments SET status=?,reference=?,confirmed_by=?,confirmed_at=?,updated_at=? WHERE order_id=?`,
         status, reference, status === 'PAID' ? admin(req).id : null, status === 'PAID' ? now : null, now, req.params.id);
       db.run('UPDATE orders SET payment_status=?,updated_at=? WHERE id=?', status, now, req.params.id);
+      const order = db.get<any>('SELECT id,order_number,account_id FROM orders WHERE id=?', req.params.id);
+      if (order?.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'ORDER','Paiement mis à jour',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+      `Le paiement de la commande ${order.order_number} est maintenant ${status}.`, `/compte/commandes/${order.id}`, now);
     });
     audit(db, req, 'PAYMENT_STATUS', 'PAYMENTS', payment.id, payment, { status, reference });
     res.json({ success: true, data: db.get<any>('SELECT * FROM payments WHERE order_id=?', req.params.id) });
@@ -531,8 +540,11 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const params = search ? [`%${search}%`, `%${search}%`] : [];
     const where = search ? 'WHERE c.name LIKE ? OR c.phone LIKE ?' : '';
     const count = db.get<any>(`SELECT COUNT(*) count FROM customers c ${where}`, ...params)?.count || 0;
-    const rows = db.all<any>(`SELECT c.*,COUNT(o.id) order_count,COALESCE(SUM(CASE WHEN o.status!='CANCELLED' THEN o.total_tnd ELSE 0 END),0) lifetime_value
-      FROM customers c LEFT JOIN orders o ON o.customer_id=c.id ${where} GROUP BY c.id ORDER BY c.registered_at DESC LIMIT ? OFFSET ?`,
+    const rows = db.all<any>(`SELECT c.*,COUNT(DISTINCT o.id) order_count,
+      COALESCE(SUM(CASE WHEN o.status!='CANCELLED' THEN o.total_tnd ELSE 0 END),0) lifetime_value,
+      MAX(a.id) account_id,MAX(a.email) account_email,MAX(a.phone_verified_at) phone_verified_at,MAX(a.last_login_at) account_last_login_at
+      FROM customers c LEFT JOIN orders o ON o.customer_id=c.id LEFT JOIN customer_accounts a ON a.id=o.account_id
+      ${where} GROUP BY c.id ORDER BY c.registered_at DESC LIMIT ? OFFSET ?`,
       ...params, pageSize, (page - 1) * pageSize);
     res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
   });
@@ -540,7 +552,9 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   router.get('/customers/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
     const customer = db.get<any>('SELECT * FROM customers WHERE id=?', req.params.id);
     if (!customer) return res.status(404).json({ success: false, error: 'Client introuvable.' });
-    res.json({ success: true, data: { ...customer, orders: db.all<any>('SELECT * FROM orders WHERE customer_id=? ORDER BY created_at DESC', customer.id) } });
+    const account = db.get<any>(`SELECT a.* FROM customer_accounts a JOIN orders o ON o.account_id=a.id
+      WHERE o.customer_id=? ORDER BY o.created_at DESC LIMIT 1`, customer.id);
+    res.json({ success: true, data: { ...customer, account: account || null, orders: db.all<any>('SELECT * FROM orders WHERE customer_id=? ORDER BY created_at DESC', customer.id) } });
   });
 
   router.get('/pricing', requireAdmin(db, 'commerce:read'), (_req, res) => res.json({ success: true, data: db.getPricingRules() }));

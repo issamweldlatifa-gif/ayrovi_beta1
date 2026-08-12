@@ -31,9 +31,28 @@ export class QatafoDatabase {
 
   private initSchema() {
     this.db.exec(`
+      CREATE TABLE IF NOT EXISTS customer_accounts (
+        id TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL DEFAULT '',
+        email TEXT UNIQUE COLLATE NOCASE,
+        phone TEXT UNIQUE,
+        avatar_url TEXT NOT NULL DEFAULT '',
+        email_verified_at TEXT,
+        phone_verified_at TEXT,
+        locale TEXT NOT NULL DEFAULT 'fr-TN',
+        marketing_opt_in INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE','BLOCKED','DELETED')),
+        last_login_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_accounts_phone ON customer_accounts(phone);
+      CREATE INDEX IF NOT EXISTS idx_customer_accounts_email ON customer_accounts(email);
+
       CREATE TABLE IF NOT EXISTS cart_items (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE,
         store TEXT NOT NULL,
         external_id TEXT,
         source_url TEXT NOT NULL,
@@ -250,6 +269,7 @@ export class QatafoDatabase {
         id TEXT PRIMARY KEY,
         order_number TEXT NOT NULL UNIQUE,
         customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
         source TEXT NOT NULL DEFAULT 'OTHER' CHECK(source IN ('SHEIN','AMAZON','TEMU','ALIEXPRESS','OTHER','MIXED')),
         arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
         status TEXT NOT NULL CHECK(status IN ('NEW','CONFIRMED','PAYMENT_PENDING','PAID','PURCHASING','PURCHASED','IN_TRANSIT','ARRIVED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED')),
@@ -341,6 +361,96 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(status, expected_at);
 
+      CREATE TABLE IF NOT EXISTS customer_auth_identities (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        provider TEXT NOT NULL CHECK(provider IN ('PHONE','GOOGLE')),
+        provider_subject TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(provider, provider_subject)
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_identities_account ON customer_auth_identities(account_id);
+
+      CREATE TABLE IF NOT EXISTS customer_sessions (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        csrf_token TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        last_seen_at TEXT NOT NULL,
+        ip_address TEXT NOT NULL DEFAULT '',
+        user_agent TEXT NOT NULL DEFAULT ''
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_sessions_account ON customer_sessions(account_id);
+      CREATE INDEX IF NOT EXISTS idx_customer_sessions_expiry ON customer_sessions(expires_at);
+
+      CREATE TABLE IF NOT EXISTS customer_otp_challenges (
+        id TEXT PRIMARY KEY,
+        phone TEXT NOT NULL,
+        code_hash TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        max_attempts INTEGER NOT NULL DEFAULT 5,
+        request_ip TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_otp_phone_created ON customer_otp_challenges(phone, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_customer_otp_ip_created ON customer_otp_challenges(request_ip, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS customer_oauth_states (
+        id TEXT PRIMARY KEY,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+        cart_session_id TEXT NOT NULL DEFAULT '',
+        return_to TEXT NOT NULL DEFAULT '/',
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_oauth_expiry ON customer_oauth_states(expires_at);
+
+      CREATE TABLE IF NOT EXISTS customer_addresses (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        label TEXT NOT NULL DEFAULT 'Maison',
+        recipient_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        governorate TEXT NOT NULL,
+        city TEXT NOT NULL DEFAULT '',
+        postal_code TEXT NOT NULL DEFAULT '',
+        address_line TEXT NOT NULL,
+        delivery_notes TEXT NOT NULL DEFAULT '',
+        is_default INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_addresses_account ON customer_addresses(account_id, is_default DESC, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS customer_favorites (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+        source_url TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL DEFAULT '',
+        price_tnd REAL,
+        created_at TEXT NOT NULL,
+        UNIQUE(account_id, product_id),
+        UNIQUE(account_id, source_url)
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_favorites_account ON customer_favorites(account_id, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS customer_notifications (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        type TEXT NOT NULL DEFAULT 'GENERAL' CHECK(type IN ('GENERAL','ORDER','ACCOUNT','PROMOTION')),
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        action_url TEXT NOT NULL DEFAULT '',
+        read_at TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_notifications_account ON customer_notifications(account_id, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS ai_knowledge (
         id TEXT PRIMARY KEY,
         category TEXT NOT NULL CHECK(category IN ('FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL')),
@@ -380,6 +490,21 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_audit_module ON audit_logs(module, entity_id);
     `);
+
+    // Existing installations need additive migrations because CREATE TABLE IF NOT EXISTS
+    // does not add new ownership columns to cart/order tables.
+    this.ensureColumn('cart_items', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE');
+    this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
+    this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_cart_account ON cart_items(account_id, updated_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_orders_account ON orders(account_id, created_at DESC);
+    `);
+  }
+
+  private ensureColumn(table: string, column: string, definition: string) {
+    const columns = this.db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (!columns.some((item) => item.name === column)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 
   private seedCoreData() {
@@ -571,60 +696,97 @@ export class QatafoDatabase {
     };
   }
 
-  public addItem(sessionId: string, item: AddToCartRequest): CartItem {
+  private cartOwner(accountId?: string | null) {
+    return accountId
+      ? { clause: 'account_id = ?', value: accountId }
+      : { clause: 'session_id = ? AND account_id IS NULL', value: '' };
+  }
+
+  public addItem(sessionId: string, item: AddToCartRequest, accountId?: string | null): CartItem {
     const now = new Date().toISOString();
+    const owner = this.cartOwner(accountId);
+    owner.value = accountId || sessionId;
     if (item.externalId) {
       const existing = this.get<any>(`
-        SELECT * FROM cart_items WHERE session_id = ? AND store = ? AND external_id = ?
+        SELECT * FROM cart_items WHERE ${owner.clause} AND store = ? AND external_id = ?
           AND IFNULL(variant, '') = IFNULL(?, '')
-      `, sessionId, item.store, item.externalId, item.variant || '');
+      `, owner.value, item.store, item.externalId, item.variant || '');
       if (existing) {
-        const newQty = existing.quantity + (item.quantity || 1);
+        const newQty = Number(existing.quantity) + (item.quantity || 1);
         if (newQty > 99) throw new RangeError('CART_QUANTITY_LIMIT');
-        this.run('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND session_id = ?', newQty, now, existing.id, sessionId);
-        return this.getItemById(existing.id, sessionId)!;
+        this.run(`UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND ${owner.clause}`,
+          newQty, now, existing.id, owner.value);
+        return this.getItemById(existing.id, sessionId, accountId)!;
       }
     }
 
     const id = `ayr_${randomUUID().substring(0, 8)}`;
     this.run(`INSERT INTO cart_items (
-      id, session_id, store, external_id, source_url, title, image_url,
+      id, session_id, account_id, store, external_id, source_url, title, image_url,
       source_price, source_currency, price_tnd, variant, quantity, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, sessionId, item.store, item.externalId || null, item.url, item.title, item.imageUrl,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    id, sessionId, accountId || null, item.store, item.externalId || null, item.url, item.title, item.imageUrl,
     item.sourcePrice, item.sourceCurrency, item.priceTND, item.variant || null, item.quantity || 1, now, now);
-    return this.getItemById(id, sessionId)!;
+    return this.getItemById(id, sessionId, accountId)!;
   }
 
-  public getItems(sessionId: string): CartItem[] {
-    return this.all<any>('SELECT * FROM cart_items WHERE session_id = ? ORDER BY created_at DESC', sessionId).map((row) => this.mapRow(row));
+  public getItems(sessionId: string, accountId?: string | null): CartItem[] {
+    const owner = this.cartOwner(accountId);
+    const value = accountId || sessionId;
+    return this.all<any>(`SELECT * FROM cart_items WHERE ${owner.clause} ORDER BY created_at DESC`, value).map((row) => this.mapRow(row));
   }
 
-  public getItemById(id: string, sessionId: string): CartItem | null {
-    const row = this.get<any>('SELECT * FROM cart_items WHERE id = ? AND session_id = ?', id, sessionId);
+  public getItemById(id: string, sessionId: string, accountId?: string | null): CartItem | null {
+    const owner = this.cartOwner(accountId);
+    const row = this.get<any>(`SELECT * FROM cart_items WHERE id = ? AND ${owner.clause}`, id, accountId || sessionId);
     return row ? this.mapRow(row) : null;
   }
 
-  public removeItem(id: string, sessionId: string): boolean {
-    return this.run('DELETE FROM cart_items WHERE id = ? AND session_id = ?', id, sessionId).changes > 0;
+  public removeItem(id: string, sessionId: string, accountId?: string | null): boolean {
+    const owner = this.cartOwner(accountId);
+    return this.run(`DELETE FROM cart_items WHERE id = ? AND ${owner.clause}`, id, accountId || sessionId).changes > 0;
   }
 
-  public updateQuantity(id: string, quantity: number, sessionId: string): CartItem | null {
+  public updateQuantity(id: string, quantity: number, sessionId: string, accountId?: string | null): CartItem | null {
     if (quantity <= 0) {
-      this.removeItem(id, sessionId);
+      this.removeItem(id, sessionId, accountId);
       return null;
     }
-    this.run('UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND session_id = ?',
-      quantity, new Date().toISOString(), id, sessionId);
-    return this.getItemById(id, sessionId);
+    const owner = this.cartOwner(accountId);
+    this.run(`UPDATE cart_items SET quantity = ?, updated_at = ? WHERE id = ? AND ${owner.clause}`,
+      quantity, new Date().toISOString(), id, accountId || sessionId);
+    return this.getItemById(id, sessionId, accountId);
   }
 
-  public clearCart(sessionId: string): number {
-    return this.run('DELETE FROM cart_items WHERE session_id = ?', sessionId).changes;
+  public clearCart(sessionId: string, accountId?: string | null): number {
+    const owner = this.cartOwner(accountId);
+    return this.run(`DELETE FROM cart_items WHERE ${owner.clause}`, accountId || sessionId).changes;
   }
 
-  public createOrderFromCart(sessionId: string, input: CheckoutInput) {
-    const items = this.getItems(sessionId);
+  /** Merge the current browser's guest basket into the authenticated cross-device basket. */
+  public attachCartToAccount(sessionId: string, accountId: string): number {
+    return this.transaction(() => {
+      const guestItems = this.all<any>('SELECT * FROM cart_items WHERE session_id=? AND account_id IS NULL ORDER BY created_at', sessionId);
+      let attached = 0;
+      for (const item of guestItems) {
+        const existing = item.external_id
+          ? this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND external_id=? AND IFNULL(variant,'')=IFNULL(?,'')`, accountId, item.store, item.external_id, item.variant || '')
+          : this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND source_url=? AND title=? AND IFNULL(variant,'')=IFNULL(?,'')`, accountId, item.store, item.source_url, item.title, item.variant || '');
+        if (existing) {
+          const quantity = Math.min(99, Number(existing.quantity) + Number(item.quantity));
+          this.run('UPDATE cart_items SET quantity=?,updated_at=? WHERE id=?', quantity, new Date().toISOString(), existing.id);
+          this.run('DELETE FROM cart_items WHERE id=? AND account_id IS NULL', item.id);
+        } else {
+          this.run('UPDATE cart_items SET account_id=?,updated_at=? WHERE id=? AND account_id IS NULL', accountId, new Date().toISOString(), item.id);
+        }
+        attached += 1;
+      }
+      return attached;
+    });
+  }
+
+  public createOrderFromCart(sessionId: string, input: CheckoutInput, accountId: string) {
+    const items = this.getItems(sessionId, accountId);
     if (items.length === 0) throw new Error('EMPTY_CART');
     const rules = this.getPricingRules();
     const now = new Date().toISOString();
@@ -633,7 +795,16 @@ export class QatafoDatabase {
     const normalizedPhone = input.phone.replace(/\s+/g, ' ').trim();
 
     return this.transaction(() => {
-      let customer = this.get<any>('SELECT * FROM customers WHERE phone = ?', normalizedPhone);
+      const account = this.get<any>('SELECT id,phone,phone_verified_at,status FROM customer_accounts WHERE id=?', accountId);
+      if (!account || account.status !== 'ACTIVE' || !account.phone || !account.phone_verified_at || account.phone !== normalizedPhone) {
+        throw new Error('VERIFIED_PHONE_REQUIRED');
+      }
+
+      const accountPhoneDigits = normalizedPhone.replace(/\D/g, '').replace(/^216(?=\d{8}$)/, '');
+      let customer = this.all<any>('SELECT * FROM customers ORDER BY updated_at DESC').find((candidate) => {
+        const candidateDigits = String(candidate.phone || '').replace(/\D/g, '').replace(/^00216(?=\d{8}$)/, '').replace(/^216(?=\d{8}$)/, '');
+        return candidateDigits === accountPhoneDigits;
+      });
       if (!customer) {
         const customerId = `customer_${randomUUID()}`;
         this.run(`INSERT INTO customers (id,name,phone,governorate,address,registered_at,status,updated_at)
@@ -664,10 +835,10 @@ export class QatafoDatabase {
       const snapshot = JSON.stringify({ ...rules, capturedAt: now });
 
       this.run(`INSERT INTO orders (
-        id,order_number,customer_id,source,arrival_id,status,payment_status,payment_method,subtotal_tnd,customs_tnd,
+        id,order_number,customer_id,account_id,source,arrival_id,status,payment_status,payment_method,subtotal_tnd,customs_tnd,
         shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,pricing_snapshot,governorate,address,phone,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,'NEW','PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      orderId, orderNumber, customer.id, source, null, input.paymentMethod,
+      ) VALUES (?,?,?,?,?,?,'NEW','PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
       snapshot, input.governorate, input.address, normalizedPhone, '', now, now);
 
@@ -684,12 +855,15 @@ export class QatafoDatabase {
       }
 
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,NULL,'NEW','Commande créée depuis le checkout public',NULL,?)`, `history_${randomUUID()}`, orderId, now);
+        VALUES (?,?,NULL,'NEW','Commande créée depuis le checkout client',NULL,?)`, `history_${randomUUID()}`, orderId, now);
       this.run(`INSERT INTO payments (id,order_id,method,status,amount_tnd,reference,created_at,updated_at)
         VALUES (?,?,?,'PENDING',?,NULL,?,?)`, `payment_${randomUUID()}`, orderId, input.paymentMethod, totals.total, now, now);
       this.run(`INSERT INTO deliveries (id,order_id,governorate,address,phone,status,created_at,updated_at)
         VALUES (?,?,?,?,?,'PENDING',?,?)`, `delivery_${randomUUID()}`, orderId, input.governorate, input.address, normalizedPhone, now, now);
-      this.clearCart(sessionId);
+      this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'ORDER','Commande confirmée',?, ?, ?)`, `notification_${randomUUID()}`, accountId,
+        `Votre commande ${orderNumber} a bien été enregistrée.`, `/compte/commandes/${orderId}`, now);
+      this.clearCart(sessionId, accountId);
 
       return {
         orderId,
@@ -700,4 +874,5 @@ export class QatafoDatabase {
       };
     });
   }
+
 }

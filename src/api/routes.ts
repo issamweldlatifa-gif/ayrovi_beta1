@@ -6,6 +6,7 @@ import { QatafoDatabase as AyroviDatabase } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { AddToCartRequest } from '../types';
 import { calculatePrice } from '../services/pricing';
+import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -77,6 +78,18 @@ export function createApiRouter(
     if (sessionId) return sessionId;
     res.status(400).json({ success: false, error: 'Session client invalide ou absente.' });
     return null;
+  }
+
+  const protectAuthenticatedCart = (req: Request, res: Response, next: NextFunction) => {
+    if (!resolveCustomer(db, req)) return next();
+    return requireCustomer(db)(req, res, next);
+  };
+
+  function cartAccountId(req: Request, sessionId: string): string | null {
+    const customer = (req as any).customer || resolveCustomer(db, req);
+    if (!customer) return null;
+    db.attachCartToAccount(sessionId, customer.id);
+    return customer.id;
   }
 
   /**
@@ -178,7 +191,7 @@ export function createApiRouter(
   /**
    * POST /api/cart/items
    */
-  router.post('/cart/items', (req: Request, res: Response) => {
+  router.post('/cart/items', protectAuthenticatedCart, (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
@@ -224,8 +237,9 @@ export function createApiRouter(
     };
 
     try {
-      const cartItem = db.addItem(sessionId, normalizedItem);
-      const summary = cartSummary()(db.getItems(sessionId));
+      const accountId = cartAccountId(req, sessionId);
+      const cartItem = db.addItem(sessionId, normalizedItem, accountId);
+      const summary = cartSummary()(db.getItems(sessionId, accountId));
       return res.status(201).json({
         success: true,
         cartItem,
@@ -252,7 +266,8 @@ export function createApiRouter(
     if (!sessionId) return;
 
     try {
-      const summary = cartSummary()(db.getItems(sessionId));
+      const accountId = cartAccountId(req, sessionId);
+      const summary = cartSummary()(db.getItems(sessionId, accountId));
 
       return res.json({
         success: true,
@@ -273,13 +288,14 @@ export function createApiRouter(
   /**
    * DELETE /api/cart/items/:id
    */
-  router.delete('/cart/items/:id', (req: Request, res: Response) => {
+  router.delete('/cart/items/:id', protectAuthenticatedCart, (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
     const { id } = req.params;
     try {
-      const removed = db.removeItem(id, sessionId);
+      const accountId = cartAccountId(req, sessionId);
+      const removed = db.removeItem(id, sessionId, accountId);
       if (!removed) return res.status(404).json({ success: false, error: 'Article introuvable.' });
       return res.json({ success: true, removed: true });
     } catch {
@@ -290,7 +306,7 @@ export function createApiRouter(
   /**
    * PATCH /api/cart/items/:id
    */
-  router.patch('/cart/items/:id', (req: Request, res: Response) => {
+  router.patch('/cart/items/:id', protectAuthenticatedCart, (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
@@ -301,9 +317,10 @@ export function createApiRouter(
     }
 
     try {
-      const existing = db.getItemById(id, sessionId);
+      const accountId = cartAccountId(req, sessionId);
+      const existing = db.getItemById(id, sessionId, accountId);
       if (!existing) return res.status(404).json({ success: false, error: 'Article introuvable.' });
-      const updated = db.updateQuantity(id, quantity, sessionId);
+      const updated = db.updateQuantity(id, quantity, sessionId, accountId);
       return res.json({ success: true, cartItem: updated });
     } catch {
       return res.status(500).json({ success: false, error: 'Erreur de mise à jour.' });
@@ -313,15 +330,15 @@ export function createApiRouter(
   /**
    * POST /api/checkout
    */
-  router.post('/checkout', (req: Request, res: Response) => {
+  router.post('/checkout', requireCustomer(db, { verifiedPhone: true }), (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
-    const { name, phone, city, address, paymentMethod } = req.body ?? {};
+    const customer = customerFromRequest(req);
+    const { name, city, address, paymentMethod } = req.body ?? {};
 
     if (
       typeof name !== 'string' || !name.trim() || name.length > 160 ||
-      typeof phone !== 'string' || phone.length > 40 || phone.replace(/\D/g, '').length < 8 ||
       typeof city !== 'string' || !city.trim() || city.length > 100 ||
       typeof address !== 'string' || !address.trim() || address.length > 500
     ) {
@@ -351,7 +368,8 @@ export function createApiRouter(
       return res.status(400).json({ success: false, error: 'Ce gouvernorat n’est pas desservi actuellement.' });
     }
 
-    const items = db.getItems(sessionId);
+    db.attachCartToAccount(sessionId, customer.id);
+    const items = db.getItems(sessionId, customer.id);
     if (items.length === 0) {
       return res.status(400).json({
         success: false,
@@ -364,17 +382,19 @@ export function createApiRouter(
     try {
       const result = db.createOrderFromCart(sessionId, {
         name: name.trim(),
-        phone: phone.trim(),
+        phone: customer.phone!,
         governorate: city.trim(),
         address: address.trim(),
         paymentMethod: normalizedPaymentMethod,
-      });
+      }, customer.id);
       return res.json({
         success: true,
         ...result,
         message: 'Votre commande a été enregistrée avec succès chez AYROVI !'
       });
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });
+      if (error?.message === 'VERIFIED_PHONE_REQUIRED') return res.status(403).json({ success: false, code: 'PHONE_VERIFICATION_REQUIRED', error: 'Vérifiez votre téléphone avant la commande.' });
       console.error('[Checkout Error]', error);
       return res.status(500).json({ success: false, error: 'La commande n’a pas pu être enregistrée.' });
     }

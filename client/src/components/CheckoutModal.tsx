@@ -1,14 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { X, AlertCircle, CheckCircle2, Truck, Loader2, Phone, MapPin, User, CreditCard } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { CustomerInfo, OrderResult } from '../types';
+import { CustomerAddress, CustomerInfo, CustomerSession, OrderResult } from '../types';
 import { getSessionId } from '../utils/session';
+import { customerApi } from '../customer/api';
 
 interface CheckoutModalProps {
   isOpen: boolean;
   onClose: () => void;
   totalTND: number;
   itemCount: number;
+  customerSession: CustomerSession | null;
+  onRequireAuthentication: () => void;
   onOrderSuccess: (result: OrderResult) => void;
 }
 
@@ -44,6 +47,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   onClose,
   totalTND,
   itemCount,
+  customerSession,
+  onRequireAuthentication,
   onOrderSuccess,
 }) => {
   const [formData, setFormData] = useState<CustomerInfo>({
@@ -57,6 +62,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const [paymentMethods, setPaymentMethods] = useState(['COD', 'D17', 'FLOUCI']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState('');
 
   useBodyScrollLock(isOpen);
 
@@ -95,11 +102,67 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     };
   }, [isOpen, isLoading, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!customerSession || !customerSession.account.phoneVerified) {
+      setAddresses([]);
+      setSelectedAddressId('');
+      onRequireAuthentication();
+      return;
+    }
+    let active = true;
+    setError(null);
+    setAddresses([]);
+    setSelectedAddressId('');
+    setFormData((current) => ({
+      name: customerSession.account.displayName,
+      phone: customerSession.account.phone || '',
+      city: governorates.includes(current.city) ? current.city : governorates[0],
+      address: '',
+      paymentMethod: current.paymentMethod,
+    }));
+    customerApi<any>('/api/customer/account/addresses')
+      .then((result) => {
+        if (!active) return;
+        const nextAddresses = Array.isArray(result.data) ? result.data : [];
+        setAddresses(nextAddresses);
+        const preferred = nextAddresses.find((address: CustomerAddress) => Boolean(address.is_default)) || nextAddresses[0];
+        if (preferred) {
+          setSelectedAddressId(preferred.id);
+          setFormData((current) => ({
+            ...current,
+            name: preferred.recipient_name || current.name,
+            phone: customerSession.account.phone || '',
+            city: preferred.governorate || current.city,
+            address: [preferred.address_line, preferred.city, preferred.postal_code].filter(Boolean).join(', '),
+          }));
+        }
+      })
+      .catch(() => { if (active) setAddresses([]); });
+    return () => { active = false; };
+  }, [isOpen, customerSession?.account.id, customerSession?.account.phoneVerified]);
+
+  const chooseAddress = (address: CustomerAddress) => {
+    setSelectedAddressId(address.id);
+    setFormData((current) => ({
+      ...current,
+      name: address.recipient_name || current.name,
+      phone: customerSession?.account.phone || '',
+      city: address.governorate || current.city,
+      address: [address.address_line, address.city, address.postal_code].filter(Boolean).join(', '),
+    }));
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!customerSession || !customerSession.account.phoneVerified) {
+      onRequireAuthentication();
+      return;
+    }
 
     if (!formData.name.trim() || !formData.phone.trim() || !formData.address.trim()) {
       setError('Veuillez remplir tous les champs obligatoires pour assurer une livraison rapide.');
@@ -119,6 +182,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         headers: {
           'Content-Type': 'application/json',
           'x-session-id': getSessionId(),
+          'x-csrf-token': customerSession.csrfToken,
         },
         body: JSON.stringify(formData),
       });
@@ -144,7 +208,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-xs sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
       <div className="relative w-full max-w-lg bg-white border border-[#e2e8f0] rounded-3xl shadow-2xl overflow-hidden">
         
         {/* Header */}
@@ -178,6 +242,25 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
           )}
 
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-bold text-emerald-800">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            Commande liée au compte {customerSession?.account.displayName}. Téléphone vérifié.
+          </div>
+
+          {addresses.length > 0 && (
+            <div>
+              <label className="mb-2 block text-xs font-bold text-[#374151]">Choisir une adresse enregistrée :</label>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {addresses.map((address) => (
+                  <button key={address.id} type="button" onClick={() => chooseAddress(address)} className={`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-[#673de6] bg-[#f2eeff] text-[#4e28b9]' : 'border-slate-200 bg-white text-slate-600'}`}>
+                    <strong className="block">{address.label}{address.is_default ? ' · Par défaut' : ''}</strong>
+                    <span className="mt-1 block truncate">{address.address_line}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Name */}
           <div>
             <label className="block text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1.5">
@@ -204,7 +287,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               type="tel"
               required
               value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              readOnly
+              aria-readonly="true"
               placeholder="+216 98 123 456"
               className="w-full bg-[#f8f9fe] border border-[#e2e8f0] focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none placeholder:text-[#9ca3af] font-mono font-semibold"
             />
