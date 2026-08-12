@@ -1,4 +1,3 @@
-import { randomInt } from 'node:crypto';
 import { isIP } from 'node:net';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
@@ -6,6 +5,7 @@ import { SmartLinkScraper } from '../scraper/scraper';
 import { QatafoDatabase as AyroviDatabase } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { AddToCartRequest } from '../types';
+import { calculatePrice } from '../services/pricing';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -43,13 +43,6 @@ function isUnsafeHostname(rawHostname: string): boolean {
   return false;
 }
 
-function calculateItemPriceTND(sourcePrice: number, sourceCurrency: string): number | null {
-  const rate = VisualProductExtractor.RATES_TO_TND[sourceCurrency];
-  if (!rate) return null;
-  const convertedTND = Math.round(sourcePrice * rate * 100) / 100;
-  const serviceFeeTND = Math.round(Math.max(10, convertedTND * 0.08) * 100) / 100;
-  return Math.round((convertedTND + serviceFeeTND + 25) * 100) / 100;
-}
 
 export function createApiRouter(
   db: AyroviDatabase,
@@ -57,6 +50,19 @@ export function createApiRouter(
   visionExtractor: VisualProductExtractor
 ): Router {
   const router = Router();
+
+  function cartSummary() {
+    const rules = db.getPricingRules();
+    return (items: ReturnType<AyroviDatabase['getItems']>) => {
+      const pricedItems = items.map((item) => {
+        const breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, { quantity: item.quantity });
+        if (!breakdown) throw new Error('CART_PRICING_FAILED');
+        return { ...item, lineTotalTND: breakdown.totalTND, pricingVersion: breakdown.pricingVersion };
+      });
+      const totalTND = Math.round(pricedItems.reduce((sum, item) => sum + item.lineTotalTND, 0) * 100) / 100;
+      return { items: pricedItems, totalTND };
+    };
+  }
 
   function getSessionId(req: Request): string {
     const candidate = req.headers['x-session-id'] || req.query.sessionId;
@@ -101,9 +107,17 @@ export function createApiRouter(
       }
 
       const product = await visionExtractor.extractFromImage(imageBuffer, filename);
+      const priced = calculatePrice(db.getPricingRules(), product.sourcePrice, product.sourceCurrency);
+      const normalizedProduct = priced ? {
+        ...product,
+        convertedPriceTND: priced.convertedPriceTND,
+        serviceFeeTND: priced.serviceFeeTND,
+        estimatedShippingTND: priced.shippingFeeTND,
+        totalPriceTND: priced.totalTND,
+      } : product;
       return res.json({
         success: true,
-        product
+        product: normalizedProduct
       });
     } catch (err: any) {
       console.error('[Vision Error]', err);
@@ -140,9 +154,17 @@ export function createApiRouter(
 
     try {
       const product = await scraper.scrapeProduct(cleanUrl);
+      const priced = calculatePrice(db.getPricingRules(), product.sourcePrice, product.sourceCurrency);
+      const normalizedProduct = priced ? {
+        ...product,
+        convertedPriceTND: priced.convertedPriceTND,
+        serviceFeeTND: priced.serviceFeeTND,
+        estimatedShippingTND: priced.shippingFeeTND,
+        totalPriceTND: priced.totalTND,
+      } : product;
       return res.json({
         success: true,
-        product
+        product: normalizedProduct
       });
     } catch (err: any) {
       console.error('[Scraper Error]', err);
@@ -168,7 +190,8 @@ export function createApiRouter(
     const quantity = Number(item.quantity ?? 1);
     const sourcePrice = Number(item.sourcePrice);
     const sourceCurrency = typeof item.sourceCurrency === 'string' ? item.sourceCurrency.trim().toUpperCase() : '';
-    const calculatedPriceTND = calculateItemPriceTND(sourcePrice, sourceCurrency);
+    const calculatedPrice = calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency);
+    const calculatedPriceTND = calculatedPrice?.totalTND ?? null;
 
     if (
       typeof item.title !== 'string' || !item.title.trim() || item.title.length > 500 ||
@@ -202,13 +225,12 @@ export function createApiRouter(
 
     try {
       const cartItem = db.addItem(sessionId, normalizedItem);
-      const items = db.getItems(sessionId);
-      const totalTND = items.reduce((sum, current) => sum + current.priceTND * current.quantity, 0);
+      const summary = cartSummary()(db.getItems(sessionId));
       return res.status(201).json({
         success: true,
         cartItem,
-        totalItemsCount: items.reduce((sum, current) => sum + current.quantity, 0),
-        totalTND: Math.round(totalTND * 100) / 100,
+        totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
+        totalTND: summary.totalTND,
       });
     } catch (err: any) {
       if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
@@ -230,16 +252,15 @@ export function createApiRouter(
     if (!sessionId) return;
 
     try {
-      const items = db.getItems(sessionId);
-      const totalTND = items.reduce((sum, it) => sum + it.priceTND * it.quantity, 0);
+      const summary = cartSummary()(db.getItems(sessionId));
 
       return res.json({
         success: true,
         sessionId,
-        itemCount: items.length,
-        totalItemsCount: items.reduce((sum, it) => sum + it.quantity, 0),
-        totalTND: Math.round(totalTND * 100) / 100,
-        items
+        itemCount: summary.items.length,
+        totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0),
+        totalTND: summary.totalTND,
+        items: summary.items,
       });
     } catch (err: any) {
       return res.status(500).json({
@@ -310,6 +331,26 @@ export function createApiRouter(
       });
     }
 
+    const paymentCode = String(paymentMethod || '').trim().toUpperCase();
+    const paymentSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='payment_methods'");
+    const governorateSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='governorates'");
+    let configuredPayments: string[] = ['COD', 'D17', 'FLOUCI'];
+    let configuredGovernorates: string[] = [];
+    try {
+      const parsedPayments = JSON.parse(paymentSetting?.setting_value || '[]');
+      const parsedGovernorates = JSON.parse(governorateSetting?.setting_value || '[]');
+      if (Array.isArray(parsedPayments) && parsedPayments.length) configuredPayments = parsedPayments.map(String);
+      if (Array.isArray(parsedGovernorates)) configuredGovernorates = parsedGovernorates.map(String);
+    } catch {
+      return res.status(500).json({ success: false, error: 'La configuration commerciale est invalide.' });
+    }
+    if (!configuredPayments.includes(paymentCode)) {
+      return res.status(400).json({ success: false, error: 'Ce moyen de paiement n’est pas disponible.' });
+    }
+    if (configuredGovernorates.length && !configuredGovernorates.includes(city.trim())) {
+      return res.status(400).json({ success: false, error: 'Ce gouvernorat n’est pas desservi actuellement.' });
+    }
+
     const items = db.getItems(sessionId);
     if (items.length === 0) {
       return res.status(400).json({
@@ -318,26 +359,25 @@ export function createApiRouter(
       });
     }
 
-    const orderNumber = `AYR-${randomInt(100000, 1000000)}`;
-    const totalTND = items.reduce((sum, it) => sum + it.priceTND * it.quantity, 0);
-    const normalizedPaymentMethod = paymentMethod === 'd17' ? 'd17' : 'cod';
+    const normalizedPaymentMethod = paymentCode as 'COD' | 'D17' | 'FLOUCI';
 
-    db.clearCart(sessionId);
-
-    return res.json({
-      success: true,
-      orderNumber,
-      customer: {
+    try {
+      const result = db.createOrderFromCart(sessionId, {
         name: name.trim(),
         phone: phone.trim(),
-        city: city.trim(),
+        governorate: city.trim(),
         address: address.trim(),
         paymentMethod: normalizedPaymentMethod,
-      },
-      totalTND: Math.round(totalTND * 100) / 100,
-      itemCount: items.length,
-      message: 'Votre commande a été enregistrée avec succès chez AYROVI !'
-    });
+      });
+      return res.json({
+        success: true,
+        ...result,
+        message: 'Votre commande a été enregistrée avec succès chez AYROVI !'
+      });
+    } catch (error) {
+      console.error('[Checkout Error]', error);
+      return res.status(500).json({ success: false, error: 'La commande n’a pas pu être enregistrée.' });
+    }
   });
 
   router.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

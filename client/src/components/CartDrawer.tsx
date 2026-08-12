@@ -125,7 +125,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="text-xs font-black text-[#673de6]">
-                        {(item.priceTND * item.quantity).toFixed(2)} DT
+                        {(item.lineTotalTND ?? item.priceTND * item.quantity).toFixed(2)} DT
                       </div>
 
                       {/* Quantity Controls */}

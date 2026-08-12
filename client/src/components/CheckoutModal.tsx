@@ -16,7 +16,7 @@ const TUNISIAN_GOVERNORATES_FR = [
   'Tunis',
   'Ariana',
   'Ben Arous',
-  'Manouba',
+  'La Manouba',
   'Nabeul',
   'Zaghouan',
   'Bizerte',
@@ -53,6 +53,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     address: '',
     paymentMethod: 'cod',
   });
+  const [governorates, setGovernorates] = useState(TUNISIAN_GOVERNORATES_FR);
+  const [paymentMethods, setPaymentMethods] = useState(['COD', 'D17', 'FLOUCI']);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,11 +62,35 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    const controller = new AbortController();
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !isLoading) onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
+    fetch('/api/public/commerce-config', { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'Configuration indisponible.');
+        const configuredGovernorates = Array.isArray(payload.data?.governorates) && payload.data.governorates.length
+          ? payload.data.governorates.map(String)
+          : TUNISIAN_GOVERNORATES_FR;
+        const configuredMethods = Array.isArray(payload.data?.paymentMethods)
+          ? payload.data.paymentMethods.map((method: unknown) => String(method).toUpperCase()).filter((method: string) => ['COD', 'D17', 'FLOUCI'].includes(method))
+          : [];
+        const methods = configuredMethods.length ? configuredMethods : ['COD', 'D17', 'FLOUCI'];
+        setGovernorates(configuredGovernorates);
+        setPaymentMethods(methods);
+        setFormData((current) => ({
+          ...current,
+          city: configuredGovernorates.includes(current.city) ? current.city : configuredGovernorates[0],
+          paymentMethod: methods.includes(current.paymentMethod.toUpperCase()) ? current.paymentMethod : methods[0].toLowerCase(),
+        }));
+      })
+      .catch((fetchError) => {
+        if (fetchError?.name !== 'AbortError') console.warn('[Checkout Config Error]', fetchError);
+      });
     return () => {
+      controller.abort();
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, isLoading, onClose]);
@@ -195,7 +221,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               className="w-full bg-[#f8f9fe] border border-[#e2e8f0] focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none font-semibold"
             >
-              {TUNISIAN_GOVERNORATES_FR.map((gov) => (
+              {governorates.map((gov) => (
                 <option key={gov} value={gov}>
                   {gov}
                 </option>
@@ -224,35 +250,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <CreditCard className="w-3.5 h-3.5 text-[#673de6]" />
               <span>Mode de paiement :</span>
             </label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, paymentMethod: 'cod' })}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                  formData.paymentMethod === 'cod'
-                    ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
-                    : 'border-[#e2e8f0] bg-[#f8f9fe] text-[#6b7280]'
-                }`}
-              >
-                <span>À la livraison</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setFormData({ ...formData, paymentMethod: 'd17' })}
-                className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                  formData.paymentMethod === 'd17'
-                    ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
-                    : 'border-[#e2e8f0] bg-[#f8f9fe] text-[#6b7280]'
-                }`}
-              >
-                <span>D17 / Virement / Flouci</span>
-              </button>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {paymentMethods.map((method) => {
+                const value = method.toLowerCase();
+                const label = method === 'COD' ? 'À la livraison' : method === 'D17' ? 'D17' : 'Flouci';
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, paymentMethod: value })}
+                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                      formData.paymentMethod === value
+                        ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
+                        : 'border-[#e2e8f0] bg-[#f8f9fe] text-[#6b7280]'
+                    }`}
+                  >
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
           {/* Summary Box */}
           <div className="bg-[#f8f9fe] border border-[#eef0f6] rounded-xl p-3.5 flex justify-between items-center text-xs">
-            <span className="text-[#6b7280] font-semibold">Montant total dû à la réception :</span>
+            <span className="text-[#6b7280] font-semibold">Montant total de la commande :</span>
             <span className="text-base font-extrabold text-[#673de6]">{totalTND.toFixed(2)} DT</span>
           </div>
 

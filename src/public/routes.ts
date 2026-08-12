@@ -1,0 +1,194 @@
+import { Router } from 'express';
+import { QatafoDatabase } from '../db/database';
+import { calculatePrice } from '../services/pricing';
+
+function parseJson(value: string, fallback: any = []) {
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function mapArrival(row: any) {
+  return {
+    id: row.id,
+    name: row.name,
+    type: row.type,
+    departureAt: row.departure_at,
+    expectedArrivalAt: row.expected_arrival_at,
+    endsAt: row.ends_at,
+    description: row.description,
+    mainImage: row.main_image,
+    secondaryImages: parseJson(row.secondary_images),
+    badge: row.badge,
+    status: row.status,
+  };
+}
+
+function mapProduct(row: any) {
+  return {
+    id: row.id,
+    name: row.name,
+    description: row.description,
+    image: row.image,
+    additionalImages: parseJson(row.additional_images),
+    brandId: row.brand_id,
+    brandName: row.brand_name,
+    category: row.category,
+    sourceUrl: row.source_url,
+    sourcePlatform: row.source_platform,
+    originalPrice: Number(row.original_price),
+    currency: row.currency,
+    convertedPrice: Number(row.converted_price),
+    customsFee: Number(row.customs_fee),
+    shippingFee: Number(row.shipping_fee),
+    serviceFee: Number(row.service_fee),
+    finalPrice: Number(row.final_price),
+    expressAvailable: Boolean(row.express_available),
+    stockStatus: row.stock_status,
+    arrivalIds: row.arrival_ids ? String(row.arrival_ids).split(',').filter(Boolean) : [],
+  };
+}
+
+export function createPublicRouter(db: QatafoDatabase): Router {
+  const router = Router();
+
+  const commerceConfig = () => {
+    const pricing = db.getPricingRules();
+    const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
+      ('delivery_delay','governorates','payment_methods')`);
+    const facts: Record<string, any> = {};
+    for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
+    return {
+      pricing: {
+        version: pricing.version,
+        rates: { EUR: pricing.rateEUR, USD: pricing.rateUSD, GBP: pricing.rateGBP, JPY: pricing.rateJPY, TND: 1 },
+        customsFeePercent: pricing.customsFeePercent,
+        shippingFeeTND: pricing.shippingFeeTND,
+        serviceFeePercent: pricing.serviceFeePercent,
+        minimumServiceFeeTND: pricing.minimumServiceFeeTND,
+        expressFeeTND: pricing.expressFeeTND,
+      },
+      governorates: Array.isArray(facts.governorates) ? facts.governorates : [],
+      paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
+      deliveryDelay: String(facts.delivery_delay || ''),
+    };
+  };
+
+  router.get('/commerce-config', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.json({ success: true, data: commerceConfig(), serverTime: new Date().toISOString() });
+  });
+
+  router.post('/pricing/preview', (req, res) => {
+    const originalPrice = Number(req.body?.originalPrice);
+    const quantity = Number(req.body?.quantity ?? 1);
+    const currency = String(req.body?.currency || '').trim().toUpperCase();
+    const express = req.body?.express === true;
+    if (originalPrice > 1_000_000 || quantity > 99) {
+      return res.status(400).json({ success: false, error: 'Montant ou quantité hors limites.' });
+    }
+    const result = calculatePrice(db.getPricingRules(), originalPrice, currency, { quantity, express });
+    if (!result) return res.status(400).json({ success: false, error: 'Données de calcul invalides.' });
+    res.json({ success: true, data: result });
+  });
+
+  router.get('/hero-slides', (_req, res) => {
+    const rows = db.all<any>(`SELECT id,image,video,title,subtitle,cta,target_url targetUrl,display_order displayOrder
+      FROM hero_slides WHERE active=1 ORDER BY display_order,id`);
+    res.json({ success: true, data: rows });
+  });
+
+  router.get('/brands', (_req, res) => {
+    const rows = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
+      FROM brands WHERE active=1 ORDER BY display_order,name`);
+    res.json({ success: true, data: rows });
+  });
+
+  router.get('/arrivals', (_req, res) => {
+    const rows = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED')
+      ORDER BY CASE type WHEN 'EXPRESS' THEN 0 ELSE 1 END,expected_arrival_at`);
+    res.json({ success: true, data: rows.map(mapArrival), serverTime: new Date().toISOString() });
+  });
+
+  router.get('/products', (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
+    const arrivalId = typeof req.query.arrivalId === 'string' ? req.query.arrivalId : '';
+    const params: any[] = [];
+    const filter = arrivalId ? 'AND EXISTS (SELECT 1 FROM product_arrivals f WHERE f.product_id=p.id AND f.arrival_id=?)' : '';
+    if (arrivalId) params.push(arrivalId);
+    const rows = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
+      LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' ${filter}
+      GROUP BY p.id ORDER BY p.updated_at DESC LIMIT ?`, ...params, limit);
+    res.json({ success: true, data: rows.map(mapProduct) });
+  });
+
+  router.get('/promotions', (_req, res) => {
+    const now = new Date().toISOString();
+    const rows = db.all<any>(`SELECT p.*,
+      (SELECT GROUP_CONCAT(arrival_id) FROM promotion_arrivals WHERE promotion_id=p.id) arrival_ids,
+      (SELECT GROUP_CONCAT(product_id) FROM promotion_products WHERE promotion_id=p.id) product_ids
+      FROM promotions p WHERE p.status='ACTIVE' AND p.starts_at<=? AND p.ends_at>? ORDER BY p.starts_at DESC`, now, now)
+      .map((row) => ({ ...row, arrival_ids: row.arrival_ids ? row.arrival_ids.split(',') : [], product_ids: row.product_ids ? row.product_ids.split(',') : [] }));
+    res.json({ success: true, data: rows, serverTime: now });
+  });
+
+  router.get('/stories', (_req, res) => {
+    const now = new Date().toISOString();
+    const rows = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=?
+      AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC`, now, now);
+    res.json({ success: true, data: rows, serverTime: now });
+  });
+
+  router.get('/news', (req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
+    const now = new Date().toISOString();
+    const rows = db.all<any>(`SELECT * FROM news_items WHERE status='PUBLISHED' AND published_at<=?
+      ORDER BY published_at DESC LIMIT ?`, now, limit);
+    res.json({ success: true, data: rows, serverTime: now });
+  });
+
+  router.get('/home', (_req, res) => {
+    const now = new Date().toISOString();
+    const hero = db.all<any>(`SELECT id,image,video,title,subtitle,cta,target_url targetUrl,display_order displayOrder
+      FROM hero_slides WHERE active=1 ORDER BY display_order,id`);
+    const brands = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
+      FROM brands WHERE active=1 ORDER BY display_order,name`);
+    const arrivals = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED') ORDER BY expected_arrival_at`).map(mapArrival);
+    const products = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p LEFT JOIN product_arrivals pa ON pa.product_id=p.id
+      WHERE p.status='ACTIVE' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 12`).map(mapProduct);
+    const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
+    const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
+    const news = db.all<any>(`SELECT * FROM news_items WHERE status='PUBLISHED' AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);
+    res.json({ success: true, data: { hero, brands, arrivals, products, promotions, stories, news }, serverTime: now });
+  });
+
+  router.get('/assistant-context', (_req, res) => {
+    const now = new Date().toISOString();
+    const pricing = db.getPricingRules();
+    const knowledge = db.all<any>(`SELECT id,category,question,answer,keywords,priority FROM ai_knowledge
+      WHERE active=1 ORDER BY priority DESC,created_at DESC`).map((row) => ({ ...row, keywords: parseJson(row.keywords) }));
+    const arrivals = db.all<any>(`SELECT id,name,type,expected_arrival_at,description,badge FROM arrivals
+      WHERE status='ACTIVE' ORDER BY expected_arrival_at`).map((row) => ({ id: row.id, name: row.name, type: row.type, expectedArrivalAt: row.expected_arrival_at, description: row.description, badge: row.badge }));
+    const promotions = db.all<any>(`SELECT id,name,description,discount_type,value,promo_code,ends_at FROM promotions
+      WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY ends_at`, now, now);
+    const brands = db.all<any>('SELECT id,name,category FROM brands WHERE active=1 ORDER BY display_order,name');
+    const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
+      ('company_name','company_phone','company_email','delivery_delay','governorates','payment_methods')`);
+    const facts: Record<string, any> = {};
+    for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.json({ success: true, data: {
+      serverTime: now,
+      pricing: {
+        version: pricing.version,
+        rates: { EUR: pricing.rateEUR, USD: pricing.rateUSD, GBP: pricing.rateGBP, JPY: pricing.rateJPY, TND: 1 },
+        customsFeePercent: pricing.customsFeePercent,
+        shippingFeeTND: pricing.shippingFeeTND,
+        serviceFeePercent: pricing.serviceFeePercent,
+        minimumServiceFeeTND: pricing.minimumServiceFeeTND,
+        expressFeeTND: pricing.expressFeeTND,
+      },
+      facts, arrivals, promotions, brands, knowledge,
+    } });
+  });
+
+  return router;
+}

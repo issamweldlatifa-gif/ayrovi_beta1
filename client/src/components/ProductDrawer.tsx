@@ -15,18 +15,24 @@ interface ProductDrawerProps {
   onOrderComplete: () => void;
 }
 
-const RATES_TO_TND: Record<string, number> = {
-  EUR: 4.00,
-  USD: 4.00,
-  JPY: 0.0265,
-  GBP: 4.80,
-  CAD: 2.95,
-  CHF: 4.20,
-  TND: 1.0,
-};
+interface PricingPreview {
+  convertedPriceTND: number;
+  customsFeeTND: number;
+  shippingFeeTND: number;
+  serviceFeeTND: number;
+  expressFeeTND: number;
+  totalTND: number;
+  exchangeRate: number;
+  pricingVersion: number;
+}
+
+interface CommerceConfig {
+  governorates: string[];
+  paymentMethods: string[];
+}
 
 const TUNISIAN_GOVERNORATES_FR = [
-  'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan',
+  'Tunis', 'Ariana', 'Ben Arous', 'La Manouba', 'Nabeul', 'Zaghouan',
   'Bizerte', 'Béja', 'Jendouba', 'Le Kef', 'Siliana', 'Sousse',
   'Monastir', 'Mahdia', 'Sfax', 'Kairouan', 'Kasserine', 'Sidi Bouzid',
   'Gabès', 'Médenine', 'Tataouine', 'Gafsa', 'Tozeur', 'Kébili'
@@ -56,6 +62,12 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [checkoutSummary, setCheckoutSummary] = useState<AddToCartResult | null>(null);
+  const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+  const [commerceConfig, setCommerceConfig] = useState<CommerceConfig>({
+    governorates: TUNISIAN_GOVERNORATES_FR,
+    paymentMethods: ['COD', 'D17', 'FLOUCI'],
+  });
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const isOpenRef = useRef(isOpen);
@@ -127,14 +139,76 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     };
   }, [isOpen, onClose, product]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const controller = new AbortController();
+    fetch('/api/public/commerce-config', { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'Configuration indisponible.');
+        const governorates = Array.isArray(payload.data?.governorates) && payload.data.governorates.length
+          ? payload.data.governorates.map(String)
+          : TUNISIAN_GOVERNORATES_FR;
+        const configuredMethods = Array.isArray(payload.data?.paymentMethods)
+          ? payload.data.paymentMethods.map((method: unknown) => String(method).toUpperCase()).filter((method: string) => ['COD', 'D17', 'FLOUCI'].includes(method))
+          : [];
+        const paymentMethods = configuredMethods.length ? configuredMethods : ['COD', 'D17', 'FLOUCI'];
+        setCommerceConfig({ governorates, paymentMethods });
+        setFormData((current) => ({
+          ...current,
+          city: governorates.includes(current.city) ? current.city : governorates[0],
+          paymentMethod: paymentMethods.includes(current.paymentMethod.toUpperCase()) ? current.paymentMethod : paymentMethods[0].toLowerCase(),
+        }));
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') console.warn('[Commerce Config Error]', error);
+      });
+    return () => controller.abort();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || sourcePrice <= 0 || quantity < 1) {
+      setPricingPreview(null);
+      setIsCalculatingPrice(false);
+      return;
+    }
+    setPricingPreview(null);
+    setIsCalculatingPrice(true);
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch('/api/public/pricing/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ originalPrice: sourcePrice, currency, quantity }),
+          signal: controller.signal,
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'Calcul indisponible.');
+        setPricingPreview(payload.data);
+        setErrorMsg((current) => current === 'Le calcul tarifaire central est momentanément indisponible. Réessayez.' ? null : current);
+      } catch (error: any) {
+        if (error?.name !== 'AbortError') {
+          setPricingPreview(null);
+          setErrorMsg('Le calcul tarifaire central est momentanément indisponible. Réessayez.');
+        }
+      } finally {
+        if (!controller.signal.aborted) setIsCalculatingPrice(false);
+      }
+    }, 220);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [isOpen, sourcePrice, currency, quantity]);
+
   if (!isOpen) return null;
 
-  const rate = RATES_TO_TND[currency] || 4.00;
-  const convertedTND = Math.round(sourcePrice * rate * 100) / 100;
-  const serviceFeeTND = sourcePrice > 0 ? Math.round(Math.max(10, convertedTND * 0.08) * 100) / 100 : 0;
-  const shippingTND = sourcePrice > 0 ? 25.00 : 0;
-  const totalTND = sourcePrice > 0 ? Math.round((convertedTND + serviceFeeTND + shippingTND) * 100) / 100 : 0;
-  const orderTotalTND = Math.round(totalTND * quantity * 100) / 100;
+  const convertedTND = pricingPreview?.convertedPriceTND ?? 0;
+  const customsTND = pricingPreview?.customsFeeTND ?? 0;
+  const serviceFeeTND = pricingPreview?.serviceFeeTND ?? 0;
+  const shippingTND = pricingPreview?.shippingFeeTND ?? 0;
+  const orderTotalTND = pricingPreview?.totalTND ?? 0;
   const checkoutTotalTND = checkoutSummary?.totalTND ?? orderTotalTND;
 
   const handleFileUpload = async (file: File) => {
@@ -246,7 +320,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       imageUrl: product?.mainImage || '',
       sourcePrice: Number(sourcePrice),
       sourceCurrency: currency,
-      priceTND: totalTND,
+      priceTND: orderTotalTND,
       variant: variantNote.trim() || undefined,
       quantity,
     });
@@ -336,9 +410,9 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setFormData({
       name: '',
       phone: '',
-      city: TUNISIAN_GOVERNORATES_FR[0],
+      city: commerceConfig.governorates[0] || TUNISIAN_GOVERNORATES_FR[0],
       address: '',
-      paymentMethod: 'cod',
+      paymentMethod: (commerceConfig.paymentMethods[0] || 'COD').toLowerCase(),
     });
     setErrorMsg(null);
     setOrderResult(null);
@@ -598,17 +672,24 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <span className="font-semibold text-[#1d2130]">{convertedTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between text-[#6b7280]">
-                    <span>Dédouanement + expédition express :</span>
+                    <span>Dédouanement :</span>
+                    <span className="font-semibold text-[#1d2130]">+{customsTND.toFixed(2)} DT</span>
+                  </div>
+                  <div className="flex justify-between text-[#6b7280]">
+                    <span>Livraison :</span>
                     <span className="font-semibold text-[#1d2130]">+{shippingTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between text-[#6b7280]">
-                    <span>Frais de service & garantie (8% ou 10 DT) :</span>
+                    <span>Frais de service & garantie :</span>
                     <span className="font-semibold text-[#1d2130]">+{serviceFeeTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200 font-extrabold text-sm sm:text-base">
                     <span className="text-[#1d2130]">Total à régler :</span>
-                    <span className="text-[#673de6] text-lg font-black">{orderTotalTND.toFixed(2)} DT</span>
+                    <span className="text-[#673de6] text-lg font-black">
+                      {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
+                    </span>
                   </div>
+                  {pricingPreview && <p className="text-right text-[10px] text-[#9ca3af]">Tarification serveur v{pricingPreview.pricingVersion}</p>}
                 </div>
               </div>
 
@@ -696,7 +777,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                   className="w-full bg-[#f8f9fe] border border-slate-200 focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none font-semibold"
                 >
-                  {TUNISIAN_GOVERNORATES_FR.map((gov) => (
+                  {commerceConfig.governorates.map((gov) => (
                     <option key={gov} value={gov}>{gov}</option>
                   ))}
                 </select>
@@ -721,29 +802,25 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   <CreditCard className="w-3.5 h-3.5 text-[#673de6]" />
                   <span>Paiement :</span>
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, paymentMethod: 'cod' })}
-                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formData.paymentMethod === 'cod'
-                        ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
-                        : 'border-slate-200 bg-[#f8f9fe] text-slate-500'
-                    }`}
-                  >
-                    <span>À la livraison</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, paymentMethod: 'd17' })}
-                    className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                      formData.paymentMethod === 'd17'
-                        ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
-                        : 'border-slate-200 bg-[#f8f9fe] text-slate-500'
-                    }`}
-                  >
-                    <span>D17 / Flouci</span>
-                  </button>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                  {commerceConfig.paymentMethods.map((method) => {
+                    const value = method.toLowerCase();
+                    const label = method === 'COD' ? 'À la livraison' : method === 'D17' ? 'D17' : 'Flouci';
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, paymentMethod: value })}
+                        className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                          formData.paymentMethod === value
+                            ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
+                            : 'border-slate-200 bg-[#f8f9fe] text-slate-500'
+                        }`}
+                      >
+                        <span>{label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </form>
@@ -802,7 +879,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             <button
               type="button"
               onClick={() => void handleProceedToCheckoutForm()}
-              disabled={sourcePrice <= 0 || isAddingToCart}
+              disabled={sourcePrice <= 0 || !pricingPreview || isCalculatingPrice || isAddingToCart}
               className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-[#673de6] hover:bg-[#5025d1] text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isAddingToCart ? (

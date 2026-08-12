@@ -4,6 +4,7 @@ import { Navbar } from './components/Navbar';
 import { MenuDrawer } from './components/MenuDrawer';
 import { HeroSlider } from './components/HeroSlider';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
+import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
 import { ProductDrawer } from './components/ProductDrawer';
@@ -51,7 +52,7 @@ export const App: React.FC = () => {
     fetchCart();
   }, []);
 
-  const totalCartTND = cartItems.reduce((sum, item) => sum + item.priceTND * item.quantity, 0);
+  const totalCartTND = cartItems.reduce((sum, item) => sum + (item.lineTotalTND ?? item.priceTND * item.quantity), 0);
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const handleExtracted = (product: ScrapedProduct) => {
@@ -178,6 +179,9 @@ export const App: React.FC = () => {
 
       {/* Full-image fashion hero */}
       <HeroSlider />
+
+      {/* Backend-managed arrivals, stories, products, promotions and news */}
+      <PublicCmsSections />
 
       {/* Partner Brands Marquee Slider Container with generous spacing */}
       <PartnerBrandsSlider />

@@ -59,6 +59,8 @@ export interface CartItem {
   sourcePrice: number;
   sourceCurrency: string;
   priceTND: number;
+  lineTotalTND?: number;
+  pricingVersion?: number;
   variant: string | null;
   quantity: number;
   createdAt: string;

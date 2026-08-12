@@ -1,16 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Heart } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import ratesTransparencyImage from '../assets/rates-transparency.jpg';
 
-const EXCHANGE_RATES = [
-  '1 EUR = 4.00 DT',
-  '1 USD = 4.00 DT',
-  '100 JPY = 2.65 DT',
-  'Livraison dans les 24 gouvernorats',
-];
-
 export const Footer: React.FC = () => {
+  const [exchangeRates, setExchangeRates] = useState<string[]>(['Tarifs AYROVI en cours de synchronisation…']);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/public/commerce-config', { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok || !payload.success) throw new Error(payload.error || 'Configuration indisponible.');
+        const rates = payload.data?.pricing?.rates || {};
+        const lines = ['EUR', 'USD', 'GBP'].flatMap((currency) =>
+          Number.isFinite(Number(rates[currency])) ? [`1 ${currency} = ${Number(rates[currency]).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} DT`] : [],
+        );
+        if (Number.isFinite(Number(rates.JPY))) lines.push(`100 JPY = ${(Number(rates.JPY) * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} DT`);
+        const governorateCount = Array.isArray(payload.data?.governorates) ? payload.data.governorates.length : 0;
+        if (governorateCount) lines.push(`Livraison dans ${governorateCount} gouvernorats`);
+        setExchangeRates(lines.length ? lines : ['Tarifs momentanément indisponibles']);
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') setExchangeRates(['Tarifs momentanément indisponibles']);
+      });
+    return () => controller.abort();
+  }, []);
+
   return (
     <footer className="mt-16 border-t border-[#e2e8f0] bg-white pb-8 pt-12 text-[#6b7280]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -48,7 +64,7 @@ export const Footer: React.FC = () => {
               </h4>
 
               <ul className="mt-6 divide-y divide-white/30 border-y border-white/30 drop-shadow-md">
-                {EXCHANGE_RATES.map((rate) => (
+                {exchangeRates.map((rate) => (
                   <li key={rate} className="py-3 text-sm font-semibold tracking-wide text-white sm:text-base">
                     {rate}
                   </li>

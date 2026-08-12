@@ -6,29 +6,34 @@ import { QatafoDatabase as AyroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
+import { createAdminRouter } from './admin/routes';
+import { createPublicRouter } from './public/routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.disable('x-powered-by');
 app.use((_req, res, next) => {
-  res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors *; base-uri 'self'; form-action 'self'");
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), payment=()');
   next();
 });
 
+const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token'],
 }));
 app.use(express.json({ limit: '14mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Database, Scraper & Vision Engine
-const db = new AyroviDatabase();
+const databasePath = process.env.DATABASE_PATH || (process.env.NODE_ENV === 'test' ? ':memory:' : undefined);
+const db = new AyroviDatabase(databasePath);
 const scraper = new SmartLinkScraper();
 const visionExtractor = new VisualProductExtractor();
 
@@ -56,6 +61,8 @@ app.use('/api', (_req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+app.use('/api/admin', createAdminRouter(db));
+app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 
 // Healthcheck Route

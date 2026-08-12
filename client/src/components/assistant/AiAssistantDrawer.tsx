@@ -15,24 +15,63 @@ interface AiAssistantDrawerProps {
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS = 4;
 
-const createReply = (message: string, webSearchEnabled: boolean) => {
-  const text = message.toLowerCase();
-  if (text.includes('taux') || text.includes('change') || text.includes('euro') || text.includes('dollar')) {
-    return 'Le taux AYROVI est fixe et le montant final est affiché clairement avant la confirmation. Consultez la liste « Taux & Transparence » en bas de la page pour les valeurs à jour.';
+interface AssistantContext {
+  serverTime: string;
+  pricing: { rates: Record<string, number>; customsFeePercent: number; shippingFeeTND: number; serviceFeePercent: number; minimumServiceFeeTND: number; expressFeeTND: number };
+  facts: Record<string, any>;
+  arrivals: Array<{ name: string; type: string; expectedArrivalAt: string; description: string }>;
+  promotions: Array<{ name: string; description: string; promo_code?: string; ends_at: string }>;
+  brands: Array<{ name: string }>;
+  knowledge: Array<{ question: string; answer: string; keywords: string[] }>;
+}
+
+const includesAny = (text: string, words: string[]) => words.some((word) => text.includes(word));
+const createReply = (message: string, context: AssistantContext | null) => {
+  const text = message.toLocaleLowerCase('fr');
+  if (!context && includesAny(text, ['taux', 'change', 'euro', 'dollar', 'frais', 'service', 'douane', 'express', 'livraison', 'délai', 'paiement', 'arrivage', 'promotion', 'marque'])) {
+    return 'Je ne peux pas vérifier les informations commerciales AYROVI pour le moment. Merci de réessayer dans quelques instants afin que je vous communique uniquement les données publiées et à jour.';
   }
-  if (text.includes('shein') || text.includes('amazon') || text.includes('temu') || text.includes('aliexpress')) {
-    return 'Pour commander, ouvrez Lens depuis la barre inférieure, ajoutez une capture d’écran ou collez le lien du produit. AYROVI calcule ensuite votre total en Dinars Tunisiens.';
+  if (context) {
+    if (includesAny(text, ['taux', 'change', 'euro', 'eur', 'dollar', 'usd', 'livre', 'gbp', 'yen', 'jpy'])) {
+      const { rates } = context.pricing;
+      return `Taux AYROVI publiés : 1 EUR = ${rates.EUR} TND, 1 USD = ${rates.USD} TND, 1 GBP = ${rates.GBP} TND et 1 JPY = ${rates.JPY} TND. Le total calculé inclut les frais applicables et s’affiche avant confirmation.`;
+    }
+    if (includesAny(text, ['frais', 'service', 'douane', 'shipping']) || (text.includes('express') && includesAny(text, ['coût', 'cout', 'tarif', 'prix']))) {
+      const pricing = context.pricing;
+      return `Configuration publiée : douane ${pricing.customsFeePercent} %, livraison ${pricing.shippingFeeTND} TND, service ${pricing.serviceFeePercent} % avec un minimum de ${pricing.minimumServiceFeeTND} TND, et option Express ${pricing.expressFeeTND} TND lorsqu’elle s’applique.`;
+    }
+    if (includesAny(text, ['paiement', 'd17', 'flouci', 'cash', 'cod'])) {
+      const names: Record<string, string> = { COD: 'paiement à la livraison', D17: 'D17', FLOUCI: 'Flouci' };
+      const methods = Array.isArray(context.facts.payment_methods) ? context.facts.payment_methods.map((method: string) => names[method] || method) : [];
+      return methods.length ? `Moyens de paiement publiés : ${methods.join(', ')}.` : 'Les moyens de paiement ne sont pas renseignés actuellement.';
+    }
+    if (includesAny(text, ['livraison', 'délai', 'gouvernorat'])) {
+      const governorates = Array.isArray(context.facts.governorates) ? context.facts.governorates.length : 0;
+      return `Le délai indicatif publié est de ${context.facts.delivery_delay || 'non renseigné'}.${governorates ? ` AYROVI dessert ${governorates} gouvernorats.` : ''}`;
+    }
+    if (includesAny(text, ['arrivage', 'arrivée', 'arrive', 'express'])) {
+      const future = context.arrivals.filter((arrival) => new Date(arrival.expectedArrivalAt).getTime() > new Date(context.serverTime).getTime()).sort((a, b) => a.expectedArrivalAt.localeCompare(b.expectedArrivalAt));
+      if (!future.length) return 'Aucun prochain arrivage n’est publié actuellement.';
+      return future.slice(0, 3).map((arrival) => `${arrival.name} (${arrival.type === 'EXPRESS' ? 'Express' : 'Standard'}) : ${new Intl.DateTimeFormat('fr-TN', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(arrival.expectedArrivalAt))}.`).join(' ');
+    }
+    if (includesAny(text, ['promotion', 'promo', 'réduction', 'code'])) {
+      if (!context.promotions.length) return 'Aucune promotion active n’est publiée actuellement.';
+      return context.promotions.slice(0, 3).map((promotion) => `${promotion.name}${promotion.promo_code ? ` — code ${promotion.promo_code}` : ''} : ${promotion.description}`).join(' ');
+    }
+    if (includesAny(text, ['marque', 'brand'])) {
+      return context.brands.length ? `Marques partenaires publiées : ${context.brands.map((brand) => brand.name).join(', ')}.` : 'Aucune marque partenaire n’est publiée actuellement.';
+    }
+    const matchingKnowledge = context.knowledge.find((item) => item.keywords.some((keyword) => text.includes(String(keyword).toLocaleLowerCase('fr'))));
+    if (matchingKnowledge) return matchingKnowledge.answer;
   }
-  if (text.includes('livraison') || text.includes('délai') || text.includes('gouvernorat')) {
-    return 'AYROVI livre dans les 24 gouvernorats. Le délai indicatif est généralement de 5 à 8 jours ouvrés, selon la boutique et la disponibilité de l’article.';
+  if (includesAny(text, ['shein', 'amazon', 'temu', 'aliexpress', 'commander', 'capture', 'image', 'photo'])) {
+    return 'Pour préparer un achat, ouvrez Lens depuis la barre inférieure, ajoutez une capture d’écran ou collez le lien du produit. Le total en Dinars Tunisiens est ensuite calculé avant confirmation.';
   }
-  if (text.includes('commande') || text.includes('suivi') || text.includes('référence')) {
-    return 'Envoyez-moi votre référence AYR-2026-XXXX pour vérifier votre commande et obtenir les informations de suivi disponibles.';
+  if (includesAny(text, ['suivi', 'référence', 'statut'])) {
+    const contact = context?.facts.company_phone || context?.facts.company_email;
+    return `Pour protéger vos données, le suivi d’une commande nécessite une vérification par l’équipe AYROVI.${contact ? ` Contact publié : ${contact}.` : ''}`;
   }
-  if (text.includes('image') || text.includes('photo') || text.includes('capture')) {
-    return 'Image reçue. Pour extraire automatiquement le produit et son prix, utilisez également l’outil Lens accessible depuis la barre de navigation AYROVI.';
-  }
-  return `${webSearchEnabled ? 'Recherche Web activée. ' : ''}Je peux vous aider à calculer un prix, préparer un achat international ou suivre une commande AYROVI. Indiquez simplement la boutique, le produit ou votre référence.`;
+  return 'Je peux vous renseigner sur les taux, frais, arrivages, promotions, marques, livraisons et paiements publiés par AYROVI, ou vous guider pour utiliser Lens.';
 };
 
 export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({ isOpen, onClose }) => {
@@ -49,6 +88,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({ isOpen, on
   const [toast, setToast] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Record<string, FeedbackValue | undefined>>({});
+  const [commercialContext, setCommercialContext] = useState<AssistantContext | null>(null);
 
   const replyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -57,6 +97,16 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({ isOpen, on
   const pageRef = useRef<HTMLElement>(null);
 
   useBodyScrollLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let cancelled = false;
+    fetch('/api/public/assistant-context')
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((payload) => { if (!cancelled && payload.success && payload.data) setCommercialContext(payload.data); })
+      .catch(() => { if (!cancelled) setCommercialContext(null); });
+    return () => { cancelled = true; };
+  }, [isOpen]);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -79,7 +129,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({ isOpen, on
         {
           id: `assistant_${Date.now()}`,
           role: 'assistant',
-          text: createReply(sourceText, webSearchEnabled),
+          text: createReply(sourceText, commercialContext),
         },
       ]);
       setIsGenerating(false);
