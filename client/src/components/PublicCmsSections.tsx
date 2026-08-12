@@ -149,7 +149,7 @@ export const PublicCmsSections: React.FC = () => {
                 type="button"
                 onClick={() => setActivePage(definition.id)}
                 aria-label={`Ouvrir ${definition.label}`}
-                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-1 py-2 text-center text-[clamp(0.69rem,3.15vw,2rem)] font-black tracking-[-0.035em] text-[#050505] [font-weight:950] transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#673de6]"
+                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-[clamp(0.62rem,3.55vw,2rem)] font-black tracking-[-0.035em] text-[#050505] [font-weight:950] transition-colors hover:text-[#673de6] focus-visible:text-[#673de6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#673de6]"
               >
                 {definition.label}
               </button>
