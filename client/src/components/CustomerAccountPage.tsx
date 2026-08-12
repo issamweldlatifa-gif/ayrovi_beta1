@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, Heart, Home, Loader2, LogOut,
-  MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X,
+  MapPin, Package, Pencil, Phone, Plus, ShoppingBag, Trash2, User, X,
 } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -91,6 +91,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [developmentCode, setDevelopmentCode] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [phoneLinkOpen, setPhoneLinkOpen] = useState(false);
+  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(initialMessage || '');
   const [overview, setOverview] = useState<any>(null);
@@ -275,22 +276,39 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const unreadCount = useMemo(() => rows.filter((item) => !item.read_at).length, [rows]);
   if (!isOpen) return null;
 
+  const googleEnabled = Boolean(config?.google.enabled);
+  const googleStartHref = `/api/customer/auth/google/start?cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
+  const showPhoneLogin = phoneLinkOpen || phoneLoginOpen || (config !== null && !googleEnabled);
+
   const authPanel = (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-5 py-10 sm:px-8">
       <div className="mb-8 text-center"><span className="mx-auto grid h-16 w-16 place-items-center bg-[#673de6] text-white"><FigLogoIcon className="h-10 w-10" /></span><h1 className="mt-5 text-3xl font-black tracking-[-0.045em] text-[#17131f]">{phoneLinkOpen ? 'Vérifier mon téléphone' : 'Bienvenue chez AYROVI'}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{phoneLinkOpen ? 'Cette vérification sécurise vos commandes et votre historique.' : 'Votre panier, vos commandes et vos adresses sur tous vos appareils.'}</p></div>
       {error && <div className="mb-4 border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>}
-      {!challengeId ? <form onSubmit={sendCode} className="space-y-4">
-        <Field label="Numéro de téléphone tunisien"><div className="relative"><Phone className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#673de6]" /><input autoFocus type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} pl-11`} required /></div></Field>
-        <button disabled={authBusy || config?.phoneOtp.enabled === false} className="flex w-full items-center justify-center gap-2 bg-[#673de6] px-4 py-3.5 text-sm font-black text-white transition hover:bg-[#532bc8] disabled:cursor-not-allowed disabled:opacity-50">{authBusy && <Loader2 className="h-4 w-4 animate-spin" />}Recevoir mon code SMS</button>
-        {config?.phoneOtp.enabled === false && <p className="text-center text-xs font-semibold text-amber-700">L’envoi SMS doit être configuré sur le serveur.</p>}
-      </form> : <form onSubmit={verifyCode} className="space-y-4">
+      {/* Google est la méthode de connexion principale */}
+      {!challengeId && !phoneLinkOpen && <>
+        <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} className={`flex w-full items-center justify-center gap-3 border px-4 py-3.5 text-sm font-black transition ${googleEnabled ? 'border-[#17131f] bg-[#17131f] text-white shadow-lg hover:bg-[#2b2340]' : 'pointer-events-none border-slate-300 bg-white text-[#17131f] opacity-50'}`}><span className="grid h-6 w-6 place-items-center rounded-full bg-white font-black text-[#4285f4]">G</span>Continuer avec Google</a>
+        {config !== null && !googleEnabled && <p className="mt-2 text-center text-xs text-slate-400">Google sera disponible dès que ses identifiants seront ajoutés sur Render.</p>}
+        {googleEnabled && !showPhoneLogin && <p className="mt-2 text-center text-xs text-slate-400">Connexion instantanée et sécurisée avec votre compte Google.</p>}
+      </>}
+      {/* Connexion par téléphone : secondaire (optionnelle) */}
+      {!challengeId && showPhoneLogin && <>
+        {!phoneLinkOpen && <div className="my-6 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400"><span className="h-px flex-1 bg-slate-200" />ou<span className="h-px flex-1 bg-slate-200" /></div>}
+        <form onSubmit={sendCode} className="space-y-4">
+          <Field label="Numéro de téléphone tunisien"><div className="relative"><Phone className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#673de6]" /><input autoFocus type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} pl-11`} required /></div></Field>
+          <button disabled={authBusy || config?.phoneOtp.enabled === false} className="flex w-full items-center justify-center gap-2 bg-[#673de6] px-4 py-3.5 text-sm font-black text-white transition hover:bg-[#532bc8] disabled:cursor-not-allowed disabled:opacity-50">{authBusy && <Loader2 className="h-4 w-4 animate-spin" />}Recevoir mon code SMS</button>
+          {config?.phoneOtp.enabled === false && <p className="text-center text-xs font-semibold text-amber-700">L’envoi SMS doit être configuré sur le serveur.</p>}
+        </form>
+      </>}
+      {!challengeId && !phoneLinkOpen && googleEnabled && !showPhoneLogin && (
+        <button type="button" onClick={() => setPhoneLoginOpen(true)} className="mt-5 w-full py-2 text-xs font-black text-[#673de6]">Utiliser mon numéro de téléphone (SMS)</button>
+      )}
+      {challengeId && <form onSubmit={verifyCode} className="space-y-4">
         <div className="border border-[#dcd3f7] bg-[#f5f2ff] p-4 text-center"><p className="text-xs font-bold text-slate-500">Code envoyé au</p><strong className="mt-1 block text-base text-[#342d40]">{maskedPhone}</strong></div>
         <Field label="Code à 6 chiffres"><input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" className={`${inputClass} text-center font-mono text-2xl tracking-[0.35em]`} required /></Field>
         {developmentCode && <button type="button" onClick={() => setCode(developmentCode)} className="w-full border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">Mode développement — utiliser {developmentCode}</button>}
         <button disabled={authBusy || code.length !== 6} className="flex w-full items-center justify-center gap-2 bg-[#673de6] px-4 py-3.5 text-sm font-black text-white disabled:opacity-50">{authBusy && <Loader2 className="h-4 w-4 animate-spin" />}Valider et activer mon compte</button>
         <button type="button" onClick={() => { setChallengeId(''); setCode(''); setError(''); }} className="w-full py-2 text-xs font-black text-[#673de6]">Modifier le numéro</button>
       </form>}
-      {!phoneLinkOpen && <><div className="my-6 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400"><span className="h-px flex-1 bg-slate-200" />ou<span className="h-px flex-1 bg-slate-200" /></div><a href={config?.google.enabled ? `/api/customer/auth/google/start?cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}` : undefined} aria-disabled={!config?.google.enabled} className={`flex w-full items-center justify-center gap-3 border border-slate-300 bg-white px-4 py-3.5 text-sm font-black text-[#17131f] ${config?.google.enabled ? 'hover:border-[#673de6]' : 'pointer-events-none opacity-50'}`}><span className="grid h-6 w-6 place-items-center rounded-full border border-slate-200 font-black text-[#4285f4]">G</span>Continuer avec Google</a>{config?.google.enabled === false && <p className="mt-2 text-center text-xs text-slate-400">Google sera disponible dès que ses identifiants seront ajoutés sur Render.</p>}</>}
       {phoneLinkOpen && <button type="button" onClick={() => { setPhoneLinkOpen(false); setChallengeId(''); setError(''); }} className="mt-6 flex w-full items-center justify-center gap-2 py-2 text-xs font-black text-slate-500"><ArrowLeft className="h-4 w-4" />Retour au compte</button>}
       <p className="mt-7 text-center text-[11px] leading-5 text-slate-400">Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone ou message.</p>
     </div>
@@ -306,7 +324,6 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     ];
     return <div className="space-y-6">
       <section className="relative overflow-hidden bg-[#24104f] p-6 text-white sm:p-8"><div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-[#673de6]/70 blur-2xl" /><p className="relative text-xs font-black uppercase tracking-[0.18em] text-[#fbbf24]">Mon espace AYROVI</p><h2 className="relative mt-2 text-3xl font-black tracking-tight">Bonjour, {session!.account.displayName || 'Client AYROVI'}</h2><p className="relative mt-2 text-sm text-white/65">{money(overview?.totalSpent)} commandés au total</p></section>
-      {!session!.account.phoneVerified && <section className="flex flex-col gap-4 border border-amber-200 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between"><div className="flex gap-3"><ShieldCheck className="mt-0.5 h-6 w-6 shrink-0 text-amber-700" /><div><h3 className="font-black text-amber-900">Téléphone à vérifier</h3><p className="mt-1 text-xs leading-5 text-amber-800">Obligatoire pour confirmer une commande et retrouver l’historique associé à votre numéro.</p></div></div><button onClick={() => { setPhoneLinkOpen(true); setError(''); }} className="shrink-0 bg-amber-900 px-4 py-2.5 text-xs font-black text-white">Vérifier maintenant</button></section>}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{cards.map(({ label, value, icon: Icon, section: target }) => <button key={target} onClick={() => setSection(target)} className="border border-slate-200 bg-white p-4 text-left transition hover:border-[#673de6]"><Icon className="h-5 w-5 text-[#673de6]" /><strong className="mt-4 block text-2xl font-black text-[#17131f]">{value}</strong><span className="text-xs font-bold text-slate-500">{label}</span></button>)}</div>
       <section><div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-black text-[#17131f]">Commandes récentes</h3><button onClick={() => setSection('orders')} className="text-xs font-black text-[#673de6]">Tout voir</button></div>{overview?.recentOrders?.length ? <div className="divide-y divide-slate-100 border border-slate-200 bg-white">{overview.recentOrders.map((order: any) => <button key={order.id} onClick={() => openOrder(order.id)} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50"><div className="grid h-12 w-12 shrink-0 place-items-center bg-[#f0ebff] text-[#673de6]">{order.image_url ? <img src={order.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-5 w-5" />}</div><div className="min-w-0 flex-1"><strong className="block truncate text-sm text-[#17131f]">{order.order_number}</strong><span className="text-xs text-slate-400">{date(order.created_at)} · {order.item_count} article(s)</span></div><div className="text-right"><Status value={order.status} /><strong className="mt-1 block text-sm">{money(order.total_tnd)}</strong></div></button>)}</div> : <Empty icon={Package} title="Aucune commande" text="Vos futures commandes apparaîtront ici." />}</section>
     </div>;
