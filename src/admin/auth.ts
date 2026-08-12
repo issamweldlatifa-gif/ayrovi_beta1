@@ -48,11 +48,15 @@ function cookieValue(token: string, maxAgeSeconds: number): string {
 }
 
 export function ensureBootstrapAdmin(db: QatafoDatabase) {
-  const existing = db.get<{ count: number }>('SELECT COUNT(*) AS count FROM admin_users');
-  if ((existing?.count ?? 0) > 0) return;
-
   const email = (process.env.ADMIN_EMAIL || 'admin@ayrovi.tn').trim().toLowerCase();
   const configuredPassword = process.env.ADMIN_PASSWORD;
+  const forceReset = /^(1|true|yes|oui)$/i.test(String(process.env.ADMIN_BOOTSTRAP_RESET || '').trim());
+  const existing = db.get<{ count: number }>('SELECT COUNT(*) AS count FROM admin_users');
+  const hasAdmins = (existing?.count ?? 0) > 0;
+
+  // Comportement normal : ne créer un compte que s'il n'existe aucun administrateur.
+  if (hasAdmins && !forceReset) return;
+
   const password = configuredPassword || (process.env.NODE_ENV === 'production' ? '' : 'AyroviBeta2026!');
   if (!password) {
     console.warn('[Admin] Aucun compte créé. Définissez ADMIN_EMAIL et ADMIN_PASSWORD puis redémarrez.');
@@ -60,9 +64,25 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   }
   if (password.length < 12) throw new Error('ADMIN_PASSWORD must contain at least 12 characters');
   const now = new Date().toISOString();
+
+  // Mode réinitialisation d'urgence (ADMIN_BOOTSTRAP_RESET=yes) : ré-applique le couple
+  // ADMIN_EMAIL/ADMIN_PASSWORD sur le compte existant (ou le crée s'il n'existe pas).
+  // Utile quand la base persistante contient déjà un administrateur dont le mot de passe est inconnu.
+  if (hasAdmins && forceReset) {
+    const target = db.get<{ id: string }>('SELECT id FROM admin_users WHERE email=? LIMIT 1', email)
+      || db.get<{ id: string }>('SELECT id FROM admin_users ORDER BY created_at ASC LIMIT 1');
+    if (target) {
+      db.run('UPDATE admin_users SET email=?, password_hash=?, active=1, updated_at=? WHERE id=?',
+        email, hashPassword(password), now, target.id);
+      console.info(`[Admin] Mot de passe réinitialisé via ADMIN_BOOTSTRAP_RESET pour ${email}. Retirez cette variable après connexion.`);
+      return;
+    }
+  }
+
   db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
     VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
   if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@ayrovi.tn (changez ADMIN_PASSWORD avant production).');
+  if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }
 
 export function createAdminSession(db: QatafoDatabase, user: any) {
