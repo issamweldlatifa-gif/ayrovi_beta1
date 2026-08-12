@@ -58,9 +58,12 @@ La description complète des fichiers, rôles, données et routes se trouve dans
 
 ## Déploiement
 
-Le projet inclut `render.yaml`. Pour un autre hébergeur Node.js :
+Le projet inclut un Blueprint `render.yaml` prêt pour Render avec Node.js, healthcheck, plan Starter et disque persistant partagé par SQLite et les médias Admin. Consultez [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md) pour la procédure complète.
 
-- Build : `npm install && npm run build`
+Variables obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` et `DATABASE_PATH`. Le mot de passe Admin doit être unique et contenir au moins 12 caractères.
+
+Pour un autre hébergeur Node.js :
+
+- Build : `npm ci && npm run build`
 - Start : `npm start`
-- Stockage : volume persistant pour `DATABASE_PATH` et le dossier `data/uploads`
-- Variables obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`
+- Stockage : montez un volume persistant sur le dossier `data` afin de conserver SQLite et `data/uploads`

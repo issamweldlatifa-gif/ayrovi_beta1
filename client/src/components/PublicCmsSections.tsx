@@ -142,7 +142,7 @@ export const PublicCmsSections: React.FC = () => {
     <>
       <section id="arrivages" className="border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
         <nav className="mx-auto max-w-7xl overflow-x-auto px-5 py-7 [scrollbar-width:none] sm:px-8 sm:py-10 [&::-webkit-scrollbar]:hidden" aria-label="Contenus AYROVI">
-          <div className="flex w-max items-center gap-10 sm:gap-14 lg:mx-auto lg:gap-16">
+          <div className="flex w-full min-w-[700px] items-center justify-between gap-10">
             {pageDefinitions.map((definition) => (
               <button
                 key={definition.id}
