@@ -230,7 +230,7 @@
 @keyframes lens-sweep { 0%, 100% { transform: translateY(-100%); } 50% { transform: translateY(100%); } }
 @keyframes lens-corners { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: 1; transform: scale(1.015); } }
 
-/* AYROVIX V2 - Glassmorphism Laser & Particles */
+/* AYROVIX V2 - Glassmorphism Laser & Particles (legacy) + Google Lens Stars (new) */
 .lens-laser {
   top: 0;
   animation: lens-laser-move 2.4s ease-in-out infinite;
@@ -255,6 +255,29 @@
 @keyframes particles-drift {
   0% { transform: translateY(0); }
   100% { transform: translateY(-40px); }
+}
+
+/* Google Lens style stars - remplacent Xray violet */
+.lens-stars {
+  pointer-events: none;
+}
+.lens-star {
+  position: absolute;
+  font-size: 18px;
+  line-height: 1;
+  text-shadow: 0 0 8px currentColor, 0 0 16px currentColor;
+  animation: lens-star-twinkle 2.2s ease-in-out infinite;
+  user-select: none;
+}
+.lens-star.small {
+  font-size: 12px;
+  opacity: 0.9;
+}
+@keyframes lens-star-twinkle {
+  0%, 100% { transform: scale(0.8) rotate(0deg); opacity: 0.3; }
+  25% { transform: scale(1.2) rotate(15deg); opacity: 1; }
+  50% { transform: scale(0.9) rotate(-10deg); opacity: 0.7; }
+  75% { transform: scale(1.15) rotate(10deg); opacity: 1; }
 }
 
 /* Price pulse - Smart Price Anchor */

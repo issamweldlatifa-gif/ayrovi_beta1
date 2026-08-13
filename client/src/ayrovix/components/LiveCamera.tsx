@@ -168,22 +168,34 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </p>
       )}
 
-      {/* Viseur - AYROVIX Glassmorphism V2 */}
+      {/* Viseur - Google Lens Stars style (au lieu de Xray violet) */}
       <div className="pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">
         <div className="relative aspect-square w-full max-w-[300px]">
-          {/* Glass blur background */}
-          <div className="absolute inset-0 rounded-[28px] bg-white/5 backdrop-blur-[2px] border border-white/10" />
-          {/* Corners with purple glow */}
-          <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-[26px] border-l-[3.5px] border-t-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
-          <span className="absolute right-0 top-0 h-10 w-10 rounded-tr-[26px] border-r-[3.5px] border-t-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
-          <span className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-[26px] border-b-[3.5px] border-l-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
-          <span className="absolute bottom-0 right-0 h-10 w-10 rounded-br-[26px] border-b-[3.5px] border-r-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
-          {/* Laser line with purple gradient and particles */}
-          <div className="absolute inset-3 overflow-hidden rounded-[18px]">
-            <div className="lens-laser absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#7e57ff] to-transparent shadow-[0_0_8px_#673de6]" />
-            <div className="lens-particles absolute inset-0" />
+          {/* Glass blur background - plus subtil, comme Google Lens */}
+          <div className="absolute inset-0 rounded-[32px] bg-white/[0.04] backdrop-blur-[1px] border border-white/5" />
+          {/* Corners blancs épurés style Google Lens */}
+          <span className="absolute left-0 top-0 h-11 w-11 rounded-tl-[28px] border-l-[2.5px] border-t-[2.5px] border-white/90" />
+          <span className="absolute right-0 top-0 h-11 w-11 rounded-tr-[28px] border-r-[2.5px] border-t-[2.5px] border-white/90" />
+          <span className="absolute bottom-0 left-0 h-11 w-11 rounded-bl-[28px] border-b-[2.5px] border-l-[2.5px] border-white/90" />
+          <span className="absolute bottom-0 right-0 h-11 w-11 rounded-br-[28px] border-b-[2.5px] border-r-[2.5px] border-white/90" />
+          {/* Stars comme Google Lens - petites étoiles scintillantes */}
+          <div className="absolute inset-0 overflow-hidden rounded-[28px]">
+            {/* 8 étoiles colorées style Google Lens */}
+            <div className="lens-stars absolute inset-0">
+              <span className="lens-star" style={{top:'18%', left:'22%', animationDelay:'0s', color:'#4285F4'}}>✦</span>
+              <span className="lens-star" style={{top:'25%', left:'78%', animationDelay:'0.3s', color:'#EA4335'}}>✦</span>
+              <span className="lens-star" style={{top:'65%', left:'15%', animationDelay:'0.6s', color:'#FBBC05'}}>✦</span>
+              <span className="lens-star" style={{top:'72%', left:'82%', animationDelay:'0.9s', color:'#34A853'}}>✦</span>
+              <span className="lens-star small" style={{top:'42%', left:'8%', animationDelay:'1.2s', color:'#fff'}}>✧</span>
+              <span className="lens-star small" style={{top:'38%', left:'92%', animationDelay:'1.5s', color:'#fff'}}>✧</span>
+              <span className="lens-star small" style={{top:'12%', left:'50%', animationDelay:'0.4s', color:'#fff'}}>✧</span>
+              <span className="lens-star small" style={{top:'88%', left:'48%', animationDelay:'0.8s', color:'#fff'}}>✧</span>
+            </div>
+            {/* Scintillement central doux */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-2 w-2 rounded-full bg-white/70 blur-[1px] animate-pulse" />
+            </div>
           </div>
-          <span className="lens-scan absolute inset-3 opacity-60" />
         </div>
       </div>
 
