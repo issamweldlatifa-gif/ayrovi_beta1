@@ -73,14 +73,30 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   const [verifyingLink, setVerifyingLink] = useState(false);
   const previewRef = useRef<string | null>(null);
   const abortRef = useRef(0);
+  const requestAbortRef = useRef<AbortController | null>(null);
 
   useBodyScrollLock(isOpen);
 
-  useEffect(() => () => { if (previewRef.current) URL.revokeObjectURL(previewRef.current); }, []);
+  useEffect(() => () => {
+    requestAbortRef.current?.abort();
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+  }, []);
 
   if (!isOpen) return null;
 
+  const startRequest = () => {
+    requestAbortRef.current?.abort();
+    const controller = new AbortController();
+    requestAbortRef.current = controller;
+    return { controller, token: ++abortRef.current };
+  };
+  const finishRequest = (controller: AbortController) => {
+    if (requestAbortRef.current === controller) requestAbortRef.current = null;
+  };
+
   const reset = () => {
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
     abortRef.current += 1;
     setStage(cameraCapable ? 'live' : 'home');
     if (previewRef.current) { URL.revokeObjectURL(previewRef.current); previewRef.current = null; }
@@ -115,11 +131,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   const runImageAnalysis = async (fileOverride?: File) => {
     const file = fileOverride || imageFile;
     if (!file) return;
-    const token = ++abortRef.current;
+    const { controller, token } = startRequest();
     setStage('analyzing');
     setError(null);
     try {
-      const result = await analyzeImage(file);
+      const result = await analyzeImage(file, controller.signal);
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
       if (!usable && !result.ocrPrice) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
@@ -131,24 +147,26 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       });
       setStage('candidates');
     } catch (err: any) {
-      if (abortRef.current !== token) return;
+      if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
       fail(apiError?.code || 'UNKNOWN', apiError?.message || "L'analyse a échoué. Vérifiez votre connexion.");
+    } finally {
+      finishRequest(controller);
     }
   };
 
   const runUrlAnalysis = async (url: string, channel: 'url' | 'qr') => {
-    const token = ++abortRef.current;
+    const { controller, token } = startRequest();
     setStage('analyzing');
     setError(null);
     try {
-      const result = await analyzeUrl(url, channel);
+      const result = await analyzeUrl(url, channel, controller.signal);
       if (abortRef.current !== token) return;
       setUrlResult(result);
       setProduct(result.product);
       setStage('product');
     } catch (err: any) {
-      if (abortRef.current !== token) return;
+      if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
       fail(
         apiError?.code || 'UNKNOWN',
@@ -156,15 +174,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
           ? 'Impossible de récupérer toutes les informations automatiquement. Photographiez le produit ou sa page : AYROVIX le lira pour vous.'
           : (apiError?.message || "L'analyse du lien a échoué."),
       );
+    } finally {
+      finishRequest(controller);
     }
   };
 
   const runBarcodeAnalysis = async (code: string) => {
-    const token = ++abortRef.current;
+    const { controller, token } = startRequest();
     setStage('analyzing');
     setError(null);
     try {
-      const result = await analyzeBarcode(code);
+      const result = await analyzeBarcode(code, controller.signal);
       if (abortRef.current !== token) return;
       if (result.candidates.length) {
         setCandidatesView({ queryLabel: `Code-barres ${result.code}`, list: result.candidates, eventId: result.eventId });
@@ -174,27 +194,32 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
         setStage('barcode');
       }
     } catch (err: any) {
-      if (abortRef.current !== token) return;
+      if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
       fail(apiError?.code || 'UNKNOWN', apiError?.message || "Lecture du code impossible. Réessayez.");
+    } finally {
+      finishRequest(controller);
     }
   };
 
   const handleChooseCandidate = async (candidate: AyrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
     if (candidate.sourceUrl && candidate.kind !== 'catalog') {
-      const token = ++abortRef.current;
+      const { controller, token } = startRequest();
       setStage('analyzing');
       setError(null);
       try {
-        const result = await analyzeUrl(candidate.sourceUrl, 'url');
+        const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal);
         if (abortRef.current !== token) return;
         setUrlResult(result);
         setProduct(result.product);
         setStage('product');
         return;
-      } catch {
-        // fallback to candidate itself
+      } catch (error: any) {
+        if (controller.signal.aborted || error?.name === 'AbortError') return;
+        // Network/extraction failure: keep the already selected candidate.
+      } finally {
+        finishRequest(controller);
       }
     }
     setProduct(candidateToProduct(candidate));
@@ -203,9 +228,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const handleVerifyLink = async () => {
     if (!verifyLink.trim() || !product) return;
+    const { controller } = startRequest();
     setVerifyingLink(true);
     try {
-      const result = await analyzeUrl(verifyLink.trim(), 'url');
+      const result = await analyzeUrl(verifyLink.trim(), 'url', controller.signal);
       // Merge verified product data into current product, keeping calculated price if needed
       setProduct({
         ...result.product,
@@ -215,8 +241,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       setUrlResult(result);
       setVerifyLink('');
     } catch (e: any) {
-      alert(e?.message || 'Lien invalide');
+      if (!controller.signal.aborted && e?.name !== 'AbortError') alert(e?.message || 'Lien invalide');
     } finally {
+      finishRequest(controller);
       setVerifyingLink(false);
     }
   };

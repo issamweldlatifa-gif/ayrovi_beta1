@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Heart, MessageSquare, Package, ShieldCheck, Truck } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import ratesTransparencyImage from '../assets/rates-transparency.jpg';
+import { getCommerceConfig } from '../services/publicApi';
 
 interface FooterProps {
   onOpenAccount?: () => void;
@@ -31,11 +32,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
   const [footerAbout, setFooterAbout] = useState('La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence et sans carte bancaire internationale.');
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/public/commerce-config', { signal: controller.signal })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error || 'Configuration indisponible.');
+    let active = true;
+    getCommerceConfig()
+      .then((payload) => {
+        if (!active) return;
         const rates = payload.data?.pricing?.rates || {};
         const lines = ['EUR', 'USD', 'GBP'].flatMap((currency) =>
           Number.isFinite(Number(rates[currency])) ? [`1 ${currency} = ${Number(rates[currency]).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} DT`] : [],
@@ -48,10 +48,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
         if (ch && typeof ch === 'object') setChannels({ facebook: String(ch.facebook || ''), instagram: String(ch.instagram || ''), tiktok: String(ch.tiktok || ''), whatsapp: String(ch.whatsapp || '') });
         if (payload.data?.footerAbout) setFooterAbout(String(payload.data.footerAbout));
       })
-      .catch((error) => {
-        if (error?.name !== 'AbortError') setExchangeRates(['Tarifs momentanément indisponibles']);
-      });
-    return () => controller.abort();
+      .catch(() => { if (active) setExchangeRates(['Tarifs momentanément indisponibles']); });
+    return () => { active = false; };
   }, []);
 
   const socials = [

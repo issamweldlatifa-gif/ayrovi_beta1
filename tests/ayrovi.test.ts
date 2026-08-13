@@ -236,6 +236,18 @@ describe('AYROVI platform', () => {
     expect(response.body.success).toBe(false);
   });
 
+  test('image extraction rejects spoofed image MIME and keeps healthcheck alive', async () => {
+    const response = await request(app)
+      .post('/api/extract-image')
+      .attach('image', Buffer.from('not-a-real-jpeg'), {
+        filename: 'payload.js',
+        contentType: 'image/jpeg',
+      });
+    expect(response.status).toBe(415);
+    expect(response.body.code).toBe('INVALID_IMAGE');
+    expect((await request(app).get('/api/health')).status).toBe(200);
+  });
+
   test('scraping blocks malformed and private service addresses', async () => {
     const malformed = await request(app).post('/api/scrape').send({ url: 'not-a-web-address' });
     expect(malformed.status).toBe(400);

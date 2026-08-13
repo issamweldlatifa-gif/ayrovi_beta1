@@ -1,25 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
-import { MenuDrawer } from './components/MenuDrawer';
 import { HeroSlider } from './components/HeroSlider';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
-import { ProductDrawer } from './components/ProductDrawer';
-import { LensLauncher } from './ayrovix/components/LensLauncher';
 import type { AyrovixOrderPayload } from './ayrovix/types';
-import { AiAssistantDrawer } from './components/assistant/AiAssistantDrawer';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
-import { CartDrawer } from './components/CartDrawer';
-import { CheckoutModal } from './components/CheckoutModal';
-import { OrderSuccessModal } from './components/OrderSuccessModal';
 import { Footer } from './components/Footer';
-import { CustomerAccountPage } from './components/CustomerAccountPage';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct, CartItem, OrderResult, CustomerSession } from './types';
 import { getSessionId } from './utils/session';
 import { customerApi } from './customer/api';
+import { getCommerceConfig } from './services/publicApi';
+
+const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
+const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
+const LensLauncher = lazy(() => import('./ayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
+const AiAssistantDrawer = lazy(() => import('./components/assistant/AiAssistantDrawer').then((module) => ({ default: module.AiAssistantDrawer })));
+const CartDrawer = lazy(() => import('./components/CartDrawer').then((module) => ({ default: module.CartDrawer })));
+const CheckoutModal = lazy(() => import('./components/CheckoutModal').then((module) => ({ default: module.CheckoutModal })));
+const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
+const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
 export const App: React.FC = () => {
   const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
@@ -60,12 +62,12 @@ export const App: React.FC = () => {
     }
   };
 
-  // تطبيق ثيم المنصة من لوحة التطوير (ألوان/تدرج/خط) في وقت التشغيل
+  // تطبيق ثيم المنصة من طلب configuration مشترك واحد.
   useEffect(() => {
-    const controller = new AbortController();
-    fetch('/api/public/commerce-config', { signal: controller.signal })
-      .then(async (response) => {
-        const payload = await response.json();
+    let active = true;
+    getCommerceConfig()
+      .then((payload) => {
+        if (!active) return;
         const theme = payload?.data?.theme;
         if (!theme || typeof theme !== 'object' || !theme.primary) return;
         const root = document.documentElement;
@@ -82,7 +84,7 @@ export const App: React.FC = () => {
         root.style.setProperty('--ayrovi-font', fonts[String(theme.font)] || fonts.jakarta);
       })
       .catch(() => undefined);
-    return () => controller.abort();
+    return () => { active = false; };
   }, []);
 
   useEffect(() => {
@@ -292,10 +294,11 @@ export const App: React.FC = () => {
       />
 
       {/* Sliding Side Menu Drawer */}
-      <MenuDrawer
-        isOpen={isMenuDrawerOpen}
-        onClose={() => setIsMenuDrawerOpen(false)}
-      />
+      {isMenuDrawerOpen && (
+        <Suspense fallback={null}>
+          <MenuDrawer isOpen onClose={() => setIsMenuDrawerOpen(false)} />
+        </Suspense>
+      )}
 
       {/* Full-image fashion hero */}
       <HeroSlider />
@@ -331,75 +334,96 @@ export const App: React.FC = () => {
       />
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}
-      <ProductDrawer
-        isOpen={isProductDrawerOpen}
-        product={extractedProduct}
-        onClose={() => setIsProductDrawerOpen(false)}
-        onAddToCart={handleAddToCart}
-        onExtracted={handleExtracted}
-        onNewClientOrder={handleNewClientOrder}
-        onOrderComplete={() => setCartItems([])}
-        onCheckoutRequested={handleProceedToCheckout}
-      />
+      {isProductDrawerOpen && (
+        <Suspense fallback={null}>
+          <ProductDrawer
+            isOpen
+            product={extractedProduct}
+            onClose={() => setIsProductDrawerOpen(false)}
+            onAddToCart={handleAddToCart}
+            onExtracted={handleExtracted}
+            onNewClientOrder={handleNewClientOrder}
+            onOrderComplete={() => setCartItems([])}
+            onCheckoutRequested={handleProceedToCheckout}
+          />
+        </Suspense>
+      )}
 
       {/* Modular AYROVI assistant interface */}
-      <AiAssistantDrawer
-        isOpen={isAiDrawerOpen}
-        onClose={() => setIsAiDrawerOpen(false)}
-      />
+      {isAiDrawerOpen && (
+        <Suspense fallback={null}>
+          <AiAssistantDrawer isOpen onClose={() => setIsAiDrawerOpen(false)} />
+        </Suspense>
+      )}
 
       {/* Slide-in Cart Drawer */}
       {/* AYROVIX Lens — expérience caméra mobile-first (au-dessus du système existant) */}
-      <LensLauncher
-        isOpen={isLensOpen}
-        onClose={() => setIsLensOpen(false)}
-        onOrder={handleAyrovixOrder}
-      />
+      {isLensOpen && (
+        <Suspense fallback={null}>
+          <LensLauncher isOpen onClose={() => setIsLensOpen(false)} onOrder={handleAyrovixOrder} />
+        </Suspense>
+      )}
 
-      <CartDrawer
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        items={cartItems}
-        totalTND={totalCartTND}
-        onUpdateQuantity={handleUpdateQuantity}
-        onRemoveItem={handleRemoveItem}
-        onProceedToCheckout={handleProceedToCheckout}
-      />
+      {isCartOpen && (
+        <Suspense fallback={null}>
+          <CartDrawer
+            isOpen
+            onClose={() => setIsCartOpen(false)}
+            items={cartItems}
+            totalTND={totalCartTND}
+            onUpdateQuantity={handleUpdateQuantity}
+            onRemoveItem={handleRemoveItem}
+            onProceedToCheckout={handleProceedToCheckout}
+          />
+        </Suspense>
+      )}
 
       {/* Checkout Modal */}
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        onClose={() => setIsCheckoutOpen(false)}
-        totalTND={totalCartTND}
-        itemCount={totalCartCount}
-        customerSession={customerSession}
-        onRequireAuthentication={() => {
-          setIsCheckoutOpen(false);
-          setResumeCheckoutAfterAuth(true);
-          setAccountMessage('Connectez-vous pour confirmer la commande.');
-          setIsAccountOpen(true);
-        }}
-        onOrderSuccess={handleOrderSuccess}
-      />
+      {isCheckoutOpen && (
+        <Suspense fallback={null}>
+          <CheckoutModal
+            isOpen
+            onClose={() => setIsCheckoutOpen(false)}
+            totalTND={totalCartTND}
+            itemCount={totalCartCount}
+            customerSession={customerSession}
+            onRequireAuthentication={() => {
+              setIsCheckoutOpen(false);
+              setResumeCheckoutAfterAuth(true);
+              setAccountMessage('Connectez-vous pour confirmer la commande.');
+              setIsAccountOpen(true);
+            }}
+            onOrderSuccess={handleOrderSuccess}
+          />
+        </Suspense>
+      )}
 
-      <CustomerAccountPage
-        isOpen={isAccountOpen}
-        session={customerSession}
-        loadingSession={isCustomerSessionLoading}
-        initialMessage={accountMessage}
-        onClose={() => { setIsAccountOpen(false); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
-        onSession={handleCustomerSession}
-        onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
-        onCartChanged={() => { void fetchCart(); }}
-        onOpenCart={() => { setIsAccountOpen(false); setIsCartOpen(true); }}
-      />
+      {isAccountOpen && (
+        <Suspense fallback={null}>
+          <CustomerAccountPage
+            isOpen
+            session={customerSession}
+            loadingSession={isCustomerSessionLoading}
+            initialMessage={accountMessage}
+            onClose={() => { setIsAccountOpen(false); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
+            onSession={handleCustomerSession}
+            onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
+            onCartChanged={() => { void fetchCart(); }}
+            onOpenCart={() => { setIsAccountOpen(false); setIsCartOpen(true); }}
+          />
+        </Suspense>
+      )}
 
       {/* Order Success Confetti Modal */}
-      <OrderSuccessModal
-        result={orderResult}
-        onClose={() => setOrderResult(null)}
-        onOpenAccount={() => { setOrderResult(null); setIsAccountOpen(true); }}
-      />
+      {orderResult && (
+        <Suspense fallback={null}>
+          <OrderSuccessModal
+            result={orderResult}
+            onClose={() => setOrderResult(null)}
+            onOpenAccount={() => { setOrderResult(null); setIsAccountOpen(true); }}
+          />
+        </Suspense>
+      )}
 
     </div>
   );

@@ -19,18 +19,19 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload.data as T;
 }
 
-export async function analyzeImage(file: File): Promise<AyrovixImageResult> {
+export async function analyzeImage(file: File, signal?: AbortSignal): Promise<AyrovixImageResult> {
   const body = new FormData();
   body.append('image', file, file.name || 'ayrovix.jpg');
-  const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body });
+  const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, signal });
   return parseResponse<AyrovixImageResult>(response);
 }
 
-export async function analyzeUrl(url: string, channel: 'url' | 'qr'): Promise<AyrovixUrlResult> {
+export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal): Promise<AyrovixUrlResult> {
   const response = await fetch('/api/ayrovix/analyze-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, channel }),
+    signal,
   });
   return parseResponse<AyrovixUrlResult>(response);
 }
@@ -46,11 +47,12 @@ export function markChosen(eventId: string): void {
 }
 
 /** Recherche par code-barres (EAN/UPC) lu en direct. */
-export async function analyzeBarcode(code: string): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+export async function analyzeBarcode(code: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-barcode', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ code }),
+    signal,
   });
   return parseResponse(response);
 }

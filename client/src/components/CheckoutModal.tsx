@@ -4,6 +4,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CustomerAddress, CustomerInfo, CustomerSession, OrderResult } from '../types';
 import { getSessionId } from '../utils/session';
 import { customerApi } from '../customer/api';
+import { getCommerceConfig } from '../services/publicApi';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -70,15 +71,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const controller = new AbortController();
+    let active = true;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !isLoading) onClose();
     };
     document.addEventListener('keydown', handleKeyDown);
-    fetch('/api/public/commerce-config', { signal: controller.signal })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error || 'Configuration indisponible.');
+    getCommerceConfig()
+      .then((payload) => {
+        if (!active) return;
         const configuredGovernorates = Array.isArray(payload.data?.governorates) && payload.data.governorates.length
           ? payload.data.governorates.map(String)
           : TUNISIAN_GOVERNORATES_FR;
@@ -109,7 +109,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         if (fetchError?.name !== 'AbortError') console.warn('[Checkout Config Error]', fetchError);
       });
     return () => {
-      controller.abort();
+      active = false;
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, isLoading, onClose]);

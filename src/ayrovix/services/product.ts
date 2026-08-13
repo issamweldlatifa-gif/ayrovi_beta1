@@ -1,39 +1,18 @@
-import { isIP } from 'node:net';
 import type { QatafoDatabase } from '../../db/database';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyrovixCandidate, AyrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
 import { catalogSearch, scoreCandidate, freeExternalSearch, serpSearch } from './search';
+import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 
 /**
  * AYROVIX · Product extraction layer V2 — Free Tier compatible.
- * Mode URL/QR : scraper first, fallback 100% gratuit (DuckDuckGo + catalogue) if Puppeteer fails on Render Free.
+ * Mode URL/QR : safe bounded HTML metadata fetch first, then catalogue/search fallback when merchant metadata is unavailable.
  */
 
 export class ExtractionFailedError extends Error { readonly code = 'EXTRACTION_FAILED'; }
 export class InvalidUrlError extends Error { readonly code = 'INVALID_URL'; }
-
-function isUnsafeHostname(rawHostname: string): boolean {
-  const hostname = rawHostname.toLowerCase().replace(/^\\[|\\]$/g, '').replace(/\\.$/, '');
-  if (
-    hostname === 'localhost' ||
-    hostname.endsWith('.localhost') ||
-    hostname.endsWith('.local') ||
-    hostname.endsWith('.internal') ||
-    hostname.endsWith('.lan')
-  ) return true;
-  const ipVersion = isIP(hostname);
-  if (ipVersion === 4) {
-    const [a, b] = hostname.split('.').map(Number);
-    if (a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254)) return true;
-  }
-  if (ipVersion === 6) {
-    const normalized = hostname.replace(/^0+/g, '') || '0';
-    if (normalized === '::1' || normalized.startsWith('fe80') || normalized.startsWith('fc') || normalized.startsWith('fd')) return true;
-  }
-  return false;
-}
 
 export function sanitizeProductUrl(raw: unknown): string | null {
   if (typeof raw !== 'string' || !raw.trim() || raw.length > 4096) return null;
@@ -137,6 +116,9 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
       return { product: toAyrovixProduct(db, scraped), alternates: all };
     }
   } catch (e) {
+    if (e instanceof UnsafeUrlError || (e as any)?.code === 'UNSAFE_URL') {
+      throw new InvalidUrlError((e as Error).message);
+    }
     console.warn(`[AYROVIX scraper] Fallback for ${url} — ${e}`);
   }
 

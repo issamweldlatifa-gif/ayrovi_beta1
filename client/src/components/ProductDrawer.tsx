@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct, CustomerInfo, OrderResult } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { getSessionId } from '../utils/session';
+import { getCommerceConfig } from '../services/publicApi';
 
 interface ProductDrawerProps {
   isOpen: boolean;
@@ -125,6 +126,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       setErrorMsg(null);
       setOrderResult(null);
       setCheckoutSummary(null);
+      setPreview(null);
       setStep(product ? 'details' : 'input');
       return;
     }
@@ -150,11 +152,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const controller = new AbortController();
-    fetch('/api/public/commerce-config', { signal: controller.signal })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error || 'Configuration indisponible.');
+    let active = true;
+    getCommerceConfig()
+      .then((payload) => {
+        if (!active) return;
         const governorates = Array.isArray(payload.data?.governorates) && payload.data.governorates.length
           ? payload.data.governorates.map(String)
           : TUNISIAN_GOVERNORATES_FR;
@@ -172,7 +173,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       .catch((error) => {
         if (error?.name !== 'AbortError') console.warn('[Commerce Config Error]', error);
       });
-    return () => controller.abort();
+    return () => { active = false; };
   }, [isOpen]);
 
   useEffect(() => {
@@ -232,6 +233,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setIsUploading(true);
     setErrorMsg(null);
     setPreview(URL.createObjectURL(file));
+    let keepPreview = false;
     try {
       const form = new FormData();
       form.append('image', file);
@@ -247,6 +249,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
         throw new Error(data.error || "Impossible d'extraire les données de la capture.");
       }
 
+      keepPreview = true;
       onExtracted(data.product);
       setStep('details');
     } catch (err: any) {
@@ -258,7 +261,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       if (activeRequestRef.current === controller) {
         activeRequestRef.current = null;
         setIsUploading(false);
-        setPreview(null);
+        if (!keepPreview) setPreview(null);
       }
     }
   };
@@ -622,8 +625,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             <div className="space-y-5">
               <div className="bg-surface border border-slate-200 rounded-2xl p-4 flex gap-4 items-center">
                 <div className="w-20 h-20 rounded-xl bg-white border border-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
-                  {product?.mainImage ? (
-                    <img src={product.mainImage} alt={title} className="w-full h-full object-contain" />
+                  {(uploadPreview || product?.mainImage) ? (
+                    <img src={uploadPreview || product?.mainImage || ''} alt={title} className="w-full h-full object-contain" />
                   ) : (
                     <PackageCheck className="h-7 w-7 text-brand" aria-hidden="true" />
                   )}

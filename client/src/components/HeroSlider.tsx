@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from './QatafoIcons';
 import heroHomme from '../assets/hero-homme.jpg';
 import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';
+import { getPublicHome } from '../services/publicApi';
 
 interface HeroSlide {
   id: string;
@@ -27,10 +28,9 @@ export const HeroSlider: React.FC = () => {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/public/hero-slides')
-      .then((response) => response.ok ? response.json() : Promise.reject())
+    getPublicHome()
       .then((payload) => {
-        if (!cancelled && payload.success && Array.isArray(payload.data) && payload.data.length) setManagedSlides(payload.data);
+        if (!cancelled && Array.isArray(payload.data?.hero) && payload.data.hero.length) setManagedSlides(payload.data.hero);
       })
       .catch(() => undefined);
     return () => { cancelled = true; };

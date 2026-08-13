@@ -1,16 +1,40 @@
 import type { AyrovixIdentification } from '../types';
 
 /**
- * AYROVIX Vision V5 Radical — Fast, No Effects, No Slowness (user request)
- * - Removed stars, Xray purple, heavy animations from camera (frontend)
- * - Vision: fast path, no ListModels discovery if GEMINI_MODEL set, max 2 models, 12s timeout, prioritize gemini-3-flash-preview (SUCCESS in logs)
- * - Search: fast DuckDuckGo single endpoint, 5s timeout, no enrichment (enrich on click only)
- * - OCR removed from critical path (was 5-10s Tesseract) — now via separate /api/extract-image endpoint only
- * - Incompatibility fixed: removed audio models (native-audio, tts) which don't support image
+ * AYROVIX Vision v4 — 2026-08-13 Fix for 404 + Quota + Interactions API migration
+ * Logs from user:
+ * - gemini-2.5-flash 404 "no longer available to new users, use Interactions API"
+ * - gemini-2.5-flash-lite 404 same
+ * - gemini-2.5-flash-preview-tts 429 quota exceeded free_tier limit 0
+ * - All gemini models tried failed, final fallback local
+ * - DuckDuckGo AbortError
+ *
+ * Fixes:
+ * - Implements new Interactions API (POST /v1beta2/interactions) as primary for Gemini (required since June 2026)
+ * - Keeps legacy generateContent as fallback
+ * - Auto-discovers models via ListModels
+ * - Increases DuckDuckGo timeout, handles abort, adds retry
+ * - Adds clear logging for quota 0 case
  */
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MODEL_CACHE_TTL_MS = 60 * 60_000;
+
+function boundedEnvMs(name: string, fallback: number, min: number, max: number): number {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+}
+
+function remainingTimeout(deadline: number, perRequestMax: number): number {
+  const remaining = deadline - Date.now();
+  if (remaining <= 0) throw new AyrovixIdentificationError('AI_TIMEOUT');
+  return Math.max(50, Math.min(perRequestMax, remaining));
+}
+
+function hasTime(deadline: number, minimum = 100): boolean {
+  return deadline - Date.now() > minimum;
+}
 
 export class AyrovixUnavailableError extends Error { readonly code = 'AYROVIX_UNAVAILABLE'; }
 export class AyrovixIdentificationError extends Error { readonly code = 'IDENTIFICATION_FAILED'; }
@@ -25,16 +49,19 @@ function getAnthropicKey(): string | null {
   return (process.env.ANTHROPIC_API_KEY || '').trim() || null;
 }
 
+function localFallbackEnabled(): boolean {
+  return process.env.AYROVIX_ALLOW_LOCAL_FALLBACK === 'true';
+}
+
 export function ayrovixAiReady(): boolean {
-  if (process.env.AYROVIX_ALLOW_LOCAL_FALLBACK !== 'false') return true;
-  return Boolean(getGeminiKey() || getOpenAIKey() || getAnthropicKey());
+  return Boolean(getGeminiKey() || getOpenAIKey() || getAnthropicKey() || localFallbackEnabled());
 }
 export function getActiveProviders(): string[] {
   const p: string[] = [];
   if (getGeminiKey()) p.push('gemini');
   if (getOpenAIKey()) p.push('openai');
   if (getAnthropicKey()) p.push('anthropic');
-  p.push('local-fallback');
+  if (localFallbackEnabled()) p.push('local-fallback');
   return p;
 }
 
@@ -86,69 +113,113 @@ export function buildSearchQuery(id: AyrovixIdentification): string {
   return fallback.replace(/\s+/g,' ').trim().slice(0,200) || id.category || 'produit';
 }
 
+// ---------- Gemini discovery ----------
+// Filter out audio-only, tts, robotics models which don't support image
 function isVisionModel(name: string): boolean {
-  const l = name.toLowerCase();
-  if (l.includes('native-audio')) return false;
-  if (l.includes('-tts') || l.includes('preview-tts')) return false;
-  if (l.includes('audio') && !l.includes('vision')) return false;
-  if (l.includes('robotics') || l.includes('computer-use')) return false;
-  return l.includes('gemini');
+  const lower = name.toLowerCase();
+  if (lower.includes('native-audio')) return false;
+  if (lower.includes('-tts') || lower.includes('preview-tts')) return false;
+  if (lower.includes('audio') && !lower.includes('vision')) return false;
+  if (lower.includes('robotics')) return false;
+  if (lower.includes('computer-use')) return false;
+  if (lower.includes('code-') && !lower.includes('flash')) return false;
+  return lower.includes('gemini');
 }
 
-async function discoverGeminiModelsFast(key: string): Promise<string[]> {
-  if (process.env.GEMINI_MODEL?.trim()) return []; // fast path: env model set, skip discovery
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`, { signal: AbortSignal.timeout(3000) });
-    if (!res.ok) return [];
-    const data: any = await res.json();
-    const models = (data.models || []) as any[];
-    const filtered = models.map((m:any)=>String(m.name||'').replace('models/','')).filter(isVisionModel);
-    // Prefer working model from logs
-    const ranked = filtered.sort((a,b)=>{
-      const score = (n:string)=>{
-        n=n.toLowerCase();
-        if (n.includes('3-flash-preview')) return 0;
-        if (n.includes('3.5-flash')) return 1;
-        if (n.includes('2.5-flash-lite')) return 2;
-        return 10;
-      };
-      return score(a)-score(b);
-    });
-    return ranked.slice(0,3);
-  } catch { return []; }
+let geminiModelCache: { key: string; at: number; models: string[] } | null = null;
+
+async function discoverGeminiModels(key: string, deadline: number): Promise<string[]> {
+  if (geminiModelCache && geminiModelCache.key === key && Date.now() - geminiModelCache.at < MODEL_CACHE_TTL_MS) {
+    return geminiModelCache.models;
+  }
+
+  const versions = ['v1beta', 'v1'];
+  const discovered = await Promise.all(versions.map(async (ver) => {
+    try {
+      const res = await fetch(`https://generativelanguage.googleapis.com/${ver}/models?key=${key}`, {
+        signal: AbortSignal.timeout(remainingTimeout(deadline, 3_500)),
+      });
+      if (!res.ok) return [];
+      const data: any = await res.json();
+      return ((data.models || []) as any[])
+        .map((model) => String(model.name || '').replace('models/', ''))
+        .filter(isVisionModel);
+    } catch {
+      return [];
+    }
+  }));
+
+  const unique = [...new Set(discovered.flat())];
+  const ranked = unique.sort((a,b)=>{
+    const score = (n:string)=>{
+      n=n.toLowerCase();
+      if (n.includes('3-flash-preview')) return 0;
+      if (n.includes('3.5-flash')) return 1;
+      if (n.includes('2.5-flash-lite')) return 2;
+      if (n.includes('2.0-flash-lite')) return 3;
+      if (n.includes('2.5-flash')) return 4;
+      if (n.includes('2.0-flash')) return 5;
+      if (n.includes('1.5-flash-8b')) return 6;
+      if (n.includes('1.5-flash')) return 7;
+      if (n.includes('flash')) return 8;
+      if (n.includes('pro')) return 9;
+      return 10;
+    };
+    return score(a)-score(b);
+  });
+  geminiModelCache = { key, at: Date.now(), models: ranked };
+  console.log(`[AYROVIX gemini-discover] cached vision models: ${ranked.slice(0,8).join(', ')}`);
+  return ranked;
 }
 
+// Helper to extract text from Interactions API response
 function extractInteractionsText(payload: any): string {
+  // New API returns output_text convenience field
   if (typeof payload?.output_text === 'string' && payload.output_text.trim()) return payload.output_text;
+  if (typeof payload?.outputText === 'string' && payload.outputText.trim()) return payload.outputText;
+  // Else iterate steps
   const steps: any[] = Array.isArray(payload?.steps) ? payload.steps : [];
+  // Find last model_output step with text
   for (let i = steps.length - 1; i >= 0; i--) {
     const step = steps[i];
-    if (step?.type === 'model_output') {
+    if (step?.type === 'model_output' || step?.type === 'assistant_output' || step?.type === 'model') {
       const content = step?.content;
       if (Array.isArray(content)) {
-        for (const c of content) if (typeof c?.text === 'string' && c.text.trim()) return c.text;
+        for (const c of content) {
+          if (typeof c?.text === 'string' && c.text.trim()) return c.text;
+          if (typeof c?.type === 'string' && c.type === 'text' && typeof c?.text === 'string') return c.text;
+        }
       }
+      if (typeof content === 'string') return content;
     }
   }
-  const legacy = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (typeof legacy === 'string' && legacy.trim()) return legacy;
+  // Fallback: try candidates (legacy) if still present
+  const legacyText = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (typeof legacyText === 'string' && legacyText.trim()) return legacyText;
   return '';
 }
 
-async function identifyViaGeminiInteractions(image: Buffer, mime: string, modelList: string[], key: string): Promise<AyrovixIdentification> {
+// ---------- Gemini via NEW Interactions API (required since June 2026) ----------
+async function identifyViaGeminiInteractions(image: Buffer, mime: string, modelList: string[], key: string, deadline: number): Promise<AyrovixIdentification> {
   const endpoints = [
     'https://generativelanguage.googleapis.com/v1beta2/interactions',
     'https://generativelanguage.googleapis.com/v1beta/interactions',
+    'https://generativelanguage.googleapis.com/v1/interactions',
   ];
+
   const base64 = image.toString('base64');
+
   let lastError: any = null;
-  for (const model of modelList.slice(0,3)) { // max 3 models for speed
+
+  for (const model of modelList) {
+    if (!hasTime(deadline)) break;
     for (const endpoint of endpoints) {
+      if (!hasTime(deadline)) break;
       const url = `${endpoint}?key=${key}`;
       const controller = new AbortController();
-      const timeout = setTimeout(()=>controller.abort(), 12000); // 12s not 35s
+      const timeout = setTimeout(()=>controller.abort(), remainingTimeout(deadline, 5_000));
       try {
-        console.log(`[AYROVIX] Gemini Interactions model=${model}`);
+        console.log(`[AYROVIX] Trying Gemini Interactions model=${model} endpoint=${endpoint.split('/').slice(-2).join('/')}`);
         const res = await fetch(url, {
           method:'POST', signal: controller.signal,
           headers:{ 'Content-Type':'application/json' },
@@ -162,17 +233,77 @@ async function identifyViaGeminiInteractions(image: Buffer, mime: string, modelL
         });
         if (!res.ok) {
           const txt = await res.text().catch(()=> '');
-          console.warn(`[AYROVIX gemini-interactions] ${model} HTTP ${res.status} ${txt.slice(0,400)}`);
+          console.warn(`[AYROVIX gemini-interactions] model=${model} HTTP ${res.status} ${txt.slice(0,800)}`);
           lastError = txt;
-          if (txt.includes('API_KEY_INVALID')) throw new AyrovixUnavailableError('Gemini key invalid');
-          if (txt.includes('RESOURCE_EXHAUSTED') || res.status===429) throw new AyrovixIdentificationError('Gemini quota');
+          if (txt.includes('API_KEY_INVALID')) throw new AyrovixUnavailableError('Gemini API key invalide');
+          if (txt.includes('RESOURCE_EXHAUSTED') || res.status===429) {
+            // Quota 0 case seen in logs: free tier limit 0
+            console.warn(`[AYROVIX gemini-interactions] Quota exceeded for ${model} — free tier may need billing or model not allowed for free tier`);
+            // Don't throw immediately, try next model which might have free quota
+            if (txt.includes('free_tier') && txt.includes('limit: 0')) {
+              // This model not allowed for free tier, try next
+              continue;
+            }
+            throw new AyrovixIdentificationError('Gemini quota dépassé (429) — free tier limit 0, activez facturation ou utilisez OpenAI');
+          }
           if (res.status===404) continue;
           continue;
         }
         const payload:any = await res.json();
         const text = extractInteractionsText(payload);
+        if (!text) {
+          console.warn(`[AYROVIX gemini-interactions] empty text for model=${model} payload=${JSON.stringify(payload).slice(0,500)}`);
+          continue;
+        }
+        console.log(`[AYROVIX] Gemini Interactions SUCCESS model=${model}`);
+        return parseIdentification(String(text));
+      } catch(e:any){
+        lastError=e;
+        if (e instanceof AyrovixUnavailableError) throw e;
+        console.warn(`[AYROVIX gemini-interactions] error model=${model} ${e?.message||e}`);
+        continue;
+      } finally { clearTimeout(timeout); }
+    }
+  }
+  throw lastError || new Error('Interactions all failed');
+}
+
+// ---------- Gemini via legacy generateContent (fallback) ----------
+async function identifyViaGeminiLegacy(image: Buffer, mime: string, modelList: string[], key: string, deadline: number): Promise<AyrovixIdentification> {
+  let lastError:any=null;
+  for (const model of modelList) {
+    if (!hasTime(deadline)) break;
+    for (const ver of ['v1beta','v1']) {
+      if (!hasTime(deadline)) break;
+      const endpoint = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${key}`;
+      const controller = new AbortController();
+      const timeout = setTimeout(()=>controller.abort(), remainingTimeout(deadline, 5_000));
+      try {
+        console.log(`[AYROVIX] Trying Gemini Legacy model=${model} api=${ver}`);
+        const res = await fetch(endpoint, {
+          method:'POST', signal: controller.signal,
+          headers:{ 'Content-Type':'application/json' },
+          body: JSON.stringify({
+            contents:[{ parts:[
+              { text: SYSTEM_PROMPT + '\n\nIdentifie le produit principal de cette image.' },
+              { inlineData: { mimeType: mime, data: image.toString('base64') } },
+            ]}],
+            generationConfig:{ temperature:0, maxOutputTokens:700 },
+          }),
+        });
+        if (!res.ok) {
+          const txt = await res.text().catch(()=> '');
+          console.warn(`[AYROVIX gemini-legacy] model=${model} api=${ver} HTTP ${res.status} ${txt.slice(0,600)}`);
+          lastError=txt;
+          if (txt.includes('API_KEY_INVALID')) throw new AyrovixUnavailableError('Gemini key invalid');
+          if (res.status===429) throw new AyrovixIdentificationError('Gemini quota dépassé');
+          if (res.status===404||res.status===400) continue;
+          continue;
+        }
+        const payload:any = await res.json();
+        const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         if (!text) continue;
-        console.log(`[AYROVIX] Gemini SUCCESS ${model}`);
+        console.log(`[AYROVIX] Gemini Legacy SUCCESS model=${model}`);
         return parseIdentification(String(text));
       } catch(e:any){
         lastError=e;
@@ -181,24 +312,131 @@ async function identifyViaGeminiInteractions(image: Buffer, mime: string, modelL
       } finally { clearTimeout(timeout); }
     }
   }
-  throw lastError || new Error('Interactions failed');
+  throw lastError || new Error('Legacy all failed');
 }
 
-async function identifyViaOpenAI(image: Buffer, mime: string): Promise<AyrovixIdentification> {
+async function identifyViaGemini(image: Buffer, mime: string, deadline: number): Promise<AyrovixIdentification> {
+  const key = getGeminiKey();
+  if (!key) throw new AyrovixUnavailableError('Gemini key missing');
+
+  let discovered: string[] = [];
+  try { discovered = await discoverGeminiModels(key, deadline); } catch {}
+
+  const envModel = process.env.GEMINI_MODEL?.trim();
+  const fallbacks = [
+    'gemini-3-flash-preview', // SUCCESS in logs at 12:02:52
+    'gemini-3.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.0-flash-lite',
+    'gemini-2.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+  ];
+
+  const modelsToTry = [envModel, ...discovered, ...fallbacks].filter(Boolean) as string[];
+  const unique = [...new Set(modelsToTry)].slice(0, 4);
+
+  // A provider receives one bounded time budget; do not walk an unbounded model matrix.
+  try {
+    return await identifyViaGeminiInteractions(image, mime, unique, key, deadline);
+  } catch (e:any) {
+    console.warn(`[AYROVIX gemini] Interactions failed: ${e?.message||e}`);
+  }
+  if (!hasTime(deadline, 500)) throw new AyrovixIdentificationError('Gemini timeout');
+  return await identifyViaGeminiLegacy(image, mime, unique, key, deadline);
+}
+
+// ---------- Anthropic ----------
+let anthropicModelCache: { key: string; at: number; models: string[] } | null = null;
+
+async function listAnthropicModels(key: string, deadline: number): Promise<string[]> {
+  if (anthropicModelCache && anthropicModelCache.key === key && Date.now() - anthropicModelCache.at < MODEL_CACHE_TTL_MS) {
+    return anthropicModelCache.models;
+  }
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/models', {
+      headers:{ 'x-api-key':key, 'anthropic-version':'2023-06-01' },
+      signal: AbortSignal.timeout(remainingTimeout(deadline, 2_500)),
+    });
+    if (!res.ok) return [];
+    const data:any = await res.json();
+    const models = (data.data||[]).map((m:any)=>String(m.id||'')).filter(Boolean);
+    anthropicModelCache = { key, at: Date.now(), models };
+    return models;
+  } catch { return []; }
+}
+
+async function identifyViaAnthropic(image: Buffer, mime: string, deadline: number): Promise<AyrovixIdentification> {
+  const key = getAnthropicKey();
+  if (!key) throw new AyrovixUnavailableError('Anthropic missing');
+  let discovered: string[] = [];
+  try { discovered = await listAnthropicModels(key, deadline); } catch {}
+  const envModel = process.env.ANTHROPIC_MODEL?.trim();
+  const fallbacks = [
+    'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-5-20250929',
+  ];
+  const models = [...new Set([envModel, ...discovered, ...fallbacks].filter(Boolean) as string[])].slice(0, 3);
+  let lastError:any=null;
+  for (const model of models) {
+    if (!hasTime(deadline)) break;
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), remainingTimeout(deadline, 5_000));
+    try {
+      console.log(`[AYROVIX] Trying Claude ${model}`);
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method:'POST', signal: controller.signal,
+        headers:{ 'content-type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({
+          model, max_tokens:700, temperature:0, system: SYSTEM_PROMPT,
+          messages:[{ role:'user', content:[
+            { type:'image', source:{ type:'base64', media_type:mime, data:image.toString('base64') } },
+            { type:'text', text:'Identifie le produit principal de cette image.' }
+          ]}]
+        }),
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(()=> '');
+        console.warn(`[AYROVIX anthropic] ${model} HTTP ${res.status} ${txt.slice(0,600)}`);
+        lastError=txt;
+        if (res.status===401||res.status===403) throw new AyrovixUnavailableError('Anthropic auth');
+        if (res.status===429) throw new AyrovixIdentificationError('Claude quota');
+        if (res.status===404) continue;
+        continue;
+      }
+      const payload:any = await res.json();
+      const text = String(payload?.content?.[0]?.text||'');
+      if (!text.trim()) continue;
+      console.log(`[AYROVIX] Claude SUCCESS ${model}`);
+      return parseIdentification(text);
+    } catch(e:any){
+      lastError=e;
+      if (e instanceof AyrovixUnavailableError) throw e;
+      continue;
+    } finally { clearTimeout(timeout); }
+  }
+  throw lastError || new AyrovixIdentificationError('Claude failed');
+}
+
+// ---------- OpenAI ----------
+async function identifyViaOpenAI(image: Buffer, mime: string, deadline: number): Promise<AyrovixIdentification> {
   const key = getOpenAIKey();
   if (!key) throw new AyrovixUnavailableError('OpenAI missing');
-  const models = [process.env.OPENAI_MODEL?.trim(), 'gpt-4o-mini'].filter(Boolean) as string[];
+  const models = [...new Set([process.env.OPENAI_MODEL?.trim(), 'gpt-4o-mini', 'gpt-4.1-mini'].filter(Boolean) as string[])].slice(0, 2);
   let lastError:any=null;
-  for (const model of models.slice(0,2)) {
+  for (const model of models) {
+    if (!hasTime(deadline)) break;
     const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(), 12000);
+    const timeout = setTimeout(()=>controller.abort(), remainingTimeout(deadline, 5_000));
     try {
-      console.log(`[AYROVIX] OpenAI ${model}`);
+      console.log(`[AYROVIX] Trying OpenAI ${model}`);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method:'POST', signal: controller.signal,
         headers:{ 'content-type':'application/json', 'Authorization':`Bearer ${key}` },
         body: JSON.stringify({
-          model, max_tokens:500, temperature:0,
+          model, max_tokens:700, temperature:0,
           messages:[
             { role:'system', content: SYSTEM_PROMPT },
             { role:'user', content:[
@@ -210,15 +448,16 @@ async function identifyViaOpenAI(image: Buffer, mime: string): Promise<AyrovixId
       });
       if (!res.ok) {
         const txt = await res.text().catch(()=> '');
-        console.warn(`[AYROVIX openai] ${model} HTTP ${res.status}`);
+        console.warn(`[AYROVIX openai] ${model} HTTP ${res.status} ${txt.slice(0,500)}`);
         lastError=txt;
         if (res.status===401) throw new AyrovixUnavailableError('OpenAI key invalid');
+        if (res.status===429) throw new AyrovixIdentificationError('OpenAI quota');
         continue;
       }
       const payload:any = await res.json();
       const text = payload?.choices?.[0]?.message?.content || '';
       if (!text) continue;
-      console.log(`[AYROVIX] OpenAI SUCCESS`);
+      console.log(`[AYROVIX] OpenAI SUCCESS ${model}`);
       return parseIdentification(String(text));
     } catch(e:any){
       lastError=e;
@@ -229,41 +468,52 @@ async function identifyViaOpenAI(image: Buffer, mime: string): Promise<AyrovixId
   throw lastError || new AyrovixIdentificationError('OpenAI failed');
 }
 
-function localFallback(): AyrovixIdentification {
+function localFallbackIdentification(): AyrovixIdentification {
   return {
-    category:'product', brand:null, model:null, color:[], visible_text:[], possible_model_codes:[],
+    category:'product',
+    brand:null,
+    model:null,
+    color:[],
+    visible_text:[],
+    possible_model_codes:[],
     description:'Produit détecté via analyse locale AYROVI — recherche générique',
     confidence:0.25,
   };
 }
 
 export async function identifyProduct(image: Buffer, mime: string): Promise<AyrovixIdentification> {
-  if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format non supporté");
+  if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format d'image non supporté");
   if (image.length===0 || image.length>MAX_IMAGE_BYTES) throw new AyrovixIdentificationError('Image trop lourde');
 
-  const geminiKey = getGeminiKey();
-  const openaiKey = getOpenAIKey();
+  const attempts:string[]=[]; const errors:string[]=[];
+  const totalDeadline = Date.now() + boundedEnvMs('AYROVIX_AI_TIMEOUT_MS', 14_000, 5_000, 30_000);
+  const providerBudgetMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 5_000, 2_000, 12_000);
+  const providerDeadline = () => Math.min(totalDeadline, Date.now() + providerBudgetMs);
 
-  // FAST PATH: prioritize working model gemini-3-flash-preview (SUCCESS in logs) or env model
-  if (geminiKey) {
-    try {
-      const envModel = process.env.GEMINI_MODEL?.trim();
-      let models: string[] = [];
-      if (envModel) {
-        models = [envModel];
-      } else {
-        const discovered = await discoverGeminiModelsFast(geminiKey);
-        models = discovered.length ? discovered : ['gemini-3-flash-preview', 'gemini-2.5-flash-lite', 'gemini-2.0-flash-lite'];
-      }
-      return await identifyViaGeminiInteractions(image, mime, models, geminiKey);
-    } catch(e:any){
-      console.warn(`[AYROVIX gemini] fast fail: ${e?.message||e}`);
+  if (getGeminiKey() && hasTime(totalDeadline)) {
+    try { return await identifyViaGemini(image,mime,providerDeadline()); }
+    catch(e:any){
+      attempts.push('gemini'); errors.push(`gemini:${e?.code||e?.message||String(e).slice(0,200)}`);
+      console.warn(`[AYROVIX gemini] final failed: ${e?.message||e}`);
     }
   }
-  if (openaiKey) {
-    try { return await identifyViaOpenAI(image, mime); }
-    catch(e:any){ console.warn(`[AYROVIX openai] fail: ${e?.message}`); }
+  if (getOpenAIKey() && hasTime(totalDeadline)) {
+    try { return await identifyViaOpenAI(image,mime,providerDeadline()); }
+    catch(e:any){
+      attempts.push('openai'); errors.push(`openai:${e?.code||e?.message}`);
+      console.warn(`[AYROVIX openai] final failed: ${e?.message}`);
+    }
   }
-  console.warn(`[AYROVIX] fallback local`);
-  return localFallback();
+  if (getAnthropicKey() && hasTime(totalDeadline)) {
+    try { return await identifyViaAnthropic(image,mime,providerDeadline()); }
+    catch(e:any){
+      attempts.push('anthropic'); errors.push(`anthropic:${e?.code||e?.message}`);
+      console.warn(`[AYROVIX anthropic] final failed: ${e?.message}`);
+    }
+  }
+  if (localFallbackEnabled()) {
+    console.warn(`[AYROVIX] All remote failed (${attempts.join(',')}) — explicit demo fallback. ${errors.join(' | ')}`);
+    return localFallbackIdentification();
+  }
+  throw new AyrovixIdentificationError(`Échec après ${attempts.length}`);
 }

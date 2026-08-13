@@ -65,11 +65,16 @@ export function startCodeScan(
     if (stopped) return;
     if (nativeDetector === undefined) nativeDetector = await createNativeDetector();
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // Barcode/QR detection does not need a 1080p frame. Downscaling avoids a
+      // multi-megabyte getImageData allocation on every scan tick.
+      const scale = Math.min(1, 640 / video.videoWidth);
+      const targetWidth = Math.max(1, Math.round(video.videoWidth * scale));
+      const targetHeight = Math.max(1, Math.round(video.videoHeight * scale));
+      if (canvas.width !== targetWidth) canvas.width = targetWidth;
+      if (canvas.height !== targetHeight) canvas.height = targetHeight;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (ctx) {
-        ctx.drawImage(video, 0, 0);
+        ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
         let raw: string | null = null;
         if (nativeDetector) {
           try { raw = (await nativeDetector.detect(canvas))[0]?.rawValue || null; } catch { /* frame ignorée */ }
@@ -85,7 +90,7 @@ export function startCodeScan(
         }
       }
     }
-    timer = window.setTimeout(() => { void tick(); }, 240);
+    timer = window.setTimeout(() => { void tick(); }, nativeDetector ? 300 : 450);
   };
 
   void tick();

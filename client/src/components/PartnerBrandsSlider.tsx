@@ -14,6 +14,7 @@ import theNorthFaceLogo from '../assets/brands/the-north-face.jpg';
 import versaceLogo from '../assets/brands/versace.jpg';
 import yslLogo from '../assets/brands/ysl.jpg';
 import zaraLogo from '../assets/brands/zara.jpg';
+import { getPublicHome } from '../services/publicApi';
 
 interface BrandItem { id: string; name: string; category: string; logo: string; surface: 'dark' | 'light'; fallback: string; }
 const localLogos: Record<string, string> = {
@@ -35,8 +36,8 @@ export const PartnerBrandsSlider: React.FC = () => {
   const [failed, setFailed] = useState<Record<string, boolean>>({});
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/public/brands').then((response) => response.ok ? response.json() : Promise.reject()).then((payload) => {
-      if (!cancelled && payload.success && Array.isArray(payload.data) && payload.data.length) setManaged(payload.data);
+    getPublicHome().then((payload) => {
+      if (!cancelled && Array.isArray(payload.data?.brands) && payload.data.brands.length) setManaged(payload.data.brands);
     }).catch(() => undefined);
     return () => { cancelled = true; };
   }, []);

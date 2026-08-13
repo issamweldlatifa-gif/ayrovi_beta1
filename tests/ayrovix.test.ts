@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
-import { scoreCandidate } from '../src/ayrovix/services/search';
+import { duckDuckGoSearch, scoreCandidate } from '../src/ayrovix/services/search';
 import { getAyrovixStats } from '../src/ayrovix/events';
+import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
 
 /** PNG 1x1 minimal — multer valide le mimetype déclaré, pas le contenu. */
@@ -57,6 +60,24 @@ describe('AYROVIX Lens', () => {
       .attach('image', Buffer.from('plain text'), { filename: 'notes.txt', contentType: 'text/plain' });
     expect(wrongType.status).toBe(415);
     expect(wrongType.body.code).toBe('UNSUPPORTED_IMAGE');
+  });
+
+  test('rejette une fausse image sans écrire de fichier et garde le serveur disponible', async () => {
+    const uploadsDir = path.resolve(process.cwd(), 'data/uploads');
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    const before = fs.readdirSync(uploadsDir).sort();
+
+    const response = await request(app)
+      .post('/api/ayrovix/analyze-image')
+      .attach('image', Buffer.from("console.log('not an image')"), {
+        filename: 'payload.js',
+        contentType: 'image/jpeg',
+      });
+
+    expect(response.status).toBe(415);
+    expect(response.body.code).toBe('INVALID_IMAGE');
+    expect(fs.readdirSync(uploadsDir).sort()).toEqual(before);
+    expect((await request(app).get('/api/health')).status).toBe(200);
   });
 
   test('analyze-image sans clé serveur → 503 AYROVIX_UNAVAILABLE (la clé ne part jamais au client)', async () => {
@@ -120,6 +141,23 @@ describe('AYROVIX Lens', () => {
     }
   });
 
+  test('SSRF : bloque les IP privées issues du DNS et accepte une résolution publique', async () => {
+    expect(isUnsafeIpAddress('127.0.0.1')).toBe(true);
+    expect(isUnsafeIpAddress('169.254.169.254')).toBe(true);
+    expect(isUnsafeIpAddress('10.20.30.40')).toBe(true);
+    expect(isUnsafeIpAddress('2606:4700:4700::1111')).toBe(false);
+
+    await expect(resolveSafeHttpUrl('https://shop.example.org/product', async () => [
+      { address: '127.0.0.1', family: 4 },
+    ])).rejects.toMatchObject({ code: 'UNSAFE_URL' });
+
+    const publicTarget = await resolveSafeHttpUrl('https://shop.example.org/product', async () => [
+      { address: '1.1.1.1', family: 4 },
+      { address: '2606:4700:4700::1111', family: 6 },
+    ]);
+    expect(publicTarget.addresses).toEqual(['1.1.1.1', '2606:4700:4700::1111']);
+  });
+
   test('analyze-url : SSRF bloqué (localhost) et lien vide rejeté', async () => {
     const localhost = await request(app).post('/api/ayrovix/analyze-url').send({ url: 'http://localhost:3000/secret', channel: 'qr' });
     expect(localhost.status).toBe(400);
@@ -129,15 +167,25 @@ describe('AYROVIX Lens', () => {
     expect(empty.status).toBe(400);
   });
 
-  test('analyze-url : échec d\'extraction → 422 EXTRACTION_FAILED (fallback capture côté client)', async () => {
-    // domaine volontairement inatteignable/invalide côté scraper → message propre, aucune donnée devinée
+  test('analyze-url : rejette un domaine non résolvable avant tout scraping', async () => {
     const response = await request(app)
       .post('/api/ayrovix/analyze-url')
       .send({ url: 'https://produit-inexistant-ayrovix-test.invalid/page-produit' });
-    expect([422, 500]).toContain(response.status);
-    expect(response.body.code).toBe('EXTRACTION_FAILED');
-    expect(response.body.error).toContain('Impossible');
-  }, 30_000);
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_URL');
+  });
+
+  test('recherche externe respecte une deadline globale courte', async () => {
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: any = {}) => new Promise((_resolve, reject) => {
+      const abort = () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+      if (init.signal?.aborted) abort();
+      else init.signal?.addEventListener('abort', abort, { once: true });
+    })));
+    const startedAt = Date.now();
+    const result = await duckDuckGoSearch('deadline-test', 6, Date.now() + 150);
+    expect(result).toEqual([]);
+    expect(Date.now() - startedAt).toBeLessThan(700);
+  });
 
   test('analyze-barcode : validation stricte + réponse propre sans fournisseur de recherche', async () => {
     const invalid = await request(app).post('/api/ayrovix/analyze-barcode').send({ code: 'ABC-123' });

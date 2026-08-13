@@ -1,5 +1,6 @@
-import puppeteer, { Browser } from 'puppeteer';
+import { JSDOM } from 'jsdom';
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
+import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
 
 export class SmartLinkScraper {
   public static readonly RATES_TO_TND: Record<string, number> = {
@@ -24,22 +25,28 @@ export class SmartLinkScraper {
   }
 
   public async scrapeProduct(rawUrl: string): Promise<ScrapedProduct> {
-    const cleanUrl = this.cleanPastedUrl(rawUrl);
-    if (!cleanUrl) {
+    const cleanedInput = this.cleanPastedUrl(rawUrl);
+    if (!cleanedInput) {
       throw new Error('Veuillez fournir une URL de produit valide.');
     }
+    const safeTarget = await resolveSafeHttpUrl(cleanedInput);
+    const cleanUrl = safeTarget.url.toString();
 
     const store = this.detectStore(cleanUrl);
     const storeName = this.getStoreDisplayName(store, cleanUrl);
-    const currency = this.detectCurrencyFromUrl(cleanUrl);
+    let currency = this.detectCurrencyFromUrl(cleanUrl);
 
     const urlInfo = this.extractDeepUrlInfo(cleanUrl, store);
 
     let liveData: any = null;
     try {
-      liveData = await this.scrapeWithPuppeteer(cleanUrl, store);
+      liveData = await this.scrapeWithHttp(cleanUrl, store);
     } catch (err: any) {
       console.warn('[Live Scraper Note]', err.message);
+    }
+    const detectedLiveCurrency = String(liveData?.currency || '').toUpperCase();
+    if (detectedLiveCurrency && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
+      currency = detectedLiveCurrency;
     }
 
     const title = (liveData && liveData.title && !this.isBotBlocked(liveData.title))
@@ -224,78 +231,88 @@ export class SmartLinkScraper {
     };
   }
 
-  private async scrapeWithPuppeteer(url: string, storeType: StoreType): Promise<any> {
-    let browser: Browser | null = null;
+  private async scrapeWithHttp(url: string, storeType: StoreType): Promise<any> {
+    const response = await fetchSafeRemote(url, {
+      signal: AbortSignal.timeout(7_000),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+      },
+    });
+    if (!response.ok) throw new Error(`REMOTE_HTTP_${response.status}`);
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+      throw new Error('REMOTE_NOT_HTML');
+    }
+    const html = await readLimitedText(response, 2_000_000);
+    const dom = new JSDOM(html, { url });
     try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-gpu',
-          '--window-size=1280,800'
-        ]
+      const document = dom.window.document;
+      const meta = (selector: string) => document.querySelector(selector)?.getAttribute('content')?.trim() || '';
+      const text = (selector: string) => document.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim() || '';
+      const parsePrice = (raw: unknown): number => {
+        const normalized = String(raw || '').replace(/\s/g, '').replace(/[^0-9,.-]/g, '');
+        if (!normalized) return 0;
+        const decimal = normalized.includes(',') && !normalized.includes('.') ? normalized.replace(',', '.') : normalized.replace(/,/g, '');
+        const value = Number.parseFloat(decimal);
+        return Number.isFinite(value) && value > 0 && value < 1_000_000 ? value : 0;
+      };
+
+      let title = meta('meta[property="og:title"]') || meta('meta[name="twitter:title"]')
+        || text('#productTitle, h1.product-title-word-break, h1, [class*="product-intro__name"], [class*="goods-name"]')
+        || document.title;
+      title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '').replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
+
+      const jsonLd: any[] = [];
+      for (const node of Array.from(document.querySelectorAll('script[type="application/ld+json"]')).slice(0, 20)) {
+        try {
+          const parsed = JSON.parse(node.textContent || 'null');
+          if (Array.isArray(parsed)) jsonLd.push(...parsed);
+          else if (parsed?.['@graph'] && Array.isArray(parsed['@graph'])) jsonLd.push(...parsed['@graph']);
+          else if (parsed) jsonLd.push(parsed);
+        } catch { /* malformed merchant JSON-LD */ }
+      }
+      const productLd = jsonLd.find((item) => {
+        const type = item?.['@type'];
+        return type === 'Product' || (Array.isArray(type) && type.includes('Product'));
       });
+      const offers = Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers;
 
-      const page = await browser.newPage();
-      await page.setUserAgent(
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1'
+      const selectorPrice = storeType === 'amazon'
+        ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
+        : storeType === 'shein'
+          ? text('.original, .del-price, [style*="line-through"], [class*="price"]')
+          : text('[itemprop="price"], [class*="price"]');
+      const price = parsePrice(
+        meta('meta[property="product:price:amount"]') || meta('meta[itemprop="price"]')
+        || offers?.price || offers?.lowPrice || selectorPrice,
       );
+      const currency = String(
+        meta('meta[property="product:price:currency"]') || offers?.priceCurrency || '',
+      ).trim().toUpperCase();
 
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 10000 });
+      const imageCandidates = [
+        meta('meta[property="og:image"]'),
+        meta('meta[name="twitter:image"]'),
+        String(productLd?.image?.url || productLd?.image?.[0] || productLd?.image || ''),
+        document.querySelector('#landingImage, #main-image, img[data-old-hires], img[class*="main-img"]')?.getAttribute('data-old-hires') || '',
+        document.querySelector('#landingImage, #main-image, img[class*="main-img"]')?.getAttribute('src') || '',
+      ];
+      const images = [...new Set(imageCandidates.map((value) => {
+        try { return value ? new URL(value, url).toString() : ''; } catch { return ''; }
+      }).filter((value) => /^https?:\/\//i.test(value)))].slice(0, 6);
 
-      const data = await page.evaluate((store) => {
-        const titleEl = document.querySelector(
-          '#productTitle, h1.product-title-word-break, h1, [class*="product-intro__name"], [class*="goods-name"], meta[property="og:title"]'
-        );
-        let domTitle = titleEl?.textContent?.replace(/\s+/g, ' ')?.trim() || titleEl?.getAttribute('content') || document.title;
-        if (domTitle) {
-          domTitle = domTitle.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '').trim();
-          domTitle = domTitle.replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
-        }
-
-        let domPrice = 0;
-        let domCurrency = 'EUR';
-
-        if (store === 'amazon') {
-          const amzPriceEl = document.querySelector(
-            '.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice'
-          );
-          if (amzPriceEl && amzPriceEl.textContent) {
-            const clean = amzPriceEl.textContent.replace(/[^0-9.,]/g, '').replace(',', '.');
-            const num = parseFloat(clean);
-            if (!isNaN(num) && num > 0) domPrice = num;
-          }
-        } else if (store === 'shein') {
-          const originalPriceEl = document.querySelector('.original, .del-price, [style*="line-through"]');
-          if (originalPriceEl && originalPriceEl.textContent) {
-            const clean = originalPriceEl.textContent.replace(/[^0-9.,]/g, '').replace(',', '.');
-            const num = parseFloat(clean);
-            if (!isNaN(num) && num > 0) domPrice = num;
-          }
-        }
-
-        const imgs: string[] = [];
-        const mainImgEl = document.querySelector(
-          '#landingImage, #main-image, img[data-old-hires], img[class*="main-img"], img[class*="crop-image"], meta[property="og:image"]'
-        );
-        const mainSrc = mainImgEl?.getAttribute('src') || mainImgEl?.getAttribute('content') || mainImgEl?.getAttribute('data-old-hires');
-        if (mainSrc && mainSrc.startsWith('http')) imgs.push(mainSrc);
-
-        return {
-          title: domTitle,
-          price: domPrice,
-          currency: domCurrency,
-          images: imgs
-        };
-      }, storeType);
-
-      await browser.close();
-      return data;
-    } catch (err) {
-      if (browser) await browser.close();
-      throw err;
+      return {
+        title: title || String(productLd?.name || ''),
+        price,
+        currency,
+        images,
+        externalId: String(productLd?.sku || productLd?.productID || ''),
+        variants: { sizes: [], colors: [] },
+      };
+    } finally {
+      dom.window.close();
     }
   }
 

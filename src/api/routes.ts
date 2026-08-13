@@ -1,4 +1,3 @@
-import { isIP } from 'node:net';
 import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
@@ -7,42 +6,12 @@ import { VisualProductExtractor } from '../services/vision';
 import { AddToCartRequest } from '../types';
 import { calculatePrice } from '../services/pricing';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
+import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
+import { isUnsafeHostname, UnsafeUrlError } from '../services/safeUrl';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
 const SUPPORTED_STORES = new Set(['amazon', 'shein', 'temu', 'aliexpress', 'generic']);
-
-function isUnsafeHostname(rawHostname: string): boolean {
-  const hostname = rawHostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
-  if (
-    hostname === 'localhost' ||
-    hostname.endsWith('.localhost') ||
-    hostname.endsWith('.local') ||
-    hostname.endsWith('.internal') ||
-    hostname.endsWith('.lan')
-  ) return true;
-
-  const ipVersion = isIP(hostname);
-  if (ipVersion === 4) {
-    const [first, second] = hostname.split('.').map(Number);
-    return (
-      first === 0 || first === 10 || first === 127 || first >= 224 ||
-      (first === 100 && second >= 64 && second <= 127) ||
-      (first === 169 && second === 254) ||
-      (first === 172 && second >= 16 && second <= 31) ||
-      (first === 192 && second === 168) ||
-      (first === 198 && (second === 18 || second === 19))
-    );
-  }
-  if (ipVersion === 6) {
-    return (
-      hostname === '::' || hostname === '::1' ||
-      hostname.startsWith('fc') || hostname.startsWith('fd') ||
-      /^fe[89ab]/.test(hostname) || hostname.startsWith('::ffff:')
-    );
-  }
-  return false;
-}
 
 
 export function createApiRouter(
@@ -99,17 +68,17 @@ export function createApiRouter(
   router.post('/extract-image', upload.single('image'), async (req: Request, res: Response) => {
     try {
       let imageBuffer: Buffer | null = null;
-      let filename: string = 'screenshot.jpg';
+      let declaredMimeType = '';
 
       if (req.file) {
-        if (!req.file.mimetype.startsWith('image/')) {
-          return res.status(415).json({ success: false, error: 'Le fichier envoyé doit être une image.' });
-        }
         imageBuffer = req.file.buffer;
-        filename = req.file.originalname;
+        declaredMimeType = req.file.mimetype;
       } else if (typeof req.body?.imageBase64 === 'string') {
-        const match = req.body.imageBase64.match(/^data:image\/[A-Za-z0-9.+-]+;base64,([A-Za-z0-9+/=]+)$/);
-        if (match) imageBuffer = Buffer.from(match[1], 'base64');
+        const match = req.body.imageBase64.match(/^data:(image\/[A-Za-z0-9.+-]+);base64,([A-Za-z0-9+/=]+)$/);
+        if (match) {
+          declaredMimeType = match[1];
+          imageBuffer = Buffer.from(match[2], 'base64');
+        }
       }
 
       if (!imageBuffer || imageBuffer.length === 0 || imageBuffer.length > MAX_IMAGE_SIZE) {
@@ -119,7 +88,8 @@ export function createApiRouter(
         });
       }
 
-      const product = await visionExtractor.extractFromImage(imageBuffer, filename);
+      const normalized = await normalizeUploadedImage(imageBuffer, declaredMimeType);
+      const product = await visionExtractor.extractFromImage(normalized.buffer);
       const priced = calculatePrice(db.getPricingRules(), product.sourcePrice, product.sourceCurrency);
       const normalizedProduct = priced ? {
         ...product,
@@ -133,6 +103,9 @@ export function createApiRouter(
         product: normalizedProduct
       });
     } catch (err: any) {
+      if (err instanceof InvalidImageError || err?.code === 'INVALID_IMAGE') {
+        return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: err.message });
+      }
       console.error('[Vision Error]', err);
       return res.status(500).json({
         success: false,
@@ -180,6 +153,9 @@ export function createApiRouter(
         product: normalizedProduct
       });
     } catch (err: any) {
+      if (err instanceof UnsafeUrlError || err?.code === 'UNSAFE_URL') {
+        return res.status(400).json({ success: false, code: 'INVALID_URL', error: err.message });
+      }
       console.error('[Scraper Error]', err);
       return res.status(500).json({
         success: false,

@@ -4,6 +4,7 @@ import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';
 import { X } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
+import { getPublicHome } from '../services/publicApi';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
 type CmsPage = keyof HomeData;
@@ -74,8 +75,7 @@ export const PublicCmsSections: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     const startedAt = Date.now();
-    fetch('/api/public/home')
-      .then((response) => response.ok ? response.json() : Promise.reject())
+    getPublicHome()
       .then((payload) => {
         if (cancelled || !payload.success || !payload.data) return;
         setHome({ ...emptyHome, ...payload.data });

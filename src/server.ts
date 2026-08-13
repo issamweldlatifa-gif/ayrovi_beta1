@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
@@ -32,6 +33,10 @@ app.use((_req, res, next) => {
   }
   next();
 });
+
+// Compress JSON, JavaScript, CSS and other text responses. Hashed assets keep
+// their immutable cache policy while transferring at a fraction of the size.
+app.use(compression({ threshold: 1024 }));
 
 // ===== Limitation de débit (endpoints sensibles) — en mémoire, sans dépendance =====
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();

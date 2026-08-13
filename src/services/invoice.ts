@@ -1,14 +1,13 @@
 /**
- * AYROVI Invoice Service — توليد الفاتورة الإلكترونية (HTML → PDF عبر Chromium).
+ * AYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
  * - تُحفظ الفواتير في  <dataDir>/uploads/invoices/<invoice_number>.pdf
  *   (على Render: داخل القرص الدائم ayrovi-data).
- * - Puppeteer موجود أصلًا في المشروع (لقطة المنتجات) → لا تبعيات جديدة.
+ * - لا يعتمد التوليد على Chromium، لذلك يعمل بنفس النتيجة محليًا وفي الإنتاج.
  * - المسار يُبنى دائمًا من رقم الفاتورة المخزَّن في قاعدة البيانات (لا مدخلات مستخدم).
  */
 import fs from 'node:fs';
 import path from 'node:path';
-import puppeteer from 'puppeteer';
 import { QatafoDatabase } from '../db/database';
 import { writeSimplePdf, PdfLine } from './simplePdf';
 
@@ -170,7 +169,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 </body></html>`;
 }
 
-/** نموذج نصي مسطّح للفاتورة — يُستخدم في الخطة البديلة بدون Chromium */
+/** نموذج نصي مسطّح للفاتورة — المصدر الحتمي لمولد PDF المحلي بدون Chromium. */
 export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[] {
   const PURPLE: [number, number, number] = [0.4, 0.24, 0.9];
   const GREY: [number, number, number] = [0.42, 0.41, 0.48];
@@ -233,24 +232,8 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
   if (!order?.invoice_number) throw new Error('INVOICE_NUMBER_MISSING');
   const target = invoiceAbsolutePath(String(order.invoice_number));
 
-  try {
-    const html = buildInvoiceHtml(db, orderId);
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-    });
-    try {
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      await page.pdf({ path: target, format: 'A4', printBackground: true, margin: { top: '12mm', bottom: '12mm', left: '10mm', right: '10mm' } });
-    } finally {
-      await browser.close();
-    }
-  } catch (chromiumError: any) {
-    // خطة بديلة مضمونة: كاتب PDF داخلي بدون أي تبعيات نظام (بيئات بدون مكتبات Chromium)
-    console.warn('[Invoice] Chromium غير متاح — توليد PDF مبسّط محليًا:', chromiumError?.message?.split('\n')[0] || chromiumError);
-    writeSimplePdf(buildInvoiceLines(db, orderId), target);
-  }
+  // Deterministic local generation: no browser binary, sandbox flags or system libraries.
+  writeSimplePdf(buildInvoiceLines(db, orderId), target);
   db.run('UPDATE orders SET invoice_path=?, updated_at=? WHERE id=?', target, new Date().toISOString(), orderId);
   return target;
 }

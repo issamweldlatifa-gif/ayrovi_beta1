@@ -20,7 +20,7 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
 
 Les identifiants Google, le secret client et le jeton SMS restent exclusivement dans les variables Render. Ils ne doivent jamais être préfixés par `VITE_` ni ajoutés au code frontend.
 
-Le build exécute `npm ci --include=dev && npm run build`, puis le service démarre avec `npm start`. L’option `--include=dev` est nécessaire pendant le build Render afin d’installer Vite, TypeScript et les autres outils de compilation, même lorsque `NODE_ENV=production`. Le Blueprint fixe Node.js 22 et conserve le navigateur Puppeteer dans `node_modules/.cache/puppeteer` afin que l’extraction de liens reste disponible à l’exécution.
+Le build exécute `npm ci --include=dev && npm run build`, puis le service démarre avec `npm start`. L’option `--include=dev` est nécessaire pendant le build Render afin d’installer Vite, TypeScript et les autres outils de compilation, même lorsque `NODE_ENV=production`. Le Blueprint fixe Node.js 22. L’extraction de liens utilise désormais un fetch HTML borné et sécurisé (JSON-LD/Open Graph), sans navigateur Chromium ni cache Puppeteer.
 
 ## SQLite et fichiers persistants
 

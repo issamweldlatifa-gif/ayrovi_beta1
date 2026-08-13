@@ -16,8 +16,6 @@ services:
         value: production
       - key: NODE_VERSION
         value: 22.22.0
-      - key: PUPPETEER_CACHE_DIR
-        value: /opt/render/project/src/node_modules/.cache/puppeteer
       - key: DATABASE_PATH
         value: /opt/render/project/src/data/qatafo.sqlite
       - key: ADMIN_EMAIL
@@ -59,7 +57,15 @@ services:
       - key: OPENAI_MODEL
         value: gpt-4o-mini
       - key: AYROVIX_ALLOW_LOCAL_FALLBACK
-        value: true
+        value: false
+      - key: AYROVIX_AI_TIMEOUT_MS
+        value: 14000
+      - key: AYROVIX_PROVIDER_TIMEOUT_MS
+        value: 5000
+      - key: AYROVIX_OCR_TIMEOUT_MS
+        value: 7000
+      - key: AYROVIX_SEARCH_TIMEOUT_MS
+        value: 4000
       - key: SERPAPI_KEY
         sync: false
       - key: BRAVE_API_KEY

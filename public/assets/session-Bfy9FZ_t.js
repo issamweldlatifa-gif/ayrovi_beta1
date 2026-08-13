@@ -1,0 +1,1 @@
+var e=`ayrovi_session_id`,t=``,n=()=>{let e=globalThis.crypto?.randomUUID?.()??Math.random().toString(36).slice(2);return`ayrovi-${Date.now()}-${e}`},r=()=>{try{let t=window.localStorage.getItem(e);if(t)return t;let r=n();return window.localStorage.setItem(e,r),r}catch{return t||=n(),t}};export{r as t};

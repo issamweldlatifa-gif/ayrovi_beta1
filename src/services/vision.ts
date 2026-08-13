@@ -1,8 +1,68 @@
 import Tesseract from 'tesseract.js';
-import path from 'path';
-import fs from 'fs';
-import { randomUUID } from 'node:crypto';
 import { ScrapedProduct, StoreType } from '../types';
+
+let ocrWorkerPromise: ReturnType<typeof Tesseract.createWorker> | null = null;
+let ocrQueue: Promise<void> = Promise.resolve();
+let pendingOcrJobs = 0;
+const MAX_QUEUED_OCR_JOBS = 3;
+
+async function getOcrWorker() {
+  if (!ocrWorkerPromise) {
+    ocrWorkerPromise = Tesseract.createWorker('eng+fra', 1, {
+      logger: () => {},
+      // Never let a worker error become an uncaught process-level exception.
+      errorHandler: (error) => console.warn('[AYROVIX OCR worker]', error?.message || error),
+    }).then(async (worker) => {
+      await worker.setParameters({ tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, preserve_interword_spaces: '1' });
+      return worker;
+    });
+  }
+  return ocrWorkerPromise;
+}
+
+async function recognizeText(imageBuffer: Buffer): Promise<string> {
+  // Tests use the self-terminating helper so the suite never retains a worker thread.
+  if (process.env.NODE_ENV === 'test') {
+    const result = await Tesseract.recognize(imageBuffer, 'eng+fra', {
+      logger: () => {},
+      errorHandler: () => {},
+      tessedit_pageseg_mode: '11' as any,
+      preserve_interword_spaces: '1' as any,
+    } as any);
+    return result.data.text;
+  }
+  if (pendingOcrJobs >= MAX_QUEUED_OCR_JOBS) throw new Error('OCR_BUSY');
+  pendingOcrJobs += 1;
+  const job = ocrQueue.then(async () => {
+    const worker = await getOcrWorker();
+    const configuredTimeout = Number(process.env.AYROVIX_OCR_TIMEOUT_MS);
+    const timeoutMs = Number.isFinite(configuredTimeout)
+      ? Math.min(15_000, Math.max(2_000, configuredTimeout))
+      : 7_000;
+    let timeout: NodeJS.Timeout | undefined;
+    try {
+      const result = await Promise.race([
+        worker.recognize(imageBuffer),
+        new Promise<never>((_resolve, reject) => {
+          timeout = setTimeout(() => reject(new Error('OCR_TIMEOUT')), timeoutMs);
+        }),
+      ]);
+      return result.data.text;
+    } catch (error) {
+      await worker.terminate().catch(() => undefined);
+      ocrWorkerPromise = null;
+      throw error;
+    } finally {
+      if (timeout) clearTimeout(timeout);
+    }
+  });
+  ocrQueue = job.then(() => undefined, () => undefined);
+  try {
+    return await job;
+  } finally {
+    pendingOcrJobs -= 1;
+  }
+}
 
 export class VisualProductExtractor {
   public static readonly RATES_TO_TND: Record<string, number> = {
@@ -15,24 +75,10 @@ export class VisualProductExtractor {
     TND: 1.0
   };
 
-  public async extractFromImage(imageBuffer: Buffer, originalFilename?: string): Promise<ScrapedProduct> {
-    const tempDir = path.resolve(process.cwd(), 'data/uploads');
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
-    const fileExt = originalFilename ? path.extname(originalFilename) : '.jpg';
-    const filename = `shot_${randomUUID().substring(0, 8)}${fileExt || '.jpg'}`;
-    const filePath = path.join(tempDir, filename);
-
-    fs.writeFileSync(filePath, imageBuffer);
-
-    // OCR ajusté pour captures mobiles : texte épars, espaces préservés, langues eng+fra
-    const { data: { text } } = await Tesseract.recognize(filePath, 'eng+fra', {
-      logger: () => {},
-      tessedit_pageseg_mode: '11' as any, // PSM sparse text — idéal pour captures produits
-      preserve_interword_spaces: '1' as any,
-    } as any);
+  public async extractFromImage(imageBuffer: Buffer, _originalFilename?: string): Promise<ScrapedProduct> {
+    // The image is decoded and normalized before reaching this method. OCR runs
+    // directly from memory: Lens images are never written to the public uploads directory.
+    const text = await recognizeText(imageBuffer);
 
     const store = this.detectStoreFromText(text);
     const storeName = this.getStoreDisplayName(store);
@@ -52,8 +98,6 @@ export class VisualProductExtractor {
     const estimatedShippingTND = price > 0 ? 25.00 : 0;
     const totalPriceTND = price > 0 ? Math.round((convertedPriceTND + serviceFeeTND + estimatedShippingTND) * 100) / 100 : 0;
 
-    const imageUrl = `/uploads/${filename}`;
-
     return {
       id: 'vision_' + Date.now(),
       store,
@@ -64,8 +108,9 @@ export class VisualProductExtractor {
       description: isCartScreenshot
         ? `Total réel de la commande extrait depuis la capture du panier (${price} ${currency} = ${totalPriceTND} DT).`
         : `Article extrait avec le prix original (${price > 0 ? `${price} ${currency}` : 'À préciser'}). Vérifié par AYROVI.`,
-      images: [imageUrl],
-      mainImage: imageUrl,
+      // The client already owns a local preview. Do not persist or publish Lens uploads.
+      images: [],
+      mainImage: '',
       sourcePrice: price,
       sourceCurrency: currency,
       convertedPriceTND,
