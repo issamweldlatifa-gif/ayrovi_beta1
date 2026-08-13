@@ -123,12 +123,14 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       return [];
     }
 
+    const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
+    const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
     const params = new URLSearchParams({
       engine: 'google_lens',
       type: 'products',
       image_id: imageId,
       hl: 'fr',
-      country: (process.env.AYROVIX_LENS_COUNTRY || 'fr').trim().toLowerCase().slice(0, 2),
+      country,
       api_key: key,
     });
     const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {

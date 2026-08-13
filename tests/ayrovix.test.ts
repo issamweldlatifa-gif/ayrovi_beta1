@@ -150,6 +150,11 @@ describe('AYROVIX Lens', () => {
         currency: 'EUR',
         match: 99,
       });
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+
+      const cachedVisual = await serpApiVisualSearch(PNG_1PX, 8);
+      expect(cachedVisual).toEqual(visual);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
 
       fetchMock.mockClear();
       const candidates = await searchCandidates(db, NIKE_ID, 'Nike Air Max 95 DC9412-400', visual);
