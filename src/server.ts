@@ -7,6 +7,7 @@ import { QatafoDatabase as AyroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
+import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
 import { createCustomerRouter } from './customer/routes';
@@ -60,6 +61,7 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000)
 app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
+app.use('/api/ayrovix', rateLimit('ayrovix', 12, 10 * 60_000));
 
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
 app.use(cors({
@@ -103,6 +105,7 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 app.use('/api/admin', createAdminRouter(db));
+app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
 app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));

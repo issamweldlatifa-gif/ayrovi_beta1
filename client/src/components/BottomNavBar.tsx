@@ -4,10 +4,10 @@ import { AiLogoIcon, LensBoxIcon } from './Icons';
 
 interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
-  isProductDrawerOpen: boolean;
   cartCount: number;
   onToggleAiDrawer: () => void;
-  onToggleProductDrawer: () => void;
+  /** AYROVIX Lens — nouvelle expérience caméra (remplace l'ancien drawer Lens). */
+  onOpenLens: () => void;
   onScrollToTop: () => void;
   onOpenCart: () => void;
 }
@@ -18,10 +18,9 @@ const NAV_ICON = 'h-[22px] w-[22px]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   isAiDrawerOpen,
-  isProductDrawerOpen,
   cartCount,
   onToggleAiDrawer,
-  onToggleProductDrawer,
+  onOpenLens,
   onScrollToTop,
   onOpenCart,
 }) => {
@@ -93,14 +92,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
 
         <button
           type="button"
-          onClick={onToggleProductDrawer}
-          className={`${NAV_ITEM} ${
-            isProductDrawerOpen
-              ? 'bg-brand text-white shadow-sm'
-              : 'text-brand hover:bg-brand/5'
-          }`}
-          aria-label="Ouvrir Lens"
-          aria-pressed={isProductDrawerOpen}
+          onClick={onOpenLens}
+          className={`${NAV_ITEM} text-brand hover:bg-brand/5`}
+          aria-label="Ouvrir AYROVIX Lens"
         >
           <LensBoxIcon className={NAV_ICON} />
           <span>Lens</span>

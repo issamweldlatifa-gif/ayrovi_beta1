@@ -238,3 +238,8 @@
   animation: link-shimmer 1.4s linear infinite;
 }
 @keyframes link-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* AYROVIX Lens — montée plein écran façon caméra mobile */
+.ayrovix-sheet { animation: ayrovix-sheet-in 340ms cubic-bezier(.22, .61, .36, 1); }
+@keyframes ayrovix-sheet-in { from { opacity: 0; transform: translateY(4vh); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ayrovix-sheet, .lens-scan { animation: none !important; } }

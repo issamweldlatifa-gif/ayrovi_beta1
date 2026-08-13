@@ -39,3 +39,11 @@
 - Champ désormais éditable (prefill : téléphone de l'adresse enregistrée > téléphone du compte), validation client alignée serveur (8 chiffres, prefixe 2/4/5/7/9), codes `INVALID_PHONE` explicites côté API + matching client historique sur chiffres normalisés.
 - Emails admin via Nodemailer (MAIL_PROVIDER/MAIL_API_KEY/MAIL_FROM) avec repli console ; alerte à chaque capture d'acompte.
 - Env de test épinglé dans vitest.config.mts (admin email/password, OTP console) → tests déterministes sans .env. 32/32 verts. Déployé (commit 8333aaa).
+
+## AYROVIX Lens V1 (2026-08-13)
+- **Nouvelle feature au-dessus du système existant** (zéro casse : auth, panier, calculator, commandes, acompte 20%, preuves, admin, factures intacts).
+- Server `src/ayrovix/` : `services/ai.ts` (Claude Vision, clé ANTHROPIC_API_KEY server-side only, jamais de VITE_*), `services/search.ts` (fournisseurs interchangeables : catalogue AYROVI toujours actif + Google Shopping optionnel via SERPAPI_KEY ; scoring déterministe code>marque>modèle>couleurs), `services/product.ts` (URL → scraper existant, SSRF bloqué, jamais de données devinées), `services/currency.ts` (réutilise pricing_config versionné), `events.ts` (analytics anonymes).
+- API : POST /api/ayrovix/analyze-image (multer 6 Mo, JPEG/PNG/WebP/GIF), /analyze-url (canal url|qr), /choose ; rate-limit 12/10 min ; 503 AYROVIX_UNAVAILABLE sans clé.
+- Admin : GET /api/admin/ayrovix/stats (reports:read) + carte AYROVIX dans Rapports (analyses 7j, taux de correspondance, top marques/requêtes).
+- Client `client/src/ayrovix/` : LensLauncher (sheet plein écran, state machine home→preview→analyzing→candidates→product), LensCamera (capture=environment + fallback), LensUpload, QRScanner (BarcodeDetector natif + repli jsqr), ProductCandidates (plusieurs candidats, % match, jamais de réponse unique), ProductResult + ProductVariants. Commander → handleAddToCart existant → panier → checkout dépôt existant.
+- Env : ANTHROPIC_API_KEY / ANTHROPIC_MODEL / SERPAPI_KEY documentés dans .env.example. Tests 38/38 (image sans clé→503, mime→415, query builder, scoring, flux simulé end-to-end, SSRF QR).

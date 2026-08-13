@@ -8,6 +8,8 @@ import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
 import { ProductDrawer } from './components/ProductDrawer';
+import { LensLauncher } from './ayrovix/components/LensLauncher';
+import type { AyrovixOrderPayload } from './ayrovix/types';
 import { AiAssistantDrawer } from './components/assistant/AiAssistantDrawer';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { CartDrawer } from './components/CartDrawer';
@@ -24,6 +26,7 @@ export const App: React.FC = () => {
 
   // Drawer States (Mutually Exclusive)
   const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
+  const [isLensOpen, setIsLensOpen] = useState(false);
   const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
 
@@ -137,6 +140,22 @@ export const App: React.FC = () => {
       setIsMenuDrawerOpen(false);
       setIsProductDrawerOpen(true);
     }
+  };
+
+  // AYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
+  const handleOpenLens = () => {
+    setIsProductDrawerOpen(false);
+    setIsAiDrawerOpen(false);
+    setIsMenuDrawerOpen(false);
+    setIsCartOpen(false);
+    setIsLensOpen(true);
+  };
+
+  const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
+    const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
+    if (!summary) throw new Error('AYROVIX_ADD_TO_CART_FAILED');
+    setIsLensOpen(false);
+    setIsCartOpen(true);
   };
 
   const handleToggleAiDrawer = () => {
@@ -299,10 +318,9 @@ export const App: React.FC = () => {
       {/* Instagram-Style Floating Transparent White Glass Bottom Nav Bar (AI Icon on Left, Lens Icon on Right) */}
       <BottomNavBar
         isAiDrawerOpen={isAiDrawerOpen}
-        isProductDrawerOpen={isProductDrawerOpen}
         cartCount={totalCartCount}
         onToggleAiDrawer={handleToggleAiDrawer}
-        onToggleProductDrawer={handleToggleProductDrawer}
+        onOpenLens={handleOpenLens}
         onScrollToTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
         onOpenCart={() => {
           setIsProductDrawerOpen(false);
@@ -331,6 +349,13 @@ export const App: React.FC = () => {
       />
 
       {/* Slide-in Cart Drawer */}
+      {/* AYROVIX Lens — expérience caméra mobile-first (au-dessus du système existant) */}
+      <LensLauncher
+        isOpen={isLensOpen}
+        onClose={() => setIsLensOpen(false)}
+        onOrder={handleAyrovixOrder}
+      />
+
       <CartDrawer
         isOpen={isCartOpen}
         onClose={() => setIsCartOpen(false)}

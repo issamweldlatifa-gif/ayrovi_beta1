@@ -20,6 +20,7 @@ import {
   verifyPassword,
 } from './auth';
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
+import { getAyrovixStats } from '../ayrovix/events';
 
 interface ResourceConfig {
   table: string;
@@ -645,6 +646,10 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const from = datePattern.test(String(req.query.from || '')) ? String(req.query.from) : undefined;
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
+  });
+  // AYROVIX Lens — usage produit (analytics anonymes : canal, marque, taux de correspondance)
+  router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), (_req, res) => {
+    res.json({ success: true, data: getAyrovixStats(db) });
   });
   const expenseCategories = ['ADS', 'SHIPPING', 'STOCK', 'SERVICES', 'SALARIES', 'FEES', 'OTHER'];
   router.post('/expenses', requireAdmin(db, 'reports:write'), (req, res) => {
