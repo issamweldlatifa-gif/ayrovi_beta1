@@ -3,14 +3,14 @@ import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
 
 /**
- * AYROVIX · Search layer — fournisseurs interchangeables V2 (Free Tier Support)
- * V1 : (1) catalogue AYROVI (toujours actif), (2) Google Shopping via SerpAPI
- * V2 (NEW - Free): (3) Brave Search (free 2000/mo) si BRAVE_API_KEY, (4) DuckDuckGo HTML scraping 100% gratuit sans clé
- * Toutes les couches sont optionnelles — le catalogue reste la base.
+ * AYROVIX Search V3 — Google Lens style: free tier + enriched details (image, sizes, colors, link)
+ * Fixes from logs Aug 13:
+ * - DuckDuckGo fetch failed (AbortError, network) → retry with lite + brave scrape fallback
+ * - Missing sizes/colors/link → enrich candidates via OG + JSON-LD scrape
+ * - Gemini now SUCCESS with gemini-3-flash-preview, DuckDuckGo is the bottleneck
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
-
 const tokenize = (value: string): string[] =>
   value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .split(/[^a-z0-9]+/).filter((t) => t.length > 1 && !STOPWORDS.has(t));
@@ -45,7 +45,6 @@ export function scoreCandidate(identification: AyrovixIdentification | null, que
   return clampMatch(score);
 }
 
-/** Fournisseur 1 — catalogue AYROVI (stock & produits actifs). Toujours gratuit. */
 export function catalogSearch(db: QatafoDatabase, identification: AyrovixIdentification | null, query: string, limit = 6): AyrovixCandidate[] {
   const rules = db.getPricingRules();
   const rows = db.all<any>(
@@ -75,11 +74,10 @@ export function catalogSearch(db: QatafoDatabase, identification: AyrovixIdentif
         match,
       } satisfies AyrovixCandidate;
     })
-    .filter((candidate) => candidate.match >= 35);
+    .filter((c) => c.match >= 35);
   return scored.sort((a, b) => b.match - a.match).slice(0, limit);
 }
 
-/** Fournisseur 2 — Google Shopping via SerpAPI (payant, mais free tier 100/mois) */
 export async function serpSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
   const key = process.env.SERPAPI_KEY?.trim();
   if (!key) return [];
@@ -118,7 +116,6 @@ export async function serpSearch(query: string, limit = 6): Promise<AyrovixCandi
   }
 }
 
-/** Fournisseur 3 — Brave Search API (FREE 2000/mois, sans carte) — https://brave.com/search/api/ */
 export async function braveSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
   const key = process.env.BRAVE_API_KEY?.trim() || process.env.BRAVE_SEARCH_API_KEY?.trim();
   if (!key) return [];
@@ -130,10 +127,7 @@ export async function braveSearch(query: string, limit = 6): Promise<AyrovixCand
       signal: controller.signal,
       headers: { 'X-Subscription-Token': key, 'Accept': 'application/json' },
     });
-    if (!res.ok) {
-      console.warn(`[AYROVIX brave] HTTP ${res.status}`);
-      return [];
-    }
+    if (!res.ok) return [];
     const payload: any = await res.json();
     const results: any[] = Array.isArray(payload?.web?.results) ? payload.web.results : [];
     return results.slice(0, limit).map((item, idx) => ({
@@ -152,135 +146,250 @@ export async function braveSearch(query: string, limit = 6): Promise<AyrovixCand
       priceTnd: null,
       match: clampMatch(75 - idx*5),
     } satisfies AyrovixCandidate));
-  } catch (e) {
-    console.warn(`[AYROVIX brave] error ${e}`);
+  } catch {
     return [];
   } finally {
     clearTimeout(timeout);
   }
 }
 
-/** Fournisseur 4 — DuckDuckGo HTML scraping — 100% GRATUIT, sans aucune clé — FREE TIER WORKS */
-export async function duckDuckGoSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 20000); // 20s due to Render free spin-down 50s
+// Enrich candidate with Open Graph image, price, sizes, colors via lightweight fetch (no Puppeteer)
+async function enrichCandidate(candidate: AyrovixCandidate): Promise<AyrovixCandidate> {
+  if (candidate.image && candidate.price != null) return candidate; // already enriched
   try {
-    // DuckDuckGo HTML lite endpoint — no JS, no key, reliable
-    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy shopping')}`;
-    const res = await fetch(url, {
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 6000);
+    const res = await fetch(candidate.sourceUrl, {
       signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'fr,en-US;q=0.9,en;q=0.8',
       },
     });
-    if (!res.ok) {
-      console.warn(`[AYROVIX duckduckgo] HTTP ${res.status}`);
-      return [];
-    }
+    clearTimeout(timeout);
+    if (!res.ok) return candidate;
     const html = await res.text();
 
-    // Simple parsing without JSDOM — regex for result__a
-    const candidates: AyrovixCandidate[] = [];
-    // DuckDuckGo HTML has <a class="result__a" href="...">Title</a>
-    const linkRegex = /<a[^>]+class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/gi;
-    const urlRegex = /uddg=([^&"]+)/; // DuckDuckGo redirects via /l/?uddg=encoded_url
+    // og:image
+    let image = candidate.image;
+    if (!image) {
+      const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+      if (ogMatch) image = ogMatch[1].trim();
+    }
 
-    let match;
-    let idx = 0;
-    while ((match = linkRegex.exec(html)) !== null && candidates.length < limit) {
-      let rawUrl = match[1] || '';
-      let title = (match[2] || '').replace(/<[^>]*>/g, '').trim();
-      if (!title) continue;
-      // Decode DuckDuckGo redirect
-      const uddgMatch = rawUrl.match(urlRegex);
-      if (uddgMatch) {
-        try { rawUrl = decodeURIComponent(uddgMatch[1]); } catch {}
+    // price from JSON-LD or meta
+    let price = candidate.price;
+    let currency = candidate.currency;
+    if (price == null) {
+      const priceMatch = html.match(/"price"\s*:\s*"?([\d.]+)"?/) ||
+                         html.match(/product:price:amount["'][^>]*content=["']([\d.]+)["']/i) ||
+                         html.match(/\$([\d]+\.[\d]{2})/);
+      if (priceMatch) {
+        const p = parseFloat(priceMatch[1]);
+        if (Number.isFinite(p) && p>0 && p<100000) {
+          price = p;
+          // try currency
+          if (!currency) {
+            const currMatch = html.match(/"priceCurrency"\s*:\s*"([A-Z]{3})"/) || html.match(/product:price:currency["'][^>]*content=["']([A-Z]{3})["']/i);
+            currency = currMatch ? currMatch[1] : 'USD';
+          }
+        }
       }
-      // Filter out duckduckgo internal
-      if (rawUrl.includes('duckduckgo.com')) continue;
-      if (!rawUrl.startsWith('http')) continue;
-      // Skip non-shopping noise
-      if (title.length < 5) continue;
-
-      candidates.push({
-        id: `ddg_${idx}_${Buffer.from(rawUrl).toString('base64url').slice(0,8)}`,
-        kind: 'external' as const,
-        title: title.slice(0,160),
-        brand: null,
-        model: null,
-        colors: [],
-        sizes: [],
-        source: 'Réseau Partenaires',
-        sourceUrl: rawUrl,
-        image: '',
-        price: null,
-        currency: null,
-        priceTnd: null,
-        match: clampMatch(70 - idx*5),
-      } satisfies AyrovixCandidate);
-      idx++;
     }
 
-    if (candidates.length) console.log(`[AYROVIX duckduckgo] found ${candidates.length} free results for "${query}"`);
-    else console.warn(`[AYROVIX duckduckgo] no results parsed for "${query}" — html length ${html.length}`);
-    return candidates;
-  } catch (e: any) {
-    if (e?.name === 'AbortError') {
-      console.warn(`[AYROVIX duckduckgo] AbortError (timeout 20s) — Render free instance may be spin-down, will retry next request`);
-    } else {
-      console.warn(`[AYROVIX duckduckgo] error ${e?.message||e}`);
+    // sizes/colors heuristic
+    let sizes: string[] = candidate.sizes;
+    let colors: string[] = candidate.colors;
+    if (!sizes.length) {
+      const sizeMatch = html.match(/sizes?["':\s]+\[([^\]]+)\]/i);
+      if (sizeMatch) {
+        const raw = sizeMatch[1];
+        const found = raw.match(/\"([A-Z0-9\/]+)\"/g)?.map(s=>s.replace(/"/g,'')).slice(0,6) || [];
+        if (found.length) sizes = found;
+      } else {
+        // look for common sizes in page
+        const sizeList = ['XS','S','M','L','XL','XXL','2XL','3XL','36','37','38','39','40','41','42','43','44','45'];
+        const found: string[] = [];
+        for (const s of sizeList) if (new RegExp(`\\b${s}\\b`).test(html)) found.push(s);
+        if (found.length >=2 && found.length <=8) sizes = found.slice(0,6);
+      }
     }
-    return [];
-  } finally {
-    clearTimeout(timeout);
+    if (!colors.length) {
+      const colorKeywords = ['black','white','blue','navy','red','green','yellow','grey','gray','beige','brown','pink','purple','orange'];
+      const foundColors: string[] = [];
+      const lowerHtml = html.toLowerCase();
+      for (const c of colorKeywords) if (lowerHtml.includes(c)) foundColors.push(c);
+      if (foundColors.length) colors = [...new Set(foundColors)].slice(0,3);
+    }
+
+    return { ...candidate, image: image || candidate.image, price: price ?? candidate.price, currency: currency ?? candidate.currency, sizes, colors };
+  } catch {
+    return candidate;
   }
 }
 
-/** Recherche externe gratuite combinée — Brave si clé, sinon DuckDuckGo scraping 100% gratuit */
+export async function duckDuckGoSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
+  // Try multiple endpoints to avoid Render blocking and AbortError seen in logs
+  const endpoints = [
+    `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy shopping')}`,
+    `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query + ' shopping')}`,
+    `https://duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy')}`,
+  ];
+
+  for (const url of endpoints) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml',
+          'Accept-Language': 'fr,en-US;q=0.9,en;q=0.8',
+          'Referer': 'https://duckduckgo.com/',
+        },
+      });
+      if (!res.ok) {
+        console.warn(`[AYROVIX duckduckgo] ${url} HTTP ${res.status}`);
+        continue;
+      }
+      const html = await res.text();
+      const candidates: AyrovixCandidate[] = [];
+      const linkRegex = /<a[^>]+class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/gi;
+      const urlRegex = /uddg=([^&"]+)/;
+      let match;
+      let idx = 0;
+      while ((match = linkRegex.exec(html)) !== null && candidates.length < limit) {
+        let rawUrl = match[1] || '';
+        let title = (match[2] || '').replace(/<[^>]*>/g, '').trim();
+        if (!title) continue;
+        const uddgMatch = rawUrl.match(urlRegex);
+        if (uddgMatch) {
+          try { rawUrl = decodeURIComponent(uddgMatch[1]); } catch {}
+        }
+        if (rawUrl.includes('duckduckgo.com')) continue;
+        if (!rawUrl.startsWith('http')) continue;
+        if (title.length < 5) continue;
+        candidates.push({
+          id: `ddg_${idx}_${Buffer.from(rawUrl).toString('base64url').slice(0,8)}`,
+          kind: 'external' as const,
+          title: title.slice(0,160),
+          brand: null,
+          model: null,
+          colors: [],
+          sizes: [],
+          source: 'Réseau Partenaires',
+          sourceUrl: rawUrl,
+          image: '',
+          price: null,
+          currency: null,
+          priceTnd: null,
+          match: clampMatch(70 - idx*5),
+        } satisfies AyrovixCandidate);
+        idx++;
+      }
+
+      if (candidates.length) {
+        console.log(`[AYROVIX duckduckgo] found ${candidates.length} via ${url} for "${query}"`);
+        // Enrich top 3 with OG data to get images, sizes, colors, price (Google Lens style)
+        const enriched = await Promise.all(
+          candidates.slice(0,3).map(c => enrichCandidate(c))
+        );
+        const rest = candidates.slice(3);
+        return [...enriched, ...rest];
+      }
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        console.warn(`[AYROVIX duckduckgo] AbortError ${url} — retrying next endpoint`);
+      } else {
+        console.warn(`[AYROVIX duckduckgo] error ${url}: ${e?.message||e}`);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  // Final fallback: try Brave scrape without API key (search.brave.com)
+  try {
+    const braveUrl = `https://search.brave.com/search?q=${encodeURIComponent(query + ' buy shopping')}`;
+    const controller = new AbortController();
+    const timeout = setTimeout(()=>controller.abort(), 8000);
+    const res = await fetch(braveUrl, { signal: controller.signal, headers: { 'User-Agent':'Mozilla/5.0' } });
+    clearTimeout(timeout);
+    if (res.ok) {
+      const html = await res.text();
+      // Very simple parse for Brave
+      const linkRegex = /<a[^>]+href="(https:\/\/[^"]+)"[^>]*class="[^"]*result[^"]*">([^<]{10,120})<\/a>/gi;
+      const candidates: AyrovixCandidate[] = [];
+      let m, idx=0;
+      while ((m = linkRegex.exec(html)) !== null && candidates.length < limit) {
+        const rawUrl = m[1];
+        const title = m[2].trim();
+        if (rawUrl.includes('brave.com')) continue;
+        candidates.push({
+          id: `brave_scrape_${idx}_${Buffer.from(rawUrl).toString('base64url').slice(0,8)}`,
+          kind: 'external' as const,
+          title: title.slice(0,160),
+          brand: null,
+          model: null,
+          colors: [],
+          sizes: [],
+          source: 'Réseau Partenaires',
+          sourceUrl: rawUrl,
+          image: '',
+          price: null,
+          currency: null,
+          priceTnd: null,
+          match: clampMatch(65 - idx*5),
+        } satisfies AyrovixCandidate);
+        idx++;
+      }
+      if (candidates.length) {
+        console.log(`[AYROVIX brave-scrape] found ${candidates.length} for "${query}"`);
+        return candidates;
+      }
+    }
+  } catch {}
+
+  console.warn(`[AYROVIX duckduckgo] all endpoints failed for "${query}"`);
+  return [];
+}
+
 export async function freeExternalSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
-  // Try Brave first (free 2000/mo with key), then DuckDuckGo (no key at all)
   const brave = await braveSearch(query, limit);
   if (brave.length) return brave;
   const ddg = await duckDuckGoSearch(query, limit);
   return ddg;
 }
 
-/** Recherche fusionnée : catalogue (toujours) + SerpAPI (si clé) + Free External (Brave/DuckDuckGo) */
 export async function searchCandidates(
   db: QatafoDatabase,
   identification: AyrovixIdentification,
   query: string,
 ): Promise<AyrovixCandidate[]> {
   const catalog = catalogSearch(db, identification, query);
-
-  // Parallel external searches
   const [serp, freeExternal] = await Promise.all([
     serpSearch(query),
     freeExternalSearch(query, 6),
   ]);
-
   const allExternal = [...serp, ...freeExternal];
-
-  const rescoredExternal = allExternal.map((candidate) => ({
-    ...candidate,
-    match: scoreCandidate(identification, query, candidate),
+  const rescoredExternal = allExternal.map((c) => ({
+    ...c,
+    match: scoreCandidate(identification, query, c),
   }));
-
   const seen = new Set<string>();
   return [...catalog, ...rescoredExternal]
-    .filter((candidate) => {
-      const key = `${candidate.title.toLowerCase()}|${candidate.source.toLowerCase()}`;
+    .filter((c) => {
+      const key = `${c.title.toLowerCase()}|${c.source.toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
-      return candidate.match >= 25; // lowered to 25 for free search to show more results
+      return c.match >= 20;
     })
     .sort((a, b) => b.match - a.match)
     .slice(0, 8);
 }
 
-/** Health checks */
 export interface SerpApiHealth { configured: boolean; reachable: boolean; valid: boolean; plan?: string; searchesLeft?: number | null; }
 export interface FreeSearchHealth { braveConfigured: boolean; duckDuckGoAvailable: boolean; }
 
@@ -312,7 +421,6 @@ export async function checkSerpApiHealth(force = false): Promise<SerpApiHealth> 
 
 export async function checkFreeSearchHealth(): Promise<FreeSearchHealth> {
   const braveConfigured = Boolean(process.env.BRAVE_API_KEY?.trim() || process.env.BRAVE_SEARCH_API_KEY?.trim());
-  // Quick check DuckDuckGo reachable
   let duckDuckGoAvailable = true;
   try {
     const controller = new AbortController();

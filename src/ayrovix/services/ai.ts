@@ -95,6 +95,18 @@ export function buildSearchQuery(id: AyrovixIdentification): string {
 }
 
 // ---------- Gemini discovery ----------
+// Filter out audio-only, tts, robotics models which don't support image
+function isVisionModel(name: string): boolean {
+  const lower = name.toLowerCase();
+  if (lower.includes('native-audio')) return false;
+  if (lower.includes('-tts') || lower.includes('preview-tts')) return false;
+  if (lower.includes('audio') && !lower.includes('vision')) return false;
+  if (lower.includes('robotics')) return false;
+  if (lower.includes('computer-use')) return false;
+  if (lower.includes('code-') && !lower.includes('flash')) return false;
+  return lower.includes('gemini');
+}
+
 async function discoverGeminiModels(key: string): Promise<string[]> {
   const allModels: string[] = [];
   for (const ver of ['v1beta','v1']) {
@@ -105,32 +117,32 @@ async function discoverGeminiModels(key: string): Promise<string[]> {
       const models = (data.models || []) as any[];
       for (const m of models) {
         const name = String(m.name||'').replace('models/','');
-        // For Interactions API, supported methods may be different — include all gemini models
-        if (name.toLowerCase().includes('gemini')) {
+        if (isVisionModel(name)) {
           allModels.push(name);
         }
       }
     } catch {}
   }
   const unique = [...new Set(allModels)];
-  // Prefer newer efficient models for 2026
+  // Prefer newer efficient vision models for 2026 — gemini-3-flash-preview was SUCCESS in logs
   const ranked = unique.sort((a,b)=>{
     const score = (n:string)=>{
       n=n.toLowerCase();
-      if (n.includes('2.5-flash-lite')) return 0;
-      if (n.includes('2.0-flash-lite')) return 1;
-      if (n.includes('2.5-flash')) return 2;
-      if (n.includes('2.0-flash')) return 3;
-      if (n.includes('3-') && n.includes('flash')) return 4;
-      if (n.includes('1.5-flash-8b')) return 5;
-      if (n.includes('1.5-flash')) return 6;
-      if (n.includes('flash')) return 7;
-      if (n.includes('pro')) return 8;
+      if (n.includes('3-flash-preview')) return 0; // SUCCESS seen in logs
+      if (n.includes('3.5-flash')) return 1;
+      if (n.includes('2.5-flash-lite')) return 2;
+      if (n.includes('2.0-flash-lite')) return 3;
+      if (n.includes('2.5-flash')) return 4;
+      if (n.includes('2.0-flash')) return 5;
+      if (n.includes('1.5-flash-8b')) return 6;
+      if (n.includes('1.5-flash')) return 7;
+      if (n.includes('flash')) return 8;
+      if (n.includes('pro')) return 9;
       return 10;
     };
     return score(a)-score(b);
   });
-  console.log(`[AYROVIX gemini-discover] available: ${ranked.slice(0,15).join(', ')}`);
+  console.log(`[AYROVIX gemini-discover] available vision models: ${ranked.slice(0,15).join(', ')}`);
   return ranked;
 }
 
@@ -282,12 +294,12 @@ async function identifyViaGemini(image: Buffer, mime: string): Promise<AyrovixId
 
   const envModel = process.env.GEMINI_MODEL?.trim();
   const fallbacks = [
+    'gemini-3-flash-preview', // SUCCESS in logs at 12:02:52
+    'gemini-3.5-flash',
     'gemini-2.5-flash-lite',
     'gemini-2.0-flash-lite',
     'gemini-2.5-flash',
     'gemini-2.0-flash',
-    'gemini-2.5-flash-image',
-    'gemini-3-flash-preview',
     'gemini-1.5-flash-8b',
     'gemini-1.5-flash',
     'gemini-1.5-pro',
