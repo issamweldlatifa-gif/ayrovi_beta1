@@ -49,7 +49,7 @@ services:
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_MODEL
-        value: claude-3-5-sonnet-20241022
+        value: claude-sonnet-4-20250514
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_MODEL
@@ -61,4 +61,6 @@ services:
       - key: AYROVIX_ALLOW_LOCAL_FALLBACK
         value: true
       - key: SERPAPI_KEY
+        sync: false
+      - key: BRAVE_API_KEY
         sync: false

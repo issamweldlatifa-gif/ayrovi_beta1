@@ -22,7 +22,7 @@ import {
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
-import { checkSerpApiHealth } from '../ayrovix/services/search';
+import { checkSerpApiHealth, checkFreeSearchHealth } from '../ayrovix/services/search';
 
 interface ResourceConfig {
   table: string;
@@ -649,9 +649,9 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
   });
-  // AYROVIX Lens — usage produit + état réel des fournisseurs (Vision IA multi-provider, SerpAPI)
+  // AYROVIX Lens — usage produit + état réel des fournisseurs (Vision IA multi-provider, SerpAPI + Free Search)
   router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), async (_req, res) => {
-    const serpapi = await checkSerpApiHealth();
+    const [serpapi, freeSearch] = await Promise.all([checkSerpApiHealth(), checkFreeSearchHealth()]);
     res.json({
       success: true,
       data: {
@@ -659,6 +659,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         providers: {
           vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Multi-Provider Vision (Gemini > OpenAI > Claude > Local)' },
           serpapi,
+          freeSearch, // { braveConfigured, duckDuckGoAvailable } — 100% gratuit
         },
       },
     });
