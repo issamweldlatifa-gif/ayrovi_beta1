@@ -4,7 +4,7 @@ import path from 'node:path';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
-import { anthropicWebSearch, duckDuckGoSearch, scoreCandidate } from '../src/ayrovix/services/search';
+import { anthropicWebSearch, scoreCandidate } from '../src/ayrovix/services/search';
 import { getAyrovixStats } from '../src/ayrovix/events';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
@@ -16,6 +16,7 @@ const PNG_1PX = Buffer.from(
 );
 
 const NIKE_ID: AyrovixIdentification = {
+  input_kind: 'product_photo',
   category: 'sneakers',
   brand: 'Nike',
   model: 'Air Max 95',
@@ -24,6 +25,7 @@ const NIKE_ID: AyrovixIdentification = {
   possible_model_codes: [],
   description: 'Baskets running bleu marine à bulle visible.',
   confidence: 0.9,
+  detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 },
 };
 
 function seedCatalogProduct() {
@@ -40,11 +42,18 @@ function seedCatalogProduct() {
 }
 
 function stubAnthropic(text: string) {
-  vi.stubGlobal('fetch', vi.fn(async () => ({
+  const mock = vi.fn(async (_url: string, _init: RequestInit = {}) => ({
     ok: true,
     status: 200,
     json: async () => ({ content: [{ type: 'text', text }] }),
-  })));
+  }));
+  vi.stubGlobal('fetch', mock);
+  return mock;
+}
+
+function restoreEnv(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
 }
 
 describe('AYROVIX Lens', () => {
@@ -104,11 +113,12 @@ describe('AYROVIX Lens', () => {
 
   test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
     seedCatalogProduct();
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test-ayrovix-suite-key-0123456789';
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
     stubAnthropic(JSON.stringify({
-      category: 'sneakers', brand: 'Nike', model: 'Air Max 95',
+      input_kind: 'product_photo', category: 'sneakers', brand: 'Nike', model: 'Air Max 95',
       color: ['navy', 'grey'], visible_text: ['NIKE'], possible_model_codes: [],
       description: 'Baskets running bleu marine à bulle visible.', confidence: 0.9,
+      detected_price: { amount: 0, currency: '', label: 'none', confidence: 0 },
     }));
     try {
       const response = await request(app)
@@ -138,6 +148,55 @@ describe('AYROVIX Lens', () => {
       expect(stats.last7d.image).toBeGreaterThanOrEqual(1);
     } finally {
       process.env.ANTHROPIC_API_KEY = '';
+    }
+  });
+
+  test('Claude lit le prix visible dans la même requête structurée que Vision', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-price';
+    const fetchMock = stubAnthropic(JSON.stringify({
+      input_kind: 'product_screenshot', category: 'handbag', brand: 'Zara', model: null,
+      color: ['black'], visible_text: ['49.99 EUR'], possible_model_codes: [],
+      description: 'Sac à main noir.', confidence: 0.88,
+      detected_price: { amount: 49.99, currency: 'EUR', label: 'product_price', confidence: 0.96 },
+    }));
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'capture-produit.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.detectedPrice).toMatchObject({
+        sourcePrice: 49.99,
+        sourceCurrency: 'EUR',
+        isCartScreenshot: false,
+      });
+      expect(response.body.data.detectedPrice.totalPriceTND).toBeGreaterThan(0);
+      const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(requestBody.output_config.format.type).toBe('json_schema');
+      expect(requestBody.tools).toBeUndefined();
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+    }
+  });
+
+  test("un ancien prix barré n'est jamais accepté comme prix de commande", async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-old-price';
+    stubAnthropic(JSON.stringify({
+      input_kind: 'product_screenshot', category: 'shoes', brand: 'Nike', model: null,
+      color: ['white'], visible_text: ['99.00 EUR'], possible_model_codes: [],
+      description: 'Chaussures blanches.', confidence: 0.8,
+      detected_price: { amount: 99, currency: 'EUR', label: 'old_price', confidence: 0.99 },
+    }));
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'ancien-prix.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.detectedPrice).toBeNull();
+      expect(response.body.data).not.toHaveProperty('ocrPrice');
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
     }
   });
 
@@ -175,11 +234,11 @@ describe('AYROVIX Lens', () => {
     expect(response.body.code).toBe('INVALID_URL');
   });
 
-  test('Claude Web Search transforme les résultats officiels en candidats sans DuckDuckGo', async () => {
+  test('Claude Web Search transforme les résultats officiels Anthropic en candidats', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousModel = process.env.ANTHROPIC_MODEL;
     const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
-    process.env.ANTHROPIC_API_KEY = 'sk-ant-test-web-search';
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
     process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
     process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
@@ -203,22 +262,51 @@ describe('AYROVIX Lens', () => {
       const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
       expect(body.tools[0]).toMatchObject({ type: 'web_search_20250305', max_uses: 1 });
     } finally {
-      process.env.ANTHROPIC_API_KEY = previousKey;
-      process.env.ANTHROPIC_MODEL = previousModel;
-      process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = previousSearch;
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('ANTHROPIC_MODEL', previousModel);
+      restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);
     }
   });
 
-  test('recherche externe respecte une deadline globale courte', async () => {
-    vi.stubGlobal('fetch', vi.fn((_url: string, init: any = {}) => new Promise((_resolve, reject) => {
-      const abort = () => reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
-      if (init.signal?.aborted) abort();
-      else init.signal?.addEventListener('abort', abort, { once: true });
-    })));
-    const startedAt = Date.now();
-    const result = await duckDuckGoSearch('deadline-test', 6, Date.now() + 150);
-    expect(result).toEqual([]);
-    expect(Date.now() - startedAt).toBeLessThan(700);
+  test('QR texte utilise Claude Web Search via /analyze-code', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-qr-search';
+    process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
+      content: [{ type: 'web_search_tool_result', content: [
+        { type: 'web_search_result', title: 'Produit QR AYR-REF-2026', url: 'https://www.amazon.fr/dp/B000000001' },
+      ] }],
+      usage: { server_tool_use: { web_search_requests: 1 } },
+    }), { status: 200, headers: { 'content-type': 'application/json' } })));
+    try {
+      const response = await request(app).post('/api/ayrovix/analyze-code').send({ value: 'AYR-REF-2026' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.code).toBe('AYR-REF-2026');
+      expect(response.body.data.candidates[0]).toMatchObject({ source: 'Amazon', kind: 'external' });
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);
+    }
+  });
+
+  test('Claude Web Search respecte une deadline globale déjà presque épuisée', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-deadline';
+    process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const startedAt = Date.now();
+      const result = await anthropicWebSearch('deadline-test', 6, Date.now() + 150);
+      expect(result).toEqual([]);
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(Date.now() - startedAt).toBeLessThan(300);
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousKey);
+      restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);
+    }
   });
 
   test('analyze-barcode : validation stricte + réponse propre sans fournisseur de recherche', async () => {
@@ -229,7 +317,7 @@ describe('AYROVIX Lens', () => {
     const valid = await request(app).post('/api/ayrovix/analyze-barcode').send({ code: '619125062532' });
     expect(valid.status).toBe(200);
     expect(valid.body.data.code).toBe('619125062532');
-    expect(Array.isArray(valid.body.data.candidates)).toBe(true); // vide sans SERPAPI_KEY — jamais de résultat inventé
+    expect(Array.isArray(valid.body.data.candidates)).toBe(true); // vide sans clé Anthropic — jamais de résultat inventé
     expect(valid.body.data.eventId).toMatch(/^ayx_/);
     expect(db.get<any>('SELECT query FROM ayrovix_events WHERE id=?', valid.body.data.eventId).query).toBe('barcode:619125062532');
   });

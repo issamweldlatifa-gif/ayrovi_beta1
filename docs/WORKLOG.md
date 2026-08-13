@@ -61,3 +61,13 @@
 - **Torche** : toggleTorch durci (tente applyConstraints même si capabilities muet, hint utilisateur si l'appareil refuse).
 - **Bouton ⋮** à côté du flash → sheet sombre : Comment l'utiliser (4 étapes) + Conditions d'utilisation (IA indicative, prix confirmé au panier, photos non conservées, anti-abus…).
 - **SerpAPI vérifiée** : checkSerpApiHealth() (account.json, cache 60 s) exposé dans /api/admin/ayrovix/stats → badges d'état dans la carte AYROVIX des Rapports (Vision IA + SerpAPI, recherches restantes).
+
+## AYROVIX Lens V2 — Anthropic uniquement (2026-08-13, état courant)
+- Cette section remplace les choix de fournisseurs documentés dans les versions historiques ci-dessus.
+- Claude Haiku 4.5 est l'unique fournisseur Vision de Lens. Une seule réponse structurée identifie le produit et lit le prix réellement visible, sans cascade IA ni résultat générique inventé.
+- Claude Web Search est l'unique recherche externe : `web_search_20250305`, `max_uses: 1`, cache 5 min et coalescing. Sans clé, seul le catalogue local reste disponible.
+- L'API expose `detectedPrice` et `/analyze-code`; les QR texte, QR URL et codes-barres décodés localement suivent désormais les routes Claude/catalogue adaptées.
+- Les captures contenant du texte restent en PNG sans filtres; le serveur valide et réencode les images en mémoire.
+- La vérification d'un lien direct doit extraire un prix magasin exploitable avant de commander à partir d'un prix lu sur image.
+- `.env.example`, `render.yaml` et les badges Admin Lens n'exposent plus que la configuration Anthropic.
+- Validation locale finale : TypeScript ✅, 47/47 tests ✅, build production ✅, audit 0 vulnérabilité ✅, `git diff --check` et contrôle des secrets ✅.

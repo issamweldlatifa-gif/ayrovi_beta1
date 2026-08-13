@@ -59,7 +59,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               <p className="text-xl font-extrabold text-ink price-pulse">
                 {product.priceTnd != null ? `≈ ${product.priceTnd.toFixed(2)} DT` : '—'}
               </p>
-              <p className="text-[10px] font-semibold text-emerald-600">Vérifié par AYROVI • Tout inclus</p>
+              <p className="text-[10px] font-semibold text-emerald-600">Calcul AYROVI • Tout inclus</p>
             </div>
           </div>
 

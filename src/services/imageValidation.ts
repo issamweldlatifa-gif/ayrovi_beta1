@@ -16,16 +16,16 @@ export class InvalidImageError extends Error {
 
 export interface NormalizedImage {
   buffer: Buffer;
-  mimeType: 'image/jpeg';
+  mimeType: 'image/jpeg' | 'image/png' | 'image/webp';
   width: number;
   height: number;
   originalFormat: 'jpeg' | 'png' | 'webp';
 }
 
 /**
- * Decode untrusted input with libvips, strips metadata and re-encodes it to a
- * server-selected JPEG. Tesseract and remote AI providers never receive the
- * original bytes, filename or extension supplied by the client.
+ * Decode untrusted input with libvips, strip metadata and re-encode it to a
+ * server-selected format. PNG screenshots stay lossless for visible prices;
+ * product photos remain compact. Claude never receives the original bytes.
  */
 export async function normalizeUploadedImage(
   input: Buffer,
@@ -56,22 +56,30 @@ export async function normalizeUploadedImage(
       throw new InvalidImageError('Image trop grande — 25 mégapixels maximum.');
     }
 
-    const { data, info } = await decoder
+    const pipeline = decoder
       .rotate()
       .resize({
         width: MAX_OUTPUT_EDGE,
         height: MAX_OUTPUT_EDGE,
         fit: 'inside',
         withoutEnlargement: true,
-      })
-      .flatten({ background: '#ffffff' })
-      .jpeg({ quality: 88, mozjpeg: true })
-      .toBuffer({ resolveWithObject: true });
+      });
+    const output = format === 'png'
+      ? pipeline.png({ compressionLevel: 9 }).toBuffer({ resolveWithObject: true })
+      : format === 'webp'
+        ? pipeline.webp({ quality: 90, smartSubsample: true }).toBuffer({ resolveWithObject: true })
+        : pipeline.flatten({ background: '#ffffff' }).jpeg({ quality: 88, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+    const { data, info } = await output;
 
-    if (!data.length || !info.width || !info.height) throw new InvalidImageError();
+    if (!data.length || !info.width || !info.height || data.length > 5 * 1024 * 1024) {
+      throw new InvalidImageError('Image normalisée trop volumineuse — réduisez sa résolution.');
+    }
+    const mimeType: NormalizedImage['mimeType'] = format === 'png'
+      ? 'image/png'
+      : format === 'webp' ? 'image/webp' : 'image/jpeg';
     return {
       buffer: data,
-      mimeType: 'image/jpeg',
+      mimeType,
       width: info.width,
       height: info.height,
       originalFormat: format as NormalizedImage['originalFormat'],

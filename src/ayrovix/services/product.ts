@@ -3,12 +3,13 @@ import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyrovixCandidate, AyrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
-import { catalogSearch, scoreCandidate, freeExternalSearch, serpSearch } from './search';
+import { catalogSearch, scoreCandidate, anthropicExternalSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 
 /**
- * AYROVIX · Product extraction layer V2 — Free Tier compatible.
- * Mode URL/QR : safe bounded HTML metadata fetch first, then catalogue/search fallback when merchant metadata is unavailable.
+ * AYROVIX product-link layer.
+ * URL/QR links use SSRF-safe metadata extraction first, then Claude Web Search
+ * through the same paid Anthropic key when merchant metadata is incomplete.
  */
 
 export class ExtractionFailedError extends Error { readonly code = 'EXTRACTION_FAILED'; }
@@ -110,8 +111,8 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
       const alternates = catalogSearch(db, null, scraped.title, 4)
         .map((c) => ({ ...c, match: scoreCandidate(null, scraped.title, c) }))
         .sort((a, b) => b.match - a.match);
-      const freeAlternates = await freeExternalSearch(scraped.title, 4).catch(()=>[]);
-      const all = [...alternates, ...freeAlternates.map(c => ({ ...c, match: scoreCandidate(null, scraped.title, c) }))]
+      const externalAlternates = await anthropicExternalSearch(scraped.title, 4).catch(()=>[]);
+      const all = [...alternates, ...externalAlternates.map(c => ({ ...c, match: scoreCandidate(null, scraped.title, c) }))]
         .sort((a, b) => b.match - a.match).slice(0,6);
       return { product: toAyrovixProduct(db, scraped), alternates: all };
     }
@@ -122,7 +123,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     console.warn(`[AYROVIX scraper] Fallback for ${url} — ${e}`);
   }
 
-  console.log(`[AYROVIX] Using free fallback for URL: ${url}`);
+  console.log(`[AYROVIX] Using catalog + Claude fallback for URL: ${url}`);
   const fallbackProduct = toFallbackProductFromUrl(url);
   let query = '';
   try {
@@ -132,11 +133,8 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
   } catch { query = url; }
 
   const catalog = catalogSearch(db, null, query, 4);
-  const [serp, free] = await Promise.all([
-    serpSearch(query).catch(()=>[]),
-    freeExternalSearch(query, 6).catch(()=>[]),
-  ]);
-  const all = [...catalog, ...serp, ...free].map(c => ({ ...c, match: scoreCandidate(null, query, c) }))
+  const external = await anthropicExternalSearch(query, 6).catch(() => []);
+  const all = [...catalog, ...external].map(c => ({ ...c, match: scoreCandidate(null, query, c) }))
     .sort((a,b)=>b.match-a.match).slice(0,8);
 
   return { product: fallbackProduct, alternates: all };

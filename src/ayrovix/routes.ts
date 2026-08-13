@@ -3,20 +3,18 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import type { VisualProductExtractor } from '../services/vision';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady } from './services/ai';
-import { searchCandidates, serpSearch, freeExternalSearch } from './services/search';
+import { catalogSearch, anthropicExternalSearch, scoreCandidate, searchCandidates } from './services/search';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
-import type { AyrovixChannel } from './types';
+import type { AyrovixCandidate, AyrovixChannel } from './types';
 import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 
 /**
- * AYROVIX · API publique V3 — Free Tier + OCR Price Extraction combined
- * Image → AI Vision (identification) + OCR (price from screenshot) + External Search (DuckDuckGo/Brave) + Catalog
- * - Live camera / gallery upload now returns both identification AND ocrPrice
- * - Before checkout, frontend will ask for product link to verify — as requested
+ * AYROVIX public API — one paid Anthropic key powers Vision, visible-price
+ * reading and official Web Search. QR/barcode decoding remains local on-device;
+ * product URLs are fetched directly through the SSRF-safe metadata extractor.
  */
 
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
@@ -24,66 +22,75 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
 
-export function createAyrovixRouter(
-  db: QatafoDatabase,
-  scraper: SmartLinkScraper,
-  visionExtractor?: VisualProductExtractor,
-): Router {
+function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = `${item.sourceUrl || ''}|${item.title.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).sort((a, b) => b.match - a.match).slice(0, limit);
+}
+
+async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {
+  const local = catalogSearch(db, null, value, 4)
+    .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
+  const external = await anthropicExternalSearch(value, 8).catch(() => []);
+  return mergeCandidates([
+    ...local,
+    ...external.map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) })),
+  ]);
+}
+
+export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
 
   router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
     const file = req.file;
-    if (!file || !file.buffer?.length) {
+    if (!file?.buffer?.length) {
       return res.status(400).json({ success: false, code: 'IMAGE_REQUIRED', error: 'Veuillez envoyer une image du produit.' });
     }
     if (!ALLOWED_MIME.has(file.mimetype)) {
       return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
     }
     try {
-      // Decode untrusted input once and re-encode it with a server-selected format.
-      // Neither OCR nor remote providers receive the original bytes or filename.
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       if (!ayrovixAiReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
-      const extractOcrPrice = async () => {
-        if (!visionExtractor) return null;
-        try {
-          const product = await visionExtractor.extractFromImage(normalized.buffer);
-          const priced = calculatePrice(db.getPricingRules(), product.sourcePrice, product.sourceCurrency);
-          return {
-            sourcePrice: product.sourcePrice,
-            sourceCurrency: product.sourceCurrency,
-            convertedPriceTND: priced?.convertedPriceTND ?? product.convertedPriceTND,
-            serviceFeeTND: priced?.serviceFeeTND ?? product.serviceFeeTND,
-            estimatedShippingTND: priced?.shippingFeeTND ?? product.estimatedShippingTND,
-            totalPriceTND: priced?.totalTND ?? product.totalPriceTND,
-            title: product.title,
-            brand: product.brand,
-            isCartScreenshot: String(product.description||'').toLowerCase().includes('panier') || String(product.externalId||'') === 'CART-TOTAL',
-            imageUrl: null,
-          };
-        } catch (error) {
-          console.warn('[AYROVIX OCR] extraction failed', (error as any)?.message);
-          return null;
-        }
-      };
-
-      // OCR is expensive: start it immediately only for likely screenshots. For
-      // ordinary camera photos, Vision runs alone unless it reports price-like text.
-      const likelyScreenshot = file.mimetype === 'image/png'
-        || /(?:screen(?:shot)?|capture|whatsapp|panier|cart|receipt|facture)/i.test(file.originalname || '');
-      let ocrPromise: ReturnType<typeof extractOcrPrice> | null = likelyScreenshot ? extractOcrPrice() : null;
+      // Claude performs identification and visible-price reading in one request.
       const identification = await identifyProduct(normalized.buffer, normalized.mimeType);
-      const visibleText = identification.visible_text.join(' ');
-      if (!ocrPromise && /(?:\d|[$€£¥]|\b(?:price|prix|total|cart|panier)\b)/i.test(visibleText)) {
-        ocrPromise = extractOcrPrice();
-      }
-      const ocrResult = ocrPromise ? await ocrPromise : null;
+      const visiblePrice = identification.detected_price;
+      const usablePrice = visiblePrice.confidence >= 0.65
+        && visiblePrice.amount > 0
+        && Boolean(visiblePrice.currency)
+        && (visiblePrice.label === 'product_price' || visiblePrice.label === 'cart_total');
+      const calculated = usablePrice
+        ? calculatePrice(db.getPricingRules(), visiblePrice.amount, visiblePrice.currency)
+        : null;
+      const isCartScreenshot = identification.input_kind === 'cart_screenshot'
+        || visiblePrice.label === 'cart_total';
+      const title = [identification.brand, identification.model].filter(Boolean).join(' ')
+        || identification.description
+        || 'Produit détecté par AYROVIX';
+      const priceResult = usablePrice ? {
+        sourcePrice: visiblePrice.amount,
+        sourceCurrency: visiblePrice.currency,
+        convertedPriceTND: calculated?.convertedPriceTND ?? null,
+        serviceFeeTND: calculated?.serviceFeeTND ?? null,
+        estimatedShippingTND: calculated?.shippingFeeTND ?? null,
+        totalPriceTND: calculated?.totalTND ?? null,
+        title,
+        brand: identification.brand,
+        isCartScreenshot,
+        imageUrl: null,
+      } : null;
 
       const query = buildSearchQuery(identification);
-      const candidates = query ? await searchCandidates(db, identification, query) : [];
+      const candidates = identification.confidence >= 0.35 && query
+        ? await searchCandidates(db, identification, query)
+        : [];
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
         brand: identification.brand,
@@ -98,9 +105,11 @@ export function createAyrovixRouter(
           query,
           candidates,
           eventId,
-          ocrPrice: ocrResult, // NEW: price extracted from image via Tesseract (for cart screenshots etc.)
-          message: ocrResult?.isCartScreenshot
-            ? `Prix panier détecté: ${ocrResult.sourcePrice} ${ocrResult.sourceCurrency} ≈ ${ocrResult.totalPriceTND} DT. Veuillez fournir le lien du produit pour vérification avant commande.`
+          detectedPrice: priceResult,
+          message: priceResult
+            ? isCartScreenshot
+              ? `Total visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Un lien produit reste obligatoire avant commande.`
+              : `Prix visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Le lien marchand permettra de le vérifier.`
             : undefined,
         },
       });
@@ -133,66 +142,66 @@ export function createAyrovixRouter(
         return res.status(400).json({ success: false, code: 'INVALID_URL', error: 'Ce lien ne peut pas être analysé. Vérifiez le format.' });
       }
       if (error instanceof ExtractionFailedError || error?.code === 'EXTRACTION_FAILED') {
-        console.warn('[AYROVIX analyze-url] Fallback after EXTRACTION_FAILED for', url);
         try {
-          const fallbackQuery = String(url).slice(0, 100);
-          const freeCandidates = await freeExternalSearch(fallbackQuery, 6);
+          const fallbackQuery = String(url || '').slice(0, 160);
+          const candidates = await anthropicExternalSearch(fallbackQuery, 6);
           return res.json({
             success: true,
             data: {
               product: {
-                title: `Produit ${String(url).slice(0, 60)}`,
+                title: `Produit ${fallbackQuery.slice(0, 60)}`,
                 brand: null,
                 model: null,
-                description: 'Lien partagé — résultats de recherche libre ci-dessous. Veuillez confirmer le lien avant commande.',
-                image: '',
-                images: [],
-                source: 'Web',
-                sourceUrl: String(url),
-                price: null,
-                currency: null,
-                priceTnd: null,
-                exchangeRate: null,
-                colors: [],
-                sizes: [],
-                availability: 'unknown',
+                description: 'Lien partagé — résultats Claude Web Search à confirmer.',
+                image: '', images: [], source: 'Web', sourceUrl: String(url || ''),
+                price: null, currency: null, priceTnd: null, exchangeRate: null,
+                colors: [], sizes: [], availability: 'unknown',
               },
-              alternates: freeCandidates,
-              eventId: recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: freeCandidates.length }),
+              alternates: candidates,
+              eventId: recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length }),
               fallback: true,
             },
           });
-        } catch {}
-        return res.status(422).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer toutes les informations automatiquement.' });
+        } catch { /* clean error below */ }
       }
       console.warn('[AYROVIX analyze-url]', error?.message || 'unknown');
-      return res.status(500).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer toutes les informations automatiquement.' });
+      return res.status(422).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer les informations du produit.' });
     }
   });
 
-  router.post('/choose', (req: Request, res: Response) => {
-    const eventId = String(req.body?.eventId || '');
-    markAyrovixChosen(db, eventId);
-    return res.json({ success: true });
+  router.post('/analyze-code', async (req: Request, res: Response) => {
+    const value = String(req.body?.value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (value.length < 2) {
+      return res.status(400).json({ success: false, code: 'INVALID_CODE', error: 'Le contenu de ce QR code est vide ou illisible.' });
+    }
+    try {
+      const candidates = await searchByCodeOrText(db, value);
+      const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
+      return res.json({ success: true, data: { code: value, candidates, eventId } });
+    } catch (error: any) {
+      console.warn('[AYROVIX analyze-code]', error?.message || 'unknown');
+      return res.status(502).json({ success: false, code: 'CODE_SEARCH_FAILED', error: 'La recherche de ce QR code a échoué.' });
+    }
   });
 
   router.post('/analyze-barcode', async (req: Request, res: Response) => {
     const code = String(req.body?.code || '').replace(/\D/g, '');
-    if (!/^[\d]{6,14}$/.test(code)) {
+    if (!/^\d{6,14}$/.test(code)) {
       return res.status(400).json({ success: false, code: 'INVALID_BARCODE', error: 'Ce code-barres est illisible. Rapprochez-vous et réessayez.' });
     }
     try {
-      const [serp, free] = await Promise.all([
-        serpSearch(code, 6).catch(()=>[]),
-        freeExternalSearch(code, 6).catch(()=>[]),
-      ]);
-      const candidates = [...serp, ...free];
+      const candidates = await searchByCodeOrText(db, code);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
       return res.json({ success: true, data: { code, candidates, eventId } });
     } catch (error: any) {
       console.warn('[AYROVIX analyze-barcode]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'BARCODE_SEARCH_FAILED', error: 'La recherche par code a échoué. Essayez avec une photo.' });
     }
+  });
+
+  router.post('/choose', (req: Request, res: Response) => {
+    markAyrovixChosen(db, String(req.body?.eventId || ''));
+    return res.json({ success: true });
   });
 
   router.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => {

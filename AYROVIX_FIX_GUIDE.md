@@ -1,132 +1,67 @@
-# AYROVIX Lens — Fix IDENTIFICATION_FAILED + بدائل مجانية
+# AYROVIX Lens — configuration Anthropic
 
-## المشكلة اللي شفتها في الـ Logs
-```
-[AYROVIX analyze-image] IDENTIFICATION_FAILED
-[AYROVIX analyze-image] IDENTIFICATION_FAILED
-```
-السبب: مفتاح `ANTHROPIC_API_KEY` (Claude) انتهى رصيده أو تم حظره بسبب 429 / 401.
-الكود القديم كان يرمي `422 IDENTIFICATION_FAILED` مباشرة بدون محاولة ثانية ويوقف تجربة المستخدم.
+## Architecture active
 
-## الحل الذي طبقناه (موجود الآن في الكود المحلي)
+AYROVIX Lens utilise **Anthropic uniquement** pour ses fonctions IA et sa recherche externe :
 
-### 1. Multi-Provider Vision Layer
-عدلت `src/ayrovix/services/ai.ts` ليدعم 3 مزودين + fallback محلي:
+- **Claude Vision** identifie le produit et lit un prix réellement visible dans l’image au cours d’une seule requête structurée.
+- **Claude Web Search** découvre des pages produit externes avec une recherche maximum par analyse.
+- Le catalogue AYROVI reste une source locale, sans API externe.
+- Les QR codes et codes-barres sont décodés localement dans le navigateur, puis leur valeur est envoyée au serveur pour l’analyse de lien ou la recherche Claude.
+- Les pages produit sont lues par un fetch HTML sécurisé afin d’obtenir leurs métadonnées et leur prix direct. Claude n’invente pas le prix d’un magasin.
 
-**ترتيب المحاولة التلقائي:**
-1. **Gemini 1.5 Flash (Google)** — الأفضل كبديل مجاني
-2. **OpenAI gpt-4o-mini** — أرخص بديل مدفوع ($0.15 / 1M tokens vision)
-3. **Claude 3.5 Sonnet (Anthropic)** — الأصلي
-4. **Local Fallback** — يرجع دائماً نتيجة generic مع confidence 0.25 حتى لا تنهار الواجهة
+Il n’existe ni cascade vers un autre fournisseur IA, ni moteur de recherche alternatif, ni résultat générique inventé en cas d’échec. Sans clé Anthropic valide, Lens répond explicitement comme indisponible.
 
-إذا فشل مزود بسبب quota، يجرب الذي بعده فوراً، ويسجل في Logs:
-```
-[AYROVIX] Trying Gemini...
-[AYROVIX gemini] failed: ...
-[AYROVIX] Trying OpenAI...
-[AYROVIX] All remote providers failed — using local fallback
-```
+## Variables Render
 
-**النتيجة الآن:**
-قبل: `{"success":false,"code":"IDENTIFICATION_FAILED"}` → الصورة لا تعمل
-بعد: `{"success":true,"data":{"identification":{...fallback...}}}` → تعمل حتى بدون أي مفتاح، والكتالوج الداخلي يرد بنتائج
-
-تم اختباره محلياً:
-```bash
-curl -F "image=@public/assets/nike-Dnelz9bu.jpg" http://localhost:3000/api/ayrovix/analyze-image
-# => success:true مع fallback
-```
-
-### 2. متغيرات البيئة الجديدة
-في `.env.example` و `render.yaml`:
+Toutes ces variables sont **serveur uniquement** :
 
 ```env
-# البديل المجاني الأفضل
-GEMINI_API_KEY=AIza...  (من https://aistudio.google.com/app/apikey)
-GEMINI_MODEL=gemini-1.5-flash
-
-# بديل رخيص جداً
-OPENAI_API_KEY=sk-proj-...
-OPENAI_MODEL=gpt-4o-mini
-
-# الأصلي
-ANTHROPIC_API_KEY=sk-ant-...
-ANTHROPIC_MODEL=claude-3-5-sonnet-20241022
-
-# اجعلها true لمنع انهيار Lens حتى لو كل المفاتيح فارغة (مستحسن)
-AYROVIX_ALLOW_LOCAL_FALLBACK=true
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-haiku-4-5-20251001
+AYROVIX_PROVIDER_TIMEOUT_MS=5000
+AYROVIX_SEARCH_TIMEOUT_MS=7000
+AYROVIX_ANTHROPIC_WEB_SEARCH=true
 ```
 
-تم تحديث `render.yaml` ليشملها تلقائياً في Render.
+Ne créez jamais de variable `VITE_*` pour la clé. Toute variable préfixée par `VITE_` est intégrée au JavaScript envoyé au navigateur.
 
----
+## Capacités prises en charge
 
-## كيف تحصل على البدائل ؟
+| Entrée | Traitement |
+|---|---|
+| Photo produit | Claude Vision → catalogue local → Claude Web Search |
+| Capture avec prix | Claude Vision lit uniquement le prix visible avec type et confiance |
+| Lien produit | Validation SSRF → métadonnées/prix direct → catalogue + Claude Web Search |
+| QR URL | Décodage local → même analyse sécurisée que le lien |
+| QR texte | Décodage local → `/api/ayrovix/analyze-code` → catalogue + Claude Web Search |
+| EAN/UPC/Code128 | Décodage local → `/api/ayrovix/analyze-barcode` → catalogue + Claude Web Search |
 
-### Option A — Gemini (مجاني 100%)
-1. ادخل https://aistudio.google.com/app/apikey
-2. سجل دخول بـ Google → Create API Key
-3. انسخ المفتاح → ضعه في Render → Environment → `GEMINI_API_KEY`
-4. مجاناً: **1500 طلب / يوم** — أكثر من كافي لـ AYROVI Beta، وسرعة ممتازة، وجودة Vision مشابهة لـ Claude.
-5. في الكود اخترنا `gemini-1.5-flash` لأنه أسرع وأرخص من `gemini-1.5-pro`.
+## Règles de prix
 
-**مميزات Gemini لـ AYROVI:**
-- يفهم الملابس والعلامات (Nike, Zara...) جيداً
-- يقرأ النصوص في الصورة (OCR مجاني ضمنياً)
-- Free tier لا يطلب بطاقة بنكية
+- Un prix issu d’une image n’est conservé que s’il correspond à un prix produit actuel ou au total d’un panier, avec une confiance d’au moins `0.65`.
+- Un ancien prix barré ne devient jamais un prix de commande.
+- Avant une commande fondée sur un prix lu dans une image, le client doit fournir puis vérifier le lien direct de la fiche produit.
+- Le prix direct extrait de la page du magasin remplace le prix visuel dès qu’il est disponible.
+- Si la page ne permet pas de vérifier son prix, Lens demande un autre lien direct au lieu de valider un montant non confirmé.
 
-### Option B — OpenAI gpt-4o-mini (رخيص جداً)
-1. https://platform.openai.com/api-keys → Create key
-2. اشحن 5$ → تكفي حوالي 15,000 صورة Lens
-3. ضع `OPENAI_API_KEY`
-4. موديل `gpt-4o-mini` دقيق جداً وتكلفته 1/20 من Claude.
+## Diagnostic
 
-### Option C — إصلاح Claude
-- ادخل https://console.anthropic.com/settings/billing واشحن رصيد
-- أو أنشئ مفتاح جديد إذا تم تسريبه
+1. Vérifiez que `ANTHROPIC_API_KEY` existe dans **Render → Environment** et que le compte Anthropic dispose de crédits.
+2. Vérifiez les logs serveur : Vision affiche `Trying Claude` puis `Claude SUCCESS`; la recherche affiche `anthropic-search`.
+3. Dans **Admin → Rapports**, les deux badges doivent indiquer `Claude Vision` et `Claude Web Search` configurés.
+4. Après une modification :
 
-### Option D — Local Fallback (موجود الآن — بدون أي مفتاح)
-الكود الجديد يعمل حتى لو لم تضع أي مفتاح. سيرد بمنتج generic ويبحث في كتالوج AYROVI الداخلي. لن ترى بعد اليوم `IDENTIFICATION_FAILED` في الـ Logs يمنع المستخدم.
-
----
-
-## ما الذي يجب أن تفعله على Render الآن ؟
-
-1. في مشروعك المحلي:
 ```bash
-git add src/ayrovix/services/ai.ts .env.example render.yaml src/admin/routes.ts
-git commit -m "feat(ayrovix): multi-provider vision (Gemini > OpenAI > Claude > local) fixes IDENTIFICATION_FAILED"
-git push origin main
+npm run typecheck
+npm test
+npm run build
+npm audit --audit-level=high
 ```
 
-2. في Render Dashboard → ayrovi service → Environment:
-- أضف `GEMINI_API_KEY` (احصل عليه مجاناً)
-- اترك `AYROVIX_ALLOW_LOCAL_FALLBACK=true`
-- احتفظ بـ `ANTHROPIC_API_KEY` القديم حتى لو فارغ (سيتم تجاوزه)
+## Sécurité
 
-3. Deploy سيشتغل تلقائياً، والـ logs ستصبح:
-```
-[AYROVIX] Trying Gemini...
-[AYROVIX] Gemini success — category=shoes confidence=0.92
-```
-بدلاً من `IDENTIFICATION_FAILED`.
-
----
-
-## تحسين إضافي مقترح (اختياري)
-
-لو تريد دقة أفضل بدون مزود خارجي، يمكن إضافة:
-- **HuggingFace CLIP + BLIP** (يعمل محلياً بدون API، لكن يحتاج GPU/CPU أكثر)
-- **Florence-2 (Microsoft)** open-source vision
-- **Tesseract OCR + brand detection** الموجود أصلاً في `src/services/vision.ts` يمكن دمجه مع fallback ليستخرج الماركة من النص.
-
-الكود الحالي جاهز لهذا: في `localFallbackIdentification()` يمكنك استدعاء `VisualProductExtractor` لاستخراج نصوص ثم تخمين الماركة.
-
----
-
-## الخلاصة
-
-- ❌ قبل: Claude فقط → عند نفاذ الرصيد = Lens معطلة + Logs مزعجة
-- ✅ بعد: Gemini (مجاني) → OpenAI (رخيص) → Claude → Local Fallback (لا يفشل أبداً)
-
-**أفضل مسار لك الآن:** استعمل **Gemini مجاناً** — دقيقة واحدة لإنشاء المفتاح و Lens ترجع تشتغل 100%.
+- Ne copiez jamais une clé réelle dans ce fichier, dans Git, dans un ticket ou dans le chat.
+- Faites tourner immédiatement toute clé déjà exposée.
+- Les images Lens sont validées et réencodées en mémoire; elles ne sont pas écrites dans les uploads par le flux Lens.
+- La résolution DNS, les redirections et les adresses privées sont contrôlées avant la lecture d’un lien.

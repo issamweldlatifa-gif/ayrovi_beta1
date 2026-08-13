@@ -1,6 +1,7 @@
 /** AYROVIX — contrats client (miroir 1:1 de src/ayrovix/types.ts). */
 
 export interface AyrovixIdentification {
+  input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
   category: string;
   brand: string | null;
   model: string | null;
@@ -9,6 +10,12 @@ export interface AyrovixIdentification {
   possible_model_codes: string[];
   description: string;
   confidence: number;
+  detected_price: {
+    amount: number;
+    currency: string;
+    label: 'none' | 'product_price' | 'old_price' | 'cart_total';
+    confidence: number;
+  };
 }
 
 export interface AyrovixCandidate {
@@ -46,7 +53,7 @@ export interface AyrovixProduct {
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
 }
 
-export interface AyrovixOcrPrice {
+export interface AyrovixDetectedPrice {
   sourcePrice: number;
   sourceCurrency: string;
   convertedPriceTND: number | null;
@@ -64,7 +71,7 @@ export interface AyrovixImageResult {
   query: string;
   candidates: AyrovixCandidate[];
   eventId: string;
-  ocrPrice?: AyrovixOcrPrice | null;
+  detectedPrice?: AyrovixDetectedPrice | null;
   message?: string;
 }
 
@@ -72,6 +79,7 @@ export interface AyrovixUrlResult {
   product: AyrovixProduct;
   alternates: AyrovixCandidate[];
   eventId: string;
+  fallback?: boolean;
 }
 
 /** Charge utile transmise au Calculator/panier AYROVI existant (aucun flow modifié). */

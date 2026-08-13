@@ -22,7 +22,7 @@ import {
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
-import { checkSerpApiHealth, checkFreeSearchHealth } from '../ayrovix/services/search';
+import { checkAnthropicSearchHealth } from '../ayrovix/services/search';
 
 interface ResourceConfig {
   table: string;
@@ -649,17 +649,15 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
   });
-  // AYROVIX Lens — usage produit + état réel des fournisseurs (Vision IA multi-provider, SerpAPI + Free Search)
+  // AYROVIX Lens — Anthropic-only Vision + official Claude Web Search.
   router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), async (_req, res) => {
-    const [serpapi, freeSearch] = await Promise.all([checkSerpApiHealth(), checkFreeSearchHealth()]);
     res.json({
       success: true,
       data: {
         ...getAyrovixStats(db),
         providers: {
-          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Vision IA — ordre configurable, Anthropic recommandé pour Lens' },
-          serpapi,
-          freeSearch,
+          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Claude Vision — Anthropic uniquement' },
+          search: checkAnthropicSearchHealth(),
         },
       },
     });

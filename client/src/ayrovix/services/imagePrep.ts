@@ -1,8 +1,7 @@
 /**
- * AYROVIX · préparation d'image côté client V2 — Image Clarity + Secret Tech Hidden
- * - Réduction douce (max 1400px, JPEG 0.85) pour upload rapide 4G
- * - Amélioration clarté: contrast(1.15) brightness(1.08) saturate(1.1) pour produit plus net
- * - Aucun mot technique exposé (OCR/Vision caché)
+ * AYROVIX client image preparation.
+ * Product photos are compact JPEGs; screenshots stay PNG so visible prices and
+ * product codes remain sharp for Claude Vision. No colour-changing filters.
  */
 
 export interface PreparedImage {
@@ -15,26 +14,34 @@ export async function prepareImage(source: File): Promise<PreparedImage> {
   if (!source.type.startsWith('image/')) return { file: source, previewUrl };
   try {
     const bitmap = await createImageBitmap(source);
-    const MAX = 1400;
-    const scale = Math.min(1, MAX / Math.max(bitmap.width, bitmap.height));
-    // Même si pas de resize, on améliore la clarté pour l'upload
-    const targetW = Math.round(bitmap.width * scale);
-    const targetH = Math.round(bitmap.height * scale);
+    const screenshot = source.type === 'image/png'
+      || /(?:screen(?:shot)?|capture|panier|cart|receipt|facture)/i.test(source.name || '');
+    const maxEdge = screenshot ? 1600 : 1280;
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    const targetWidth = Math.max(1, Math.round(bitmap.width * scale));
+    const targetHeight = Math.max(1, Math.round(bitmap.height * scale));
     const canvas = document.createElement('canvas');
-    canvas.width = targetW;
-    canvas.height = targetH;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { bitmap.close(); return { file: source, previewUrl }; }
-    // AYROVI Clarity Boost — rend l'image plus nette et claire (caché sous nom "Analyse instantanée")
-    // @ts-ignore - filter support modern browsers
-    ctx.filter = 'contrast(1.15) brightness(1.08) saturate(1.1)';
-    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      bitmap.close();
+      return { file: source, previewUrl };
+    }
+    context.drawImage(bitmap, 0, 0, targetWidth, targetHeight);
     bitmap.close();
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.88));
+    const outputType = screenshot ? 'image/png' : 'image/jpeg';
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, screenshot ? undefined : 0.84));
     if (!blob) return { file: source, previewUrl };
-    // Si l'image améliorée plus grande, garde l'original mais preview reste clair
-    if (blob.size > source.size * 1.2) return { file: source, previewUrl };
-    return { file: new File([blob], source.name.replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' }), previewUrl };
+    // Avoid replacing an already compact image with a significantly larger one.
+    if (blob.size > source.size * 1.25 && source.size <= 5 * 1024 * 1024) {
+      return { file: source, previewUrl };
+    }
+    const extension = screenshot ? '.png' : '.jpg';
+    return {
+      file: new File([blob], source.name.replace(/\.\w+$/, '') + extension, { type: outputType }),
+      previewUrl,
+    };
   } catch {
     return { file: source, previewUrl };
   }

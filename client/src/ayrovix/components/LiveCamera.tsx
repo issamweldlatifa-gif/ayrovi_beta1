@@ -6,6 +6,7 @@ interface LiveCameraProps {
   onPhoto: (file: File) => void;
   onQrUrl: (url: string) => void;
   onBarcode: (code: string) => void;
+  onCodeText: (value: string) => void;
   onLink: (url: string) => void;
   onClose: () => void;
   onCameraFailed: () => void;
@@ -17,7 +18,7 @@ type CameraMode = 'search' | 'upload' | 'code';
  * AYROVIX Lens — caméra sans effets (user request: remove stars/Xray, keep clean & fast)
  * Radical performance: no animations, no particles, simple white corners only.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onLink, onClose, onCameraFailed }) => {
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onCameraFailed }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -62,10 +63,10 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
     const session = startCodeScan(video, (result: CodeScanResult) => {
       if (result.kind === 'url') onQrUrl(result.value);
       else if (result.kind === 'barcode') onBarcode(result.value);
-      else setNotice('Ce code ne contient ni lien ni code-barres produit. Essayez un autre code.');
+      else onCodeText(result.value);
     });
     return () => session.stop();
-  }, [mode, onQrUrl, onBarcode]);
+  }, [mode, onQrUrl, onBarcode, onCodeText]);
 
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks()[0];

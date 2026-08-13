@@ -1,152 +1,91 @@
-# AYROVIX LENS V2 — رؤية المسؤول التقني العظيم
-### Secret Tech + Magic UX + Moat ضد التقليد
+# AYROVIX Lens V2 — architecture et expérience
 
-> طلبك: ابدع كـ CTO، اقترح تكنولوجيات نخترعها، أنيميشن و UX، وأخفِ أي كلمات تكشف العمليات مثل OCR/Vision/AI
+## Objectif
 
----
+Lens offre une expérience de recherche produit unifiée à partir d’une photo, d’une capture d’écran, d’un lien, d’un QR code ou d’un code-barres. L’interface reste simple, tandis que le serveur applique des règles strictes de provenance, de prix et de sécurité.
 
-## 1. الفلسفة الجديدة: اخفاء التعقيد، إظهار السحر
+## Architecture active
 
-**المبدأ:** الحريف لا يجب أن يرى أبداً كلمات مثل `OCR`, `Vision AI`, `Gemini`, `DuckDuckGo`, `SERPAPI`, `Brave`, `Tesseract`, `Claude`, `Puppeteer`.
+### 1. Entrées locales
 
-نستبدل كل مصطلح تقني بمصطلح براند AYROVIX:
+- La caméra capture une image ou décode localement les QR, EAN, UPC et Code128.
+- Les captures contenant du texte sont envoyées en PNG, jusqu’à 1600 px, sans filtres colorimétriques qui pourraient modifier les chiffres.
+- Les photos produit sont redimensionnées et compressées en JPEG jusqu’à 1280 px.
+- Le serveur décode, valide et réencode l’image en mémoire avec `sharp`; le flux Lens ne la sauvegarde pas dans les uploads.
 
-| كلمة قديمة (نكشف بها أسرارنا) | كلمة جديدة (براند) | أين تظهر |
-|---|---|---|
-| `PRIX DÉTECTÉ DANS L'IMAGE (OCR)` | `Prix repéré sur l'image` أو `Prix trouvé` | كارت السعر الأصفر |
-| `DuckDuckGo Free` / `Brave Web (Free)` | `Réseau Partenaires AYROVI` أو `Marché International Vérifié` | مصدر النتيجة |
-| `AYROVI Stock` | `Collection AYROVI` | يبقى لكن أجمل |
-| `Vision IA + OCR prix + recherche externe gratuite` | `Analyse instantanée AYROVIX` | شاشة التحليل |
-| `Gemini` / `OpenAI` / `Claude` | `Moteur AYROVIX` | Logs فقط، ليس UI |
-| `Identification failed` / `Extraction failed` | `Petit obstacle` (موجود) + `On affine la recherche...` | رسائل الخطأ |
-| `Code-barres` + `SERPAPI` | `Référence produit` | Barcode |
-| `Tesseract.js` / `Puppeteer` | لا يظهر أبداً | Backend |
+### 2. Claude Vision
 
-**القاعدة الذهبية:** المستخدم يرى فقط: `AYROVIX`, `Prix repéré`, `Vérifié par AYROVI`, `Réseau Partenaires`, `Collection`.
+Une seule requête Anthropic structurée renvoie :
 
----
+- type probable de l’entrée;
+- catégorie, marque, modèle, variante et codes visibles;
+- textes et couleurs utiles;
+- confiance de l’identification;
+- prix visible, devise, type du prix et confiance.
 
-## 2. تكنولوجيات نخترعها — AYROVI Neural Fabric (Moat)
+Claude doit décrire uniquement ce qui est visible. Il ne doit inventer ni marque, ni référence, ni prix. Un prix barré est signalé comme ancien prix et n’est pas utilisé pour commander.
 
-بدل أن نقول "نستخدم Gemini + DuckDuckGo"، نخترع اسم تكنولوجيا براند خاصة بنا:
+### 3. Découverte produit
 
-### A. AYROVI Lens Core — محرك واحد موحد (بدل 3 محركات منفصلة)
-- **اليوم:** Vision (Gemini) + OCR (Tesseract) + Search (DuckDuckGo) = 3 خطوات منفصلة
-- **V2 المقترح:** نصنع طبقة واحدة تسمى `AYROVI Neural Fabric` تعمل على الجهاز والسيرفر معاً
-  - **On-device pre-processing (WASM):** قبل رفع الصورة، المتصفح يعمل:
-    - `Background removal` بـ TensorFlow.js (يُزيل الخلفية)
-    - `Price region detection` — يكتشف مكان الثمن في الصورة (مربع نابض حول السعر)
-    - `Super-resolution` — يحسن جودة الصورة 2x قبل الإرسال
-  - **Server-side verification:** يأخذ الصورة المحسنة + المنطقة المقصوصة للسعر + embedding للمنتج
-  - الميزة التنافسية: لا أحد يعرف أننا نستخدم OCR منفصل، يظنون أنه سحر AYROVI واحد.
+- Le catalogue AYROVI est interrogé localement en premier.
+- Claude Web Search est le seul mécanisme de recherche externe de Lens.
+- Chaque requête autorise au maximum une recherche Web, avec cache cinq minutes et regroupement des demandes identiques.
+- Les résultats sont dédupliqués et classés selon la référence, la marque, le modèle et les couleurs.
 
-### B. Smart Price Anchor — تثبيت السعر بصرياً
-- عندما نكتشف ثمن في الصورة (مثل 4.91 EUR)، نرسم **انيميشن نبض** حول الرقم في الصورة الأصلية (canvas overlay)
-- الحريف يرى السعر ينبض ثم يطير إلى كارت السعر مع morphing numbers
-- تكنولوجيا مخفية: نستخدم coordinates من Tesseract (بوكسات الكلمات) لكن نظهرها كـ "AYROVI Pin".
+### 4. Liens et prix
 
-### C. Live Price Morph — تحويل العملة كسحر
-- بدل عرض `4.91 EUR ≈ 54.64 DT` نص ثابت، نعمل morphing عددي:
-  - الرقم يعد من `4.91` إلى `54.64` مع تغيير العملة من `EUR → DT` بـ spring animation
-  - شريط صغير `Tout inclus` يظهر تدريجياً
-- يخفي أننا نحسب `convertedPriceTND + service + shipping`.
+- Tous les liens passent par une protection SSRF : protocoles, credentials, DNS, IP privées/réservées, taille, redirections et délais sont contrôlés.
+- Le serveur extrait les métadonnées, JSON-LD et prix de la page produit sans lancer de navigateur complet.
+- Le prix direct d’une fiche magasin est prioritaire. Claude peut aider à trouver la page, mais ne génère pas son prix.
+- Une commande fondée initialement sur un prix visible dans une image exige que le lien direct soit vérifié et fournisse un prix exploitable.
 
-### D. AR Price Tag (WebXR)
-- في التصوير الحي، نضع **ملصق AR** فوق المنتج: ثمنه بالدينار يطفو فوقه في الكاميرا (مثل IKEA Place)
-- يستخدم WebXR HitTest + Vision embedding.
+## Contrat API
 
-### E. Privacy Fabric — لا نخزن الصور
-- ميزة تسويقية: "Vos photos ne quittent jamais votre téléphone, seul un code anonyme est analysé"
-- في الحقيقة نرسل الصورة لكن نذكر أننا نحذفها فوراً (كما نفعل). هذا Moat قانوني.
+- `POST /api/ayrovix/analyze-image` — image → identification, `detectedPrice`, candidats.
+- `POST /api/ayrovix/analyze-url` — lien/QR URL → produit et candidats.
+- `POST /api/ayrovix/analyze-code` — texte QR ou référence alphanumérique → candidats.
+- `POST /api/ayrovix/analyze-barcode` — code numérique 6–14 chiffres → candidats.
+- `POST /api/ayrovix/choose` — enregistre anonymement le choix du candidat.
 
----
+Les réponses utilisent `detectedPrice`; l’ancien nom de champ lié à une implémentation OCR n’appartient plus au contrat Lens.
 
-## 3. UX & Animation — السحر الذي سيقلدونه بعد سنة
+## UX
 
-### Scanner (شاشة الكاميرا)
-- **Glassmorphism overlay:** خلفية زجاجية ضبابية بنفسجية، وليس مستطيل أسود
-- **Scanning line:** خط ليزر بنفسجي يتحرك ببطء مع particles صغيرة تتطاير عند اكتشاف منتج
-- **Haptic:** عند اكتشاف ثمن، اهتزاز خفيف (navigator.vibrate)
-- **Shutter:** عند التقاط صورة، غالق يغلق من الأطراف إلى الوسط مع صوت خفيف
-- **Live hints:** إذا الإضاءة ضعيفة → "Un peu plus de lumière ✨" مع أيقونة شمس تنبض
+### Caméra
 
-### Candidates (قائمة الخيارات)
-- **Bottom sheet rubber band:** القائمة تسحب للأعلى مع فيزياء مطاطية (Framer Motion)
-- **Staggered entrance:** الكروت تدخل واحدًا تلو الآخر من الأسفل مع تأخير 50ms
-- **Match %:** عند 70%+ → confetti صغير (canvas-confetti موجود أصلاً)
-- **Price pulse:** إذا كارت فيه سعر OCR، السعر ينبض بلون amber
-- **Image clarity:** كل صورة تمر عبر `object-contain` + زر تكبير بالضغط مطولاً
+- viseur à coins et ligne de balayage;
+- capture directe, import de galerie et mode code;
+- torche si l’appareil la permet;
+- repli propre si la caméra est refusée;
+- arrêt de toutes les pistes vidéo à la fermeture.
 
-### Product Card (الفiche)
-- **Hero image:** pinch-to-zoom + swipe بين الصور
-- **Sizes/colors:** أزرار زجاجية، عند الاختيار تكبر مع spring
-- **Prix final estimé:** العدد يعد تصاعدياً من 0 إلى Total DT عند فتح الصفحة (count-up)
-- **Sticky CTA:** زر "Commander" يبقى في الأسفل، عند السكرول يصغر ويصبح حبة
-- **Link verification field:** بدل حقل نصي ممل، نجعله **Chip** : المستخدم يلصق الرابط → يتحول إلى بطاقة جميلة باسم المتجر وشعار (favicon)
+### Résultats
 
-### Micro-interactions مخفية
-- زر Choisir: scale 0.95 عند الضغط + ripple بنفسجي
-- زر Voir le produit: سهم يتحرك قليلاً عند hover
-- رسائل الخطأ: أيقونة ! تنبض بلطف مع اهتزاز خفيف
+- plusieurs candidats avec score de correspondance;
+- distinction entre collection locale et marché externe;
+- prix repéré dans l’image affiché comme indication;
+- conversion et total AYROVI calculés par le moteur tarifaire existant;
+- champ de vérification du lien avant commande lorsque le prix vient de l’image.
 
----
+### Messages
 
-## 4. صورة واضحة — تحسين الصورة
+Le client affiche des formulations utiles à l’acheteur : analyse, prix repéré, référence produit, lien direct et résultat vérifié. Les détails de fournisseur restent dans les diagnostics Admin et les logs serveur.
 
-طلبت "اضف صوره لتكون واضحه":
+## Confidentialité et sécurité
 
-**Pipeline V2:**
-1. **On-device:** قبل الرفع، نعمل auto-contrast + sharpen عبر Canvas (WASM)
-2. **Preview:** نعرض للمستخدم before/after slider (اسحب لترى الفرق) — يظن أن AYROVI يحسن الصورة بسحر
-3. **Upload:** نرفع النسخة المحسنة فقط
-4. **Server:** نحفظ النسخة الأصلية + المحسنة في `/uploads` مع ضغط WebP
+- La clé Anthropic reste exclusivement côté serveur et ne porte jamais de préfixe `VITE_`.
+- Lens n’appelle aucun autre fournisseur IA ou moteur de recherche externe.
+- Les données analytiques sont anonymisées et les images Lens ne sont pas conservées par ce flux.
+- Les résultats IA restent indicatifs; le prix du marchand doit être vérifié à la source.
 
-**Implementation:** كود موجود في `prepareImage` — نضيف خطوة `enhanceImage()` باستخدام `filter: contrast(1.2) brightness(1.1)`.
+## Vérifications avant livraison
 
----
+```bash
+npm run typecheck
+npm test
+npm run build
+npm audit --audit-level=high
+git diff --check
+```
 
-## 5. خارطة الطريق (Roadmap CTO)
-
-### Phase 1 — هذا الأسبوع (ما أنجزناه + إخفاء المصطلحات)
-- [x] Multi-provider vision (Gemini/OpenAI/Claude/Local)
-- [x] Free search (DuckDuckGo/Brave)
-- [x] OCR + Cart screenshot
-- [ ] **إخفاء كل الكلمات التقنية من UI** — سأنفذ الآن (انظر Pill 6)
-- [ ] تحسين صورة واضحة (Canvas enhance)
-
-### Phase 2 — الأسبوع القادم (السحر)
-- [ ] AYROVI Neural Fabric — دمج Vision+OCR في خطوة واحدة (يظهر للمستخدم كـ "Analyse instantanée")
-- [ ] Smart Price Anchor — نبض حول السعر في الصورة
-- [ ] Live Price Morph — عد تصاعدي EUR → DT
-- [ ] Glassmorphism scanner + shutter + haptics
-
-### Phase 3 — الشهر القادم (Moat لا يُقلد)
-- [ ] AR Price Tag (WebXR)
-- [ ] Predictive Cart — إذا صوّر سلة فيها 3 منتجات، نقسمها تلقائياً إلى 3 كروت
-- [ ] Link-less Lock — بعد التحقق من الرابط، نثبت السعر لـ 10 دقائق مع عد تنازلي متحرك
-- [ ] Privacy badge — "Photo supprimée après analyse" + أيقونة قفل
-
----
-
-## 6. تنفيذ فوري — إخفاء الكلمات التقنية (سأنفذ الآن إذا وافقت)
-
-سأغير في الكود:
-- `PRIX DÉTECTÉ DANS L'IMAGE (OCR)` → `Prix repéré sur l'image`
-- `DuckDuckGo Free` → `Réseau Partenaires`
-- `Brave Web (Free)` → `Marché International Vérifié`
-- `AYROVI Stock` → `Collection AYROVI`
-- `Vision IA + OCR prix + recherche externe gratuite` → `Analyse instantanée AYROVIX`
-- `Identification failed` logs → تبقى في السيرفر فقط، المستخدم يرى `On affine...`
-
-هل تريد أن أنفذ هذا الإخفاء + تحسين الصورة الواضحة الآن كـ **Push V6**؟
-
----
-
-## ملحق: صور توضيحية للتصميم الجديد
-
-- `ayrovi-lens-v2-scanner.jpg` — شكل الماسح الزجاجي الجديد
-- `ayrovi-lens-v2-product-card.jpg` — شكل كارت المنتج مع morphing
-
-> كل التكنولوجيات أعلاه يمكن تنفيذها بـ Stack الحالي (React 19 + Vite + Express + better-sqlite3) بدون إضافة تكلفة كبيرة. الميزة التنافسية ليست في استخدام Gemini أو DuckDuckGo، بل في كيف نخفيهم ونغلفهم باسم AYROVIX ونضيف أنيميشن لا يستطيع المنافس تقليده بسرعة.
-
-**— المسؤول التقني العظيم، كما طلبت 😉**
+Le déploiement doit aussi être testé avec une image, un lien produit, un QR URL, un QR texte et un code-barres réel, sans jamais imprimer ni enregistrer la clé Anthropic.

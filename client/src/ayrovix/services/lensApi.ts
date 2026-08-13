@@ -46,6 +46,17 @@ export function markChosen(eventId: string): void {
   }).catch(() => {});
 }
 
+/** Recherche du contenu texte d'un QR via Claude Web Search. */
+export async function analyzeCode(value: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+  const response = await fetch('/api/ayrovix/analyze-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ value }),
+    signal,
+  });
+  return parseResponse(response);
+}
+
 /** Recherche par code-barres (EAN/UPC) lu en direct. */
 export async function analyzeBarcode(code: string, signal?: AbortSignal): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
   const response = await fetch('/api/ayrovix/analyze-barcode', {

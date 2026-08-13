@@ -1,11 +1,12 @@
 /**
- * AYROVIX — Contrats partagés côté serveur.
- * Architecture extensible : Input → AI Vision → Search → Matching → Extraction → Currency → Calculator.
- * Claude = couche de compréhension UNIQUEMENT (jamais moteur de recherche, jamais source de prix).
+ * AYROVIX — contrats partagés côté serveur.
+ * Claude Vision identifie le produit et lit uniquement un prix réellement visible;
+ * Claude Web Search découvre des pages, sans devenir la source du prix marchand.
  */
 
-/** Ce que la couche Vision (Claude) extrait d'une image. Aucun prix n'est demandé ni accepté. */
+/** Données structurées extraites de l'image par Claude Vision. */
 export interface AyrovixIdentification {
+  input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
   category: string;
   brand: string | null;
   model: string | null;
@@ -14,6 +15,12 @@ export interface AyrovixIdentification {
   possible_model_codes: string[];
   description: string;
   confidence: number; // 0..1
+  detected_price: {
+    amount: number;
+    currency: string;
+    label: 'none' | 'product_price' | 'old_price' | 'cart_total';
+    confidence: number;
+  };
 }
 
 export type AyrovixChannel = 'image' | 'url' | 'qr';
@@ -27,7 +34,7 @@ export interface AyrovixCandidate {
   model: string | null;
   colors: string[];
   sizes: string[];
-  source: string;         // ex. "AYROVI Stock", "SHEIN", "Google Shopping"
+  source: string;         // ex. "Collection AYROVI", "SHEIN", "Amazon"
   sourceUrl: string;      // page produit (ou page interne)
   image: string;
   price: number | null;   // prix source (null si inconnu — jamais deviné)
@@ -55,13 +62,31 @@ export interface AyrovixProduct {
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
 }
 
+export interface AyrovixDetectedPrice {
+  sourcePrice: number;
+  sourceCurrency: string;
+  convertedPriceTND: number | null;
+  serviceFeeTND: number | null;
+  estimatedShippingTND: number | null;
+  totalPriceTND: number | null;
+  title: string;
+  brand: string | null;
+  isCartScreenshot: boolean;
+  imageUrl: string | null;
+}
+
 export interface AyrovixAnalyzeImageResponse {
   identification: AyrovixIdentification;
   query: string;
   candidates: AyrovixCandidate[];
+  eventId: string;
+  detectedPrice?: AyrovixDetectedPrice | null;
+  message?: string;
 }
 
 export interface AyrovixAnalyzeUrlResponse {
   product: AyrovixProduct;
   alternates: AyrovixCandidate[];
+  eventId: string;
+  fallback?: boolean;
 }
