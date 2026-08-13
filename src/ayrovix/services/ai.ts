@@ -9,7 +9,7 @@ import type { AyrovixIdentification } from '../types';
  */
 
 const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-3-5-haiku-latest';
+const DEFAULT_MODEL = 'claude-3-5-sonnet-20241022';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
