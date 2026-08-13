@@ -306,13 +306,28 @@ describe('AYROVI platform', () => {
     expect(withoutCsrf.status).toBe(403);
     expect(withoutCsrf.body.error).toContain('sécurité');
 
+    // Un numéro de livraison invalide est rejeté sans consommer le panier.
+    const invalidPhoneCheckout = await customerAgent
+      .post('/api/checkout')
+      .set('x-session-id', primarySession)
+      .set('x-csrf-token', customerCsrf)
+      .send({
+        name: 'Client Test',
+        phone: '1234',
+        city: 'Tunis',
+        address: 'Avenue Habib Bourguiba, Tunis',
+        paymentMethod: 'bank_transfer',
+      });
+    expect(invalidPhoneCheckout.status).toBe(400);
+
+    // Le téléphone de livraison est saisi librement au checkout (format international accepté).
     const checkoutResponse = await customerAgent
       .post('/api/checkout')
       .set('x-session-id', primarySession)
       .set('x-csrf-token', customerCsrf)
       .send({
         name: 'Client Test',
-        phone: '98123456',
+        phone: '+216 98 123 456',
         city: 'Tunis',
         address: 'Avenue Habib Bourguiba, Tunis',
         paymentMethod: 'bank_transfer',
@@ -331,7 +346,7 @@ describe('AYROVI platform', () => {
     persistedCustomerId = order.customer_id;
     expect(order.pricing_snapshot).toContain('"version":1');
     expect(order.account_id).toBe(primaryAccountId);
-    expect(order.phone).toBe('98123456');
+    expect(order.phone).toBe('+216 98 123 456');
     expect(order.status).toBe('PAYMENT_PENDING');
     expect(order.deposit_status).toBe('PENDING');
     expect(order.deposit_percent).toBe(20);

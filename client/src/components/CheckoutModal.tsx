@@ -144,7 +144,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           setFormData((current) => ({
             ...current,
             name: preferred.recipient_name || current.name,
-            phone: customerSession.account.phone || '',
+            phone: preferred.phone || current.phone || customerSession.account.phone || '',
             city: preferred.governorate || current.city,
             address: [preferred.address_line, preferred.city, preferred.postal_code].filter(Boolean).join(', '),
           }));
@@ -159,7 +159,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setFormData((current) => ({
       ...current,
       name: address.recipient_name || current.name,
-      phone: customerSession?.account.phone || '',
+      phone: address.phone || current.phone || customerSession?.account.phone || '',
       city: address.governorate || current.city,
       address: [address.address_line, address.city, address.postal_code].filter(Boolean).join(', '),
     }));
@@ -181,8 +181,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    if (formData.phone.replace(/\D/g, '').length < 8) {
-      setError('Veuillez renseigner un numéro de téléphone tunisien valide (8 chiffres).');
+    let phoneDigits = formData.phone.replace(/\D/g, '');
+    if (phoneDigits.startsWith('00216')) phoneDigits = phoneDigits.slice(5);
+    else if (phoneDigits.startsWith('216') && phoneDigits.length === 11) phoneDigits = phoneDigits.slice(3);
+    if (!/^[24579]\d{7}$/.test(phoneDigits)) {
+      setError('Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5, 7 ou 9 (ex : 98 123 456).');
       return;
     }
 
@@ -299,11 +302,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               type="tel"
               required
               value={formData.phone}
-              readOnly
-              aria-readonly="true"
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value.replace(/[^\d+\s]/g, '').slice(0, 17) })}
+              inputMode="tel"
+              autoComplete="tel"
               placeholder="+216 98 123 456"
               className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-mono font-semibold"
             />
+            <p className="mt-1 text-[10px] text-muted font-semibold">
+              Utilisé pour cette livraison uniquement — vous pouvez le modifier (8 chiffres, ex : 98 123 456).
+            </p>
           </div>
 
           {/* Governorate */}
