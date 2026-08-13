@@ -24,7 +24,8 @@ app.use((_req, res, next) => {
   res.setHeader('Content-Security-Policy', `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; ${frameAncestors} base-uri 'self'; form-action 'self'`);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), payment=()');
+  // Caméra autorisée pour notre origine (AYROVIX Lens) ; le reste des API sensibles reste bloqué.
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
   if (isProd) {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');

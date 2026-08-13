@@ -30,6 +30,8 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const [mode, setMode] = useState<CameraMode>('search');
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
+  const [torchHint, setTorchHint] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [linkInput, setLinkInput] = useState('');
   const modeRef = useRef<CameraMode>('search');
@@ -74,14 +76,24 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
     return () => session.stop();
   }, [mode, onQrUrl, onBarcode]);
 
+  /**
+   * Torche : nécessite HTTPS + permission caméra + track arrière (Android Chrome).
+   * Certains appareils n'exposent la capacité qu'après le premier applyConstraints —
+   * on tente réellement la commande et on signale clairement si l'appareil refuse.
+   */
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks()[0];
-    if (!track) return;
+    if (!track) { setTorchHint(true); setTimeout(() => setTorchHint(false), 2200); return; }
     const next = !torchOn;
     try {
       await track.applyConstraints({ advanced: [{ torch: next } as any] });
+      setTorchAvailable(true);
       setTorchOn(next);
-    } catch { /* ignoré */ }
+    } catch {
+      setTorchOn(false);
+      setTorchHint(true);
+      setTimeout(() => setTorchHint(false), 2200);
+    }
   };
 
   /** Obturateur — fige la frame courante en JPEG et lance la suite (~analyse immédiate). */
@@ -131,16 +143,30 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M15 5l-7 7 7 7" /></svg>
         </button>
         <p className="text-sm font-extrabold tracking-wide drop-shadow">AYROVIX Lens</p>
-        <button
-          type="button"
-          onClick={toggleTorch}
-          disabled={!torchAvailable}
-          aria-label={torchOn ? 'Éteindre le flash' : 'Allumer le flash'}
-          className={`grid h-11 w-11 place-items-center rounded-full backdrop-blur transition active:scale-95 disabled:opacity-35 ${torchOn ? 'bg-amber-300 text-ink' : 'bg-white/15'}`}
-        >
-          <svg width="17" height="17" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2Z" /></svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleTorch}
+            aria-label={torchOn ? 'Éteindre le flash' : 'Allumer le flash'}
+            className={`grid h-11 w-11 place-items-center rounded-full backdrop-blur transition active:scale-95 ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-amber-300 text-ink' : 'bg-white/15'}`}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2Z" /></svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowInfo(true)}
+            aria-label="Conditions et mode d'emploi d'AYROVIX Lens"
+            className="grid h-11 w-11 place-items-center rounded-full bg-white/15 backdrop-blur transition active:scale-95"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
+          </button>
+        </div>
       </header>
+      {torchHint && (
+        <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[11px] font-semibold text-white/90">
+          Flash non proposé par cet appareil/navigateur — rapprochez-vous avec un bon éclairage.
+        </p>
+      )}
 
       {/* Viseur */}
       <div className="pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">
@@ -236,6 +262,50 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           e.target.value = '';
         }}
       />
+
+      {/* ── Sheet : mode d'emploi + conditions d'utilisation ── */}
+      {showInfo && (
+        <div className="fixed inset-0 z-30 flex items-end justify-center" role="dialog" aria-modal="true" aria-label="Mode d'emploi et conditions AYROVIX Lens">
+          <button type="button" aria-label="Fermer" onClick={() => setShowInfo(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative max-h-[82vh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-[#17131f] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 text-white">
+            <span className="mx-auto mb-4 block h-1 w-11 rounded-full bg-white/25" />
+            <div className="mb-4 flex items-center justify-between">
+              <p className="text-base font-extrabold">AYROVIX Lens</p>
+              <button type="button" onClick={() => setShowInfo(false)} aria-label="Fermer l'aide"
+                className="grid h-9 w-9 place-items-center rounded-full bg-white/10 transition active:scale-95">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+              </button>
+            </div>
+
+            <section className="mb-5">
+              <p className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-violet-300">Comment l'utiliser</p>
+              <ol className="space-y-2.5 text-[13px] leading-relaxed text-white/85">
+                <li><b className="text-white">1 · Cadrez</b> le produit (ou visez un QR / code-barres en mode « Code ») dans un bon éclairage.</li>
+                <li><b className="text-white">2 · AYROVIX identifie</b> l'article grâce à l'IA, puis recherche les meilleures correspondances.</li>
+                <li><b className="text-white">3 · Vous confirmez</b> le bon produit parmi les propositions — jamais de choix automatique.</li>
+                <li><b className="text-white">4 · Prix final en DT</b> calculé par le Calculator AYROVI, puis commande avec acompte 20%.</li>
+              </ol>
+            </section>
+
+            <section>
+              <p className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-violet-300">Conditions d'utilisation</p>
+              <ul className="list-disc space-y-2 pl-4 text-[12.5px] leading-relaxed text-white/70">
+                <li>L'identification par IA est une <b className="text-white/90">aide indicative</b> : vérifiez toujours la fiche (marque, modèle, taille) avant de commander.</li>
+                <li>Le prix source peut évoluer ; <b className="text-white/90">le prix final AYROVIX confirmé au panier</b> fait foi.</li>
+                <li>Photos et images servent uniquement à l'identification — elles ne sont <b className="text-white/90">pas conservées</b> après analyse.</li>
+                <li>Ne scannez ni personnes, ni documents personnels, ni contenus illégaux.</li>
+                <li>Usage personnel et raisonnable — un anti-abus limite le nombre d'analyses par période.</li>
+                <li>En commandant, les règles habituelles AYROVI s'appliquent (acompte 20%, validation du paiement, suivi).</li>
+              </ul>
+            </section>
+
+            <button type="button" onClick={() => setShowInfo(false)}
+              className="mt-5 min-h-[48px] w-full rounded-2xl bg-white text-sm font-extrabold text-ink transition active:scale-[0.98]">
+              C'est compris
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

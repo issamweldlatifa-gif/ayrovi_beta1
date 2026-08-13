@@ -1,28 +1,29 @@
 import type { AyrovixIdentification } from '../types';
 
 /**
- * AYROVIX · AI understanding layer (Claude Vision).
- * - La clé reste STRICTEMENT côté serveur (ANTHROPIC_API_KEY), jamais dans le bundle client.
- * - Rôle : comprendre l'image et identifier le produit. Aucun prix n'est demandé au modèle.
- * - Remplaceable : cette couche est isolée derrière identifyProduct() ; la recherche est ailleurs.
+ * AYROVIX · AI understanding layer — OpenAI Vision (gpt-4o-mini par défaut).
+ * - La clé reste STRICTEMENT côté serveur (OPENAI_API_KEY), jamais dans le bundle client
+ *   (aucune variable VITE_* : tout ce qui commence par VITE_ part dans le navigateur).
+ * - Rôle : comprendre l'image et identifier le produit — JAMAIS de prix, JAMAIS de recherche.
+ * - Couche isolée et remplaçable : le reste d'AYROVIX ne connaît que identifyProduct().
  */
 
-const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
-const DEFAULT_MODEL = 'claude-haiku-4-5';
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // limite confortable de l'API Vision
+const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
+const DEFAULT_MODEL = 'gpt-4o-mini'; // vision + JSON mode, rapide et économique
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
 export class AyrovixUnavailableError extends Error { readonly code = 'AYROVIX_UNAVAILABLE'; }
 export class AyrovixIdentificationError extends Error { readonly code = 'IDENTIFICATION_FAILED'; }
 
 export function ayrovixAiReady(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim().length > 20);
+  return Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim().length > 20);
 }
 
 const SYSTEM_PROMPT = `Tu es le moteur d'identification visuelle d'AYROVIX, un assistant shopping tunisien.
-Analyse l'image et identifie le produit principal. Réponds UNIQUEMENT par un objet JSON valide, sans markdown, sans texte autour, avec exactement ces clés :
+Analyse l'image et identifie le produit principal. Réponds UNIQUEMENT par un objet JSON valide, sans markdown, avec exactement ces clés :
 {
-  "category": string en anglais simple (ex. "shoes", "handbag", "dress", "watch", "phone_case"),
+  "category": string en anglais simple (ex. "shoes", "handbag", "dress", "watch", "supplement"),
   "brand": string ou null si non visible,
   "model": string ou null (nom commercial du modèle si identifiable),
   "color": tableau de 1 à 3 couleurs en anglais, des plus dominantes aux plus discrètes,
@@ -79,33 +80,37 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 35_000);
   try {
-    const response = await fetch(ANTHROPIC_ENDPOINT, {
+    const response = await fetch(OPENAI_ENDPOINT, {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'content-type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY as string,
-        'anthropic-version': '2023-06-01',
+        authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       // Jamais de journalisation : ni clé, ni image, ni réponse brute (confidentialité client).
       body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
+        model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
+        response_format: { type: 'json_object' },
+        temperature: 0,
         max_tokens: 700,
-        system: SYSTEM_PROMPT,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mime, data: image.toString('base64') } },
-            { type: 'text', text: 'Identifie le produit principal de cette image.' },
-          ],
-        }],
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: [
+              { type: 'text', text: 'Identifie le produit principal de cette image.' },
+              { type: 'image_url', image_url: { url: `data:${mime};base64,${image.toString('base64')}`, detail: 'auto' } },
+            ],
+          },
+        ],
       }),
     });
-    if (!response.ok) throw new AyrovixIdentificationError(`Analyse indisponible (HTTP ${response.status}).`);
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) throw new AyrovixUnavailableError('Configuration AYROVIX invalide.');
+      throw new AyrovixIdentificationError(`Analyse indisponible (HTTP ${response.status}).`);
+    }
     const payload: any = await response.json();
-    const text = Array.isArray(payload?.content)
-      ? payload.content.filter((b: any) => b?.type === 'text').map((b: any) => String(b.text || '')).join('\n')
-      : '';
+    const text = String(payload?.choices?.[0]?.message?.content || '');
     if (!text.trim()) throw new AyrovixIdentificationError('Réponse vide du modèle.');
     return parseIdentification(text);
   } catch (error: any) {

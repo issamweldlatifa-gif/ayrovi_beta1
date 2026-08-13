@@ -146,3 +146,48 @@ export async function searchCandidates(
     .sort((a, b) => b.match - a.match)
     .slice(0, 8);
 }
+
+/**
+ * Vérification santé SerpAPI (admin) — appel /account léger, mise en cache 60 s.
+ * Sert à CONFIRMER que la recherche produits externe fonctionne réellement.
+ */
+export interface SerpApiHealth {
+  configured: boolean;
+  reachable: boolean;
+  valid: boolean;
+  plan?: string;
+  searchesLeft?: number | null;
+}
+
+let serpHealthCache: { at: number; result: SerpApiHealth } | null = null;
+
+export async function checkSerpApiHealth(force = false): Promise<SerpApiHealth> {
+  if (serpHealthCache && !force && Date.now() - serpHealthCache.at < 60_000) return serpHealthCache.result;
+  const key = process.env.SERPAPI_KEY?.trim();
+  const base: SerpApiHealth = { configured: Boolean(key), reachable: false, valid: false };
+  if (!key) {
+    serpHealthCache = { at: Date.now(), result: base };
+    return base;
+  }
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6_000);
+  try {
+    const response = await fetch(`https://serpapi.com/account.json?api_key=${encodeURIComponent(key)}`, { signal: controller.signal });
+    const payload: any = await response.json().catch(() => ({}));
+    const result: SerpApiHealth = {
+      configured: true,
+      reachable: true,
+      valid: response.ok && !payload?.error,
+      plan: typeof payload?.plan_name === 'string' ? payload.plan_name : undefined,
+      searchesLeft: Number.isFinite(Number(payload?.total_searches_left)) ? Number(payload.total_searches_left) : null,
+    };
+    serpHealthCache = { at: Date.now(), result };
+    return result;
+  } catch {
+    const result: SerpApiHealth = { configured: true, reachable: false, valid: false };
+    serpHealthCache = { at: Date.now(), result };
+    return result;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
