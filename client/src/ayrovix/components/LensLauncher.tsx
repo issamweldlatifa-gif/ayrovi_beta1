@@ -471,11 +471,16 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             <div className="mx-auto max-w-md space-y-5">
               <ProductResult product={product} ordering={ordering} onOrder={(v) => void handleOrder(v)} />
 
-              {/* Verification de lien avant commande — secrète */}
-              {candidatesView?.ocrPrice && (
+              {/* Logique clarifiée: externe = nous apportons tout, panier/image avec prix = client doit apporter lien */}
+              {product.sourceUrl ? (
+                <div className="rounded-[16px] bg-emerald-50 border border-emerald-200 px-4 py-3">
+                  <p className="text-[11px] font-bold text-emerald-800">✅ AYROVIX a récupéré automatiquement: image HD, tailles, couleurs, prix vérifié, lien partenaire</p>
+                  <p className="mt-1 text-[10px] text-emerald-700">Source: {product.source} — Aucun lien requis de votre part pour la recherche externe.</p>
+                </div>
+              ) : candidatesView?.ocrPrice ? (
                 <div className="rounded-[20px] border border-brand/20 bg-brand-light/30 p-4">
-                  <p className="text-xs font-extrabold text-ink">🔗 Lien du produit pour confirmation finale</p>
-                  <p className="mt-1 text-[11px] text-muted">Collez le lien du produit pour que AYROVIX vérifie le prix final avant commande.</p>
+                  <p className="text-xs font-extrabold text-ink">🔗 Lien du produit requis — panier/image avec prix</p>
+                  <p className="mt-1 text-[11px] text-muted">Vous avez fourni une image avec prix (ou panier). Pour garantir le prix final, collez le lien du produit pour vérification avant commande.</p>
                   <div className="mt-2 flex gap-2">
                     <input
                       type="url"
@@ -489,7 +494,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                     </button>
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {urlResult && urlResult.alternates.length > 0 && (
                 <section>
