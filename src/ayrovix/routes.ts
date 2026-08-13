@@ -4,16 +4,16 @@ import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError } from './services/ai';
-import { searchCandidates, serpSearch } from './services/search';
+import { searchCandidates, serpSearch, freeExternalSearch } from './services/search';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import type { AyrovixChannel } from './types';
 
 /**
- * AYROVIX · API publique (rate-limitée dans server.ts).
- *  POST /api/ayrovix/analyze-image  — image → identification (Claude) → candidats à confirmer
- *  POST /api/ayrovix/analyze-url    — URL (collée ou QR) → fiche produit fiable + alternatives
- *  POST /api/ayrovix/choose         — télémétrie de confirmation (anonyme)
+ * AYROVIX · API publique V2 — Free Tier Search (Brave + DuckDuckGo) + Vision multi-provider
+ * POST /api/ayrovix/analyze-image  — image → identification → candidats
+ * POST /api/ayrovix/analyze-url    — URL/QR → fiche + alternates (fallback gratuit si scraper fail)
+ * POST /api/ayrovix/analyze-barcode — code-barres → recherche libre (SERPAPI si dispo, sinon Brave/DuckDuckGo gratuit)
  */
 
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
@@ -47,7 +47,6 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
-      // Détail technique journalisé sans image ni donnée sensible ; l'utilisateur voit un message clair.
       console.warn('[AYROVIX analyze-image]', error?.code || error?.message || 'unknown');
       return res.status(422).json({ success: false, code: 'IDENTIFICATION_FAILED', error: "Impossible d'identifier le produit. Essayez une photo plus nette et centrée." });
     }
@@ -69,7 +68,39 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       if (error instanceof InvalidUrlError || error?.code === 'INVALID_URL') {
         return res.status(400).json({ success: false, code: 'INVALID_URL', error: 'Ce lien ne peut pas être analysé. Vérifiez le format.' });
       }
+      // Même si scraper échoue, extractProductFromUrl V2 ne lance plus EXTRACTION_FAILED sauf URL invalide
+      // On garde le catch pour compatibilité mais on tente un dernier fallback gratuit
       if (error instanceof ExtractionFailedError || error?.code === 'EXTRACTION_FAILED') {
+        console.warn('[AYROVIX analyze-url] Fallback after EXTRACTION_FAILED for', url);
+        try {
+          const fallbackQuery = String(url).slice(0, 100);
+          const freeCandidates = await freeExternalSearch(fallbackQuery, 6);
+          return res.json({
+            success: true,
+            data: {
+              product: {
+                title: `Produit ${String(url).slice(0, 60)}`,
+                brand: null,
+                model: null,
+                description: 'Lien partagé — résultats de recherche libre ci-dessous.',
+                image: '',
+                images: [],
+                source: 'Web',
+                sourceUrl: String(url),
+                price: null,
+                currency: null,
+                priceTnd: null,
+                exchangeRate: null,
+                colors: [],
+                sizes: [],
+                availability: 'unknown',
+              },
+              alternates: freeCandidates,
+              eventId: recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: freeCandidates.length }),
+              fallback: true,
+            },
+          });
+        } catch {}
         return res.status(422).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer toutes les informations automatiquement.' });
       }
       console.warn('[AYROVIX analyze-url]', error?.message || 'unknown');
@@ -83,15 +114,19 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     return res.json({ success: true });
   });
 
-  // Code-barres lu en direct (EAN/UPC/Code128) → recherche par code si un fournisseur est configuré.
-  // Sans SERPAPI_KEY : succès avec candidats vides — le client affiche le code + bascule photo.
+  // Code-barres: maintenant 100% gratuit — essaie SERPAPI si clé, sinon Brave (free 2000/mo), sinon DuckDuckGo (0 clé)
   router.post('/analyze-barcode', async (req: Request, res: Response) => {
     const code = String(req.body?.code || '').replace(/\D/g, '');
-    if (!/^\d{6,14}$/.test(code)) {
+    if (!/^[\d]{6,14}$/.test(code)) {
       return res.status(400).json({ success: false, code: 'INVALID_BARCODE', error: 'Ce code-barres est illisible. Rapprochez-vous et réessayez.' });
     }
     try {
-      const candidates = await serpSearch(code, 6);
+      // Essai parallèle: SERPAPI (si clé) + free search (Brave/DuckDuckGo)
+      const [serp, free] = await Promise.all([
+        serpSearch(code, 6).catch(()=>[]),
+        freeExternalSearch(code, 6).catch(()=>[]),
+      ]);
+      const candidates = [...serp, ...free];
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
       return res.json({ success: true, data: { code, candidates, eventId } });
     } catch (error: any) {
