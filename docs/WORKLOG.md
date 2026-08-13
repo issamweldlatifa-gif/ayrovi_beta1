@@ -33,3 +33,9 @@
 - الألوان ثابتة `[#673de6]` في المكونات — ستُستبدل بـ tokens قابلة للثيم عبر `@theme inline`
 - الثيم يُحمَّل من `/api/public/commerce-config` (setting `site_theme` JSON)
 - إشعارات العميل عند المراجعة موجودة؛ الناقص: إشعار الأدمن عند رفع الوصل
+
+## Correctif — téléphone de livraison bloqué au checkout (2026-08-13)
+- **Bug** : le champ téléphone du CheckoutModal était `readOnly`, prérempli uniquement depuis `account.phone` → tout compte sans numéro (inscription Google/email) ne pouvait jamais valider de commande.
+- Champ désormais éditable (prefill : téléphone de l'adresse enregistrée > téléphone du compte), validation client alignée serveur (8 chiffres, prefixe 2/4/5/7/9), codes `INVALID_PHONE` explicites côté API + matching client historique sur chiffres normalisés.
+- Emails admin via Nodemailer (MAIL_PROVIDER/MAIL_API_KEY/MAIL_FROM) avec repli console ; alerte à chaque capture d'acompte.
+- Env de test épinglé dans vitest.config.mts (admin email/password, OTP console) → tests déterministes sans .env. 32/32 verts. Déployé (commit 8333aaa).
