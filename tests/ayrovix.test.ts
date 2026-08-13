@@ -36,11 +36,11 @@ function seedCatalogProduct() {
   return id;
 }
 
-function stubOpenAi(text: string) {
+function stubAnthropic(text: string) {
   vi.stubGlobal('fetch', vi.fn(async () => ({
     ok: true,
     status: 200,
-    json: async () => ({ choices: [{ message: { content: text } }] }),
+    json: async () => ({ content: [{ type: 'text', text }] }),
   })));
 }
 
@@ -81,10 +81,10 @@ describe('AYROVIX Lens', () => {
     expect(weak).toBeGreaterThanOrEqual(0);
   });
 
-  test('image → identification OpenAI (simulée) → candidats catalogue → événement → choix', async () => {
+  test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
     seedCatalogProduct();
-    process.env.OPENAI_API_KEY = 'sk-test-ayrovix-suite-key-0123456789';
-    stubOpenAi(JSON.stringify({
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test-ayrovix-suite-key-0123456789';
+    stubAnthropic(JSON.stringify({
       category: 'sneakers', brand: 'Nike', model: 'Air Max 95',
       color: ['navy', 'grey'], visible_text: ['NIKE'], possible_model_codes: [],
       description: 'Baskets running bleu marine à bulle visible.', confidence: 0.9,
@@ -116,7 +116,7 @@ describe('AYROVIX Lens', () => {
       expect(stats.last7d.total).toBeGreaterThanOrEqual(1);
       expect(stats.last7d.image).toBeGreaterThanOrEqual(1);
     } finally {
-      process.env.OPENAI_API_KEY = '';
+      process.env.ANTHROPIC_API_KEY = '';
     }
   });
 

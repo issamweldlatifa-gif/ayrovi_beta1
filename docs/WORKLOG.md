@@ -55,8 +55,8 @@
 - Sans caméra/permission refusée → menu de repli (photo, import, lien). Un seul flux getUserMedia pour toute la session ; tracks stoppés à la fermeture.
 - Tests 39/39 (validation barcode + réponse sans fournisseur). QRScanner.tsx supprimé : le scan vit dans LiveCamera (une seule caméra).
 
-## AYROVIX Lens V1.2 — OpenAI Vision + permissions caméra + infos (2026-08-13)
-- **Passage Anthropic → OpenAI** : services/ai.ts appelle api.openai.com/v1/chat/completions (JSON mode, OPENAI_MODEL=gpt-4o-mini par défaut) ; 401/403 → AYROVIX_UNAVAILABLE. Env : OPENAI_API_KEY / OPENAI_MODEL (.env.example à jour). Tests stub reshape (choices[0].message.content) — 39/39 verts.
+## AYROVIX Lens V1.3 — retour Claude Vision (2026-08-13)
+- **Retour OpenAI → Anthropic** : `services/ai.ts` appelle `api.anthropic.com/v1/messages` (ANTHROPIC_API_KEY / ANTHROPIC_MODEL=claude-3-5-haiku-latest). Tests stub `content[0].text`. Admin badges + render.yaml mis à jour.
 - **Bug trouvé & corrigé** : Permissions-Policy était `camera=()` → caméra (donc flash) bloquée pour le site lui-même. Désormais `camera=(self)`.
 - **Torche** : toggleTorch durci (tente applyConstraints même si capabilities muet, hint utilisateur si l'appareil refuse).
 - **Bouton ⋮** à côté du flash → sheet sombre : Comment l'utiliser (4 étapes) + Conditions d'utilisation (IA indicative, prix confirmé au panier, photos non conservées, anti-abus…).
