@@ -31,11 +31,11 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose }) => {
       />
 
       <div className="fixed inset-y-0 left-0 flex max-w-full">
-        <div className="relative w-screen max-w-xs border-r border-[#e4dbff] bg-white shadow-[24px_0_70px_-28px_rgba(29,18,72,0.45)] sm:max-w-sm">
+        <div className="relative w-screen max-w-xs border-r border-brand/15 bg-white shadow-[24px_0_70px_-28px_rgba(29,18,72,0.45)] sm:max-w-sm">
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-2xl border border-[#e4dbff] bg-[#f7f4ff] text-[#673de6] shadow-sm transition duration-300 hover:scale-105 hover:bg-[#eee8ff] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#673de6] focus-visible:ring-offset-2"
+            className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-2xl border border-brand/15 bg-brand/5 text-brand shadow-sm transition duration-300 hover:scale-105 hover:bg-brand/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             title="Fermer"
             aria-label="Fermer le menu"
           >

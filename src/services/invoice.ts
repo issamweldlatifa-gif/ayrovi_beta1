@@ -154,6 +154,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   <div class="deposit">
     <strong>✓ Acompte de confirmation encaissé (${Number(order.deposit_percent || 20)}%)</strong>
     <table><tbody>
+      ${Number(order.deposit_discount_tnd) ? `<tr><td>Acompte (${Number(order.deposit_percent || 20)}%) avant remise</td><td class="num">${money(Number(deposit) + Number(order.deposit_discount_tnd))}</td></tr>
+      <tr><td>Remise paiement par carte</td><td class="num" style="color:#047857;">−${money(order.deposit_discount_tnd)}</td></tr>` : ''}
       <tr><td>Acompte payé (${escapeHtml(methodLabel)})</td><td class="num"><strong>${money(deposit)}</strong></td></tr>
       <tr><td>Solde restant à la livraison</td><td class="num">${money(balance)}</td></tr>
     </tbody></table>
@@ -212,6 +214,7 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
   if (Number(order.discount_tnd)) addTotal('Remise', -Number(order.discount_tnd));
   addTotal('TOTAL DE LA COMMANDE', order.total_tnd, true);
   lines.push({ text: '', size: 3 });
+  if (Number(order.deposit_discount_tnd)) addTotal('Remise paiement par carte', -Number(order.deposit_discount_tnd), false, [0.02, 0.47, 0.36]);
   addTotal(`Acompte payé (${Number(order.deposit_percent || 20)}%) — ${methodLabel}`, deposit, true, [0.02, 0.47, 0.36]);
   addTotal('Solde restant à la livraison', balance, true);
   if (order.tracking_code) {

@@ -401,3 +401,23 @@ export const AiMark = createIcon('AiMark', <>
   <line x1="19.4" y1="9.2" x2="19.4" y2="19.2" />
   <circle cx="19.4" cy="5.8" r="1" fill="currentColor" stroke="none" />
 </>);
+
+export const ChartLine = createIcon('ChartLine', <>
+  <path d="M4 4v14.4A1.6 1.6 0 0 0 5.6 20H20" />
+  <path d="m6.5 14.5 3.8-4.2 3 2.8 5.2-6" />
+  <circle cx="18.5" cy="7.1" r="1.1" fill="currentColor" stroke="none" />
+</>);
+
+export const Palette = createIcon('Palette', <>
+  <path d="M12 4a8 8 0 0 0 0 16h1.2a2.3 2.3 0 0 0 1.6-3.9 2.3 2.3 0 0 1 1.7-3.9H19a3 3 0 0 0 3-3c0-2.9-4.5-5.2-10-5.2z" transform="translate(-1 0) scale(0.96)" />
+  <circle cx="7.6" cy="10" r="1.1" fill="currentColor" stroke="none" />
+  <circle cx="11.4" cy="7.6" r="1.1" fill="currentColor" stroke="none" />
+  <circle cx="15.6" cy="9" r="1.1" fill="currentColor" stroke="none" />
+</>);
+
+export const Channels = createIcon('Channels', <>
+  <circle cx="6" cy="12" r="2.2" />
+  <circle cx="17" cy="6" r="2.2" />
+  <circle cx="17" cy="18" r="2.2" />
+  <path d="m8 10.8 7-3.6M8 13.2l7 3.6" />
+</>);

@@ -53,7 +53,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   const commerceConfig = () => {
     const pricing = db.getPricingRules();
     const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
-      ('delivery_delay','governorates','payment_methods','deposit_percent','company_legal_name','company_name','bank_rib','poste_account','flouci_number')`);
+      ('delivery_delay','governorates','payment_methods','deposit_percent','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','footer_about')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
     return {
@@ -72,11 +72,22 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
       deposit: {
         percent: Number(facts.deposit_percent) > 0 ? Number(facts.deposit_percent) : 20,
+        cardDiscountPercent: Number(facts.card_discount_percent) >= 0 ? Number(facts.card_discount_percent) : 5,
         companyName: String(facts.company_legal_name || facts.company_name || 'AYROVI'),
         bankRib: String(facts.bank_rib || ''),
         posteAccount: String(facts.poste_account || ''),
         flouciNumber: String(facts.flouci_number || ''),
       },
+      // قنوات التواصل الاجتماعي (تُدار من لوحة الأدمن ← Paramètres ← CHANNELS)
+      channels: {
+        facebook: String(facts.facebook_url || ''),
+        instagram: String(facts.instagram_url || ''),
+        tiktok: String(facts.tiktok_url || ''),
+        whatsapp: String(facts.whatsapp_url || ''),
+      },
+      // الثيم البصري (لوحة التطوير في الإدارة)
+      theme: facts.site_theme && typeof facts.site_theme === 'object' ? facts.site_theme : null,
+      footerAbout: String(facts.footer_about || ''),
     };
   };
 

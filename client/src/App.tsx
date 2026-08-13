@@ -57,6 +57,31 @@ export const App: React.FC = () => {
     }
   };
 
+  // تطبيق ثيم المنصة من لوحة التطوير (ألوان/تدرج/خط) في وقت التشغيل
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/api/public/commerce-config', { signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        const theme = payload?.data?.theme;
+        if (!theme || typeof theme !== 'object' || !theme.primary) return;
+        const root = document.documentElement;
+        root.style.setProperty('--ayrovi-purple', String(theme.primary));
+        root.style.setProperty('--ayrovi-purple-dark', String(theme.primaryDark || theme.primary));
+        root.style.setProperty('--ayrovi-purple-light', String(theme.primaryLight || theme.primary));
+        if (theme.accent) root.style.setProperty('--ayrovi-yellow', String(theme.accent));
+        if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
+        const fonts: Record<string, string> = {
+          jakarta: "'Plus Jakarta Sans', 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif",
+          inter: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif",
+          system: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
+        };
+        root.style.setProperty('--ayrovi-font', fonts[String(theme.font)] || fonts.jakarta);
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     const restoreCustomer = async () => {
       const customerAuthResult = new URLSearchParams(window.location.search).get('customerAuth');
@@ -66,9 +91,8 @@ export const App: React.FC = () => {
         setCustomerSession(restored);
         if (customerAuthResult === 'success') {
           setIsAccountOpen(true);
-          setAccountMessage(restored.account.phoneVerified
-            ? 'Connexion Google réussie. Votre compte AYROVI est actif.'
-            : 'Connexion Google réussie. Vérifiez maintenant votre téléphone avant de commander.');
+          // La vérification du téléphone est OPTIONNELLE (Profil du compte) — jamais un préalable à la commande.
+          setAccountMessage('Connexion Google réussie. Bienvenue sur AYROVI !');
         } else if (customerAuthResult === 'error') {
           setIsAccountOpen(true);
           setAccountMessage('Erreur : la connexion Google n’a pas abouti. Réessayez ou utilisez le code SMS.');
@@ -200,12 +224,7 @@ export const App: React.FC = () => {
       setIsAccountOpen(true);
       return;
     }
-    if (!customerSession.account.phoneVerified) {
-      setResumeCheckoutAfterAuth(true);
-      setAccountMessage('Vérifiez votre numéro de téléphone pour confirmer la commande.');
-      setIsAccountOpen(true);
-      return;
-    }
+    // Aucun préalable de vérification téléphonique : le numéro de livraison est saisi au checkout.
     setResumeCheckoutAfterAuth(false);
     setIsCheckoutOpen(true);
   };
@@ -213,7 +232,7 @@ export const App: React.FC = () => {
   const handleCustomerSession = (nextSession: CustomerSession) => {
     setCustomerSession(nextSession);
     void fetchCart();
-    if (nextSession.account.phoneVerified && resumeCheckoutAfterAuth) {
+    if (resumeCheckoutAfterAuth) {
       setResumeCheckoutAfterAuth(false);
       setIsAccountOpen(false);
       setIsCheckoutOpen(true);
@@ -228,7 +247,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between text-[#1d2130] bg-white relative pb-20 sm:pb-24">
+    <div className="min-h-screen flex flex-col justify-between text-ink bg-white relative pb-20 sm:pb-24">
       
       {/* Top Yellow Notice Bar */}
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />
@@ -272,7 +291,7 @@ export const App: React.FC = () => {
       <AboutSection />
 
       {/* Hostinger-Style Full Footer with Fig Logo, Qui sommes-nous, Payment & Social Icons */}
-      <Footer />
+      <Footer onOpenAccount={() => setIsAccountOpen(true)} onOpenAssistant={() => setIsAiDrawerOpen(true)} />
 
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton />

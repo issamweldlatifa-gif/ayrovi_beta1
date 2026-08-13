@@ -45,7 +45,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
     <header
       className={`sticky top-0 z-40 w-full transition-all duration-500 ${
         hasPassedHero
-          ? 'border-b border-slate-200/90 bg-white/95 text-[#1d2130] shadow-[0_8px_30px_-18px_rgba(15,23,42,0.35)] backdrop-blur-xl'
+          ? 'glass-header text-ink'
           : 'border-b border-transparent bg-transparent text-white'
       }`}
     >
@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
           onClick={onOpenMenuDrawer}
           className={`flex h-10 w-10 items-center justify-center rounded-2xl border shadow-sm transition-all duration-300 active:scale-95 sm:h-11 sm:w-11 ${
             hasPassedHero
-              ? 'border-[#e4dbff] bg-[#f1ebff] text-[#673de6] hover:bg-[#e8e0ff]'
+              ? 'border-brand/15 bg-brand/5 text-brand hover:bg-brand/10'
               : 'border-white/30 bg-black/20 text-white backdrop-blur-md hover:bg-black/30'
           }`}
           aria-label="Menu"
@@ -65,12 +65,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
         </button>
 
         <div className="flex items-center gap-2.5">
-          <span className={`flex rounded-xl p-0.5 transition-colors duration-300 ${hasPassedHero ? 'bg-transparent text-[#673de6]' : 'bg-white/10 text-white backdrop-blur-sm'}`}>
+          <span className={`flex rounded-xl p-0.5 transition-colors duration-300 ${hasPassedHero ? 'bg-transparent text-brand' : 'bg-white/10 text-white backdrop-blur-sm'}`}>
             <FigLogoIcon className="h-8 w-8 drop-shadow-sm sm:h-9 sm:w-9" />
           </span>
           <span
             className={`text-2xl font-black tracking-tight transition-colors duration-300 sm:text-3xl ${
-              hasPassedHero ? 'text-[#1d2130]' : 'text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]'
+              hasPassedHero ? 'text-ink' : 'text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]'
             }`}
           >
             AYROVI
@@ -80,12 +80,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
         <button
           type="button"
           onClick={onOpenAccount}
-          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-[#ffc24b] to-[#ff6b9a] p-0.5 shadow-md transition hover:scale-105 active:scale-95 sm:h-11 sm:w-11"
+          className="relative flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-accent to-[#ff6b9a] p-0.5 shadow-md transition hover:scale-105 active:scale-95 sm:h-11 sm:w-11"
           title={isAuthenticated ? 'Mon compte AYROVI' : 'Se connecter'}
           aria-label={isAuthenticated ? 'Mon compte AYROVI' : 'Se connecter'}
         >
-          <span className={`flex h-full w-full items-center justify-center rounded-full transition-colors duration-300 ${hasPassedHero ? 'bg-[#673de6]' : 'bg-[#1e0b4b]/90 backdrop-blur-sm'}`}>
-            <User className="h-5 w-5 text-[#ffc24b]" />
+          <span className={`flex h-full w-full items-center justify-center rounded-full transition-colors duration-300 ${hasPassedHero ? 'bg-brand' : 'bg-[#1e0b4b]/90 backdrop-blur-sm'}`}>
+            <User className="h-5 w-5 text-accent" />
           </span>
           {isAuthenticated && <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500" />}
 

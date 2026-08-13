@@ -54,7 +54,7 @@ export const HeroSlider: React.FC = () => {
 
   return (
     <section id="home-hero" className="-mt-16 w-full sm:-mt-20" aria-roledescription="carousel" aria-label="Collections AYROVI">
-      <div className="relative h-[72svh] min-h-[520px] w-full overflow-hidden bg-[#24104f] shadow-[0_28px_70px_-32px_rgba(43,18,89,0.7)] sm:min-h-[620px] lg:min-h-[680px] lg:max-h-[860px]">
+      <div className="relative h-[72svh] min-h-[520px] w-full overflow-hidden bg-brand-deep shadow-[0_28px_70px_-32px_rgba(43,18,89,0.7)] sm:min-h-[620px] lg:min-h-[680px] lg:max-h-[860px]">
         <div className="absolute inset-0">
           {slides.map((slide, index) => (
             <div key={slide.id} className={`absolute inset-0 transition-[opacity,transform] duration-[1200ms] ease-out ${index === activeIndex ? 'z-[1] scale-100 opacity-100' : 'z-0 scale-[1.045] opacity-0'}`} aria-hidden={index !== activeIndex}>
@@ -74,9 +74,9 @@ export const HeroSlider: React.FC = () => {
         <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center px-16 pb-8 text-center sm:px-20 sm:pb-11">
           <h1 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.055em] text-white drop-shadow-[0_4px_18px_rgba(0,0,0,0.55)] sm:text-6xl lg:text-7xl">Toute la mode du monde, livrée chez vous.</h1>
           {slides[activeIndex]?.subtitle && <p className="mt-4 max-w-2xl text-sm font-semibold text-white/85 sm:text-base">{slides[activeIndex].subtitle}</p>}
-          {slides[activeIndex]?.cta && slides[activeIndex]?.targetUrl && <a href={slides[activeIndex].targetUrl} className="mt-5 bg-[#fbbf24] px-5 py-3 text-xs font-black text-[#17131f]">{slides[activeIndex].cta}</a>}
+          {slides[activeIndex]?.cta && slides[activeIndex]?.targetUrl && <a href={slides[activeIndex].targetUrl} className="mt-5 bg-accent px-5 py-3 text-xs font-black text-ink">{slides[activeIndex].cta}</a>}
           <div className="mt-6 flex items-center gap-2" aria-label="Choisir une image">
-            {slides.map((slide, index) => <button key={slide.id} type="button" onClick={() => setActiveIndex(index)} className={`h-1.5 rounded-full shadow-sm transition-all duration-500 ${index === activeIndex ? 'w-9 bg-[#fbbf24]' : 'w-4 bg-white/55 hover:bg-white/85'}`} aria-label={`Afficher ${slide.alt}`} aria-current={index === activeIndex ? 'true' : undefined} />)}
+            {slides.map((slide, index) => <button key={slide.id} type="button" onClick={() => setActiveIndex(index)} className={`h-1.5 rounded-full shadow-sm transition-all duration-500 ${index === activeIndex ? 'w-9 bg-accent' : 'w-4 bg-white/55 hover:bg-white/85'}`} aria-label={`Afficher ${slide.alt}`} aria-current={index === activeIndex ? 'true' : undefined} />)}
           </div>
         </div>
       </div>

@@ -617,6 +617,93 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', req.params.id) });
   });
 
+  // ===== إشعارات الإدارة (وصل جديد / طلب جديد …) =====
+  router.get('/notifications', requireAdmin(db, 'dashboard:read'), (req, res) => {
+    const limit = parsePositiveInteger(req.query.limit, 30, 100);
+    res.json({ success: true, data: db.listAdminNotifications(limit), unread: db.unreadAdminNotificationsCount() });
+  });
+  router.post('/notifications/:id/read', requireAdmin(db, 'dashboard:read'), (req, res) => {
+    db.markAdminNotificationRead(String(req.params.id).slice(0, 80));
+    res.json({ success: true, unread: db.unreadAdminNotificationsCount() });
+  });
+  router.post('/notifications/read-all', requireAdmin(db, 'dashboard:read'), (_req, res) => {
+    db.markAllAdminNotificationsRead();
+    res.json({ success: true, unread: 0 });
+  });
+
+  // ===== التقارير المالية والمصاريف =====
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  router.get('/reports/finance', requireAdmin(db, 'reports:read'), (req, res) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const from = datePattern.test(String(req.query.from || '')) ? String(req.query.from) : monthStart;
+    const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : today;
+    if (from > to) return res.status(400).json({ success: false, error: 'Plage de dates invalide.' });
+    res.json({ success: true, data: db.getFinancialReport(from, to) });
+  });
+  router.get('/expenses', requireAdmin(db, 'reports:read'), (req, res) => {
+    const from = datePattern.test(String(req.query.from || '')) ? String(req.query.from) : undefined;
+    const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
+    res.json({ success: true, data: db.listExpenses(from, to) });
+  });
+  const expenseCategories = ['ADS', 'SHIPPING', 'STOCK', 'SERVICES', 'SALARIES', 'FEES', 'OTHER'];
+  router.post('/expenses', requireAdmin(db, 'reports:write'), (req, res) => {
+    const label = String(req.body?.label || '').trim().slice(0, 160);
+    const category = expenseCategories.includes(String(req.body?.category)) ? String(req.body.category) : 'OTHER';
+    const amount = Math.round(Number(req.body?.amountTnd) * 1000) / 1000;
+    const expenseDate = String(req.body?.expenseDate || '').slice(0, 10);
+    const notes = String(req.body?.notes || '').trim().slice(0, 500);
+    if (!label || !datePattern.test(expenseDate)) return res.status(400).json({ success: false, error: 'Libellé et date (AAAA-MM-JJ) obligatoires.' });
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 1_000_000) return res.status(400).json({ success: false, error: 'Montant invalide.' });
+    const expense = db.createExpense({ label, category, amountTnd: amount, expenseDate, notes, createdBy: admin(req).id });
+    audit(db, req, 'CREATE', 'EXPENSES', expense.id, null, expense);
+    res.status(201).json({ success: true, data: expense });
+  });
+  router.delete('/expenses/:id', requireAdmin(db, 'reports:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM expenses WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Dépense introuvable.' });
+    db.deleteExpense(existing.id);
+    audit(db, req, 'DELETE', 'EXPENSES', existing.id, existing, null);
+    res.json({ success: true });
+  });
+
+  // ===== إعادة توليد/إرسال الفاتورة يدويًا عند الحاجة =====
+  router.post('/orders/:id/invoice/resend', requireAdmin(db, 'payments:write'), async (req, res) => {
+    const order = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
+    if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    if (!order.invoice_number) return res.status(409).json({ success: false, error: 'Aucune facture — confirmez d’abord l’acompte.' });
+    try {
+      await generateInvoicePdf(db, order.id);
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: 'La facture n’a pas pu être régénérée.' });
+    }
+    const account = order.account_id ? db.get<any>('SELECT email,display_name FROM customer_accounts WHERE id=?', order.account_id) : null;
+    let mail: { delivered: boolean; provider: string } = { delivered: false, provider: 'no-email' };
+    if (account?.email) {
+      const updated = db.get<any>('SELECT * FROM orders WHERE id=?', order.id);
+      const total = Number(order.total_tnd), dep = Number(order.deposit_amount_tnd);
+      const balance = Math.max(0, Math.round((total - dep) * 1000) / 1000);
+      const result = await sendMail({
+        to: String(account.email),
+        subject: `Facture ${order.invoice_number} — commande ${order.order_number}`,
+        html: invoiceEmailHtml({
+          customerName: String(account.display_name || 'Client AYROVI'),
+          orderNumber: String(order.order_number),
+          invoiceNumber: String(order.invoice_number),
+          trackingCode: String(updated?.tracking_code || ''),
+          totalLabel: `${total.toFixed(3)} DT`,
+          depositLabel: `${dep.toFixed(3)} DT`,
+          balanceLabel: `${balance.toFixed(3)} DT`,
+          company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'AYROVI'),
+        }),
+        attachments: updated?.invoice_path && fs.existsSync(String(updated.invoice_path)) ? [{ filename: `${order.invoice_number}.pdf`, path: String(updated.invoice_path) }] : [],
+      });
+      mail = { delivered: result.delivered, provider: result.provider };
+    }
+    audit(db, req, 'INVOICE_RESENT', 'ORDERS', order.id, null, { invoice_number: order.invoice_number, mailed: mail.delivered });
+    res.json({ success: true, data: { invoiceNumber: order.invoice_number, mail } });
+  });
+
   router.get('/customers', requireAdmin(db, 'commerce:read'), (req, res) => {
     const page = parsePositiveInteger(req.query.page, 1, 100000);
     const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);

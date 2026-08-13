@@ -77,7 +77,7 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
               <span className={iconClass}><Globe2 className="h-4 w-4" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Recherche Web</strong><small className="text-xs text-zinc-500">Activer ou désactiver la recherche Web</small></span>
             </span>
-            <span className={`relative h-[26px] w-11 rounded-full transition ${webSearchEnabled ? 'bg-[#7c3aed]' : isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`}>
+            <span className={`relative h-[26px] w-11 rounded-full transition ${webSearchEnabled ? 'bg-brand' : isDark ? 'bg-zinc-700' : 'bg-zinc-300'}`}>
               <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow transition ${webSearchEnabled ? 'left-5' : 'left-0.5'}`} />
             </span>
           </button>

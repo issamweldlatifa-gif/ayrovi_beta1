@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import express from 'express';
+import express, { NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
@@ -17,12 +17,49 @@ const PORT = process.env.PORT || 3000;
 app.disable('x-powered-by');
 if (process.env.NODE_ENV === 'production' || process.env.RENDER) app.set('trust proxy', 1);
 app.use((_req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors *; base-uri 'self'; form-action 'self'");
+  const isProd = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
+  // En production : frame-ancestors 'self' (anti-clickjacking). En dev : ouvert pour la prévisualisation sandbox.
+  const frameAncestors = isProd ? "frame-ancestors 'self';" : '';
+  res.setHeader('Content-Security-Policy', `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; ${frameAncestors} base-uri 'self'; form-action 'self'`);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   res.setHeader('Permissions-Policy', 'camera=(), geolocation=(), payment=()');
+  if (isProd) {
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+  }
   next();
 });
+
+// ===== Limitation de débit (endpoints sensibles) — en mémoire, sans dépendance =====
+const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+const rateSweeper = setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets) if (bucket.resetAt <= now) rateBuckets.delete(key);
+}, 5 * 60_000);
+rateSweeper.unref?.();
+function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: Request) => string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const key = `${name}:${keyFn ? keyFn(req) : req.ip || 'unknown'}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key) ?? { count: 0, resetAt: now + windowMs };
+    if (bucket.resetAt <= now) { bucket.count = 0; bucket.resetAt = now + windowMs; }
+    bucket.count += 1;
+    rateBuckets.set(key, bucket);
+    if (bucket.count > limit) {
+      res.setHeader('Retry-After', String(Math.ceil((bucket.resetAt - now) / 1000)));
+      return res.status(429).json({ success: false, code: 'RATE_LIMITED', error: 'Trop de tentatives — réessayez dans quelques instants.' });
+    }
+    next();
+  };
+}
+// Authentification & endpoints coûteux — plafonds volontairement généreux pour l'usage réel
+app.use('/api/admin/auth/login', rateLimit('admin-login', 10, 5 * 60_000));
+app.use('/api/customer/auth/otp/request', rateLimit('otp-request', 5, 60_000, (req) => `${req.ip}:${String(req.body?.phone || '').slice(0, 24)}`));
+app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
+app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
+app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
+app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
 app.use(cors({

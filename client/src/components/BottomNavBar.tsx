@@ -54,8 +54,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           onClick={onToggleAiDrawer}
           className={`${NAV_ITEM} ${
             isAiDrawerOpen
-              ? 'bg-[#673de6] text-white shadow-sm'
-              : 'text-[#673de6] hover:bg-[#f1ebff]'
+              ? 'bg-brand text-white shadow-sm'
+              : 'text-brand hover:bg-brand/5'
           }`}
           aria-label="Assistant AYROVI"
           aria-pressed={isAiDrawerOpen}
@@ -67,7 +67,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
         <button
           type="button"
           onClick={onScrollToTop}
-          className={`${NAV_ITEM} text-[#5f6674] hover:bg-[#f4f5fa] hover:text-[#1d2130]`}
+          className={`${NAV_ITEM} text-[#5f6674] hover:bg-surface hover:text-ink`}
           aria-label="Accueil"
         >
           <Home className={NAV_ICON} />
@@ -77,13 +77,13 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
         <button
           type="button"
           onClick={onOpenCart}
-          className={`${NAV_ITEM} relative text-[#5f6674] hover:bg-[#f4f5fa] hover:text-[#1d2130]`}
+          className={`${NAV_ITEM} relative text-[#5f6674] hover:bg-surface hover:text-ink`}
           aria-label={`Panier, ${cartCount} article${cartCount > 1 ? 's' : ''}`}
         >
           <span className="relative">
             <ShoppingBag className={NAV_ICON} />
             {cartCount > 0 && (
-              <span className="absolute -right-2.5 -top-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-[#673de6] px-1 text-[9px] font-black leading-none text-white shadow-sm">
+              <span className="absolute -right-2.5 -top-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-brand px-1 text-[9px] font-black leading-none text-white shadow-sm">
                 {cartCount > 99 ? '99+' : cartCount}
               </span>
             )}
@@ -96,8 +96,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           onClick={onToggleProductDrawer}
           className={`${NAV_ITEM} ${
             isProductDrawerOpen
-              ? 'bg-[#673de6] text-white shadow-sm'
-              : 'text-[#673de6] hover:bg-[#f1ebff]'
+              ? 'bg-brand text-white shadow-sm'
+              : 'text-brand hover:bg-brand/5'
           }`}
           aria-label="Ouvrir Lens"
           aria-pressed={isProductDrawerOpen}

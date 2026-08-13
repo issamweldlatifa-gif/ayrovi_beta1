@@ -46,23 +46,23 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pr-0 sm:pr-10">
-        <div className="w-screen max-w-md bg-white border-l border-[#e2e8f0] shadow-2xl flex flex-col">
+        <div className="w-screen max-w-md bg-white border-l border-line shadow-2xl flex flex-col">
           
           {/* Header */}
-          <div className="p-4 sm:p-6 border-b border-[#eef0f6] flex items-center justify-between bg-[#f8f9fe]">
+          <div className="p-4 sm:p-6 border-b border-line flex items-center justify-between bg-surface">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-[#673de6]/10 border border-[#673de6]/20 flex items-center justify-center text-[#673de6]">
+              <div className="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand">
                 <ShoppingBag className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-[#1d2130]">Mon Panier</h2>
-                <p className="text-xs text-[#6b7280] font-medium">{items.length} article{items.length > 1 ? 's' : ''} dans le panier</p>
+                <h2 className="text-base sm:text-lg font-bold text-ink">Mon Panier</h2>
+                <p className="text-xs text-muted font-medium">{items.length} article{items.length > 1 ? 's' : ''} dans le panier</p>
               </div>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-xl text-[#6b7280] hover:text-[#1d2130] hover:bg-[#eef0f6] transition-colors"
+              className="p-2 rounded-xl text-muted hover:text-ink hover:bg-line transition-colors"
               aria-label="Fermer le panier"
             >
               <X className="w-5 h-5" />
@@ -73,11 +73,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-white">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-[#f4f5fa] border border-[#e2e8f0] flex items-center justify-center text-[#9ca3af]">
-                  <ShoppingBag className="w-8 h-8 text-[#673de6]" />
+                <div className="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center text-muted">
+                  <ShoppingBag className="w-8 h-8 text-brand" />
                 </div>
-                <h3 className="text-base font-bold text-[#1d2130]">Votre panier est vide</h3>
-                <p className="text-xs text-[#6b7280] max-w-xs leading-relaxed">
+                <h3 className="text-base font-bold text-ink">Votre panier est vide</h3>
+                <p className="text-xs text-muted max-w-xs leading-relaxed">
                   Importez une capture d'écran ou collez un lien pour ajouter des articles.
                 </p>
               </div>
@@ -85,27 +85,27 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-[#f8f9fe] border border-[#eef0f6] rounded-2xl p-3.5 flex gap-3.5 items-start group hover:border-[#673de6]/40 transition-all"
+                  className="bg-surface border border-line rounded-2xl p-3.5 flex gap-3.5 items-start group hover:border-brand/40 transition-all"
                 >
                   {/* Thumbnail */}
-                  <div className="w-16 h-16 rounded-xl bg-white border border-[#e2e8f0] flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
                     ) : (
-                      <Package className="w-6 h-6 text-[#9ca3af]" />
+                      <Package className="w-6 h-6 text-muted" />
                     )}
                   </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#673de6]/10 text-[#673de6] uppercase">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand/10 text-brand uppercase">
                         {item.store}
                       </span>
                       <button
                         type="button"
                         onClick={() => onRemoveItem(item.id)}
-                        className="text-[#9ca3af] hover:text-red-600 transition-colors p-1"
+                        className="text-muted hover:text-red-600 transition-colors p-1"
                         title="Supprimer"
                         aria-label={`Supprimer ${item.title} du panier`}
                       >
@@ -113,40 +113,40 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </button>
                     </div>
 
-                    <h4 className="text-xs font-bold text-[#1d2130] truncate mt-1">
+                    <h4 className="text-xs font-bold text-ink truncate mt-1">
                       {item.title}
                     </h4>
 
                     {item.variant && (
-                      <p className="text-[11px] text-[#6b7280] truncate mt-0.5">
+                      <p className="text-[11px] text-muted truncate mt-0.5">
                         {item.variant}
                       </p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">
-                      <div className="text-xs font-black text-[#673de6]">
+                      <div className="text-xs font-black text-brand">
                         {(item.lineTotalTND ?? item.priceTND * item.quantity).toFixed(2)} DT
                       </div>
 
                       {/* Quantity Controls */}
-                      <div className="flex items-center gap-1.5 bg-white border border-[#e2e8f0] rounded-lg p-0.5 shadow-xs">
+                      <div className="flex items-center gap-1.5 bg-white border border-line rounded-lg p-0.5 shadow-xs">
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
-                          className="w-6 h-6 rounded flex items-center justify-center text-[#6b7280] hover:text-[#1d2130] hover:bg-[#f4f5fa] disabled:cursor-not-allowed disabled:opacity-35"
+                          className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={`Diminuer la quantité de ${item.title}`}
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-bold text-[#1d2130] px-1">
+                        <span className="text-xs font-bold text-ink px-1">
                           {item.quantity}
                         </span>
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= 99}
-                          className="w-6 h-6 rounded flex items-center justify-center text-[#6b7280] hover:text-[#1d2130] hover:bg-[#f4f5fa] disabled:cursor-not-allowed disabled:opacity-35"
+                          className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={`Augmenter la quantité de ${item.title}`}
                         >
                           <Plus className="w-3 h-3" />
@@ -161,10 +161,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Footer & Checkout */}
           {items.length > 0 && (
-            <div className="p-4 sm:p-6 border-t border-[#eef0f6] bg-[#f8f9fe] space-y-3">
+            <div className="p-4 sm:p-6 border-t border-line bg-surface space-y-3">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-[#6b7280] font-semibold">Total général de la commande :</span>
-                <span className="text-xl font-extrabold text-[#1d2130]">{totalTND.toFixed(2)} DT</span>
+                <span className="text-muted font-semibold">Total général de la commande :</span>
+                <span className="text-xl font-extrabold text-ink">{totalTND.toFixed(2)} DT</span>
               </div>
 
               <button

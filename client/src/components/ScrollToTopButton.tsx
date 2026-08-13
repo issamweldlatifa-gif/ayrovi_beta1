@@ -22,7 +22,7 @@ export const ScrollToTopButton: React.FC = () => {
   return (
     <button
       onClick={scrollToTop}
-      className="fixed right-4 sm:right-6 bottom-24 sm:bottom-28 z-40 w-11 h-11 rounded-full bg-white hover:bg-[#673de6] hover:text-white text-[#1d2130] border border-slate-200 shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 animate-in fade-in zoom-in-75 duration-200 cursor-pointer"
+      className="fixed right-4 sm:right-6 bottom-24 sm:bottom-28 z-40 w-11 h-11 rounded-full bg-white hover:bg-brand hover:text-white text-ink border border-slate-200 shadow-xl flex items-center justify-center transition-all hover:scale-110 active:scale-95 animate-in fade-in zoom-in-75 duration-200 cursor-pointer"
       title="Retourner en haut"
       aria-label="Retourner en haut"
     >

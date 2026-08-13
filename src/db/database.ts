@@ -29,6 +29,7 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   payment_method TEXT NOT NULL DEFAULT 'CARD' CHECK(payment_method IN ('COD','D17','FLOUCI','CARD','BANK_TRANSFER','POSTE')),
   deposit_percent REAL NOT NULL DEFAULT 20,
   deposit_amount_tnd REAL NOT NULL DEFAULT 0,
+  deposit_discount_tnd REAL NOT NULL DEFAULT 0,
   deposit_status TEXT NOT NULL DEFAULT 'NONE' CHECK(deposit_status IN ('NONE','PENDING','SUBMITTED','PAID','REJECTED')),
   deposit_proof_path TEXT NOT NULL DEFAULT '',
   deposit_submitted_at TEXT,
@@ -59,6 +60,17 @@ const ORDERS_INDEXES_SQL = [
   'CREATE INDEX IF NOT EXISTS idx_orders_status_date ON orders(status, created_at DESC);',
   'CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC);',
 ];
+
+const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
+  id TEXT PRIMARY KEY,
+  category TEXT NOT NULL CHECK(category IN ('GENERAL','COMMERCE','DELIVERY','PAYMENT','CHANNELS','DESIGN')),
+  setting_key TEXT NOT NULL UNIQUE,
+  setting_value TEXT NOT NULL,
+  value_type TEXT NOT NULL DEFAULT 'STRING' CHECK(value_type IN ('STRING','NUMBER','BOOLEAN','JSON')),
+  label TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  updated_by TEXT
+);`;
 
 const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
@@ -477,6 +489,30 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_customer_notifications_account ON customer_notifications(account_id, created_at DESC);
 
+      CREATE TABLE IF NOT EXISTS admin_notifications (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL DEFAULT 'GENERAL' CHECK(type IN ('GENERAL','DEPOSIT_REVIEW','ORDER','SYSTEM')),
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        action_url TEXT NOT NULL DEFAULT '',
+        read_at TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_admin_notifications_date ON admin_notifications(created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS expenses (
+        id TEXT PRIMARY KEY,
+        label TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT 'OTHER' CHECK(category IN ('ADS','SHIPPING','STOCK','SERVICES','SALARIES','FEES','OTHER')),
+        amount_tnd REAL NOT NULL CHECK(amount_tnd >= 0),
+        expense_date TEXT NOT NULL,
+        notes TEXT NOT NULL DEFAULT '',
+        created_by TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(expense_date DESC);
+
       CREATE TABLE IF NOT EXISTS ai_knowledge (
         id TEXT PRIMARY KEY,
         category TEXT NOT NULL CHECK(category IN ('FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL')),
@@ -489,17 +525,6 @@ export class QatafoDatabase {
         updated_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_ai_knowledge_active ON ai_knowledge(active, category, priority DESC);
-
-      CREATE TABLE IF NOT EXISTS settings (
-        id TEXT PRIMARY KEY,
-        category TEXT NOT NULL CHECK(category IN ('GENERAL','COMMERCE','DELIVERY','PAYMENT')),
-        setting_key TEXT NOT NULL UNIQUE,
-        setting_value TEXT NOT NULL,
-        value_type TEXT NOT NULL DEFAULT 'STRING' CHECK(value_type IN ('STRING','NUMBER','BOOLEAN','JSON')),
-        label TEXT NOT NULL,
-        updated_at TEXT NOT NULL,
-        updated_by TEXT
-      );
 
       CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
@@ -522,8 +547,11 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE');
     this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
-    this.rebuildTableIfLegacy('orders', "'POSTE'", ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
+    this.rebuildTableIfLegacy('orders', 'deposit_discount_tnd', ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
     this.rebuildTableIfLegacy('payments', "'POSTE'", PAYMENTS_TABLE_SQL, []);
+    // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN (القواعد القديمة كانت ترفضها بصمت)
+    this.db.exec(SETTINGS_TABLE_SQL);
+    this.rebuildTableIfLegacy('settings', "'CHANNELS'", SETTINGS_TABLE_SQL, []);
     // فهرس عمود العربون — بعد الترقية (القواعد القديمة تحصل عليه داخل إعادة البناء)
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC)');
     this.db.exec(`UPDATE settings SET setting_value='["CARD","FLOUCI","BANK_TRANSFER","POSTE"]',updated_at=datetime('now')
@@ -600,6 +628,18 @@ export class QatafoDatabase {
       ['setting_poste_account', 'PAYMENT', 'poste_account', '', 'STRING', 'Compte courant postal (mandat poste)'],
       ['setting_flouci_number', 'PAYMENT', 'flouci_number', '', 'STRING', 'Numéro / identifiant Flouci'],
       ['setting_invoice_email', 'PAYMENT', 'invoice_email_enabled', 'true', 'BOOLEAN', 'Envoyer la facture par e-mail'],
+      ['setting_card_discount_percent', 'PAYMENT', 'card_discount_percent', '5', 'NUMBER', 'Remise (%) sur l’acompte payé par carte bancaire'],
+      ['setting_admin_alert_email', 'GENERAL', 'admin_alert_email', '', 'STRING', 'Email admin pour les alertes (nouvel acompte à vérifier…)'],
+      ['setting_facebook_url', 'CHANNELS', 'facebook_url', '', 'STRING', 'Lien page Facebook'],
+      ['setting_instagram_url', 'CHANNELS', 'instagram_url', '', 'STRING', 'Lien profil Instagram'],
+      ['setting_tiktok_url', 'CHANNELS', 'tiktok_url', '', 'STRING', 'Lien profil TikTok'],
+      ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
+      ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
+        preset: 'violet', primary: '#673de6', primaryDark: '#5025d1', primaryLight: '#7e57ff',
+        accent: '#fbbf24', ink: '#1d2130', gradient: 'linear-gradient(135deg,#24104f 0%,#673de6 100%)',
+        font: 'jakarta', radius: 'soft',
+      }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
+      ['setting_footer_about', 'DESIGN', 'footer_about', 'La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence.', 'STRING', 'Texte de présentation du pied de page'],
     ];
     for (const row of settings) insertSetting.run(...row, now);
 
@@ -905,17 +945,22 @@ export class QatafoDatabase {
       const snapshot = JSON.stringify({ ...rules, capturedAt: now });
 
       const depositPercent = this.getDepositPercent();
-      const depositAmount = Math.round((totals.total * depositPercent) / 100 * 1000) / 1000;
+      const depositBase = Math.round((totals.total * depositPercent) / 100 * 1000) / 1000;
+      // الدفع بالبطاقة: خصم 5% (قابل للضبط) على العربون — الفاتورة تُنشأ مباشرة بعد تأكيد الدفع
+      const isCard = String(input.paymentMethod).toUpperCase() === 'CARD';
+      const cardDiscountPercent = isCard ? this.getCardDiscountPercent() : 0;
+      const depositDiscount = Math.round(depositBase * cardDiscountPercent / 100 * 1000) / 1000;
+      const depositAmount = Math.round((depositBase - depositDiscount) * 1000) / 1000;
       const balanceAfterDeposit = Math.round((totals.total - depositAmount) * 1000) / 1000;
 
       this.run(`INSERT INTO orders (
         id,order_number,customer_id,account_id,source,arrival_id,status,payment_status,payment_method,
-        deposit_percent,deposit_amount_tnd,deposit_status,
+        deposit_percent,deposit_amount_tnd,deposit_discount_tnd,deposit_status,
         subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,
         pricing_snapshot,governorate,address,phone,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?,'PAYMENT_PENDING','PENDING',?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,'PAYMENT_PENDING','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
-      depositPercent, depositAmount,
+        depositPercent, depositAmount, depositDiscount,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
       snapshot, input.governorate, input.address, normalizedPhone, '', now, now);
 
@@ -940,7 +985,11 @@ export class QatafoDatabase {
         VALUES (?,?,?,?,?,'PENDING',?,?)`, `delivery_${randomUUID()}`, orderId, input.governorate, input.address, normalizedPhone, now, now);
       this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'ORDER','Acompte à régler',?, ?, ?)`, `notification_${randomUUID()}`, accountId,
-        `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${String(input.paymentMethod)}) pour la confirmer.`, `/compte/commandes/${orderId}`, now);
+        `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${String(input.paymentMethod)}) pour la confirmer.${depositDiscount > 0 ? ` Remise carte −${depositDiscount.toFixed(3)} DT appliquée.` : ''}`, `/compte/commandes/${orderId}`, now);
+      // إشعار الإدارة بطلب جديد بانتظار العربون
+      this.notifyAdmins('ORDER', 'Nouvelle commande',
+        `${orderNumber} — ${totals.total.toFixed(3)} DT, acompte ${depositAmount.toFixed(3)} DT (${String(input.paymentMethod)}).`,
+        `/admin?tab=orders&order=${orderId}`);
       this.clearCart(sessionId, accountId);
 
       return {
@@ -952,6 +1001,9 @@ export class QatafoDatabase {
         deposit: {
           percent: depositPercent,
           amountTnd: depositAmount,
+          baseAmountTnd: depositBase,
+          discountTnd: depositDiscount,
+          cardDiscountPercent,
           balanceTnd: balanceAfterDeposit,
           method: String(input.paymentMethod).toUpperCase(),
           status: 'PENDING' as DepositStatus,
@@ -965,6 +1017,92 @@ export class QatafoDatabase {
     const raw = Number(this.get<any>("SELECT setting_value FROM settings WHERE setting_key='deposit_percent'")?.setting_value ?? 20);
     if (!Number.isFinite(raw)) return 20;
     return Math.min(100, Math.max(1, raw));
+  }
+
+  /** نسبة خصم عربون البطاقة (افتراضي 5%) */
+  public getCardDiscountPercent(): number {
+    const raw = Number(this.get<any>("SELECT setting_value FROM settings WHERE setting_key='card_discount_percent'")?.setting_value ?? 5);
+    if (!Number.isFinite(raw)) return 5;
+    return Math.min(50, Math.max(0, raw));
+  }
+
+  // ===== إشعارات الإدارة =====
+  public notifyAdmins(type: string, title: string, message: string, actionUrl = '') {
+    this.run(`INSERT INTO admin_notifications (id,type,title,message,action_url,created_at) VALUES (?,?,?,?,?,?)`,
+      `adminnotif_${randomUUID()}`, type, String(title).slice(0, 160), String(message).slice(0, 500), String(actionUrl).slice(0, 300), new Date().toISOString());
+  }
+
+  public listAdminNotifications(limit = 30) {
+    return this.all<any>(`SELECT * FROM admin_notifications ORDER BY created_at DESC LIMIT ?`, Math.min(100, Math.max(1, limit)));
+  }
+
+  public unreadAdminNotificationsCount(): number {
+    return Number(this.get<any>(`SELECT COUNT(*) count FROM admin_notifications WHERE read_at IS NULL`)?.count ?? 0);
+  }
+
+  public markAdminNotificationRead(id: string) {
+    this.run(`UPDATE admin_notifications SET read_at=COALESCE(read_at, ?) WHERE id=?`, new Date().toISOString(), id);
+  }
+
+  public markAllAdminNotificationsRead() {
+    this.run(`UPDATE admin_notifications SET read_at=COALESCE(read_at, ?)`, new Date().toISOString());
+  }
+
+  // ===== المصاريف والتقارير المالية =====
+  public listExpenses(from?: string, to?: string) {
+    const clauses: string[] = []; const params: any[] = [];
+    if (from) { clauses.push('expense_date >= ?'); params.push(from); }
+    if (to) { clauses.push('expense_date <= ?'); params.push(to); }
+    const where = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    return this.all<any>(`SELECT * FROM expenses ${where} ORDER BY expense_date DESC, created_at DESC`, ...params);
+  }
+
+  public createExpense(input: { label: string; category: string; amountTnd: number; expenseDate: string; notes: string; createdBy?: string }) {
+    const id = `expense_${randomUUID()}`;
+    const now = new Date().toISOString();
+    this.run(`INSERT INTO expenses (id,label,category,amount_tnd,expense_date,notes,created_by,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)`, id, input.label, input.category, input.amountTnd, input.expenseDate, input.notes, input.createdBy ?? null, now, now);
+    return this.get<any>('SELECT * FROM expenses WHERE id=?', id);
+  }
+
+  public deleteExpense(id: string) {
+    this.run('DELETE FROM expenses WHERE id=?', id);
+  }
+
+  /** تقرير مالي: مداخيل (أرصد العربون المؤكدة + الطلبات المدفوعة بالكامل) − مصاريف = ربح */
+  public getFinancialReport(from: string, to: string) {
+    const incomeRow = this.get<any>(`SELECT COALESCE(SUM(amount_tnd),0) total, COUNT(*) count FROM payments
+      WHERE status='PAID' AND confirmed_at IS NOT NULL AND confirmed_at >= ? AND confirmed_at <= ?`, `${from}T00:00:00`, `${to}T23:59:59.999Z`);
+    const ordersRow = this.get<any>(`SELECT COUNT(*) count, COALESCE(SUM(total_tnd),0) total FROM orders
+      WHERE status NOT IN ('CANCELLED','PAYMENT_PENDING') AND created_at >= ? AND created_at <= ?`, `${from}T00:00:00`, `${to}T23:59:59.999Z`);
+    const depositsPending = this.get<any>(`SELECT COUNT(*) count, COALESCE(SUM(deposit_amount_tnd),0) total FROM orders
+      WHERE status='PAYMENT_PENDING' AND deposit_status IN ('PENDING','SUBMITTED')`);
+    const expensesRow = this.get<any>(`SELECT COALESCE(SUM(amount_tnd),0) total, COUNT(*) count FROM expenses
+      WHERE expense_date >= ? AND expense_date <= ?`, from, to);
+    const expensesByCategory = this.all<any>(`SELECT category, COALESCE(SUM(amount_tnd),0) total FROM expenses
+      WHERE expense_date >= ? AND expense_date <= ? GROUP BY category ORDER BY total DESC`, from, to);
+    // آخر 6 أشهر للرسم البياني
+    const monthly: Array<{ month: string; income: number; expenses: number }> = [];
+    for (let offset = 5; offset >= 0; offset -= 1) {
+      const d = new Date(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() - offset);
+      const monthStart = d.toISOString().slice(0, 10);
+      const endDate = new Date(d); endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+      const monthEnd = endDate.toISOString().slice(0, 10);
+      const inc = this.get<any>(`SELECT COALESCE(SUM(amount_tnd),0) t FROM payments WHERE status='PAID' AND confirmed_at >= ? AND confirmed_at < ?`, monthStart, monthEnd)?.t ?? 0;
+      const exp = this.get<any>(`SELECT COALESCE(SUM(amount_tnd),0) t FROM expenses WHERE expense_date >= ? AND expense_date < ?`, monthStart, monthEnd)?.t ?? 0;
+      monthly.push({ month: monthStart.slice(0, 7), income: Math.round(Number(inc) * 1000) / 1000, expenses: Math.round(Number(exp) * 1000) / 1000 });
+    }
+    const income = Math.round(Number(incomeRow?.total ?? 0) * 1000) / 1000;
+    const expenses = Math.round(Number(expensesRow?.total ?? 0) * 1000) / 1000;
+    return {
+      period: { from, to },
+      income, incomeCount: Number(incomeRow?.count ?? 0),
+      confirmedOrders: { count: Number(ordersRow?.count ?? 0), total: Math.round(Number(ordersRow?.total ?? 0) * 1000) / 1000 },
+      pendingDeposits: { count: Number(depositsPending?.count ?? 0), total: Math.round(Number(depositsPending?.total ?? 0) * 1000) / 1000 },
+      expenses, expensesCount: Number(expensesRow?.count ?? 0),
+      profit: Math.round((income - expenses) * 1000) / 1000,
+      expensesByCategory, monthly,
+    };
   }
 
   private generateTrackingCode(): string {
@@ -1001,6 +1139,10 @@ export class QatafoDatabase {
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
         VALUES (?,?,?,'PAYMENT_PENDING',?,NULL,?)`, `history_${randomUUID()}`, orderId, order.status,
         'Preuve d’acompte téléversée par le client — en attente de vérification.', now);
+      // إشعار فوري للإدارة: وصل جديد بانتظار المراجعة
+      this.notifyAdmins('DEPOSIT_REVIEW', 'Acompte à vérifier',
+        `La commande ${order.order_number} (${Number(order.deposit_amount_tnd).toFixed(3)} DT) a reçu une preuve de paiement — vérifiez-la.`,
+        `/admin?tab=orders&order=${orderId}`);
       return this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
     });
   }

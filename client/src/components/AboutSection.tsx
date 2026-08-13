@@ -9,8 +9,8 @@ const BENEFITS = [
     description:
       'Un taux clair et garanti vous permet de connaître le montant exact en Dinars dès la validation de votre panier.',
     icon: ArrowRightLeft,
-    iconClassName: 'bg-[#ffc24b] text-[#1d2130]',
-    accentClassName: 'from-[#ffc24b] to-[#ff9f43]',
+    iconClassName: 'bg-accent text-ink',
+    accentClassName: 'from-accent to-[#ff9f43]',
   },
   {
     step: '02',
@@ -18,8 +18,8 @@ const BENEFITS = [
     description:
       "Toutes les démarches administratives, taxes d’importation et dédouanement sont entièrement prises en charge.",
     icon: ShieldCheck,
-    iconClassName: 'bg-[#673de6] text-white',
-    accentClassName: 'from-[#673de6] to-[#9b7cf7]',
+    iconClassName: 'bg-brand text-white',
+    accentClassName: 'from-brand to-[#9b7cf7]',
   },
   {
     step: '03',
@@ -37,13 +37,13 @@ export const AboutSection: React.FC = () => {
     <section className="relative bg-white" aria-labelledby="why-ayrovi-title">
       <header className="px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-[#673de6]/20 bg-[#673de6]/10 px-3.5 py-1 text-[11px] font-bold text-[#673de6] shadow-sm sm:text-xs">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/10 px-3.5 py-1 text-[11px] font-bold text-brand shadow-sm sm:text-xs">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Pourquoi choisir AYROVI ?</span>
           </div>
           <h2
             id="why-ayrovi-title"
-            className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-[#1d2130] sm:text-5xl"
+            className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl"
           >
             La simplicité d’un achat local pour vos marques mondiales
           </h2>
@@ -77,17 +77,17 @@ export const AboutSection: React.FC = () => {
                     <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md sm:h-14 sm:w-14 ${iconClassName}`}>
                       <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
                     </span>
-                    <span className="text-5xl font-black leading-none text-[#1d2130]/[0.07] sm:text-6xl">
+                    <span className="text-5xl font-black leading-none text-ink/[0.07] sm:text-6xl">
                       {step}
                     </span>
                   </div>
 
-                  <div className="my-7 h-px w-full bg-gradient-to-r from-[#673de6]/55 via-[#dfeaf0] to-transparent" />
+                  <div className="my-7 h-px w-full bg-gradient-to-r from-brand/55 via-[#dfeaf0] to-transparent" />
 
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#673de6]">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-brand">
                     Avantage AYROVI
                   </p>
-                  <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-[#1d2130] sm:text-3xl lg:text-4xl">
+                  <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl lg:text-4xl">
                     {title}
                   </h3>
                   <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-[#697180] sm:text-base sm:leading-8">
@@ -100,10 +100,10 @@ export const AboutSection: React.FC = () => {
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-[#673de6] sm:text-xs">
-        <span className="h-px w-10 bg-[#fbbf24]" />
+      <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand sm:text-xs">
+        <span className="h-px w-10 bg-accent" />
         Simple · Transparent · Local
-        <span className="h-px w-10 bg-[#fbbf24]" />
+        <span className="h-px w-10 bg-accent" />
       </div>
     </section>
   );

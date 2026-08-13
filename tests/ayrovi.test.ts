@@ -540,6 +540,77 @@ describe('AYROVI platform', () => {
     expect(rejected.deposit_review_note).toBe('Mandat illisible');
   }, 20000);
 
+  test('card checkout applies the 5% card discount and notification feed tracks the review queue', async () => {
+    const cardSession = uniqueSession('card');
+    await request(app).post('/api/cart/items').set('x-session-id', cardSession).send(createCartItem('Card discount item'));
+    const checkout = await customerAgent
+      .post('/api/checkout')
+      .set('x-session-id', cardSession)
+      .set('x-csrf-token', customerCsrf)
+      .send({ name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
+    expect(checkout.status).toBe(200);
+    const { deposit } = checkout.body;
+    // خصم 5% على العربون للدفع بالبطاقة
+    expect(deposit.method).toBe('CARD');
+    expect(deposit.cardDiscountPercent).toBe(5);
+    expect(deposit.discountTnd).toBeCloseTo(deposit.baseAmountTnd * 0.05, 2);
+    expect(deposit.amountTnd).toBeCloseTo(deposit.baseAmountTnd * 0.95, 2);
+    const orderRow = db.get<any>('SELECT deposit_discount_tnd FROM orders WHERE id=?', checkout.body.orderId);
+    expect(orderRow.deposit_discount_tnd).toBeCloseTo(deposit.discountTnd, 2);
+
+    // إشعارات الإدارة: طلب جديد + وصولات سابقة بانتظار المراجعة
+    const reviewer = request.agent(app);
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    expect(login.status).toBe(200);
+    const csrf = login.body.data.csrfToken;
+    const notifications = await reviewer.get('/api/admin/notifications');
+    expect(notifications.status).toBe(200);
+    expect(notifications.body.unread).toBeGreaterThan(0);
+    expect(notifications.body.data.some((n: any) => n.type === 'DEPOSIT_REVIEW')).toBe(true);
+    expect(notifications.body.data.some((n: any) => n.type === 'ORDER')).toBe(true);
+
+    // قبول عربون البطاقة بدون وصل (البوابة تؤكد) ⇒ فاتورة فورية
+    const approve = await reviewer.post(`/api/admin/orders/${checkout.body.orderId}/deposit/review`).set('x-csrf-token', csrf).send({ decision: 'approve' });
+    expect(approve.status).toBe(200);
+    expect(approve.body.data.invoice.generated).toBe(true);
+
+    // إعادة توليد/إرسال الفاتورة عند الحاجة
+    const resend = await reviewer.post(`/api/admin/orders/${checkout.body.orderId}/invoice/resend`).set('x-csrf-token', csrf);
+    expect(resend.status).toBe(200);
+    expect(resend.body.data.invoiceNumber).toBe(approve.body.data.invoice.number);
+
+    const readAll = await reviewer.post('/api/admin/notifications/read-all').set('x-csrf-token', csrf);
+    expect(readAll.body.unread).toBe(0);
+    expect((await request(app).get('/api/admin/notifications')).status).toBe(401);
+  }, 20000);
+
+  test('finance reports combine income, expenses and profit with strict validation', async () => {
+    const reviewer = request.agent(app);
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    const csrf = login.body.data.csrfToken;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const badExpense = await reviewer.post('/api/admin/expenses').set('x-csrf-token', csrf).send({ label: '', amountTnd: -5, expenseDate: today });
+    expect(badExpense.status).toBe(400);
+    const created = await reviewer.post('/api/admin/expenses').set('x-csrf-token', csrf)
+      .send({ label: 'Campagne Facebook Ads', category: 'ADS', amountTnd: 120, expenseDate: today, notes: 'Test' });
+    expect(created.status).toBe(201);
+
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const report = await reviewer.get(`/api/admin/reports/finance?from=${monthStart}&to=${today}`);
+    expect(report.status).toBe(200);
+    expect(report.body.data.income).toBeGreaterThan(0); // العربونات المؤكدة أعلاه
+    expect(report.body.data.expenses).toBe(120);
+    expect(report.body.data.profit).toBeCloseTo(report.body.data.income - 120, 2);
+    expect(report.body.data.monthly).toHaveLength(6);
+    expect(report.body.data.expensesByCategory[0].category).toBe('ADS');
+
+    const removed = await reviewer.delete(`/api/admin/expenses/${created.body.data.id}`).set('x-csrf-token', csrf);
+    expect(removed.status).toBe(200);
+    expect((await reviewer.get(`/api/admin/reports/finance?from=${monthStart}&to=${today}`)).body.data.expenses).toBe(0);
+    expect((await request(app).get('/api/admin/reports/finance')).status).toBe(401);
+  });
+
   test('customer profile, addresses, favorites, notifications and ownership boundaries persist', async () => {
     const profile = await customerAgent
       .put('/api/customer/account/profile')
@@ -660,6 +731,9 @@ describe('AYROVI platform', () => {
     expect(commerce.body.data.deposit).toHaveProperty('bankRib');
     expect(commerce.body.data.deposit).toHaveProperty('posteAccount');
     expect(commerce.body.data.deposit).toHaveProperty('flouciNumber');
+    expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
+    expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
+    expect(commerce.body.data.theme.primary).toBe('#673de6');
     expect(commerce.body.data.pricing.version).toBe(1);
 
     const preview = await request(app).post('/api/public/pricing/preview').send({ originalPrice: 21.99, currency: 'EUR', quantity: 2 });
@@ -861,6 +935,16 @@ describe('AYROVI platform', () => {
     expect(pricingAudit.user_name).toBe('AYROVI Admin');
     expect(pricingAudit.old_value.version).toBe(originalPricingVersion);
     expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
+  });
+
+  test('rate limiting throttles brute-force attempts on sensitive endpoints', async () => {
+    // bucket otp-verify : 12 requêtes / 5 min par IP — des tentatives précédentes peuvent déjà compter
+    const statuses: number[] = [];
+    for (let i = 0; i < 16; i += 1) {
+      const res = await request(app).post('/api/customer/auth/otp/verify').send({ challengeId: 'bogus', code: '123456' });
+      statuses.push(res.status);
+    }
+    expect(statuses).toContain(429);
   });
 
   test('logout invalidates the admin session', async () => {

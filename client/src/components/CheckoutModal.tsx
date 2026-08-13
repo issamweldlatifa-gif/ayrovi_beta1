@@ -60,7 +60,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   });
   const [governorates, setGovernorates] = useState(TUNISIAN_GOVERNORATES_FR);
   const [paymentMethods, setPaymentMethods] = useState(['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE']);
-  const [depositInfo, setDepositInfo] = useState({ percent: 20, companyName: 'AYROVI', bankRib: '', posteAccount: '', flouciNumber: '' });
+  const [depositInfo, setDepositInfo] = useState({ percent: 20, cardDiscountPercent: 5, companyName: 'AYROVI', bankRib: '', posteAccount: '', flouciNumber: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
@@ -90,6 +90,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           const d = payload.data.deposit;
           setDepositInfo({
             percent: Number(d.percent) > 0 ? Number(d.percent) : 20,
+            cardDiscountPercent: Number.isFinite(Number(d.cardDiscountPercent)) ? Number(d.cardDiscountPercent) : 5,
             companyName: String(d.companyName || 'AYROVI'),
             bankRib: String(d.bankRib || ''),
             posteAccount: String(d.posteAccount || ''),
@@ -220,24 +221,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-xs sm:p-6" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
-      <div className="relative w-full max-w-lg bg-white border border-[#e2e8f0] rounded-3xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg bg-white border border-line rounded-3xl shadow-2xl overflow-hidden">
         
         {/* Header */}
-        <div className="p-5 sm:p-6 border-b border-[#eef0f6] flex items-center justify-between bg-[#f8f9fe]">
+        <div className="p-5 sm:p-6 border-b border-line flex items-center justify-between bg-surface">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-[#673de6]/10 border border-[#673de6]/20 flex items-center justify-center text-[#673de6]">
+            <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand">
               <Truck className="w-5 h-5" />
             </div>
             <div>
-              <h3 id="checkout-title" className="text-base sm:text-lg font-bold text-[#1d2130]">Finaliser la Commande</h3>
-              <p className="text-xs text-[#6b7280] font-medium">Livraison express dans toute la Tunisie</p>
+              <h3 id="checkout-title" className="text-base sm:text-lg font-bold text-ink">Finaliser la Commande</h3>
+              <p className="text-xs text-muted font-medium">Livraison express dans toute la Tunisie</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="p-2 rounded-xl text-[#6b7280] hover:text-[#1d2130] hover:bg-[#eef0f6] transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+            className="p-2 rounded-xl text-muted hover:text-ink hover:bg-line transition-colors disabled:cursor-not-allowed disabled:opacity-40"
             aria-label="Fermer la validation de commande"
           >
             <X className="w-5 h-5" />
@@ -260,10 +261,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {addresses.length > 0 && (
             <div>
-              <label className="mb-2 block text-xs font-bold text-[#374151]">Choisir une adresse enregistrée :</label>
+              <label className="mb-2 block text-xs font-bold text-muted">Choisir une adresse enregistrée :</label>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {addresses.map((address) => (
-                  <button key={address.id} type="button" onClick={() => chooseAddress(address)} className={`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-[#673de6] bg-[#f2eeff] text-[#4e28b9]' : 'border-slate-200 bg-white text-slate-600'}`}>
+                  <button key={address.id} type="button" onClick={() => chooseAddress(address)} className={`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-brand bg-[#f2eeff] text-brand-dark' : 'border-slate-200 bg-white text-slate-600'}`}>
                     <strong className="block">{address.label}{address.is_default ? ' · Par défaut' : ''}</strong>
                     <span className="mt-1 block truncate">{address.address_line}</span>
                   </button>
@@ -274,8 +275,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Name */}
           <div>
-            <label className="block text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-[#673de6]" />
+            <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-brand" />
               <span>Nom et Prénom :</span>
             </label>
             <input
@@ -284,14 +285,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Ex : Anis Ben Ammar"
-              className="w-full bg-[#f8f9fe] border border-[#e2e8f0] focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none placeholder:text-[#9ca3af] font-semibold"
+              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold"
             />
           </div>
 
           {/* Phone */}
           <div>
-            <label className="block text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-[#673de6]" />
+            <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-brand" />
               <span>Numéro de Téléphone (pour la livraison) :</span>
             </label>
             <input
@@ -301,20 +302,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               readOnly
               aria-readonly="true"
               placeholder="+216 98 123 456"
-              className="w-full bg-[#f8f9fe] border border-[#e2e8f0] focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none placeholder:text-[#9ca3af] font-mono font-semibold"
+              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-mono font-semibold"
             />
           </div>
 
           {/* Governorate */}
           <div>
-            <label className="block text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-[#673de6]" />
+            <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-brand" />
               <span>Gouvernorat :</span>
             </label>
             <select
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              className="w-full bg-[#f8f9fe] border border-[#e2e8f0] focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none font-semibold"
+              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
             >
               {governorates.map((gov) => (
                 <option key={gov} value={gov}>
@@ -326,7 +327,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {/* Address */}
           <div>
-            <label className="block text-xs font-bold text-[#374151] mb-1.5">
+            <label className="block text-xs font-bold text-muted mb-1.5">
               Adresse complète, Ville et Code Postal :
             </label>
             <textarea
@@ -335,22 +336,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder="Ex : Ennasr 2, Rue Hédi Nouira, Résidence l'Espoir Apt 4"
-              className="w-full bg-[#f8f9fe] border border-[#e2e8f0] focus:border-[#673de6] rounded-xl px-3.5 py-2 text-xs sm:text-sm text-[#1d2130] focus:outline-none placeholder:text-[#9ca3af] font-semibold resize-none"
+              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold resize-none"
             />
           </div>
 
           {/* Payment Method */}
           <div>
-            <label className="block text-xs font-bold text-[#374151] mb-1.5 flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-[#673de6]" />
+            <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
+              <CreditCard className="w-3.5 h-3.5 text-brand" />
               <span>Mode de paiement de l’acompte :</span>
             </label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {paymentMethods.map((method) => {
                 const value = method.toLowerCase();
                 const META: Record<string, { label: string; hint: string }> = {
-                  CARD: { label: 'Carte bancaire', hint: 'Confirmation immédiate' },
-                  FLOUCI: { label: 'Flouci', hint: 'Puis envoyez la capture' },
+                  CARD: { label: 'Carte bancaire', hint: `−${depositInfo.cardDiscountPercent}% · confirmation immédiate` },
+                  FLOUCI: { label: 'Flouci / D17', hint: 'Puis envoyez la capture' },
                   BANK_TRANSFER: { label: 'Virement', hint: 'Puis envoyez le reçu' },
                   POSTE: { label: 'Mandat poste', hint: 'Puis envoyez le reçu' },
                 };
@@ -362,8 +363,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     onClick={() => setFormData({ ...formData, paymentMethod: value })}
                     className={`py-2.5 px-2 rounded-xl border text-center transition-all ${
                       formData.paymentMethod === value
-                        ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
-                        : 'border-[#e2e8f0] bg-[#f8f9fe] text-[#6b7280]'
+                        ? 'border-brand bg-brand/10 text-brand'
+                        : 'border-line bg-surface text-muted'
                     }`}
                   >
                     <span className="block text-xs font-bold">{meta.label}</span>
@@ -372,18 +373,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 );
               })}
             </div>
-            {/* تعليمات الطريقة المختارة + العربون */}
+            {/* تعليمات الطريقة المختارة + العربون (خصم البطاقة مُطبَّق) */}
             {(() => {
-              const deposit = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
+              const base = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
               const method = formData.paymentMethod.toUpperCase();
+              const discount = method === 'CARD' ? Math.round((base * depositInfo.cardDiscountPercent) / 100 * 1000) / 1000 : 0;
+              const deposit = Math.round((base - discount) * 1000) / 1000;
               const instructions: Record<string, string> = {
-                CARD: `Payez ${deposit.toFixed(3)} DT par carte bancaire : votre commande est confirmée immédiatement, avec facture électronique (e-mail + téléchargement) et code de suivi.`,
-                FLOUCI: `Envoyez ${deposit.toFixed(3)} DT via Flouci au ${depositInfo.flouciNumber || 'numéro communiqué par AYROVI'}, puis téléversez la capture d’écran depuis votre espace client.`,
+                CARD: `Payez ${deposit.toFixed(3)} DT par carte bancaire (remise −${depositInfo.cardDiscountPercent}% : −${discount.toFixed(3)} DT) : votre commande est confirmée immédiatement, avec facture électronique (e-mail + téléchargement) et code de suivi.`,
+                FLOUCI: `Envoyez ${deposit.toFixed(3)} DT via Flouci / D17 au ${depositInfo.flouciNumber || 'numéro communiqué par AYROVI'}, puis téléversez la capture d’écran depuis votre espace client.`,
                 BANK_TRANSFER: `Effectuez un virement de ${deposit.toFixed(3)} DT au nom de ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB : ${depositInfo.bankRib}` : ''}, puis téléversez le reçu depuis votre espace client.`,
                 POSTE: `Versez ${deposit.toFixed(3)} DT par mandat postal au nom de ${depositInfo.companyName}${depositInfo.posteAccount ? ` — compte : ${depositInfo.posteAccount}` : ''}, puis téléversez le reçu depuis votre espace client.`,
               };
               return (
-                <p className="mt-2 rounded-xl border border-[#dcd3f7] bg-[#f5f2ff] p-3 text-[11px] leading-5 text-[#4c1d95]">
+                <p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark">
                   {instructions[method] || ''} <strong>Votre commande n’est confirmée qu’après réception de l’acompte.</strong>
                 </p>
               );
@@ -391,19 +394,32 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
 
           {/* Summary Box */}
-          <div className="bg-[#f8f9fe] border border-[#eef0f6] rounded-xl p-3.5 text-xs space-y-1.5">
+          <div className="bg-surface border border-line rounded-xl p-3.5 text-xs space-y-1.5">
             <div className="flex justify-between items-center">
-              <span className="text-[#6b7280] font-semibold">Montant total de la commande :</span>
-              <span className="text-base font-extrabold text-[#673de6]">{totalTND.toFixed(2)} DT</span>
+              <span className="text-muted font-semibold">Montant total de la commande :</span>
+              <span className="text-base font-extrabold text-brand">{totalTND.toFixed(2)} DT</span>
             </div>
-            <div className="flex justify-between items-center border-t border-[#e5e2ee] pt-1.5">
-              <span className="text-[#b45309] font-bold">Acompte à régler maintenant ({depositInfo.percent}%) :</span>
-              <span className="text-base font-extrabold text-[#b45309]">{(Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000).toFixed(3)} DT</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-[#6b7280] font-semibold">Solde restant à la livraison :</span>
-              <span className="font-extrabold text-[#1d2130]">{(Math.round((totalTND - (totalTND * depositInfo.percent) / 100) * 1000) / 1000).toFixed(3)} DT</span>
-            </div>
+            {(() => {
+              const isCard = formData.paymentMethod.toUpperCase() === 'CARD';
+              const base = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
+              const discount = isCard ? Math.round((base * depositInfo.cardDiscountPercent) / 100 * 1000) / 1000 : 0;
+              const deposit = Math.round((base - discount) * 1000) / 1000;
+              const balance = Math.round((totalTND - deposit) * 1000) / 1000;
+              return (<>
+                <div className="flex justify-between items-center border-t border-line pt-1.5">
+                  <span className="text-[#b45309] font-bold">Acompte à régler maintenant ({depositInfo.percent}%) :</span>
+                  <span className="text-base font-extrabold text-[#b45309]">{deposit.toFixed(3)} DT</span>
+                </div>
+                {discount > 0 && <div className="flex justify-between items-center">
+                  <span className="font-bold text-emerald-700">Remise carte bancaire (−{depositInfo.cardDiscountPercent}%) :</span>
+                  <span className="font-extrabold text-emerald-700">−{discount.toFixed(3)} DT</span>
+                </div>}
+                <div className="flex justify-between items-center">
+                  <span className="text-muted font-semibold">Solde restant à la livraison :</span>
+                  <span className="font-extrabold text-ink">{balance.toFixed(3)} DT</span>
+                </div>
+              </>);
+            })()}
           </div>
 
           {/* Submit CTA */}

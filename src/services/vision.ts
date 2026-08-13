@@ -27,9 +27,12 @@ export class VisualProductExtractor {
 
     fs.writeFileSync(filePath, imageBuffer);
 
+    // OCR ajusté pour captures mobiles : texte épars, espaces préservés, langues eng+fra
     const { data: { text } } = await Tesseract.recognize(filePath, 'eng+fra', {
-      logger: () => {}
-    });
+      logger: () => {},
+      tessedit_pageseg_mode: '11' as any, // PSM sparse text — idéal pour captures produits
+      preserve_interword_spaces: '1' as any,
+    } as any);
 
     const store = this.detectStoreFromText(text);
     const storeName = this.getStoreDisplayName(store);
@@ -136,6 +139,25 @@ export class VisualProductExtractor {
   private extractOriginalPriceFromText(text: string, _store: StoreType): { price: number; currency: string } {
     let currency = 'EUR';
 
+    // 1) Prix en dinars tunisiens — autorité directe, aucune conversion
+    const tndMatch = text.match(/([0-9]+[.,][0-9]{2,3})\s*(?:DT|TND|د\.?\s?ت)/i) || text.match(/(?:DT|TND|د\.?\s?ت)\s*([0-9]+[.,][0-9]{2,3})/i);
+    if (tndMatch?.[1]) {
+      const num = parseFloat(tndMatch[1].replace(',', '.'));
+      if (!Number.isNaN(num) && num > 0) return { price: num, currency: 'TND' };
+    }
+
+    // 2) Prix proche d'un mot-clé (Prix/Price/Total/Montant/السعر) — bien plus fiable que le maximum global
+    const keywordMatch = text.match(/(?:prix|price|total(?:\s+price)?|montant|السعر|المجموع)[^\d¥€$£]{0,18}([0-9]+[.,][0-9]{2})/i);
+    if (keywordMatch?.[1]) {
+      const num = parseFloat(keywordMatch[1].replace(',', '.'));
+      if (!Number.isNaN(num) && num > 0.5) {
+        if (text.includes('£')) currency = 'GBP';
+        else if (text.includes('$') || text.includes('USD')) currency = 'USD';
+        else if (text.includes('¥') || text.includes('YEN')) currency = 'JPY';
+        return { price: num, currency };
+      }
+    }
+
     if (text.includes('¥') || text.includes('円') || text.includes('YEN') || text.includes('amazon.co.jp')) {
       currency = 'JPY';
       const yenMatches: number[] = [];
@@ -157,6 +179,8 @@ export class VisualProductExtractor {
 
     if (text.includes('$') || text.includes('USD')) {
       currency = 'USD';
+    } else if (text.includes('£') || text.includes('GBP')) {
+      currency = 'GBP';
     }
 
     const crossedOutMatch = text.match(/\[-[0-9]+%\]\s*([0-9]+[,.][0-9]{2})/i) ||

@@ -131,7 +131,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
           <p className={sectionLabel}>Paramètres</p>
           <button type="button" onClick={onToggleDark} className={`flex w-full items-center justify-between rounded-xl px-2.5 py-3 text-sm transition ${isDark ? 'text-zinc-100 hover:bg-white/6' : 'text-zinc-900 hover:bg-black/[0.045]'}`}>
             <span className="flex items-center gap-3"><Moon className="h-4 w-4 text-zinc-400" />Mode sombre</span>
-            <span className={`relative h-[26px] w-11 rounded-full transition ${isDark ? 'bg-[#7c3aed]' : 'bg-zinc-300'}`}>
+            <span className={`relative h-[26px] w-11 rounded-full transition ${isDark ? 'bg-brand' : 'bg-zinc-300'}`}>
               <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow transition ${isDark ? 'left-5' : 'left-0.5'}`} />
             </span>
           </button>

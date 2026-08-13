@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Tokens de marque pilotables à l'exécution (Admin → Développement) */
+@theme inline {
+  --color-brand: var(--ayrovi-purple);
+  --color-brand-dark: var(--ayrovi-purple-dark);
+  --color-brand-light: var(--ayrovi-purple-light);
+  --color-brand-deep: var(--ayrovi-deep);
+  --color-accent: var(--ayrovi-yellow);
+  --color-ink: var(--ayrovi-ink);
+  --color-muted: var(--ayrovi-muted);
+  --color-surface: var(--ayrovi-surface);
+  --color-line: var(--ayrovi-border);
+}
+
 @layer base {
   :root {
     color-scheme: light;
@@ -7,6 +20,8 @@
     --ayrovi-purple-dark: #5025d1;
     --ayrovi-purple-light: #7e57ff;
     --ayrovi-yellow: #fbbf24;
+    --ayrovi-deep: #24104f;
+    --ayrovi-gradient: linear-gradient(135deg, #24104f 0%, #673de6 100%);
     --ayrovi-ink: #1d2130;
     --ayrovi-muted: #6b7280;
     --ayrovi-surface: #f8f9fe;
@@ -178,3 +193,48 @@
     transition-duration: 1ms !important;
   }
 }
+
+/* Dégradé de marque (Utilisé pour les bannières hero/compte) */
+.bg-brand-gradient { background: var(--ayrovi-gradient); }
+
+/* Barre de navigation « verre dépoli » */
+.glass-header {
+  background: color-mix(in oklab, #ffffff 72%, transparent);
+  -webkit-backdrop-filter: saturate(1.6) blur(14px);
+  backdrop-filter: saturate(1.6) blur(14px);
+  border-bottom: 1px solid color-mix(in oklab, var(--ayrovi-border) 65%, transparent);
+  box-shadow: 0 10px 30px -18px rgba(29, 18, 72, 0.25);
+}
+
+/* Effet de balayage « Google Lens » sur l'aperçu d'image analysée */
+.lens-scan { position: relative; overflow: hidden; }
+.lens-scan::before {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--ayrovi-purple) 26%, transparent) 46%, color-mix(in oklab, var(--ayrovi-purple) 60%, transparent) 50%, color-mix(in oklab, var(--ayrovi-purple) 26%, transparent) 54%, transparent 100%);
+  animation: lens-sweep 2.1s ease-in-out infinite;
+}
+.lens-scan::after {
+  content: ""; position: absolute; inset: 10px; z-index: 2; pointer-events: none; border-radius: 12px;
+  background:
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top left / 22px 2px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top left / 2px 22px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top right / 22px 2px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top right / 2px 22px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom left / 22px 2px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom left / 2px 22px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom right / 22px 2px,
+    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom right / 2px 22px;
+  background-repeat: no-repeat;
+  animation: lens-corners 2.1s ease-in-out infinite;
+}
+@keyframes lens-sweep { 0%, 100% { transform: translateY(-100%); } 50% { transform: translateY(100%); } }
+@keyframes lens-corners { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: 1; transform: scale(1.015); } }
+
+/* Effet d'analyse de lien (téléversement d'URL) */
+.link-analyze { position: relative; overflow: hidden; }
+.link-analyze::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, color-mix(in oklab, var(--ayrovi-purple) 16%, transparent) 50%, transparent 70%);
+  animation: link-shimmer 1.4s linear infinite;
+}
+@keyframes link-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }

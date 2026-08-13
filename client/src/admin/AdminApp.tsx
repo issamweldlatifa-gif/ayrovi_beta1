@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle, Bell, Calculator, Calendar, CheckCircle2, CreditCard, FileText, FigLeaf, Gift, Globe2, Grid,
-  History, Home, Image, LogOut, Menu, MessageSquare, Package, Pencil, Percent, Plus, Search as SearchIcon,
+  AlertCircle, Bell, Calculator, Calendar, ChartLine, CheckCircle2, CreditCard, FileText, FigLeaf, Gift, Globe2, Grid,
+  History, Home, Image, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,
   Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,
 } from '../components/QatafoIcons';
 import { ADMIN_SESSION_EXPIRED_EVENT, adminApi, ApiError, loadIdentity, login, logout, queryString } from './api';
@@ -11,7 +11,7 @@ import {
 } from './components';
 import './admin.css';
 
-type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'audit:read';
+type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'audit:read' | 'reports:read' | 'reports:write';
 type UserIdentity = { id: string; email: string; name: string; role: string; permissions: Permission[] };
 type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'image' | 'boolean' | 'list';
 type FieldDefinition = { key: string; label: string; type: FieldType; required?: boolean; options?: string[]; hint?: string; full?: boolean };
@@ -124,9 +124,10 @@ const navGroups = [
   ]},
   { label: 'Commerce', items: [
     { id: 'orders', label: 'Commandes', icon: Package, permission: 'commerce:read' as Permission }, { id: 'customers', label: 'Clients', icon: User, permission: 'commerce:read' as Permission },
-    { id: 'pricing', label: 'Prix & taux', icon: Calculator, permission: 'commerce:read' as Permission },
+    { id: 'pricing', label: 'Prix & taux', icon: Calculator, permission: 'commerce:read' as Permission }, { id: 'reports', label: 'Rapports', icon: ChartLine, permission: 'reports:read' as Permission },
   ]},
   { label: 'Système', items: [
+    { id: 'design', label: 'Développement', icon: Palette, permission: 'settings:write' as Permission },
     { id: 'assistant', label: 'Assistant IA', icon: MessageSquare, permission: 'settings:write' as Permission }, { id: 'settings', label: 'Paramètres', icon: Settings, permission: 'content:read' as Permission },
     { id: 'users', label: 'Utilisateurs', icon: ShieldCheck, permission: 'users:write' as Permission }, { id: 'audit', label: 'Journal d’audit', icon: History, permission: 'audit:read' as Permission },
   ]},
@@ -298,7 +299,7 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite
           <button className="admin-button admin-button--primary" disabled={busy||(selected.payment_method!=='CARD'&&!selected.deposit_proof_path)} onClick={()=>reviewDeposit('approve')}>✓ Confirmer l’acompte{selected.payment_method==='CARD'?' (paiement carte reçu)':''}</button>
           <button className="admin-button admin-button--danger" disabled={busy} onClick={()=>reviewDeposit('reject')}>✕ Refuser</button>
         </div>}
-        {selected.deposit_status==='PAID'&&<p className="admin-block-small" style={{marginTop:8}}>Facture : {selected.invoice_number||'—'} {selected.invoice_path?'(PDF généré)':'(génération en cours)'} </p>}
+        {selected.deposit_status==='PAID'&&<div style={{marginTop:10,display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}><p className="admin-block-small" style={{margin:0}}>Facture : {selected.invoice_number||'—'} {selected.invoice_path?'(PDF généré)':'(génération en cours)'}</p>{canPay&&selected.invoice_number&&<button className="admin-button admin-button--secondary" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail ✓':'régénérée (e-mail non configuré ou client sans adresse)'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}>↻ Régénérer / renvoyer la facture</button>}</div>}
       </section>}
       <h3>Articles</h3><DataTable<any> rows={selected.items||[]} columns={[{key:'product_name',label:'Produit'},{key:'source_platform',label:'Source'},{key:'quantity',label:'Qté'},{key:'original_price',label:'Prix source',render:(row)=>`${row.original_price} ${row.currency}`},{key:'total_tnd',label:'Total figé',render:(row)=>formatMoney(row.total_tnd)}]}/>
       <h3>Historique</h3><div className="admin-timeline">{(selected.history||[]).map((item:any)=><div key={item.id}><i/><div><StatusBadge status={item.to_status}/><p>{item.note||'Mise à jour du statut'}</p><small>{formatDate(item.created_at,true)}</small></div></div>)}</div>
@@ -357,7 +358,7 @@ const SettingsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const load=()=>adminApi<any>('/settings').then(r=>setRows(r.data.map((row:any)=>row.value_type==='JSON'?{...row,setting_value:JSON.stringify(row.setting_value,null,2)}:row)));
   useEffect(()=>{load();},[]);
   const update=async(row:any)=>{setBusy(row.id);try{let value=row.setting_value;if(row.value_type==='JSON'){try{value=JSON.parse(String(value));}catch{throw new Error('Le JSON est invalide. Corrigez sa syntaxe avant d’enregistrer.');}}await adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});await load();setToast({message:'Paramètre enregistré.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy('');}};
-  const groups=['GENERAL','COMMERCE','DELIVERY','PAYMENT'];return <><PageHeader title="Paramètres" description="Configuration générale, commerce, livraison et paiements — sans secret dans le frontend."/>
+  const groups=['GENERAL','COMMERCE','DELIVERY','PAYMENT','CHANNELS','DESIGN'];return <><PageHeader title="Paramètres" description="Configuration générale, commerce, livraison, paiements, canaux et design — sans secret dans le frontend."/>
   <div className="admin-settings-grid">{groups.map(group=><section className="admin-card" key={group}><CardTitle title={labels[group]||group} subtitle={`${rows.filter(r=>r.category===group).length} paramètres`}/><div className="admin-settings-list">{rows.filter(r=>r.category===group).map(row=><div key={row.id}><Field label={row.label}>{row.value_type==='JSON'?<textarea rows={3} disabled={!canWrite} value={String(row.setting_value)} onChange={e=>setRows(rows.map(r=>r.id===row.id?{...r,setting_value:e.target.value}:r))}/>:<input disabled={!canWrite} type={row.value_type==='NUMBER'?'number':'text'} value={String(row.setting_value)} onChange={e=>setRows(rows.map(r=>r.id===row.id?{...r,setting_value:e.target.value}:r))}/>}</Field>{canWrite&&<Button variant="secondary" busy={busy===row.id} onClick={()=>update(row)}>Enregistrer</Button>}</div>)}</div></section>)}</div>{toast&&<Toast {...toast}/>}</>;
 };
 
@@ -371,14 +372,94 @@ const UsersPage:React.FC=()=>{
 
 const AuditPage:React.FC=()=>{const[rows,setRows]=useState<any[]>([]);const[page,setPage]=useState({page:1,totalPages:1,total:0});const[loading,setLoading]=useState(true);const load=async(p=1)=>{setLoading(true);const r=await adminApi<any>(`/audit-logs?page=${p}&pageSize=30`);setRows(r.data);setPage(r.pagination);setLoading(false);};useEffect(()=>{load();},[]);return <><PageHeader title="Journal d’audit" description="Qui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après."/><section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[{key:'created_at',label:'Date',render:r=>formatDate(r.created_at,true)},{key:'user_name',label:'Acteur'},{key:'action',label:'Action',render:r=><StatusBadge status={r.action}/>},{key:'module',label:'Module'},{key:'entity_id',label:'Cible',render:r=><code>{r.entity_id||'—'}</code>},{key:'changes',label:'Modification',render:r=><small>{r.old_value?'Valeur précédente conservée':''}{r.old_value&&r.new_value?' → ':''}{r.new_value?'Nouvelle valeur conservée':''}</small>}]}/><Pagination {...page} onChange={load}/></section></>};
 
+// ===== جرس إشعارات الإدارة (وصل جديد / طلب جديد) =====
+const NotificationsBell:React.FC<{onNavigate:(section:string)=>void}>=({onNavigate})=>{
+  const [open,setOpen]=useState(false);const [rows,setRows]=useState<any[]>([]);const [unread,setUnread]=useState(0);
+  const load=useCallback(async()=>{try{const r=await adminApi<any>('/notifications?limit=20');setRows(r.data||[]);setUnread(Number(r.unread)||0);}catch{/* صامت */}},[]);
+  useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[load]);
+  const markAll=async()=>{try{await adminApi('/notifications/read-all',{method:'POST'});await load();}catch{/* */}};
+  const openItem=async(item:any)=>{try{const r=await adminApi<any>(`/notifications/${item.id}/read`,{method:'POST'});setUnread(Number(r.unread)||0);}catch{/* */}setOpen(false);if(String(item.action_url||'').includes('tab=orders'))onNavigate('orders');};
+  return <div className="admin-bell"><button className="admin-icon-button" onClick={()=>{setOpen(!open);if(!open)void load();}} aria-label="Notifications"><Bell/>{unread>0&&<b className="admin-bell-badge">{unread>99?'99+':unread}</b>}</button>
+  {open&&<div className="admin-bell-panel"><header><strong>Notifications</strong>{unread>0&&<button onClick={markAll}>Tout marquer lu</button>}</header>
+  <div className="admin-bell-list">{rows.length===0&&<p className="admin-bell-empty">Aucune notification.</p>}{rows.map(item=><button key={item.id} className={item.read_at?'':'is-unread'} onClick={()=>openItem(item)}><strong>{item.title}</strong><span>{item.message}</span><time>{formatDate(item.created_at,true)}</time></button>)}</div></div>}</div>;
+};
+
+// ===== التقارير المالية: مداخيل / مصاريف / أرباح =====
+const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
+  const today=new Date().toISOString().slice(0,10);const monthStart=`${today.slice(0,7)}-01`;
+  const [from,setFrom]=useState(monthStart);const [to,setTo]=useState(today);
+  const [report,setReport]=useState<any>(null);const [expenses,setExpenses]=useState<any[]>([]);const [toast,setToast]=useState<any>(null);const [busy,setBusy]=useState(false);
+  const [form,setForm]=useState({label:'',category:'OTHER',amountTnd:'',expenseDate:today,notes:''});
+  const load=useCallback(async()=>{try{const[r,e]=await Promise.all([adminApi<any>(`/reports/finance?from=${from}&to=${to}`),adminApi<any>(`/expenses?from=${from}&to=${to}`)]);setReport(r.data);setExpenses(e.data||[]);}catch(err:any){setToast({message:err.message,tone:'error'});}},[from,to]);
+  useEffect(()=>{load();},[load]);
+  const add=async()=>{setBusy(true);try{await adminApi('/expenses',{method:'POST',body:JSON.stringify({...form,amountTnd:Number(form.amountTnd)})});setForm({label:'',category:'OTHER',amountTnd:'',expenseDate:today,notes:''});await load();setToast({message:'Dépense enregistrée.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
+  const remove=async(id:string)=>{try{await adminApi(`/expenses/${id}`,{method:'DELETE'});await load();}catch(e:any){setToast({message:e.message,tone:'error'});}};
+  const maxMonthly=Math.max(1,...((report?.monthly||[]) as any[]).flatMap(m=>[m.income,m.expenses]));
+  return <><PageHeader title="Rapports financiers" description="Revenus encaissés (acomptes confirmés), dépenses et bénéfice net — calculés depuis la base." action={<div className="admin-report-range"><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/><span>→</span><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></div>}/>
+  {report&&<div className="admin-kpi-grid">
+    <section className="admin-kpi"><span>Revenus encaissés</span><strong className="is-income">{formatMoney(report.income)}</strong><small>{report.incomeCount} acompte(s) confirmé(s)</small></section>
+    <section className="admin-kpi"><span>Dépenses</span><strong className="is-expense">{formatMoney(report.expenses)}</strong><small>{report.expensesCount} ligne(s)</small></section>
+    <section className="admin-kpi"><span>Bénéfice net</span><strong className={report.profit>=0?'is-income':'is-expense'}>{formatMoney(report.profit)}</strong><small>Revenus − dépenses</small></section>
+    <section className="admin-kpi"><span>Acomptes en attente</span><strong>{formatMoney(report.pendingDeposits?.total)}</strong><small>{report.pendingDeposits?.count} commande(s) non confirmée(s)</small></section>
+  </div>}
+  <div className="admin-report-grid">
+    <section className="admin-card"><CardTitle title="6 derniers mois" subtitle="Revenus vs dépenses (TND)"/><div className="admin-chart">{((report?.monthly||[]) as any[]).map(m=><div key={m.month} className="admin-chart-col"><div className="admin-chart-bars"><i className="is-income" style={{height:`${Math.max(2,Math.round((m.income/maxMonthly)*110))}px`}} title={`Revenus ${formatMoney(m.income)}`}/><i className="is-expense" style={{height:`${Math.max(2,Math.round((m.expenses/maxMonthly)*110))}px`}} title={`Dépenses ${formatMoney(m.expenses)}`}/></div><span>{m.month.slice(5)}/{m.month.slice(2,4)}</span></div>)}<div className="admin-chart-legend"><i className="is-income"/>Revenus<i className="is-expense"/>Dépenses</div></div></section>
+    <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
+  </div>
+  <div className="admin-report-grid">
+    <section className="admin-card"><CardTitle title="Nouvelle dépense" subtitle="Enregistrez vos charges pour un bénéfice exact"/>{canWrite?<Form onSubmit={e=>{e.preventDefault();add();}}><Field label="Libellé" required full><input value={form.label} onChange={e=>setForm({...form,label:e.target.value})} required placeholder="Ex : Campagne Facebook Ads"/></Field><div className="admin-form-row"><Field label="Catégorie" full><Select value={form.category} onChange={e=>setForm({...form,category:e.target.value})} options={options(['ADS','SHIPPING','STOCK','SERVICES','SALARIES','FEES','OTHER'])}/></Field><Field label="Montant (TND)" required full><input type="number" min="0.001" step="0.001" value={form.amountTnd} onChange={e=>setForm({...form,amountTnd:e.target.value})} required/></Field></div><div className="admin-form-row"><Field label="Date" full><input type="date" value={form.expenseDate} onChange={e=>setForm({...form,expenseDate:e.target.value})} required/></Field><Field label="Notes" full><input value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/></Field></div><Button busy={busy} type="submit">Ajouter la dépense</Button></Form>:<p className="admin-block-small">Lecture seule pour votre rôle.</p>}</section>
+    <section className="admin-card"><CardTitle title="Dépenses de la période" subtitle={`${expenses.length} ligne(s)`}/><div className="admin-settings-list">{expenses.length===0&&<p className="admin-block-small">Aucune dépense.</p>}{expenses.map(row=><div key={row.id} className="admin-cat-row"><span><strong>{row.label}</strong><small className="admin-block-small">{row.expense_date} · {({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}{row.notes?` · ${row.notes}`:''}</small></span><span className="admin-cat-amount">{formatMoney(row.amount_tnd)}{canWrite&&<Button variant="ghost" onClick={()=>remove(row.id)}>Suppr.</Button>}</span></div>)}</div></section>
+  </div>{toast&&<Toast {...toast}/>}</>;
+};
+
+// ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
+const THEME_PRESETS=[
+  {id:'violet',label:'Violet AYROVI',primary:'#673de6',primaryDark:'#5025d1',primaryLight:'#7e57ff',accent:'#fbbf24',gradient:'linear-gradient(135deg,#24104f 0%,#673de6 100%)',font:'jakarta'},
+  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#f59e0b',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:'inter'},
+  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#fbbf24',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:'jakarta'},
+  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#fde047',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:'inter'},
+  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#673de6',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:'jakarta'},
+  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#fbbf24',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:'inter'},
+];
+const FONT_OPTIONS=[{value:'jakarta',label:'Plus Jakarta Sans (moderne)'},{value:'inter',label:'Inter (neutre)'},{value:'system',label:'Système (rapide)'}];
+const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
+  const [rows,setRows]=useState<any[]>([]);const [theme,setTheme]=useState<any>(THEME_PRESETS[0]);const [footerAbout,setFooterAbout]=useState('');
+  const [channels,setChannels]=useState({facebook:'',instagram:'',tiktok:'',whatsapp:''});
+  const [toast,setToast]=useState<any>(null);const [busy,setBusy]=useState(false);
+  const parseJson=(v:any)=>{try{return typeof v==='string'?JSON.parse(v):v;}catch{return null;}};
+  const load=()=>adminApi<any>('/settings').then(r=>{setRows(r.data);
+    const find=(key:string)=>r.data.find((row:any)=>row.setting_key===key);
+    const t=parseJson(find('site_theme')?.setting_value);if(t&&t.primary)setTheme({preset:'custom',ink:'#1d2130',...t});
+    setFooterAbout(String(find('footer_about')?.setting_value??''));
+    setChannels({facebook:String(find('facebook_url')?.setting_value??''),instagram:String(find('instagram_url')?.setting_value??''),tiktok:String(find('tiktok_url')?.setting_value??''),whatsapp:String(find('whatsapp_url')?.setting_value??'')});
+  });
+  useEffect(()=>{load();},[]);
+  const saveRow=(key:string,value:any)=>{const row=rows.find((r:any)=>r.setting_key===key);if(!row)return Promise.resolve();return adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});};
+  const save=async()=>{setBusy(true);try{await Promise.all([saveRow('site_theme',theme),saveRow('footer_about',footerAbout),saveRow('facebook_url',channels.facebook),saveRow('instagram_url',channels.instagram),saveRow('tiktok_url',channels.tiktok),saveRow('whatsapp_url',channels.whatsapp)]);await load();setToast({message:'Design publié — la boutique adopte le nouveau thème (rechargement des pages).',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
+  const applyPreset=(preset:any)=>setTheme({...theme,...preset,preset:preset.id});
+  return <><PageHeader title="Développement & design" description="Thème complet de la boutique (couleurs, dégradés, police), canaux sociaux et texte du pied de page." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
+  <div className="admin-report-grid">
+    <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
+    <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select value={theme.font||'jakarta'} onChange={e=>setTheme({...theme,preset:'custom',font:e.target.value})} options={FONT_OPTIONS}/></Field></div>
+    <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique AYROVI</strong><span>Aperçu du dégradé principal</span><button style={{background:theme.accent,color:'#17131f'}} type="button">Bouton accent</button></div></section>
+    <section className="admin-card"><CardTitle title="Canaux & pied de page" subtitle="Liens affichés dans la section « Nos canaux » du site"/><div className="admin-settings-list">
+      <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/ayrovi"/></Field>
+      <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/ayrovi"/></Field>
+      <Field label="TikTok" full><input disabled={!canWrite} value={channels.tiktok} onChange={e=>setChannels({...channels,tiktok:e.target.value})} placeholder="https://tiktok.com/@ayrovi"/></Field>
+      <Field label="WhatsApp" full><input disabled={!canWrite} value={channels.whatsapp} onChange={e=>setChannels({...channels,whatsapp:e.target.value})} placeholder="https://wa.me/21600000000"/></Field>
+      <Field label="Texte du pied de page" full><textarea rows={4} disabled={!canWrite} value={footerAbout} onChange={e=>setFooterAbout(e.target.value)}/></Field>
+    </div></section>
+  </div>{toast&&<Toast {...toast}/>}</>;
+};
+
 const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout})=>{
   const initial=new URLSearchParams(location.search).get('section')||'dashboard';const[section,setSection]=useState(initial);const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
   const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string)=>{setSection(id);setMobile(false);history.pushState({},'',`/admin?section=${id}`);};
   useEffect(()=>{const pop=()=>setSection(new URLSearchParams(location.search).get('section')||'dashboard');addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
   return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><FigLeaf/><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={section===id?'is-active':''} onClick={()=>navigate(id)}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank"><Globe2/>Voir le site public</a><span>AYROVI v3.1 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
-  <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><button className="admin-icon-button"><Bell/></button><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
+  <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><NotificationsBell onNavigate={navigate}/><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
 };
 
 export const AdminApp:React.FC=()=>{

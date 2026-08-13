@@ -53,9 +53,16 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   
   const [isUploading, setIsUploading] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const uploadPreviewRef = useRef<string | null>(null);
+  const setPreview = (url: string | null) => {
+    if (uploadPreviewRef.current) URL.revokeObjectURL(uploadPreviewRef.current);
+    uploadPreviewRef.current = url;
+    setUploadPreview(url);
+  };
 
   const [title, setTitle] = useState(product?.title || 'Article International');
   const [sourcePrice, setSourcePrice] = useState<number>(product?.sourcePrice || 0);
@@ -224,6 +231,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     activeRequestRef.current = controller;
     setIsUploading(true);
     setErrorMsg(null);
+    setPreview(URL.createObjectURL(file));
     try {
       const form = new FormData();
       form.append('image', file);
@@ -250,6 +258,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       if (activeRequestRef.current === controller) {
         activeRequestRef.current = null;
         setIsUploading(false);
+        setPreview(null);
       }
     }
   };
@@ -448,19 +457,19 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       />
 
       <section className="relative flex h-screen h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-white">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-[#f8f9fe] px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-surface px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-[#673de6] text-white flex items-center justify-center font-black text-xs">
+            <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center font-black text-xs">
               +
             </div>
             <div>
-              <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-[#1d2130]">
+              <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
                 {step === 'input' && "Nouvelle Commande (Lens)"}
                 {step === 'details' && "Fiche de Calcul & Prix (DT)"}
                 {step === 'checkout' && "Livraison & Coordonnées"}
                 {step === 'success' && "Commande Confirmée"}
               </h3>
-              <p className="text-[11px] text-[#6b7280] font-medium">Conversion transparente et garantie</p>
+              <p className="text-[11px] text-muted font-medium">Conversion transparente et garantie</p>
             </div>
           </div>
 
@@ -468,7 +477,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             ref={closeButtonRef}
             type="button"
             onClick={handleCloseDrawer}
-            className="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-[#1d2130] flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#673de6] focus-visible:ring-offset-2"
+            className="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             aria-label="Fermer Lens"
           >
             <X className="w-5 h-5" />
@@ -485,10 +494,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           {step === 'input' && (
             <div className="space-y-5">
               <div className="text-center space-y-1">
-                <h4 className="font-extrabold text-lg text-[#1d2130]">
+                <h4 className="font-extrabold text-lg text-ink">
                   Comment souhaitez-vous ajouter l'article ?
                 </h4>
-                <p className="text-xs text-[#6b7280]">
+                <p className="text-xs text-muted">
                   Importez une capture d'écran ou collez un lien pour calculer le prix exact en Dinars.
                 </p>
               </div>
@@ -498,9 +507,17 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading || isScraping}
-                className="hostinger-purple-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl p-6 text-left text-white disabled:cursor-wait disabled:opacity-70"
+                className="hostinger-purple-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl p-6 text-left text-white disabled:cursor-wait disabled:opacity-90"
               >
-                <div className="flex items-start justify-between">
+                {/* تجربة AYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
+                {isUploading && uploadPreview && (
+                  <>
+                    <img src={uploadPreview} alt="Capture en cours d’analyse" className="absolute inset-0 h-full w-full object-cover" />
+                    <div className="absolute inset-0 bg-black/35" />
+                    <div className="lens-scan absolute inset-0" />
+                  </>
+                )}
+                <div className="relative z-10 flex items-start justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
                       <Camera className="w-3.5 h-3.5 text-yellow-300" />
@@ -510,25 +527,25 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       Capture d'écran (Screenshot)
                     </h5>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-[#673de6] transition-all">
+                  <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-brand transition-all">
                     <ArrowUpRight className="w-5 h-5" />
                   </div>
                 </div>
 
-                <p className="text-xs text-purple-100/90 my-2">
-                  Prenez une photo de votre article sur SHEIN, Amazon ou TEMU.
+                <p className="relative z-10 my-2 text-xs text-purple-100/90">
+                  {isUploading ? 'AYROVI Lens lit votre capture : produit, prix et devise…' : 'Prenez une photo de votre article sur SHEIN, Amazon ou TEMU.'}
                 </p>
 
-                <div className="pt-2">
-                  <div className="inline-flex items-center gap-2 bg-white text-[#1d2130] px-4 py-2 rounded-xl text-xs font-bold shadow-xs">
+                <div className="relative z-10 pt-2">
+                  <div className="inline-flex items-center gap-2 bg-white text-ink px-4 py-2 rounded-xl text-xs font-bold shadow-xs">
                     {isUploading ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#673de6]" />
-                        <span>Analyse en cours...</span>
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+                        <span>Analyse Lens en cours...</span>
                       </>
                     ) : (
                       <>
-                        <ImageIcon className="w-3.5 h-3.5 text-[#673de6]" />
+                        <ImageIcon className="w-3.5 h-3.5 text-brand" />
                         <span>Sélectionner une photo</span>
                       </>
                     )}
@@ -537,8 +554,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </button>
 
               {/* Card 2: Link Direct */}
-              <div className="hostinger-purple-card rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[190px]">
-                <div className="flex items-start justify-between">
+              <div className={`hostinger-purple-card rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[190px] ${isScraping ? 'link-analyze' : ''}`}>
+                <div className="relative z-10 flex items-start justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
                       <Link2 className="w-3.5 h-3.5 text-yellow-300" />
@@ -554,10 +571,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <p className="text-xs text-purple-100/90 my-2">
-                  Copiez l'URL de votre article depuis SHEIN, AliExpress ou Amazon.
+                  {isScraping ? 'Lecture du lien : ouverture de la page, extraction du prix et conversion…' : "Copiez l'URL de votre article depuis SHEIN, AliExpress ou Amazon."}
                 </p>
 
-                <form onSubmit={handleScrapeUrl} className="pt-2 space-y-2">
+                <form onSubmit={handleScrapeUrl} className="pt-2 space-y-2 relative z-10">
                   <div className="flex gap-1.5">
                     <input
                       type="url"
@@ -582,11 +599,11 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   <button
                     type="submit"
                     disabled={isUploading || isScraping || !urlInput.trim()}
-                    className="w-full bg-white text-[#1d2130] hover:bg-yellow-300 disabled:opacity-50 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    className="w-full bg-white text-ink hover:bg-yellow-300 disabled:opacity-50 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
                   >
                     {isScraping ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-[#673de6]" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
                         <span>Calcul en cours...</span>
                       </>
                     ) : (
@@ -603,12 +620,12 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
           {step === 'details' && (
             <div className="space-y-5">
-              <div className="bg-[#f8f9fe] border border-slate-200 rounded-2xl p-4 flex gap-4 items-center">
+              <div className="bg-surface border border-slate-200 rounded-2xl p-4 flex gap-4 items-center">
                 <div className="w-20 h-20 rounded-xl bg-white border border-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
                   {product?.mainImage ? (
                     <img src={product.mainImage} alt={title} className="w-full h-full object-contain" />
                   ) : (
-                    <PackageCheck className="h-7 w-7 text-[#673de6]" aria-hidden="true" />
+                    <PackageCheck className="h-7 w-7 text-brand" aria-hidden="true" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
@@ -619,25 +636,25 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-white border border-slate-200 focus:border-[#673de6] rounded-xl px-2.5 py-1.5 text-xs font-bold text-[#1d2130] focus:outline-none"
+                    className="w-full bg-white border border-slate-200 focus:border-brand rounded-xl px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="bg-[#f8f9fe] border border-[#eef0f6] rounded-2xl p-4 sm:p-5 space-y-4">
+              <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-[#1d2130] flex items-center gap-1.5">
-                    <Calculator className="w-4 h-4 text-[#673de6]" />
+                  <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+                    <Calculator className="w-4 h-4 text-brand" />
                     <span>Prix original sur le site :</span>
                   </span>
-                  <span className="text-xs font-extrabold text-[#673de6]">
+                  <span className="text-xs font-extrabold text-brand">
                     Conversion AYROVI
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] text-[#6b7280] font-semibold mb-1">
+                    <label className="block text-[11px] text-muted font-semibold mb-1">
                       Montant devise :
                     </label>
                     <input
@@ -647,18 +664,18 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       value={sourcePrice || ''}
                       onChange={(e) => setSourcePrice(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-slate-200 focus:border-[#673de6] rounded-xl px-3 py-2 text-sm font-black text-[#1d2130] focus:outline-none shadow-xs"
+                      className="w-full bg-white border border-slate-200 focus:border-brand rounded-xl px-3 py-2 text-sm font-black text-ink focus:outline-none shadow-xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-[#6b7280] font-semibold mb-1">
+                    <label className="block text-[11px] text-muted font-semibold mb-1">
                       Devise :
                     </label>
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-white border border-slate-200 focus:border-[#673de6] rounded-xl px-3 py-2 text-xs font-bold text-[#1d2130] focus:outline-none shadow-xs"
+                      className="w-full bg-white border border-slate-200 focus:border-brand rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none shadow-xs"
                     >
                       <option value="EUR">Euro (€ EUR)</option>
                       <option value="USD">Dollar ($ USD)</option>
@@ -669,29 +686,29 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <div className="pt-3 border-t border-slate-200 space-y-1.5 text-xs">
-                  <div className="flex justify-between text-[#6b7280]">
+                  <div className="flex justify-between text-muted">
                     <span>Prix converti :</span>
-                    <span className="font-semibold text-[#1d2130]">{convertedTND.toFixed(2)} DT</span>
+                    <span className="font-semibold text-ink">{convertedTND.toFixed(2)} DT</span>
                   </div>
-                  <div className="flex justify-between text-[#6b7280]">
+                  <div className="flex justify-between text-muted">
                     <span>Dédouanement :</span>
-                    <span className="font-semibold text-[#1d2130]">+{customsTND.toFixed(2)} DT</span>
+                    <span className="font-semibold text-ink">+{customsTND.toFixed(2)} DT</span>
                   </div>
-                  <div className="flex justify-between text-[#6b7280]">
+                  <div className="flex justify-between text-muted">
                     <span>Livraison :</span>
-                    <span className="font-semibold text-[#1d2130]">+{shippingTND.toFixed(2)} DT</span>
+                    <span className="font-semibold text-ink">+{shippingTND.toFixed(2)} DT</span>
                   </div>
-                  <div className="flex justify-between text-[#6b7280]">
+                  <div className="flex justify-between text-muted">
                     <span>Frais de service & garantie :</span>
-                    <span className="font-semibold text-[#1d2130]">+{serviceFeeTND.toFixed(2)} DT</span>
+                    <span className="font-semibold text-ink">+{serviceFeeTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-slate-200 font-extrabold text-sm sm:text-base">
-                    <span className="text-[#1d2130]">Total à régler :</span>
-                    <span className="text-[#673de6] text-lg font-black">
+                    <span className="text-ink">Total à régler :</span>
+                    <span className="text-brand text-lg font-black">
                       {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
                     </span>
                   </div>
-                  {pricingPreview && <p className="text-right text-[10px] text-[#9ca3af]">Tarification serveur v{pricingPreview.pricingVersion}</p>}
+                  {pricingPreview && <p className="text-right text-[10px] text-muted">Tarification serveur v{pricingPreview.pricingVersion}</p>}
                 </div>
               </div>
 
@@ -705,7 +722,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     value={variantNote}
                     onChange={(e) => setVariantNote(e.target.value)}
                     placeholder="Ex : M, Noir..."
-                    className="w-full bg-[#f8f9fe] border border-slate-200 focus:border-[#673de6] rounded-xl px-3 py-2 text-xs text-[#1d2130] focus:outline-none"
+                    className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3 py-2 text-xs text-ink focus:outline-none"
                   />
                 </div>
 
@@ -717,17 +734,17 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#1d2130] font-black flex items-center justify-center cursor-pointer"
+                      className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-ink font-black flex items-center justify-center cursor-pointer"
                     >
                       -
                     </button>
-                    <span className="font-bold text-[#1d2130] min-w-[2rem] text-center">
+                    <span className="font-bold text-ink min-w-[2rem] text-center">
                       {quantity}
                     </span>
                     <button
                       type="button"
                       onClick={() => setQuantity(quantity + 1)}
-                      className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#1d2130] font-black flex items-center justify-center cursor-pointer"
+                      className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-ink font-black flex items-center justify-center cursor-pointer"
                     >
                       +
                     </button>
@@ -740,8 +757,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           {step === 'checkout' && (
             <form id="lens-checkout-form" onSubmit={handleFinalOrderSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-[#374151] mb-1 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-[#673de6]" />
+                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-brand" />
                   <span>Nom et Prénom :</span>
                 </label>
                 <input
@@ -750,13 +767,13 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="Ex : Anis Ben Ammar"
-                  className="w-full bg-[#f8f9fe] border border-slate-200 focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none font-semibold"
+                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#374151] mb-1 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-[#673de6]" />
+                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
+                  <Phone className="w-3.5 h-3.5 text-brand" />
                   <span>Téléphone :</span>
                 </label>
                 <input
@@ -765,19 +782,19 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   placeholder="+216 98 123 456"
-                  className="w-full bg-[#f8f9fe] border border-slate-200 focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none font-mono font-semibold"
+                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-mono font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#374151] mb-1 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#673de6]" />
+                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-brand" />
                   <span>Gouvernorat :</span>
                 </label>
                 <select
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full bg-[#f8f9fe] border border-slate-200 focus:border-[#673de6] rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-[#1d2130] focus:outline-none font-semibold"
+                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
                 >
                   {commerceConfig.governorates.map((gov) => (
                     <option key={gov} value={gov}>{gov}</option>
@@ -786,7 +803,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#374151] mb-1">
+                <label className="block text-xs font-bold text-muted mb-1">
                   Adresse complète :
                 </label>
                 <textarea
@@ -795,13 +812,13 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   placeholder="Ex : Rue Hédi Nouira, Ennasr 2, Apt 4"
-                  className="w-full bg-[#f8f9fe] border border-slate-200 focus:border-[#673de6] rounded-xl px-3.5 py-2 text-xs text-[#1d2130] focus:outline-none font-semibold resize-none"
+                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2 text-xs text-ink focus:outline-none font-semibold resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#374151] mb-1 flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-[#673de6]" />
+                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-brand" />
                   <span>Paiement :</span>
                 </label>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -815,8 +832,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                         onClick={() => setFormData({ ...formData, paymentMethod: value })}
                         className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
                           formData.paymentMethod === value
-                            ? 'border-[#673de6] bg-[#673de6]/10 text-[#673de6]'
-                            : 'border-slate-200 bg-[#f8f9fe] text-slate-500'
+                            ? 'border-brand bg-brand/10 text-brand'
+                            : 'border-slate-200 bg-surface text-slate-500'
                         }`}
                       >
                         <span>{label}</span>
@@ -835,25 +852,25 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </div>
 
               <div>
-                <h4 className="text-xl font-bold text-[#1d2130]">
+                <h4 className="text-xl font-bold text-ink">
                   Félicitations ! Commande validée
                 </h4>
-                <p className="text-xs text-[#6b7280] mt-1">
+                <p className="text-xs text-muted mt-1">
                   Votre code de suivi est généré et actif chez AYROVI.
                 </p>
               </div>
 
-              <div className="bg-[#f8f9fe] border border-[#673de6]/30 rounded-2xl p-4 flex items-center justify-between">
+              <div className="bg-surface border border-brand/30 rounded-2xl p-4 flex items-center justify-between">
                 <div className="text-left">
-                  <span className="text-[10px] text-[#6b7280] uppercase font-bold block">Code de suivi :</span>
-                  <span className="text-lg font-mono font-black text-[#673de6]">{orderResult.orderNumber}</span>
+                  <span className="text-[10px] text-muted uppercase font-bold block">Code de suivi :</span>
+                  <span className="text-lg font-mono font-black text-brand">{orderResult.orderNumber}</span>
                 </div>
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(orderResult.orderNumber);
                     alert("Code copié : " + orderResult.orderNumber);
                   }}
-                  className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-[#1d2130] shadow-2xs cursor-pointer"
+                  className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-ink shadow-2xs cursor-pointer"
                   title="Copier"
                 >
                   <Copy className="w-4 h-4" />
@@ -882,7 +899,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               type="button"
               onClick={() => void handleProceedToCheckoutForm()}
               disabled={sourcePrice <= 0 || !pricingPreview || isCalculatingPrice || isAddingToCart}
-              className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-[#673de6] hover:bg-[#5025d1] text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-brand hover:bg-brand-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isAddingToCart ? (
                 <>
@@ -911,7 +928,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 type="submit"
                 form="lens-checkout-form"
                 disabled={isSubmitting}
-                className="flex-1 py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-[#673de6] hover:bg-[#5025d1] text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-brand hover:bg-brand-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>
@@ -931,7 +948,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           <button
             type="button"
             onClick={handleResetForNewClient}
-            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-[#673de6]/40 bg-[#f1ebff] hover:bg-[#e8defc] text-[#673de6] font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
+            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-brand/40 bg-brand/5 hover:bg-[#e8defc] text-brand font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
           >
             <span>Nouvelle commande pour un autre client</span>
           </button>

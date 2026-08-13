@@ -10,16 +10,20 @@ export type AdminPermission =
   | 'payments:write'
   | 'settings:write'
   | 'users:write'
-  | 'audit:read';
+  | 'audit:read'
+  | 'reports:read'
+  | 'reports:write';
 
 const rolePermissions: Record<AdminRole, Set<AdminPermission>> = {
   SUPER_ADMIN: new Set([
     'dashboard:read','content:read','content:write','commerce:read','orders:write',
     'pricing:write','payments:write','settings:write','users:write','audit:read',
+    'reports:read','reports:write',
   ]),
   ADMIN: new Set([
     'dashboard:read','content:read','content:write','commerce:read','orders:write',
     'pricing:write','payments:write','settings:write','audit:read',
+    'reports:read','reports:write',
   ]),
   CONTENT_MANAGER: new Set(['dashboard:read','content:read','content:write']),
   ORDER_MANAGER: new Set(['dashboard:read','commerce:read','orders:write','payments:write']),

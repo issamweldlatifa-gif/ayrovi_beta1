@@ -5,6 +5,7 @@ import multer from 'multer';
 import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { uploadsDir, invoiceAbsolutePath } from '../services/invoice';
+import { sendMail } from '../services/mailer';
 import {
   cleanupCustomerAuth,
   clearCustomerCookie,
@@ -578,6 +579,15 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     fs.writeFileSync(absolute, file.buffer);
     try {
       const updated = db.attachDepositProof(order.id, absolute);
+      // تنبيه بريدي اختياري للإدارة (وصل جديد بانتظار المراجعة) — لا يُفشل الطلب إن تعذّر
+      const alertEmail = String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='admin_alert_email'")?.setting_value || '').trim();
+      if (alertEmail) {
+        void sendMail({
+          to: alertEmail,
+          subject: `🔔 Acompte à vérifier — commande ${order.order_number}`,
+          html: `<p>Une preuve d'acompte vient d'être téléversée pour la commande <strong>${order.order_number}</strong> (${Number(updated.deposit_amount_tnd).toFixed(3)} DT).</p><p>Ouvrez le tableau des commandes pour la vérifier.</p>`,
+        }).catch(() => undefined);
+      }
       res.json({ success: true, data: { depositStatus: updated.deposit_status, submittedAt: updated.deposit_submitted_at } });
     } catch (error: any) {
       fs.rmSync(absolute, { force: true });

@@ -61,7 +61,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
       <div ref={areaRef} onScroll={handleScroll} className="absolute inset-0 flex flex-col gap-4 overflow-y-auto px-5 py-6">
         {messages.length === 0 && !isGenerating ? (
           <div className="flex min-h-full flex-col items-center justify-center px-3 text-center">
-            <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full shadow-sm ${isDark ? 'bg-[#26262e] text-[#9161f5]' : 'bg-[#f0eeff] text-[#7c3aed]'}`}>
+            <div className={`mb-4 flex h-14 w-14 items-center justify-center rounded-full shadow-sm ${isDark ? 'bg-[#26262e] text-brand-light' : 'bg-brand/10 text-brand'}`}>
               <AiLogoIcon className="h-7 w-7" />
             </div>
             <h2 className={`text-lg font-bold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Comment puis-je vous aider ?</h2>
@@ -110,7 +110,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                         {copiedId === message.id ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
                       </button>
                       <button type="button" onClick={() => onRegenerate(message.id)} className={actionButton} title="Régénérer"><RefreshCw className="h-3.5 w-3.5" /></button>
-                      <button type="button" onClick={() => onFeedback(message.id, 'up')} className={`${actionButton} ${feedback[message.id] === 'up' ? '!text-[#7c3aed]' : ''}`} title="Utile"><ThumbsUp className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => onFeedback(message.id, 'up')} className={`${actionButton} ${feedback[message.id] === 'up' ? '!text-brand' : ''}`} title="Utile"><ThumbsUp className="h-3.5 w-3.5" /></button>
                       <button type="button" onClick={() => onFeedback(message.id, 'down')} className={`${actionButton} ${feedback[message.id] === 'down' ? '!text-red-500' : ''}`} title="Pas utile"><ThumbsDown className="h-3.5 w-3.5" /></button>
                     </div>
                   </div>
@@ -120,7 +120,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
 
             {isGenerating && (
               <div className={`flex w-fit items-center gap-1.5 rounded-[20px_20px_20px_6px] px-4 py-4 shadow-sm ring-1 ${isDark ? 'bg-[#232329] ring-zinc-700/70' : 'bg-white ring-zinc-200'}`}>
-                {[0, 1, 2].map((dot) => <span key={dot} className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#7c3aed]" style={{ animationDelay: `${dot * 140}ms` }} />)}
+                {[0, 1, 2].map((dot) => <span key={dot} className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand" style={{ animationDelay: `${dot * 140}ms` }} />)}
               </div>
             )}
           </>
