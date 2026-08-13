@@ -21,7 +21,8 @@
 - [x] P3 التصميم — @theme inline tokens (brand/ink/muted/surface/line/accent)؛ استبدال ~250 لونًا ثابتًا؛ تطبيق الثيم وقت التشغيل من commerce-config؛ صفحة Développement بـ 6 قوالب جاهزة + ألوان مخصصة + خط + قنوات + نص الفوتر؛ فوتر Yanaya-ستايل (شارات ثقة + قنوات + أكورديون + أوسمة دفع + حقوق)؛ شريط زجاجي glass-header؛ خطوط Google؛ ترحيل settings CHECK (CHANNELS/DESIGN) مُختبر على قاعدة قديمة
 - [x] P4 Lens/OCR — معاينة + مسح ضوئي lens-scan أثناء التحليل، shimmer للروابط؛ OCR: PSM sparse + أولوية TND/مطابقة كلمات مفتاحية/GBP
 - [x] P5 الأمان — CSP موسّعة للخطوط + frame-ancestors 'self' + HSTS + X-Frame-Options (إنتاج فقط)؛ rate limiting (admin-login/otp/checkout/vision/scrape) مع اختبار 429
-- [x] P6 — اختبارات 31/31 ✓؛ فحص أنواع ✓؛ ترحيل قاعدة قديمة حقيقية ✓ (FK=0)؛ معاينة محلية مدخنة ✓ → دفع GitHub + تحقق Render
+- [x] P6 — اختبارات 31/31 ✓؛ فحص أنواع ✓؛ ترحيل قاعدة قديمة حقيقية ✓ (FK=0)؛ معاينة محلية مدخنة ✓
+- [⚠️] نشر Render لـ fa091c9 **معلّق**: GitHub main محدّث لكن Render لم يبدّل بعد 30 دقيقة (CSP القديم ما زال مخدومًا). المطلوب من المستخدم: لوحة Render → Manual Deploy → Deploy latest commit، أو فحص سجل البناء الفاشل إن وُجد. النسخة القديمة تخدم بشكل سليم (لا انقطاع).
 
 ## بقية أفكار مؤجلة (ليست مطلوبة الآن)
 - دمج Figma حقيقي يتطلب مفاتيح API (مؤجل — القوالب الجاهزة تغني حاليًا)
