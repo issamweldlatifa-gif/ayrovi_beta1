@@ -372,23 +372,79 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
           {stage === 'candidates' && candidatesView && (
             <div className="mx-auto max-w-md space-y-4">
               {candidatesView.ocrPrice && candidatesView.ocrPrice.sourcePrice > 0 && (
-                <div className="rounded-[20px] border border-amber-200 bg-amber-50 p-3.5">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
-                    {candidatesView.ocrPrice.isCartScreenshot ? '🛒 Prix panier détecté (OCR)' : '💰 Prix détecté dans l’image (OCR)'}
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-ink">
-                    {candidatesView.ocrPrice.sourcePrice.toFixed(2)} {candidatesView.ocrPrice.sourceCurrency}
-                    {candidatesView.ocrPrice.totalPriceTND != null && (
-                      <span className="ml-2 text-brand">≈ {candidatesView.ocrPrice.totalPriceTND.toFixed(2)} DT (tout inclus)</span>
-                    )}
-                  </p>
-                  <p className="mt-1 text-[11px] text-muted">
-                    {candidatesView.ocrPrice.isCartScreenshot
-                      ? 'Capture de panier — total extrait automatiquement.'
-                      : `Produit: ${candidatesView.ocrPrice.title}`}
-                  </p>
-                  <p className="mt-2 text-[11px] font-semibold text-amber-800">⚠️ Avant commande, vous devrez coller le lien du produit pour vérification (comme demandé).</p>
-                </div>
+                <>
+                  {/* Carte produit OCR - petite carte avec image, prix, description, bouton acheter */}
+                  <div className="overflow-hidden rounded-[22px] border-2 border-brand bg-white shadow-lg">
+                    <div className="relative aspect-[4/3] bg-surface">
+                      {(candidatesView.ocrPrice.imageUrl || previewUrl) ? (
+                        <img
+                          src={candidatesView.ocrPrice.imageUrl || previewUrl || ''}
+                          alt={candidatesView.ocrPrice.title}
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-muted">
+                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M8 6V5a4 4 0 0 1 8 0v1" /></svg>
+                        </div>
+                      )}
+                      <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-extrabold text-ink">OCR • Prix détecté</span>
+                      <span className="absolute right-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.ocrPrice.sourceCurrency}</span>
+                    </div>
+                    <div className="space-y-3 p-4">
+                      <div>
+                        <h3 className="text-[15px] font-extrabold leading-snug text-ink line-clamp-2">
+                          {candidatesView.ocrPrice.title || candidatesView.queryLabel || 'Produit détecté via OCR'}
+                        </h3>
+                        <p className="mt-1 text-[11px] text-muted">
+                          {candidatesView.ocrPrice.isCartScreenshot ? '🛒 Panier détecté — total extrait' : '💰 Prix extrait depuis l’image'} • {candidatesView.ocrPrice.brand || 'Produit'} 
+                        </p>
+                      </div>
+                      <div className="flex items-end justify-between rounded-2xl bg-amber-50 p-3.5 border border-amber-200">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Prix source (OCR)</p>
+                          <p className="text-sm font-bold text-ink">{candidatesView.ocrPrice.sourcePrice.toFixed(2)} {candidatesView.ocrPrice.sourceCurrency}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700">Prix final estimé</p>
+                          <p className="text-lg font-extrabold text-ink">≈ {candidatesView.ocrPrice.totalPriceTND?.toFixed(2) || '—'} DT</p>
+                          <p className="text-[9px] text-emerald-600 font-semibold">Tout inclus</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ocr = candidatesView!.ocrPrice!;
+                          setProduct({
+                            title: ocr.title || candidatesView!.queryLabel || 'Produit détecté via OCR',
+                            brand: ocr.brand,
+                            model: null,
+                            description: ocr.isCartScreenshot ? `Panier détecté: ${ocr.sourcePrice} ${ocr.sourceCurrency} - ${ocr.title}` : `Prix OCR: ${ocr.sourcePrice} ${ocr.sourceCurrency} - ${ocr.title}`,
+                            image: ocr.imageUrl || previewUrl || '',
+                            images: ocr.imageUrl ? [ocr.imageUrl] : previewUrl ? [previewUrl] : [],
+                            source: ocr.isCartScreenshot ? 'OCR Panier' : 'OCR Vision',
+                            sourceUrl: '',
+                            price: ocr.sourcePrice,
+                            currency: ocr.sourceCurrency,
+                            priceTnd: ocr.totalPriceTND,
+                            exchangeRate: null,
+                            colors: [],
+                            sizes: [],
+                            availability: 'unknown',
+                          });
+                          setStage('product');
+                        }}
+                        className="bg-brand-gradient flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 text-sm font-extrabold text-white shadow"
+                      >
+                        Commander avec ce prix • {candidatesView.ocrPrice.totalPriceTND?.toFixed(2) || candidatesView.ocrPrice.sourcePrice.toFixed(2)} DT
+                      </button>
+                      <p className="text-center text-[10px] font-semibold text-amber-800">⚠️ Avant commande, collez le lien du produit pour vérification (comme demandé).</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[16px] bg-surface px-3 py-2 text-center">
+                    <p className="text-[11px] font-bold text-muted">Ou choisissez une correspondance externe ci-dessous</p>
+                  </div>
+                </>
               )}
               {candidatesView.queryLabel && (
                 <p className="rounded-2xl bg-surface px-4 py-3 text-center text-[11px] font-semibold text-muted">
@@ -401,31 +457,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                 <div className="space-y-4 rounded-[22px] border border-dashed border-line p-6 text-center">
                   <p className="text-sm font-extrabold text-ink">Aucune correspondance externe</p>
                   {candidatesView.ocrPrice && candidatesView.ocrPrice.sourcePrice > 0 ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-muted">Mais prix détecté via OCR : {candidatesView.ocrPrice.sourcePrice} {candidatesView.ocrPrice.sourceCurrency}</p>
-                      <button type="button" onClick={() => {
-                        // Create product from OCR price
-                        const ocr = candidatesView!.ocrPrice!;
-                        setProduct({
-                          title: ocr.title || candidatesView!.queryLabel || 'Produit détecté via OCR',
-                          brand: ocr.brand,
-                          model: null,
-                          description: ocr.isCartScreenshot ? 'Panier détecté via OCR' : 'Prix extrait depuis l’image',
-                          image: ocr.imageUrl || previewUrl || '',
-                          images: ocr.imageUrl ? [ocr.imageUrl] : [],
-                          source: 'OCR Vision',
-                          sourceUrl: '',
-                          price: ocr.sourcePrice,
-                          currency: ocr.sourceCurrency,
-                          priceTnd: ocr.totalPriceTND,
-                          exchangeRate: null,
-                          colors: [],
-                          sizes: [],
-                          availability: 'unknown',
-                        });
-                        setStage('product');
-                      }} className="min-h-[46px] rounded-xl bg-ink px-5 text-xs font-extrabold text-white">Utiliser ce prix OCR</button>
-                    </div>
+                    <p className="text-xs text-muted">Utilisez la carte OCR ci-dessus pour commander.</p>
                   ) : (
                     <p className="text-xs leading-relaxed text-muted">Essayez le lien direct de la page boutique pour un calcul exact.</p>
                   )}
