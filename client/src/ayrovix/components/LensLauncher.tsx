@@ -172,8 +172,30 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     }
   };
 
-  const handleChooseCandidate = (candidate: AyrovixCandidate) => {
+  const handleChooseCandidate = async (candidate: AyrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
+
+    // Si candidat externe avec URL (DuckDuckGo Free, Brave, SerpAPI...), tente de récupérer la fiche complète
+    // avec image, tailles, couleurs, prix via /api/ayrovix/analyze-url (fallback gratuit inclus)
+    if (candidate.sourceUrl && candidate.kind !== 'catalog') {
+      const token = ++abortRef.current;
+      setStage('analyzing');
+      setError(null);
+      try {
+        const result = await analyzeUrl(candidate.sourceUrl, 'url');
+        if (abortRef.current !== token) return;
+        setUrlResult(result);
+        setProduct(result.product);
+        setStage('product');
+        return;
+      } catch (err: any) {
+        if (abortRef.current !== token) return;
+        // Fallback: affiche le candidat tel quel si le scraping complet échoue (pas de blocage)
+        console.warn('[AYROVIX choose] analyze-url fallback failed, using candidate directly', err?.message);
+      }
+    }
+
+    // Catalogue ou fallback rapide
     setProduct(candidateToProduct(candidate));
     setStage('product');
   };

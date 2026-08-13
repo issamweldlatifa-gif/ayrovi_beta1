@@ -52,7 +52,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
               <button
                 type="button"
                 onClick={() => onChoose(candidate)}
-                disabled={candidate.price == null && candidate.kind !== 'catalog'}
+                // Permet de choisir même si prix non connu — on ira chercher la fiche complète via analyze-url (free fallback)
                 className="min-h-[40px] flex-1 rounded-xl bg-ink px-3 text-xs font-bold text-white transition active:scale-95 disabled:opacity-40"
               >
                 Choisir
