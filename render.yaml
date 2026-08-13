@@ -46,3 +46,9 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-3-5-haiku-latest
+      - key: SERPAPI_KEY
+        sync: false

@@ -1,15 +1,15 @@
 import type { AyrovixIdentification } from '../types';
 
 /**
- * AYROVIX · AI understanding layer — OpenAI Vision (gpt-4o-mini par défaut).
- * - La clé reste STRICTEMENT côté serveur (OPENAI_API_KEY), jamais dans le bundle client
+ * AYROVIX · AI understanding layer — Anthropic Claude Vision.
+ * - La clé reste STRICTEMENT côté serveur (ANTHROPIC_API_KEY), jamais dans le bundle client
  *   (aucune variable VITE_* : tout ce qui commence par VITE_ part dans le navigateur).
  * - Rôle : comprendre l'image et identifier le produit — JAMAIS de prix, JAMAIS de recherche.
  * - Couche isolée et remplaçable : le reste d'AYROVIX ne connaît que identifyProduct().
  */
 
-const OPENAI_ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-const DEFAULT_MODEL = 'gpt-4o-mini'; // vision + JSON mode, rapide et économique
+const ANTHROPIC_ENDPOINT = 'https://api.anthropic.com/v1/messages';
+const DEFAULT_MODEL = 'claude-3-5-haiku-latest';
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
@@ -17,7 +17,7 @@ export class AyrovixUnavailableError extends Error { readonly code = 'AYROVIX_UN
 export class AyrovixIdentificationError extends Error { readonly code = 'IDENTIFICATION_FAILED'; }
 
 export function ayrovixAiReady(): boolean {
-  return Boolean(process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY.trim().length > 20);
+  return Boolean(process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY.trim().length > 20);
 }
 
 const SYSTEM_PROMPT = `Tu es le moteur d'identification visuelle d'AYROVIX, un assistant shopping tunisien.
@@ -80,26 +80,33 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 35_000);
   try {
-    const response = await fetch(OPENAI_ENDPOINT, {
+    const response = await fetch(ANTHROPIC_ENDPOINT, {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'x-api-key': String(process.env.ANTHROPIC_API_KEY),
+        'anthropic-version': '2023-06-01',
       },
       // Jamais de journalisation : ni clé, ni image, ni réponse brute (confidentialité client).
       body: JSON.stringify({
-        model: process.env.OPENAI_MODEL || DEFAULT_MODEL,
-        response_format: { type: 'json_object' },
-        temperature: 0,
+        model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
         max_tokens: 700,
+        temperature: 0,
+        system: SYSTEM_PROMPT,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
           {
             role: 'user',
             content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: mime,
+                  data: image.toString('base64'),
+                },
+              },
               { type: 'text', text: 'Identifie le produit principal de cette image.' },
-              { type: 'image_url', image_url: { url: `data:${mime};base64,${image.toString('base64')}`, detail: 'auto' } },
             ],
           },
         ],
@@ -110,7 +117,7 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
       throw new AyrovixIdentificationError(`Analyse indisponible (HTTP ${response.status}).`);
     }
     const payload: any = await response.json();
-    const text = String(payload?.choices?.[0]?.message?.content || '');
+    const text = String(payload?.content?.[0]?.text || '');
     if (!text.trim()) throw new AyrovixIdentificationError('Réponse vide du modèle.');
     return parseIdentification(text);
   } catch (error: any) {

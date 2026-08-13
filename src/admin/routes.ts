@@ -657,7 +657,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       data: {
         ...getAyrovixStats(db),
         providers: {
-          vision: { configured: ayrovixAiReady(), label: 'OpenAI Vision' },
+          vision: { configured: ayrovixAiReady(), label: 'Claude Vision' },
           serpapi,
         },
       },
