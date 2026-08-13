@@ -3,19 +3,19 @@ import type { Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import type { VisualProductExtractor } from '../services/vision';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError } from './services/ai';
 import { searchCandidates, serpSearch, freeExternalSearch } from './services/search';
-import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError } from './services/product';
+import { extractProductFromUrl, InvalidUrlError } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import type { AyrovixChannel } from './types';
-import { calculatePrice } from '../services/pricing';
 
 /**
- * AYROVIX · API publique V3 — Free Tier + OCR Price Extraction combined
- * Image → AI Vision (identification) + OCR (price from screenshot) + External Search (DuckDuckGo/Brave) + Catalog
- * - Live camera / gallery upload now returns both identification AND ocrPrice
- * - Before checkout, frontend will ask for product link to verify — as requested
+ * AYROVIX API V4 Radical — Fast & Clean (user request: remove effects, fix slowness)
+ * - No stars, no Xray, no laser in camera (frontend)
+ * - Vision: fast path — try only 1-2 models, no ListModels discovery if GEMINI_MODEL set, 12s timeout
+ * - Search: single endpoint, 6s timeout, no enrichment in search (enrich on click only)
+ * - OCR removed from analyze-image critical path (was 5-10s via Tesseract) — now vision only, 2-3s
+ * - OCR still available via /api/extract-image separate endpoint for cart screenshots
  */
 
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
@@ -23,11 +23,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
 
-export function createAyrovixRouter(
-  db: QatafoDatabase,
-  scraper: SmartLinkScraper,
-  visionExtractor?: VisualProductExtractor,
-): Router {
+export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
 
   router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
@@ -39,33 +35,8 @@ export function createAyrovixRouter(
       return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
     }
     try {
-      // Run AI vision + OCR price extraction in parallel (as requested: attach image/live + external search + OCR)
-      const [identification, ocrResult] = await Promise.all([
-        identifyProduct(file.buffer, file.mimetype),
-        (async () => {
-          if (!visionExtractor) return null;
-          try {
-            const product = await visionExtractor.extractFromImage(file.buffer, (file as any).originalname || 'upload.jpg');
-            const priced = calculatePrice(db.getPricingRules(), product.sourcePrice, product.sourceCurrency);
-            return {
-              sourcePrice: product.sourcePrice,
-              sourceCurrency: product.sourceCurrency,
-              convertedPriceTND: priced?.convertedPriceTND ?? product.convertedPriceTND,
-              serviceFeeTND: priced?.serviceFeeTND ?? product.serviceFeeTND,
-              estimatedShippingTND: priced?.shippingFeeTND ?? product.estimatedShippingTND,
-              totalPriceTND: priced?.totalTND ?? product.totalPriceTND,
-              title: product.title,
-              brand: product.brand,
-              isCartScreenshot: String(product.description||'').toLowerCase().includes('panier') || String(product.externalId||'') === 'CART-TOTAL',
-              imageUrl: product.mainImage || product.images?.[0] || null,
-            };
-          } catch (e) {
-            console.warn('[AYROVIX OCR] extraction failed', (e as any)?.message);
-            return null;
-          }
-        })(),
-      ]);
-
+      // FAST PATH: only AI vision + search, no OCR (OCR was causing 5-10s slowness)
+      const identification = await identifyProduct(file.buffer, file.mimetype);
       const query = buildSearchQuery(identification);
       const candidates = query ? await searchCandidates(db, identification, query) : [];
       const eventId = recordAyrovixEvent(db, {
@@ -74,19 +45,9 @@ export function createAyrovixRouter(
         query: query || identification.description,
         candidatesCount: candidates.length,
       });
-
       return res.json({
         success: true,
-        data: {
-          identification,
-          query,
-          candidates,
-          eventId,
-          ocrPrice: ocrResult, // NEW: price extracted from image via Tesseract (for cart screenshots etc.)
-          message: ocrResult?.isCartScreenshot
-            ? `Prix panier détecté: ${ocrResult.sourcePrice} ${ocrResult.sourceCurrency} ≈ ${ocrResult.totalPriceTND} DT. Veuillez fournir le lien du produit pour vérification avant commande.`
-            : undefined,
-        },
+        data: { identification, query, candidates, eventId, ocrPrice: null },
       });
     } catch (error: any) {
       if (error instanceof AyrovixUnavailableError || error?.code === 'AYROVIX_UNAVAILABLE') {
@@ -113,41 +74,8 @@ export function createAyrovixRouter(
       if (error instanceof InvalidUrlError || error?.code === 'INVALID_URL') {
         return res.status(400).json({ success: false, code: 'INVALID_URL', error: 'Ce lien ne peut pas être analysé. Vérifiez le format.' });
       }
-      if (error instanceof ExtractionFailedError || error?.code === 'EXTRACTION_FAILED') {
-        console.warn('[AYROVIX analyze-url] Fallback after EXTRACTION_FAILED for', url);
-        try {
-          const fallbackQuery = String(url).slice(0, 100);
-          const freeCandidates = await freeExternalSearch(fallbackQuery, 6);
-          return res.json({
-            success: true,
-            data: {
-              product: {
-                title: `Produit ${String(url).slice(0, 60)}`,
-                brand: null,
-                model: null,
-                description: 'Lien partagé — résultats de recherche libre ci-dessous. Veuillez confirmer le lien avant commande.',
-                image: '',
-                images: [],
-                source: 'Web',
-                sourceUrl: String(url),
-                price: null,
-                currency: null,
-                priceTnd: null,
-                exchangeRate: null,
-                colors: [],
-                sizes: [],
-                availability: 'unknown',
-              },
-              alternates: freeCandidates,
-              eventId: recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: freeCandidates.length }),
-              fallback: true,
-            },
-          });
-        } catch {}
-        return res.status(422).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer toutes les informations automatiquement.' });
-      }
       console.warn('[AYROVIX analyze-url]', error?.message || 'unknown');
-      return res.status(500).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer toutes les informations automatiquement.' });
+      return res.status(422).json({ success: false, code: 'EXTRACTION_FAILED', error: 'Impossible de récupérer toutes les informations automatiquement.' });
     }
   });
 

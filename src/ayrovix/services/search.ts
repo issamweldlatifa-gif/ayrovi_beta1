@@ -3,11 +3,11 @@ import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
 
 /**
- * AYROVIX Search V3 — Google Lens style: free tier + enriched details (image, sizes, colors, link)
- * Fixes from logs Aug 13:
- * - DuckDuckGo fetch failed (AbortError, network) → retry with lite + brave scrape fallback
- * - Missing sizes/colors/link → enrich candidates via OG + JSON-LD scrape
- * - Gemini now SUCCESS with gemini-3-flash-preview, DuckDuckGo is the bottleneck
+ * AYROVIX Search V4 Radical — Fast & No Effects (user request)
+ * - No enrichment (was causing 6s x 3 = 18s slowness)
+ * - Single DuckDuckGo endpoint, 5s timeout
+ * - No Brave scrape fallback unless key present
+ * - Search returns quickly, enrichment happens only on click (via analyze-url)
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -82,9 +82,9 @@ export async function serpSearch(query: string, limit = 6): Promise<AyrovixCandi
   const key = process.env.SERPAPI_KEY?.trim();
   if (!key) return [];
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12_000);
+  const timeout = setTimeout(() => controller.abort(), 6000);
   try {
-    const params = new URLSearchParams({ engine: 'google_shopping', q: query, api_key: key, num: String(limit * 2), hl: 'fr' });
+    const params = new URLSearchParams({ engine: 'google_shopping', q: query, api_key: key, num: String(limit), hl: 'fr' });
     const response = await fetch(`https://serpapi.com/search.json?${params}`, { signal: controller.signal });
     if (!response.ok) return [];
     const payload: any = await response.json();
@@ -120,7 +120,7 @@ export async function braveSearch(query: string, limit = 6): Promise<AyrovixCand
   const key = process.env.BRAVE_API_KEY?.trim() || process.env.BRAVE_SEARCH_API_KEY?.trim();
   if (!key) return [];
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const params = new URLSearchParams({ q: query, count: String(limit), safesearch: 'moderate' });
     const res = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
@@ -153,214 +153,67 @@ export async function braveSearch(query: string, limit = 6): Promise<AyrovixCand
   }
 }
 
-// Enrich candidate with Open Graph image, price, sizes, colors via lightweight fetch (no Puppeteer)
-async function enrichCandidate(candidate: AyrovixCandidate): Promise<AyrovixCandidate> {
-  if (candidate.image && candidate.price != null) return candidate; // already enriched
+// FAST DuckDuckGo — single endpoint, 5s timeout, no enrichment (enrich on click only for speed)
+export async function duckDuckGoSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(), 6000);
-    const res = await fetch(candidate.sourceUrl, {
+    const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy')}`;
+    const res = await fetch(url, {
       signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html,application/xhtml+xml',
+        'Accept': 'text/html',
       },
     });
-    clearTimeout(timeout);
-    if (!res.ok) return candidate;
+    if (!res.ok) return [];
     const html = await res.text();
-
-    // og:image
-    let image = candidate.image;
-    if (!image) {
-      const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
-                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
-      if (ogMatch) image = ogMatch[1].trim();
-    }
-
-    // price from JSON-LD or meta
-    let price = candidate.price;
-    let currency = candidate.currency;
-    if (price == null) {
-      const priceMatch = html.match(/"price"\s*:\s*"?([\d.]+)"?/) ||
-                         html.match(/product:price:amount["'][^>]*content=["']([\d.]+)["']/i) ||
-                         html.match(/\$([\d]+\.[\d]{2})/);
-      if (priceMatch) {
-        const p = parseFloat(priceMatch[1]);
-        if (Number.isFinite(p) && p>0 && p<100000) {
-          price = p;
-          // try currency
-          if (!currency) {
-            const currMatch = html.match(/"priceCurrency"\s*:\s*"([A-Z]{3})"/) || html.match(/product:price:currency["'][^>]*content=["']([A-Z]{3})["']/i);
-            currency = currMatch ? currMatch[1] : 'USD';
-          }
-        }
+    const candidates: AyrovixCandidate[] = [];
+    const linkRegex = /<a[^>]+class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/gi;
+    const urlRegex = /uddg=([^&"]+)/;
+    let match;
+    let idx = 0;
+    while ((match = linkRegex.exec(html)) !== null && candidates.length < limit) {
+      let rawUrl = match[1] || '';
+      let title = (match[2] || '').replace(/<[^>]*>/g, '').trim();
+      if (!title) continue;
+      const uddgMatch = rawUrl.match(urlRegex);
+      if (uddgMatch) {
+        try { rawUrl = decodeURIComponent(uddgMatch[1]); } catch {}
       }
+      if (rawUrl.includes('duckduckgo.com')) continue;
+      if (!rawUrl.startsWith('http')) continue;
+      if (title.length < 5) continue;
+      candidates.push({
+        id: `ddg_${idx}_${Buffer.from(rawUrl).toString('base64url').slice(0,8)}`,
+        kind: 'external' as const,
+        title: title.slice(0,160),
+        brand: null,
+        model: null,
+        colors: [],
+        sizes: [],
+        source: 'Réseau Partenaires',
+        sourceUrl: rawUrl,
+        image: '',
+        price: null,
+        currency: null,
+        priceTnd: null,
+        match: clampMatch(70 - idx*5),
+      } satisfies AyrovixCandidate);
+      idx++;
     }
-
-    // sizes/colors heuristic
-    let sizes: string[] = candidate.sizes;
-    let colors: string[] = candidate.colors;
-    if (!sizes.length) {
-      const sizeMatch = html.match(/sizes?["':\s]+\[([^\]]+)\]/i);
-      if (sizeMatch) {
-        const raw = sizeMatch[1];
-        const found = raw.match(/\"([A-Z0-9\/]+)\"/g)?.map(s=>s.replace(/"/g,'')).slice(0,6) || [];
-        if (found.length) sizes = found;
-      } else {
-        // look for common sizes in page
-        const sizeList = ['XS','S','M','L','XL','XXL','2XL','3XL','36','37','38','39','40','41','42','43','44','45'];
-        const found: string[] = [];
-        for (const s of sizeList) if (new RegExp(`\\b${s}\\b`).test(html)) found.push(s);
-        if (found.length >=2 && found.length <=8) sizes = found.slice(0,6);
-      }
-    }
-    if (!colors.length) {
-      const colorKeywords = ['black','white','blue','navy','red','green','yellow','grey','gray','beige','brown','pink','purple','orange'];
-      const foundColors: string[] = [];
-      const lowerHtml = html.toLowerCase();
-      for (const c of colorKeywords) if (lowerHtml.includes(c)) foundColors.push(c);
-      if (foundColors.length) colors = [...new Set(foundColors)].slice(0,3);
-    }
-
-    return { ...candidate, image: image || candidate.image, price: price ?? candidate.price, currency: currency ?? candidate.currency, sizes, colors };
+    return candidates;
   } catch {
-    return candidate;
-  }
-}
-
-export async function duckDuckGoSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
-  // Try multiple endpoints to avoid Render blocking and AbortError seen in logs
-  const endpoints = [
-    `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy shopping')}`,
-    `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query + ' shopping')}`,
-    `https://duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy')}`,
-  ];
-
-  for (const url of endpoints) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12000);
-    try {
-      const res = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml',
-          'Accept-Language': 'fr,en-US;q=0.9,en;q=0.8',
-          'Referer': 'https://duckduckgo.com/',
-        },
-      });
-      if (!res.ok) {
-        console.warn(`[AYROVIX duckduckgo] ${url} HTTP ${res.status}`);
-        continue;
-      }
-      const html = await res.text();
-      const candidates: AyrovixCandidate[] = [];
-      const linkRegex = /<a[^>]+class="[^"]*result__a[^"]*"[^>]*href="([^"]+)"[^>]*>(.*?)<\/a>/gi;
-      const urlRegex = /uddg=([^&"]+)/;
-      let match;
-      let idx = 0;
-      while ((match = linkRegex.exec(html)) !== null && candidates.length < limit) {
-        let rawUrl = match[1] || '';
-        let title = (match[2] || '').replace(/<[^>]*>/g, '').trim();
-        if (!title) continue;
-        const uddgMatch = rawUrl.match(urlRegex);
-        if (uddgMatch) {
-          try { rawUrl = decodeURIComponent(uddgMatch[1]); } catch {}
-        }
-        if (rawUrl.includes('duckduckgo.com')) continue;
-        if (!rawUrl.startsWith('http')) continue;
-        if (title.length < 5) continue;
-        candidates.push({
-          id: `ddg_${idx}_${Buffer.from(rawUrl).toString('base64url').slice(0,8)}`,
-          kind: 'external' as const,
-          title: title.slice(0,160),
-          brand: null,
-          model: null,
-          colors: [],
-          sizes: [],
-          source: 'Réseau Partenaires',
-          sourceUrl: rawUrl,
-          image: '',
-          price: null,
-          currency: null,
-          priceTnd: null,
-          match: clampMatch(70 - idx*5),
-        } satisfies AyrovixCandidate);
-        idx++;
-      }
-
-      if (candidates.length) {
-        console.log(`[AYROVIX duckduckgo] found ${candidates.length} via ${url} for "${query}"`);
-        // Enrich top 3 with OG data to get images, sizes, colors, price (Google Lens style)
-        const enriched = await Promise.all(
-          candidates.slice(0,3).map(c => enrichCandidate(c))
-        );
-        const rest = candidates.slice(3);
-        return [...enriched, ...rest];
-      }
-    } catch (e: any) {
-      if (e?.name === 'AbortError') {
-        console.warn(`[AYROVIX duckduckgo] AbortError ${url} — retrying next endpoint`);
-      } else {
-        console.warn(`[AYROVIX duckduckgo] error ${url}: ${e?.message||e}`);
-      }
-    } finally {
-      clearTimeout(timeout);
-    }
-  }
-
-  // Final fallback: try Brave scrape without API key (search.brave.com)
-  try {
-    const braveUrl = `https://search.brave.com/search?q=${encodeURIComponent(query + ' buy shopping')}`;
-    const controller = new AbortController();
-    const timeout = setTimeout(()=>controller.abort(), 8000);
-    const res = await fetch(braveUrl, { signal: controller.signal, headers: { 'User-Agent':'Mozilla/5.0' } });
+    return [];
+  } finally {
     clearTimeout(timeout);
-    if (res.ok) {
-      const html = await res.text();
-      // Very simple parse for Brave
-      const linkRegex = /<a[^>]+href="(https:\/\/[^"]+)"[^>]*class="[^"]*result[^"]*">([^<]{10,120})<\/a>/gi;
-      const candidates: AyrovixCandidate[] = [];
-      let m, idx=0;
-      while ((m = linkRegex.exec(html)) !== null && candidates.length < limit) {
-        const rawUrl = m[1];
-        const title = m[2].trim();
-        if (rawUrl.includes('brave.com')) continue;
-        candidates.push({
-          id: `brave_scrape_${idx}_${Buffer.from(rawUrl).toString('base64url').slice(0,8)}`,
-          kind: 'external' as const,
-          title: title.slice(0,160),
-          brand: null,
-          model: null,
-          colors: [],
-          sizes: [],
-          source: 'Réseau Partenaires',
-          sourceUrl: rawUrl,
-          image: '',
-          price: null,
-          currency: null,
-          priceTnd: null,
-          match: clampMatch(65 - idx*5),
-        } satisfies AyrovixCandidate);
-        idx++;
-      }
-      if (candidates.length) {
-        console.log(`[AYROVIX brave-scrape] found ${candidates.length} for "${query}"`);
-        return candidates;
-      }
-    }
-  } catch {}
-
-  console.warn(`[AYROVIX duckduckgo] all endpoints failed for "${query}"`);
-  return [];
+  }
 }
 
 export async function freeExternalSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
   const brave = await braveSearch(query, limit);
   if (brave.length) return brave;
-  const ddg = await duckDuckGoSearch(query, limit);
-  return ddg;
+  return duckDuckGoSearch(query, limit);
 }
 
 export async function searchCandidates(
@@ -374,17 +227,14 @@ export async function searchCandidates(
     freeExternalSearch(query, 6),
   ]);
   const allExternal = [...serp, ...freeExternal];
-  const rescoredExternal = allExternal.map((c) => ({
-    ...c,
-    match: scoreCandidate(identification, query, c),
-  }));
+  const rescored = allExternal.map((c) => ({ ...c, match: scoreCandidate(identification, query, c) }));
   const seen = new Set<string>();
-  return [...catalog, ...rescoredExternal]
+  return [...catalog, ...rescored]
     .filter((c) => {
       const key = `${c.title.toLowerCase()}|${c.source.toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
-      return c.match >= 20;
+      return c.match >= 25;
     })
     .sort((a, b) => b.match - a.match)
     .slice(0, 8);
@@ -401,7 +251,7 @@ export async function checkSerpApiHealth(force = false): Promise<SerpApiHealth> 
   const base: SerpApiHealth = { configured: Boolean(key), reachable: false, valid: false };
   if (!key) { serpHealthCache = { at: Date.now(), result: base }; return base; }
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 6_000);
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
     const response = await fetch(`https://serpapi.com/account.json?api_key=${encodeURIComponent(key)}`, { signal: controller.signal });
     const payload: any = await response.json().catch(() => ({}));
@@ -424,7 +274,7 @@ export async function checkFreeSearchHealth(): Promise<FreeSearchHealth> {
   let duckDuckGoAvailable = true;
   try {
     const controller = new AbortController();
-    setTimeout(()=>controller.abort(), 3000);
+    setTimeout(()=>controller.abort(), 2500);
     const res = await fetch('https://html.duckduckgo.com/html/?q=test', { signal: controller.signal, headers: { 'User-Agent':'Mozilla/5.0' } });
     duckDuckGoAvailable = res.ok;
   } catch { duckDuckGoAvailable = false; }
