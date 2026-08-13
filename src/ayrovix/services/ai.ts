@@ -147,7 +147,7 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
 
   const model = process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
   // The first request for a new Structured Outputs schema may compile a grammar.
-  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 10_000, 2_000, 15_000);
+  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 12_000, 12_000, 20_000);
   try {
     console.log(`[AYROVIX] Trying Claude ${model}`);
     const response = await fetch('https://api.anthropic.com/v1/messages', {
