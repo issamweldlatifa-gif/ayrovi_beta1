@@ -5,6 +5,7 @@ import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady } from './services/ai';
 import { catalogSearch, anthropicExternalSearch, scoreCandidate, searchCandidates } from './services/search';
+import { serpApiVisualSearch } from './services/visualSearch';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import type { AyrovixCandidate, AyrovixChannel } from './types';
@@ -12,9 +13,10 @@ import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 
 /**
- * AYROVIX public API — one paid Anthropic key powers Vision, visible-price
- * reading and official Web Search. QR/barcode decoding remains local on-device;
- * product URLs are fetched directly through the SSRF-safe metadata extractor.
+ * AYROVIX public API — Claude powers visual understanding, visible-price
+ * reading and text Web Search; SerpApi Google Lens adds reverse-image product
+ * matches. QR/barcode decoding remains local on-device and product URLs are
+ * fetched directly through the SSRF-safe metadata extractor.
  */
 
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
@@ -59,8 +61,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
-      // Claude performs identification and visible-price reading in one request.
-      const identification = await identifyProduct(normalized.buffer, normalized.mimeType);
+      // Run understanding/price reading and reverse-image discovery in parallel.
+      // If Google Lens is not configured it resolves immediately to an empty list.
+      const [identification, visualCandidates] = await Promise.all([
+        identifyProduct(normalized.buffer, normalized.mimeType),
+        serpApiVisualSearch(normalized.buffer, 8),
+      ]);
       const visiblePrice = identification.detected_price;
       const usablePrice = visiblePrice.confidence >= 0.65
         && visiblePrice.amount > 0
@@ -88,8 +94,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       } : null;
 
       const query = buildSearchQuery(identification);
-      const candidates = identification.confidence >= 0.35 && query
-        ? await searchCandidates(db, identification, query)
+      const candidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && query
+        ? await searchCandidates(db, identification, query, visualCandidates)
         : [];
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',

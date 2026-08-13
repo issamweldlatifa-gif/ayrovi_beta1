@@ -3,9 +3,9 @@ import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
 
 /**
- * AYROVIX Search — Anthropic-only external discovery.
- * Claude Web Search performs at most one paid search per query; results are
- * cached and coalesced. Lens has no alternative external-search provider.
+ * AYROVIX text discovery. Claude Web Search is used for links, QR/barcodes and
+ * as the image-search fallback when Google Lens returns no visual products.
+ * Results are cached and coalesced.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -233,14 +233,24 @@ export async function searchCandidates(
   db: QatafoDatabase,
   identification: AyrovixIdentification,
   query: string,
+  visualCandidates: AyrovixCandidate[] = [],
 ): Promise<AyrovixCandidate[]> {
   const catalog = catalogSearch(db, identification, query);
   const deadline = Date.now() + searchBudgetMs();
-  const external = await anthropicExternalSearch(query, 6, deadline);
-  const rescored = external.map((candidate) => ({
-    ...candidate,
-    match: scoreCandidate(identification, query, candidate),
-  }));
+  // A real visual match is more useful than another text-only web search. Use
+  // Claude Web Search only when Google Lens found no usable product page.
+  const external = visualCandidates.length
+    ? visualCandidates
+    : await anthropicExternalSearch(query, 6, deadline);
+  const rules = db.getPricingRules();
+  const rescored = external.map((candidate) => {
+    const estimated = estimateTnd(rules, candidate.price, candidate.currency || 'EUR');
+    return {
+      ...candidate,
+      priceTnd: candidate.priceTnd ?? estimated?.priceTnd ?? null,
+      match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)),
+    };
+  });
   const seen = new Set<string>();
   return [...catalog, ...rescored].filter((candidate) => {
     const key = `${candidate.sourceUrl || ''}|${candidate.title.toLowerCase()}`;

@@ -71,3 +71,12 @@
 - La vérification d'un lien direct doit extraire un prix magasin exploitable avant de commander à partir d'un prix lu sur image.
 - `.env.example`, `render.yaml` et les badges Admin Lens n'exposent plus que la configuration Anthropic.
 - Validation locale finale : TypeScript ✅, 47/47 tests ✅, build production ✅, audit 0 vulnérabilité ✅, `git diff --check` et contrôle des secrets ✅.
+
+## AYROVIX Lens V2.1 — recherche visuelle Google Lens (2026-08-13, état courant)
+- Cette section remplace l'architecture de recherche image Anthropic-only documentée en V2.
+- Une photo lance désormais Claude Vision et SerpApi Google Lens en parallèle : Claude lit le prix et les indices visibles; Google Lens renvoie produits, images, liens et prix éventuels.
+- L'image destinée à SerpApi est réencodée en mémoire en JPEG de 500 Ko maximum, sans fichier public ni upload AYROVI; `image_id` est temporaire.
+- Si Google Lens renvoie au moins un produit exploitable, Claude Web Search n'est pas facturé pour cette image. Il reste le fallback texte et le moteur des QR/codes-barres/liens.
+- Cache SHA-256 dix minutes et coalescing empêchent de refacturer les rescans identiques.
+- Les badges Admin distinguent Claude Vision, Google Lens et Claude Web Search.
+- Validation locale : TypeScript ✅, 48/48 tests ✅, build production ✅, audit 0 vulnérabilité ✅.

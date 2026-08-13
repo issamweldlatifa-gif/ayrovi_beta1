@@ -48,6 +48,12 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-haiku-4-5-20251001
+      - key: SERPAPI_KEY
+        sync: false
+      - key: AYROVIX_VISUAL_SEARCH_TIMEOUT_MS
+        value: 10000
+      - key: AYROVIX_LENS_COUNTRY
+        value: fr
       - key: AYROVIX_ANTHROPIC_WEB_SEARCH
         value: true
       - key: AYROVIX_PROVIDER_TIMEOUT_MS

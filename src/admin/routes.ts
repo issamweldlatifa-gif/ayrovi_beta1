@@ -23,6 +23,7 @@ import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
 import { checkAnthropicSearchHealth } from '../ayrovix/services/search';
+import { checkSerpApiVisualHealth } from '../ayrovix/services/visualSearch';
 
 interface ResourceConfig {
   table: string;
@@ -649,14 +650,15 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
   });
-  // AYROVIX Lens — Anthropic-only Vision + official Claude Web Search.
+  // AYROVIX Lens — Claude understanding/search + SerpApi Google Lens matches.
   router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), async (_req, res) => {
     res.json({
       success: true,
       data: {
         ...getAyrovixStats(db),
         providers: {
-          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Claude Vision — Anthropic uniquement' },
+          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Claude Vision — compréhension et prix visible' },
+          visualSearch: checkSerpApiVisualHealth(),
           search: checkAnthropicSearchHealth(),
         },
       },

@@ -4,7 +4,8 @@ import path from 'node:path';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
-import { anthropicWebSearch, scoreCandidate } from '../src/ayrovix/services/search';
+import { anthropicWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
+import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { getAyrovixStats } from '../src/ayrovix/events';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
@@ -109,6 +110,54 @@ describe('AYROVIX Lens', () => {
     expect(withCode).toBeGreaterThan(85);
     expect(weak).toBeLessThan(withCode);
     expect(weak).toBeGreaterThanOrEqual(0);
+  });
+
+  test('SerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude', async () => {
+    const previousKey = process.env.SERPAPI_KEY;
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    const fetchMock = vi.fn(async (url: string, init: RequestInit = {}) => {
+      if (url.startsWith('https://serpapi.com/image?')) {
+        expect(init.method).toBe('POST');
+        expect(init.body).toBeInstanceOf(FormData);
+        return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
+      }
+      if (url.startsWith('https://serpapi.com/search.json?')) {
+        const parsed = new URL(url);
+        expect(parsed.searchParams.get('engine')).toBe('google_lens');
+        expect(parsed.searchParams.get('type')).toBe('products');
+        expect(parsed.searchParams.get('image_id')).toBe('temporary-image-id');
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Nike Air Max 95 Navy DC9412-400',
+            link: 'https://shop.example.com/nike-air-max-95',
+            source: 'Example Shop',
+            image: 'https://cdn.example.com/nike-air-max-95.jpg',
+            exact_matches: true,
+            price: { extracted_value: 149.99, currency: '€' },
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const visual = await serpApiVisualSearch(PNG_1PX, 8);
+      expect(visual).toHaveLength(1);
+      expect(visual[0]).toMatchObject({
+        kind: 'external',
+        image: 'https://cdn.example.com/nike-air-max-95.jpg',
+        price: 149.99,
+        currency: 'EUR',
+        match: 99,
+      });
+
+      fetchMock.mockClear();
+      const candidates = await searchCandidates(db, NIKE_ID, 'Nike Air Max 95 DC9412-400', visual);
+      expect(candidates.find((item) => item.id.startsWith('lens_'))?.image).toContain('nike-air-max-95.jpg');
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      restoreEnv('SERPAPI_KEY', previousKey);
+    }
   });
 
   test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {

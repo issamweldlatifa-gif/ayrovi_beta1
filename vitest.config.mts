@@ -14,6 +14,7 @@ export default defineConfig({
       CUSTOMER_AUTH_SECRET: 'test-customer-auth-secret-0123456789abcdef0123456789abcdef',
       // AYROVIX : hermétique — aucune clé IA ne fuit dans la suite ; les tests la simulent.
       ANTHROPIC_API_KEY: '',
+      SERPAPI_KEY: '',
       AYROVIX_ANTHROPIC_WEB_SEARCH: 'false',
     },
   },

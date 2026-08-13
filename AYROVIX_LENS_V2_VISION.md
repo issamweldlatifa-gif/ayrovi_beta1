@@ -27,10 +27,12 @@ Claude doit décrire uniquement ce qui est visible. Il ne doit inventer ni marqu
 
 ### 3. Découverte produit
 
-- Le catalogue AYROVI est interrogé localement en premier.
-- Claude Web Search est le seul mécanisme de recherche externe de Lens.
-- Chaque requête autorise au maximum une recherche Web, avec cache cinq minutes et regroupement des demandes identiques.
-- Les résultats sont dédupliqués et classés selon la référence, la marque, le modèle et les couleurs.
+- Claude Vision et SerpApi Google Lens sont lancés en parallèle sur une photo.
+- Google Lens reçoit une copie JPEG en mémoire de 500 Ko maximum et renvoie les correspondances visuelles avec images, liens et prix éventuels.
+- Le catalogue AYROVI est interrogé localement.
+- Si Google Lens trouve au moins un produit exploitable, Claude Web Search n'est pas appelé pour cette image.
+- Claude Web Search reste le fallback texte et traite aussi QR, code-barres et recherche par lien.
+- Les résultats sont mis en cache, dédupliqués et classés selon correspondance visuelle, référence, marque, modèle et couleurs.
 
 ### 4. Liens et prix
 
@@ -73,9 +75,9 @@ Le client affiche des formulations utiles à l’acheteur : analyse, prix repér
 
 ## Confidentialité et sécurité
 
-- La clé Anthropic reste exclusivement côté serveur et ne porte jamais de préfixe `VITE_`.
-- Lens n’appelle aucun autre fournisseur IA ou moteur de recherche externe.
-- Les données analytiques sont anonymisées et les images Lens ne sont pas conservées par ce flux.
+- Les clés Anthropic et SerpApi restent exclusivement côté serveur et ne portent jamais de préfixe `VITE_`.
+- Claude est l'unique modèle IA; SerpApi Google Lens est utilisé uniquement comme moteur de correspondance visuelle.
+- Les données analytiques sont anonymisées. AYROVI ne conserve pas les images Lens; l'identifiant d'image temporaire SerpApi expire côté fournisseur.
 - Les résultats IA restent indicatifs; le prix du marchand doit être vérifié à la source.
 
 ## Vérifications avant livraison

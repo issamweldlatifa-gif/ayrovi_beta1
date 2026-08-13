@@ -1,16 +1,17 @@
-# AYROVIX Lens — configuration Anthropic
+# AYROVIX Lens — configuration Claude + Google Lens
 
 ## Architecture active
 
-AYROVIX Lens utilise **Anthropic uniquement** pour ses fonctions IA et sa recherche externe :
+AYROVIX Lens sépare compréhension et recherche visuelle :
 
 - **Claude Vision** identifie le produit et lit un prix réellement visible dans l’image au cours d’une seule requête structurée.
-- **Claude Web Search** découvre des pages produit externes avec une recherche maximum par analyse.
-- Le catalogue AYROVI reste une source locale, sans API externe.
-- Les QR codes et codes-barres sont décodés localement dans le navigateur, puis leur valeur est envoyée au serveur pour l’analyse de lien ou la recherche Claude.
-- Les pages produit sont lues par un fetch HTML sécurisé afin d’obtenir leurs métadonnées et leur prix direct. Claude n’invente pas le prix d’un magasin.
+- **SerpApi Google Lens** recherche la photo elle-même et renvoie des produits visuellement correspondants avec images, liens et prix éventuels.
+- **Claude Web Search** reste le fallback texte lorsque Google Lens ne renvoie aucun produit, ainsi que pour les liens, QR et codes-barres.
+- Le catalogue AYROVI reste une source locale.
+- Les QR codes et codes-barres sont décodés localement dans le navigateur.
+- Les pages produit sont lues par un fetch HTML sécurisé afin d’obtenir leurs métadonnées et leur prix direct. Aucun modèle n’invente le prix d’un magasin.
 
-Il n’existe ni cascade vers un autre fournisseur IA, ni moteur de recherche alternatif, ni résultat générique inventé en cas d’échec. Sans clé Anthropic valide, Lens répond explicitement comme indisponible.
+Claude et Google Lens sont lancés en parallèle pour éviter d'additionner leurs latences. Sans clé Anthropic valide, la compréhension/prix est indisponible; sans clé SerpApi, la recherche d'image revient automatiquement au texte Claude.
 
 ## Variables Render
 
@@ -20,6 +21,9 @@ Toutes ces variables sont **serveur uniquement** :
 ANTHROPIC_API_KEY=
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 AYROVIX_PROVIDER_TIMEOUT_MS=12000
+SERPAPI_KEY=
+AYROVIX_VISUAL_SEARCH_TIMEOUT_MS=10000
+AYROVIX_LENS_COUNTRY=fr
 AYROVIX_SEARCH_TIMEOUT_MS=7000
 AYROVIX_ANTHROPIC_WEB_SEARCH=true
 ```
@@ -30,7 +34,7 @@ Ne créez jamais de variable `VITE_*` pour la clé. Toute variable préfixée pa
 
 | Entrée | Traitement |
 |---|---|
-| Photo produit | Claude Vision → catalogue local → Claude Web Search |
+| Photo produit | Claude Vision + SerpApi Google Lens en parallèle → catalogue → Claude Web Search si aucun match visuel |
 | Capture avec prix | Claude Vision lit uniquement le prix visible avec type et confiance |
 | Lien produit | Validation SSRF → métadonnées/prix direct → catalogue + Claude Web Search |
 | QR URL | Décodage local → même analyse sécurisée que le lien |
@@ -47,9 +51,9 @@ Ne créez jamais de variable `VITE_*` pour la clé. Toute variable préfixée pa
 
 ## Diagnostic
 
-1. Vérifiez que `ANTHROPIC_API_KEY` existe dans **Render → Environment** et que le compte Anthropic dispose de crédits.
-2. Vérifiez les logs serveur : Vision affiche `Trying Claude` puis `Claude SUCCESS`; la recherche affiche `anthropic-search`.
-3. Dans **Admin → Rapports**, les deux badges doivent indiquer `Claude Vision` et `Claude Web Search` configurés.
+1. Vérifiez que `ANTHROPIC_API_KEY` et `SERPAPI_KEY` existent dans **Render → Environment**.
+2. Vérifiez les logs : Vision affiche `Claude SUCCESS`, Google Lens affiche `serpapi-lens`, et le fallback texte `anthropic-search`.
+3. Dans **Admin → Rapports**, les badges doivent indiquer `Claude Vision`, `Google Lens` et `Claude Web Search` configurés.
 4. Après une modification :
 
 ```bash
@@ -63,5 +67,5 @@ npm audit --audit-level=high
 
 - Ne copiez jamais une clé réelle dans ce fichier, dans Git, dans un ticket ou dans le chat.
 - Faites tourner immédiatement toute clé déjà exposée.
-- Les images Lens sont validées et réencodées en mémoire; elles ne sont pas écrites dans les uploads par le flux Lens.
+- Les images Lens sont validées et réencodées en mémoire; elles ne sont pas écrites dans les uploads AYROVI. Une copie JPEG de 500 Ko maximum est envoyée à l'Image API SerpApi pour obtenir un identifiant temporaire.
 - La résolution DNS, les redirections et les adresses privées sont contrôlées avant la lecture d’un lien.
