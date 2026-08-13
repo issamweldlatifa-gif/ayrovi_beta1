@@ -163,7 +163,7 @@ export async function braveSearch(query: string, limit = 6): Promise<AyrovixCand
 /** Fournisseur 4 — DuckDuckGo HTML scraping — 100% GRATUIT, sans aucune clé — FREE TIER WORKS */
 export async function duckDuckGoSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 10_000);
+  const timeout = setTimeout(() => controller.abort(), 20000); // 20s due to Render free spin-down 50s
   try {
     // DuckDuckGo HTML lite endpoint — no JS, no key, reliable
     const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(query + ' buy shopping')}`;
@@ -224,9 +224,14 @@ export async function duckDuckGoSearch(query: string, limit = 6): Promise<Ayrovi
     }
 
     if (candidates.length) console.log(`[AYROVIX duckduckgo] found ${candidates.length} free results for "${query}"`);
+    else console.warn(`[AYROVIX duckduckgo] no results parsed for "${query}" — html length ${html.length}`);
     return candidates;
-  } catch (e) {
-    console.warn(`[AYROVIX duckduckgo] error ${e}`);
+  } catch (e: any) {
+    if (e?.name === 'AbortError') {
+      console.warn(`[AYROVIX duckduckgo] AbortError (timeout 20s) — Render free instance may be spin-down, will retry next request`);
+    } else {
+      console.warn(`[AYROVIX duckduckgo] error ${e?.message||e}`);
+    }
     return [];
   } finally {
     clearTimeout(timeout);
