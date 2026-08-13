@@ -57,12 +57,17 @@ export function ayrovixAiReady(): boolean {
   return Boolean(getGeminiKey() || getOpenAIKey() || getAnthropicKey() || localFallbackEnabled());
 }
 export function getActiveProviders(): string[] {
-  const p: string[] = [];
-  if (getGeminiKey()) p.push('gemini');
-  if (getOpenAIKey()) p.push('openai');
-  if (getAnthropicKey()) p.push('anthropic');
-  if (localFallbackEnabled()) p.push('local-fallback');
-  return p;
+  const providers: string[] = [];
+  if (getGeminiKey()) providers.push('gemini');
+  if (getOpenAIKey()) providers.push('openai');
+  if (getAnthropicKey()) providers.push('anthropic');
+  const primary = String(process.env.AYROVIX_PRIMARY_PROVIDER || '').trim().toLowerCase();
+  if (providers.includes(primary)) {
+    providers.splice(providers.indexOf(primary), 1);
+    providers.unshift(primary);
+  }
+  if (localFallbackEnabled()) providers.push('local-fallback');
+  return providers;
 }
 
 const SYSTEM_PROMPT = `Tu es le moteur d'identification visuelle d'AYROVIX, un assistant shopping tunisien.
@@ -490,25 +495,29 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
   const providerBudgetMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 5_000, 2_000, 12_000);
   const providerDeadline = () => Math.min(totalDeadline, Date.now() + providerBudgetMs);
 
-  if (getGeminiKey() && hasTime(totalDeadline)) {
-    try { return await identifyViaGemini(image,mime,providerDeadline()); }
-    catch(e:any){
-      attempts.push('gemini'); errors.push(`gemini:${e?.code||e?.message||String(e).slice(0,200)}`);
-      console.warn(`[AYROVIX gemini] final failed: ${e?.message||e}`);
-    }
-  }
-  if (getOpenAIKey() && hasTime(totalDeadline)) {
-    try { return await identifyViaOpenAI(image,mime,providerDeadline()); }
-    catch(e:any){
-      attempts.push('openai'); errors.push(`openai:${e?.code||e?.message}`);
-      console.warn(`[AYROVIX openai] final failed: ${e?.message}`);
-    }
-  }
-  if (getAnthropicKey() && hasTime(totalDeadline)) {
-    try { return await identifyViaAnthropic(image,mime,providerDeadline()); }
-    catch(e:any){
-      attempts.push('anthropic'); errors.push(`anthropic:${e?.code||e?.message}`);
-      console.warn(`[AYROVIX anthropic] final failed: ${e?.message}`);
+  type Provider = 'gemini' | 'openai' | 'anthropic';
+  const configured: Record<Provider, boolean> = {
+    gemini: Boolean(getGeminiKey()),
+    openai: Boolean(getOpenAIKey()),
+    anthropic: Boolean(getAnthropicKey()),
+  };
+  const requestedPrimary = String(process.env.AYROVIX_PRIMARY_PROVIDER || '').trim().toLowerCase();
+  const defaultOrder: Provider[] = ['gemini', 'openai', 'anthropic'];
+  const providerOrder = [
+    ...(defaultOrder.includes(requestedPrimary as Provider) ? [requestedPrimary as Provider] : []),
+    ...defaultOrder,
+  ].filter((provider, index, all) => configured[provider] && all.indexOf(provider) === index);
+
+  for (const provider of providerOrder) {
+    if (!hasTime(totalDeadline)) break;
+    try {
+      if (provider === 'gemini') return await identifyViaGemini(image, mime, providerDeadline());
+      if (provider === 'openai') return await identifyViaOpenAI(image, mime, providerDeadline());
+      return await identifyViaAnthropic(image, mime, providerDeadline());
+    } catch (error: any) {
+      attempts.push(provider);
+      errors.push(`${provider}:${error?.code || error?.message || String(error).slice(0, 200)}`);
+      console.warn(`[AYROVIX ${provider}] final failed: ${error?.message || error}`);
     }
   }
   if (localFallbackEnabled()) {

@@ -4,7 +4,7 @@ import path from 'node:path';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
-import { duckDuckGoSearch, scoreCandidate } from '../src/ayrovix/services/search';
+import { anthropicWebSearch, duckDuckGoSearch, scoreCandidate } from '../src/ayrovix/services/search';
 import { getAyrovixStats } from '../src/ayrovix/events';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
@@ -173,6 +173,40 @@ describe('AYROVIX Lens', () => {
       .send({ url: 'https://produit-inexistant-ayrovix-test.invalid/page-produit' });
     expect(response.status).toBe(400);
     expect(response.body.code).toBe('INVALID_URL');
+  });
+
+  test('Claude Web Search transforme les résultats officiels en candidats sans DuckDuckGo', async () => {
+    const previousKey = process.env.ANTHROPIC_API_KEY;
+    const previousModel = process.env.ANTHROPIC_MODEL;
+    const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-test-web-search';
+    process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+    process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
+    const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
+      model: 'claude-haiku-4-5-20251001',
+      content: [{
+        type: 'web_search_tool_result',
+        content: [
+          { type: 'web_search_result', title: 'Nike Air Max 95 Navy Grey', url: 'https://stockx.com/nike-air-max-95-navy-grey' },
+          { type: 'web_search_result', title: 'Nike Air Max 95 listing', url: 'https://www.ebay.com/itm/123' },
+        ],
+      }],
+      usage: { server_tool_use: { web_search_requests: 1 } },
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const results = await anthropicWebSearch('Nike Air Max 95 navy grey', 6, Date.now() + 2_000);
+      expect(results).toHaveLength(2);
+      expect(results[0]).toMatchObject({ source: 'StockX', kind: 'external' });
+      expect(results[1].source).toBe('eBay');
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const body = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+      expect(body.tools[0]).toMatchObject({ type: 'web_search_20250305', max_uses: 1 });
+    } finally {
+      process.env.ANTHROPIC_API_KEY = previousKey;
+      process.env.ANTHROPIC_MODEL = previousModel;
+      process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = previousSearch;
+    }
   });
 
   test('recherche externe respecte une deadline globale courte', async () => {

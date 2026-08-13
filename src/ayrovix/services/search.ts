@@ -4,11 +4,10 @@ import { estimateTnd } from './currency';
 import { fetchSafeRemote, readLimitedText } from '../../services/safeUrl';
 
 /**
- * AYROVIX Search V3 — Google Lens style: free tier + enriched details (image, sizes, colors, link)
- * Fixes from logs Aug 13:
- * - DuckDuckGo fetch failed (AbortError, network) → retry with lite + brave scrape fallback
- * - Missing sizes/colors/link → enrich candidates via OG + JSON-LD scrape
- * - Gemini now SUCCESS with gemini-3-flash-preview, DuckDuckGo is the bottleneck
+ * AYROVIX Search V4 — official search providers first.
+ * Anthropic Web Search uses the same paid Claude key as Vision and is capped at
+ * one search per query. HTML scraping is disabled by default in production
+ * because DuckDuckGo repeatedly times out from Render.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -18,7 +17,16 @@ const externalSearchInFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
 function searchBudgetMs(): number {
   const configured = Number(process.env.AYROVIX_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(10_000, Math.max(1_500, configured)) : 4_000;
+  return Number.isFinite(configured) ? Math.min(12_000, Math.max(1_500, configured)) : 7_000;
+}
+
+function anthropicWebSearchEnabled(): boolean {
+  return process.env.AYROVIX_ANTHROPIC_WEB_SEARCH === 'true'
+    && Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+}
+
+function htmlSearchFallbackEnabled(): boolean {
+  return process.env.AYROVIX_ALLOW_HTML_SEARCH_FALLBACK === 'true';
 }
 
 function remainingSearchMs(deadline: number, perRequestMax: number): number {
@@ -167,6 +175,101 @@ export async function braveSearch(query: string, limit = 6, deadline = Date.now(
     return [];
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function merchantLabel(sourceUrl: string): string {
+  try {
+    const host = new URL(sourceUrl).hostname.toLowerCase().replace(/^www\./, '');
+    const known: Record<string, string> = {
+      'amazon.com': 'Amazon', 'amazon.fr': 'Amazon', 'ebay.com': 'eBay',
+      'stockx.com': 'StockX', 'nike.com': 'Nike', 'adidas.com': 'Adidas',
+      'shein.com': 'SHEIN', 'temu.com': 'TEMU', 'aliexpress.com': 'AliExpress',
+      'zara.com': 'Zara',
+    };
+    return known[host] || host.split('.').slice(-2, -1)[0]?.replace(/^./, (letter) => letter.toUpperCase()) || 'Marché International';
+  } catch {
+    return 'Marché International';
+  }
+}
+
+/** Official Anthropic server-side Web Search: one paid search at most per query. */
+export async function anthropicWebSearch(
+  query: string,
+  limit = 6,
+  deadline = Date.now() + searchBudgetMs(),
+): Promise<AyrovixCandidate[]> {
+  const key = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!key || !anthropicWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
+  const model = process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001';
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      signal: AbortSignal.timeout(remainingSearchMs(deadline, 7_500)),
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 384,
+        temperature: 0,
+        system: 'You are AYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages and avoid news, reviews and generic search pages. Keep the final answer very short.',
+        messages: [{
+          role: 'user',
+          content: `Find direct product pages selling this exact item: ${query.slice(0, 200)}`,
+        }],
+        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 1 }],
+      }),
+    });
+    if (!response.ok) {
+      console.warn(`[AYROVIX anthropic-search] HTTP ${response.status}`);
+      return [];
+    }
+    const payload: any = await response.json();
+    const rawResults: any[] = [];
+    for (const block of Array.isArray(payload?.content) ? payload.content : []) {
+      if (block?.type !== 'web_search_tool_result') continue;
+      if (!Array.isArray(block.content)) {
+        const code = block?.content?.error_code;
+        if (code) console.warn(`[AYROVIX anthropic-search] tool error ${code}`);
+        continue;
+      }
+      rawResults.push(...block.content.filter((item: any) => item?.type === 'web_search_result'));
+    }
+    const seen = new Set<string>();
+    const candidates: AyrovixCandidate[] = [];
+    for (const item of rawResults) {
+      const sourceUrl = String(item?.url || '').trim();
+      const title = String(item?.title || '').replace(/\s+/g, ' ').trim();
+      if (!/^https?:\/\//i.test(sourceUrl) || title.length < 5 || seen.has(sourceUrl)) continue;
+      seen.add(sourceUrl);
+      const index = candidates.length;
+      candidates.push({
+        id: `anthropic_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
+        kind: 'external',
+        title: title.slice(0, 160),
+        brand: null,
+        model: null,
+        colors: [],
+        sizes: [],
+        source: merchantLabel(sourceUrl),
+        sourceUrl,
+        image: '',
+        price: null,
+        currency: null,
+        priceTnd: null,
+        match: clampMatch(86 - index * 3),
+      });
+      if (candidates.length >= limit) break;
+    }
+    const searches = Number(payload?.usage?.server_tool_use?.web_search_requests || 0);
+    console.log(`[AYROVIX anthropic-search] ${candidates.length} candidates, searches=${searches}`);
+    return candidates;
+  } catch (error: any) {
+    console.warn(`[AYROVIX anthropic-search] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    return [];
   }
 }
 
@@ -382,8 +485,17 @@ export async function freeExternalSearch(
   if (existing) return (await existing).map((item) => ({ ...item }));
 
   const task = (async () => {
-    const brave = await braveSearch(query, limit, deadline);
-    const results = brave.length ? brave : await duckDuckGoSearch(query, limit, deadline);
+    let results: AyrovixCandidate[] = [];
+    if (anthropicWebSearchEnabled()) {
+      // Anthropic is an official, paid and bounded provider. Do not fall through
+      // to brittle HTML scraping when it is configured but temporarily fails.
+      results = await anthropicWebSearch(query, limit, deadline);
+    } else {
+      results = await braveSearch(query, limit, deadline);
+      if (!results.length && htmlSearchFallbackEnabled()) {
+        results = await duckDuckGoSearch(query, limit, deadline);
+      }
+    }
     if (results.length) {
       externalSearchCache.set(cacheKey, { at: Date.now(), results });
       if (externalSearchCache.size > 200) externalSearchCache.delete(externalSearchCache.keys().next().value as string);
@@ -406,7 +518,7 @@ export async function searchCandidates(
   const catalog = catalogSearch(db, identification, query);
   const deadline = Date.now() + searchBudgetMs();
   const [serp, freeExternal] = await Promise.all([
-    serpSearch(query, 6, deadline),
+    anthropicWebSearchEnabled() ? Promise.resolve([]) : serpSearch(query, 6, deadline),
     freeExternalSearch(query, 6, deadline),
   ]);
   const allExternal = [...serp, ...freeExternal];
@@ -427,7 +539,12 @@ export async function searchCandidates(
 }
 
 export interface SerpApiHealth { configured: boolean; reachable: boolean; valid: boolean; plan?: string; searchesLeft?: number | null; }
-export interface FreeSearchHealth { braveConfigured: boolean; duckDuckGoAvailable: boolean; }
+export interface FreeSearchHealth {
+  anthropicWebSearchConfigured: boolean;
+  braveConfigured: boolean;
+  htmlFallbackEnabled: boolean;
+  duckDuckGoAvailable: boolean;
+}
 
 let serpHealthCache: { at: number; result: SerpApiHealth } | null = null;
 
@@ -456,13 +573,24 @@ export async function checkSerpApiHealth(force = false): Promise<SerpApiHealth> 
 }
 
 export async function checkFreeSearchHealth(): Promise<FreeSearchHealth> {
+  const anthropicWebSearchConfigured = anthropicWebSearchEnabled();
   const braveConfigured = Boolean(process.env.BRAVE_API_KEY?.trim() || process.env.BRAVE_SEARCH_API_KEY?.trim());
-  let duckDuckGoAvailable = true;
-  try {
+  const htmlFallbackEnabled = htmlSearchFallbackEnabled();
+  let duckDuckGoAvailable = false;
+  if (htmlFallbackEnabled) {
     const controller = new AbortController();
-    setTimeout(()=>controller.abort(), 3000);
-    const res = await fetch('https://html.duckduckgo.com/html/?q=test', { signal: controller.signal, headers: { 'User-Agent':'Mozilla/5.0' } });
-    duckDuckGoAvailable = res.ok;
-  } catch { duckDuckGoAvailable = false; }
-  return { braveConfigured, duckDuckGoAvailable };
+    const timeout = setTimeout(() => controller.abort(), 2_500);
+    try {
+      const res = await fetch('https://html.duckduckgo.com/html/?q=test', {
+        signal: controller.signal,
+        headers: { 'User-Agent':'Mozilla/5.0' },
+      });
+      duckDuckGoAvailable = res.ok;
+    } catch {
+      duckDuckGoAvailable = false;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  return { anthropicWebSearchConfigured, braveConfigured, htmlFallbackEnabled, duckDuckGoAvailable };
 }

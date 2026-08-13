@@ -58,6 +58,12 @@ services:
         value: gpt-4o-mini
       - key: AYROVIX_ALLOW_LOCAL_FALLBACK
         value: false
+      - key: AYROVIX_PRIMARY_PROVIDER
+        value: anthropic
+      - key: AYROVIX_ANTHROPIC_WEB_SEARCH
+        value: true
+      - key: AYROVIX_ALLOW_HTML_SEARCH_FALLBACK
+        value: false
       - key: AYROVIX_AI_TIMEOUT_MS
         value: 14000
       - key: AYROVIX_PROVIDER_TIMEOUT_MS
@@ -65,7 +71,7 @@ services:
       - key: AYROVIX_OCR_TIMEOUT_MS
         value: 7000
       - key: AYROVIX_SEARCH_TIMEOUT_MS
-        value: 4000
+        value: 7000
       - key: SERPAPI_KEY
         sync: false
       - key: BRAVE_API_KEY

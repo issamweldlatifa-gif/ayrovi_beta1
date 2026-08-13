@@ -657,9 +657,9 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       data: {
         ...getAyrovixStats(db),
         providers: {
-          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Multi-Provider Vision (Gemini > OpenAI > Claude > Local)' },
+          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Vision IA — ordre configurable, Anthropic recommandé pour Lens' },
           serpapi,
-          freeSearch, // { braveConfigured, duckDuckGoAvailable } — 100% gratuit
+          freeSearch,
         },
       },
     });

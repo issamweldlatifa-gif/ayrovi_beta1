@@ -16,11 +16,12 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `GOOGLE_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/google/callback`.
    - `CUSTOMER_OTP_PROVIDER` : `webhook` en production.
    - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : URL HTTPS et jeton Bearer de l’adaptateur SMS.
+   - `ANTHROPIC_API_KEY` : clé serveur Claude pour l’identification Vision et la recherche Web officielle AYROVIX.
 5. Lancez le déploiement.
 
 Les identifiants Google, le secret client et le jeton SMS restent exclusivement dans les variables Render. Ils ne doivent jamais être préfixés par `VITE_` ni ajoutés au code frontend.
 
-Le build exécute `npm ci --include=dev && npm run build`, puis le service démarre avec `npm start`. L’option `--include=dev` est nécessaire pendant le build Render afin d’installer Vite, TypeScript et les autres outils de compilation, même lorsque `NODE_ENV=production`. Le Blueprint fixe Node.js 22. L’extraction de liens utilise désormais un fetch HTML borné et sécurisé (JSON-LD/Open Graph), sans navigateur Chromium ni cache Puppeteer.
+Le build exécute `npm ci --include=dev && npm run build`, puis le service démarre avec `npm start`. L’option `--include=dev` est nécessaire pendant le build Render afin d’installer Vite, TypeScript et les autres outils de compilation, même lorsque `NODE_ENV=production`. Le Blueprint fixe Node.js 22. L’extraction de liens utilise désormais un fetch HTML borné et sécurisé (JSON-LD/Open Graph), sans navigateur Chromium ni cache Puppeteer. Lens utilise Claude Haiku comme fournisseur Vision principal et Claude Web Search avec une recherche maximum par requête; le scraping HTML DuckDuckGo est désactivé par défaut.
 
 ## SQLite et fichiers persistants
 
