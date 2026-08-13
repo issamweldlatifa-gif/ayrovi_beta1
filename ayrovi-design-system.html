@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AYROVI · Design System V1 — Laboratoire visuel</title>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  AYROVI DESIGN SYSTEM — Visual Laboratory (V1)
+  Mobile-first (360→430px de référence) · Aucune librairie externe.
+  En production : police "Plus Jakarta Sans" (Google Fonts, déjà chargée
+  dans l'app). Ici : pile système équivalente pour un test hors-ligne.
+  ═══════════════════════════════════════════════════════════════════
+-->
+<style>
+/* ════════════════════════ 1. DESIGN TOKENS ════════════════════════ */
+:root{
+  /* — Échelle primitive (usage INTERDIT dans les composants) — */
+  --p-violet-50:#f3efff;--p-violet-100:#e7dfff;--p-violet-200:#cdbaff;--p-violet-300:#b292ff;
+  --p-violet-400:#9668ff;--p-violet-500:#7c4dff;--p-violet-600:#673de6;--p-violet-700:#5529cf;
+  --p-violet-800:#4320a6;--p-violet-900:#341a7d;
+  --p-ink-900:#191c2a;--p-ink-700:#3d4157;--p-ink-500:#6b7086;--p-ink-300:#a2a7bd;
+  --p-ink-100:#e5e6ef;--p-paper:#ffffff;--p-mist:#f7f6fb;
+  --p-green-600:#15803d;--p-green-50:#e7f6ee;--p-amber-700:#b45309;--p-amber-50:#fdf3e3;
+  --p-red-600:#dc2626;--p-red-50:#fdecec;--p-blue-600:#1d5fd1;--p-blue-50:#eaf1fe;
+
+  /* — TOKENS SÉMANTIQUES · couleur — */
+  --ay-primary:var(--p-violet-600);
+  --ay-primary-dark:var(--p-violet-700);
+  --ay-primary-light:var(--p-violet-50);
+  --ay-gradient:linear-gradient(135deg,var(--p-violet-500) 0%,var(--p-violet-600) 55%,var(--p-violet-800) 100%);
+  --ay-bg:var(--p-paper);
+  --ay-surface:var(--p-mist);
+  --ay-text:var(--p-ink-900);
+  --ay-text-muted:var(--p-ink-500);
+  --ay-border:var(--p-ink-100);
+  --ay-success:var(--p-green-600); --ay-success-bg:var(--p-green-50);
+  --ay-warning:var(--p-amber-700); --ay-warning-bg:var(--p-amber-50);
+  --ay-error:var(--p-red-600);     --ay-error-bg:var(--p-red-50);
+  --ay-info:var(--p-blue-600);     --ay-info-bg:var(--p-blue-50);
+
+  /* — TOKENS · typographie (échelle 1.25 · base 15px) — */
+  --ay-font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --ay-display:800 clamp(2rem,6vw,2.75rem)/1.1 var(--ay-font);
+  --ay-h1:800 clamp(1.6rem,4.5vw,2rem)/1.2 var(--ay-font);
+  --ay-h2:700 1.375rem/1.3 var(--ay-font);
+  --ay-h3:700 1.125rem/1.35 var(--ay-font);
+  --ay-body-lg:400 1.0625rem/1.65 var(--ay-font);
+  --ay-body:400 .9375rem/1.6 var(--ay-font);
+  --ay-body-sm:400 .8125rem/1.55 var(--ay-font);
+  --ay-caption:600 .75rem/1.4 var(--ay-font);
+  --ay-label:700 .6875rem/1.3 var(--ay-font);
+
+  /* — TOKENS · espacement (base 4px) — */
+  --ay-space-1:.25rem; --ay-space-2:.5rem; --ay-space-3:.75rem; --ay-space-4:1rem;
+  --ay-space-6:1.5rem; --ay-space-8:2rem; --ay-space-12:3rem; --ay-space-16:4rem;
+
+  /* — TOKENS · rayon — */
+  --ay-radius-sm:.5rem; --ay-radius-md:.75rem; --ay-radius-lg:1.25rem; --ay-radius-full:999px;
+
+  /* — TOKENS · ombres — */
+  --ay-shadow-sm:0 1px 2px rgba(25,28,42,.06);
+  --ay-shadow-md:0 6px 18px -4px rgba(25,28,42,.12);
+  --ay-shadow-lg:0 18px 42px -12px rgba(67,32,166,.28);
+
+  /* — TOKENS · mouvement — */
+  --ay-dur-fast:150ms; --ay-dur-ui:250ms; --ay-dur-sheet:400ms;
+  --ay-ease:cubic-bezier(.22,.61,.36,1);
+
+  /* — TOKENS · touch — */
+  --ay-touch:2.75rem; /* 44px minimum */
+}
+@media (prefers-reduced-motion:reduce){ :root{ --ay-dur-fast:0ms; --ay-dur-ui:0ms; --ay-dur-sheet:0ms; } }
+
+/* ════════════════════════ 2. BASE ════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font:var(--ay-body);color:var(--ay-text);background:var(--ay-surface);-webkit-font-smoothing:antialiased}
+img,svg{display:block}
+a{color:var(--ay-primary);text-decoration:none}
+:where(a,button,input,select,textarea,[tabindex]):focus-visible{
+  outline:2px solid var(--ay-primary);outline-offset:2px;border-radius:var(--ay-radius-sm)}
+::selection{background:var(--p-violet-200)}
+
+/* ════════════════════════ 3. CHROME DU LABO ════════════════════════ */
+.lab-top{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.85);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--ay-border)}
+.lab-top-in{max-width:1200px;margin-inline:auto;padding:var(--ay-space-3) var(--ay-space-4);
+  display:flex;align-items:center;gap:var(--ay-space-3);flex-wrap:wrap}
+.lab-logo{font:800 1.125rem/1 var(--ay-font);letter-spacing:-.02em;
+  background:var(--ay-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lab-ver{font:var(--ay-label);text-transform:uppercase;letter-spacing:.08em;color:var(--ay-primary);
+  background:var(--ay-primary-light);padding:.25rem .6rem;border-radius:var(--ay-radius-full)}
+.lab-top nav{margin-inline-start:auto;display:flex;gap:var(--ay-space-2);overflow-x:auto;max-width:100%;scrollbar-width:none}
+.lab-top nav::-webkit-scrollbar{display:none}
+.lab-top nav a{white-space:nowrap;font:var(--ay-caption);color:var(--ay-text-muted);
+  padding:.4rem .7rem;border-radius:var(--ay-radius-full);border:1px solid transparent}
+.lab-top nav a:hover{color:var(--ay-text);border-color:var(--ay-border);background:var(--ay-bg)}
+.lab-wrap{max-width:1200px;margin-inline:auto;padding:var(--ay-space-4);display:grid;gap:var(--ay-space-12)}
+@media(min-width:64rem){.lab-wrap{padding:var(--ay-space-8)}}
+.lab-sec{scroll-margin-top:5.5rem}
+.lab-sec>header{margin-bottom:var(--ay-space-4);max-width:44rem}
+.lab-eyebrow{font:var(--ay-label);text-transform:uppercase;letter-spacing:.12em;color:var(--ay-primary);display:block;margin-bottom:var(--ay-space-1)}
+.lab-sec h2{font:var(--ay-h1);letter-spacing:-.02em}
+.lab-sec .lab-desc{color:var(--ay-text-muted);font:var(--ay-body-lg);margin-top:var(--ay-space-2)}
+.panel{background:var(--ay-bg);border:1px solid var(--ay-border);border-radius:var(--ay-radius-lg);
+  padding:var(--ay-space-4);display:flex;flex-wrap:wrap;gap:var(--ay-space-4);align-items:flex-start}
+@media(min-width:64rem){.panel{padding:var(--ay-space-6)}}
+.panel+.lab-note,.lab-note{margin-top:var(--ay-space-3);font:var(--ay-body-sm);color:var(--ay-text-muted)}
+.lab-note code,.tok-code{font:600 .75rem/1.4 ui-monospace,SFMono-Regular,Menlo,monospace;
+  background:var(--ay-surface);border:1px solid var(--ay-border);border-radius:var(--ay-radius-sm);padding:.15rem .45rem;color:var(--p-violet-700)}
+.lab-grid{display:grid;gap:var(--ay-space-3);width:100%}
+.lab-label{width:100%;font:var(--ay-label);text-transform:uppercase;letter-spacing:.1em;color:var(--ay-text-muted);margin-bottom:calc(-1*var(--ay-space-2))}
+
+/* ════════════════════════ 4. ATOMS ════════════════════════ */
+/* — Badge — */
+.badge{display:inline-flex;align-items:center;gap:.3rem;font:var(--ay-label);text-transform:uppercase;
+  letter-spacing:.06em;padding:.3rem .65rem;border-radius:var(--ay-radius-full);border:1px solid transparent}
+.badge--brand{background:var(--ay-primary-light);color:var(--ay-primary-dark)}
+.badge--solid{background:var(--ay-text);color:#fff}
+.badge--success{background:var(--ay-success-bg);color:var(--ay-success)}
+.badge--warning{background:var(--ay-warning-bg);color:var(--ay-warning)}
+.badge--error{background:var(--ay-error-bg);color:var(--ay-error)}
+.badge--info{background:var(--ay-info-bg);color:var(--ay-info)}
+.badge--outline{background:transparent;border-color:var(--ay-border);color:var(--ay-text-muted)}
+
+/* — Boutons — */
+.btn{appearance:none;border:1px solid transparent;cursor:pointer;font-family:var(--ay-font);
+  display:inline-flex;align-items:center;justify-content:center;gap:var(--ay-space-2);
+  font-weight:700;font-size:.9375rem;line-height:1;min-height:var(--ay-touch);
+  padding-inline:var(--ay-space-6);border-radius:var(--ay-radius-md);
+  transition:transform var(--ay-dur-fast) var(--ay-ease),background var(--ay-dur-fast) var(--ay-ease),
+             color var(--ay-dur-fast) var(--ay-ease),border-color var(--ay-dur-fast) var(--ay-ease),
+             box-shadow var(--ay-dur-fast) var(--ay-ease),opacity var(--ay-dur-fast) var(--ay-ease);
+  -webkit-tap-highlight-color:transparent;user-select:none}
+.btn:active{transform:scale(.97)}
+.btn:disabled,.btn[aria-disabled="true"]{opacity:.45;cursor:not-allowed;transform:none}
+.btn--primary{background:var(--ay-text);color:#fff}
+.btn--primary:hover{background:var(--p-ink-700)}
+.btn--gradient{background:var(--ay-gradient);color:#fff;box-shadow:var(--ay-shadow-md)}
+.btn--gradient:hover{box-shadow:var(--ay-shadow-lg)}
+.btn--secondary{background:var(--ay-bg);border-color:var(--ay-text);color:var(--ay-text)}
+.btn--secondary:hover{background:var(--ay-surface)}
+.btn--ghost{background:transparent;color:var(--ay-primary)}
+.btn--ghost:hover{background:var(--ay-primary-light)}
+.btn--destructive{background:var(--ay-error);color:#fff}
+.btn--destructive:hover{background:#b91c1c}
+.btn--sm{min-height:2.25rem;padding-inline:var(--ay-space-4);font-size:.8125rem}
+.btn--lg{min-height:3.25rem;padding-inline:var(--ay-space-8);font-size:1rem;border-radius:var(--ay-radius-lg)}
+.btn--block{width:100%}
+.btn--icon{min-width:var(--ay-touch);width:var(--ay-touch);padding-inline:0;position:relative}
+.btn--icon.badge-dot::after{content:"";position:absolute;top:.45rem;inset-inline-end:.45rem;width:.55rem;height:.55rem;
+  border-radius:50%;background:var(--ay-error);border:2px solid var(--ay-bg)}
+.btn .spinner{width:1.1rem;height:1.1rem;border-radius:50%;border:2px solid currentColor;
+  border-inline-end-color:transparent;animation:ay-spin .7s linear infinite}
+@keyframes ay-spin{to{transform:rotate(1turn)}}
+
+/* — Champs — */
+.field{display:grid;gap:.4rem;width:100%;max-width:24rem}
+.field label{font:var(--ay-caption)}
+.field .hint{font:var(--ay-body-sm);color:var(--ay-text-muted)}
+.field .hint--error{color:var(--ay-error);font-weight:600}
+.input{appearance:none;width:100%;font:400 .9375rem/1.4 var(--ay-font);color:var(--ay-text);
+  background:var(--ay-bg);border:1px solid var(--ay-border);border-radius:var(--ay-radius-md);
+  min-height:var(--ay-touch);padding-inline:var(--ay-space-4);
+  transition:border-color var(--ay-dur-fast) var(--ay-ease),box-shadow var(--ay-dur-fast) var(--ay-ease)}
+.input::placeholder{color:var(--p-ink-300)}
+.input:hover{border-color:var(--p-ink-300)}
+.input:focus{outline:none;border-color:var(--ay-primary);box-shadow:0 0 0 3px var(--ay-primary-light)}
+.input:disabled{background:var(--ay-surface);color:var(--ay-text-muted);cursor:not-allowed}
+.input--error{border-color:var(--ay-error)}
+.input--error:focus{box-shadow:0 0 0 3px var(--ay-error-bg)}
+.select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='m1 1 5 5 5-5' stroke='%236b7086' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 1rem center;padding-inline-end:2.5rem;cursor:pointer}
+[dir="rtl"] .select{background-position:left 1rem center;padding-inline-end:var(--ay-space-4);padding-inline-start:2.5rem}
+.searchbox{position:relative;width:100%;max-width:24rem}
+.searchbox .input{padding-inline-start:2.9rem;border-radius:var(--ay-radius-full);background:var(--ay-surface)}
+[dir="rtl"] .searchbox .input{padding-inline-start:var(--ay-space-4);padding-inline-end:2.9rem}
+.searchbox>svg{position:absolute;top:50%;inset-inline-start:1rem;transform:translateY(-50%);color:var(--ay-text-muted);pointer-events:none}
+.phonebox{display:flex;gap:var(--ay-space-2);width:100%;max-width:24rem}
+.phonebox .prefix{flex:none;display:flex;align-items:center;padding-inline:var(--ay-space-3);min-height:var(--ay-touch);
+  border:1px solid var(--ay-border);border-radius:var(--ay-radius-md);background:var(--ay-surface);
+  font:700 .875rem/1 var(--ay-font);color:var(--ay-text-muted)}
+
+/* — Chips (filtres rapides) — */
+.chip{display:inline-flex;align-items:center;gap:.4rem;cursor:pointer;font:var(--ay-caption);
+  min-height:2.5rem;padding-inline:var(--ay-space-4);border-radius:var(--ay-radius-full);
+  background:var(--ay-bg);border:1px solid var(--ay-border);color:var(--ay-text);
+  transition:all var(--ay-dur-fast) var(--ay-ease)}
+.chip:hover{border-color:var(--ay-text)}
+.chip[aria-pressed="true"]{background:var(--ay-text);border-color:var(--ay-text);color:#fff}
+
+/* — Alertes — */
+.alert{display:flex;gap:var(--ay-space-3);align-items:flex-start;width:100%;
+  padding:var(--ay-space-4);border-radius:var(--ay-radius-md);border:1px solid transparent;
+  font:var(--ay-body-sm)}
+.alert strong{font-weight:700;display:block;margin-bottom:.15rem}
+.alert--info{background:var(--ay-info-bg);color:var(--ay-info);border-color:#cfe0fa}
+.alert--success{background:var(--ay-success-bg);color:var(--ay-success);border-color:#c4e8d2}
+.alert--warning{background:var(--ay-warning-bg);color:var(--ay-warning);border-color:#f5ddb8}
+.alert--error{background:var(--ay-error-bg);color:var(--ay-error);border-color:#f6c9c9}
+.alert svg{flex:none;margin-top:.1rem}
+
+/* — Skeleton — */
+.skel{position:relative;overflow:hidden;background:var(--p-ink-100);border-radius:var(--ay-radius-sm)}
+.skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.65),transparent);
+  animation:ay-shimmer 1.4s infinite}
+@keyframes ay-shimmer{to{transform:translateX(100%)}}
+
+/* ════════════════════════ 5. MOLECULES · Cards ════════════════════════ */
+.card-p{width:11rem;flex:none;scroll-snap-align:start;display:grid;gap:var(--ay-space-2)}
+@media(min-width:48rem){.card-p{width:13.5rem}}
+.card-p__media{position:relative;aspect-ratio:4/5;border-radius:var(--ay-radius-md);overflow:hidden;
+  background:var(--ay-surface);border:1px solid var(--ay-border)}
+.card-p__media .ph{position:absolute;inset:0}
+.card-p__fav{position:absolute;top:.5rem;inset-inline-end:.5rem;width:2.25rem;height:2.25rem;border:0;cursor:pointer;
+  border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;color:var(--ay-text);
+  box-shadow:var(--ay-shadow-sm);transition:transform var(--ay-dur-fast) var(--ay-ease),color var(--ay-dur-fast)}
+.card-p__fav:hover{transform:scale(1.08)}
+.card-p__fav[aria-pressed="true"]{color:var(--ay-error)}
+.card-p__flags{position:absolute;bottom:.5rem;inset-inline-start:.5rem;display:flex;gap:.3rem;flex-wrap:wrap}
+.card-p__body{display:grid;gap:.15rem}
+.card-p__name{font:600 .8125rem/1.35 var(--ay-font);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-p__src{font:var(--ay-caption);color:var(--ay-text-muted)}
+.card-p__price{display:flex;align-items:baseline;gap:.4rem;margin-top:.1rem}
+.card-p__price b{font:800 1rem/1 var(--ay-font);letter-spacing:-.01em}
+.card-p__price s{font:var(--ay-caption);color:var(--ay-text-muted)}
+.card-p__inc{font:var(--ay-label);font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ay-success)}
+.card-p__cta{display:flex;gap:var(--ay-space-2);margin-top:var(--ay-space-1)}
+.ph{display:grid;place-items:center;color:rgba(255,255,255,.85)}
+.ph--a{background:linear-gradient(160deg,#8b6cf6,#5529cf)}
+.ph--b{background:linear-gradient(160deg,#ff8fb1,#e14d7c)}
+.ph--c{background:linear-gradient(160deg,#5fc9c0,#1f8f86)}
+.ph--d{background:linear-gradient(160deg,#f6b45b,#d97c16)}
+.card-feat{position:relative;border-radius:var(--ay-radius-lg);overflow:hidden;min-height:12rem;
+  display:flex;align-items:flex-end;width:100%;max-width:26rem;color:#fff;
+  background:linear-gradient(150deg,var(--p-violet-500),var(--p-violet-800))}
+.card-feat__in{position:relative;padding:var(--ay-space-6);display:grid;gap:var(--ay-space-2)}
+.card-feat h3{font:var(--ay-h2);color:#fff}
+.card-feat p{font:var(--ay-body-sm);opacity:.9;max-width:20rem}
+.card-action{display:flex;align-items:center;gap:var(--ay-space-3);width:100%;max-width:26rem;
+  padding:var(--ay-space-4);border-radius:var(--ay-radius-lg);border:1px solid var(--ay-border);
+  background:var(--ay-bg);cursor:pointer;text-align:start;
+  transition:box-shadow var(--ay-dur-ui) var(--ay-ease),transform var(--ay-dur-fast) var(--ay-ease)}
+.card-action:hover{box-shadow:var(--ay-shadow-md)}
+.card-action:active{transform:scale(.985)}
+.card-action__ic{flex:none;width:2.75rem;height:2.75rem;border-radius:var(--ay-radius-md);
+  display:grid;place-items:center;background:var(--ay-primary-light);color:var(--ay-primary)}
+.card-action b{display:block;font:var(--ay-h3)}
+.card-action span{font:var(--ay-body-sm);color:var(--ay-text-muted)}
+.card-action>svg:last-child{margin-inline-start:auto;color:var(--p-ink-300)}
+.card-stat{width:10.5rem;flex:none;padding:var(--ay-space-4);border-radius:var(--ay-radius-lg);
+  border:1px solid var(--ay-border);background:var(--ay-bg);display:grid;gap:.35rem}
+.card-stat b{font:800 1.5rem/1.1 var(--ay-font);letter-spacing:-.02em}
+.card-stat span{font:var(--ay-caption);color:var(--ay-text-muted)}
+.card-stat .up{font:var(--ay-label);color:var(--ay-success)}
+
+/* ════════════════════════ 6. ORGANISMS ════════════════════════ */
+/* — Toasts — */
+.toast-root{position:fixed;bottom:calc(4.5rem + env(safe-area-inset-bottom));inset-inline:0;z-index:90;
+  display:grid;justify-items:center;gap:var(--ay-space-2);pointer-events:none;padding-inline:var(--ay-space-4)}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:var(--ay-space-3);max-width:26rem;width:fit-content;
+  background:var(--ay-text);color:#fff;font:var(--ay-body-sm);font-weight:600;
+  padding:.85rem var(--ay-space-4);border-radius:var(--ay-radius-md);box-shadow:var(--ay-shadow-lg);
+  animation:ay-toast-in var(--ay-dur-ui) var(--ay-ease)}
+.toast svg{flex:none}
+.toast--ok svg{color:#6ee7a8}.toast--err svg{color:#ff9c9c}
+@keyframes ay-toast-in{from{opacity:0;transform:translateY(.75rem) scale(.96)}}
+.toast.out{transition:opacity var(--ay-dur-ui),transform var(--ay-dur-ui);opacity:0;transform:translateY(.5rem)}
+
+/* — Modal — */
+.overlay{position:fixed;inset:0;z-index:80;background:rgba(25,28,42,.55);backdrop-filter:blur(2px);
+  display:grid;place-items:center;padding:var(--ay-space-4);
+  animation:ay-fade var(--ay-dur-ui) var(--ay-ease)}
+.overlay[hidden]{display:none}
+@keyframes ay-fade{from{opacity:0}}
+.modal{background:var(--ay-bg);border-radius:var(--ay-radius-lg);box-shadow:var(--ay-shadow-lg);
+  width:100%;max-width:24rem;padding:var(--ay-space-6);display:grid;gap:var(--ay-space-4);
+  animation:ay-pop var(--ay-dur-ui) var(--ay-ease)}
+@keyframes ay-pop{from{opacity:0;transform:translateY(.75rem) scale(.97)}}
+.modal h3{font:var(--ay-h2)}
+.modal p{font:var(--ay-body-sm);color:var(--ay-text-muted)}
+.modal .row{display:flex;gap:var(--ay-space-3)}
+
+/* — Bottom sheet — */
+.sheet-root{position:fixed;inset:0;z-index:80}
+.sheet-root[hidden]{display:none}
+.sheet-backdrop{position:absolute;inset:0;background:rgba(25,28,42,.55);animation:ay-fade var(--ay-dur-ui) var(--ay-ease)}
+.sheet{position:absolute;inset-inline:0;bottom:0;background:var(--ay-bg);
+  border-radius:var(--ay-radius-lg) var(--ay-radius-lg) 0 0;box-shadow:var(--ay-shadow-lg);
+  padding:var(--ay-space-2) var(--ay-space-4) calc(var(--ay-space-6) + env(safe-area-inset-bottom));
+  animation:ay-sheet-up var(--ay-dur-sheet) var(--ay-ease);max-height:80vh;overflow:auto}
+.sheet-root.closing .sheet{transition:transform var(--ay-dur-ui) var(--ay-ease);transform:translateY(100%)}
+.sheet-root.closing .sheet-backdrop{transition:opacity var(--ay-dur-ui);opacity:0}
+@keyframes ay-sheet-up{from{transform:translateY(100%)}}
+.sheet__grip{width:2.75rem;height:.3rem;border-radius:var(--ay-radius-full);background:var(--p-ink-100);margin:var(--ay-space-2) auto var(--ay-space-4)}
+.sheet h3{font:var(--ay-h2);margin-bottom:var(--ay-space-3)}
+.sheet .opt{display:flex;align-items:center;gap:var(--ay-space-3);width:100%;border:0;background:none;cursor:pointer;
+  font:600 .9375rem/1.3 var(--ay-font);color:var(--ay-text);text-align:start;padding:var(--ay-space-3) 0;border-bottom:1px solid var(--ay-border)}
+.sheet .opt:last-of-type{border-bottom:0}
+.sheet .opt svg{color:var(--p-ink-300);margin-inline-start:auto}
+
+/* — Navigation mobile (bottom bar) — */
+.navbar{display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.92);
+  backdrop-filter:blur(14px);border-top:1px solid var(--ay-border);
+  padding:var(--ay-space-2) var(--ay-space-2) calc(var(--ay-space-2) + env(safe-area-inset-bottom))}
+.navbar a{display:grid;justify-items:center;gap:.2rem;font:var(--ay-label);font-size:.6rem;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--ay-text-muted);
+  padding:.45rem 0;border-radius:var(--ay-radius-md);position:relative;
+  transition:color var(--ay-dur-fast) var(--ay-ease)}
+.navbar a[aria-current="page"]{color:var(--ay-primary)}
+.navbar a:active{transform:scale(.95)}
+.navbar .dot{position:absolute;top:.3rem;inset-inline-end:calc(50% - .95rem);min-width:1rem;height:1rem;
+  border-radius:var(--ay-radius-full);background:var(--ay-error);color:#fff;
+  font:700 .58rem/1rem var(--ay-font);text-align:center;padding-inline:.18rem}
+.navbar .ai-pill{margin-top:-1.35rem;width:3rem;height:3rem;border-radius:var(--ay-radius-full);
+  background:var(--ay-gradient);display:grid;place-items:center;color:#fff;box-shadow:var(--ay-shadow-lg)}
+.phoneframe{width:100%;max-width:22rem;margin-inline:auto;border:1px solid var(--ay-border);
+  border-radius:calc(var(--ay-radius-lg) + .5rem);background:var(--ay-surface);overflow:hidden;box-shadow:var(--ay-shadow-md)}
+.phoneframe .fakepage{min-height:9rem;display:grid;place-items:center;color:var(--ay-text-muted);font:var(--ay-body-sm)}
+
+/* — Top bar — */
+.topbar{display:flex;align-items:center;gap:var(--ay-space-3);width:100%;
+  padding:var(--ay-space-3) var(--ay-space-4);background:rgba(255,255,255,.88);backdrop-filter:blur(14px);
+  border:1px solid var(--ay-border);border-radius:var(--ay-radius-full)}
+.topbar .lg{font:800 1.05rem/1 var(--ay-font);letter-spacing:-.02em;
+  background:var(--ay-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;flex:none}
+.topbar .searchbox{max-width:none;flex:1}
+.topbar .searchbox .input{min-height:2.5rem;background:var(--ay-surface);border-color:transparent}
+.topbar .acts{display:flex;gap:var(--ay-space-1);flex:none}
+.iconbtn{width:2.5rem;height:2.5rem;border:0;border-radius:50%;background:transparent;cursor:pointer;
+  display:grid;place-items:center;color:var(--ay-text);position:relative;
+  transition:background var(--ay-dur-fast) var(--ay-ease)}
+.iconbtn:hover{background:var(--ay-surface)}
+.iconbtn .dot{position:absolute;top:.2rem;inset-inline-end:.2rem;min-width:1rem;height:1rem;border-radius:50%;
+  background:var(--ay-error);color:#fff;font:700 .58rem/1rem var(--ay-font);text-align:center;padding-inline:.15rem}
+
+/* — Empty state — */
+.empty{display:grid;justify-items:center;gap:var(--ay-space-3);text-align:center;width:100%;
+  padding:var(--ay-space-12) var(--ay-space-4)}
+.empty__ic{width:4.5rem;height:4.5rem;border-radius:50%;background:var(--ay-primary-light);
+  display:grid;place-items:center;color:var(--ay-primary)}
+.empty h3{font:var(--ay-h2)}
+.empty p{font:var(--ay-body-sm);color:var(--ay-text-muted);max-width:19rem}
+
+/* — Swatches tokens — */
+.sw{width:100%;max-width:11rem;display:grid;gap:.4rem}
+.sw i{display:block;height:3.25rem;border-radius:var(--ay-radius-md);border:1px solid var(--ay-border)}
+.sw b{font:var(--ay-caption)}
+.sw span{font:600 .68rem/1.35 ui-monospace,Menlo,monospace;color:var(--ay-text-muted)}
+.bar-row{display:flex;align-items:center;gap:var(--ay-space-3);font:600 .72rem/1 ui-monospace,Menlo,monospace;color:var(--ay-text-muted)}
+.bar-row i{display:block;height:.9rem;border-radius:.25rem;background:var(--ay-gradient)}
+.rad-demo{display:grid;place-items:center;width:4.5rem;height:4.5rem;background:var(--ay-primary-light);
+  border:1.5px solid var(--p-violet-200);color:var(--ay-primary-dark);font:700 .68rem/1.2 var(--ay-font);text-align:center}
+.sh-demo{width:7rem;height:4.5rem;border-radius:var(--ay-radius-md);background:var(--ay-bg);border:1px solid var(--ay-border);
+  display:grid;place-items:center;font:700 .68rem/1 ui-monospace,Menlo,monospace;color:var(--ay-text-muted)}
+.motion-ball{width:2.25rem;height:2.25rem;border-radius:50%;background:var(--ay-gradient)}
+.motion-track{flex:1;height:2rem;position:relative}
+.motion-track .motion-ball{position:absolute;inset-inline-start:0;top:-.15rem}
+.motion-track.play .m1{animation:ay-move var(--ay-dur-fast) var(--ay-ease) forwards}
+.motion-track.play .m2{animation:ay-move var(--ay-dur-ui) var(--ay-ease) forwards}
+.motion-track.play .m3{animation:ay-move var(--ay-dur-sheet) var(--ay-ease) forwards}
+@keyframes ay-move{to{inset-inline-start:calc(100% - 2.4rem)}}
+.rail{display:flex;gap:var(--ay-space-3);overflow-x:auto;scroll-snap-type:x mandatory;
+  padding-bottom:var(--ay-space-2);scrollbar-width:none;width:100%}
+.rail::-webkit-scrollbar{display:none}
+.lab-footer{margin-top:var(--ay-space-8);border-top:1px solid var(--ay-border);padding:var(--ay-space-6) var(--ay-space-4);
+  text-align:center;color:var(--ay-text-muted);font:var(--ay-body-sm)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ CHROME DU LABO ═══════════ -->
+<header class="lab-top">
+  <div class="lab-top-in">
+    <span class="lab-logo">AYROVI</span>
+    <span class="lab-ver">Design System · V1</span>
+    <nav aria-label="Index du laboratoire">
+      <a href="#tokens">Tokens</a><a href="#typo">Typo</a><a href="#boutons">Boutons</a>
+      <a href="#champs">Champs</a><a href="#cartes">Cartes</a><a href="#badges">Badges</a>
+      <a href="#alertes">Alertes</a><a href="#toasts">Toasts</a><a href="#modal">Modal</a>
+      <a href="#sheet">Sheet</a><a href="#navigation">Navigation</a><a href="#skeleton">Skeleton</a>
+      <a href="#empty">Empty</a>
+    </nav>
+  </div>
+</header>
+
+<main class="lab-wrap">
+
+<!-- ═══════════ 01 · TOKENS ═══════════ -->
+<section class="lab-sec" id="tokens">
+  <header>
+    <span class="lab-eyebrow">01 · Fondations</span>
+    <h2>Design Tokens</h2>
+    <p class="lab-desc">Source de vérité unique. Les composants consomment uniquement les tokens sémantiques — jamais l'échelle primitive. Principe repris du ZDS (Semantic tokens : Background / Text / Border / Primary).</p>
+  </header>
+  <div class="panel">
+    <span class="lab-label">Couleurs sémantiques</span>
+    <div class="sw"><i style="background:var(--ay-primary)"></i><b>Primary</b><span>--ay-primary<br>#673DE6</span></div>
+    <div class="sw"><i style="background:var(--ay-primary-dark)"></i><b>Primary Dark</b><span>--ay-primary-dark<br>#5529CF</span></div>
+    <div class="sw"><i style="background:var(--ay-primary-light)"></i><b>Primary Light</b><span>--ay-primary-light<br>#F3EFFF</span></div>
+    <div class="sw"><i style="background:var(--ay-gradient)"></i><b>Gradient (marque)</b><span>--ay-gradient<br>135° violet</span></div>
+    <div class="sw"><i style="background:var(--ay-bg)"></i><b>Background</b><span>--ay-bg<br>#FFFFFF</span></div>
+    <div class="sw"><i style="background:var(--ay-surface)"></i><b>Surface</b><span>--ay-surface<br>#F7F6FB</span></div>
+    <div class="sw"><i style="background:var(--ay-text)"></i><b>Text</b><span>--ay-text<br>#191C2A</span></div>
+    <div class="sw"><i style="background:var(--ay-text-muted)"></i><b>Muted</b><span>--ay-text-muted<br>#6B7086</span></div>
+    <div class="sw"><i style="background:var(--ay-border)"></i><b>Border</b><span>--ay-border<br>#E5E6EF</span></div>
+    <div class="sw"><i style="background:var(--ay-success)"></i><b>Success</b><span>--ay-success<br>#15803D</span></div>
+    <div class="sw"><i style="background:var(--ay-warning)"></i><b>Warning</b><span>--ay-warning<br>#B45309</span></div>
+    <div class="sw"><i style="background:var(--ay-error)"></i><b>Error</b><span>--ay-error<br>#DC2626</span></div>
+    <div class="sw"><i style="background:var(--ay-info)"></i><b>Info</b><span>--ay-info<br>#1D5FD1</span></div>
+  </div>
+  <p class="lab-note">Contraste : <b>Text/BG = 13.9:1</b> (AAA) · <b>Primary/BG = 5.9:1</b> (AA) · <b>Muted/BG = 4.6:1</b> (AA). Le blanc sur Primary = 5.9:1 ✔ — le bouton gradient reste accessible.</p>
+  <div class="panel">
+    <span class="lab-label">Espacement · base 4px</span>
+    <div class="lab-grid" id="spaceGrid">
+      <div class="bar-row"><i style="width:4px"></i>4 · --ay-space-1</div>
+      <div class="bar-row"><i style="width:8px"></i>8 · --ay-space-2</div>
+      <div class="bar-row"><i style="width:12px"></i>12 · --ay-space-3</div>
+      <div class="bar-row"><i style="width:16px"></i>16 · --ay-space-4</div>
+      <div class="bar-row"><i style="width:24px"></i>24 · --ay-space-6</div>
+      <div class="bar-row"><i style="width:32px"></i>32 · --ay-space-8</div>
+      <div class="bar-row"><i style="width:48px"></i>48 · --ay-space-12</div>
+      <div class="bar-row"><i style="width:64px"></i>64 · --ay-space-16</div>
+    </div>
+  </div>
+  <div class="panel">
+    <span class="lab-label">Rayons</span>
+    <div class="rad-demo" style="border-radius:var(--ay-radius-sm)">sm<br>8</div>
+    <div class="rad-demo" style="border-radius:var(--ay-radius-md)">md<br>12</div>
+    <div class="rad-demo" style="border-radius:var(--ay-radius-lg)">lg<br>20</div>
+    <div class="rad-demo" style="border-radius:var(--ay-radius-full)">full<br>999</div>
+    <span class="lab-label" style="margin-top:var(--ay-space-4)">Ombres</span>
+    <div class="sh-demo" style="box-shadow:var(--ay-shadow-sm)">sm</div>
+    <div class="sh-demo" style="box-shadow:var(--ay-shadow-md)">md</div>
+    <div class="sh-demo" style="box-shadow:var(--ay-shadow-lg)">lg</div>
+    <span class="lab-label" style="margin-top:var(--ay-space-4)">Motion · <button class="btn btn--ghost btn--sm" onclick="document.querySelectorAll('.motion-track').forEach(t=>{t.classList.remove('play');void t.offsetWidth;t.classList.add('play')})">Rejouer</button></span>
+    <div style="display:grid;gap:.75rem;width:100%">
+      <div style="display:flex;align-items:center;gap:.75rem"><span class="tok-code">150ms</span><div class="motion-track play"><i class="motion-ball m1"></i></div></div>
+      <div style="display:flex;align-items:center;gap:.75rem"><span class="tok-code">250ms</span><div class="motion-track play"><i class="motion-ball m2"></i></div></div>
+      <div style="display:flex;align-items:center;gap:.75rem"><span class="tok-code">400ms</span><div class="motion-track play"><i class="motion-ball m3"></i></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 02 · TYPOGRAPHIE ═══════════ -->
+<section class="lab-sec" id="typo">
+  <header>
+    <span class="lab-eyebrow">02 · Fondations</span>
+    <h2>Typographie</h2>
+    <p class="lab-desc">Production : <b>Plus Jakarta Sans</b>. Hiérarchie par le poids puis la taille (principe Zalando : Brand bold → nom regular → prix bold).</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch;gap:var(--ay-space-6)">
+    <div><span class="lab-label">Display · --ay-display</span><p style="font:var(--ay-display);letter-spacing:-.03em">Toute la mode du monde, livrée en Tunisie.</p></div>
+    <div><span class="lab-label">H1 · --ay-h1</span><p style="font:var(--ay-h1);letter-spacing:-.02em">Nouvel arrivage SHEIN</p></div>
+    <div><span class="lab-label">H2 · --ay-h2</span><p style="font:var(--ay-h2)">Calculez votre prix final</p></div>
+    <div><span class="lab-label">H3 · --ay-h3</span><p style="font:var(--ay-h3)">Sneakers urbaines — lot de juillet</p></div>
+    <div><span class="lab-label">Body Large · --ay-body-lg</span><p style="font:var(--ay-body-lg)">Collez un lien SHEIN, Zara ou Amazon : AYROVI calcule les frais, commande et livre chez vous.</p></div>
+    <div><span class="lab-label">Body · --ay-body</span><p style="font:var(--ay-body)">Prix final tout inclus : produit, transport, douane et livraison à domicile.</p></div>
+    <div><span class="lab-label">Body Small · --ay-body-sm</span><p style="font:var(--ay-body-sm);color:var(--ay-text-muted)">Délai estimé : 10 à 14 jours ouvrés après validation de l'acompte.</p></div>
+    <div><span class="lab-label">Caption · --ay-caption</span><p style="font:var(--ay-caption);color:var(--ay-text-muted)">Source : SHEIN · Réf. SH-382460229</p></div>
+    <div><span class="lab-label">Label · --ay-label</span><p style="font:var(--ay-label);text-transform:uppercase;letter-spacing:.1em;color:var(--ay-primary)">Prix final · tout inclus</p></div>
+  </div>
+</section>
+
+<!-- ═══════════ 03 · BOUTONS ═══════════ -->
+<section class="lab-sec" id="boutons">
+  <header>
+    <span class="lab-eyebrow">03 · Atomes</span>
+    <h2>Boutons</h2>
+    <p class="lab-desc">Un seul primary par écran. Hauteur tactile 44px minimum. États : default / hover / pressed (scale .97) / focus (anneau) / loading / disabled.</p>
+  </header>
+  <div class="panel">
+    <span class="lab-label">Variantes</span>
+    <button class="btn btn--primary">Commander</button>
+    <button class="btn btn--gradient">Analyser un lien</button>
+    <button class="btn btn--secondary">Voir le détail</button>
+    <button class="btn btn--ghost">En savoir plus</button>
+    <button class="btn btn--destructive">Supprimer</button>
+    <span class="lab-label">Tailles</span>
+    <button class="btn btn--primary btn--sm">Petit · 36</button>
+    <button class="btn btn--primary">Standard · 44</button>
+    <button class="btn btn--primary btn--lg">Grand · 52</button>
+    <span class="lab-label">États</span>
+    <button class="btn btn--primary" id="demoLoad" onclick="this.querySelector('.lbl').textContent='Envoi…';this.insertAdjacentHTML('afterbegin','<i class=spinner></i>');this.disabled=true;setTimeout(()=>{this.querySelector('.spinner').remove();this.querySelector('.lbl').textContent='Commander';this.disabled=false},2000)"><span class="lbl">Cliquer → Loading 2s</span></button>
+    <button class="btn btn--primary" disabled>Désactivé</button>
+    <button class="btn btn--secondary" aria-disabled="true">Aria-disabled</button>
+    <span class="lab-label">Icon buttons & bloc</span>
+    <button class="btn btn--secondary btn--icon" aria-label="Favoris"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button>
+    <button class="btn btn--secondary btn--icon badge-dot" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Zm-8.3 9a2.3 2.3 0 0 0 4.6 0"/></svg></button>
+    <button class="btn btn--gradient btn--block">Payer l'acompte · 20%</button>
+  </div>
+</section>
+
+<!-- ═══════════ 04 · CHAMPS ═══════════ -->
+<section class="lab-sec" id="champs">
+  <header>
+    <span class="lab-eyebrow">04 · Atomes</span>
+    <h2>Champs</h2>
+    <p class="lab-desc">Le champ de recherche AYROVI accepte un <b>lien produit</b> ou des mots-clés (avantage structurel sur le modèle catalogue classique).</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch;max-width:34rem">
+    <span class="lab-label">Recherche intelligente (lien OU mots-clés)</span>
+    <div class="searchbox">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input class="input" type="search" placeholder="Collez un lien SHEIN, Zara, Amazon… ou cherchez">
+    </div>
+    <span class="lab-label">Texte</span>
+    <div class="field"><label for="f1">Nom et prénom</label><input id="f1" class="input" placeholder="Ex : Issa Issa"></div>
+    <span class="lab-label">Email · état erreur</span>
+    <div class="field"><label for="f2">Adresse e-mail</label><input id="f2" class="input input--error" type="email" value="issa@ayrovi" aria-invalid="true" aria-describedby="e2"><span class="hint hint--error" id="e2">Format invalide — ex : nom@domaine.tn</span></div>
+    <span class="lab-label">Téléphone tunisien · préfixe fixe</span>
+    <div class="field"><label for="f3">Téléphone de livraison</label><div class="phonebox"><span class="prefix">+216</span><input id="f3" class="input" type="tel" inputmode="tel" placeholder="98 123 456"></div><span class="hint">8 chiffres · commence par 2, 4, 5, 7 ou 9</span></div>
+    <span class="lab-label">Select</span>
+    <div class="field"><label for="f4">Gouvernorat</label><select id="f4" class="input select"><option>Tunis</option><option>Ariana</option><option>Sfax</option><option>Sousse</option></select></div>
+    <span class="lab-label">Désactivé</span>
+    <div class="field"><input class="input" value="Verrouillé" disabled></div>
+    <span class="lab-label">Chips · filtres rapides (pressed = on)</span>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+      <button class="chip" aria-pressed="false" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">Tout</button>
+      <button class="chip" aria-pressed="true" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">En stock Tunis</button>
+      <button class="chip" aria-pressed="false" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">Prix</button>
+      <button class="chip" aria-pressed="false" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')">Taille</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 05 · CARTES ═══════════ -->
+<section class="lab-sec" id="cartes">
+  <header>
+    <span class="lab-eyebrow">05 · Molécules</span>
+    <h2>Cartes</h2>
+    <p class="lab-desc">Le prix TND « tout inclus » est la star. La carte entière est cliquable ; le CTA rapide est un ajout propre au modèle AYROVI (achat immédiat).</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch">
+    <span class="lab-label">Carte produit · rail horizontal (mobile) → grille (desktop)</span>
+    <div class="rail">
+      <article class="card-p">
+        <div class="card-p__media">
+          <div class="ph ph--a"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 6V5a4 4 0 0 1 8 0v1"/></svg></div>
+          <button class="card-p__fav" aria-pressed="false" aria-label="Ajouter aux favoris" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button>
+          <div class="card-p__flags"><span class="badge badge--solid">En stock Tunis</span></div>
+        </div>
+        <div class="card-p__body">
+          <p class="card-p__name">Sac bandoulière cuir grainé — arrivage juillet</p>
+          <p class="card-p__src">Source : import AYROVI</p>
+          <p class="card-p__price"><b>129 DT</b><s>159 DT</s></p>
+          <p class="card-p__inc">Prix final · tout inclus</p>
+          <div class="card-p__cta"><button class="btn btn--primary btn--sm btn--block">Ajouter</button></div>
+        </div>
+      </article>
+      <article class="card-p">
+        <div class="card-p__media">
+          <div class="ph ph--b"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M4 16V8l8-4 8 4v8l-8 4-8-4Z"/><path d="m4 8 8 4 8-4M12 12v8"/></svg></div>
+          <button class="card-p__fav" aria-pressed="true" aria-label="Retirer des favoris" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button>
+          <div class="card-p__flags"><span class="badge badge--brand">Nouvel arrivage</span></div>
+        </div>
+        <div class="card-p__body">
+          <p class="card-p__name">Sneakers running maille respirante</p>
+          <p class="card-p__src">Source : SHEIN · sur commande</p>
+          <p class="card-p__price"><b>185 DT</b><span class="badge badge--outline" style="font-size:.56rem">44 € source</span></p>
+          <p class="card-p__inc">Estimation tout inclus</p>
+          <div class="card-p__cta"><button class="btn btn--gradient btn--sm btn--block">Commander</button></div>
+        </div>
+      </article>
+      <article class="card-p">
+        <div class="card-p__media">
+          <div class="ph ph--c"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></div>
+          <button class="card-p__fav" aria-pressed="false" aria-label="Ajouter aux favoris" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button>
+          <div class="card-p__flags"><span class="badge badge--error">-20%</span></div>
+        </div>
+        <div class="card-p__body">
+          <p class="card-p__name">Robe satin coupe midi — édition limitée</p>
+          <p class="card-p__src">Source : Zara · arrivage</p>
+          <p class="card-p__price"><b>149 DT</b><s>186 DT</s></p>
+          <p class="card-p__inc">Prix final · tout inclus</p>
+          <div class="card-p__cta"><button class="btn btn--primary btn--sm btn--block">Ajouter</button></div>
+        </div>
+      </article>
+    </div>
+    <span class="lab-label">Carte mise en avant (featured)</span>
+    <div class="card-feat">
+      <div class="card-feat__in">
+        <span class="badge badge--outline" style="border-color:rgba(255,255,255,.4);color:#fff;width:fit-content">Arrivage · Août</span>
+        <h3>Nouveau lot SHEIN · 120 pièces</h3>
+        <p>Disponible immédiatement depuis Tunis — aucune attente internationale.</p>
+        <div><button class="btn btn--lg" style="background:#fff;color:var(--ay-text)">Découvrir l'arrivage</button></div>
+      </div>
+    </div>
+    <span class="lab-label">Carte action & statistique</span>
+    <div style="display:flex;gap:var(--ay-space-3);flex-wrap:wrap;width:100%">
+      <button class="card-action">
+        <span class="card-action__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 14a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 10a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span>
+        <span><b>Coller un lien</b><span>SHEIN, Zara, H&M, Amazon…</span></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+      <button class="card-action">
+        <span class="card-action__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h8M8 15h4"/></svg></span>
+        <span><b>Scanner une photo</b><span>Screenshot WhatsApp, Instagram…</span></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+      <div class="card-stat"><b>96 DT</b><span>Panier moyen</span><span class="up">▲ 12%</span></div>
+      <div class="card-stat"><b>4,8/5</b><span>Satisfaction</span><span class="up">▲ 0,3</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 06 · BADGES ═══════════ -->
+<section class="lab-sec" id="badges">
+  <header>
+    <span class="lab-eyebrow">06 · Atomes</span>
+    <h2>Badges</h2>
+    <p class="lab-desc">Vocabulaire propre à AYROVI — jamais copié : « En stock Tunis », « Sur commande », « Nouvel arrivage ».</p>
+  </header>
+  <div class="panel">
+    <span class="badge badge--solid">En stock Tunis</span>
+    <span class="badge badge--brand">Nouvel arrivage</span>
+    <span class="badge badge--info">Sur commande</span>
+    <span class="badge badge--success">Acompte validé</span>
+    <span class="badge badge--warning">En révision</span>
+    <span class="badge badge--error">-20%</span>
+    <span class="badge badge--outline">44 € source</span>
+  </div>
+</section>
+
+<!-- ═══════════ 07 · ALERTES ═══════════ -->
+<section class="lab-sec" id="alertes">
+  <header>
+    <span class="lab-eyebrow">07 · Molécules</span>
+    <h2>Alertes</h2>
+    <p class="lab-desc">Toujours actionnables : une alerte explique et propose la suite.</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch;max-width:34rem">
+    <div class="alert alert--info" role="status"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg><span><strong>Analyse du lien en cours</strong>Quelques secondes suffisent — le prix final apparaîtra ici.</span></div>
+    <div class="alert alert--success" role="status"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7"/></svg><span><strong>Acompte reçu</strong>Votre commande AYR-481516 passe en achat. Suivi : vous serez notifié à chaque étape.</span></div>
+    <div class="alert alert--warning" role="alert"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v5m0 3h.01M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/></svg><span><strong>Capture d'acompte en révision</strong>Vérification sous 24 h ouvrées — rien à faire de votre côté.</span></div>
+    <div class="alert alert--error" role="alert"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg><span><strong>Lien non reconnu</strong>Essayez la capture d'écran du produit — l'IA la lira pour vous.</span></div>
+  </div>
+</section>
+
+<!-- ═══════════ 08 · TOASTS ═══════════ -->
+<section class="lab-sec" id="toasts">
+  <header>
+    <span class="lab-eyebrow">08 · Molécules</span>
+    <h2>Toasts</h2>
+    <p class="lab-desc">Confirmation en contexte, au-dessus de la bottom bar, auto-dismiss 3,5 s. Essayez :</p>
+  </header>
+  <div class="panel">
+    <button class="btn btn--secondary" onclick="ayToast('Article ajouté au panier','ok')">Toast succès</button>
+    <button class="btn btn--secondary" onclick="ayToast('Connexion instable — nouvel essai…','err')">Toast erreur</button>
+    <button class="btn btn--secondary" onclick="ayToast('Lien copié dans le presse-papiers','ok')">Toast neutre</button>
+  </div>
+</section>
+
+<!-- ═══════════ 09 · MODAL ═══════════ -->
+<section class="lab-sec" id="modal">
+  <header>
+    <span class="lab-eyebrow">09 · Organismes</span>
+    <h2>Modal</h2>
+    <p class="lab-desc">Desktop et confirmations courtes. Fermeture : bouton, clic-extérieur, Échap. Focus piégé.</p>
+  </header>
+  <div class="panel">
+    <button class="btn btn--primary" id="openModal">Ouvrir le modal</button>
+  </div>
+</section>
+
+<!-- ═══════════ 10 · BOTTOM SHEET ═══════════ -->
+<section class="lab-sec" id="sheet">
+  <header>
+    <span class="lab-eyebrow">10 · Organismes</span>
+    <h2>Bottom Sheet</h2>
+    <p class="lab-desc">Le pattern mobile de Zalando pour filtres & options — adopté : poignée, montée 400 ms, fermeture par backdrop.</p>
+  </header>
+  <div class="panel">
+    <button class="btn btn--primary" id="openSheet">Ouvrir la sheet (filtres)</button>
+  </div>
+</section>
+
+<!-- ═══════════ 11 · NAVIGATION ═══════════ -->
+<section class="lab-sec" id="navigation">
+  <header>
+    <span class="lab-eyebrow">11 · Organismes</span>
+    <h2>Navigation</h2>
+    <p class="lab-desc">Chrome permanent = 5 destinations max. L'AI est surélevée (pill) car c'est l'action signature d'AYROVI. <b>Non définitif</b> — à tester avec les autres pages.</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch;gap:var(--ay-space-6)">
+    <span class="lab-label">Top bar (recherche toujours visible — principe Zalando)</span>
+    <div class="topbar">
+      <span class="lg">AYROVI</span>
+      <div class="searchbox"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input class="input" type="search" placeholder="Lien ou recherche…" aria-label="Recherche"></div>
+      <div class="acts">
+        <button class="iconbtn" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Zm-8.3 9a2.3 2.3 0 0 0 4.6 0"/></svg><span class="dot">2</span></button>
+        <button class="iconbtn" aria-label="Compte"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></button>
+      </div>
+    </div>
+    <span class="lab-label">Bottom bar mobile · Accueil | Recherche | AI | Panier | Compte</span>
+    <div class="phoneframe">
+      <div class="fakepage">Contenu de page — la barre reste fixe en bas</div>
+      <nav class="navbar" aria-label="Navigation principale">
+        <a href="#" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9Z"/></svg>Accueil</a>
+        <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Recherche</a>
+        <a href="#"><span class="ai-pill"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></span>AI</a>
+        <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/></svg><span class="dot">3</span>Panier</a>
+        <a href="#"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>Compte</a>
+      </nav>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 12 · SKELETON ═══════════ -->
+<section class="lab-sec" id="skeleton">
+  <header>
+    <span class="lab-eyebrow">12 · États</span>
+    <h2>Skeleton</h2>
+    <p class="lab-desc">Le chargement mime la forme finale (principe Zalando) — jamais de spinner pleine page.</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch">
+    <div class="rail">
+      <div class="card-p"><div class="card-p__media skel" style="border:0"></div><div class="card-p__body"><div class="skel" style="height:.8rem;width:88%"></div><div class="skel" style="height:.65rem;width:55%"></div><div class="skel" style="height:1rem;width:40%"></div></div></div>
+      <div class="card-p"><div class="card-p__media skel" style="border:0"></div><div class="card-p__body"><div class="skel" style="height:.8rem;width:75%"></div><div class="skel" style="height:.65rem;width:60%"></div><div class="skel" style="height:1rem;width:45%"></div></div></div>
+      <div class="card-p"><div class="card-p__media skel" style="border:0"></div><div class="card-p__body"><div class="skel" style="height:.8rem;width:82%"></div><div class="skel" style="height:.65rem;width:50%"></div><div class="skel" style="height:1rem;width:38%"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 13 · EMPTY STATE ═══════════ -->
+<section class="lab-sec" id="empty">
+  <header>
+    <span class="lab-eyebrow">13 · États</span>
+    <h2>Empty State</h2>
+    <p class="lab-desc">Un vide n'est jamais une fin : il propose toujours la prochaine action.</p>
+  </header>
+  <div class="panel" style="flex-direction:column;align-items:stretch">
+    <div class="empty">
+      <span class="empty__ic"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/></svg></span>
+      <h3>Votre panier est vide</h3>
+      <p>Collez un lien de produit ou explorez le nouvel arrivage disponible à Tunis.</p>
+      <button class="btn btn--gradient">Coller un lien</button>
+      <button class="btn btn--ghost">Voir l'arrivage</button>
+    </div>
+  </div>
+  <p class="lab-note">Matrice complète des états : chaque composant ci-dessus doit répondre à Default · Hover · Pressed · Focus · Loading · Success · Error · Empty · Disabled avant intégration React.</p>
+</section>
+
+</main>
+
+<footer class="lab-footer">
+  <p><b>AYROVI Design System · V1</b> — Laboratoire visuel. Aucune dépendance externe.<br>
+  Prochaine étape : <b>Review → V2 → Approval</b>, puis intégration page par page au-dessus du système existant.</p>
+</footer>
+
+<!-- ═══════════ INSTANCES DEMO (hors flux) ═══════════ -->
+<div class="toast-root" id="toastRoot" aria-live="polite"></div>
+
+<div class="overlay" id="modalOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <h3 id="mTitle">Confirmer la commande ?</h3>
+    <p>Un acompte de <b>20%</b> (38,60 DT) vous sera demandé pour lancer l'achat. Le solde à la livraison.</p>
+    <div class="row">
+      <button class="btn btn--primary btn--block" id="modalOk">Confirmer</button>
+      <button class="btn btn--ghost" id="modalCancel">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet-root" id="sheetRoot" hidden>
+  <div class="sheet-backdrop" data-close></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle">
+    <div class="sheet__grip" aria-hidden="true"></div>
+    <h3 id="sTitle">Filtres rapides</h3>
+    <button class="opt">En stock Tunis<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
+    <button class="opt">Sur commande<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
+    <button class="opt">Prix<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
+    <button class="opt">Catégorie<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
+    <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+      <button class="btn btn--primary btn--block" data-close>Voir 48 résultats</button>
+      <button class="btn btn--ghost" data-close>Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Toasts */
+function ayToast(msg,type){
+  const root=document.getElementById('toastRoot');
+  const t=document.createElement('div');t.className='toast toast--'+(type==='err'?'err':'ok');
+  const icon=type==='err'
+    ?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6m0-6-6 6"/></svg>'
+    :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 13 4 4L19 7"/></svg>';
+  t.innerHTML=icon+'<span>'+msg+'</span>';
+  root.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),260)},3500);
+}
+/* Modal */
+const mo=document.getElementById('modalOverlay');
+const openM=()=>{mo.hidden=false;mo.querySelector('.btn--primary').focus();document.body.style.overflow='hidden'};
+const closeM=()=>{mo.hidden=true;document.body.style.overflow=''};
+document.getElementById('openModal').onclick=openM;
+document.getElementById('modalOk').onclick=()=>{closeM();ayToast('Commande confirmée — acompte 20%','ok')};
+document.getElementById('modalCancel').onclick=closeM;
+mo.addEventListener('click',e=>{if(e.target===mo)closeM()});
+/* Sheet */
+const sr=document.getElementById('sheetRoot');
+const openS=()=>{sr.hidden=false;document.body.style.overflow='hidden'};
+const closeS=()=>{sr.classList.add('closing');setTimeout(()=>{sr.hidden=true;sr.classList.remove('closing');document.body.style.overflow=''},240)};
+document.getElementById('openSheet').onclick=openS;
+sr.querySelectorAll('[data-close]').forEach(el=>el.addEventListener('click',closeS));
+/* Échap global */
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(!mo.hidden)closeM();if(!sr.hidden)closeS()}});
+</script>
+</body>
+</html>

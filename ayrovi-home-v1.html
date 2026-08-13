@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="fr" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AYROVI · Accueil V1 — Prototype</title>
+<!--
+  ═══════════════════════════════════════════════════════════════
+  AYROVI HOME V1 — Prototype EXPÉRIENCE (hors ligne, sans backend)
+  Mobile-first 360→430px · Rejoue le parcours : Lien → Calcul → Commander
+  Design tokens : copie 1:1 du laboratoire (ayrovi-design-system.html)
+  ═══════════════════════════════════════════════════════════════
+-->
+<style>
+/* ════ TOKENS (sync: ayrovi-design-system.html) ════ */
+:root{
+  --p-violet-50:#f3efff;--p-violet-200:#cdbaff;--p-violet-400:#9668ff;--p-violet-500:#7c4dff;
+  --p-violet-600:#673de6;--p-violet-700:#5529cf;--p-violet-800:#4320a6;
+  --p-ink-900:#191c2a;--p-ink-700:#3d4157;--p-ink-500:#6b7086;--p-ink-300:#a2a7bd;
+  --p-ink-100:#e5e6ef;--p-paper:#fff;--p-mist:#f7f6fb;
+  --p-green-600:#15803d;--p-green-50:#e7f6ee;
+  --ay-primary:var(--p-violet-600);--ay-primary-dark:var(--p-violet-700);--ay-primary-light:var(--p-violet-50);
+  --ay-gradient:linear-gradient(135deg,var(--p-violet-500) 0%,var(--p-violet-600) 55%,var(--p-violet-800) 100%);
+  --ay-gradient-soft:linear-gradient(180deg,#f6f2ff 0%,#fff 78%);
+  --ay-bg:var(--p-paper);--ay-surface:var(--p-mist);--ay-text:var(--p-ink-900);
+  --ay-text-muted:var(--p-ink-500);--ay-border:var(--p-ink-100);
+  --ay-success:var(--p-green-600);--ay-error:#dc2626;
+  --ay-font:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  --ay-display:800 clamp(1.9rem,5.4vw,2.9rem)/1.08 var(--ay-font);
+  --ay-h1:800 clamp(1.5rem,4vw,1.9rem)/1.2 var(--ay-font);
+  --ay-h2:700 clamp(1.2rem,3vw,1.375rem)/1.3 var(--ay-font);
+  --ay-h3:700 1.05rem/1.35 var(--ay-font);
+  --ay-body:400 .9375rem/1.6 var(--ay-font);--ay-body-sm:400 .8125rem/1.55 var(--ay-font);
+  --ay-caption:600 .75rem/1.4 var(--ay-font);--ay-label:700 .66rem/1.3 var(--ay-font);
+  --ay-space-1:.25rem;--ay-space-2:.5rem;--ay-space-3:.75rem;--ay-space-4:1rem;--ay-space-6:1.5rem;--ay-space-8:2rem;--ay-space-12:3rem;--ay-space-16:4rem;
+  --ay-radius-sm:.5rem;--ay-radius-md:.75rem;--ay-radius-lg:1.25rem;--ay-radius-full:999px;
+  --ay-shadow-md:0 6px 18px -4px rgba(25,28,42,.12);
+  --ay-shadow-lg:0 18px 42px -12px rgba(67,32,166,.28);
+  --ay-dur-fast:150ms;--ay-dur-ui:250ms;--ay-dur-sheet:400ms;--ay-ease:cubic-bezier(.22,.61,.36,1);
+  --ay-touch:2.75rem;
+}
+*,*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font:var(--ay-body);color:var(--ay-text);background:var(--ay-bg);-webkit-font-smoothing:antialiased}
+svg{display:block}
+a{text-decoration:none;color:inherit}
+button{font-family:var(--ay-font)}
+:where(a,button,input):focus-visible{outline:2px solid var(--ay-primary);outline-offset:2px;border-radius:var(--ay-radius-sm)}
+.wrap{width:100%;max-width:72.5rem;margin-inline:auto;padding-inline:var(--ay-space-4)}
+@media(min-width:48rem){.wrap{padding-inline:var(--ay-space-8)}}
+
+/* ════ ATOMS ════ */
+.badge{display:inline-flex;align-items:center;gap:.3rem;font:var(--ay-label);text-transform:uppercase;letter-spacing:.07em;padding:.32rem .68rem;border-radius:var(--ay-radius-full);border:1px solid transparent}
+.badge--brand{background:var(--ay-primary-light);color:var(--ay-primary-dark)}
+.badge--solid{background:var(--ay-text);color:#fff}
+.badge--success{background:var(--p-green-50);color:var(--ay-success)}
+.badge--error{background:#fdecec;color:var(--ay-error)}
+.badge--glass{background:rgba(255,255,255,.16);color:#fff;border-color:rgba(255,255,255,.3)}
+.btn{appearance:none;border:1px solid transparent;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:var(--ay-space-2);font-weight:700;font-size:.9375rem;line-height:1;min-height:var(--ay-touch);padding-inline:var(--ay-space-6);border-radius:var(--ay-radius-md);transition:transform var(--ay-dur-fast) var(--ay-ease),background var(--ay-dur-fast) var(--ay-ease),box-shadow var(--ay-dur-fast) var(--ay-ease),color var(--ay-dur-fast);-webkit-tap-highlight-color:transparent;user-select:none}
+.btn:active{transform:scale(.97)}
+.btn--primary{background:var(--ay-text);color:#fff}.btn--primary:hover{background:var(--p-ink-700)}
+.btn--gradient{background:var(--ay-gradient);color:#fff;box-shadow:var(--ay-shadow-md)}.btn--gradient:hover{box-shadow:var(--ay-shadow-lg)}
+.btn--ghost{background:transparent;color:var(--ay-primary)}.btn--ghost:hover{background:var(--ay-primary-light)}
+.btn--white{background:#fff;color:var(--ay-text)}
+.btn--lg{min-height:3.25rem;padding-inline:var(--ay-space-8);font-size:1rem;border-radius:var(--ay-radius-lg)}
+.btn--block{width:100%}
+.btn .spinner{width:1.05rem;height:1.05rem;border-radius:50%;border:2px solid currentColor;border-inline-end-color:transparent;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(1turn)}}
+
+/* ════ ANNOUNCE + HEADER ════ */
+.announce{background:var(--ay-text);color:#fff;text-align:center;font:var(--ay-caption);padding:.55rem var(--ay-space-4);letter-spacing:.02em}
+.announce b{color:var(--p-violet-200)}
+.topbar{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.85);backdrop-filter:blur(14px);border-bottom:1px solid var(--ay-border)}
+.topbar-in{display:flex;align-items:center;gap:var(--ay-space-3);padding-block:.65rem}
+.logo{font:800 1.2rem/1 var(--ay-font);letter-spacing:-.03em;background:var(--ay-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;flex:none}
+.hsearch{position:relative;flex:1;min-width:0}
+.hsearch svg{position:absolute;inset-inline-start:.95rem;top:50%;transform:translateY(-50%);color:var(--ay-text-muted);pointer-events:none}
+.hsearch input{width:100%;font:400 .875rem/1.4 var(--ay-font);min-height:2.6rem;padding-inline:2.6rem 1rem;border-radius:var(--ay-radius-full);border:1px solid var(--ay-border);background:var(--ay-surface);color:var(--ay-text);transition:border-color var(--ay-dur-fast)}
+.hsearch input:focus{outline:none;border-color:var(--ay-primary);background:#fff}
+.hsearch input::placeholder{color:var(--p-ink-300)}
+.hacts{display:flex;gap:var(--ay-space-1);flex:none}
+.iconbtn{width:2.5rem;height:2.5rem;border:0;border-radius:50%;background:transparent;cursor:pointer;display:grid;place-items:center;color:var(--ay-text);position:relative;transition:background var(--ay-dur-fast)}
+.iconbtn:hover{background:var(--ay-surface)}
+.iconbtn .dot{position:absolute;top:.15rem;inset-inline-end:.15rem;min-width:1rem;height:1rem;border-radius:50%;background:var(--ay-error);color:#fff;font:700 .58rem/1rem var(--ay-font);text-align:center;padding-inline:.15rem}
+.nav-inline{display:none}
+@media(min-width:64rem){
+  .hsearch{max-width:26rem}
+  .nav-inline{display:flex;gap:var(--ay-space-1);margin-inline-start:auto}
+  .nav-inline a{font:var(--ay-caption);color:var(--ay-text-muted);padding:.5rem .8rem;border-radius:var(--ay-radius-full)}
+  .nav-inline a[aria-current]{color:var(--ay-primary);background:var(--ay-primary-light);font-weight:700}
+  .nav-inline a:hover{color:var(--ay-text)}
+}
+
+/* ════ HERO ════ */
+.hero{background:var(--ay-gradient-soft);padding-block:var(--ay-space-12) var(--ay-space-16);overflow:hidden}
+.hero-grid{display:grid;gap:var(--ay-space-8)}
+@media(min-width:56rem){.hero-grid{grid-template-columns:1.05fr .95fr;align-items:center}}
+.hero-copy{max-width:34rem}
+.hero h1{font:var(--ay-display);letter-spacing:-.035em;margin:var(--ay-space-4) 0}
+.hero h1 em{font-style:normal;background:var(--ay-gradient);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .lede{font:400 1.05rem/1.65 var(--ay-font);color:var(--ay-text-muted);max-width:27rem}
+/* — le bloc-action signature — */
+.heroa{margin-top:var(--ay-space-6);display:grid;gap:var(--ay-space-3)}
+.heroa__box{display:flex;gap:var(--ay-space-2);background:#fff;border:1px solid var(--ay-border);border-radius:var(--ay-radius-full);padding:.35rem;box-shadow:var(--ay-shadow-md)}
+.heroa__box input{flex:1;min-width:0;border:0;background:none;font:400 .9rem/1.4 var(--ay-font);padding-inline:var(--ay-space-4);color:var(--ay-text)}
+.heroa__box input:focus{outline:none}
+.heroa__box input::placeholder{color:var(--p-ink-300)}
+.heroa__box .btn{flex:none;border-radius:var(--ay-radius-full);min-height:2.6rem;padding-inline:var(--ay-space-5)}
+.heroa__alt{display:flex;gap:var(--ay-space-3);align-items:center;flex-wrap:wrap;font:var(--ay-caption);color:var(--ay-text-muted)}
+.heroa__alt a{color:var(--ay-primary);font-weight:700;display:inline-flex;align-items:center;gap:.3rem}
+.trust{display:flex;gap:var(--ay-space-4);flex-wrap:wrap;margin-top:var(--ay-space-6)}
+.trust span{display:inline-flex;align-items:center;gap:.4rem;font:var(--ay-caption);color:var(--ay-text-muted)}
+.trust svg{color:var(--ay-success);flex:none}
+/* — visuel hero (pile de cartes, desktop) — */
+.hero-visual{position:relative;display:none}
+@media(min-width:56rem){.hero-visual{display:block}}
+.hv-card{position:absolute;width:13.5rem;background:#fff;border:1px solid var(--ay-border);border-radius:var(--ay-radius-lg);padding:var(--ay-space-3);box-shadow:var(--ay-shadow-lg);display:grid;gap:.5rem}
+.hv-card .ph{aspect-ratio:4/3;border-radius:var(--ay-radius-md);display:grid;place-items:center;color:rgba(255,255,255,.9)}
+.hv-a{top:0;inset-inline-end:8rem;transform:rotate(-5deg)}
+.hv-b{top:5.5rem;inset-inline-end:0;transform:rotate(3deg);z-index:2}
+.hv-c{top:12.5rem;inset-inline-end:11rem;transform:rotate(-2deg)}
+.ph1{background:linear-gradient(155deg,#8b6cf6,#4320a6)}
+.ph2{background:linear-gradient(155deg,#ff9ebc,#e14d7c)}
+.ph3{background:linear-gradient(155deg,#63cfc6,#158f86)}
+.ph4{background:linear-gradient(155deg,#f8bd6a,#d97c16)}
+.hv-price{display:flex;justify-content:space-between;align-items:center}
+.hv-price b{font:800 .95rem/1 var(--ay-font)}
+.hv-price span{font:var(--ay-label);text-transform:uppercase;letter-spacing:.06em;color:var(--ay-success)}
+
+/* ════ SECTIONS GÉNÉRIQUES ════ */
+.sec{padding-block:var(--ay-space-12)}
+.sec--mist{background:var(--ay-surface)}
+.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--ay-space-4);margin-bottom:var(--ay-space-6)}
+.sec-head h2{font:var(--ay-h1);letter-spacing:-.02em}
+.sec-head .sub{font:var(--ay-body-sm);color:var(--ay-text-muted);margin-top:.3rem;max-width:30rem}
+.sec-head>a{flex:none;font:700 .87rem/1 var(--ay-font);color:var(--ay-primary);display:inline-flex;align-items:center;gap:.3rem;padding-block:.4rem}
+
+/* ════ COMMENT ÇA MARCHE (typo, pas de cartes) ════ */
+.steps{display:grid;gap:var(--ay-space-8)}
+@media(min-width:48rem){.steps{grid-template-columns:repeat(3,1fr);gap:var(--ay-space-6)}}
+.step{border-top:2px solid var(--ay-text);padding-top:var(--ay-space-3)}
+.step b{display:block;font:var(--ay-h3);margin-bottom:.35rem}
+.step b i{font-style:normal;color:var(--ay-primary);margin-inline-end:.45rem}
+.step p{font:var(--ay-body-sm);color:var(--ay-text-muted)}
+
+/* ════ BOUTIQUES (chips texte) ════ */
+.stores{display:flex;flex-wrap:wrap;gap:var(--ay-space-2)}
+.store{font:700 .8rem/1 var(--ay-font);letter-spacing:.04em;color:var(--ay-text-muted);border:1px solid var(--ay-border);border-radius:var(--ay-radius-full);padding:.6rem 1.05rem;background:#fff;transition:all var(--ay-dur-fast)}
+.store:hover{border-color:var(--ay-text);color:var(--ay-text)}
+
+/* ════ RAIL PRODUITS ════ */
+.rail{display:flex;gap:var(--ay-space-3);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding-bottom:var(--ay-space-2);margin-inline:calc(-1*var(--ay-space-4));padding-inline:var(--ay-space-4)}
+.rail::-webkit-scrollbar{display:none}
+@media(min-width:48rem){.rail{margin-inline:calc(-1*var(--ay-space-8));padding-inline:var(--ay-space-8)}}
+@media(min-width:64rem){.rail{margin-inline:0;padding-inline:0}}
+.card-p{width:10.6rem;flex:none;scroll-snap-align:start;display:grid;gap:var(--ay-space-2);cursor:pointer}
+@media(min-width:48rem){.card-p{width:12.5rem}}
+.card-p__media{position:relative;aspect-ratio:4/5;border-radius:var(--ay-radius-md);overflow:hidden;border:1px solid var(--ay-border)}
+.card-p__media .ph{position:absolute;inset:0;transition:transform var(--ay-dur-ui) var(--ay-ease)}
+.card-p:hover .card-p__media .ph{transform:scale(1.03)}
+.card-p__fav{position:absolute;top:.5rem;inset-inline-end:.5rem;width:2.25rem;height:2.25rem;border:0;cursor:pointer;border-radius:50%;background:rgba(255,255,255,.92);display:grid;place-items:center;color:var(--ay-text);box-shadow:0 1px 2px rgba(25,28,42,.12);transition:transform var(--ay-dur-fast),color var(--ay-dur-fast)}
+.card-p__fav[aria-pressed="true"]{color:var(--ay-error)}
+.card-p__flags{position:absolute;bottom:.5rem;inset-inline-start:.5rem;display:flex;gap:.3rem}
+.card-p__name{font:600 .82rem/1.35 var(--ay-font);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-p__src{font:var(--ay-caption);color:var(--ay-text-muted)}
+.card-p__price{display:flex;align-items:baseline;gap:.4rem}
+.card-p__price b{font:800 1rem/1 var(--ay-font);letter-spacing:-.01em}
+.card-p__price s{font:var(--ay-caption);color:var(--ay-text-muted)}
+.card-p__inc{font:var(--ay-label);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ay-success)}
+
+/* ════ STORIES ════ */
+.story{width:8.6rem;aspect-ratio:9/14;flex:none;scroll-snap-align:start;border-radius:var(--ay-radius-lg);position:relative;overflow:hidden;cursor:pointer;border:0;padding:0;text-align:start;transition:transform var(--ay-dur-fast) var(--ay-ease)}
+.story:active{transform:scale(.96)}
+.story .cap{position:absolute;inset-inline:0;bottom:0;padding:var(--ay-space-3);color:#fff;font:700 .8rem/1.3 var(--ay-font);background:linear-gradient(transparent,rgba(20,12,50,.72))}
+.story .ring{position:absolute;top:.6rem;inset-inline-start:.6rem}
+
+/* ════ SERVICES (liste, pas des cartes) ════ */
+.svc{display:flex;gap:var(--ay-space-4);align-items:flex-start;padding-block:var(--ay-space-5);border-top:1px solid var(--ay-border)}
+.svc:last-child{border-bottom:1px solid var(--ay-border)}
+.svc__ic{flex:none;width:3rem;height:3rem;border-radius:var(--ay-radius-md);display:grid;place-items:center;background:var(--ay-primary-light);color:var(--ay-primary)}
+.svc b{display:block;font:var(--ay-h3)}
+.svc p{font:var(--ay-body-sm);color:var(--ay-text-muted);margin-top:.25rem;max-width:36rem}
+@media(min-width:56rem){.svc-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:var(--ay-space-8)}}
+
+/* ════ BANDE CONFIANCE + CTA FINAL ════ */
+.band{background:var(--ay-gradient);color:#fff;border-radius:var(--ay-radius-lg);padding:var(--ay-space-8) var(--ay-space-6);display:grid;gap:var(--ay-space-6);overflow:hidden;position:relative}
+@media(min-width:56rem){.band{grid-template-columns:1fr auto;align-items:center;padding:var(--ay-space-12) var(--ay-space-8)}}
+.band h2{font:var(--ay-h1);letter-spacing:-.02em}
+.band p{opacity:.92;max-width:30rem;margin-top:.6rem;font:400 1rem/1.6 var(--ay-font)}
+.band .kpis{display:flex;gap:var(--ay-space-8);flex-wrap:wrap;margin-top:var(--ay-space-2)}
+.band .kpis b{display:block;font:800 1.6rem/1.1 var(--ay-font);letter-spacing:-.02em}
+.band .kpis span{font:var(--ay-caption);opacity:.85}
+
+/* ════ FOOTER ════ */
+.foot{border-top:1px solid var(--ay-border);padding-block:var(--ay-space-8) calc(var(--ay-space-8) + 4.5rem);display:grid;gap:var(--ay-space-6)}
+@media(min-width:56rem){.foot{grid-template-columns:1.4fr 1fr 1fr;padding-bottom:var(--ay-space-8)}}
+.foot h4{font:var(--ay-label);text-transform:uppercase;letter-spacing:.1em;color:var(--ay-text-muted);margin-bottom:var(--ay-space-3)}
+.foot a{display:block;font:var(--ay-body-sm);color:var(--ay-text-muted);padding-block:.3rem}
+.foot a:hover{color:var(--ay-text)}
+.foot .brandline{font:var(--ay-body-sm);color:var(--ay-text-muted);max-width:22rem;margin-top:.5rem}
+
+/* ════ BOTTOM NAV (mobile) ════ */
+.navbar{position:fixed;inset-inline:0;bottom:0;z-index:70;display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.94);backdrop-filter:blur(14px);border-top:1px solid var(--ay-border);padding:.4rem .4rem calc(.4rem + env(safe-area-inset-bottom))}
+@media(min-width:64rem){.navbar{display:none}}
+.navbar a{display:grid;justify-items:center;gap:.15rem;font:var(--ay-label);font-size:.58rem;letter-spacing:.04em;text-transform:uppercase;color:var(--ay-text-muted);padding:.4rem 0;border-radius:var(--ay-radius-md);position:relative}
+.navbar a[aria-current]{color:var(--ay-primary)}
+.navbar .ai-pill{margin-top:-1.3rem;width:3rem;height:3rem;border-radius:50%;background:var(--ay-gradient);display:grid;place-items:center;color:#fff;box-shadow:var(--ay-shadow-lg)}
+.navbar .dot{position:absolute;top:.25rem;inset-inline-end:calc(50% - .95rem);min-width:1rem;height:1rem;border-radius:50%;background:var(--ay-error);color:#fff;font:700 .58rem/1rem var(--ay-font);text-align:center}
+
+/* ════ DEMO : analyse de lien ════ */
+.demo{margin-top:var(--ay-space-4)}
+.demo[hidden]{display:none}
+.demo .skel{position:relative;overflow:hidden;background:var(--p-ink-100);border-radius:var(--ay-radius-sm)}
+.demo .skel::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);animation:shim 1.3s infinite}
+@keyframes shim{to{transform:translateX(100%)}}
+.demo-card{display:flex;gap:var(--ay-space-3);align-items:center;background:var(--ay-surface);border:1px solid var(--ay-border);border-radius:var(--ay-radius-lg);padding:var(--ay-space-3)}
+.demo-done{border-color:#bfe6cd;background:#f4fbf6;animation:pop var(--ay-dur-ui) var(--ay-ease)}
+@keyframes pop{from{opacity:0;transform:translateY(.5rem)}}
+.demo-done .phx{flex:none;width:4.25rem;height:4.25rem;border-radius:var(--ay-radius-md);background:linear-gradient(155deg,#8b6cf6,#4320a6);display:grid;place-items:center;color:#fff}
+.demo-done b{font:700 .85rem/1.3 var(--ay-font);display:block}
+.demo-done .pr{font:800 1.05rem/1 var(--ay-font);margin-top:.3rem}
+.demo-done .pr small{font:var(--ay-label);color:var(--ay-success);text-transform:uppercase;letter-spacing:.06em;margin-inline-start:.4rem}
+@media(max-width:23rem){.demo-done{flex-wrap:wrap}}
+
+/* toast */
+.toast-root{position:fixed;bottom:calc(5rem + env(safe-area-inset-bottom));inset-inline:0;z-index:90;display:grid;justify-items:center;pointer-events:none;padding-inline:1rem}
+.toast{display:flex;align-items:center;gap:.6rem;background:var(--ay-text);color:#fff;font:600 .82rem/1.4 var(--ay-font);padding:.85rem 1.1rem;border-radius:var(--ay-radius-md);box-shadow:var(--ay-shadow-lg);animation:pop var(--ay-dur-ui) var(--ay-ease)}
+.toast.out{transition:opacity .25s,transform .25s;opacity:0;transform:translateY(.5rem)}
+</style>
+</head>
+<body>
+
+<!-- ═══ BANDEAU CONFIANCE (principe : la promesse avant tout) ═══ -->
+<div class="announce">🚚 <b>Livraison dans toute la Tunisie</b> · Acompte 20% seulement · Solde à la réception</div>
+
+<!-- ═══ HEADER ═══ -->
+<header class="topbar">
+  <div class="wrap topbar-in">
+    <a class="logo" href="#" aria-label="AYROVI — Accueil">AYROVI</a>
+    <div class="hsearch">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="search" placeholder="Collez un lien SHEIN, Zara, Amazon…" aria-label="Recherche ou lien produit">
+    </div>
+    <nav class="nav-inline" aria-label="Navigation principale">
+      <a href="#" aria-current="page">Accueil</a><a href="#recherche">Recherche</a><a href="#ai">AI</a><a href="#panier">Panier</a><a href="#compte">Compte</a>
+    </nav>
+    <div class="hacts">
+      <button class="iconbtn" aria-label="Notifications"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6Zm-8.3 9a2.3 2.3 0 0 0 4.6 0"/></svg><span class="dot">2</span></button>
+      <button class="iconbtn" aria-label="Mon compte"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg></button>
+    </div>
+  </div>
+</header>
+
+<main>
+<!-- ═══ HERO : qu'est-ce qu'AYROVI + action principale ═══ -->
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div class="hero-copy">
+      <span class="badge badge--brand"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4Z"/></svg> Nouveau · Arrivage SHEIN août</span>
+      <h1>Le shopping mondial, <em>livré chez vous</em> en Tunisie.</h1>
+      <p class="lede">Collez le lien de n'importe quel produit — SHEIN, Zara, H&M, Amazon. AYROVI calcule le prix final tout inclus, commande à votre place et vous livre.</p>
+
+      <div class="heroa">
+        <form class="heroa__box" id="linkForm">
+          <input type="text" id="linkInput" placeholder="Collez un lien de produit ici…" aria-label="Lien du produit à analyser">
+          <button class="btn btn--gradient" type="submit" id="analyzeBtn"><span>Analyser</span></button>
+        </form>
+        <p class="heroa__alt">ou
+          <a href="#demo" id="scanLink"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><circle cx="12" cy="13.5" r="3.5"/><path d="M8.5 7 10 4h4l1.5 3"/></svg> envoyez une capture d'écran</a>
+          <a href="#arrivage">voir l'arrivage en stock →</a>
+        </p>
+      </div>
+
+      <!-- démo du flux Lien → Calcul → Commander -->
+      <div class="demo" id="demo" hidden>
+        <div id="demoSkel" class="demo-card" style="background:transparent;border-style:dashed">
+          <div class="skel" style="width:4.25rem;height:4.25rem;flex:none"></div>
+          <div style="flex:1;display:grid;gap:.45rem"><div class="skel" style="height:.75rem;width:70%"></div><div class="skel" style="height:.6rem;width:40%"></div><div class="skel" style="height:1rem;width:30%"></div></div>
+        </div>
+        <div id="demoDone" class="demo-card demo-done" hidden>
+          <div class="phx"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="16" height="12" rx="2"/><path d="M8 7V6a4 4 0 0 1 8 0v1"/></svg></div>
+          <div style="flex:1;min-width:0">
+            <b>Ensemble assorti Muchica — SHEIN</b>
+            <span class="badge badge--brand" style="font-size:.56rem;margin-top:.25rem">Sur commande · 10–14 j</span>
+            <div class="pr">122,96 DT <small>Prix final · tout inclus</small></div>
+          </div>
+          <button class="btn btn--primary" id="orderDemo" style="flex:none">Commander</button>
+        </div>
+      </div>
+
+      <div class="trust">
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg>Prix final, zéro surprise douane</span>
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg>Acompte 20% seulement</span>
+        <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg>Suivi de commande en direct</span>
+      </div>
+    </div>
+
+    <div class="hero-visual" aria-hidden="true">
+      <div class="hv-card hv-a"><div class="ph ph1"></div><div class="hv-price"><b>89 DT</b><span>Tout inclus</span></div></div>
+      <div class="hv-card hv-b"><div class="ph ph2"></div><div class="hv-price"><b>122,96 DT</b><span>Sur commande</span></div></div>
+      <div class="hv-card hv-c"><div class="ph ph3"></div><div class="hv-price"><b>149 DT</b><span>Stock Tunis</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COMMENT ÇA MARCHE (typographie + filet, pas de cartes) ═══ -->
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-head"><div><h2>Trois étapes, zéro friction</h2><p class="sub">Du lien à votre porte — AYROVI gère le calcul, l'achat et la logistique.</p></div></div>
+    <div class="steps">
+      <div class="step"><b><i>01</i>Collez ou scannez</b><p>Un lien, une capture WhatsApp, une photo Instagram — l'IA lit le produit pour vous.</p></div>
+      <div class="step"><b><i>02</i>Validez le prix final</b><p>Produit + transport + douane + livraison : un seul prix en dinars, avant de payer.</p></div>
+      <div class="step"><b><i>03</i>Suivez jusqu'à la porte</b><p>Acompte 20%, notifications à chaque étape, solde à la livraison partout en Tunisie.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ BOUTIQUES LUES (découverte par source) ═══ -->
+<section class="sec sec--mist" style="padding-block:var(--ay-space-8)">
+  <div class="wrap">
+    <p class="sub" style="font:var(--ay-label);text-transform:uppercase;letter-spacing:.12em;color:var(--ay-text-muted);margin-bottom:var(--ay-space-3)">On lit pour vous</p>
+    <div class="stores" aria-label="Boutiques supportées">
+      <button class="store">SHEIN</button><button class="store">ZARA</button><button class="store">H&amp;M</button>
+      <button class="store">BERSHKA</button><button class="store">PULL&amp;BEAR</button><button class="store">AMAZON</button>
+      <button class="store">ALIEXPRESS</button><button class="store">… ou toute photo</button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ ARRIVAGE ═══ -->
+<section class="sec" id="arrivage">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><span class="badge badge--success" style="margin-bottom:.5rem">Disponible immédiatement</span><h2>Nouvel arrivage à Tunis</h2><p class="sub">Déjà dédouané, déjà en stock. Livraison sous 24–72 h selon gouvernorat.</p></div>
+      <a href="#arrivage">Tout voir<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></a>
+    </div>
+    <div class="rail">
+      <article class="card-p">
+        <div class="card-p__media"><div class="ph ph4"></div><button class="card-p__fav" aria-pressed="false" aria-label="Favori" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button><div class="card-p__flags"><span class="badge badge--solid">En stock Tunis</span></div></div>
+        <p class="card-p__name">Sac bandoulière cuir grainé</p><p class="card-p__src">Lot juillet · 8 pièces restantes</p>
+        <p class="card-p__price"><b>129 DT</b><s>159 DT</s></p><p class="card-p__inc">Prix final · tout inclus</p>
+      </article>
+      <article class="card-p">
+        <div class="card-p__media"><div class="ph ph1"></div><button class="card-p__fav" aria-pressed="false" aria-label="Favori" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button><div class="card-p__flags"><span class="badge badge--solid">En stock Tunis</span></div></div>
+        <p class="card-p__name">Sneakers running maille respirante</p><p class="card-p__src">Lot août · pointures 36–42</p>
+        <p class="card-p__price"><b>149 DT</b></p><p class="card-p__inc">Prix final · tout inclus</p>
+      </article>
+      <article class="card-p">
+        <div class="card-p__media"><div class="ph ph2"></div><button class="card-p__fav" aria-pressed="false" aria-label="Favori" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button><div class="card-p__flags"><span class="badge badge--error">-20%</span></div></div>
+        <p class="card-p__name">Robe satin coupe midi</p><p class="card-p__src">Édition limitée · 4 pièces</p>
+        <p class="card-p__price"><b>119 DT</b><s>149 DT</s></p><p class="card-p__inc">Prix final · tout inclus</p>
+      </article>
+      <article class="card-p">
+        <div class="card-p__media"><div class="ph ph3"></div><button class="card-p__fav" aria-pressed="false" aria-label="Favori" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button><div class="card-p__flags"><span class="badge badge--solid">En stock Tunis</span></div></div>
+        <p class="card-p__name">Ensemble loungewear coton</p><p class="card-p__src">Lot août · tailles S–XL</p>
+        <p class="card-p__price"><b>96 DT</b></p><p class="card-p__inc">Prix final · tout inclus</p>
+      </article>
+      <article class="card-p">
+        <div class="card-p__media"><div class="ph ph4"></div><button class="card-p__fav" aria-pressed="false" aria-label="Favori" onclick="this.setAttribute('aria-pressed',this.getAttribute('aria-pressed')!=='true')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21c-4.8-3.5-8-6.6-8-10a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 11c0 3.4-3.2 6.5-8 10Z"/></svg></button><div class="card-p__flags"><span class="badge badge--solid">En stock Tunis</span></div></div>
+        <p class="card-p__name">Lunettes de soleil rétro</p><p class="card-p__src">Lot juillet · étui inclus</p>
+        <p class="card-p__price"><b>54 DT</b></p><p class="card-p__inc">Prix final · tout inclus</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ STORIES (contenu visuel) ═══ -->
+<section class="sec sec--mist" id="stories">
+  <div class="wrap">
+    <div class="sec-head"><div><h2>Stories AYROVI</h2><p class="sub">Coulisses des arrivages, conseils tailles, astuces douane.</p></div>
+    <a href="#stories">Tout voir<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></a></div>
+    <div class="rail">
+      <button class="story" style="background:linear-gradient(160deg,#7c4dff,#341a7d)" onclick="ayToast('Stories — bientôt disponible')"><span class="cap">Déballage du lot d'août 📦</span></button>
+      <button class="story" style="background:linear-gradient(160deg,#ff8fb1,#b03060)" onclick="ayToast('Stories — bientôt disponible')"><span class="cap">Comment lire les tailles SHEIN</span></button>
+      <button class="story" style="background:linear-gradient(160deg,#5fc9c0,#146b64)" onclick="ayToast('Stories — bientôt disponible')"><span class="cap">Douane : ce qu'on paie pour vous</span></button>
+      <button class="story" style="background:linear-gradient(160deg,#f6b45b,#b35c0e)" onclick="ayToast('Stories — bientôt disponible')"><span class="cap">Top 10 demandes de la semaine</span></button>
+      <button class="story" style="background:linear-gradient(160deg,#9b8cff,#4a3a8f)" onclick="ayToast('Stories — bientôt disponible')"><span class="cap">Avant / Après : avis clientes</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ SERVICES ═══ -->
+<section class="sec" id="services">
+  <div class="wrap">
+    <div class="sec-head"><div><h2>Un service complet, pas juste un site</h2></div></div>
+    <div class="svc-grid">
+      <div class="svc"><span class="svc__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="2.5" width="14" height="19" rx="2"/><path d="M9 7h6M9 11h.01M12 11h.01M15 11h.01M9 14h.01M12 14h.01M15 14h.01M9 17h6"/></svg></span><div><b>Calcul précis en dinars</b><p>Taux de change, transport, douane et livraison estimés avant toute décision.</p></div></div>
+      <div class="svc"><span class="svc__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></span><div><b>Assistant AI shopping</b><p>Analyse de liens et de captures, conseils tailles, réponses instantanées 7j/7.</p></div></div>
+      <div class="svc"><span class="svc__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/></svg></span><div><b>Commande à votre place</b><p>Acompte 20% par carte, Flouci, virement ou poste — validation humaine de chaque pièce.</p></div></div>
+      <div class="svc"><span class="svc__ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7h13v10H3zM16 10h4l1.5 3v4H16z"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg></span><div><b>Suivi en temps réel</b><p>Attente → révision → achat → expédition → livraison : notifié à chaque étape.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA FINAL (full-width, rythme visuel) ═══ -->
+<section class="sec" style="padding-top:0">
+  <div class="wrap">
+    <div class="band">
+      <div>
+        <span class="badge badge--glass">Prêt en 30 secondes</span>
+        <h2 style="margin-top:var(--ay-space-3)">Votre prochain article vous attend à l'étranger.<br>On s'occupe du reste.</h2>
+        <p>Première commande ? Essayez avec un lien SHEIN — le prix final s'affiche avant tout paiement.</p>
+        <div class="kpis">
+          <div><b>1 200+</b><span>commandes livrées</span></div>
+          <div><b>24 gouvernorats</b><span>desservis</span></div>
+          <div><b>4,8/5</b><span>satisfaction clientes</span></div>
+        </div>
+      </div>
+      <div style="display:grid;gap:var(--ay-space-3);justify-items:stretch">
+        <button class="btn btn--white btn--lg" onclick="document.getElementById('linkInput').focus();window.scrollTo({top:0,behavior:'smooth'})">Coller mon premier lien</button>
+        <a href="#arrivage" class="btn btn--lg" style="background:transparent;border-color:rgba(255,255,255,.5);color:#fff">Explorer l'arrivage</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- ═══ FOOTER MINIMAL ═══ -->
+<footer class="wrap foot">
+  <div>
+    <span class="logo">AYROVI</span>
+    <p class="brandline">Votre intermédiaire shopping vers la Tunisie. Calcul, commande, dédouanement et livraison — un seul prix, une seule équipe.</p>
+  </div>
+  <div><h4>Plateforme</h4><a href="#arrivage">Arrivage</a><a href="#stories">Stories</a><a href="#services">Services</a><a href="#how">Comment ça marche</a></div>
+  <div><h4>Aide</h4><a href="#">Suivi de commande</a><a href="#">Paiement & acompte</a><a href="#">Livraison</a><a href="#">Contact</a></div>
+</footer>
+
+<!-- ═══ BOTTOM NAV MOBILE ═══ -->
+<nav class="navbar" aria-label="Navigation principale">
+  <a href="#" aria-current="page"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2h-4v-6h-6v6H5a2 2 0 0 1-2-2v-9Z"/></svg>Accueil</a>
+  <a href="#recherche"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Recherche</a>
+  <a href="#ai"><span class="ai-pill"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 3v3m0 12v3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1M3 12h3m12 0h3M5.6 18.4l2.1-2.1m8.6-8.6 2.1-2.1"/><circle cx="12" cy="12" r="3.2"/></svg></span>AI</a>
+  <a href="#panier"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M6 6h15l-1.5 9h-12z"/><path d="M6 6 5 3H2"/><circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/></svg><span class="dot">3</span>Panier</a>
+  <a href="#compte"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>Compte</a>
+</nav>
+
+<div class="toast-root" id="toastRoot" aria-live="polite"></div>
+
+<script>
+/* Demo du flux signature : Lien → Analyse (skeleton) → Prix final → Commander */
+const form=document.getElementById('linkForm'),demo=document.getElementById('demo'),
+      skel=document.getElementById('demoSkel'),done=document.getElementById('demoDone'),
+      btn=document.getElementById('analyzeBtn'),input=document.getElementById('linkInput');
+form.addEventListener('submit',e=>{
+  e.preventDefault();
+  demo.hidden=false;skel.hidden=false;done.hidden=true;
+  btn.disabled=true;btn.innerHTML='<i class="spinner"></i><span>Analyse…</span>';
+  demo.scrollIntoView({behavior:'smooth',block:'nearest'});
+  setTimeout(()=>{
+    skel.hidden=true;done.hidden=false;
+    btn.disabled=false;btn.innerHTML='<span>Analyser</span>';
+  },1500);
+});
+document.getElementById('orderDemo').addEventListener('click',()=>ayToast('Acompte 20% : 24,60 DT · (démo)'));
+document.getElementById('scanLink').addEventListener('click',e=>{e.preventDefault();ayToast('Envoyez une capture — l\u2019IA la lit pour vous (démo)')});
+/* Toasts */
+function ayToast(msg){
+  const root=document.getElementById('toastRoot');root.innerHTML='';
+  const t=document.createElement('div');t.className='toast';
+  t.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a8f0c6" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg><span>'+msg+'</span>';
+  root.appendChild(t);
+  setTimeout(()=>{t.classList.add('out');setTimeout(()=>t.remove(),260)},3200);
+}
+</script>
+</body>
+</html>
