@@ -365,7 +365,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-r-transparent" />
                 AYROVIX analyse…
               </div>
-              <p className="text-center text-[11px] text-muted">Vision IA + OCR prix + recherche externe gratuite.</p>
+              <p className="text-center text-[11px] text-muted">Analyse instantanée AYROVIX — prix et correspondances en cours.</p>
             </div>
           )}
 
@@ -387,7 +387,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M8 6V5a4 4 0 0 1 8 0v1" /></svg>
                         </div>
                       )}
-                      <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-extrabold text-ink">OCR • Prix détecté</span>
+                      <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-extrabold text-ink">Prix repéré</span>
                       <span className="absolute right-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.ocrPrice.sourceCurrency}</span>
                     </div>
                     <div className="space-y-3 p-4">
@@ -396,7 +396,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                           {candidatesView.ocrPrice.title || candidatesView.queryLabel || 'Produit détecté via OCR'}
                         </h3>
                         <p className="mt-1 text-[11px] text-muted">
-                          {candidatesView.ocrPrice.isCartScreenshot ? '🛒 Panier détecté — total extrait' : '💰 Prix extrait depuis l’image'} • {candidatesView.ocrPrice.brand || 'Produit'} 
+                          {candidatesView.ocrPrice.isCartScreenshot ? '🛒 Panier repéré — total calculé' : '✨ Produit repéré sur l’image'} • {candidatesView.ocrPrice.brand || 'Collection AYROVI'} 
                         </p>
                       </div>
                       <div className="flex items-end justify-between rounded-2xl bg-amber-50 p-3.5 border border-amber-200">
@@ -415,13 +415,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                         onClick={() => {
                           const ocr = candidatesView!.ocrPrice!;
                           setProduct({
-                            title: ocr.title || candidatesView!.queryLabel || 'Produit détecté via OCR',
+                            title: ocr.title || candidatesView!.queryLabel || 'Produit repéré par AYROVIX',
                             brand: ocr.brand,
                             model: null,
-                            description: ocr.isCartScreenshot ? `Panier détecté: ${ocr.sourcePrice} ${ocr.sourceCurrency} - ${ocr.title}` : `Prix OCR: ${ocr.sourcePrice} ${ocr.sourceCurrency} - ${ocr.title}`,
+                            description: ocr.isCartScreenshot ? `Panier: ${ocr.sourcePrice} ${ocr.sourceCurrency} - ${ocr.title}` : `${ocr.title} — Prix repéré ${ocr.sourcePrice} ${ocr.sourceCurrency}`,
                             image: ocr.imageUrl || previewUrl || '',
                             images: ocr.imageUrl ? [ocr.imageUrl] : previewUrl ? [previewUrl] : [],
-                            source: ocr.isCartScreenshot ? 'OCR Panier' : 'OCR Vision',
+                            source: 'Collection AYROVI',
                             sourceUrl: '',
                             price: ocr.sourcePrice,
                             currency: ocr.sourceCurrency,
@@ -471,11 +471,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             <div className="mx-auto max-w-md space-y-5">
               <ProductResult product={product} ordering={ordering} onOrder={(v) => void handleOrder(v)} />
 
-              {/* Verification de lien avant commande — comme demandé */}
+              {/* Verification de lien avant commande — secrète */}
               {candidatesView?.ocrPrice && (
                 <div className="rounded-[20px] border border-brand/20 bg-brand-light/30 p-4">
-                  <p className="text-xs font-extrabold text-ink">🔗 Vérification du lien produit (requis avant commande)</p>
-                  <p className="mt-1 text-[11px] text-muted">Collez le lien du produit correspondant au prix OCR détecté pour vérification du prix final avant commande.</p>
+                  <p className="text-xs font-extrabold text-ink">🔗 Lien du produit pour confirmation finale</p>
+                  <p className="mt-1 text-[11px] text-muted">Collez le lien du produit pour que AYROVIX vérifie le prix final avant commande.</p>
                   <div className="mt-2 flex gap-2">
                     <input
                       type="url"
