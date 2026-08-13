@@ -123,12 +123,11 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     const scraped = await scraper.scrapeProduct(url);
     if (scraped && scraped.title && Number.isFinite(scraped.sourcePrice) && scraped.sourcePrice > 0) {
       const alternates = catalogSearch(db, null, scraped.title, 4)
-        .map((c) => ({ ...c, match: scoreCandidate(null, scraped.title, c) }))
+        .map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) }))
         .sort((a, b) => b.match - a.match);
-      const externalAlternates = await anthropicExternalSearch(scraped.title, 4).catch(()=>[]);
-      const all = [...alternates, ...externalAlternates.map(c => ({ ...c, match: scoreCandidate(null, scraped.title, c) }))]
-        .sort((a, b) => b.match - a.match).slice(0,6);
-      return { product: toAyrovixProduct(db, scraped), alternates: all };
+      // The direct merchant page already supplied the authoritative product.
+      // Do not add a paid text search (and 7–12 s latency) merely for alternatives.
+      return { product: toAyrovixProduct(db, scraped), alternates };
     }
   } catch (e) {
     if (e instanceof UnsafeUrlError || (e as any)?.code === 'UNSAFE_URL') {
