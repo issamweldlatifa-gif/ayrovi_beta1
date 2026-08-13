@@ -51,7 +51,7 @@ services:
       - key: AYROVIX_ANTHROPIC_WEB_SEARCH
         value: true
       - key: AYROVIX_PROVIDER_TIMEOUT_MS
-        value: 5000
+        value: 12000
       - key: AYROVIX_OCR_TIMEOUT_MS
         value: 7000
       - key: AYROVIX_SEARCH_TIMEOUT_MS

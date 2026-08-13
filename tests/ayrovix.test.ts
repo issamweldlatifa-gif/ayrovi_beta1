@@ -173,6 +173,8 @@ describe('AYROVIX Lens', () => {
       expect(response.body.data.detectedPrice.totalPriceTND).toBeGreaterThan(0);
       const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
       expect(requestBody.output_config.format.type).toBe('json_schema');
+      const schemaJson = JSON.stringify(requestBody.output_config.format.schema);
+      expect(schemaJson).not.toMatch(/"(?:minimum|maximum|minItems|maxItems|pattern|format)"/);
       expect(requestBody.tools).toBeUndefined();
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);

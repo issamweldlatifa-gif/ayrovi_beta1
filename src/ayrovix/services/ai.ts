@@ -58,18 +58,20 @@ const IDENTIFICATION_SCHEMA = {
     category: { type: 'string' },
     brand: { type: ['string', 'null'] },
     model: { type: ['string', 'null'] },
-    color: { type: 'array', items: { type: 'string' }, maxItems: 3 },
-    visible_text: { type: 'array', items: { type: 'string' }, maxItems: 8 },
-    possible_model_codes: { type: 'array', items: { type: 'string' }, maxItems: 4 },
+    // Anthropic Structured Outputs rejects validation keywords such as
+    // maxItems/minimum/maximum. Bounds are enforced in parseIdentification().
+    color: { type: 'array', items: { type: 'string' } },
+    visible_text: { type: 'array', items: { type: 'string' } },
+    possible_model_codes: { type: 'array', items: { type: 'string' } },
     description: { type: 'string' },
-    confidence: { type: 'number', minimum: 0, maximum: 1 },
+    confidence: { type: 'number' },
     detected_price: {
       type: 'object',
       properties: {
-        amount: { type: 'number', minimum: 0 },
+        amount: { type: 'number' },
         currency: { type: 'string' },
         label: { type: 'string', enum: ['none', 'product_price', 'old_price', 'cart_total'] },
-        confidence: { type: 'number', minimum: 0, maximum: 1 },
+        confidence: { type: 'number' },
       },
       required: ['amount', 'currency', 'label', 'confidence'],
       additionalProperties: false,
@@ -144,7 +146,8 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
   if (!key) throw new AyrovixUnavailableError('Anthropic key missing');
 
   const model = process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
-  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 5_000, 2_000, 12_000);
+  // The first request for a new Structured Outputs schema may compile a grammar.
+  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 10_000, 2_000, 15_000);
   try {
     console.log(`[AYROVIX] Trying Claude ${model}`);
     const response = await fetch('https://api.anthropic.com/v1/messages', {
