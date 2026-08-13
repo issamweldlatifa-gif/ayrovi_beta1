@@ -398,6 +398,91 @@ describe('AYROVIX Lens', () => {
     }
   });
 
+  test('demande de revue : validation, persistance, déduplication et propriété de session', async () => {
+    const sessionId = `lens-review-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const payload = {
+      sourceUrl: 'https://shop.example.org/products/nike-air-max-95',
+      title: 'Nike Air Max 95 Navy',
+      imageUrl: 'https://cdn.example.org/nike.jpg',
+      source: 'Example Shop',
+      lensPrice: 149.99,
+      lensCurrency: 'EUR',
+      desiredSize: '41 EU',
+      desiredColor: 'Navy',
+      contact: '+216 20 123 456',
+    };
+
+    expect((await request(app).post('/api/ayrovix/review-request').send(payload)).status).toBe(400);
+    expect((await request(app).post('/api/ayrovix/review-request').set('x-session-id', sessionId).send({ ...payload, contact: 'bad' })).body.code).toBe('CONTACT_REQUIRED');
+    expect((await request(app).post('/api/ayrovix/review-request').set('x-session-id', sessionId).send({ ...payload, sourceUrl: 'http://127.0.0.1/private' })).body.code).toBe('INVALID_PRODUCT');
+
+    const created = await request(app).post('/api/ayrovix/review-request').set('x-session-id', sessionId).send(payload);
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({
+      status: 'PENDING', title: payload.title, sourceUrl: payload.sourceUrl,
+      lensPrice: payload.lensPrice, lensCurrency: 'EUR', duplicate: false,
+    });
+    expect(created.body.data).not.toHaveProperty('contact');
+    expect(created.body.data).not.toHaveProperty('adminNote');
+    const id = created.body.data.id;
+    expect(id).toMatch(/^ayx_review_/);
+
+    const duplicate = await request(app).post('/api/ayrovix/review-request').set('x-session-id', sessionId).send(payload);
+    expect(duplicate.status).toBe(200);
+    expect(duplicate.body.data).toMatchObject({ id, duplicate: true });
+    expect(db.get<any>('SELECT COUNT(*) count FROM ayrovix_review_requests WHERE id=?', id).count).toBe(1);
+
+    const owned = await request(app).get(`/api/ayrovix/review-request/${id}`).set('x-session-id', sessionId);
+    expect(owned.status).toBe(200);
+    expect(owned.body.data.id).toBe(id);
+    const isolated = await request(app).get(`/api/ayrovix/review-request/${id}`).set('x-session-id', `${sessionId}-other`);
+    expect(isolated.status).toBe(404);
+
+    const notification = db.get<any>('SELECT * FROM admin_notifications WHERE action_url LIKE ? ORDER BY created_at DESC', `%request=${id}%`);
+    expect(notification).toMatchObject({ type: 'ORDER', title: 'Produit Lens à vérifier' });
+  });
+
+  test('administration des revues Lens : permissions, devis validé, audit et réponse publique sûre', async () => {
+    const sessionId = `lens-admin-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const created = await request(app).post('/api/ayrovix/review-request').set('x-session-id', sessionId).send({
+      sourceUrl: 'https://shop.example.org/products/admin-review', title: 'Produit à confirmer', source: 'Shop Test',
+      lensPrice: 75, lensCurrency: 'EUR', desiredSize: 'M', contact: 'review@example.org',
+    });
+    expect(created.status).toBe(201);
+    const id = created.body.data.id;
+
+    expect((await request(app).get('/api/admin/ayrovix-reviews')).status).toBe(401);
+    const reviewer = request.agent(app);
+    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    expect(login.status).toBe(200);
+    const csrf = login.body.data.csrfToken;
+
+    const queue = await reviewer.get('/api/admin/ayrovix-reviews?status=PENDING&search=Produit%20à%20confirmer');
+    expect(queue.status).toBe(200);
+    expect(queue.body.data.some((row: any) => row.id === id)).toBe(true);
+    const invalidQuote = await reviewer.put(`/api/admin/ayrovix-reviews/${id}`).set('x-csrf-token', csrf).send({ status: 'QUOTED' });
+    expect(invalidQuote.status).toBe(400);
+
+    const quoted = await reviewer.put(`/api/admin/ayrovix-reviews/${id}`).set('x-csrf-token', csrf).send({
+      status: 'QUOTED', quotedPrice: 389.5, quotedCurrency: 'TND', verifiedVariant: 'M · Noir · en stock',
+      verifiedUrl: 'https://shop.example.org/products/admin-review?variant=m-black',
+      customerMessage: 'Prix et stock confirmés pour la variante M noire.',
+      adminNote: 'Vérifié manuellement par la fiche marchand.',
+    });
+    expect(quoted.status).toBe(200);
+    expect(quoted.body.data).toMatchObject({ status: 'QUOTED', quoted_price: 389.5, quoted_currency: 'TND', verified_variant: 'M · Noir · en stock' });
+    expect(db.get<any>('SELECT action,module FROM audit_logs WHERE entity_id=? ORDER BY created_at DESC', id)).toMatchObject({ action: 'STATUS_CHANGE', module: 'AYROVIX_REVIEWS' });
+
+    const publicStatus = await request(app).get(`/api/ayrovix/review-request/${id}`).set('x-session-id', sessionId);
+    expect(publicStatus.status).toBe(200);
+    expect(publicStatus.body.data).toMatchObject({
+      status: 'QUOTED', quotedPrice: 389.5, quotedCurrency: 'TND', verifiedVariant: 'M · Noir · en stock',
+      customerMessage: 'Prix et stock confirmés pour la variante M noire.',
+    });
+    expect(publicStatus.body.data).not.toHaveProperty('adminNote');
+    expect(JSON.stringify(publicStatus.body.data)).not.toContain('Vérifié manuellement');
+  });
+
   test('analyze-barcode : validation stricte + réponse propre sans fournisseur de recherche', async () => {
     const invalid = await request(app).post('/api/ayrovix/analyze-barcode').send({ code: 'ABC-123' });
     expect(invalid.status).toBe(400);

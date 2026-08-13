@@ -95,6 +95,27 @@ export interface AyrovixUrlResult {
   fallback?: boolean;
 }
 
+export interface AyrovixReviewRequest {
+  id: string;
+  status: 'PENDING' | 'IN_REVIEW' | 'QUOTED' | 'REJECTED' | 'CANCELLED';
+  title: string;
+  sourceUrl: string;
+  imageUrl: string;
+  source: string;
+  lensPrice: number | null;
+  lensCurrency: string | null;
+  desiredSize: string;
+  desiredColor: string;
+  quotedPrice: number | null;
+  quotedCurrency: string | null;
+  verifiedVariant: string;
+  verifiedUrl: string;
+  customerMessage: string;
+  createdAt: string;
+  updatedAt: string;
+  duplicate?: boolean;
+}
+
 /** Charge utile transmise au Calculator/panier AYROVI existant (aucun flow modifié). */
 export interface AyrovixOrderPayload {
   store: 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';

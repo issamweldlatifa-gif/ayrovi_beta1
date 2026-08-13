@@ -92,3 +92,10 @@
 - Si une boutique bloque la vérification automatique, l'utilisateur peut revenir aux autres résultats sans refaire le scan. Un fallback `SCRAPERAPI_KEY` strictement serveur est prêt mais reste optionnel et inactif sans abonnement.
 - Test réel Coproom : 10 pointures disponibles, couleur Noir, images et prix distincts par pointure extraits directement de la fiche.
 - Validation locale : TypeScript ✅, 49/49 tests ✅, build production ✅, audit 0 vulnérabilité ✅.
+
+## AYROVIX Lens V2.3 — طلب مراجعة السعر دون طريق مسدود (2026-08-13)
+- عندما لا تؤكد صفحة المتجر السعر، يمكن للعميل الآن إرسال طلب مراجعة محفوظ بدل الاعتماد على سعر Lens أو التوقف عند «تحقق من الرابط».
+- `POST /api/ayrovix/review-request` يتحقق من session والرابط ووسيلة الاتصال، يربط الحساب اختياريًا، يمنع التكرار عشر دقائق، ويرسل إشعار إدارة. `GET /api/ayrovix/review-request/:id` مقيد بملكية session أو الحساب ولا يكشف بيانات داخلية.
+- أضيفت قائمة إدارة **Demandes Lens** مع البحث والتصفية والتفاصيل، وتأكيد السعر/العملة/الvariant والرابط والحالة، ورسالة عميل منفصلة عن الملاحظة الداخلية. التحديثات محمية بصلاحيات وCSRF ومسجلة في audit.
+- يظل السعر الظاهر من Lens غير قابل للسلة أو الدفع. المسار المقبول هو سعر merchant/variant مؤكد، أو طلب مراجعة محفوظ.
+- التحقق المحلي: TypeScript ✅، **51/51** اختبارًا ✅، build إنتاجي ✅، و0 ثغرات npm ✅.

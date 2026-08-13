@@ -18,16 +18,16 @@ const statusLabels: Record<string, string> = {
   PUBLISHED: 'Publié', EXPIRED: 'Expiré', AVAILABLE: 'Disponible', LIMITED: 'Limité', OUT_OF_STOCK: 'Épuisé',
   NEW: 'Nouvelle', CONFIRMED: 'Confirmée', PAYMENT_PENDING: 'Paiement en attente', PAID: 'Payée', PURCHASING: 'En achat',
   PURCHASED: 'Achetée', IN_TRANSIT: 'En transit', ARRIVED: 'Arrivée', OUT_FOR_DELIVERY: 'En livraison', DELIVERED: 'Livrée', CANCELLED: 'Annulée',
-  PENDING: 'En attente', FAILED: 'Échoué', REFUNDED: 'Remboursé', PREPARING: 'Préparation', SHIPPED: 'Expédié', RETURNED: 'Retourné',
+  PENDING: 'En attente', IN_REVIEW: 'En cours', QUOTED: 'Devis envoyé', REJECTED: 'Refusée', FAILED: 'Échoué', REFUNDED: 'Remboursé', PREPARING: 'Préparation', SHIPPED: 'Expédié', RETURNED: 'Retourné',
   STANDARD: 'Standard', EXPRESS: 'Express', SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',
   // حالات العربون (dépôt)
-  NONE: '—', SUBMITTED: 'Preuve reçue', REJECTED: 'Reçu refusé',
+  NONE: '—', SUBMITTED: 'Preuve reçue',
 };
 
 export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const normalized = String(status || '').toUpperCase();
-  const tone = ['ACTIVE','PAID','DELIVERED','PUBLISHED','AVAILABLE','COMPLETED'].includes(normalized) ? 'success'
-    : ['CANCELLED','FAILED','OUT_OF_STOCK','ARCHIVED','EXPIRED','BLOCKED'].includes(normalized) ? 'danger'
+  const tone = ['ACTIVE','PAID','DELIVERED','PUBLISHED','AVAILABLE','COMPLETED','QUOTED'].includes(normalized) ? 'success'
+    : ['CANCELLED','FAILED','OUT_OF_STOCK','ARCHIVED','EXPIRED','BLOCKED','REJECTED'].includes(normalized) ? 'danger'
       : ['SCHEDULED','PAYMENT_PENDING','PENDING','LIMITED','EXPRESS'].includes(normalized) ? 'warning' : 'neutral';
   return <span className={`status-badge status-badge--${tone}`}>{statusLabels[normalized] || status}</span>;
 };

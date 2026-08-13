@@ -123,8 +123,8 @@ const navGroups = [
     { id: 'hero', label: 'Hero Slider', icon: Sparkles, permission: 'content:read' as Permission },
   ]},
   { label: 'Commerce', items: [
-    { id: 'orders', label: 'Commandes', icon: Package, permission: 'commerce:read' as Permission }, { id: 'customers', label: 'Clients', icon: User, permission: 'commerce:read' as Permission },
-    { id: 'pricing', label: 'Prix & taux', icon: Calculator, permission: 'commerce:read' as Permission }, { id: 'reports', label: 'Rapports', icon: ChartLine, permission: 'reports:read' as Permission },
+    { id: 'orders', label: 'Commandes', icon: Package, permission: 'commerce:read' as Permission }, { id: 'lens-requests', label: 'Demandes Lens', icon: Sparkles, permission: 'commerce:read' as Permission },
+    { id: 'customers', label: 'Clients', icon: User, permission: 'commerce:read' as Permission }, { id: 'pricing', label: 'Prix & taux', icon: Calculator, permission: 'commerce:read' as Permission }, { id: 'reports', label: 'Rapports', icon: ChartLine, permission: 'reports:read' as Permission },
   ]},
   { label: 'Système', items: [
     { id: 'design', label: 'Développement', icon: Palette, permission: 'settings:write' as Permission },
@@ -306,6 +306,125 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite
     </div>}</Modal>{toast&&<Toast {...toast}/>}</>;
 };
 
+const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = ({ canWrite, requestedId }) => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<any>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState<any>(null);
+
+  const load = useCallback(async (page = 1) => {
+    setLoading(true);
+    try {
+      const result = await adminApi<any>(`/ayrovix-reviews?${queryString({ page, pageSize: 20, search, status })}`);
+      setRows(result.data || []);
+      setPagination(result.pagination);
+    } catch (error: any) {
+      setToast({ message: error.message, tone: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [search, status]);
+
+  const open = useCallback(async (row: any) => {
+    setSelected(row);
+    setDetailLoading(true);
+    try {
+      const result = await adminApi<any>(`/ayrovix-reviews/${row.id}`);
+      setSelected(result.data);
+    } catch (error: any) {
+      setToast({ message: error.message, tone: 'error' });
+      setSelected(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { const timer = setTimeout(() => void load(), 250); return () => clearTimeout(timer); }, [load]);
+  useEffect(() => {
+    if (requestedId) void open({ id: requestedId });
+  }, [open, requestedId]);
+
+  const save = async () => {
+    if (!selected || !canWrite) return;
+    setBusy(true);
+    try {
+      const result = await adminApi<any>(`/ayrovix-reviews/${selected.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          status: selected.status,
+          quotedPrice: selected.quoted_price ?? '',
+          quotedCurrency: selected.quoted_currency || 'TND',
+          verifiedVariant: selected.verified_variant || '',
+          verifiedUrl: selected.verified_url || '',
+          customerMessage: selected.customer_message || '',
+          adminNote: selected.admin_note || '',
+        }),
+      });
+      setSelected(result.data);
+      await load(pagination.page);
+      setToast({ message: 'Demande Lens mise à jour et auditée.', tone: 'success' });
+    } catch (error: any) {
+      setToast({ message: error.message, tone: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return <>
+    <PageHeader title="Demandes Lens" description="File de vérification manuelle : prix marchand, stock et variante doivent être confirmés avant toute commande." />
+    <section className="admin-list-card">
+      <div className="admin-list-toolbar">
+        <Search value={search} onChange={setSearch} placeholder="Produit, source, contact ou référence…" />
+        <Select value={status} onChange={(event) => setStatus(event.target.value)} options={[
+          { value: '', label: 'Tous les statuts' }, ...options(['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED']),
+        ]} />
+      </div>
+      <DataTable rows={rows} loading={loading} emptyText="Aucune demande Lens." onRowClick={open} columns={[
+        { key: 'title', label: 'Produit', render: (row) => <div><strong>{row.title}</strong><small className="admin-block-small">{row.source || 'Source externe'}</small></div> },
+        { key: 'contact', label: 'Contact', render: (row) => <div>{row.account_name || row.contact}<small className="admin-block-small">{row.account_name ? row.contact : 'Visiteur'}</small></div> },
+        { key: 'lens_price', label: 'Prix repéré', render: (row) => row.lens_price ? `${Number(row.lens_price).toFixed(2)} ${row.lens_currency || ''}` : '—' },
+        { key: 'variant', label: 'Souhait', render: (row) => <small>{[row.desired_size && `Taille ${row.desired_size}`, row.desired_color].filter(Boolean).join(' · ') || 'Non précisé'}</small> },
+        { key: 'status', label: 'Statut', render: (row) => <StatusBadge status={row.status} /> },
+        { key: 'created_at', label: 'Reçue le', render: (row) => formatDate(row.created_at, true) },
+      ]} />
+      <Pagination {...pagination} onChange={load} />
+    </section>
+
+    <Modal open={Boolean(selected)} title={selected?.title || 'Demande Lens'} onClose={() => setSelected(null)} wide
+      footer={selected && !detailLoading && canWrite ? <><Button variant="secondary" onClick={() => setSelected(null)}>Fermer</Button><Button busy={busy} onClick={save}>Enregistrer</Button></> : undefined}>
+      {detailLoading ? <PageLoading /> : selected && <div className="admin-order-detail">
+        <div className="admin-order-summary">
+          <article><span>Contact</span><strong>{selected.account_name || selected.contact}</strong><small>{selected.account_name ? selected.contact : 'Demande visiteur'}</small></article>
+          <article><span>Prix Lens non confirmé</span><strong>{selected.lens_price ? `${Number(selected.lens_price).toFixed(2)} ${selected.lens_currency || ''}` : 'Non disponible'}</strong><small>Ne jamais utiliser pour encaisser</small></article>
+          <article><span>Variante souhaitée</span><strong>{selected.desired_size || selected.desired_color ? [selected.desired_size, selected.desired_color].filter(Boolean).join(' · ') : 'Non précisée'}</strong><small>À vérifier sur la fiche marchand</small></article>
+        </div>
+        <section className="admin-card" style={{ marginBottom: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: selected.image_url ? '96px minmax(0,1fr)' : '1fr', gap: 16, alignItems: 'center' }}>
+            {selected.image_url && <img src={selected.image_url} alt="" referrerPolicy="no-referrer" style={{ width: 96, height: 96, objectFit: 'contain', borderRadius: 12, background: '#f6f6f8' }} />}
+            <div><strong>{selected.title}</strong><p className="admin-block-small">{selected.source || 'Source Lens'}</p><a href={selected.source_url} target="_blank" rel="noreferrer" className="admin-button admin-button--secondary" style={{ marginTop: 8 }}>Ouvrir la fiche marchand</a><code className="admin-block-small" style={{ marginTop: 8, overflowWrap: 'anywhere' }}>{selected.id}</code></div>
+          </div>
+        </section>
+        <div className="admin-form-row">
+          <Field label="Statut" required><Select disabled={!canWrite || busy} value={selected.status} onChange={(event) => setSelected({ ...selected, status: event.target.value })} options={options(['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'])} /></Field>
+          <Field label="Prix confirmé / devis" required={selected.status === 'QUOTED'}><input disabled={!canWrite || busy} type="number" min="0.01" max="1000000" step="0.01" value={selected.quoted_price ?? ''} onChange={(event) => setSelected({ ...selected, quoted_price: event.target.value })} /></Field>
+          <Field label="Devise"><Select disabled={!canWrite || busy} value={selected.quoted_currency || 'TND'} onChange={(event) => setSelected({ ...selected, quoted_currency: event.target.value })} options={options(['TND','EUR','USD','GBP'])} /></Field>
+          <Field label="Variante confirmée" full><input disabled={!canWrite || busy} value={selected.verified_variant || ''} onChange={(event) => setSelected({ ...selected, verified_variant: event.target.value })} placeholder="Ex. 41 EU · Noir · en stock" /></Field>
+          <Field label="Lien vérifié" full><input disabled={!canWrite || busy} type="url" value={selected.verified_url || ''} onChange={(event) => setSelected({ ...selected, verified_url: event.target.value })} placeholder="https://…" /></Field>
+          <Field label="Message au client" hint="Visible dans le suivi de sa demande." full><textarea disabled={!canWrite || busy} rows={3} value={selected.customer_message || ''} onChange={(event) => setSelected({ ...selected, customer_message: event.target.value })} /></Field>
+          <Field label="Note interne" hint="Réservée à l’équipe et au journal d’audit." full><textarea disabled={!canWrite || busy} rows={3} value={selected.admin_note || ''} onChange={(event) => setSelected({ ...selected, admin_note: event.target.value })} /></Field>
+        </div>
+        {selected.resolved_by_name && <p className="admin-block-small">{selected.resolved_at ? 'Résolue' : 'Prise en charge'} par {selected.resolved_by_name}{selected.resolved_at ? ` · ${formatDate(selected.resolved_at, true)}` : ''}</p>}
+      </div>}
+    </Modal>
+    {toast && <Toast message={toast.message} tone={toast.tone} />}
+  </>;
+};
+
 const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
   const [tab,setTab]=useState<'accounts'|'files'>('accounts');
   const [rows,setRows]=useState<any[]>([]); const [page,setPage]=useState({page:1,totalPages:1,total:0}); const [search,setSearch]=useState(''); const [loading,setLoading]=useState(true); const [selected,setSelected]=useState<any>(null);
@@ -373,12 +492,12 @@ const UsersPage:React.FC=()=>{
 const AuditPage:React.FC=()=>{const[rows,setRows]=useState<any[]>([]);const[page,setPage]=useState({page:1,totalPages:1,total:0});const[loading,setLoading]=useState(true);const load=async(p=1)=>{setLoading(true);const r=await adminApi<any>(`/audit-logs?page=${p}&pageSize=30`);setRows(r.data);setPage(r.pagination);setLoading(false);};useEffect(()=>{load();},[]);return <><PageHeader title="Journal d’audit" description="Qui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après."/><section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[{key:'created_at',label:'Date',render:r=>formatDate(r.created_at,true)},{key:'user_name',label:'Acteur'},{key:'action',label:'Action',render:r=><StatusBadge status={r.action}/>},{key:'module',label:'Module'},{key:'entity_id',label:'Cible',render:r=><code>{r.entity_id||'—'}</code>},{key:'changes',label:'Modification',render:r=><small>{r.old_value?'Valeur précédente conservée':''}{r.old_value&&r.new_value?' → ':''}{r.new_value?'Nouvelle valeur conservée':''}</small>}]}/><Pagination {...page} onChange={load}/></section></>};
 
 // ===== جرس إشعارات الإدارة (وصل جديد / طلب جديد) =====
-const NotificationsBell:React.FC<{onNavigate:(section:string)=>void}>=({onNavigate})=>{
+const NotificationsBell:React.FC<{onNavigate:(section:string,request?:string)=>void}>=({onNavigate})=>{
   const [open,setOpen]=useState(false);const [rows,setRows]=useState<any[]>([]);const [unread,setUnread]=useState(0);
   const load=useCallback(async()=>{try{const r=await adminApi<any>('/notifications?limit=20');setRows(r.data||[]);setUnread(Number(r.unread)||0);}catch{/* صامت */}},[]);
   useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[load]);
   const markAll=async()=>{try{await adminApi('/notifications/read-all',{method:'POST'});await load();}catch{/* */}};
-  const openItem=async(item:any)=>{try{const r=await adminApi<any>(`/notifications/${item.id}/read`,{method:'POST'});setUnread(Number(r.unread)||0);}catch{/* */}setOpen(false);if(String(item.action_url||'').includes('tab=orders'))onNavigate('orders');};
+  const openItem=async(item:any)=>{try{const r=await adminApi<any>(`/notifications/${item.id}/read`,{method:'POST'});setUnread(Number(r.unread)||0);}catch{/* */}setOpen(false);const action=String(item.action_url||'');if(action.includes('section=lens-requests')){const target=new URL(action,location.origin);onNavigate('lens-requests',target.searchParams.get('request')||undefined);}else if(action.includes('tab=orders'))onNavigate('orders');};
   return <div className="admin-bell"><button className="admin-icon-button" onClick={()=>{setOpen(!open);if(!open)void load();}} aria-label="Notifications"><Bell/>{unread>0&&<b className="admin-bell-badge">{unread>99?'99+':unread}</b>}</button>
   {open&&<div className="admin-bell-panel"><header><strong>Notifications</strong>{unread>0&&<button onClick={markAll}>Tout marquer lu</button>}</header>
   <div className="admin-bell-list">{rows.length===0&&<p className="admin-bell-empty">Aucune notification.</p>}{rows.map(item=><button key={item.id} className={item.read_at?'':'is-unread'} onClick={()=>openItem(item)}><strong>{item.title}</strong><span>{item.message}</span><time>{formatDate(item.created_at,true)}</time></button>)}</div></div>}</div>;
@@ -470,11 +589,11 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 };
 
 const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout})=>{
-  const initial=new URLSearchParams(location.search).get('section')||'dashboard';const[section,setSection]=useState(initial);const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
-  const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string)=>{setSection(id);setMobile(false);history.pushState({},'',`/admin?section=${id}`);};
-  useEffect(()=>{const pop=()=>setSection(new URLSearchParams(location.search).get('section')||'dashboard');addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
+  const initialParams=new URLSearchParams(location.search);const initial=initialParams.get('section')||'dashboard';const[section,setSection]=useState(initial);const[requestedReview,setRequestedReview]=useState(initialParams.get('request')||'');const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
+  const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string,request?:string)=>{setSection(id);setRequestedReview(request||'');setMobile(false);const params=new URLSearchParams({section:id});if(request)params.set('request',request);history.pushState({},'',`/admin?${params}`);};
+  useEffect(()=>{const pop=()=>{const params=new URLSearchParams(location.search);setSection(params.get('section')||'dashboard');setRequestedReview(params.get('request')||'');};addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
   return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><FigLeaf/><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={section===id?'is-active':''} onClick={()=>navigate(id)}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank"><Globe2/>Voir le site public</a><span>AYROVI v3.1 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
   <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><NotificationsBell onNavigate={navigate}/><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
 };

@@ -6,8 +6,10 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady } from './services/ai';
 import { catalogSearch, anthropicExternalSearch, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualSearch } from './services/visualSearch';
-import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError } from './services/product';
+import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
+import { createAyrovixReviewRequest, getAyrovixReviewForOwner } from './reviews';
+import { resolveCustomer } from '../customer/auth';
 import type { AyrovixCandidate, AyrovixChannel } from './types';
 import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
@@ -23,6 +25,49 @@ const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
+
+function reviewSessionId(req: Request): string | null {
+  const raw = Array.isArray(req.headers['x-session-id']) ? req.headers['x-session-id'][0] : req.headers['x-session-id'];
+  const value = String(raw || '').trim();
+  return /^[A-Za-z0-9._:-]{8,160}$/.test(value) ? value : null;
+}
+
+function reviewContact(raw: unknown): string | null {
+  const value = String(raw || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 160);
+  const email = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(value);
+  const digits = value.replace(/\D/g, '');
+  return email || (digits.length >= 8 && digits.length <= 15) ? value : null;
+}
+
+function optionalPublicUrl(raw: unknown): string {
+  const safe = sanitizeProductUrl(raw);
+  if (!safe) return '';
+  const parsed = new URL(safe);
+  return parsed.username || parsed.password ? '' : parsed.toString();
+}
+
+function publicReview(row: any) {
+  return {
+    id: row.id,
+    status: row.status,
+    title: row.title,
+    sourceUrl: row.source_url,
+    imageUrl: row.image_url,
+    source: row.source,
+    lensPrice: row.lens_price == null ? null : Number(row.lens_price),
+    lensCurrency: row.lens_currency || null,
+    desiredSize: row.desired_size || '',
+    desiredColor: row.desired_color || '',
+    quotedPrice: row.quoted_price == null ? null : Number(row.quoted_price),
+    quotedCurrency: row.quoted_currency || null,
+    verifiedVariant: row.verified_variant || '',
+    verifiedUrl: row.verified_url || '',
+    customerMessage: row.customer_message || '',
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    duplicate: Boolean(row.duplicate),
+  };
+}
 
 function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
   const seen = new Set<string>();
@@ -203,6 +248,54 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       console.warn('[AYROVIX analyze-barcode]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'BARCODE_SEARCH_FAILED', error: 'La recherche par code a échoué. Essayez avec une photo.' });
     }
+  });
+
+  router.post('/review-request', (req: Request, res: Response) => {
+    const sessionId = reviewSessionId(req);
+    if (!sessionId) return res.status(400).json({ success: false, code: 'INVALID_SESSION', error: 'Session client invalide.' });
+    const sourceUrl = optionalPublicUrl(req.body?.sourceUrl);
+    const title = String(req.body?.title || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 240);
+    if (!sourceUrl || title.length < 3) {
+      return res.status(400).json({ success: false, code: 'INVALID_PRODUCT', error: 'Produit ou lien marchand invalide.' });
+    }
+    const customer = resolveCustomer(db, req);
+    const contact = reviewContact(req.body?.contact) || reviewContact(customer?.phone) || reviewContact(customer?.email);
+    if (!contact) {
+      return res.status(400).json({ success: false, code: 'CONTACT_REQUIRED', error: 'Ajoutez un numéro de téléphone ou un e-mail valide.' });
+    }
+    const rawPrice = Number(req.body?.lensPrice);
+    const lensPrice = Number.isFinite(rawPrice) && rawPrice > 0 && rawPrice <= 1_000_000 ? rawPrice : null;
+    const rawCurrency = String(req.body?.lensCurrency || '').trim().toUpperCase();
+    const lensCurrency = lensPrice && /^[A-Z]{3}$/.test(rawCurrency) ? rawCurrency : null;
+    const eventId = /^ayx_[a-zA-Z0-9-]{10,64}$/.test(String(req.body?.eventId || '')) ? String(req.body.eventId) : null;
+    const request = createAyrovixReviewRequest(db, {
+      sessionId,
+      accountId: customer?.id || null,
+      eventId,
+      sourceUrl,
+      title,
+      imageUrl: optionalPublicUrl(req.body?.imageUrl),
+      source: String(req.body?.source || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 100),
+      lensPrice,
+      lensCurrency,
+      desiredSize: String(req.body?.desiredSize || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 80),
+      desiredColor: String(req.body?.desiredColor || '').replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 80),
+      contact,
+    });
+    if (eventId) markAyrovixChosen(db, eventId);
+    return res.status(request.duplicate ? 200 : 201).json({ success: true, data: publicReview(request) });
+  });
+
+  router.get('/review-request/:id', (req: Request, res: Response) => {
+    const sessionId = reviewSessionId(req);
+    const id = String(req.params.id || '');
+    if (!sessionId || !/^ayx_review_[a-zA-Z0-9-]{10,64}$/.test(id)) {
+      return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Demande invalide.' });
+    }
+    const customer = resolveCustomer(db, req);
+    const row = getAyrovixReviewForOwner(db, id, sessionId, customer?.id || null);
+    if (!row) return res.status(404).json({ success: false, code: 'NOT_FOUND', error: 'Demande introuvable.' });
+    return res.json({ success: true, data: publicReview(row) });
   });
 
   router.post('/choose', (req: Request, res: Response) => {

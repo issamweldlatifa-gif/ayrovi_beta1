@@ -24,6 +24,13 @@ import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
 import { checkAnthropicSearchHealth } from '../ayrovix/services/search';
 import { checkSerpApiVisualHealth } from '../ayrovix/services/visualSearch';
+import { sanitizeProductUrl } from '../ayrovix/services/product';
+import {
+  AyrovixReviewStatus,
+  getAyrovixReviewForAdmin,
+  listAyrovixReviews,
+  updateAyrovixReview,
+} from '../ayrovix/reviews';
 
 interface ResourceConfig {
   table: string;
@@ -105,6 +112,7 @@ const orderStatuses = ['NEW','CONFIRMED','PAYMENT_PENDING','PAID','PURCHASING','
 const paymentStatuses = ['PENDING','PAID','FAILED','REFUNDED','CANCELLED'];
 const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED'];
 const adminRoles: AdminRole[] = ['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'];
+const ayrovixReviewStatuses: AyrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 
 function parsePositiveInteger(value: unknown, fallback: number, max: number): number {
@@ -358,6 +366,69 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         activeExpressArrivals: Number(arrivals.find((row) => row.type === 'EXPRESS')?.count || 0),
       }, statuses, daily, sources, recentOrders,
     } });
+  });
+
+  router.get('/ayrovix-reviews', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const page = parsePositiveInteger(req.query.page, 1, 100000);
+    const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
+    const requestedStatus = String(req.query.status || '').trim() as AyrovixReviewStatus | '';
+    if (requestedStatus && !ayrovixReviewStatuses.includes(requestedStatus)) {
+      return res.status(400).json({ success: false, error: 'Statut de demande invalide.' });
+    }
+    const search = String(req.query.search || '').trim().slice(0, 160);
+    const { rows, total } = listAyrovixReviews(db, { status: requestedStatus, search, page, pageSize });
+    return res.json({ success: true, data: rows, pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } });
+  });
+
+  router.get('/ayrovix-reviews/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const request = getAyrovixReviewForAdmin(db, String(req.params.id || ''));
+    if (!request) return res.status(404).json({ success: false, error: 'Demande AYROVIX introuvable.' });
+    return res.json({ success: true, data: request });
+  });
+
+  router.put('/ayrovix-reviews/:id', requireAdmin(db, 'orders:write'), (req, res) => {
+    const existing = getAyrovixReviewForAdmin(db, String(req.params.id || ''));
+    if (!existing) return res.status(404).json({ success: false, error: 'Demande AYROVIX introuvable.' });
+    const status = String(req.body?.status || '') as AyrovixReviewStatus;
+    if (!ayrovixReviewStatuses.includes(status)) return res.status(400).json({ success: false, error: 'Statut invalide.' });
+    const rawPrice = req.body?.quotedPrice;
+    const quotedPrice = rawPrice === '' || rawPrice == null ? null : Number(rawPrice);
+    const quotedCurrency = String(req.body?.quotedCurrency || '').trim().toUpperCase();
+    if (quotedPrice != null && (!Number.isFinite(quotedPrice) || quotedPrice <= 0 || quotedPrice > 1_000_000)) {
+      return res.status(400).json({ success: false, error: 'Prix confirmé invalide.' });
+    }
+    if (status === 'QUOTED' && (quotedPrice == null || !/^[A-Z]{3}$/.test(quotedCurrency))) {
+      return res.status(400).json({ success: false, error: 'Un prix et une devise confirmés sont requis pour envoyer un devis.' });
+    }
+    let verifiedUrl = String(req.body?.verifiedUrl || '').trim().slice(0, 2048);
+    if (verifiedUrl) {
+      const safeUrl = sanitizeProductUrl(verifiedUrl);
+      if (!safeUrl) return res.status(400).json({ success: false, error: 'Lien de vérification invalide.' });
+      const parsed = new URL(safeUrl);
+      if (parsed.username || parsed.password) return res.status(400).json({ success: false, error: 'Lien de vérification invalide.' });
+      verifiedUrl = parsed.toString();
+    }
+    const clean = (value: unknown, limit: number) => String(value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, limit);
+    const updated = updateAyrovixReview(db, existing.id, {
+      status,
+      quotedPrice,
+      quotedCurrency: quotedPrice == null ? null : quotedCurrency,
+      verifiedVariant: clean(req.body?.verifiedVariant, 240),
+      verifiedUrl,
+      customerMessage: clean(req.body?.customerMessage, 1000),
+      adminNote: clean(req.body?.adminNote, 2000),
+      adminId: admin(req).id,
+    });
+    audit(db, req, 'STATUS_CHANGE', 'AYROVIX_REVIEWS', existing.id, existing, updated);
+    if (existing.account_id && existing.status !== status && ['QUOTED', 'REJECTED'].includes(status)) {
+      const title = status === 'QUOTED' ? 'Votre produit AYROVIX a été vérifié' : 'Mise à jour de votre demande AYROVIX';
+      const message = status === 'QUOTED'
+        ? `Le prix et la disponibilité de « ${String(existing.title).slice(0, 100)} » ont été vérifiés.`
+        : (clean(req.body?.customerMessage, 500) || `La demande pour « ${String(existing.title).slice(0, 100)} » ne peut pas être confirmée actuellement.`);
+      db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,?,?,?,?,?)`, `notification_${randomUUID()}`, existing.account_id, 'GENERAL', title, message, '/account?tab=notifications', new Date().toISOString());
+    }
+    return res.json({ success: true, data: updated });
   });
 
   for (const [resource, config] of Object.entries(resources)) {

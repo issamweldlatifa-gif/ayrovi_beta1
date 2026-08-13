@@ -1,4 +1,5 @@
-import type { AyrovixImageResult, AyrovixUrlResult } from '../types';
+import type { AyrovixImageResult, AyrovixReviewRequest, AyrovixUrlResult } from '../types';
+import { getSessionId } from '../../utils/session';
 
 /** AYROVIX · appels API — la clé IA reste côté serveur, le client n'envoie que l'entrée brute. */
 
@@ -34,6 +35,35 @@ export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: Ab
     signal,
   });
   return parseResponse<AyrovixUrlResult>(response);
+}
+
+export async function requestManualReview(input: {
+  eventId?: string;
+  sourceUrl: string;
+  title: string;
+  imageUrl?: string;
+  source?: string;
+  lensPrice?: number | null;
+  lensCurrency?: string | null;
+  desiredSize?: string;
+  desiredColor?: string;
+  contact: string;
+}, signal?: AbortSignal): Promise<AyrovixReviewRequest> {
+  const response = await fetch('/api/ayrovix/review-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-session-id': getSessionId() },
+    body: JSON.stringify(input),
+    signal,
+  });
+  return parseResponse<AyrovixReviewRequest>(response);
+}
+
+export async function getManualReview(id: string, signal?: AbortSignal): Promise<AyrovixReviewRequest> {
+  const response = await fetch(`/api/ayrovix/review-request/${encodeURIComponent(id)}`, {
+    headers: { 'x-session-id': getSessionId() },
+    signal,
+  });
+  return parseResponse<AyrovixReviewRequest>(response);
 }
 
 export function markChosen(eventId: string): void {
