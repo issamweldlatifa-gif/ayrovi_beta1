@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
-  AyrovixCandidate, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
+  AyrovixCandidate, AyrovixOcrPrice, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
 import { analyzeBarcode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
@@ -14,7 +14,6 @@ import { ProductResult } from './ProductResult';
 interface LensLauncherProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Branchement sur le panier/Calculator AYROVI existant (doit throw en cas d'échec). */
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
 }
 
@@ -24,6 +23,7 @@ interface CandidatesView {
   queryLabel: string | null;
   list: AyrovixCandidate[];
   eventId: string;
+  ocrPrice?: AyrovixOcrPrice | null;
 }
 
 function toStoreKey(sourceUrl: string): AyrovixOrderPayload['store'] {
@@ -69,6 +69,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [ordering, setOrdering] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [verifyLink, setVerifyLink] = useState('');
+  const [verifyingLink, setVerifyingLink] = useState(false);
   const previewRef = useRef<string | null>(null);
   const abortRef = useRef(0);
 
@@ -91,13 +93,14 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     setError(null);
     setOrdering(false);
     setCopied(false);
+    setVerifyLink('');
+    setVerifyingLink(false);
   };
 
   const handleClose = () => { reset(); onClose(); };
 
   const fail = (code: string, message: string) => { setError({ code, message }); setStage('error'); };
 
-  /** Image (caméra live, galerie ou repli) → préparation → analyse immédiate ou prévisualisation. */
   const handleImage = async (file: File, autoAnalyze: boolean) => {
     setError(null);
     const prepared = await prepareImage(file);
@@ -119,8 +122,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       const result = await analyzeImage(file);
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
-      if (!usable) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
-      setCandidatesView({ queryLabel: result.query || null, list: result.candidates, eventId: result.eventId });
+      if (!usable && !result.ocrPrice) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
+      setCandidatesView({
+        queryLabel: result.query || result.ocrPrice?.title || null,
+        list: result.candidates,
+        eventId: result.eventId,
+        ocrPrice: result.ocrPrice || null,
+      });
       setStage('candidates');
     } catch (err: any) {
       if (abortRef.current !== token) return;
@@ -174,9 +182,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const handleChooseCandidate = async (candidate: AyrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
-
-    // Si candidat externe avec URL (DuckDuckGo Free, Brave, SerpAPI...), tente de récupérer la fiche complète
-    // avec image, tailles, couleurs, prix via /api/ayrovix/analyze-url (fallback gratuit inclus)
     if (candidate.sourceUrl && candidate.kind !== 'catalog') {
       const token = ++abortRef.current;
       setStage('analyzing');
@@ -188,34 +193,59 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
         setProduct(result.product);
         setStage('product');
         return;
-      } catch (err: any) {
-        if (abortRef.current !== token) return;
-        // Fallback: affiche le candidat tel quel si le scraping complet échoue (pas de blocage)
-        console.warn('[AYROVIX choose] analyze-url fallback failed, using candidate directly', err?.message);
+      } catch {
+        // fallback to candidate itself
       }
     }
-
-    // Catalogue ou fallback rapide
     setProduct(candidateToProduct(candidate));
     setStage('product');
   };
 
+  const handleVerifyLink = async () => {
+    if (!verifyLink.trim() || !product) return;
+    setVerifyingLink(true);
+    try {
+      const result = await analyzeUrl(verifyLink.trim(), 'url');
+      // Merge verified product data into current product, keeping calculated price if needed
+      setProduct({
+        ...result.product,
+        // Keep OCR price if it had totalPriceTND
+        priceTnd: result.product.priceTnd ?? product.priceTnd,
+      });
+      setUrlResult(result);
+      setVerifyLink('');
+    } catch (e: any) {
+      alert(e?.message || 'Lien invalide');
+    } finally {
+      setVerifyingLink(false);
+    }
+  };
+
   const handleOrder = async ({ size, color }: { size: string; color: string }) => {
-    if (!product || product.price == null || !product.currency) return;
+    if (!product || (product.price == null && !candidatesView?.ocrPrice)) return;
+    // Require link verification if OCR price was used and no sourceUrl yet verified
+    if (candidatesView?.ocrPrice && !product.sourceUrl?.includes('http')) {
+      if (!verifyLink.trim()) {
+        alert('Veuillez coller le lien du produit pour vérification du prix avant commande (comme demandé).');
+        return;
+      }
+    }
     if (urlResult?.eventId) markChosen(urlResult.eventId);
     const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
     setOrdering(true);
     setError(null);
     try {
+      const finalPrice = product.price ?? candidatesView?.ocrPrice?.sourcePrice ?? 0;
+      const finalCurrency = product.currency ?? candidatesView?.ocrPrice?.sourceCurrency ?? 'EUR';
       await onOrder({
-        store: toStoreKey(product.sourceUrl || product.source),
+        store: toStoreKey(product.sourceUrl || product.source || verifyLink || ''),
         externalId: null,
-        url: product.sourceUrl || '',
+        url: product.sourceUrl || verifyLink || '',
         title: product.title,
-        imageUrl: product.image || '',
-        sourcePrice: product.price,
-        sourceCurrency: product.currency,
-        priceTND: product.priceTnd ?? 0,
+        imageUrl: product.image || candidatesView?.ocrPrice?.imageUrl || '',
+        sourcePrice: finalPrice,
+        sourceCurrency: finalCurrency,
+        priceTND: product.priceTnd ?? candidatesView?.ocrPrice?.totalPriceTND ?? 0,
         variant: variant || undefined,
         quantity: 1,
       });
@@ -231,8 +261,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     try { await navigator.clipboard.writeText(barcode.code); setCopied(true); setTimeout(() => setCopied(false), 1800); }
     catch { setCopied(false); }
   };
-
-  /* ══════════════ RENDU ══════════════ */
 
   if (stage === 'live') {
     return (
@@ -280,7 +308,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-4 pb-8">
-          {/* ── Repli sans caméra ── */}
           {stage === 'home' && (
             <div className="mx-auto max-w-md space-y-3 pt-2">
               <LensCamera onImage={(file) => void handleImage(file, false)} />
@@ -314,7 +341,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             </div>
           )}
 
-          {/* ── Prévisualisation (repli sans caméra) ── */}
           {stage === 'preview' && previewUrl && (
             <div className="mx-auto max-w-md space-y-4">
               <div className="relative overflow-hidden rounded-[22px] border border-line">
@@ -327,7 +353,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             </div>
           )}
 
-          {/* ── Analyse ── */}
           {stage === 'analyzing' && (
             <div className="mx-auto max-w-md space-y-4 pt-2">
               <div className="relative overflow-hidden rounded-[22px] border border-line">
@@ -340,13 +365,31 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-r-transparent" />
                 AYROVIX analyse…
               </div>
-              <p className="text-center text-[11px] text-muted">Identification du produit, puis recherche des meilleures correspondances.</p>
+              <p className="text-center text-[11px] text-muted">Vision IA + OCR prix + recherche externe gratuite.</p>
             </div>
           )}
 
-          {/* ── Candidats (photo, URL ou code-barres) ── */}
           {stage === 'candidates' && candidatesView && (
             <div className="mx-auto max-w-md space-y-4">
+              {candidatesView.ocrPrice && candidatesView.ocrPrice.sourcePrice > 0 && (
+                <div className="rounded-[20px] border border-amber-200 bg-amber-50 p-3.5">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-amber-700">
+                    {candidatesView.ocrPrice.isCartScreenshot ? '🛒 Prix panier détecté (OCR)' : '💰 Prix détecté dans l’image (OCR)'}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-ink">
+                    {candidatesView.ocrPrice.sourcePrice.toFixed(2)} {candidatesView.ocrPrice.sourceCurrency}
+                    {candidatesView.ocrPrice.totalPriceTND != null && (
+                      <span className="ml-2 text-brand">≈ {candidatesView.ocrPrice.totalPriceTND.toFixed(2)} DT (tout inclus)</span>
+                    )}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted">
+                    {candidatesView.ocrPrice.isCartScreenshot
+                      ? 'Capture de panier — total extrait automatiquement.'
+                      : `Produit: ${candidatesView.ocrPrice.title}`}
+                  </p>
+                  <p className="mt-2 text-[11px] font-semibold text-amber-800">⚠️ Avant commande, vous devrez coller le lien du produit pour vérification (comme demandé).</p>
+                </div>
+              )}
               {candidatesView.queryLabel && (
                 <p className="rounded-2xl bg-surface px-4 py-3 text-center text-[11px] font-semibold text-muted">
                   Recherche : <span className="font-extrabold text-ink">{candidatesView.queryLabel}</span>
@@ -356,18 +399,66 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                 <ProductCandidates candidates={candidatesView.list} onChoose={handleChooseCandidate} />
               ) : (
                 <div className="space-y-4 rounded-[22px] border border-dashed border-line p-6 text-center">
-                  <p className="text-sm font-extrabold text-ink">Aucune correspondance fiable</p>
-                  <p className="text-xs leading-relaxed text-muted">Produit identifié, mais aucune offre ne correspond assez. Essayez le lien direct de la page boutique pour un calcul exact.</p>
+                  <p className="text-sm font-extrabold text-ink">Aucune correspondance externe</p>
+                  {candidatesView.ocrPrice && candidatesView.ocrPrice.sourcePrice > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted">Mais prix détecté via OCR : {candidatesView.ocrPrice.sourcePrice} {candidatesView.ocrPrice.sourceCurrency}</p>
+                      <button type="button" onClick={() => {
+                        // Create product from OCR price
+                        const ocr = candidatesView!.ocrPrice!;
+                        setProduct({
+                          title: ocr.title || candidatesView!.queryLabel || 'Produit détecté via OCR',
+                          brand: ocr.brand,
+                          model: null,
+                          description: ocr.isCartScreenshot ? 'Panier détecté via OCR' : 'Prix extrait depuis l’image',
+                          image: ocr.imageUrl || previewUrl || '',
+                          images: ocr.imageUrl ? [ocr.imageUrl] : [],
+                          source: 'OCR Vision',
+                          sourceUrl: '',
+                          price: ocr.sourcePrice,
+                          currency: ocr.sourceCurrency,
+                          priceTnd: ocr.totalPriceTND,
+                          exchangeRate: null,
+                          colors: [],
+                          sizes: [],
+                          availability: 'unknown',
+                        });
+                        setStage('product');
+                      }} className="min-h-[46px] rounded-xl bg-ink px-5 text-xs font-extrabold text-white">Utiliser ce prix OCR</button>
+                    </div>
+                  ) : (
+                    <p className="text-xs leading-relaxed text-muted">Essayez le lien direct de la page boutique pour un calcul exact.</p>
+                  )}
                   <button type="button" onClick={reset} className="min-h-[46px] rounded-xl bg-ink px-5 text-xs font-extrabold text-white">Nouvelle recherche</button>
                 </div>
               )}
             </div>
           )}
 
-          {/* ── Fiche produit ── */}
           {stage === 'product' && product && (
             <div className="mx-auto max-w-md space-y-5">
               <ProductResult product={product} ordering={ordering} onOrder={(v) => void handleOrder(v)} />
+
+              {/* Verification de lien avant commande — comme demandé */}
+              {candidatesView?.ocrPrice && (
+                <div className="rounded-[20px] border border-brand/20 bg-brand-light/30 p-4">
+                  <p className="text-xs font-extrabold text-ink">🔗 Vérification du lien produit (requis avant commande)</p>
+                  <p className="mt-1 text-[11px] text-muted">Collez le lien du produit correspondant au prix OCR détecté pour vérification du prix final avant commande.</p>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      type="url"
+                      value={verifyLink}
+                      onChange={(e)=>setVerifyLink(e.target.value)}
+                      placeholder="https://..."
+                      className="min-h-[44px] flex-1 rounded-xl border border-line bg-white px-3 text-sm"
+                    />
+                    <button type="button" onClick={handleVerifyLink} disabled={verifyingLink || !verifyLink.trim()} className="min-h-[44px] rounded-xl bg-ink px-4 text-xs font-bold text-white disabled:opacity-40">
+                      {verifyingLink ? '...' : 'Vérifier'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {urlResult && urlResult.alternates.length > 0 && (
                 <section>
                   <h3 className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted">Autres correspondances</h3>
@@ -377,7 +468,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             </div>
           )}
 
-          {/* ── Code-barres lu sans offre en ligne ── */}
           {stage === 'barcode' && barcode && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-light text-brand">
@@ -397,7 +487,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             </div>
           )}
 
-          {/* ── Erreur / réessaie ── */}
           {stage === 'error' && error && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-red-50 text-red-500">

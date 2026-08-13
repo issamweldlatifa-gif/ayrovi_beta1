@@ -106,7 +106,7 @@ app.use('/api', (_req, res, next) => {
   next();
 });
 app.use('/api/admin', createAdminRouter(db));
-app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
+app.use('/api/ayrovix', createAyrovixRouter(db, scraper, visionExtractor));
 app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));

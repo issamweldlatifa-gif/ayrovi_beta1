@@ -46,11 +46,26 @@ export interface AyrovixProduct {
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
 }
 
+export interface AyrovixOcrPrice {
+  sourcePrice: number;
+  sourceCurrency: string;
+  convertedPriceTND: number | null;
+  serviceFeeTND: number | null;
+  estimatedShippingTND: number | null;
+  totalPriceTND: number | null;
+  title: string;
+  brand: string | null;
+  isCartScreenshot: boolean;
+  imageUrl: string | null;
+}
+
 export interface AyrovixImageResult {
   identification: AyrovixIdentification;
   query: string;
   candidates: AyrovixCandidate[];
   eventId: string;
+  ocrPrice?: AyrovixOcrPrice | null;
+  message?: string;
 }
 
 export interface AyrovixUrlResult {
