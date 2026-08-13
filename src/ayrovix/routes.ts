@@ -4,7 +4,7 @@ import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError } from './services/ai';
-import { searchCandidates } from './services/search';
+import { searchCandidates, serpSearch } from './services/search';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import type { AyrovixChannel } from './types';
@@ -81,6 +81,23 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     const eventId = String(req.body?.eventId || '');
     markAyrovixChosen(db, eventId);
     return res.json({ success: true });
+  });
+
+  // Code-barres lu en direct (EAN/UPC/Code128) → recherche par code si un fournisseur est configuré.
+  // Sans SERPAPI_KEY : succès avec candidats vides — le client affiche le code + bascule photo.
+  router.post('/analyze-barcode', async (req: Request, res: Response) => {
+    const code = String(req.body?.code || '').replace(/\D/g, '');
+    if (!/^\d{6,14}$/.test(code)) {
+      return res.status(400).json({ success: false, code: 'INVALID_BARCODE', error: 'Ce code-barres est illisible. Rapprochez-vous et réessayez.' });
+    }
+    try {
+      const candidates = await serpSearch(code, 6);
+      const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
+      return res.json({ success: true, data: { code, candidates, eventId } });
+    } catch (error: any) {
+      console.warn('[AYROVIX analyze-barcode]', error?.message || 'unknown');
+      return res.status(502).json({ success: false, code: 'BARCODE_SEARCH_FAILED', error: 'La recherche par code a échoué. Essayez avec une photo.' });
+    }
   });
 
   return router;

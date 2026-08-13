@@ -47,3 +47,10 @@
 - Admin : GET /api/admin/ayrovix/stats (reports:read) + carte AYROVIX dans Rapports (analyses 7j, taux de correspondance, top marques/requêtes).
 - Client `client/src/ayrovix/` : LensLauncher (sheet plein écran, state machine home→preview→analyzing→candidates→product), LensCamera (capture=environment + fallback), LensUpload, QRScanner (BarcodeDetector natif + repli jsqr), ProductCandidates (plusieurs candidats, % match, jamais de réponse unique), ProductResult + ProductVariants. Commander → handleAddToCart existant → panier → checkout dépôt existant.
 - Env : ANTHROPIC_API_KEY / ANTHROPIC_MODEL / SERPAPI_KEY documentés dans .env.example. Tests 38/38 (image sans clé→503, mime→415, query builder, scoring, flux simulé end-to-end, SSRF QR).
+
+## AYROVIX Lens V1.1 — expérience caméra live façon Amazon Lens (2026-08-13)
+- Refonte UX : Lens ouvre DÉSORMAIS la caméra en direct (plus de menu) — barre haute (fermer · AYROVIX Lens · torche si supportée), viseur à coins + lens-scan, obturateur 74px.
+- 3 modes en bas : **Recherche** (capture frame → préparation 1400px → analyse Claude immédiate), **Importer** (galerie → même pipeline), **Code** (scan live QR + codes-barres EAN/UPC/Code128 via BarcodeDetector natif, repli jsQR pour QR ; zone « coller un lien » intégrée).
+- QR avec URL → /analyze-url (canal qr) · code-barres → NOUVEAU POST /api/ayrovix/analyze-barcode (validation 6-14 chiffres, recherche SerpAPI si clé ; sinon réponse propre + carte code avec Copier/Photographier — jamais d'invention).
+- Sans caméra/permission refusée → menu de repli (photo, import, lien). Un seul flux getUserMedia pour toute la session ; tracks stoppés à la fermeture.
+- Tests 39/39 (validation barcode + réponse sans fournisseur). QRScanner.tsx supprimé : le scan vit dans LiveCamera (une seule caméra).

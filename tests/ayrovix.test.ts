@@ -138,4 +138,17 @@ describe('AYROVIX Lens', () => {
     expect(response.body.code).toBe('EXTRACTION_FAILED');
     expect(response.body.error).toContain('Impossible');
   }, 30_000);
+
+  test('analyze-barcode : validation stricte + réponse propre sans fournisseur de recherche', async () => {
+    const invalid = await request(app).post('/api/ayrovix/analyze-barcode').send({ code: 'ABC-123' });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe('INVALID_BARCODE');
+
+    const valid = await request(app).post('/api/ayrovix/analyze-barcode').send({ code: '619125062532' });
+    expect(valid.status).toBe(200);
+    expect(valid.body.data.code).toBe('619125062532');
+    expect(Array.isArray(valid.body.data.candidates)).toBe(true); // vide sans SERPAPI_KEY — jamais de résultat inventé
+    expect(valid.body.data.eventId).toMatch(/^ayx_/);
+    expect(db.get<any>('SELECT query FROM ayrovix_events WHERE id=?', valid.body.data.eventId).query).toBe('barcode:619125062532');
+  });
 });

@@ -85,7 +85,7 @@ export function catalogSearch(db: QatafoDatabase, identification: AyrovixIdentif
 }
 
 /** Fournisseur 2 — Google Shopping (optionnel, activé par SERPAPI_KEY). */
-async function serpSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
+export async function serpSearch(query: string, limit = 6): Promise<AyrovixCandidate[]> {
   const key = process.env.SERPAPI_KEY?.trim();
   if (!key) return [];
   const controller = new AbortController();

@@ -44,3 +44,13 @@ export function markChosen(eventId: string): void {
     keepalive: true,
   }).catch(() => {});
 }
+
+/** Recherche par code-barres (EAN/UPC) lu en direct. */
+export async function analyzeBarcode(code: string): Promise<{ code: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+  const response = await fetch('/api/ayrovix/analyze-barcode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code }),
+  });
+  return parseResponse(response);
+}

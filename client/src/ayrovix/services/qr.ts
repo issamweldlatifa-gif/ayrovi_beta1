@@ -1,10 +1,15 @@
 import jsQR from 'jsqr';
 
 /**
- * AYROVIX · décodage QR temps réel.
- * Priorité à l'API native BarcodeDetector (Chrome/Android & Safari récents),
- * repli universel jsQR (iOS anciens). Aucune frame ne quitte l'appareil.
+ * AYROVIX · scan de codes en direct (QR + codes-barres EAN/UPC/Code128).
+ * Priorité au natif BarcodeDetector (Chrome/Android, Safari 17.4+) —
+ * repli jsQR pour les QR uniquement. Aucune frame ne quitte l'appareil.
  */
+
+export type CodeScanResult =
+  | { kind: 'url'; value: string }      // QR contenant un lien → analyze-url
+  | { kind: 'barcode'; value: string }  // EAN/UPC/Code128 → recherche par code
+  | { kind: 'text'; value: string };    // QR sans lien → message clair
 
 export function extractUrl(text: string): string | null {
   const match = text.match(/https?:\/\/[^\s"'<>]+/i);
@@ -12,83 +17,77 @@ export function extractUrl(text: string): string | null {
   return match[0].replace(/[).,;]+$/, '');
 }
 
-export interface QrScanSession {
-  stop: () => void;
-}
+const BARCODE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'itf'];
 
-interface DetectorLike { detect: (source: CanvasImageSource) => Promise<Array<{ rawValue?: string }>>; }
+interface DetectorLike { detect: (source: CanvasImageSource) => Promise<Array<{ rawValue?: string; format?: string }>>; }
 
-function createNativeDetector(): DetectorLike | null {
+async function createNativeDetector(): Promise<DetectorLike | null> {
   const Detector = (window as any).BarcodeDetector;
   if (!Detector) return null;
   try {
-    return new Detector({ formats: ['qr_code'] }) as DetectorLike;
+    const supported: string[] = typeof Detector.getSupportedFormats === 'function'
+      ? await Detector.getSupportedFormats()
+      : ['qr_code', ...BARCODE_FORMATS];
+    const formats = ['qr_code', ...BARCODE_FORMATS].filter((format) => supported.includes(format));
+    if (!formats.length) return null;
+    return new Detector({ formats }) as DetectorLike;
   } catch {
     return null;
   }
 }
 
-export function startQrScan(
+export interface CodeScanSession { stop: () => void; }
+
+/**
+ * Boucle de scan sur un <video> DÉJÀ alimenté par la caméra (le flux appartient
+ * au composant parent — une seule caméra ouverte pour toute l'expérience Lens).
+ */
+export function startCodeScan(
   video: HTMLVideoElement,
-  onResult: (url: string) => void,
-  onInvalid: (text: string) => void,
-): QrScanSession {
+  onCode: (result: CodeScanResult) => void,
+): CodeScanSession {
   let stopped = false;
-  let stream: MediaStream | null = null;
-  let raf = 0;
+  let timer = 0;
+  let lastValue = '';
+  let lastReadAt = 0;
+  let nativeDetector: DetectorLike | null | undefined; // undefined = pas encore testé
   const canvas = document.createElement('canvas');
-  const native = createNativeDetector();
+
+  const classify = (raw: string): CodeScanResult => {
+    const url = extractUrl(raw);
+    if (url) return { kind: 'url', value: url };
+    const digits = raw.replace(/\D/g, '');
+    if (/^\d{6,14}$/.test(digits)) return { kind: 'barcode', value: digits };
+    return { kind: 'text', value: raw.slice(0, 140) };
+  };
 
   const tick = async () => {
     if (stopped) return;
+    if (nativeDetector === undefined) nativeDetector = await createNativeDetector();
     if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.videoWidth > 0) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (ctx) {
         ctx.drawImage(video, 0, 0);
-        let text: string | null = null;
-        if (native) {
-          try {
-            const codes = await native.detect(canvas);
-            text = codes[0]?.rawValue || null;
-          } catch { /* frame ignorée */ }
+        let raw: string | null = null;
+        if (nativeDetector) {
+          try { raw = (await nativeDetector.detect(canvas))[0]?.rawValue || null; } catch { /* frame ignorée */ }
         } else {
           const frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const code = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' });
-          text = code?.data || null;
+          raw = jsQR(frame.data, frame.width, frame.height, { inversionAttempts: 'dontInvert' })?.data || null;
         }
-        if (text) {
-          const url = extractUrl(text);
-          if (url) { stop(); onResult(url); return; }
-          onInvalid(text.slice(0, 120));
-          // anti-spam : petite pause avant le prochain essai
-          await new Promise((resolve) => setTimeout(resolve, 1200));
+        const now = Date.now();
+        if (raw && (raw !== lastValue || now - lastReadAt > 2500)) {
+          lastValue = raw;
+          lastReadAt = now;
+          onCode(classify(raw));
         }
       }
     }
-    raf = window.setTimeout(() => { void tick(); }, 220) as unknown as number;
+    timer = window.setTimeout(() => { void tick(); }, 240);
   };
 
-  const stop = () => {
-    stopped = true;
-    window.clearTimeout(raf);
-    stream?.getTracks().forEach((track) => track.stop());
-  };
-
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
-    .then((media) => {
-      if (stopped) { media.getTracks().forEach((track) => track.stop()); return; }
-      stream = media;
-      video.srcObject = media;
-      return video.play();
-    })
-    .then(() => { void tick(); })
-    .catch(() => {
-      // Permission refusée ou caméra indisponible : le composant affiche le fallback.
-      stop();
-      onInvalid('__CAMERA_UNAVAILABLE__');
-    });
-
-  return { stop };
+  void tick();
+  return { stop: () => { stopped = true; window.clearTimeout(timer); } };
 }
