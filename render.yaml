@@ -50,5 +50,15 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-3-5-sonnet-20241022
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-1.5-flash
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini
+      - key: AYROVIX_ALLOW_LOCAL_FALLBACK
+        value: true
       - key: SERPAPI_KEY
         sync: false

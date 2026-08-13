@@ -21,7 +21,7 @@ import {
 } from './auth';
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { getAyrovixStats } from '../ayrovix/events';
-import { ayrovixAiReady } from '../ayrovix/services/ai';
+import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
 import { checkSerpApiHealth } from '../ayrovix/services/search';
 
 interface ResourceConfig {
@@ -649,7 +649,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
   });
-  // AYROVIX Lens — usage produit + état réel des fournisseurs (Vision IA, SerpAPI)
+  // AYROVIX Lens — usage produit + état réel des fournisseurs (Vision IA multi-provider, SerpAPI)
   router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), async (_req, res) => {
     const serpapi = await checkSerpApiHealth();
     res.json({
@@ -657,7 +657,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       data: {
         ...getAyrovixStats(db),
         providers: {
-          vision: { configured: ayrovixAiReady(), label: 'Claude Vision' },
+          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Multi-Provider Vision (Gemini > OpenAI > Claude > Local)' },
           serpapi,
         },
       },
