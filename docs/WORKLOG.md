@@ -82,3 +82,13 @@
 - Validation locale : TypeScript ✅, 48/48 tests ✅, build production ✅, audit 0 vulnérabilité ✅.
 - Validation production : photo Nike Air Max 95 → HTTP 200 en 5,63 s, 8 correspondances Google Lens avec image et lien; modèle Air Max 95 reconnu par Claude. Une fiche Coproom a ensuite confirmé un prix direct de 255 EUR, distinct de l'estimation Lens.
 - Le client bloque désormais toute commande fondée seulement sur un prix Claude/Lens : le bouton n'est activé qu'après prix confirmé par la fiche marchand (ou prix du catalogue local). Les tailles/couleurs ne sont jamais annoncées si la source ne les fournit pas.
+
+## AYROVIX Lens V2.2 — fiches achetables, images résilientes et variantes réelles (2026-08-13)
+- Le brief `AYROVI-Lens-Brief-Dev.md` a été audité : le routeur QR/URL/image et les chemins Claude/Lens existaient déjà; les recommandations utiles retenues sont le parsing structuré renforcé et le fallback optionnel anti-bot.
+- Les résultats Lens conservent maintenant miniature Google + image marchand. Le client essaie automatiquement les deux avec `referrerPolicy=no-referrer`, puis affiche un placeholder propre au lieu d'une image cassée.
+- Le parser marchand lit JSON-LD, Open Graph, sélecteurs HTML, états `application/json` et objets Shopify intégrés dans JavaScript.
+- Seules les tailles/couleurs réellement disponibles sont affichées. Les variantes indisponibles sont éliminées; l'identifiant et le prix propre à chaque variante sont transmis au panier.
+- Le prix TND se recalcule selon la taille/couleur choisie. Une combinaison inexistante reste désactivée.
+- Si une boutique bloque la vérification automatique, l'utilisateur peut revenir aux autres résultats sans refaire le scan. Un fallback `SCRAPERAPI_KEY` strictement serveur est prêt mais reste optionnel et inactif sans abonnement.
+- Test réel Coproom : 10 pointures disponibles, couleur Noir, images et prix distincts par pointure extraits directement de la fiche.
+- Validation locale : TypeScript ✅, 49/49 tests ✅, build production ✅, audit 0 vulnérabilité ✅.

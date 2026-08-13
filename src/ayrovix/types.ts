@@ -37,10 +37,22 @@ export interface AyrovixCandidate {
   source: string;         // ex. "Collection AYROVI", "SHEIN", "Amazon"
   sourceUrl: string;      // page produit (ou page interne)
   image: string;
+  images?: string[];      // miniatures de repli si la source bloque l'image principale
   price: number | null;   // prix source (null si inconnu — jamais deviné)
   currency: string | null;
   priceTnd: number | null; // estimation "tout inclus" via le calculator AYROVI
   match: number;          // 0..99, score de correspondance déterministe
+}
+
+export interface AyrovixVariantOption {
+  id: string | null;
+  label: string;
+  size: string | null;
+  color: string | null;
+  available: boolean;
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
 }
 
 /** Fiche produit confirmée, prête pour le Calculator puis le panier. */
@@ -59,6 +71,7 @@ export interface AyrovixProduct {
   exchangeRate: number | null;
   colors: string[];
   sizes: string[];
+  variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
 }
 

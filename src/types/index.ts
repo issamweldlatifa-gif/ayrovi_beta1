@@ -1,10 +1,20 @@
 export type StoreType = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
 
+export interface ProductVariantDetail {
+  id?: string | null;
+  label: string;
+  size?: string | null;
+  color?: string | null;
+  available: boolean;
+  price?: number | null;
+}
+
 export interface ProductVariants {
   sizes?: string[];
   colors?: string[];
   styles?: string[];
   options?: string[];
+  details?: ProductVariantDetail[];
 }
 
 export interface ScrapedProduct {

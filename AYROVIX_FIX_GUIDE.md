@@ -26,6 +26,9 @@ AYROVIX_VISUAL_SEARCH_TIMEOUT_MS=10000
 AYROVIX_LENS_COUNTRY=fr
 AYROVIX_SEARCH_TIMEOUT_MS=7000
 AYROVIX_ANTHROPIC_WEB_SEARCH=true
+# Optionnel pour les boutiques protégées par Akamai/Cloudflare
+SCRAPERAPI_KEY=
+AYROVIX_SCRAPER_COUNTRY=fr
 ```
 
 Ne créez jamais de variable `VITE_*` pour la clé. Toute variable préfixée par `VITE_` est intégrée au JavaScript envoyé au navigateur.
@@ -47,7 +50,9 @@ Ne créez jamais de variable `VITE_*` pour la clé. Toute variable préfixée pa
 - Un ancien prix barré ne devient jamais un prix de commande.
 - Avant une commande fondée sur un prix lu dans une image, le client doit fournir puis vérifier le lien direct de la fiche produit.
 - Le prix direct extrait de la page du magasin remplace le prix visuel dès qu’il est disponible.
-- Si la page ne permet pas de vérifier son prix, Lens demande un autre lien direct au lieu de valider un montant non confirmé.
+- Quand la page publie des variantes, seules les tailles/couleurs disponibles sont proposées et leur prix propre remplace le prix général après sélection.
+- Si la page ne permet pas de vérifier son prix, Lens propose de revenir aux autres résultats; aucun montant Lens non confirmé ne devient un prix de commande.
+- `SCRAPERAPI_KEY` peut activer le fallback optionnel des boutiques protégées. Sans cette clé, le fetch HTML sécurisé normal reste utilisé.
 
 ## Diagnostic
 

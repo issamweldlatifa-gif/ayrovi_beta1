@@ -1,6 +1,6 @@
-import { JSDOM } from 'jsdom';
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
 import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
+import { parseProductPageHtml } from './productPageParser';
 
 export class SmartLinkScraper {
   public static readonly RATES_TO_TND: Record<string, number> = {
@@ -63,9 +63,11 @@ export class SmartLinkScraper {
       ? liveData.images
       : [];
 
-    const variants: ProductVariants = (liveData && liveData.variants && Object.keys(liveData.variants).length > 0)
-      ? liveData.variants
-      : urlInfo.variants;
+    const liveVariants: ProductVariants | null = liveData?.variants || null;
+    const hasLiveVariants = Boolean(
+      liveVariants?.sizes?.length || liveVariants?.colors?.length || liveVariants?.details?.length,
+    );
+    const variants: ProductVariants = hasLiveVariants ? liveVariants! : urlInfo.variants;
 
     const rate = SmartLinkScraper.RATES_TO_TND[currency] || 4.00;
     const convertedPriceTND = price > 0 ? Math.round(price * rate * 100) / 100 : 0;
@@ -90,7 +92,7 @@ export class SmartLinkScraper {
       estimatedShippingTND,
       totalPriceTND,
       variants,
-      availability: 'in_stock',
+      availability: liveData?.availability || 'in_stock',
       brand: urlInfo.brand || storeName.split(' ')[0],
       scrapedAt: new Date().toISOString()
     };
@@ -150,22 +152,13 @@ export class SmartLinkScraper {
           title = `${brand} — ${words.slice(1).join(' ')}`;
         }
 
-        const colors: string[] = [];
-        ['beige', 'black', 'cream', 'white', 'pink', 'blue', 'green', 'grey', 'khaki', 'red', 'purple', 'brown', 'noir', 'blanc', 'rose', 'bleu'].forEach(c => {
-          if (formatted.toLowerCase().includes(c)) {
-            colors.push(c.charAt(0).toUpperCase() + c.slice(1));
-          }
-        });
-
         return {
           title,
           brand,
           price: 0,
           externalId: `SH-${goodsId}`,
-          variants: {
-            sizes: ['S', 'M', 'L', 'XL'],
-            colors: colors.length > 0 ? colors : []
-          }
+          // Never infer variants from a URL slug. Only merchant-page values are shown.
+          variants: { sizes: [], colors: [], details: [] },
         };
       }
 
@@ -232,88 +225,52 @@ export class SmartLinkScraper {
   }
 
   private async scrapeWithHttp(url: string, storeType: StoreType): Promise<any> {
-    const response = await fetchSafeRemote(url, {
-      signal: AbortSignal.timeout(7_000),
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
-      },
-    });
-    if (!response.ok) throw new Error(`REMOTE_HTTP_${response.status}`);
-    const contentType = response.headers.get('content-type') || '';
-    if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-      throw new Error('REMOTE_NOT_HTML');
-    }
-    const html = await readLimitedText(response, 2_000_000);
-    const dom = new JSDOM(html, { url });
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
+      'Accept': 'text/html,application/xhtml+xml',
+      'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
+    };
+    let directResult: any = null;
+    let directError: Error | null = null;
     try {
-      const document = dom.window.document;
-      const meta = (selector: string) => document.querySelector(selector)?.getAttribute('content')?.trim() || '';
-      const text = (selector: string) => document.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim() || '';
-      const parsePrice = (raw: unknown): number => {
-        const normalized = String(raw || '').replace(/\s/g, '').replace(/[^0-9,.-]/g, '');
-        if (!normalized) return 0;
-        const decimal = normalized.includes(',') && !normalized.includes('.') ? normalized.replace(',', '.') : normalized.replace(/,/g, '');
-        const value = Number.parseFloat(decimal);
-        return Number.isFinite(value) && value > 0 && value < 1_000_000 ? value : 0;
-      };
-
-      let title = meta('meta[property="og:title"]') || meta('meta[name="twitter:title"]')
-        || text('#productTitle, h1.product-title-word-break, h1, [class*="product-intro__name"], [class*="goods-name"]')
-        || document.title;
-      title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '').replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
-
-      const jsonLd: any[] = [];
-      for (const node of Array.from(document.querySelectorAll('script[type="application/ld+json"]')).slice(0, 20)) {
-        try {
-          const parsed = JSON.parse(node.textContent || 'null');
-          if (Array.isArray(parsed)) jsonLd.push(...parsed);
-          else if (parsed?.['@graph'] && Array.isArray(parsed['@graph'])) jsonLd.push(...parsed['@graph']);
-          else if (parsed) jsonLd.push(parsed);
-        } catch { /* malformed merchant JSON-LD */ }
+      const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(7_000), headers });
+      if (!response.ok) throw new Error(`REMOTE_HTTP_${response.status}`);
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
+        throw new Error('REMOTE_NOT_HTML');
       }
-      const productLd = jsonLd.find((item) => {
-        const type = item?.['@type'];
-        return type === 'Product' || (Array.isArray(type) && type.includes('Product'));
-      });
-      const offers = Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers;
-
-      const selectorPrice = storeType === 'amazon'
-        ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
-        : storeType === 'shein'
-          ? text('.original, .del-price, [style*="line-through"], [class*="price"]')
-          : text('[itemprop="price"], [class*="price"]');
-      const price = parsePrice(
-        meta('meta[property="product:price:amount"]') || meta('meta[itemprop="price"]')
-        || offers?.price || offers?.lowPrice || selectorPrice,
-      );
-      const currency = String(
-        meta('meta[property="product:price:currency"]') || offers?.priceCurrency || '',
-      ).trim().toUpperCase();
-
-      const imageCandidates = [
-        meta('meta[property="og:image"]'),
-        meta('meta[name="twitter:image"]'),
-        String(productLd?.image?.url || productLd?.image?.[0] || productLd?.image || ''),
-        document.querySelector('#landingImage, #main-image, img[data-old-hires], img[class*="main-img"]')?.getAttribute('data-old-hires') || '',
-        document.querySelector('#landingImage, #main-image, img[class*="main-img"]')?.getAttribute('src') || '',
-      ];
-      const images = [...new Set(imageCandidates.map((value) => {
-        try { return value ? new URL(value, url).toString() : ''; } catch { return ''; }
-      }).filter((value) => /^https?:\/\//i.test(value)))].slice(0, 6);
-
-      return {
-        title: title || String(productLd?.name || ''),
-        price,
-        currency,
-        images,
-        externalId: String(productLd?.sku || productLd?.productID || ''),
-        variants: { sizes: [], colors: [] },
-      };
-    } finally {
-      dom.window.close();
+      directResult = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
+      if (directResult.price > 0) return directResult;
+    } catch (error: any) {
+      directError = error instanceof Error ? error : new Error('REMOTE_UNAVAILABLE');
     }
+
+    // Optional fallback recommended by the technical brief for Akamai/Cloudflare
+    // shops. The key remains server-side; without it the normal safe fetch stays active.
+    const scraperApiKey = process.env.SCRAPERAPI_KEY?.trim();
+    if (scraperApiKey) {
+      const country = /^[a-z]{2}$/i.test(process.env.AYROVIX_SCRAPER_COUNTRY || '')
+        ? String(process.env.AYROVIX_SCRAPER_COUNTRY).toLowerCase()
+        : 'fr';
+      const params = new URLSearchParams({
+        api_key: scraperApiKey,
+        url,
+        render: 'true',
+        country_code: country,
+      });
+      const response = await fetch(`https://api.scraperapi.com/?${params.toString()}`, {
+        signal: AbortSignal.timeout(12_000),
+        headers: { 'Accept': 'text/html,application/xhtml+xml' },
+      });
+      if (response.ok) {
+        const proxied = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
+        if (proxied.price > 0 || !directResult) return proxied;
+      } else {
+        await response.body?.cancel().catch(() => undefined);
+      }
+    }
+    if (directResult) return directResult;
+    throw directError || new Error('REMOTE_UNAVAILABLE');
   }
 
   private detectStore(url: string): StoreType {

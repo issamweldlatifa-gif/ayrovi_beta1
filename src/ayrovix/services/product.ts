@@ -31,6 +31,19 @@ export function sanitizeProductUrl(raw: unknown): string | null {
 
 function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixProduct {
   const tnd = estimateWithDb(db, scraped.sourcePrice, scraped.sourceCurrency);
+  const variantOptions = (scraped.variants?.details || []).filter((detail) => detail.available).map((detail) => {
+    const variantTnd = estimateWithDb(db, detail.price || null, scraped.sourceCurrency);
+    return {
+      id: detail.id || null,
+      label: detail.label,
+      size: detail.size || null,
+      color: detail.color || null,
+      available: true,
+      price: detail.price || null,
+      currency: detail.price ? scraped.sourceCurrency : null,
+      priceTnd: variantTnd?.priceTnd ?? null,
+    };
+  });
   return {
     title: scraped.title,
     brand: scraped.brand || null,
@@ -46,6 +59,7 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     exchangeRate: tnd?.exchangeRate ?? null,
     colors: scraped.variants?.colors || [],
     sizes: scraped.variants?.sizes || [],
+    variantOptions,
     availability: scraped.availability || 'unknown',
   };
 }

@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import type { AyrovixProduct } from '../types';
+import React, { useEffect, useState } from 'react';
+import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 import { ProductVariants } from './ProductVariants';
 
 interface ProductResultProps {
   product: AyrovixProduct;
   ordering: boolean;
   priceVerified: boolean;
-  onOrder: (variant: { size: string; color: string }) => void;
+  onOrder: (variant: { size: string; color: string; option: AyrovixVariantOption | null }) => void;
 }
 
 const AVAILABILITY: Record<string, { label: string; cls: string }> = {
@@ -20,16 +20,30 @@ const AVAILABILITY: Record<string, { label: string; cls: string }> = {
 export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering, priceVerified, onOrder }) => {
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
+  const [imageIndex, setImageIndex] = useState(0);
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
+  const options = (product.variantOptions || []).filter((option) => option.available);
   const needsSize = product.sizes.length > 0;
-  const canOrder = priceVerified && product.price != null && product.currency != null && (!needsSize || Boolean(size));
+  const needsColor = product.colors.length > 0;
+  const selectedOption = options.find((option) =>
+    (!option.size || option.size === size) && (!option.color || option.color === color),
+  ) || null;
+  const variantSelectionComplete = (!needsSize || Boolean(size)) && (!needsColor || Boolean(color));
+  const selectedPrice = selectedOption?.price ?? product.price;
+  const selectedCurrency = selectedOption?.currency ?? product.currency;
+  const selectedPriceTnd = selectedOption?.priceTnd ?? product.priceTnd;
+  const canOrder = priceVerified && product.availability !== 'out_of_stock'
+    && variantSelectionComplete && (!options.length || Boolean(selectedOption))
+    && selectedPrice != null && selectedCurrency != null;
+  const imageUrls = [...new Set([...(product.images || []), product.image].filter(Boolean))];
+  useEffect(() => setImageIndex(0), [product.sourceUrl, product.image]);
 
   return (
     <div className="space-y-4">
       <div className="overflow-hidden rounded-[22px] border border-line bg-white">
         <div className="relative aspect-[4/3] bg-surface">
-          {product.image
-            ? <img src={product.image} alt={product.title} className="h-full w-full object-contain" />
+          {imageUrls[imageIndex]
+            ? <img src={imageUrls[imageIndex]} alt={product.title} referrerPolicy="no-referrer" onError={() => setImageIndex((current) => current + 1)} className="h-full w-full object-contain" />
             : <div className="flex h-full items-center justify-center text-muted">
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M8 6V5a4 4 0 0 1 8 0v1" /></svg>
               </div>}
@@ -52,13 +66,13 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Prix source</p>
               <p className="text-sm font-bold text-ink">
-                {product.price != null && product.currency ? `${product.price.toFixed(2)} ${product.currency}` : '—'}
+                {selectedPrice != null && selectedCurrency ? `${selectedPrice.toFixed(2)} ${selectedCurrency}` : '—'}
               </p>
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand">Prix final estimé</p>
               <p className="text-xl font-extrabold text-ink price-pulse">
-                {product.priceTnd != null ? `≈ ${product.priceTnd.toFixed(2)} DT` : '—'}
+                {selectedPriceTnd != null ? `≈ ${selectedPriceTnd.toFixed(2)} DT` : '—'}
               </p>
               <p className="text-[10px] font-semibold text-emerald-600">Calcul AYROVI • Tout inclus</p>
             </div>
@@ -68,8 +82,25 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         </div>
       </div>
 
-      <ProductVariants sizes={product.sizes} colors={product.colors} size={size} color={color} onSize={setSize} onColor={setColor} />
+      <ProductVariants
+        sizes={product.sizes}
+        colors={product.colors}
+        size={size}
+        color={color}
+        options={options}
+        onSize={(value) => {
+          setSize(value);
+          if (color && options.length && !options.some((option) => option.available && option.size === value && option.color === color)) setColor('');
+        }}
+        onColor={(value) => {
+          setColor(value);
+          if (size && options.length && !options.some((option) => option.available && option.color === value && option.size === size)) setSize('');
+        }}
+      />
       {needsSize && !size && <p className="text-[11px] font-semibold text-amber-600">Choisissez votre taille pour continuer.</p>}
+      {needsColor && !color && <p className="text-[11px] font-semibold text-amber-600">Choisissez votre couleur pour continuer.</p>}
+      {options.length > 0 && variantSelectionComplete && !selectedOption && <p className="text-[11px] font-semibold text-red-600">Cette combinaison n'est pas disponible. Choisissez une autre variante.</p>}
+      {selectedOption?.price != null && <p className="text-[10px] font-semibold text-emerald-700">Prix vérifié pour la variante choisie.</p>}
       {!priceVerified && product.price != null && (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
           Prix indicatif Google Lens — vérifiez la fiche marchand ci-dessous pour activer la commande.
@@ -89,7 +120,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         )}
         <button
           type="button"
-          onClick={() => onOrder({ size, color })}
+          onClick={() => onOrder({ size, color, option: selectedOption })}
           disabled={!canOrder || ordering}
           className="bg-brand-gradient flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98] disabled:opacity-45"
         >

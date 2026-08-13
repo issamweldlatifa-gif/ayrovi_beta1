@@ -15,6 +15,7 @@ export default defineConfig({
       // AYROVIX : hermétique — aucune clé IA ne fuit dans la suite ; les tests la simulent.
       ANTHROPIC_API_KEY: '',
       SERPAPI_KEY: '',
+      SCRAPERAPI_KEY: '',
       AYROVIX_ANTHROPIC_WEB_SEARCH: 'false',
     },
   },

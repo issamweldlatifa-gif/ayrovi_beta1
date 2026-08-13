@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
-  AyrovixCandidate, AyrovixDetectedPrice, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
+  AyrovixCandidate, AyrovixDetectedPrice, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult, AyrovixVariantOption,
 } from '../types';
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
@@ -42,7 +42,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     model: candidate.model,
     description: '',
     image: candidate.image,
-    images: candidate.image ? [candidate.image] : [],
+    images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
     source: candidate.source,
     sourceUrl: candidate.sourceUrl,
     price: candidate.price,
@@ -294,8 +294,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     }
   };
 
-  const handleOrder = async ({ size, color }: { size: string; color: string }) => {
-    if (!product || (product.price == null && !candidatesView?.detectedPrice)) return;
+  const handleOrder = async ({ size, color, option }: { size: string; color: string; option: AyrovixVariantOption | null }) => {
+    if (!product || (option?.price == null && product.price == null && !candidatesView?.detectedPrice)) return;
     // Claude/Lens prices are estimates; only a local catalog price or a merchant-page price can be ordered.
     if (!verifiedPriceUrl) {
       alert('Vérifiez le lien direct de la fiche marchand avant de commander avec ce prix.');
@@ -306,18 +306,18 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     setOrdering(true);
     setError(null);
     try {
-      const finalPrice = product.price ?? candidatesView?.detectedPrice?.sourcePrice ?? 0;
-      const finalCurrency = product.currency ?? candidatesView?.detectedPrice?.sourceCurrency ?? 'EUR';
+      const finalPrice = option?.price ?? product.price ?? candidatesView?.detectedPrice?.sourcePrice ?? 0;
+      const finalCurrency = option?.currency ?? product.currency ?? candidatesView?.detectedPrice?.sourceCurrency ?? 'EUR';
       await onOrder({
         store: toStoreKey(product.sourceUrl || product.source || verifyLink || ''),
-        externalId: null,
+        externalId: option?.id || null,
         url: product.sourceUrl || verifyLink || '',
         title: product.title,
         imageUrl: product.image || candidatesView?.detectedPrice?.imageUrl || '',
         sourcePrice: finalPrice,
         sourceCurrency: finalCurrency,
-        priceTND: product.priceTnd ?? candidatesView?.detectedPrice?.totalPriceTND ?? 0,
-        variant: variant || undefined,
+        priceTND: option?.priceTnd ?? product.priceTnd ?? candidatesView?.detectedPrice?.totalPriceTND ?? 0,
+        variant: option?.label || variant || undefined,
         quantity: 1,
       });
       handleClose();
@@ -551,8 +551,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                 </div>
               ) : (
                 <div className="rounded-[20px] border border-brand/20 bg-brand-light/30 p-4">
-                  <p className="text-xs font-extrabold text-ink">🔗 Vérification de la fiche marchand requise</p>
-                  <p className="mt-1 text-[11px] text-muted">Le prix lu dans l'image ou renvoyé par Google Lens reste indicatif. Vérifiez le lien direct avant commande.</p>
+                  <p className="text-xs font-extrabold text-ink">🔗 Prix marchand non confirmé automatiquement</p>
+                  <p className="mt-1 text-[11px] text-muted">Ce magasin protège sa page ou ne publie pas de prix exploitable. Essayez le lien direct ou revenez aux autres résultats Lens.</p>
                   <div className="mt-2 flex gap-2">
                     <input
                       type="url"
@@ -565,6 +565,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                       {verifyingLink ? '...' : 'Vérifier'}
                     </button>
                   </div>
+                  {candidatesView?.list.length ? (
+                    <button type="button" onClick={() => setStage('candidates')} className="mt-2 min-h-[42px] w-full rounded-xl border border-line bg-white px-4 text-xs font-bold text-ink">
+                      Retour aux autres résultats
+                    </button>
+                  ) : null}
                 </div>
               )}
 

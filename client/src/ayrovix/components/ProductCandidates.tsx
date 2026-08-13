@@ -14,6 +14,22 @@ const Placeholder: React.FC = () => (
   </div>
 );
 
+const CandidateImage: React.FC<{ candidate: AyrovixCandidate }> = ({ candidate }) => {
+  const urls = [...new Set([...(candidate.images || []), candidate.image].filter(Boolean))];
+  const [index, setIndex] = React.useState(0);
+  if (!urls[index]) return <Placeholder />;
+  return (
+    <img
+      src={urls[index]}
+      alt=""
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setIndex((current) => current + 1)}
+      className="h-full w-full object-cover"
+    />
+  );
+};
+
 /**
  * Jamais de réponse unique : plusieurs candidats, le meilleur en tête —
  * c'est l'utilisateur qui confirme le bon produit (principe central AYROVIX).
@@ -30,9 +46,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
         )}
         <div className="flex gap-3">
           <div className="relative h-[84px] w-[68px] flex-none overflow-hidden rounded-xl border border-line">
-            {candidate.image
-              ? <img src={candidate.image} alt="" loading="lazy" className="h-full w-full object-cover" />
-              : <Placeholder />}
+            <CandidateImage candidate={candidate} />
             <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${candidate.match >= 80 ? 'bg-ink text-white' : 'bg-white/90 text-ink border border-line'}`}>
               {candidate.match}%
             </span>
@@ -55,7 +69,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
                 // Le lien direct est ensuite analysé pour confirmer les données et le prix.
                 className="min-h-[40px] flex-1 rounded-xl bg-ink px-3 text-xs font-bold text-white transition active:scale-95 disabled:opacity-40"
               >
-                Choisir
+                {candidate.kind === 'external' ? 'Vérifier et choisir' : 'Choisir'}
               </button>
               {candidate.sourceUrl && (
                 <a

@@ -6,6 +6,7 @@ import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { anthropicWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
+import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { getAyrovixStats } from '../src/ayrovix/events';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
@@ -131,6 +132,7 @@ describe('AYROVIX Lens', () => {
             title: 'Nike Air Max 95 Navy DC9412-400',
             link: 'https://shop.example.com/nike-air-max-95',
             source: 'Example Shop',
+            thumbnail: 'https://encrypted-tbn.example.com/nike-air-max-95-thumb.jpg',
             image: 'https://cdn.example.com/nike-air-max-95.jpg',
             exact_matches: true,
             price: { extracted_value: 149.99, currency: '€' },
@@ -145,7 +147,11 @@ describe('AYROVIX Lens', () => {
       expect(visual).toHaveLength(1);
       expect(visual[0]).toMatchObject({
         kind: 'external',
-        image: 'https://cdn.example.com/nike-air-max-95.jpg',
+        image: 'https://encrypted-tbn.example.com/nike-air-max-95-thumb.jpg',
+        images: [
+          'https://encrypted-tbn.example.com/nike-air-max-95-thumb.jpg',
+          'https://cdn.example.com/nike-air-max-95.jpg',
+        ],
         price: 149.99,
         currency: 'EUR',
         match: 99,
@@ -158,11 +164,38 @@ describe('AYROVIX Lens', () => {
 
       fetchMock.mockClear();
       const candidates = await searchCandidates(db, NIKE_ID, 'Nike Air Max 95 DC9412-400', visual);
-      expect(candidates.find((item) => item.id.startsWith('lens_'))?.image).toContain('nike-air-max-95.jpg');
+      expect(candidates.find((item) => item.id.startsWith('lens_'))?.images).toEqual(expect.arrayContaining([
+        expect.stringContaining('nike-air-max-95-thumb.jpg'),
+        expect.stringContaining('nike-air-max-95.jpg'),
+      ]));
       expect(fetchMock).not.toHaveBeenCalled();
     } finally {
       restoreEnv('SERPAPI_KEY', previousKey);
     }
+  });
+
+  test('fiche marchand : extrait uniquement les variantes disponibles et leur prix réel', () => {
+    const html = `<!doctype html><html><head>
+      <meta property="og:title" content="Sneaker Test">
+      <meta property="product:price:amount" content="129,99 €">
+      <meta property="product:price:currency" content="EUR">
+      <meta property="og:image" content="/products/shoe.jpg">
+      <script type="application/ld+json">{"@type":"Product","name":"Sneaker Test","sku":"SKU-42","color":["Noir","Blanc"],"offers":{"price":"129.99","priceCurrency":"EUR","availability":"https://schema.org/InStock"}}</script>
+      <script type="application/json">{"product":{"id":42,"title":"Sneaker Test","options":["Taille","Couleur"],"variants":[
+        {"id":1,"option1":"42 EU","option2":"Noir","available":true,"price":12999,"public_title":"42 EU / Noir","requires_shipping":true},
+        {"id":2,"option1":"43 EU","option2":"Noir","available":false,"price":12999,"public_title":"43 EU / Noir","requires_shipping":true},
+        {"id":3,"option1":"44 EU","option2":"Blanc","available":true,"price":13999,"public_title":"44 EU / Blanc","requires_shipping":true}
+      ]}}</script>
+    </head><body><h1>Sneaker Test</h1></body></html>`;
+    const parsed = parseProductPageHtml(html, 'https://shop.example.org/item', 'generic');
+    expect(parsed).toMatchObject({ title: 'Sneaker Test', price: 129.99, currency: 'EUR', externalId: 'SKU-42' });
+    expect(parsed.images[0]).toBe('https://shop.example.org/products/shoe.jpg');
+    expect(parsed.variants.sizes).toEqual(['42 EU', '44 EU']);
+    expect(parsed.variants.colors).toEqual(['Noir', 'Blanc']);
+    expect(parsed.variants.details).toEqual([
+      expect.objectContaining({ id: '1', size: '42 EU', color: 'Noir', price: 129.99, available: true }),
+      expect.objectContaining({ id: '3', size: '44 EU', color: 'Blanc', price: 139.99, available: true }),
+    ]);
   });
 
   test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {

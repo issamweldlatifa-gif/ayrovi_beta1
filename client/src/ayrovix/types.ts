@@ -29,10 +29,22 @@ export interface AyrovixCandidate {
   source: string;
   sourceUrl: string;
   image: string;
+  images?: string[];
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
   match: number;
+}
+
+export interface AyrovixVariantOption {
+  id: string | null;
+  label: string;
+  size: string | null;
+  color: string | null;
+  available: boolean;
+  price: number | null;
+  currency: string | null;
+  priceTnd: number | null;
 }
 
 export interface AyrovixProduct {
@@ -50,6 +62,7 @@ export interface AyrovixProduct {
   exchangeRate: number | null;
   colors: string[];
   sizes: string[];
+  variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
 }
 

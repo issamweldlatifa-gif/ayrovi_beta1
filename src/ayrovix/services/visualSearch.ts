@@ -77,6 +77,11 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
     seen.add(sourceUrl);
     const extractedPrice = Number(row?.price?.extracted_value ?? row?.extracted_price);
     const currency = normalizeCurrency(row?.price?.currency ?? row?.currency);
+    // Google-hosted thumbnails are less likely to reject browser hotlinking;
+    // keep the merchant image as a fallback for the resilient client image.
+    const images = [...new Set([row?.thumbnail, row?.image]
+      .map((value) => String(value || '').trim())
+      .filter((value) => /^https?:\/\//i.test(value)))].slice(0, 2);
     const index = results.length;
     results.push({
       id: `lens_${index}_${createHash('sha1').update(sourceUrl).digest('hex').slice(0, 10)}`,
@@ -88,7 +93,8 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
       sizes: [],
       source: String(row?.source || 'Google Lens').trim().slice(0, 80) || 'Google Lens',
       sourceUrl,
-      image: String(row?.image || row?.thumbnail || '').trim(),
+      image: images[0] || '',
+      images,
       price: Number.isFinite(extractedPrice) && extractedPrice > 0 ? extractedPrice : null,
       currency,
       priceTnd: null,

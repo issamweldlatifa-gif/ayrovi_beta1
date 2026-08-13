@@ -1,19 +1,27 @@
 import React from 'react';
+import type { AyrovixVariantOption } from '../types';
 
 interface ProductVariantsProps {
   sizes: string[];
   colors: string[];
   size: string;
   color: string;
+  options?: AyrovixVariantOption[];
   onSize: (value: string) => void;
   onColor: (value: string) => void;
 }
 
 /** Sélecteur de variantes — chips tactiles 44px, states press/focus natifs. */
-export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors, size, color, onSize, onColor }) => {
+export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors, size, color, options = [], onSize, onColor }) => {
   if (!sizes.length && !colors.length) return null;
-  const chip = (active: boolean) =>
-    `min-h-[44px] rounded-full border px-4 text-xs font-bold transition active:scale-95 ${
+  const sizeAvailable = (value: string) => !options.length || options.some((option) =>
+    option.available && option.size === value && (!color || !option.color || option.color === color),
+  );
+  const colorAvailable = (value: string) => !options.length || options.some((option) =>
+    option.available && option.color === value && (!size || !option.size || option.size === size),
+  );
+  const chip = (active: boolean, enabled = true) =>
+    `min-h-[44px] rounded-full border px-4 text-xs font-bold transition ${enabled ? 'active:scale-95' : 'cursor-not-allowed opacity-35'} ${
       active ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink'
     }`;
   return (
@@ -22,9 +30,10 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors,
         <div>
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Couleur</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Couleur">
-            {colors.slice(0, 10).map((c) => (
-              <button key={c} type="button" role="radio" aria-checked={color === c} className={chip(color === c)} onClick={() => onColor(c)}>{c}</button>
-            ))}
+            {colors.slice(0, 10).map((c) => {
+              const enabled = colorAvailable(c);
+              return <button key={c} type="button" role="radio" disabled={!enabled} aria-checked={color === c} className={chip(color === c, enabled)} onClick={() => onColor(c)}>{c}</button>;
+            })}
           </div>
         </div>
       )}
@@ -32,9 +41,10 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors,
         <div>
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">Taille</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Taille">
-            {sizes.slice(0, 14).map((s) => (
-              <button key={s} type="button" role="radio" aria-checked={size === s} className={chip(size === s)} onClick={() => onSize(s)}>{s}</button>
-            ))}
+            {sizes.slice(0, 20).map((s) => {
+              const enabled = sizeAvailable(s);
+              return <button key={s} type="button" role="radio" disabled={!enabled} aria-checked={size === s} className={chip(size === s, enabled)} onClick={() => onSize(s)}>{s}</button>;
+            })}
           </div>
         </div>
       )}
