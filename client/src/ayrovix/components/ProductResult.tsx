@@ -5,6 +5,7 @@ import { ProductVariants } from './ProductVariants';
 interface ProductResultProps {
   product: AyrovixProduct;
   ordering: boolean;
+  priceVerified: boolean;
   onOrder: (variant: { size: string; color: string }) => void;
 }
 
@@ -16,12 +17,12 @@ const AVAILABILITY: Record<string, { label: string; cls: string }> = {
 };
 
 /** Fiche produit confirmée — puis passage direct au Calculator AYROVI existant. */
-export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering, onOrder }) => {
+export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering, priceVerified, onOrder }) => {
   const [size, setSize] = useState('');
   const [color, setColor] = useState('');
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
   const needsSize = product.sizes.length > 0;
-  const canOrder = product.price != null && product.currency != null && (!needsSize || Boolean(size));
+  const canOrder = priceVerified && product.price != null && product.currency != null && (!needsSize || Boolean(size));
 
   return (
     <div className="space-y-4">
@@ -69,6 +70,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
       <ProductVariants sizes={product.sizes} colors={product.colors} size={size} color={color} onSize={setSize} onColor={setColor} />
       {needsSize && !size && <p className="text-[11px] font-semibold text-amber-600">Choisissez votre taille pour continuer.</p>}
+      {!priceVerified && product.price != null && (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
+          Prix indicatif Google Lens — vérifiez la fiche marchand ci-dessous pour activer la commande.
+        </p>
+      )}
 
       <div className="sticky bottom-3 flex gap-2.5">
         {product.sourceUrl && (

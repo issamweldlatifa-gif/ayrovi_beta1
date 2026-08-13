@@ -81,3 +81,4 @@
 - Les badges Admin distinguent Claude Vision, Google Lens et Claude Web Search.
 - Validation locale : TypeScript ✅, 48/48 tests ✅, build production ✅, audit 0 vulnérabilité ✅.
 - Validation production : photo Nike Air Max 95 → HTTP 200 en 5,63 s, 8 correspondances Google Lens avec image et lien; modèle Air Max 95 reconnu par Claude. Une fiche Coproom a ensuite confirmé un prix direct de 255 EUR, distinct de l'estimation Lens.
+- Le client bloque désormais toute commande fondée seulement sur un prix Claude/Lens : le bouton n'est activé qu'après prix confirmé par la fiche marchand (ou prix du catalogue local). Les tailles/couleurs ne sont jamais annoncées si la source ne les fournit pas.

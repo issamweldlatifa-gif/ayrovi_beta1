@@ -165,9 +165,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     try {
       const result = await analyzeUrl(url, channel, controller.signal);
       if (abortRef.current !== token) return;
+      const merchantPriceVerified = Number.isFinite(result.product.price)
+        && Number(result.product.price) > 0 && Boolean(result.product.currency);
       setUrlResult(result);
       setProduct(result.product);
-      setVerifiedPriceUrl(Number.isFinite(result.product.price) && Number(result.product.price) > 0 && Boolean(result.product.currency));
+      setVerifiedPriceUrl(merchantPriceVerified);
+      if (!merchantPriceVerified && result.product.sourceUrl) setVerifyLink(result.product.sourceUrl);
       setStage('product');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
@@ -238,23 +241,35 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       try {
         const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal);
         if (abortRef.current !== token) return;
+        const merchantPriceVerified = Number.isFinite(result.product.price)
+          && Number(result.product.price) > 0 && Boolean(result.product.currency);
         setUrlResult(result);
-        setProduct(result.product);
-        setVerifiedPriceUrl(Number.isFinite(result.product.price) && Number(result.product.price) > 0 && Boolean(result.product.currency));
+        if (merchantPriceVerified) {
+          setProduct(result.product);
+        } else {
+          // Keep the useful Lens title/image, but never promote a Lens price to a verified merchant price.
+          const lensProduct = candidateToProduct(candidate);
+          setProduct({
+            ...lensProduct,
+            description: result.product.description || lensProduct.description,
+            colors: result.product.colors.length ? result.product.colors : lensProduct.colors,
+            sizes: result.product.sizes.length ? result.product.sizes : lensProduct.sizes,
+          });
+          setVerifyLink(candidate.sourceUrl);
+        }
+        setVerifiedPriceUrl(merchantPriceVerified);
         setStage('product');
         return;
       } catch (error: any) {
         if (controller.signal.aborted || error?.name === 'AbortError') return;
-        // Network/extraction failure: keep the already selected candidate.
+        // Network/extraction failure: show the match, but require link verification before ordering.
+        setVerifyLink(candidate.sourceUrl);
       } finally {
         finishRequest(controller);
       }
     }
     setProduct(candidateToProduct(candidate));
-    setVerifiedPriceUrl(
-      Number.isFinite(candidate.price) && Number(candidate.price) > 0
-      && Boolean(candidate.currency) && /^https?:\/\//i.test(candidate.sourceUrl || ''),
-    );
+    setVerifiedPriceUrl(candidate.kind === 'catalog');
     setStage('product');
   };
 
@@ -281,9 +296,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const handleOrder = async ({ size, color }: { size: string; color: string }) => {
     if (!product || (product.price == null && !candidatesView?.detectedPrice)) return;
-    // A price read by Claude from an image remains an estimate until a link is verified.
-    if (candidatesView?.detectedPrice && (!verifiedPriceUrl || !/^https?:\/\//i.test(product.sourceUrl || ''))) {
-      alert('Collez le lien puis appuyez sur « Vérifier » avant de commander avec un prix lu sur image.');
+    // Claude/Lens prices are estimates; only a local catalog price or a merchant-page price can be ordered.
+    if (!verifiedPriceUrl) {
+      alert('Vérifiez le lien direct de la fiche marchand avant de commander avec ce prix.');
       return;
     }
     if (urlResult?.eventId) markChosen(urlResult.eventId);
@@ -527,18 +542,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
           {stage === 'product' && product && (
             <div className="mx-auto max-w-md space-y-5">
-              <ProductResult product={product} ordering={ordering} onOrder={(v) => void handleOrder(v)} />
+              <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
-              {/* Logique clarifiée: externe = nous apportons tout, panier/image avec prix = client doit apporter lien */}
-              {product.sourceUrl && (!candidatesView?.detectedPrice || verifiedPriceUrl) ? (
-                <div className="rounded-[16px] bg-emerald-50 border border-emerald-200 px-4 py-3">
-                  <p className="text-[11px] font-bold text-emerald-800">✅ AYROVIX a récupéré automatiquement: image HD, tailles, couleurs, prix vérifié, lien partenaire</p>
-                  <p className="mt-1 text-[10px] text-emerald-700">Source: {product.source} — Aucun lien requis de votre part pour la recherche externe.</p>
+              {verifiedPriceUrl ? (
+                <div className="rounded-[16px] border border-emerald-200 bg-emerald-50 px-4 py-3">
+                  <p className="text-[11px] font-bold text-emerald-800">✅ Prix confirmé par la source sélectionnée</p>
+                  <p className="mt-1 text-[10px] text-emerald-700">Source : {product.source}. Les tailles et couleurs ne sont affichées que si la source les fournit.</p>
                 </div>
-              ) : candidatesView?.detectedPrice ? (
+              ) : (
                 <div className="rounded-[20px] border border-brand/20 bg-brand-light/30 p-4">
-                  <p className="text-xs font-extrabold text-ink">🔗 Lien du produit requis — panier/image avec prix</p>
-                  <p className="mt-1 text-[11px] text-muted">Vous avez fourni une image avec prix (ou panier). Pour garantir le prix final, collez le lien du produit pour vérification avant commande.</p>
+                  <p className="text-xs font-extrabold text-ink">🔗 Vérification de la fiche marchand requise</p>
+                  <p className="mt-1 text-[11px] text-muted">Le prix lu dans l'image ou renvoyé par Google Lens reste indicatif. Vérifiez le lien direct avant commande.</p>
                   <div className="mt-2 flex gap-2">
                     <input
                       type="url"
@@ -552,7 +566,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                     </button>
                   </div>
                 </div>
-              ) : null}
+              )}
 
               {urlResult && urlResult.alternates.length > 0 && (
                 <section>
