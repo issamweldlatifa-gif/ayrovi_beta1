@@ -168,13 +168,21 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </p>
       )}
 
-      {/* Viseur */}
+      {/* Viseur - AYROVIX Glassmorphism V2 */}
       <div className="pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">
-        <div className="relative aspect-square w-full max-w-[290px]">
-          <span className="absolute left-0 top-0 h-9 w-9 rounded-tl-[18px] border-l-[3.5px] border-t-[3.5px] border-white" />
-          <span className="absolute right-0 top-0 h-9 w-9 rounded-tr-[18px] border-r-[3.5px] border-t-[3.5px] border-white" />
-          <span className="absolute bottom-0 left-0 h-9 w-9 rounded-bl-[18px] border-b-[3.5px] border-l-[3.5px] border-white" />
-          <span className="absolute bottom-0 right-0 h-9 w-9 rounded-br-[18px] border-b-[3.5px] border-r-[3.5px] border-white" />
+        <div className="relative aspect-square w-full max-w-[300px]">
+          {/* Glass blur background */}
+          <div className="absolute inset-0 rounded-[28px] bg-white/5 backdrop-blur-[2px] border border-white/10" />
+          {/* Corners with purple glow */}
+          <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-[26px] border-l-[3.5px] border-t-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
+          <span className="absolute right-0 top-0 h-10 w-10 rounded-tr-[26px] border-r-[3.5px] border-t-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
+          <span className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-[26px] border-b-[3.5px] border-l-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
+          <span className="absolute bottom-0 right-0 h-10 w-10 rounded-br-[26px] border-b-[3.5px] border-r-[3.5px] border-white shadow-[0_0_12px_rgba(103,61,230,0.6)]" />
+          {/* Laser line with purple gradient and particles */}
+          <div className="absolute inset-3 overflow-hidden rounded-[18px]">
+            <div className="lens-laser absolute left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#7e57ff] to-transparent shadow-[0_0_8px_#673de6]" />
+            <div className="lens-particles absolute inset-0" />
+          </div>
           <span className="lens-scan absolute inset-3 opacity-60" />
         </div>
       </div>

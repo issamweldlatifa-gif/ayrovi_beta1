@@ -47,7 +47,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </p>
           </div>
 
-          <div className="flex items-end justify-between gap-3 rounded-2xl bg-surface p-3.5">
+          <div className="flex items-end justify-between gap-3 rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Prix source</p>
               <p className="text-sm font-bold text-ink">
@@ -56,10 +56,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </div>
             <div className="text-right">
               <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand">Prix final estimé</p>
-              <p className="text-xl font-extrabold text-ink">
+              <p className="text-xl font-extrabold text-ink price-pulse">
                 {product.priceTnd != null ? `≈ ${product.priceTnd.toFixed(2)} DT` : '—'}
               </p>
-              <p className="text-[10px] font-semibold text-emerald-600">Tout inclus · transport, douane, service</p>
+              <p className="text-[10px] font-semibold text-emerald-600">Vérifié par AYROVI • Tout inclus</p>
             </div>
           </div>
 
