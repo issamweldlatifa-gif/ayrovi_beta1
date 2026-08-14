@@ -321,19 +321,11 @@ export const App: React.FC = () => {
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton />
 
-      {/* Instagram-Style Floating Transparent White Glass Bottom Nav Bar (AI Icon on Left, Lens Icon on Right) */}
+      {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
       <BottomNavBar
         isAiDrawerOpen={isAiDrawerOpen}
-        cartCount={totalCartCount}
         onToggleAiDrawer={handleToggleAiDrawer}
         onOpenLens={handleOpenLens}
-        onScrollToTop={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-        onOpenCart={() => {
-          setIsProductDrawerOpen(false);
-          setIsAiDrawerOpen(false);
-          setIsMenuDrawerOpen(false);
-          setIsCartOpen(true);
-        }}
       />
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}
