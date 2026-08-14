@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ChevronRight, FileText, Globe2, Image, Plug, X } from '../QatafoIcons';
+import { Camera, ChevronRight, Globe2, Image, Plug, X } from '../QatafoIcons';
 
 interface AssistantAttachmentSheetProps {
   isOpen: boolean;
@@ -66,8 +66,8 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
 
           <button type="button" onClick={() => chooseFile('file')} className={rowClass}>
             <span className="flex items-center gap-3">
-              <span className={iconClass}><FileText className="h-4 w-4" /></span>
-              <span><strong className={`block text-sm font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Ajouter un fichier</strong><small className="text-xs text-zinc-500">Joindre un document à la conversation</small></span>
+              <span className={iconClass}><Camera className="h-4 w-4" /></span>
+              <span><strong className={`block text-sm font-medium ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Prendre une photo</strong><small className="text-xs text-zinc-500">Photographier un produit, un prix ou une étiquette</small></span>
             </span>
             <ChevronRight className="h-4 w-4 text-zinc-400" />
           </button>
@@ -91,8 +91,8 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
           </button>
         </div>
 
-        <input ref={imageInputRef} type="file" accept="image/*" className="hidden" onChange={(event) => handleChange(event, 'image')} />
-        <input ref={fileInputRef} type="file" className="hidden" onChange={(event) => handleChange(event, 'file')} />
+        <input ref={imageInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => handleChange(event, 'image')} />
+        <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" capture="environment" className="hidden" onChange={(event) => handleChange(event, 'file')} />
       </section>
     </>
   );

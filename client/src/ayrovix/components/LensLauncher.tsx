@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
+import { AyrovixNavIcon } from '../../components/NavigationBrandIcons';
 import type {
   AyrovixCandidate, AyrovixDetectedPrice, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
@@ -457,10 +458,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           </div>
           <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-extrabold text-ink">
             <span>AYROVIX</span>
-            <span className="bg-brand-gradient grid h-7 w-7 place-items-center rounded-lg text-white">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
-                <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3"/>
-              </svg>
+            <span className="grid h-7 w-7 place-items-center text-[#0a0a0a]">
+              <AyrovixNavIcon size={26}/>
             </span>
           </div>
           <button type="button" onClick={() => setHistoryOpen(true)} aria-label="Historique Lens" title="Historique"

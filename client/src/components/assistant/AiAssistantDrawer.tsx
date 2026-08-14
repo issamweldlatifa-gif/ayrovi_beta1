@@ -11,7 +11,7 @@ import { AyroviMotionState } from '../AyroviMotion';
 import { analyzeUrl, markChosen } from '../../ayrovix/services/lensApi';
 import type { AyrovixCandidate, AyrovixOrderPayload, AyrovixProduct } from '../../ayrovix/types';
 import type { AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
-import { streamAssistantChat } from './assistantApi';
+import { streamAssistantChat, transcribeAssistantAudio } from './assistantApi';
 import {
   AssistantConversation,
   deleteAssistantConversation,
@@ -32,8 +32,10 @@ interface AiAssistantDrawerProps {
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
 }
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024;
-const MAX_ATTACHMENTS = 4;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_ATTACHMENTS = 2;
+const MAX_RECORD_SECONDS = 120;
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const createConversationId = () => `conversation_${Date.now()}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
 
 const toStoreKey = (source: string): AyrovixOrderPayload['store'] => {
@@ -83,6 +85,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [motionState, setMotionState] = useState<AyroviMotionState>('idle');
   const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAttachmentSheetOpen, setIsAttachmentSheetOpen] = useState(false);
@@ -104,6 +107,14 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const discardRecordingRef = useRef(false);
+  const recordingStartedAtRef = useRef(0);
+  const voiceRequestRef = useRef(0);
+  const voiceCapturePendingRef = useRef(false);
+  const transcriptionAbortRef = useRef<AbortController | null>(null);
   const historyReadyRef = useRef(false);
   const viewportFrameRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
@@ -153,9 +164,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (stored[0]) {
       setConversationId(stored[0].id);
       setMessages(stored[0].messages);
+      setSelectedProduct(stored[0].selectedProduct || null);
     } else {
       setConversationId(createConversationId());
       setMessages([]);
+      setSelectedProduct(null);
     }
     setFeedback({});
     setFeedbackComments({});
@@ -172,11 +185,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       id: conversationId,
       title: existing?.title || firstUserMessage.slice(0, 80),
       messages,
+      selectedProduct,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     });
     setConversations(next);
-  }, [messages, conversationId, historyScope, isOpen, isGenerating]);
+  }, [messages, selectedProduct, conversationId, historyScope, isOpen, isGenerating]);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -201,6 +215,24 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       await streamAssistantChat({
         conversationId,
         messages: sourceMessages,
+        state: {
+          orderStage: selectedProduct ? 'PRODUCT_CONFIGURATION' : 'CONVERSATION',
+          webSearchEnabled,
+          isAuthenticated,
+          activeProduct: selectedProduct ? {
+            messageId: selectedProduct.messageId,
+            title: selectedProduct.product.title,
+            brand: selectedProduct.product.brand,
+            model: selectedProduct.product.model,
+            source: selectedProduct.product.source,
+            sourceUrl: selectedProduct.product.sourceUrl,
+            price: selectedProduct.product.price,
+            currency: selectedProduct.product.currency,
+            priceVerificationStatus: selectedProduct.product.priceVerificationStatus,
+            colors: selectedProduct.product.colors,
+            sizes: selectedProduct.product.sizes,
+          } : null,
+        },
         csrfToken: customerCsrfToken,
         signal: controller.signal,
         onEvent: (event) => {
@@ -216,7 +248,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 const orderStatuses = Array.isArray(event.data.orders) ? event.data.orders : event.data.order ? [event.data.order] : [];
                 return { ...message, orderStatuses: orderStatuses as any };
               }
-              if (event.name === 'search_products') return { ...message, products: (event.data.products || []) as AyrovixCandidate[] };
+              if (event.name === 'search_products' || event.name === 'lens_search') return { ...message, products: (event.data.products || []) as AyrovixCandidate[] };
               if (event.name === 'escalate_to_human') return { ...message, supportTicket: (event.data.ticket || event.data) as any };
               return message;
             }));
@@ -265,12 +297,31 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   }, [isRecording]);
 
   useEffect(() => {
+    if (!isRecording || recordSeconds < MAX_RECORD_SECONDS) return;
+    discardRecordingRef.current = false;
+    setIsRecording(false);
+    setRecordSeconds(0);
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state && recorder.state !== 'inactive') recorder.stop();
+  }, [isRecording, recordSeconds]);
+
+  useEffect(() => {
     if (isOpen) return;
     generationAbortRef.current?.abort();
     generationAbortRef.current = null;
     setIsGenerating(false);
     setMotionState('idle');
+    voiceRequestRef.current += 1;
+    voiceCapturePendingRef.current = false;
+    discardRecordingRef.current = true;
+    if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaStreamRef.current = null;
+    transcriptionAbortRef.current?.abort();
+    transcriptionAbortRef.current = null;
+    setIsTranscribing(false);
     setIsRecording(false);
+    setRecordSeconds(0);
     setIsMenuOpen(false);
     setIsAttachmentSheetOpen(false);
     setFeedbackMessage(null);
@@ -278,6 +329,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => () => {
     generationAbortRef.current?.abort();
+    transcriptionAbortRef.current?.abort();
+    voiceRequestRef.current += 1;
+    voiceCapturePendingRef.current = false;
+    discardRecordingRef.current = true;
+    if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
@@ -285,6 +342,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const handleCloseAssistant = () => {
     stopGeneration();
+    transcriptionAbortRef.current?.abort();
+    voiceRequestRef.current += 1;
+    voiceCapturePendingRef.current = false;
+    discardRecordingRef.current = true;
+    if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    setIsTranscribing(false);
     setIsRecording(false);
     setRecordSeconds(0);
     setIsMenuOpen(false);
@@ -297,9 +361,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const sendMessage = (customText?: string, fromVoice = false) => {
     const text = (customText ?? input).trim();
-    if ((!text && attachments.length === 0) || isGenerating) return;
+    if ((!text && attachments.length === 0) || isGenerating || isTranscribing || isRecording || generationAbortRef.current) return;
     const sentAttachments = attachments.map((attachment) => ({ ...attachment }));
-    const displayText = text || (sentAttachments.length > 1 ? 'Pièces jointes' : 'Pièce jointe');
+    const displayText = text || (sentAttachments.length > 1 ? 'Analyse ces images.' : 'Analyse cette image.');
     const userMessage: AssistantMessage = {
       id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       role: 'user',
@@ -315,15 +379,121 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     void startAssistantReply(sourceMessages, responseId);
   };
 
-  const finishRecording = () => {
-    const duration = recordSeconds;
-    setIsRecording(false);
-    setRecordSeconds(0);
-    if (duration < 1) {
+  const releaseMediaStream = () => {
+    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
+    mediaStreamRef.current = null;
+  };
+
+  const transcribeRecording = async (audio: Blob, duration: number) => {
+    if (duration < 0.7 || audio.size < 200) {
       showToast('Enregistrement trop court');
       return;
     }
-    sendMessage(`Demande vocale enregistrée (${Math.floor(duration / 60)}:${String(duration % 60).padStart(2, '0')})`, true);
+    const controller = new AbortController();
+    transcriptionAbortRef.current?.abort();
+    transcriptionAbortRef.current = controller;
+    setIsTranscribing(true);
+    try {
+      const result = await transcribeAssistantAudio({
+        audio,
+        csrfToken: customerCsrfToken,
+        signal: controller.signal,
+      });
+      if (!result.text) {
+        showToast('Aucune parole détectée');
+        return;
+      }
+      sendMessage(result.text, true);
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') showToast(error?.message || 'Transcription vocale indisponible');
+    } finally {
+      if (transcriptionAbortRef.current === controller) {
+        transcriptionAbortRef.current = null;
+        setIsTranscribing(false);
+      }
+    }
+  };
+
+  const startRecording = async () => {
+    if (isGenerating || isTranscribing || isRecording || voiceCapturePendingRef.current) return;
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      showToast('L’enregistrement vocal n’est pas compatible avec ce navigateur');
+      return;
+    }
+    const requestId = ++voiceRequestRef.current;
+    voiceCapturePendingRef.current = true;
+    let stream: MediaStream | null = null;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (requestId !== voiceRequestRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+      const mimeType = [
+        'audio/webm;codecs=opus',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/webm',
+      ].find((type) => MediaRecorder.isTypeSupported(type));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      discardRecordingRef.current = false;
+      recordingStartedAtRef.current = Date.now();
+      recorder.ondataavailable = (event) => {
+        if (event.data.size) audioChunksRef.current.push(event.data);
+      };
+      recorder.onerror = () => {
+        discardRecordingRef.current = true;
+        setIsRecording(false);
+        setRecordSeconds(0);
+        releaseMediaStream();
+        showToast('Impossible d’enregistrer le message vocal');
+      };
+      recorder.onstop = () => {
+        const discarded = discardRecordingRef.current;
+        const duration = (Date.now() - recordingStartedAtRef.current) / 1000;
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        releaseMediaStream();
+        if (discarded) return;
+        const audio = new Blob(chunks, { type: recorder.mimeType || chunks[0]?.type || 'audio/webm' });
+        void transcribeRecording(audio, duration);
+      };
+      recorder.start(250);
+      setRecordSeconds(0);
+      setIsRecording(true);
+    } catch (error: any) {
+      stream?.getTracks().forEach((track) => track.stop());
+      releaseMediaStream();
+      if (requestId === voiceRequestRef.current) {
+        showToast(error?.name === 'NotAllowedError'
+          ? 'Autorisez le microphone pour envoyer un message vocal'
+          : 'Microphone indisponible');
+      }
+    } finally {
+      if (requestId === voiceRequestRef.current) voiceCapturePendingRef.current = false;
+    }
+  };
+
+  const finishRecording = () => {
+    discardRecordingRef.current = false;
+    setIsRecording(false);
+    setRecordSeconds(0);
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state && recorder.state !== 'inactive') recorder.stop();
+    else releaseMediaStream();
+  };
+
+  const cancelRecording = () => {
+    discardRecordingRef.current = true;
+    setIsRecording(false);
+    setRecordSeconds(0);
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state && recorder.state !== 'inactive') recorder.stop();
+    else releaseMediaStream();
   };
 
   const resetConversation = () => {
@@ -343,9 +513,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     stopGeneration();
     setConversationId(conversation.id);
     setMessages(conversation.messages);
+    setInput('');
+    setAttachments([]);
     setFeedback({});
     setFeedbackComments({});
-    setSelectedProduct(null);
+    setSelectedProduct(conversation.selectedProduct || null);
     setIsMenuOpen(false);
   };
 
@@ -357,6 +529,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       setMessages([]);
       setFeedback({});
       setFeedbackComments({});
+      setSelectedProduct(null);
     }
   };
 
@@ -366,11 +539,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       return;
     }
     if (file.size > MAX_FILE_SIZE) {
-      showToast('Fichier trop volumineux (max 10 Mo)');
+      showToast('Image trop volumineuse (max 5 Mo)');
       return;
     }
-    if (kind === 'image' && !file.type.startsWith('image/')) {
-      showToast('Merci de choisir une image valide');
+    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
+      showToast('Formats acceptés : JPEG, PNG, WebP ou GIF');
       return;
     }
     const addFile = (preview?: string) => {
@@ -380,11 +553,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       ]);
       setIsAttachmentSheetOpen(false);
     };
-    if (kind === 'image') {
-      const reader = new FileReader();
-      reader.onload = () => addFile(typeof reader.result === 'string' ? reader.result : undefined);
-      reader.readAsDataURL(file);
-    } else addFile();
+    void kind;
+    const reader = new FileReader();
+    reader.onload = () => addFile(typeof reader.result === 'string' ? reader.result : undefined);
+    reader.onerror = () => showToast('Impossible de lire cette image');
+    reader.readAsDataURL(file);
   };
 
   const handleCopy = async (message: AssistantMessage) => {
@@ -568,13 +741,14 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isDark={isDark}
           isGenerating={isGenerating}
           isRecording={isRecording}
+          isTranscribing={isTranscribing}
           recordSeconds={recordSeconds}
           onChange={setInput}
           onOpenAttachments={() => setIsAttachmentSheetOpen(true)}
           onRemoveAttachment={(id) => setAttachments((current) => current.filter((attachment) => attachment.id !== id))}
-          onStartRecording={() => setIsRecording(true)}
+          onStartRecording={() => void startRecording()}
           onFinishRecording={finishRecording}
-          onCancelRecording={() => { setIsRecording(false); setRecordSeconds(0); }}
+          onCancelRecording={cancelRecording}
           onSend={() => sendMessage()}
           onStop={stopGeneration}
         />

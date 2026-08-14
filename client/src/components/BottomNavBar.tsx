@@ -91,7 +91,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           <button
             type="button"
             onClick={onOpenLens}
-            className={`${NAV_ITEM} text-brand hover:bg-white/45 hover:shadow-sm`}
+            className={`${NAV_ITEM} text-[#0a0a0a] hover:bg-white/45 hover:shadow-sm`}
             aria-label="Ouvrir Ayrovix"
           >
             <AyrovixNavIcon size={25}/>
@@ -101,7 +101,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           <button
             type="button"
             onClick={onToggleAiDrawer}
-            className={`${NAV_ITEM} ${isAiDrawerOpen ? 'bg-brand text-white shadow-[0_9px_22px_-12px_rgba(80,37,209,0.9)]' : 'text-brand hover:bg-white/45 hover:shadow-sm'}`}
+            className={`${NAV_ITEM} text-[#0a0a0a] ${isAiDrawerOpen ? 'bg-white/70 shadow-[0_9px_22px_-14px_rgba(15,15,20,0.55)]' : 'hover:bg-white/45 hover:shadow-sm'}`}
             aria-label="Ouvrir Ayrovi"
             aria-pressed={isAiDrawerOpen}
           >
@@ -113,7 +113,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           <button
             type="button"
             onClick={() => setIsVisionOpen(true)}
-            className={`${NAV_ITEM} text-brand hover:bg-white/45 hover:shadow-sm`}
+            className={`${NAV_ITEM} text-[#0a0a0a] hover:bg-white/45 hover:shadow-sm`}
             aria-label="Ouvrir Ayvisi Vision"
           >
             <AyvisiNavIcon size={26}/>

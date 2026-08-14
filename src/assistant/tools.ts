@@ -4,13 +4,22 @@ import type { CustomerIdentity } from '../customer/auth';
 import { calculatePrice } from '../services/pricing';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/priceQuote';
 import { anthropicExternalSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
+import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
 import type { AyrovixCandidate } from '../ayrovix/types';
 
-export type AssistantToolName = 'get_order_status' | 'calculate_price' | 'search_products' | 'escalate_to_human';
+export type AssistantToolName = 'get_order_status' | 'calculate_price' | 'search_products' | 'lens_search' | 'escalate_to_human';
+
+export interface AssistantImageAttachment {
+  id: string;
+  mediaType: 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif';
+  data?: string;
+  url?: string;
+}
 
 export interface AssistantConversationLine {
   role: 'user' | 'assistant';
   text: string;
+  attachments?: AssistantImageAttachment[];
 }
 
 export interface AssistantToolContext {
@@ -19,6 +28,8 @@ export interface AssistantToolContext {
   sessionId: string;
   conversationId: string;
   messages: AssistantConversationLine[];
+  imageAttachments: AssistantImageAttachment[];
+  webSearchEnabled: boolean;
 }
 
 export interface AssistantToolExecution {
@@ -63,6 +74,22 @@ export const ASSISTANT_TOOLS = [
         query: { type: 'string', description: 'Precise product search query, brand, model or product code.' },
       },
       required: ['query'],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: 'lens_search',
+    description: 'Use AYROVIX Lens as the external visual-shopping eye. For an attached shopping image, pass its attachment id plus only the product facts visibly read from that image. The tool returns real Google Lens/catalogue references and secure quotes; never invent a result.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        image_attachment_id: { type: 'string', description: 'Exact id shown beside the attached image.' },
+        query: { type: 'string', description: 'Product description, brand/model, code or pasted link context extracted from the conversation/image.' },
+        detected_title: { type: 'string', description: 'Product title visibly identified in the image, if any.' },
+        detected_brand: { type: 'string', description: 'Brand visibly identified in the image, if any.' },
+        visible_price: { type: 'number', description: 'Current product price visibly shown in the image. Never use a crossed-out old price.' },
+        visible_currency: { type: 'string', enum: ['TND', 'EUR', 'USD', 'GBP', 'JPY'] },
+      },
       additionalProperties: false,
     },
   },
@@ -190,7 +217,7 @@ async function searchRealProducts(input: any, context: AssistantToolContext): Pr
   if (query.length < 2) return { modelResult: { success: false, code: 'SEARCH_QUERY_REQUIRED', message: 'Demandez une description plus précise du produit.' } };
   const local = catalogSearch(context.db, null, query, 5)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }));
-  const external = await anthropicExternalSearch(query, 6).catch(() => []);
+  const external = context.webSearchEnabled ? await anthropicExternalSearch(query, 6).catch(() => []) : [];
   const seen = new Set<string>();
   const candidates = [...local, ...external]
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }))
@@ -214,6 +241,85 @@ async function searchRealProducts(input: any, context: AssistantToolContext): Pr
         : 'No real matching product was found. Do not invent alternatives.',
     },
     presentation: { query, products: candidates },
+  };
+}
+
+async function lensSearch(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const attachmentId = cleanText(input?.image_attachment_id, 120);
+  const attachment = attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined;
+  const query = cleanText(input?.query || [input?.detected_brand, input?.detected_title].filter(Boolean).join(' '), 220);
+  if (!attachment && query.length < 2) {
+    return { modelResult: { success: false, code: 'LENS_INPUT_REQUIRED', message: 'Demandez une image, un lien ou une description du produit.' } };
+  }
+
+  const visual = attachment?.data
+    ? await serpApiVisualSearch(Buffer.from(attachment.data, 'base64'), 8).catch(() => [])
+    : attachment?.url
+      ? await serpApiVisualSearchUrl(attachment.url, 8).catch(() => [])
+      : [];
+  const local = query.length >= 2
+    ? catalogSearch(context.db, null, query, 5).map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }))
+    : [];
+  // Claude web search is a fallback only after Google Lens/catalogue matching,
+  // never a replacement for the primary visual-search path.
+  const external = context.webSearchEnabled && query.length >= 2 && visual.length === 0 && !local.some((candidate) => candidate.match >= 55)
+    ? await anthropicExternalSearch(query, 6).catch(() => [])
+    : [];
+
+  const visiblePrice = Number(input?.visible_price);
+  const visibleCurrency = cleanText(input?.visible_currency, 3).toUpperCase();
+  const detectedTitle = cleanText(input?.detected_title || query || 'Produit détecté par AYROVIX', 180);
+  const detectedBrand = cleanText(input?.detected_brand, 100) || null;
+  const visibleBreakdown = Number.isFinite(visiblePrice) && visiblePrice > 0
+    ? calculatePrice(context.db.getPricingRules(), visiblePrice, visibleCurrency)
+    : null;
+  const detectedCandidate: AyrovixCandidate | null = visibleBreakdown ? {
+    id: `assistant_vision_${randomUUID()}`,
+    kind: 'external',
+    title: detectedTitle,
+    brand: detectedBrand,
+    model: null,
+    colors: [],
+    sizes: [],
+    source: 'AYROVIX Vision',
+    sourceUrl: '',
+    image: '',
+    images: [],
+    price: visiblePrice,
+    currency: visibleCurrency,
+    priceTnd: visibleBreakdown.totalTND,
+    match: 65,
+  } : null;
+
+  const seen = new Set<string>();
+  const products = [
+    ...(detectedCandidate ? [detectedCandidate] : []),
+    ...visual,
+    ...local,
+    ...external.map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
+  ]
+    .filter((candidate) => {
+      const key = candidate.sourceUrl ? candidate.sourceUrl : `${candidate.source}|${candidate.title.toLowerCase()}|${candidate.price || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => right.match - left.match)
+    .slice(0, 8)
+    .map(quoteCandidate);
+
+  const modelProducts = products.map(({ priceToken: _token, images: _images, image: _image, ...product }) => product);
+  return {
+    modelResult: {
+      success: true,
+      query,
+      imageAnalyzed: Boolean(attachment),
+      products: modelProducts,
+      instruction: products.length
+        ? 'Use only these AYROVIX Lens results. The UI displays cards and collects the mandatory manual link, quantity, color, size and note.'
+        : 'AYROVIX Lens found no real result. Do not invent a product, price, size or color.',
+    },
+    presentation: { query, products, source: attachment ? 'image' : 'text' },
   };
 }
 
@@ -256,6 +362,7 @@ export async function executeAssistantTool(
   if (name === 'get_order_status') return getOrderStatus(input, context);
   if (name === 'calculate_price') return calculateRealPrice(input, context);
   if (name === 'search_products') return searchRealProducts(input, context);
+  if (name === 'lens_search') return lensSearch(input, context);
   if (name === 'escalate_to_human') return escalateToHuman(input, context);
   return { modelResult: { success: false, code: 'UNKNOWN_TOOL', message: 'Outil non reconnu.' } };
 }

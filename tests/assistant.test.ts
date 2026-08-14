@@ -7,6 +7,8 @@ import { selectAssistantModel } from '../src/assistant/service';
 import type { CustomerIdentity } from '../src/customer/auth';
 
 const originalAnthropicKey = process.env.ANTHROPIC_API_KEY;
+const originalSerpApiKey = process.env.SERPAPI_KEY;
+const originalGroqKey = process.env.GROQ_API_KEY;
 const unique = (prefix: string) => `${prefix}_${randomUUID()}`;
 
 function customerIdentity(id: string, phone: string): CustomerIdentity {
@@ -20,6 +22,8 @@ function context(customer: CustomerIdentity | null, conversationId = unique('con
   return {
     db, customer, sessionId: unique('session'), conversationId,
     messages: [{ role: 'user', text: 'J’ai besoin d’aide pour ma commande.' }],
+    imageAttachments: [],
+    webSearchEnabled: true,
   };
 }
 
@@ -62,6 +66,10 @@ describe('AYROVI Claude assistant', () => {
     vi.unstubAllGlobals();
     if (originalAnthropicKey === undefined) delete process.env.ANTHROPIC_API_KEY;
     else process.env.ANTHROPIC_API_KEY = originalAnthropicKey;
+    if (originalSerpApiKey === undefined) delete process.env.SERPAPI_KEY;
+    else process.env.SERPAPI_KEY = originalSerpApiKey;
+    if (originalGroqKey === undefined) delete process.env.GROQ_API_KEY;
+    else process.env.GROQ_API_KEY = originalGroqKey;
   });
 
   test('routes simple requests to Haiku and long complex requests to Sonnet', () => {
@@ -99,6 +107,121 @@ describe('AYROVI Claude assistant', () => {
     expect(result.modelResult.success).toBe(true);
     expect(result.presentation?.breakdown.totalTND).toBeGreaterThan(0);
     expect(result.presentation?.breakdown.originalPrice).toBe(40);
+  });
+
+  test('multimodal chat forwards sanitized image blocks and structured client state to Claude', async () => {
+    process.env.ANTHROPIC_API_KEY = 'assistant-vision-test-key';
+    const fetchMock = vi.fn(async (_url: any, _init: any) => anthropicSse([
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Image analysée.' } },
+      { type: 'content_block_stop', index: 0 },
+      { type: 'message_stop' },
+    ]));
+    vi.stubGlobal('fetch', fetchMock);
+    const imageData = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+    const response = await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', unique('assistant-session'))
+      .send({
+        conversationId: unique('conversation'),
+        state: {
+          orderStage: 'PRODUCT_CONFIGURATION',
+          activeProduct: { title: 'Sneaker test', price: 99 },
+          accessToken: 'must-never-reach-claude',
+          apiKey: 'must-also-stay-server-side',
+          preview: 'data:image/png;base64,secret-preview',
+        },
+        messages: [{
+          role: 'user',
+          text: 'Trouve ce produit.',
+          attachments: [
+            { id: 'image_test_1', type: 'image/png', dataUrl: `data:image/png;base64,${imageData}` },
+            { id: 'image_url_1', type: 'image/webp', url: 'https://cdn.example.org/products/shoe.webp' },
+          ],
+        }],
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Image analysée.');
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body || '{}'));
+    expect(requestBody.system).toContain('PRODUCT_CONFIGURATION');
+    expect(requestBody.system).toContain('Sneaker test');
+    expect(requestBody.system).not.toContain('must-never-reach-claude');
+    expect(requestBody.system).not.toContain('must-also-stay-server-side');
+    expect(requestBody.system).not.toContain('secret-preview');
+    expect(requestBody.messages[0].content).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'text', text: 'AYROVI attachment id: image_test_1' }),
+      expect.objectContaining({ type: 'image', source: expect.objectContaining({ type: 'base64', media_type: 'image/png', data: imageData }) }),
+      expect.objectContaining({ type: 'text', text: 'AYROVI attachment id: image_url_1' }),
+      expect.objectContaining({ type: 'image', source: { type: 'url', url: 'https://cdn.example.org/products/shoe.webp' } }),
+    ]));
+    expect(requestBody.tools.some((tool: any) => tool.name === 'lens_search')).toBe(true);
+  });
+
+  test('lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model', async () => {
+    process.env.SERPAPI_KEY = 'serpapi-assistant-test-key';
+    delete process.env.ANTHROPIC_API_KEY;
+    const fetchMock = vi.fn(async (url: any) => {
+      if (String(url).startsWith('https://serpapi.com/image?')) {
+        return new Response(JSON.stringify({ image_id: 'image_test_id' }), { status: 200, headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({
+        visual_matches: [{
+          title: 'Nike Air Max Test',
+          link: 'https://shop.example.org/products/nike-air-max-test',
+          source: 'Shop Test',
+          thumbnail: 'https://images.example.org/nike.jpg',
+          price: { extracted_value: 120, currency: 'EUR' },
+          exact_matches: true,
+        }],
+      }), { status: 200, headers: { 'content-type': 'application/json' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const imageData = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+    const toolContext = context(null);
+    toolContext.imageAttachments = [{ id: 'image_test_2', mediaType: 'image/png', data: imageData.toString('base64') }];
+    const result = await executeAssistantTool('lens_search', { image_attachment_id: 'image_test_2' }, toolContext);
+
+    expect(result.modelResult.success).toBe(true);
+    expect(result.modelResult.imageAnalyzed).toBe(true);
+    expect(result.presentation?.products[0].title).toBe('Nike Air Max Test');
+    expect(result.presentation?.products[0].priceToken).toBeTruthy();
+    expect(result.modelResult.products[0].priceToken).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('voice endpoint validates audio and returns Groq Whisper transcription', async () => {
+    delete process.env.GROQ_API_KEY;
+    const unavailable = await request(app)
+      .post('/api/assistant/transcribe')
+      .set('x-session-id', unique('assistant-session'))
+      .attach('audio', Buffer.from('voice'), { filename: 'voice.webm', contentType: 'audio/webm' });
+    expect(unavailable.status).toBe(503);
+    expect(unavailable.body.code).toBe('VOICE_UNAVAILABLE');
+
+    process.env.GROQ_API_KEY = 'groq-test-key';
+    const unsupported = await request(app)
+      .post('/api/assistant/transcribe')
+      .set('x-session-id', unique('assistant-session'))
+      .attach('audio', Buffer.from('voice'), { filename: 'voice.txt', contentType: 'text/plain' });
+    expect(unsupported.status).toBe(415);
+
+    const fetchMock = vi.fn(async (_url: any, init: any) => {
+      expect(init.headers.Authorization).toBe('Bearer groq-test-key');
+      expect(init.body).toBeInstanceOf(FormData);
+      return new Response(JSON.stringify({ text: 'Je cherche ces chaussures', language: 'fr', duration: 2.4 }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const transcribed = await request(app)
+      .post('/api/assistant/transcribe')
+      .set('x-session-id', unique('assistant-session'))
+      .attach('audio', Buffer.from('voice-bytes'), { filename: 'voice.webm', contentType: 'audio/webm' });
+    expect(transcribed.status).toBe(200);
+    expect(transcribed.body.data).toEqual({ text: 'Je cherche ces chaussures', provider: 'groq-whisper' });
+    expect(fetchMock).toHaveBeenCalledOnce();
   });
 
   test('support escalation requires guest contact and deduplicates an open conversation ticket', async () => {

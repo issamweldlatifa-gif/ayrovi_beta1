@@ -1,9 +1,11 @@
+import type { AyrovixProduct } from '../../ayrovix/types';
 import { AssistantMessage } from './types';
 
 export interface AssistantConversation {
   id: string;
   title: string;
   messages: AssistantMessage[];
+  selectedProduct?: { messageId: string; product: AyrovixProduct; priceVerified: boolean } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,6 +49,56 @@ const sanitizeMessage = (value: any): AssistantMessage | null => {
   };
 };
 
+const finiteNumber = (value: unknown): number | null => value == null || value === ''
+  ? null
+  : Number.isFinite(Number(value)) ? Number(value) : null;
+
+const sanitizeSelectedProduct = (value: any): AssistantConversation['selectedProduct'] => {
+  const source = value?.product;
+  const messageId = String(value?.messageId || '').slice(0, 120);
+  const title = String(source?.title || '').trim().slice(0, 240);
+  if (!messageId || !title) return null;
+  const strings = (items: unknown, limit: number) => Array.isArray(items)
+    ? items.map((item) => String(item || '').trim().slice(0, 120)).filter(Boolean).slice(0, limit)
+    : [];
+  const availability = ['in_stock', 'limited', 'out_of_stock', 'unknown'].includes(source?.availability)
+    ? source.availability : 'unknown';
+  const product: AyrovixProduct = {
+    title,
+    brand: source?.brand ? String(source.brand).slice(0, 120) : null,
+    model: source?.model ? String(source.model).slice(0, 120) : null,
+    description: String(source?.description || '').slice(0, 1000),
+    image: String(source?.image || '').slice(0, 4096),
+    images: Array.isArray(source?.images)
+      ? source.images.map((item: unknown) => String(item || '').trim().slice(0, 4096)).filter(Boolean).slice(0, 8)
+      : [],
+    source: String(source?.source || '').slice(0, 180),
+    sourceUrl: String(source?.sourceUrl || '').slice(0, 4096),
+    price: finiteNumber(source?.price),
+    currency: source?.currency ? String(source.currency).slice(0, 8) : null,
+    priceTnd: finiteNumber(source?.priceTnd),
+    exchangeRate: finiteNumber(source?.exchangeRate),
+    colors: strings(source?.colors, 30),
+    sizes: strings(source?.sizes, 30),
+    variantOptions: Array.isArray(source?.variantOptions) ? source.variantOptions.slice(0, 80).map((option: any) => ({
+      id: option?.id ? String(option.id).slice(0, 160) : null,
+      label: String(option?.label || '').slice(0, 180),
+      size: option?.size ? String(option.size).slice(0, 120) : null,
+      color: option?.color ? String(option.color).slice(0, 120) : null,
+      available: option?.available !== false,
+      price: finiteNumber(option?.price),
+      currency: option?.currency ? String(option.currency).slice(0, 8) : null,
+      priceTnd: finiteNumber(option?.priceTnd),
+      priceToken: option?.priceToken ? String(option.priceToken).slice(0, 4096) : null,
+    })) : undefined,
+    availability,
+    priceVerified: source?.priceVerified === true,
+    priceVerificationStatus: source?.priceVerificationStatus === 'VERIFIED' ? 'VERIFIED' : 'PENDING_MANUAL',
+    priceToken: source?.priceToken ? String(source.priceToken).slice(0, 4096) : null,
+  };
+  return { messageId, product, priceVerified: value?.priceVerified === true };
+};
+
 const sanitizeConversation = (value: any): AssistantConversation | null => {
   if (!value || typeof value !== 'object') return null;
   const id = String(value.id || '').slice(0, 120);
@@ -59,6 +111,7 @@ const sanitizeConversation = (value: any): AssistantConversation | null => {
     id,
     title: String(value.title || 'Nouvelle conversation').trim().slice(0, 80) || 'Nouvelle conversation',
     messages,
+    selectedProduct: sanitizeSelectedProduct(value.selectedProduct),
     createdAt: Number.isFinite(Date.parse(value.createdAt)) ? value.createdAt : now,
     updatedAt: Number.isFinite(Date.parse(value.updatedAt)) ? value.updatedAt : now,
   };

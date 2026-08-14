@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { AyrovixCandidate } from '../types';
+import { parsePublicHttpUrl } from '../../services/safeUrl';
 
 /**
  * Google Lens product discovery through SerpApi.
@@ -157,6 +158,59 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
   } catch (error: any) {
     console.warn(`[AYROVIX serpapi-lens] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];
+  }
+}
+
+async function runSerpApiVisualSearchUrl(imageUrl: string, limit: number): Promise<AyrovixCandidate[]> {
+  const key = serpApiKey();
+  if (!key) return [];
+  try {
+    const safeUrl = parsePublicHttpUrl(imageUrl).toString();
+    const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
+    const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
+    const params = new URLSearchParams({
+      engine: 'google_lens',
+      type: 'products',
+      url: safeUrl,
+      hl: 'fr',
+      country,
+      api_key: key,
+    });
+    const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
+      signal: AbortSignal.timeout(timeoutMs()),
+    });
+    if (!response.ok) {
+      console.warn(`[AYROVIX serpapi-lens] URL search HTTP ${response.status}`);
+      return [];
+    }
+    const payload: any = await response.json();
+    if (payload?.error) return [];
+    const results = toCandidates(payload, limit);
+    console.log(`[AYROVIX serpapi-lens] ${results.length} visual URL product matches`);
+    return results;
+  } catch (error: any) {
+    console.warn(`[AYROVIX serpapi-lens] URL ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    return [];
+  }
+}
+
+export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promise<AyrovixCandidate[]> {
+  if (!serpApiVisualReady()) return [];
+  let normalized: string;
+  try { normalized = parsePublicHttpUrl(imageUrl).toString(); } catch { return []; }
+  const cacheKey = `url:${createHash('sha256').update(normalized).digest('hex')}|${limit}`;
+  const cached = cache.get(cacheKey);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
+  const existing = inFlight.get(cacheKey);
+  if (existing) return (await existing).map((item) => ({ ...item }));
+  const task = runSerpApiVisualSearchUrl(normalized, limit);
+  inFlight.set(cacheKey, task);
+  try {
+    const results = await task;
+    if (results.length) cache.set(cacheKey, { at: Date.now(), results });
+    return results.map((item) => ({ ...item }));
+  } finally {
+    inFlight.delete(cacheKey);
   }
 }
 

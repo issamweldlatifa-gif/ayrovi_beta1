@@ -8,6 +8,7 @@ interface AssistantComposerProps {
   isDark: boolean;
   isGenerating: boolean;
   isRecording: boolean;
+  isTranscribing: boolean;
   recordSeconds: number;
   onChange: (value: string) => void;
   onOpenAttachments: () => void;
@@ -27,6 +28,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   isDark,
   isGenerating,
   isRecording,
+  isTranscribing,
   recordSeconds,
   onChange,
   onOpenAttachments,
@@ -76,6 +78,11 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             <span className="text-xs font-medium tabular-nums text-zinc-500">{formatTime(recordSeconds)}</span>
             <button type="button" onClick={onCancelRecording} className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 hover:text-red-500" aria-label="Annuler l’enregistrement"><X className="h-4 w-4" /></button>
           </div>
+        ) : isTranscribing ? (
+          <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
+            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#7638fa]/25 border-t-[#7638fa]" />
+            <span className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'}`}>Transcription du message vocal…</span>
+          </div>
         ) : (
           <textarea
             value={value}
@@ -89,7 +96,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
         )}
 
         <div className="flex items-center justify-between">
-          <button type="button" onClick={onOpenAttachments} disabled={isGenerating || isRecording} className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`} aria-label="Ajouter au chat">
+          <button type="button" onClick={onOpenAttachments} disabled={isGenerating || isRecording || isTranscribing} className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`} aria-label="Ajouter au chat">
             <Plus className="h-[18px] w-[18px]" />
           </button>
 
@@ -97,7 +104,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             <button
               type="button"
               onClick={isRecording ? onFinishRecording : onStartRecording}
-              disabled={isGenerating}
+              disabled={isGenerating || isTranscribing}
               className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${isRecording ? 'animate-pulse bg-red-500 text-white' : surfaceButton}`}
               aria-label={isRecording ? 'Terminer l’enregistrement' : 'Enregistrer un message vocal'}
             >
@@ -106,7 +113,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             <button
               type="button"
               onClick={isGenerating ? onStop : onSend}
-              disabled={!isGenerating && (!canSend || isRecording)}
+              disabled={isTranscribing || (!isGenerating && (!canSend || isRecording))}
               className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-30 ${isDark ? 'bg-zinc-100 text-zinc-900 hover:bg-white' : 'bg-zinc-900 text-white hover:bg-black'}`}
               aria-label={isGenerating ? 'Arrêter la réponse' : 'Envoyer'}
             >
