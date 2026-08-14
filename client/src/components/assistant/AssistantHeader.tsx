@@ -1,7 +1,6 @@
 import React from 'react';
 import { ArrowLeft, History } from '../QatafoIcons';
-import { AyroviMotionState } from '../AyroviMotion';
-import { AssistantBrandMark } from './AssistantBrandMark';
+import { AyroviMotion, AyroviMotionState } from '../AyroviMotion';
 
 interface AssistantHeaderProps {
   isDark: boolean;
@@ -32,8 +31,8 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({
         <span className="hidden min-[360px]:inline">Retour</span>
       </button>
 
-      <div className={`flex min-w-0 items-center justify-center gap-2.5 font-extrabold tracking-[-0.045em] ${isDark ? 'text-zinc-50' : 'text-[#111111]'}`} aria-label="AYROVI Assistant">
-        <AssistantBrandMark state={motionState} size={35} />
+      <div className={`flex min-w-0 items-center justify-center gap-2 font-extrabold tracking-[-0.045em] ${isDark ? 'text-zinc-50' : 'text-[#111111]'}`} aria-label="AYROVI Assistant">
+        <AyroviMotion state={motionState} size={28} color="#0a0a0a" />
         <span className="text-[15px] leading-none">AYROVI</span>
       </div>
 
