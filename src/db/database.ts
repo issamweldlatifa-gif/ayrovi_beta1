@@ -85,7 +85,33 @@ const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   updated_at TEXT NOT NULL
 );`;
 
+const STORIES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS stories (
+  id TEXT PRIMARY KEY,
+  media_type TEXT NOT NULL DEFAULT 'IMAGE' CHECK(media_type IN ('IMAGE','VIDEO')),
+  media_url TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'NEW' CHECK(category IN ('NEW','ARRIVAGE','STYLE','INFO','PROMO')),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  cta TEXT NOT NULL DEFAULT '',
+  target_url TEXT NOT NULL DEFAULT '',
+  product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+  arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
+  promotion_id TEXT REFERENCES promotions(id) ON DELETE SET NULL,
+  publish_at TEXT NOT NULL,
+  expires_at TEXT,
+  priority INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL CHECK(status IN ('DRAFT','SCHEDULED','PUBLISHED','EXPIRED','ARCHIVED')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);`;
+const STORIES_INDEXES_SQL = `CREATE INDEX IF NOT EXISTS idx_stories_status_order ON stories(status, priority DESC, publish_at);`;
 
+export function slugifyTitle(value: string): string {
+  return String(value || '')
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').slice(0, 80);
+}
 
 export class QatafoDatabase {
   private db: Database.Database;
@@ -265,29 +291,13 @@ export class QatafoDatabase {
         PRIMARY KEY(promotion_id, product_id)
       );
 
-      CREATE TABLE IF NOT EXISTS stories (
-        id TEXT PRIMARY KEY,
-        media_type TEXT NOT NULL DEFAULT 'IMAGE' CHECK(media_type IN ('IMAGE','VIDEO')),
-        media_url TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        cta TEXT NOT NULL DEFAULT '',
-        target_url TEXT NOT NULL DEFAULT '',
-        product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
-        arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
-        promotion_id TEXT REFERENCES promotions(id) ON DELETE SET NULL,
-        publish_at TEXT NOT NULL,
-        expires_at TEXT,
-        priority INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL CHECK(status IN ('DRAFT','SCHEDULED','PUBLISHED','EXPIRED')),
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_stories_status_order ON stories(status, priority DESC, publish_at);
+      ${STORIES_TABLE_SQL}
+      ${STORIES_INDEXES_SQL}
 
       CREATE TABLE IF NOT EXISTS news_items (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
+        slug TEXT NOT NULL DEFAULT '',
         summary TEXT NOT NULL DEFAULT '',
         content TEXT NOT NULL DEFAULT '',
         image TEXT NOT NULL DEFAULT '',
@@ -605,6 +615,14 @@ export class QatafoDatabase {
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.rebuildTableIfLegacy('orders', 'deposit_discount_tnd', ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
     this.rebuildTableIfLegacy('payments', "'POSTE'", PAYMENTS_TABLE_SQL, []);
+    // AYROVI Content System : slug éditorial pour les articles + statut ARCHIVED pour les stories.
+    this.ensureColumn('news_items', 'slug', "TEXT NOT NULL DEFAULT ''");
+    this.rebuildTableIfLegacy('stories', "'ARCHIVED'", STORIES_TABLE_SQL, [STORIES_INDEXES_SQL]);
+    this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'NEW'");
+    const slugless = this.db.prepare(`SELECT id,title FROM news_items WHERE slug IS NULL OR slug=''`).all() as Array<{ id: string; title: string }>;
+    for (const row of slugless) {
+      this.db.prepare(`UPDATE news_items SET slug=? WHERE id=?`).run(`${slugifyTitle(row.title)}-${row.id.replace(/[^a-z0-9]+/gi, '').slice(-6).toLowerCase()}`, row.id);
+    }
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
     this.rebuildTableIfLegacy('settings', "'CHANNELS'", SETTINGS_TABLE_SQL, []);
@@ -768,23 +786,34 @@ export class QatafoDatabase {
       this.db.prepare('INSERT OR IGNORE INTO promotion_products (promotion_id,product_id) VALUES (?,?)').run('promo_arrival_08','product_demo_01');
     }
 
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM stories').get() as any).count === 0) {
-      this.db.prepare(`INSERT INTO stories
-        (id,media_type,media_url,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'story_arrival_08','IMAGE','/media/hero-femme.jpg','Arrivage #08 ouvert','Découvrez la sélection et préparez votre commande.','Découvrir','#arrivages',
-          'product_demo_01','arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
-        );
-    }
+    {
+      // AYROVI Content System — seed idempotent (INSERT OR IGNORE) : les entrées
+      // existantes sont conservées, les manquantes sont créées avec des dates relatives.
+      const day = 86_400_000;
+      const iso = (offsetDays: number) => new Date(Date.now() + offsetDays * day).toISOString();
+      const storyInsert = this.db.prepare(`INSERT OR IGNORE INTO stories
+        (id,media_type,media_url,category,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      storyInsert.run('story_arrival_08','IMAGE','/media/hero-femme.jpg','ARRIVAGE','Arrivage #08 ouvert','Découvrez la sélection et préparez votre commande.','Découvrir','#arrivages','product_demo_01','arrival_08','promo_arrival_08',iso(-2),iso(7),100,'PUBLISHED',now,now);
+      storyInsert.run('story_new_selection','IMAGE','/media/hero-homme.jpg','NEW','Nouvelle sélection','Une sélection internationale mode et lifestyle.','Voir la sélection','#arrivages','product_demo_01','arrival_08',null,iso(-1),iso(9),80,'PUBLISHED',now,now);
+      storyInsert.run('story_style_week','IMAGE','/media/hero-enfants.jpg','STYLE','Les tendances du moment','Les essentiels de la semaine repérés pour vous.','Découvrir','',null,null,null,iso(-1),iso(9),60,'PUBLISHED',now,now);
+      storyInsert.run('story_prepare_order','IMAGE','/media/hero-femme.jpg','INFO','Préparez votre commande','Lens, lien direct, calcul en dinars : tout est prêt.','Commander','',null,null,null,iso(0),iso(10),40,'PUBLISHED',now,now);
 
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM news_items').get() as any).count === 0) {
-      this.db.prepare(`INSERT INTO news_items
-        (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
-          'news_arrival_08','Le nouvel arrivage AYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
-          'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe AYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
-        );
+      const newsInsert = this.db.prepare(`INSERT OR IGNORE INTO news_items
+        (id,title,slug,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+      newsInsert.run('news_arrival_08','Le nouvel arrivage AYROVI est ouvert','le-nouvel-arrivage-ayrovi-est-ouvert',
+        'Les commandes pour l’arrivage #08 sont maintenant disponibles.',
+        'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.\n\nLa sélection #08 combine mode, lifestyle et accessoires sourcés auprès de boutiques internationales vérifiées. Chaque commande suit le parcours standard : validation, achat international, transit puis livraison dans votre gouvernorat.\n\nUtilisez Lens pour estimer un prix en dinars avant de commander, et suivez chaque étape depuis votre espace client.',
+        '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe AYROVI',iso(-2),'PUBLISHED',now,now);
+      newsInsert.run('news_features','Découvrez les nouvelles fonctionnalités AYROVI','decouvrez-les-nouvelles-fonctionnalites-ayrovi',
+        'Lens multimodal, assistant intelligent et suivi enrichi : la plateforme évolue.',
+        'L’assistant AYROVI répond désormais en temps réel, calcule les prix totaux en dinars et suit vos commandes.\n\nLens identifie un produit depuis une photo, un lien, un QR code ou un code-barres, puis propose des correspondances vérifiables avant la commande.\n\nCes outils restent supervisés par l’équipe : chaque prix visible est confirmé manuellement avant achat.',
+        '/media/hero-femme.jpg','AYROVI',null,null,'Équipe AYROVI',iso(-1),'PUBLISHED',now,now);
+      newsInsert.run('news_orders_info','Informations importantes concernant les commandes','informations-importantes-concernant-les-commandes',
+        'Acompte, vérifications et délais : ce qu’il faut savoir avant de commander.',
+        'Un acompte de 20% confirme votre commande ; le paiement par carte bénéficie d’une remise et d’une confirmation immédiate.\n\nLes délais indicatifs couvrent l’achat international, le dédouanement et la livraison dans les 24 gouvernorats.\n\nEn cas de question, l’assistant ou l’équipe AYROVI reste disponible depuis le site.',
+        '/media/hero-enfants.jpg','INFORMATION',null,null,'Équipe AYROVI',iso(0),'PUBLISHED',now,now);
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM ai_knowledge').get() as any).count === 0) {

@@ -307,7 +307,7 @@ export const App: React.FC = () => {
       <HeroSlider />
 
       {/* Backend-managed arrivals, stories, products, promotions and news */}
-      <PublicCmsSections />
+      <PublicCmsSections onOrderProduct={handleExtracted} />
 
       {/* Partner Brands Marquee Slider Container with generous spacing */}
       <PartnerBrandsSlider />

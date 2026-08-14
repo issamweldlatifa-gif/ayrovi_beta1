@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
-import { QatafoDatabase } from '../db/database';
+import { QatafoDatabase, slugifyTitle } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { generateInvoicePdf, invoiceEmailHtml, uploadsDir } from '../services/invoice';
 import { sendMail } from '../services/mailer';
@@ -56,6 +56,7 @@ const resources: Record<string, ResourceConfig> = {
     jsonFields: ['secondary_images'], enums: { type: ['STANDARD','EXPRESS'], status: ['DRAFT','SCHEDULED','ACTIVE','COMPLETED','ARCHIVED'] },
     softDelete: { status: 'ARCHIVED' },
   },
+  // Le slug est éditable mais auto-généré depuis le titre quand il est vide.
   products: {
     table: 'products', module: 'PRODUCTS', prefix: 'product', permission: 'content:write',
     fields: ['name','description','image','additional_images','brand_id','brand_name','category','source_url','source_platform','original_price','currency','express_available','stock_status','status'],
@@ -75,15 +76,15 @@ const resources: Record<string, ResourceConfig> = {
   },
   stories: {
     table: 'stories', module: 'STORIES', prefix: 'story', permission: 'content:write',
-    fields: ['media_type','media_url','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
-    required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta'],
-    sortable: ['title','media_type','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
-    enums: { media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'] },
-    softDelete: { status: 'EXPIRED' },
+    fields: ['media_type','media_url','category','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
+    required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta','category'],
+    sortable: ['title','media_type','category','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
+    enums: { media_type: ['IMAGE','VIDEO'], category: ['NEW','ARRIVAGE','STYLE','INFO','PROMO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED','ARCHIVED'] },
+    softDelete: { status: 'ARCHIVED' },
   },
   news: {
     table: 'news_items', module: 'NEWS', prefix: 'news', permission: 'content:write',
-    fields: ['title','summary','content','image','category','arrival_id','product_id','author','published_at','status'],
+    fields: ['title','slug','summary','content','image','category','arrival_id','product_id','author','published_at','status'],
     required: ['title','category','published_at','status'], searchable: ['title','summary','content','author'],
     sortable: ['title','category','published_at','status','created_at'], defaultSort: 'published_at',
     enums: { category: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'], status: ['DRAFT','SCHEDULED','PUBLISHED','ARCHIVED'] },
@@ -194,6 +195,18 @@ function sanitizePayload(body: any, config: ResourceConfig, partial = false): Re
     throw new Error('La date de fin doit être postérieure à la date de début.');
   }
   return payload;
+}
+
+function resolveNewsSlug(db: QatafoDatabase, payload: Record<string, any>, existing?: Record<string, any>, excludeId?: string): string | null {
+  const explicit = typeof payload.slug === 'string' ? slugifyTitle(payload.slug) : '';
+  const base = explicit || slugifyTitle(String(payload.title ?? existing?.title ?? '')) || 'article';
+  let slug = base;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const taken = db.get<any>(`SELECT id FROM news_items WHERE slug=? AND id!=? LIMIT 1`, slug, excludeId || '');
+    if (!taken) return slug;
+    slug = `${base}-${randomUUID().replace(/-/g, '').slice(0, 6)}`;
+  }
+  return slug;
 }
 
 function validateResourceDates(resource: string, payload: Record<string, any>, existing?: Record<string, any>) {
@@ -526,6 +539,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         const payload = sanitizePayload(req.body, config);
         validateResourceDates(resource, payload);
         if (resource === 'products') recomputeProductPricing(db, payload);
+        if (resource === 'news') payload.slug = resolveNewsSlug(db, payload);
         const id = `${config.prefix}_${randomUUID()}`;
         const now = new Date().toISOString();
         const columns = ['id', ...Object.keys(payload), 'created_at', 'updated_at'];
@@ -550,6 +564,9 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         const payload = sanitizePayload(req.body, config, true);
         validateResourceDates(resource, payload, existing);
         if (resource === 'products') recomputeProductPricing(db, payload, existing);
+        if (resource === 'news' && ('slug' in payload || 'title' in payload)) {
+          payload.slug = resolveNewsSlug(db, payload, existing, req.params.id);
+        }
         if (Object.keys(payload).length === 0 && !req.body.arrival_ids && !req.body.product_ids) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
         const now = new Date().toISOString();
         db.transaction(() => {
