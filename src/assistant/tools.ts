@@ -330,11 +330,15 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
   const suppliedUrl = attachment?.url && possibleUrl === publicProductUrl(attachment.url) ? '' : possibleUrl;
 
   let scannedCode: AyrovixScannedCode | null = null;
-  if (!suppliedUrl && !suppliedCode && attachment?.data) {
+  if (!suppliedUrl && attachment?.data) {
+    // Server-side ZXing is authoritative for uploaded QR/barcodes; model-read
+    // code text is only a fallback.
     scannedCode = await scanCodeFromImage(Buffer.from(attachment.data, 'base64'));
   }
   const scannedUrl = scannedCode?.kind === 'url' ? publicProductUrl(scannedCode.value) : '';
-  const productUrl = suppliedUrl || scannedUrl;
+  const suppliedCodeUrl = publicProductUrl(suppliedCode) || productUrlFromText(suppliedCode);
+  const productUrl = suppliedUrl || scannedUrl || suppliedCodeUrl;
+  const urlCameFromQr = Boolean(scannedUrl || (suppliedCodeUrl && input?.code_type === 'qr'));
 
   if (productUrl) {
     try {
@@ -345,19 +349,19 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
       return {
         modelResult: {
           success: true,
-          mode: scannedUrl ? 'qr_url' : 'url',
+          mode: urlCameFromQr ? 'qr_url' : 'url',
           product: modelProduct(product),
           alternatives: products.map(({ priceToken: _token, images: _images, image: _image, ...candidate }) => candidate),
           instruction: 'The exact pasted-link product and order form are rendered inside the chat. Ask the customer to confirm the mandatory exact link, variant, quantity and note there; never redirect them to Lens.',
         },
-        presentation: { query: product.title, product, products, source: scannedUrl ? 'qr' : 'url' },
+        presentation: { query: product.title, product, products, source: urlCameFromQr ? 'qr' : 'url' },
       };
     } catch {
       return { modelResult: { success: false, code: 'LENS_URL_FAILED', message: 'Le lien produit ne peut pas être analysé. Demandez un lien marchand public complet.' } };
     }
   }
 
-  const codeValue = suppliedCode || (scannedCode && scannedCode.kind !== 'url' ? scannedCode.value : '');
+  const codeValue = (scannedCode && scannedCode.kind !== 'url' ? scannedCode.value : '') || suppliedCode;
   if (codeValue) {
     const products = await searchByCode(codeValue, context);
     return {

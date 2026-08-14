@@ -248,6 +248,13 @@ describe('AYROVI Claude assistant', () => {
     expect(result.modelResult.product.priceToken).toBeUndefined();
     expect(result.modelResult.product.variants[0].priceToken).toBeUndefined();
     expect(testScraper.scrapeProduct).toHaveBeenCalledWith('https://shop.example.org/products/air-max-95');
+
+    const qrResult = await executeAssistantTool('lens_search', {
+      code_type: 'qr', code_value: 'https://shop.example.org/products/air-max-95',
+    }, context(null));
+    expect(qrResult.modelResult.mode).toBe('qr_url');
+    expect(qrResult.presentation?.source).toBe('qr');
+    expect(qrResult.presentation?.product.priceToken).toBeTruthy();
   });
 
   test('server-side AYROVIX scanner reads QR links from assistant image attachments', async () => {
