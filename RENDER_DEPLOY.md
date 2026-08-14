@@ -18,6 +18,7 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : URL HTTPS et jeton Bearer de l’adaptateur SMS.
    - `ANTHROPIC_API_KEY` : clé serveur Claude pour l’identification, le prix visible et le fallback Web.
    - `SERPAPI_KEY` : clé serveur SerpApi pour les correspondances produit Google Lens.
+   - `GROQ_API_KEY` : clé serveur Groq pour la transcription vocale de l’Assistant (optionnel mais recommandé).
 5. Lancez le déploiement.
 
 Les identifiants Google, le secret client et le jeton SMS restent exclusivement dans les variables Render. Ils ne doivent jamais être préfixés par `VITE_` ni ajoutés au code frontend.

@@ -48,6 +48,14 @@ services:
         sync: false
       - key: ANTHROPIC_MODEL
         value: claude-haiku-4-5-20251001
+      - key: ASSISTANT_HAIKU_MODEL
+        value: claude-haiku-4-5-20251001
+      - key: ASSISTANT_SONNET_MODEL
+        value: claude-sonnet-4-5-20250929
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_STT_MODEL
+        value: whisper-large-v3-turbo
       - key: SERPAPI_KEY
         sync: false
       - key: AYROVIX_VISUAL_SEARCH_TIMEOUT_MS
@@ -70,6 +78,10 @@ services:
         sync: false
       - key: SCRAPINGBEE_API_KEY
         sync: false
+      - key: AYROVIX_SCRAPER_PREMIUM
+        value: 'false'
+      - key: AYROVIX_SCRAPINGBEE_STEALTH
+        value: 'false'
       - key: BRIGHTDATA_API_TOKEN
         sync: false
       - key: BRIGHTDATA_UNLOCKER_ZONE
