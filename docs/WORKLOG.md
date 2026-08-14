@@ -108,3 +108,10 @@
 - Le résultat affiche `✅ Prix confirmé` en cas de succès ou un avertissement informatif `⏳` avec motif réel; l’échec n’est plus un blocker. Le prix Lens proposé reste inchangé quand la vérification automatique enrichit la fiche.
 - Le scan navigateur utilise désormais `@zxing/library@0.21.3` en fallback multi-format (QR, EAN/UPC, Code128/39/93, ITF, Data Matrix, Aztec, PDF417) après BarcodeDetector natif; aucun frame ne quitte le navigateur.
 - Validation locale : TypeScript ✅, **55/55** tests ✅, build production ✅, audit npm 0 vulnérabilité ✅ et smoke API devis → panier ✅.
+
+## AYROVIX Lens V2.5 — Header compact et historique hybride (2026-08-14, état courant)
+- Écran caméra : fermeture + flash regroupés à gauche; logo AYROVIX Lens centré; Historique + menu d'information regroupés à droite.
+- Après le début d'un flux, le Header est réduit à une seule ligne sans subtitle : bouton Retour, logo Lens centré et accès Historique. Retour annule immédiatement toute requête en cours puis restaure l'écran précédent.
+- Historique hybride : métadonnées compactes dans un `localStorage` cloisonné invité/compte, synchronisation backend isolée par compte pour les clients connectés, fusion sans doublons dans l'UI. Les photos capturées/importées et les devis signés ne sont jamais conservés dans l'historique.
+- Les recherches photo, lien, QR, code texte et code-barres sont listées avec source, date, prix et action Relancer; la vérification automatique interne d'un candidat n'ajoute pas de doublon.
+- Validation locale : TypeScript ✅ et **56/56** tests ✅, dont isolation compte/invité et persistance automatique d'un scan code-barres.

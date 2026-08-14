@@ -127,6 +127,22 @@ export interface AyrovixReviewRequest {
 }
 
 /** Charge utile transmise au Calculator/panier AYROVI existant (aucun flow modifié). */
+export interface AyrovixHistoryItem {
+  id: string;
+  kind: 'image' | 'url' | 'qr' | 'barcode' | 'code';
+  inputValue: string;
+  queryLabel: string;
+  title: string;
+  imageUrl: string;
+  sourceUrl: string;
+  source: string;
+  price: number | null;
+  currency: string | null;
+  verificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  resultsCount: number;
+  createdAt: string;
+}
+
 export interface AyrovixOrderPayload {
   store: 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
   externalId: string | null;

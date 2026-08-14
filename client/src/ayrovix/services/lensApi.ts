@@ -27,11 +27,11 @@ export async function analyzeImage(file: File, signal?: AbortSignal): Promise<Ay
   return parseResponse<AyrovixImageResult>(response);
 }
 
-export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal): Promise<AyrovixUrlResult> {
+export async function analyzeUrl(url: string, channel: 'url' | 'qr', signal?: AbortSignal, recordHistory = true): Promise<AyrovixUrlResult> {
   const response = await fetch('/api/ayrovix/analyze-url', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url, channel }),
+    body: JSON.stringify({ url, channel, recordHistory }),
     signal,
   });
   return parseResponse<AyrovixUrlResult>(response);

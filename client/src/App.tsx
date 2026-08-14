@@ -360,7 +360,7 @@ export const App: React.FC = () => {
       {/* AYROVIX Lens — expérience caméra mobile-first (au-dessus du système existant) */}
       {isLensOpen && (
         <Suspense fallback={null}>
-          <LensLauncher isOpen onClose={() => setIsLensOpen(false)} onOrder={handleAyrovixOrder} />
+          <LensLauncher isOpen historyScope={customerSession?.account.id || null} onClose={() => setIsLensOpen(false)} onOrder={handleAyrovixOrder} />
         </Suspense>
       )}
 

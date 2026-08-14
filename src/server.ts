@@ -67,7 +67,12 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000)
 app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
-app.use('/api/ayrovix', rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000));
+const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
+app.use('/api/ayrovix', (req, res, next) => {
+  // Reading compact history is free; do not consume the paid-analysis quota.
+  if (req.method === 'GET' && req.path === '/history') return next();
+  return ayrovixRateLimit(req, res, next);
+});
 
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
 app.use(cors({

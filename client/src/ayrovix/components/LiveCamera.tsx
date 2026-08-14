@@ -9,6 +9,7 @@ interface LiveCameraProps {
   onCodeText: (value: string) => void;
   onLink: (url: string) => void;
   onClose: () => void;
+  onHistory: () => void;
   onCameraFailed: () => void;
 }
 
@@ -18,7 +19,7 @@ type CameraMode = 'search' | 'upload' | 'code';
  * AYROVIX Lens — caméra sans effets (user request: remove stars/Xray, keep clean & fast)
  * Radical performance: no animations, no particles, simple white corners only.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onCameraFailed }) => {
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onHistory, onCameraFailed }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -121,28 +122,34 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-      <header className="relative z-10 flex items-center justify-between px-4 pt-4">
-        <button type="button" onClick={onClose} aria-label="Fermer AYROVIX"
-          className="grid h-11 w-11 place-items-center rounded-full bg-white/15 backdrop-blur">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M15 5l-7 7 7 7" /></svg>
-        </button>
-        <p className="text-sm font-extrabold tracking-wide">AYROVIX Lens</p>
-        <div className="flex items-center gap-2">
+      <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 pt-4">
+        <div className="flex items-center gap-1.5 justify-self-start">
+          <button type="button" onClick={onClose} aria-label="Fermer AYROVIX"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
           <button
             type="button"
             onClick={toggleTorch}
             aria-label={torchOn ? 'Éteindre le flash' : 'Allumer le flash'}
-            className={`grid h-11 w-11 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-amber-300 text-black' : 'bg-white/15'}`}
+            className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-amber-300 text-black' : 'bg-white/15'}`}
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2Z" /></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2Z" /></svg>
+          </button>
+        </div>
+        <p className="whitespace-nowrap text-xs font-extrabold tracking-wide">AYROVIX Lens</p>
+        <div className="flex items-center gap-1.5 justify-self-end">
+          <button type="button" onClick={onHistory} aria-label="Historique Lens" title="Historique"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
           </button>
           <button
             type="button"
             onClick={() => setShowInfo(true)}
-            aria-label="Info"
-            className="grid h-11 w-11 place-items-center rounded-full bg-white/15 backdrop-blur"
+            aria-label="Informations AYROVIX Lens"
+            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
           </button>
         </div>
       </header>

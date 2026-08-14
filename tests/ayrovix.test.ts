@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
@@ -9,7 +10,9 @@ import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
 import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { recordAyrovixHistory } from '../src/ayrovix/history';
 import { getAyrovixStats } from '../src/ayrovix/events';
+import { createCustomerSession } from '../src/customer/auth';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
 
@@ -219,6 +222,40 @@ describe('AYROVIX Lens', () => {
     expect(verifyAyrovixPriceToken(token, { ...quote, price: 8.99 })).toBe(false);
     expect(verifyAyrovixPriceToken(token, { ...quote, referenceUrl: 'https://evil.example/other' })).toBe(false);
     expect(verifyAyrovixPriceToken(createAyrovixPriceToken(quote, -1), quote)).toBe(false);
+  });
+
+  test('historique hybride : invité local côté client, compte authentifié isolé et synchronisé côté serveur', async () => {
+    const guest = await request(app).get('/api/ayrovix/history');
+    expect(guest.status).toBe(200);
+    expect(guest.body.data).toEqual([]);
+
+    const accountId = `account_lens_history_${Date.now()}`;
+    const eventId = `ayx_${randomUUID()}`;
+    const now = new Date().toISOString();
+    db.run("INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at) VALUES (?,?,'ACTIVE',?,?)",
+      accountId, 'Client historique Lens', now, now);
+    try {
+      const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: { 'user-agent': 'Vitest' } } as any);
+      recordAyrovixHistory(db, {
+        eventId, accountId, kind: 'url', inputValue: 'https://www.amazon.fr/dp/TESTHISTORY',
+        queryLabel: 'Sneaker historique', title: 'Sneaker historique', imageUrl: 'https://images.example.org/history.jpg',
+        sourceUrl: 'https://www.amazon.fr/dp/TESTHISTORY', source: 'Amazon', price: 79.99, currency: 'EUR',
+        verificationStatus: 'VERIFIED', resultsCount: 3,
+      });
+      const cookie = `ayrovi_customer_session=${encodeURIComponent(session.token)}`;
+      const analyzed = await request(app).post('/api/ayrovix/analyze-barcode').set('Cookie', cookie).send({ code: '619125062532' });
+      expect(analyzed.status).toBe(200);
+
+      const response = await request(app).get('/api/ayrovix/history').set('Cookie', cookie);
+      expect(response.status).toBe(200);
+      expect(response.body.data).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: eventId, kind: 'url', title: 'Sneaker historique', price: 79.99, currency: 'EUR', verificationStatus: 'VERIFIED', resultsCount: 3 }),
+        expect.objectContaining({ id: analyzed.body.data.eventId, kind: 'barcode', inputValue: '619125062532' }),
+      ]));
+      expect(response.body.data[0]).not.toHaveProperty('accountId');
+    } finally {
+      db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
+    }
   });
 
   test('rendu headless : ScraperAPI reçoit render=true et les erreurs conservent fournisseur et cause', async () => {

@@ -1,11 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
-  AyrovixCandidate, AyrovixDetectedPrice, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
+  AyrovixCandidate, AyrovixDetectedPrice, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
+import { rememberAyrovixHistory } from '../services/history';
 import { LiveCamera } from './LiveCamera';
+import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
 import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
@@ -14,6 +16,7 @@ import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 interface LensLauncherProps {
   isOpen: boolean;
   onClose: () => void;
+  historyScope?: string | null;
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
 }
 
@@ -60,7 +63,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
 
 const NEW_SCAN_MESSAGE = 'Cadrez le produit dans un bon éclairage, ou collez son lien direct.';
 
-export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onOrder }) => {
+export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, historyScope, onOrder }) => {
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
   const [stage, setStage] = useState<Stage>(cameraCapable ? 'live' : 'home');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -73,7 +76,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   const [ordering, setOrdering] = useState(false);
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const previewRef = useRef<string | null>(null);
+  const stageRef = useRef<Stage>(stage);
+  stageRef.current = stage;
+  const stageStackRef = useRef<Stage[]>([]);
   const abortRef = useRef(0);
   const requestAbortRef = useRef<AbortController | null>(null);
 
@@ -95,12 +102,22 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   const finishRequest = (controller: AbortController) => {
     if (requestAbortRef.current === controller) requestAbortRef.current = null;
   };
+  const replaceStage = (next: Stage) => {
+    stageRef.current = next;
+    setStage(next);
+  };
+  const enterStage = (next: Stage) => {
+    const current = stageRef.current;
+    if (current !== next) stageStackRef.current.push(current);
+    replaceStage(next);
+  };
 
   const reset = () => {
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
     abortRef.current += 1;
-    setStage(cameraCapable ? 'live' : 'home');
+    stageStackRef.current = [];
+    replaceStage(cameraCapable ? 'live' : 'home');
     if (previewRef.current) { URL.revokeObjectURL(previewRef.current); previewRef.current = null; }
     setPreviewUrl(null);
     setImageFile(null);
@@ -112,11 +129,23 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     setOrdering(false);
     setCopied(false);
     setVerifiedPriceUrl(false);
+    setHistoryOpen(false);
+  };
+
+  const goBack = () => {
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+    abortRef.current += 1;
+    setError(null);
+    setOrdering(false);
+    const previous = stageStackRef.current.pop();
+    if (previous) replaceStage(previous);
+    else reset();
   };
 
   const handleClose = () => { reset(); onClose(); };
 
-  const fail = (code: string, message: string) => { setError({ code, message }); setStage('error'); };
+  const fail = (code: string, message: string) => { setError({ code, message }); replaceStage('error'); };
   const handleImage = async (file: File, autoAnalyze: boolean) => {
     setError(null);
     const prepared = await prepareImage(file);
@@ -125,20 +154,36 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     setPreviewUrl(prepared.previewUrl);
     setImageFile(prepared.file);
     if (autoAnalyze) void runImageAnalysis(prepared.file);
-    else setStage('preview');
+    else enterStage('preview');
   };
 
   const runImageAnalysis = async (fileOverride?: File) => {
     const file = fileOverride || imageFile;
     if (!file) return;
     const { controller, token } = startRequest();
-    setStage('analyzing');
+    enterStage('analyzing');
     setError(null);
     try {
       const result = await analyzeImage(file, controller.signal);
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
       if (!usable && !result.detectedPrice) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
+      const historyMatch = result.candidates[0];
+      rememberAyrovixHistory({
+        id: result.eventId,
+        kind: 'image',
+        inputValue: '',
+        queryLabel: result.query || result.detectedPrice?.title || '',
+        title: historyMatch?.title || result.detectedPrice?.title || result.identification.description || 'Recherche par photo',
+        imageUrl: historyMatch?.image || '',
+        sourceUrl: historyMatch?.sourceUrl || '',
+        source: historyMatch?.source || 'AYROVIX Vision',
+        price: historyMatch?.price ?? result.detectedPrice?.sourcePrice ?? null,
+        currency: historyMatch?.currency ?? result.detectedPrice?.sourceCurrency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
+        resultsCount: result.candidates.length,
+        createdAt: new Date().toISOString(),
+      }, historyScope);
       setCandidatesView({
         queryLabel: result.query || result.detectedPrice?.title || null,
         list: result.candidates,
@@ -146,7 +191,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
         detectedPrice: result.detectedPrice || null,
       });
       setVerifiedPriceUrl(false);
-      setStage('candidates');
+      replaceStage('candidates');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
@@ -158,16 +203,25 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const runUrlAnalysis = async (url: string, channel: 'url' | 'qr') => {
     const { controller, token } = startRequest();
-    setStage('analyzing');
+    enterStage('analyzing');
     setError(null);
     try {
       const result = await analyzeUrl(url, channel, controller.signal);
       if (abortRef.current !== token) return;
       const merchantPriceVerified = result.product.priceVerificationStatus === 'VERIFIED';
+      const historyMatch = result.product.price != null ? null : result.alternates[0];
+      rememberAyrovixHistory({
+        id: result.eventId, kind: channel, inputValue: url, queryLabel: result.product.title,
+        title: historyMatch?.title || result.product.title, imageUrl: historyMatch?.image || result.product.image,
+        sourceUrl: result.product.sourceUrl || url, source: historyMatch?.source || result.product.source,
+        price: historyMatch?.price ?? result.product.price, currency: historyMatch?.currency ?? result.product.currency,
+        verificationStatus: historyMatch?.priceVerificationStatus || result.product.priceVerificationStatus || 'PENDING_MANUAL',
+        resultsCount: 1 + result.alternates.length, createdAt: new Date().toISOString(),
+      }, historyScope);
       setUrlResult(result);
       setProduct(result.product);
       setVerifiedPriceUrl(merchantPriceVerified);
-      setStage('product');
+      replaceStage('product');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
@@ -184,17 +238,26 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const runCodeTextAnalysis = async (value: string) => {
     const { controller, token } = startRequest();
-    setStage('analyzing');
+    enterStage('analyzing');
     setError(null);
     try {
       const result = await analyzeCode(value, controller.signal);
       if (abortRef.current !== token) return;
+      const historyMatch = result.candidates[0];
+      rememberAyrovixHistory({
+        id: result.eventId, kind: 'code', inputValue: result.code, queryLabel: result.code,
+        title: historyMatch?.title || `Code ${result.code}`, imageUrl: historyMatch?.image || '',
+        sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'QR',
+        price: historyMatch?.price ?? null, currency: historyMatch?.currency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
+        resultsCount: result.candidates.length, createdAt: new Date().toISOString(),
+      }, historyScope);
       if (result.candidates.length) {
         setCandidatesView({ queryLabel: `QR ${result.code}`, list: result.candidates, eventId: result.eventId });
-        setStage('candidates');
+        replaceStage('candidates');
       } else {
         setBarcode({ code: result.code, eventId: result.eventId });
-        setStage('barcode');
+        replaceStage('barcode');
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
@@ -207,17 +270,26 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const runBarcodeAnalysis = async (code: string) => {
     const { controller, token } = startRequest();
-    setStage('analyzing');
+    enterStage('analyzing');
     setError(null);
     try {
       const result = await analyzeBarcode(code, controller.signal);
       if (abortRef.current !== token) return;
+      const historyMatch = result.candidates[0];
+      rememberAyrovixHistory({
+        id: result.eventId, kind: 'barcode', inputValue: result.code, queryLabel: result.code,
+        title: historyMatch?.title || `Code-barres ${result.code}`, imageUrl: historyMatch?.image || '',
+        sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'Code-barres',
+        price: historyMatch?.price ?? null, currency: historyMatch?.currency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
+        resultsCount: result.candidates.length, createdAt: new Date().toISOString(),
+      }, historyScope);
       if (result.candidates.length) {
         setCandidatesView({ queryLabel: `Code-barres ${result.code}`, list: result.candidates, eventId: result.eventId });
-        setStage('candidates');
+        replaceStage('candidates');
       } else {
         setBarcode({ code: result.code, eventId: result.eventId });
-        setStage('barcode');
+        replaceStage('barcode');
       }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
@@ -230,12 +302,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   const handleChooseCandidate = async (candidate: AyrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
-    if (candidate.sourceUrl && candidate.kind !== 'catalog') {
-      const { controller, token } = startRequest();
-      setStage('analyzing');
+    if (!candidate.sourceUrl || candidate.kind === 'catalog') {
+      setProduct(candidateToProduct(candidate));
+      setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
+      enterStage('product');
+      return;
+    }
+    const { controller, token } = startRequest();
+    enterStage('analyzing');
       setError(null);
       try {
-        const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal);
+        const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal, false);
         if (abortRef.current !== token) return;
         const lensProduct = candidateToProduct(candidate);
         const extractedPrice = result.product.price;
@@ -265,7 +342,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
           });
           setVerifiedPriceUrl(samePrice);
         }
-        setStage('product');
+        replaceStage('product');
         return;
       } catch (error: any) {
         if (controller.signal.aborted || error?.name === 'AbortError') return;
@@ -273,10 +350,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       } finally {
         finishRequest(controller);
       }
-    }
     setProduct(candidateToProduct(candidate));
-    setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
-    setStage('product');
+    setVerifiedPriceUrl(false);
+    replaceStage('product');
   };
 
   const handleOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
@@ -290,7 +366,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     const priceVerificationStatus = product.priceVerificationStatus || (verifiedPriceUrl ? 'VERIFIED' : 'PENDING_MANUAL');
     if (!priceToken) {
       setError({ code: 'QUOTE_UNAVAILABLE', message: 'Le devis sécurisé a expiré. Relancez AYROVIX Lens pour continuer.' });
-      setStage('error');
+      enterStage('error');
       return;
     }
     setOrdering(true);
@@ -317,9 +393,24 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       handleClose();
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
-      setStage('error');
+      enterStage('error');
       setOrdering(false);
     }
+  };
+
+  const repeatHistoryItem = (item: AyrovixHistoryItem) => {
+    setHistoryOpen(false);
+    if (stageRef.current === 'analyzing') {
+      requestAbortRef.current?.abort();
+      requestAbortRef.current = null;
+      abortRef.current += 1;
+      replaceStage(stageStackRef.current.pop() || (cameraCapable ? 'live' : 'home'));
+    }
+    if (item.kind === 'barcode' && item.inputValue) { void runBarcodeAnalysis(item.inputValue); return; }
+    if (item.kind === 'code' && item.inputValue) { void runCodeTextAnalysis(item.inputValue); return; }
+    const url = item.sourceUrl || item.inputValue;
+    if (url) { void runUrlAnalysis(url, item.kind === 'qr' ? 'qr' : 'url'); return; }
+    reset();
   };
 
   const copyBarcode = async () => {
@@ -330,47 +421,51 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
 
   if (stage === 'live') {
     return (
-      <LiveCamera
-        onPhoto={(file) => void handleImage(file, true)}
-        onQrUrl={(url) => void runUrlAnalysis(url, 'qr')}
-        onBarcode={(code) => void runBarcodeAnalysis(code)}
-        onCodeText={(value) => void runCodeTextAnalysis(value)}
-        onLink={(url) => void runUrlAnalysis(url, 'url')}
-        onClose={handleClose}
-        onCameraFailed={() => setStage('home')}
-      />
+      <>
+        {!historyOpen && <LiveCamera
+          onPhoto={(file) => void handleImage(file, true)}
+          onQrUrl={(url) => void runUrlAnalysis(url, 'qr')}
+          onBarcode={(code) => void runBarcodeAnalysis(code)}
+          onCodeText={(value) => void runCodeTextAnalysis(value)}
+          onLink={(url) => void runUrlAnalysis(url, 'url')}
+          onClose={handleClose}
+          onHistory={() => setHistoryOpen(true)}
+          onCameraFailed={() => { stageStackRef.current = []; replaceStage('home'); }}
+        />}
+        <LensHistory open={historyOpen} scope={historyScope} onClose={() => setHistoryOpen(false)} onRepeat={repeatHistoryItem} onNewScan={() => { setHistoryOpen(false); reset(); }} />
+      </>
     );
   }
 
   return (
     <div className="fixed inset-0 z-[75] flex flex-col bg-white" role="dialog" aria-modal="true" aria-label="AYROVIX Lens">
       <div className="ayrovix-sheet flex h-full flex-col">
-        <header className="flex items-center gap-3 border-b border-line px-4 py-3">
-          <span className="bg-brand-gradient grid h-9 w-9 flex-none place-items-center rounded-xl text-white">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
-              <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16" /><circle cx="12" cy="12" r="3" />
-            </svg>
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-extrabold leading-tight text-ink">AYROVIX</p>
-            <p className="truncate text-[11px] font-semibold text-muted">
-              {stage === 'home' && "Trouvez n'importe quel produit."}
-              {stage === 'preview' && 'Vérifiez votre image'}
-              {stage === 'analyzing' && 'Analyse en cours…'}
-              {stage === 'candidates' && 'Confirmez votre article'}
-              {stage === 'product' && 'Votre produit'}
-              {stage === 'barcode' && 'Code détecté'}
-              {stage === 'error' && 'On réessaie ?'}
-            </p>
+        <header className="grid min-h-[60px] grid-cols-[1fr_auto_1fr] items-center border-b border-line bg-white px-3 pt-[env(safe-area-inset-top)]">
+          <div className="justify-self-start">
+            {stage === 'home' ? (
+              <button type="button" onClick={handleClose} aria-label="Fermer AYROVIX"
+                className="grid h-10 w-10 place-items-center rounded-full text-ink transition active:scale-95">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            ) : (
+              <button type="button" onClick={goBack} aria-label="Retour"
+                className="inline-flex min-h-[42px] items-center gap-1 rounded-xl px-1.5 text-xs font-extrabold text-ink transition active:scale-95">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="m15 5-7 7 7 7"/></svg>
+                Retour
+              </button>
+            )}
           </div>
-          {(stage === 'candidates' || stage === 'product' || stage === 'barcode' || stage === 'preview' || stage === 'error') && (
-            <button type="button" onClick={reset} className="rounded-full px-3 py-2 text-[11px] font-bold text-brand transition hover:bg-brand-light">
-              Caméra
-            </button>
-          )}
-          <button type="button" onClick={handleClose} aria-label="Fermer AYROVIX"
-            className="grid h-10 w-10 place-items-center rounded-full border border-line text-ink transition active:scale-95">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-extrabold text-ink">
+            <span>AYROVIX</span>
+            <span className="bg-brand-gradient grid h-7 w-7 place-items-center rounded-lg text-white">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" aria-hidden="true">
+                <path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </span>
+          </div>
+          <button type="button" onClick={() => setHistoryOpen(true)} aria-label="Historique Lens" title="Historique"
+            className="grid h-10 w-10 place-items-center justify-self-end rounded-full text-ink transition active:scale-95">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
           </button>
         </header>
 
@@ -502,7 +597,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                             availability: 'unknown',
                           });
                           setVerifiedPriceUrl(false);
-                          setStage('product');
+                          enterStage('product');
                         }}
                         className="bg-brand-gradient flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 text-sm font-extrabold text-white shadow"
                       >
@@ -543,7 +638,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
               <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
               {!verifiedPriceUrl && candidatesView?.list.length ? (
-                <button type="button" onClick={() => setStage('candidates')} className="min-h-[42px] w-full rounded-xl border border-line bg-white px-4 text-xs font-bold text-ink">
+                <button type="button" onClick={goBack} className="min-h-[42px] w-full rounded-xl border border-line bg-white px-4 text-xs font-bold text-ink">
                   Retour aux autres résultats
                 </button>
               ) : null}
@@ -585,7 +680,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>
               <div className="flex justify-center gap-2.5">
                 {imageFile && error.code !== 'AYROVIX_UNAVAILABLE' && (
-                  <button type="button" onClick={() => setStage('preview')} className="min-h-[46px] rounded-xl border border-line px-5 text-xs font-bold text-ink">Revoir l'image</button>
+                  <button type="button" onClick={() => replaceStage('preview')} className="min-h-[46px] rounded-xl border border-line px-5 text-xs font-bold text-ink">Revoir l'image</button>
                 )}
                 <button type="button" onClick={reset} className="bg-brand-gradient min-h-[46px] rounded-xl px-5 text-xs font-extrabold text-white">Nouvelle recherche</button>
               </div>
@@ -593,6 +688,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
           )}
         </main>
       </div>
+      <LensHistory open={historyOpen} scope={historyScope} onClose={() => setHistoryOpen(false)} onRepeat={repeatHistoryItem} onNewScan={() => { setHistoryOpen(false); reset(); }} />
     </div>
   );
 };

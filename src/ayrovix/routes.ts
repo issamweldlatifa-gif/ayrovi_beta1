@@ -14,6 +14,7 @@ import type { AyrovixCandidate, AyrovixChannel, AyrovixDetectedPrice, AyrovixPro
 import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
+import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
 
 /**
  * AYROVIX public API — Claude powers visual understanding, visible-price
@@ -105,6 +106,19 @@ function tokenizedDetectedPrice(price: AyrovixDetectedPrice | null): AyrovixDete
   };
 }
 
+function rememberAuthenticatedHistory(
+  db: QatafoDatabase,
+  req: Request,
+  input: Omit<AyrovixHistoryInput, 'accountId'>,
+): void {
+  try {
+    recordAyrovixHistory(db, { ...input, accountId: resolveCustomer(db, req)?.id });
+  } catch (error: any) {
+    // History is a convenience and must never break Lens analysis/order flows.
+    console.warn('[AYROVIX history]', error?.message || 'write failed');
+  }
+}
+
 function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
   const seen = new Set<string>();
   return items.filter((item) => {
@@ -127,6 +141,12 @@ async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<Ay
 
 export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
+
+  router.get('/history', (req: Request, res: Response) => {
+    const customer = resolveCustomer(db, req);
+    if (!customer) return res.json({ success: true, data: [] });
+    return res.json({ success: true, data: listAyrovixHistory(db, customer.id, Number(req.query.limit) || 30) });
+  });
 
   router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
     const file = req.file;
@@ -186,6 +206,20 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         query: query || identification.description,
         candidatesCount: candidates.length,
       });
+      const historyMatch = securedCandidates[0];
+      rememberAuthenticatedHistory(db, req, {
+        eventId,
+        kind: 'image',
+        queryLabel: query || identification.description,
+        title: historyMatch?.title || securedPrice?.title || title,
+        imageUrl: historyMatch?.image || securedPrice?.imageUrl || '',
+        sourceUrl: historyMatch?.sourceUrl || '',
+        source: historyMatch?.source || 'AYROVIX Vision',
+        price: historyMatch?.price ?? securedPrice?.sourcePrice ?? null,
+        currency: historyMatch?.currency ?? securedPrice?.sourceCurrency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
+        resultsCount: candidates.length,
+      });
 
       return res.json({
         success: true,
@@ -225,13 +259,26 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         query: result.product.title,
         candidatesCount: 1 + result.alternates.length,
       });
+      const securedProduct = tokenizedProduct(result.product);
+      const securedAlternates = result.alternates.map(tokenizedCandidate);
+      const historyMatch = securedProduct.price != null ? null : securedAlternates[0];
+      if (req.body?.recordHistory !== false) rememberAuthenticatedHistory(db, req, {
+        eventId,
+        kind: channel === 'qr' ? 'qr' : 'url',
+        inputValue: String(url || ''),
+        queryLabel: result.product.title,
+        title: historyMatch?.title || securedProduct.title,
+        imageUrl: historyMatch?.image || securedProduct.image,
+        sourceUrl: securedProduct.sourceUrl,
+        source: historyMatch?.source || securedProduct.source,
+        price: historyMatch?.price ?? securedProduct.price,
+        currency: historyMatch?.currency ?? securedProduct.currency,
+        verificationStatus: historyMatch?.priceVerificationStatus || securedProduct.priceVerificationStatus,
+        resultsCount: 1 + result.alternates.length,
+      });
       return res.json({
         success: true,
-        data: {
-          product: tokenizedProduct(result.product),
-          alternates: result.alternates.map(tokenizedCandidate),
-          eventId,
-        },
+        data: { product: securedProduct, alternates: securedAlternates, eventId },
       });
     } catch (error: any) {
       if (error instanceof InvalidUrlError || error?.code === 'INVALID_URL') {
@@ -241,23 +288,36 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         try {
           const fallbackQuery = String(url || '').slice(0, 160);
           const candidates = await anthropicExternalSearch(fallbackQuery, 6);
+          const eventId = recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length });
+          const securedAlternates = candidates.map(tokenizedCandidate);
+          const fallbackProduct: AyrovixProduct = {
+            title: `Produit ${fallbackQuery.slice(0, 60)}`,
+            brand: null,
+            model: null,
+            description: 'Lien partagé — résultats Claude Web Search à confirmer.',
+            image: '', images: [], source: 'Web', sourceUrl: String(url || ''),
+            price: null, currency: null, priceTnd: null, exchangeRate: null,
+            colors: [], sizes: [], availability: 'unknown', priceVerified: false,
+            priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
+          };
+          const historyMatch = securedAlternates[0];
+          if (req.body?.recordHistory !== false) rememberAuthenticatedHistory(db, req, {
+            eventId,
+            kind: channel === 'qr' ? 'qr' : 'url',
+            inputValue: String(url || ''),
+            queryLabel: fallbackQuery,
+            title: historyMatch?.title || fallbackProduct.title,
+            imageUrl: historyMatch?.image || '',
+            sourceUrl: String(url || ''),
+            source: historyMatch?.source || 'Web',
+            price: historyMatch?.price ?? null,
+            currency: historyMatch?.currency ?? null,
+            verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
+            resultsCount: candidates.length,
+          });
           return res.json({
             success: true,
-            data: {
-              product: {
-                title: `Produit ${fallbackQuery.slice(0, 60)}`,
-                brand: null,
-                model: null,
-                description: 'Lien partagé — résultats Claude Web Search à confirmer.',
-                image: '', images: [], source: 'Web', sourceUrl: String(url || ''),
-                price: null, currency: null, priceTnd: null, exchangeRate: null,
-                colors: [], sizes: [], availability: 'unknown', priceVerified: false,
-                priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
-              },
-              alternates: candidates.map(tokenizedCandidate),
-              eventId: recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length }),
-              fallback: true,
-            },
+            data: { product: fallbackProduct, alternates: securedAlternates, eventId, fallback: true },
           });
         } catch { /* clean error below */ }
       }
@@ -273,8 +333,17 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const candidates = await searchByCodeOrText(db, value);
+      const securedCandidates = candidates.map(tokenizedCandidate);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
-      return res.json({ success: true, data: { code: value, candidates: candidates.map(tokenizedCandidate), eventId } });
+      const historyMatch = securedCandidates[0];
+      rememberAuthenticatedHistory(db, req, {
+        eventId, kind: 'code', inputValue: value, queryLabel: value,
+        title: historyMatch?.title || `Code ${value}`,
+        imageUrl: historyMatch?.image || '', sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'QR',
+        price: historyMatch?.price ?? null, currency: historyMatch?.currency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL', resultsCount: candidates.length,
+      });
+      return res.json({ success: true, data: { code: value, candidates: securedCandidates, eventId } });
     } catch (error: any) {
       console.warn('[AYROVIX analyze-code]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'CODE_SEARCH_FAILED', error: 'La recherche de ce QR code a échoué.' });
@@ -288,8 +357,17 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const candidates = await searchByCodeOrText(db, code);
+      const securedCandidates = candidates.map(tokenizedCandidate);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
-      return res.json({ success: true, data: { code, candidates: candidates.map(tokenizedCandidate), eventId } });
+      const historyMatch = securedCandidates[0];
+      rememberAuthenticatedHistory(db, req, {
+        eventId, kind: 'barcode', inputValue: code, queryLabel: code,
+        title: historyMatch?.title || `Code-barres ${code}`,
+        imageUrl: historyMatch?.image || '', sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'Code-barres',
+        price: historyMatch?.price ?? null, currency: historyMatch?.currency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL', resultsCount: candidates.length,
+      });
+      return res.json({ success: true, data: { code, candidates: securedCandidates, eventId } });
     } catch (error: any) {
       console.warn('[AYROVIX analyze-barcode]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'BARCODE_SEARCH_FAILED', error: 'La recherche par code a échoué. Essayez avec une photo.' });
