@@ -158,6 +158,22 @@ export function requireCustomer(db: QatafoDatabase, options: { verifiedPhone?: b
   };
 }
 
+export function optionalCustomer(db: QatafoDatabase) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const customer = resolveCustomer(db, req);
+    if (!customer) return next();
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+      const session = db.get<any>('SELECT csrf_token FROM customer_sessions WHERE id=?', customer.sessionId);
+      const supplied = String(req.headers['x-csrf-token'] || '');
+      if (!session || !supplied || hashToken(supplied) !== session.csrf_token) {
+        return res.status(403).json({ success: false, code: 'INVALID_CSRF', error: 'Session de sécurité invalide. Actualisez la page.' });
+      }
+    }
+    (req as any).customer = customer;
+    next();
+  };
+}
+
 export function destroyCustomerSession(db: QatafoDatabase, req: Request) {
   const token = parseCookie(req.headers.cookie, COOKIE_NAME);
   if (token) db.run('DELETE FROM customer_sessions WHERE id=?', hashToken(token));

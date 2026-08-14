@@ -156,6 +156,9 @@ function mergeAccounts(db: QatafoDatabase, sourceId: string, targetId: string): 
     if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='ayrovix_search_history'")) {
       db.run('UPDATE ayrovix_search_history SET account_id=? WHERE account_id=?', targetId, sourceId);
     }
+    if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='assistant_feedback'")) {
+      db.run('UPDATE assistant_feedback SET account_id=? WHERE account_id=?', targetId, sourceId);
+    }
     db.run('DELETE FROM customer_accounts WHERE id=?', sourceId);
     return targetId;
   });

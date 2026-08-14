@@ -1,6 +1,8 @@
+import { createHash } from 'node:crypto';
 import { Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
+import { customerFromRequest, optionalCustomer } from '../customer/auth';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -207,6 +209,38 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       },
       facts, arrivals, promotions, brands, knowledge,
     } });
+  });
+
+  router.post('/assistant-feedback', optionalCustomer(db), (req, res) => {
+    const cleanId = (value: unknown) => {
+      const text = String(value || '').trim();
+      return /^[a-zA-Z0-9:_-]{1,120}$/.test(text) ? text : '';
+    };
+    const conversationId = cleanId(req.body?.conversationId);
+    const messageId = cleanId(req.body?.messageId);
+    const rating = req.body?.rating === 'up' || req.body?.rating === 'down' ? req.body.rating : '';
+    const comment = String(req.body?.comment || '').trim().slice(0, 1500);
+    const responseExcerpt = String(req.body?.responseExcerpt || '').trim().slice(0, 2000);
+    if (!conversationId || !messageId || !rating) {
+      return res.status(400).json({ success: false, code: 'INVALID_ASSISTANT_FEEDBACK', error: 'Avis assistant invalide.' });
+    }
+
+    const customer = (req as any).customer ? customerFromRequest(req) : null;
+    const guestSession = String(req.headers['x-session-id'] || '').trim();
+    if (!customer && (guestSession.length < 8 || guestSession.length > 240)) {
+      return res.status(400).json({ success: false, code: 'ASSISTANT_SESSION_REQUIRED', error: 'Session visiteur invalide.' });
+    }
+    const guestSessionHash = customer ? '' : createHash('sha256').update(guestSession).digest('hex');
+    const owner = customer ? `account:${customer.id}` : `guest:${guestSessionHash}`;
+    const id = `assistant_feedback_${createHash('sha256').update(`${owner}\u0000${conversationId}\u0000${messageId}`).digest('hex').slice(0, 32)}`;
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO assistant_feedback
+      (id,account_id,guest_session_hash,conversation_id,message_id,rating,comment,response_excerpt,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET rating=excluded.rating,comment=excluded.comment,
+        response_excerpt=excluded.response_excerpt,updated_at=excluded.updated_at`,
+    id, customer?.id || null, guestSessionHash, conversationId, messageId, rating, comment, responseExcerpt, now, now);
+    res.status(201).json({ success: true, data: { rating, hasComment: Boolean(comment), updatedAt: now } });
   });
 
   return router;

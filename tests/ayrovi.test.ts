@@ -984,6 +984,54 @@ describe('AYROVI platform', () => {
     expect(newPreview.body.data.totalTND).toBe(127.36);
   });
 
+  test('assistant feedback is persisted for guests and CSRF-protected accounts without storing raw guest sessions', async () => {
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const guestSession = `assistant-guest-${suffix}`;
+    const guestPayload = {
+      conversationId: `conversation_${suffix}`,
+      messageId: `assistant_${suffix}`,
+      rating: 'down',
+      comment: 'La réponse pourrait être plus précise.',
+      responseExcerpt: 'Réponse test AYROVI',
+    };
+    const guest = await request(app)
+      .post('/api/public/assistant-feedback')
+      .set('x-session-id', guestSession)
+      .send(guestPayload);
+    expect(guest.status).toBe(201);
+    const guestRow = db.get<any>('SELECT * FROM assistant_feedback WHERE conversation_id=?', guestPayload.conversationId);
+    expect(guestRow.account_id).toBeNull();
+    expect(guestRow.guest_session_hash).not.toBe(guestSession);
+    expect(guestRow.guest_session_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(guestRow.comment).toBe(guestPayload.comment);
+
+    const updated = await request(app)
+      .post('/api/public/assistant-feedback')
+      .set('x-session-id', guestSession)
+      .send({ ...guestPayload, rating: 'up', comment: '' });
+    expect(updated.status).toBe(201);
+    expect(db.get<any>('SELECT rating,comment FROM assistant_feedback WHERE id=?', guestRow.id)).toEqual({ rating: 'up', comment: '' });
+
+    const accountId = `assistant_account_${suffix}`;
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at)
+      VALUES (?,?,'ACTIVE',?,?)`, accountId, 'Assistant Client', now, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const accountPayload = { ...guestPayload, conversationId: `conversation_account_${suffix}`, messageId: `assistant_account_${suffix}` };
+    const cookie = `ayrovi_customer_session=${encodeURIComponent(session.token)}`;
+    expect((await request(app).post('/api/public/assistant-feedback').set('Cookie', cookie).set('x-session-id', guestSession).send(accountPayload)).status).toBe(403);
+    const authenticated = await request(app)
+      .post('/api/public/assistant-feedback')
+      .set('Cookie', cookie)
+      .set('x-csrf-token', session.csrfToken)
+      .set('x-session-id', guestSession)
+      .send(accountPayload);
+    expect(authenticated.status).toBe(201);
+    const accountRow = db.get<any>('SELECT * FROM assistant_feedback WHERE conversation_id=?', accountPayload.conversationId);
+    expect(accountRow.account_id).toBe(accountId);
+    expect(accountRow.guest_session_hash).toBe('');
+  });
+
   test('RBAC separates content, order, admin and super-admin capabilities', async () => {
     const users = [
       { name: 'Content User', email: 'content@test.ayrovi.tn', password: 'ContentSecure2026!', role: 'CONTENT_MANAGER' },

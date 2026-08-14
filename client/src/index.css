@@ -160,9 +160,87 @@
   animation-play-state: paused;
 }
 
+/* AYROVI eight-part motion mark — all active modes share the same soft settle. */
+.ayrovi-motion {
+  display: block;
+  overflow: visible;
+}
+
+.ayrovi-motion__piece {
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  transition:
+    transform 680ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 420ms ease;
+  will-change: transform, opacity;
+}
+
+.ayrovi-motion[data-state='idle'] .ayrovi-motion__piece {
+  animation: ayroviMotionIdle 3.8s ease-in-out var(--piece-delay) infinite;
+}
+
+.ayrovi-motion[data-state='thinking'] .ayrovi-motion__piece {
+  animation: ayroviMotionThinking 1.15s ease-in-out var(--piece-delay) infinite;
+}
+
+.ayrovi-motion[data-state='analyzing'] .ayrovi-motion__piece {
+  animation: ayroviMotionAnalyzing 920ms ease-in-out var(--piece-sequence-delay) infinite;
+}
+
+.ayrovi-motion[data-state='reasoning'] .ayrovi-motion__piece {
+  animation: ayroviMotionReasoning 1.35s cubic-bezier(0.45, 0, 0.2, 1) var(--piece-delay) infinite;
+}
+
+.ayrovi-motion[data-state='creating'] .ayrovi-motion__piece {
+  animation: ayroviMotionCreating 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--piece-create-delay) infinite;
+}
+
+.ayrovi-motion[data-state='settling'] .ayrovi-motion__piece {
+  animation: none;
+  opacity: 1;
+  transform: translate(0, 0) rotate(0) scale(1);
+}
+
+@keyframes ayroviMotionIdle {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(var(--piece-x), var(--piece-y)) scale(0.985); }
+}
+
+@keyframes ayroviMotionThinking {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  45% { transform: translate(var(--piece-x), var(--piece-y)) rotate(var(--piece-turn)); }
+}
+
+@keyframes ayroviMotionAnalyzing {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  42% { transform: scale(0.84); opacity: 0.42; }
+  68% { transform: scale(1.035); opacity: 1; }
+}
+
+@keyframes ayroviMotionReasoning {
+  0%, 100% { transform: rotate(0) scale(1); }
+  35% { transform: rotate(var(--piece-turn)) scale(0.94); }
+  67% { transform: rotate(var(--piece-counter-turn)) scale(1.015); }
+}
+
+@keyframes ayroviMotionCreating {
+  0% { transform: translate(0, 0) scale(0.94); opacity: 0.7; }
+  52% { transform: translate(var(--piece-x), var(--piece-y)) scale(1.055); opacity: 1; }
+  100% { transform: translate(0, 0) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ayrovi-motion__piece {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
 /* AYROVI assistant subview entrance animations */
 @keyframes assistantSideMenuIn {
-  from { transform: translateX(-100%); }
+  from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
 

@@ -67,6 +67,7 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000)
 app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
+app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
 const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free; do not consume the paid-analysis quota.

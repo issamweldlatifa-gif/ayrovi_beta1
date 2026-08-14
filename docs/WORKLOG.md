@@ -115,3 +115,12 @@
 - Historique hybride : métadonnées compactes dans un `localStorage` cloisonné invité/compte, synchronisation backend isolée par compte pour les clients connectés, fusion sans doublons dans l'UI. Les photos capturées/importées et les devis signés ne sont jamais conservés dans l'historique.
 - Les recherches photo, lien, QR, code texte et code-barres sont listées avec source, date, prix et action Relancer; la vérification automatique interne d'un candidat n'ajoute pas de doublon.
 - Validation locale : TypeScript ✅ et **56/56** tests ✅, dont isolation compte/invité et persistance automatique d'un scan code-barres.
+
+## AYROVI Chat Assistant UI V1 — Motion, messages et feedback hybride (2026-08-14, état courant)
+- Le symbole AYROVI à huit branches a été vectorisé depuis le visuel fourni. Le composant `AyroviMotion` prend en charge `idle`, `thinking`, `analyzing`, `reasoning` et `creating`; chaque état actif revient vers `idle` via le même settle de 680 ms, avec repli statique pour `prefers-reduced-motion`.
+- Header compact : Retour à gauche, symbole animé + AYROVI centré, Historique à droite. Le symbole reflète les quatre phases de génération puis reprend sa respiration idle sans saut.
+- Les messages client utilisent le tint violet AYROVI; chaque réponse assistant possède un avatar violet animé, une bulle neutre, copier/régénérer, 👍/👎 et un formulaire de commentaire accessible.
+- Les avis sont enregistrés côté serveur avec liaison au compte lorsqu'il est connecté, CSRF obligatoire pour ce cas, et hash irréversible de la session pour le visiteur. Aucun identifiant de session brut ni question client n'est stocké.
+- Le menu fictif a été remplacé par les actions AYROVI essentielles : nouvelle conversation, historique local cloisonné invité/compte, commandes, Lens, compte, aide et thème sombre. Les badges et messages placeholder ont été supprimés.
+- Les taux factices ne sont plus récités : l'assistant renvoie vers le calcul Lens basé sur la configuration publiée et le total réel avant confirmation.
+- Validation locale : TypeScript ✅, **57/57** tests ✅ (dont feedback invité/compte + CSRF), build production ✅, audit npm 0 vulnérabilité ✅ et smoke API feedback ✅.

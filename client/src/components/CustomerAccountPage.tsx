@@ -12,6 +12,7 @@ import { getSessionId } from '../utils/session';
 interface CustomerAccountPageProps {
   isOpen: boolean;
   session: CustomerSession | null;
+  initialSection?: Section;
   loadingSession: boolean;
   onClose: () => void;
   onSession: (session: CustomerSession) => void;
@@ -80,9 +81,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputClass = 'w-full rounded-none border border-slate-200 bg-white px-3.5 py-3 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10';
 
 export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
-  isOpen, session, loadingSession, onClose, onSession, onLoggedOut, onOpenCart, onCartChanged, initialMessage,
+  isOpen, session, loadingSession, onClose, onSession, onLoggedOut, onOpenCart, onCartChanged, initialMessage, initialSection = 'home',
 }) => {
-  const [section, setSection] = useState<Section>('home');
+  const [section, setSection] = useState<Section>(initialSection);
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [phone, setPhone] = useState('');
   const [challengeId, setChallengeId] = useState('');
@@ -107,6 +108,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    setSection(initialSection);
     if (initialMessage?.startsWith('Erreur')) {
       setError(initialMessage);
       setNotice('');
@@ -115,7 +117,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setNotice(initialMessage || '');
     }
     customerApi<any>('/api/customer/auth/config').then((result) => setConfig(result.data)).catch(() => setConfig({ phoneOtp: { enabled: false }, google: { enabled: false }, checkoutRequiresAuthentication: true }));
-  }, [isOpen, initialMessage]);
+  }, [isOpen, initialMessage, initialSection]);
 
   useEffect(() => {
     if (!session) return;

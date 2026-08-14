@@ -42,6 +42,7 @@ export const App: React.FC = () => {
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [isCustomerSessionLoading, setIsCustomerSessionLoading] = useState(true);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders'>('home');
   const [accountMessage, setAccountMessage] = useState('');
   const [resumeCheckoutAfterAuth, setResumeCheckoutAfterAuth] = useState(false);
 
@@ -241,6 +242,7 @@ export const App: React.FC = () => {
     setIsProductDrawerOpen(false);
     if (!customerSession) {
       setResumeCheckoutAfterAuth(true);
+      setAccountInitialSection('home');
       setAccountMessage('Connectez-vous pour confirmer votre commande. Votre panier est conservé.');
       setIsAccountOpen(true);
       return;
@@ -287,6 +289,7 @@ export const App: React.FC = () => {
           setIsMenuDrawerOpen(false);
           setIsCartOpen(false);
           setResumeCheckoutAfterAuth(false);
+          setAccountInitialSection('home');
           setAccountMessage('');
           setIsAccountOpen(true);
         }}
@@ -313,7 +316,7 @@ export const App: React.FC = () => {
       <AboutSection />
 
       {/* Hostinger-Style Full Footer with Fig Logo, Qui sommes-nous, Payment & Social Icons */}
-      <Footer onOpenAccount={() => setIsAccountOpen(true)} onOpenAssistant={() => setIsAiDrawerOpen(true)} />
+      <Footer onOpenAccount={() => { setAccountInitialSection('home'); setIsAccountOpen(true); }} onOpenAssistant={() => setIsAiDrawerOpen(true)} />
 
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton />
@@ -352,7 +355,26 @@ export const App: React.FC = () => {
       {/* Modular AYROVI assistant interface */}
       {isAiDrawerOpen && (
         <Suspense fallback={null}>
-          <AiAssistantDrawer isOpen onClose={() => setIsAiDrawerOpen(false)} />
+          <AiAssistantDrawer
+            isOpen
+            historyScope={customerSession?.account.id || null}
+            customerCsrfToken={customerSession?.csrfToken || ''}
+            isAuthenticated={Boolean(customerSession)}
+            onClose={() => setIsAiDrawerOpen(false)}
+            onOpenLens={handleOpenLens}
+            onOpenOrders={() => {
+              setIsAiDrawerOpen(false);
+              setAccountInitialSection('orders');
+              setAccountMessage(customerSession ? '' : 'Connectez-vous pour consulter vos commandes.');
+              setIsAccountOpen(true);
+            }}
+            onOpenAccount={() => {
+              setIsAiDrawerOpen(false);
+              setAccountInitialSection('home');
+              setAccountMessage('');
+              setIsAccountOpen(true);
+            }}
+          />
         </Suspense>
       )}
 
@@ -390,6 +412,7 @@ export const App: React.FC = () => {
             onRequireAuthentication={() => {
               setIsCheckoutOpen(false);
               setResumeCheckoutAfterAuth(true);
+              setAccountInitialSection('home');
               setAccountMessage('Connectez-vous pour confirmer la commande.');
               setIsAccountOpen(true);
             }}
@@ -404,6 +427,7 @@ export const App: React.FC = () => {
             isOpen
             session={customerSession}
             loadingSession={isCustomerSessionLoading}
+            initialSection={accountInitialSection}
             initialMessage={accountMessage}
             onClose={() => { setIsAccountOpen(false); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
             onSession={handleCustomerSession}
@@ -420,7 +444,7 @@ export const App: React.FC = () => {
           <OrderSuccessModal
             result={orderResult}
             onClose={() => setOrderResult(null)}
-            onOpenAccount={() => { setOrderResult(null); setIsAccountOpen(true); }}
+            onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('home'); setIsAccountOpen(true); }}
           />
         </Suspense>
       )}
