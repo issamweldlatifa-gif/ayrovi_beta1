@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 
 export interface AyrovixOrderSelection {
@@ -23,7 +23,6 @@ const AVAILABILITY: Record<string, { label: string; cls: string }> = {
   out_of_stock: { label: 'Rupture signalée', cls: 'bg-red-50 text-red-600' },
   unknown: { label: 'Disponibilité à confirmer', cls: 'bg-slate-100 text-slate-500' },
 };
-const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
 function verificationReason(code?: string | null): string {
   if (!code) return '';
@@ -56,6 +55,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [manualUrl, setManualUrl] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  const [depositPercent, setDepositPercent] = useState(20);
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
   const options = (product.variantOptions || []).filter((option) => option.available);
   const requestedSize = sizeChoice === '__other__' ? customSize.trim() : sizeChoice;
@@ -69,7 +69,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const isUrlValid = validPublicUrl(manualUrl);
   const canOrder = selectedPrice != null && selectedCurrency != null && isUrlValid && quantity >= 1 && quantity <= 99;
   const imageUrls = [...new Set([...(product.images || []), product.image].filter(Boolean))];
-  const sizeOptions = useMemo(() => [...new Set([...product.sizes, ...STANDARD_SIZES])], [product.sizes]);
+  const sizeOptions = [...new Set(product.sizes)];
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/commerce-config')
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((payload) => {
+        const percent = Number(payload?.data?.deposit?.percent);
+        if (!cancelled && Number.isFinite(percent) && percent > 0 && percent <= 100) setDepositPercent(percent);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     setImageIndex(0);
@@ -126,7 +138,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">✅ Prix confirmé</p>
           ) : (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900">
-              <p>⏳ Prix estimé — en attente de vérification manuelle par notre équipe. Vous pouvez commander et payer l'acompte de 20% maintenant.</p>
+              <p>⏳ Prix estimé — en attente de vérification manuelle par notre équipe. Vous pouvez commander et payer l'acompte de {depositPercent}% maintenant.</p>
               {verificationReason(product.verificationFailureCode) && <p className="mt-1 font-medium">Motif : {verificationReason(product.verificationFailureCode)}.</p>}
             </div>
           )}
@@ -212,7 +224,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           disabled={ordering || selectedPrice == null || selectedCurrency == null}
           className="bg-brand-gradient flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98] disabled:opacity-45"
         >
-          {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> Ajout au panier…</> : <>Commander · acompte 20%</>}
+          {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> Ajout au panier…</> : <>Commander · acompte {depositPercent}%</>}
         </button>
       </div>
     </div>

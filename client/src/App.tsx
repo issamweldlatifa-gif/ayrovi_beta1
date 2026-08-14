@@ -362,6 +362,7 @@ export const App: React.FC = () => {
             isAuthenticated={Boolean(customerSession)}
             onClose={() => setIsAiDrawerOpen(false)}
             onOpenLens={handleOpenLens}
+            onOrder={handleAyrovixOrder}
             onOpenOrders={() => {
               setIsAiDrawerOpen(false);
               setAccountInitialSection('orders');

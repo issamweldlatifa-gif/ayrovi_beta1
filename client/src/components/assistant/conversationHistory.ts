@@ -40,6 +40,10 @@ const sanitizeMessage = (value: any): AssistantMessage | null => {
           type: String(item?.type || '').slice(0, 120),
         }))
       : undefined,
+    products: Array.isArray(value.products) ? value.products.slice(0, 8) : undefined,
+    priceBreakdown: value.priceBreakdown && typeof value.priceBreakdown === 'object' ? value.priceBreakdown : undefined,
+    orderStatuses: Array.isArray(value.orderStatuses) ? value.orderStatuses.slice(0, 5) : undefined,
+    supportTicket: value.supportTicket && typeof value.supportTicket === 'object' ? value.supportTicket : undefined,
   };
 };
 

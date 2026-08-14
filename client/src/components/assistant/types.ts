@@ -5,12 +5,50 @@ export interface AssistantAttachment {
   preview?: string;
 }
 
+export interface AssistantPriceBreakdown {
+  originalPrice: number;
+  currency: string;
+  exchangeRate: number;
+  convertedPriceTND: number;
+  customsFeeTND: number;
+  shippingFeeTND: number;
+  serviceFeeTND: number;
+  expressFeeTND: number;
+  totalTND: number;
+  pricingVersion: number;
+}
+
+export interface AssistantOrderStatus {
+  orderId: string;
+  status: string;
+  statusLabel: string;
+  paymentStatus: string;
+  depositStatus: string;
+  trackingCode: string;
+  carrier: string;
+  expectedAt: string | null;
+  updatedAt: string;
+  history: Array<{ status: string; label: string; at: string }>;
+}
+
+export interface AssistantSupportTicket {
+  id: string;
+  status: string;
+  priority?: string;
+  createdAt: string;
+  duplicate?: boolean;
+}
+
 export interface AssistantMessage {
   id: string;
   role: 'user' | 'assistant';
   text: string;
   fromVoice?: boolean;
   attachments?: AssistantAttachment[];
+  products?: import('../../ayrovix/types').AyrovixCandidate[];
+  priceBreakdown?: AssistantPriceBreakdown;
+  orderStatuses?: AssistantOrderStatus[];
+  supportTicket?: AssistantSupportTicket;
 }
 
 export type FeedbackValue = 'up' | 'down';

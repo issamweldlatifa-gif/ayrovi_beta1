@@ -8,6 +8,10 @@ import { AssistantSideMenu } from './AssistantSideMenu';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getSessionId } from '../../utils/session';
 import { AyroviMotionState } from '../AyroviMotion';
+import { analyzeUrl, markChosen } from '../../ayrovix/services/lensApi';
+import type { AyrovixCandidate, AyrovixOrderPayload, AyrovixProduct } from '../../ayrovix/types';
+import type { AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
+import { streamAssistantChat } from './assistantApi';
 import {
   AssistantConversation,
   deleteAssistantConversation,
@@ -25,69 +29,42 @@ interface AiAssistantDrawerProps {
   onOpenLens: () => void;
   onOpenOrders: () => void;
   onOpenAccount: () => void;
+  onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_ATTACHMENTS = 4;
 const createConversationId = () => `conversation_${Date.now()}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
 
-interface AssistantContext {
-  serverTime: string;
-  pricing: { rates: Record<string, number>; customsFeePercent: number; shippingFeeTND: number; serviceFeePercent: number; minimumServiceFeeTND: number; expressFeeTND: number };
-  facts: Record<string, any>;
-  arrivals: Array<{ name: string; type: string; expectedArrivalAt: string; description: string }>;
-  promotions: Array<{ name: string; description: string; promo_code?: string; ends_at: string }>;
-  brands: Array<{ name: string }>;
-  knowledge: Array<{ question: string; answer: string; keywords: string[] }>;
-}
-
-const includesAny = (text: string, words: string[]) => words.some((word) => text.includes(word));
-const createReply = (message: string, context: AssistantContext | null) => {
-  const text = message.toLocaleLowerCase('fr');
-  if (!context && includesAny(text, ['taux', 'change', 'euro', 'dollar', 'frais', 'service', 'douane', 'express', 'livraison', 'délai', 'paiement', 'arrivage', 'promotion', 'marque'])) {
-    return 'Je ne peux pas vérifier les informations commerciales AYROVI pour le moment. Merci de réessayer dans quelques instants afin que je vous communique uniquement les données publiées et à jour.';
-  }
-  if (context) {
-    if (includesAny(text, ['taux', 'change', 'euro', 'eur', 'dollar', 'usd', 'livre', 'gbp', 'yen', 'jpy'])) {
-      return 'Les taux AYROVI applicables sont vérifiés au moment du calcul de votre achat. Ajoutez le produit avec Lens : le total en dinars, frais inclus, sera affiché avant toute confirmation.';
-    }
-    if (includesAny(text, ['frais', 'service', 'douane', 'shipping']) || (text.includes('express') && includesAny(text, ['coût', 'cout', 'tarif', 'prix']))) {
-      const pricing = context.pricing;
-      return `Configuration publiée : douane ${pricing.customsFeePercent} %, livraison ${pricing.shippingFeeTND} TND, service ${pricing.serviceFeePercent} % avec un minimum de ${pricing.minimumServiceFeeTND} TND, et option Express ${pricing.expressFeeTND} TND lorsqu’elle s’applique.`;
-    }
-    if (includesAny(text, ['paiement', 'd17', 'flouci', 'cash', 'cod'])) {
-      const names: Record<string, string> = { COD: 'paiement à la livraison', CARD: 'carte bancaire', BANK_TRANSFER: 'virement bancaire', POSTE: 'mandat postal', D17: 'D17', FLOUCI: 'Flouci' };
-      const methods = Array.isArray(context.facts.payment_methods) ? context.facts.payment_methods.map((method: string) => names[method] || method) : [];
-      return methods.length ? `Moyens de paiement publiés : ${methods.join(', ')}.` : 'Les moyens de paiement ne sont pas renseignés actuellement.';
-    }
-    if (includesAny(text, ['livraison', 'délai', 'gouvernorat'])) {
-      const governorates = Array.isArray(context.facts.governorates) ? context.facts.governorates.length : 0;
-      return `Le délai indicatif publié est de ${context.facts.delivery_delay || 'non renseigné'}.${governorates ? ` AYROVI dessert ${governorates} gouvernorats.` : ''}`;
-    }
-    if (includesAny(text, ['arrivage', 'arrivée', 'arrive', 'express'])) {
-      const future = context.arrivals.filter((arrival) => new Date(arrival.expectedArrivalAt).getTime() > new Date(context.serverTime).getTime()).sort((a, b) => a.expectedArrivalAt.localeCompare(b.expectedArrivalAt));
-      if (!future.length) return 'Aucun prochain arrivage n’est publié actuellement.';
-      return future.slice(0, 3).map((arrival) => `${arrival.name} (${arrival.type === 'EXPRESS' ? 'Express' : 'Standard'}) : ${new Intl.DateTimeFormat('fr-TN', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(arrival.expectedArrivalAt))}.`).join(' ');
-    }
-    if (includesAny(text, ['promotion', 'promo', 'réduction', 'code'])) {
-      if (!context.promotions.length) return 'Aucune promotion active n’est publiée actuellement.';
-      return context.promotions.slice(0, 3).map((promotion) => `${promotion.name}${promotion.promo_code ? ` — code ${promotion.promo_code}` : ''} : ${promotion.description}`).join(' ');
-    }
-    if (includesAny(text, ['marque', 'brand'])) {
-      return context.brands.length ? `Marques partenaires publiées : ${context.brands.map((brand) => brand.name).join(', ')}.` : 'Aucune marque partenaire n’est publiée actuellement.';
-    }
-    const matchingKnowledge = context.knowledge.find((item) => item.keywords.some((keyword) => text.includes(String(keyword).toLocaleLowerCase('fr'))));
-    if (matchingKnowledge) return matchingKnowledge.answer;
-  }
-  if (includesAny(text, ['shein', 'amazon', 'temu', 'aliexpress', 'commander', 'capture', 'image', 'photo', 'calcul', 'total'])) {
-    return 'Pour préparer un achat, ouvrez Lens depuis la barre inférieure, ajoutez une capture d’écran ou collez le lien du produit. Le total en Dinars Tunisiens est ensuite calculé avant confirmation.';
-  }
-  if (includesAny(text, ['suivi', 'référence', 'statut'])) {
-    const contact = context?.facts.company_phone || context?.facts.company_email;
-    return `Pour protéger vos données, le suivi d’une commande nécessite une vérification par l’équipe AYROVI.${contact ? ` Contact publié : ${contact}.` : ''}`;
-  }
-  return 'Je peux vous renseigner sur les frais, arrivages, promotions, marques, livraisons et paiements publiés par AYROVI, ou vous guider pour utiliser Lens.';
+const toStoreKey = (source: string): AyrovixOrderPayload['store'] => {
+  const value = source.toLowerCase();
+  if (value.includes('shein')) return 'shein';
+  if (value.includes('amazon')) return 'amazon';
+  if (value.includes('temu')) return 'temu';
+  if (value.includes('aliexpress')) return 'aliexpress';
+  return 'generic';
 };
+
+const candidateToProduct = (candidate: AyrovixCandidate): AyrovixProduct => ({
+  title: candidate.title,
+  brand: candidate.brand,
+  model: candidate.model,
+  description: '',
+  image: candidate.image,
+  images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
+  source: candidate.source,
+  sourceUrl: candidate.sourceUrl,
+  price: candidate.price,
+  currency: candidate.currency,
+  priceTnd: candidate.priceTnd,
+  priceToken: candidate.priceToken || null,
+  priceVerified: candidate.priceVerificationStatus === 'VERIFIED',
+  priceVerificationStatus: candidate.priceVerificationStatus || 'PENDING_MANUAL',
+  exchangeRate: null,
+  colors: candidate.colors,
+  sizes: candidate.sizes,
+  availability: candidate.kind === 'catalog' ? 'in_stock' : 'unknown',
+});
 
 export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   isOpen,
@@ -98,6 +75,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   onOpenLens,
   onOpenOrders,
   onOpenAccount,
+  onOrder,
 }) => {
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState('');
@@ -116,11 +94,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [feedbackComments, setFeedbackComments] = useState<Record<string, string>>({});
   const [feedbackMessage, setFeedbackMessage] = useState<AssistantMessage | null>(null);
   const [isFeedbackSaving, setIsFeedbackSaving] = useState(false);
-  const [commercialContext, setCommercialContext] = useState<AssistantContext | null>(null);
   const [conversationId, setConversationId] = useState(createConversationId);
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: AyrovixProduct; priceVerified: boolean } | null>(null);
+  const [productBusyId, setProductBusyId] = useState('');
+  const [isOrdering, setIsOrdering] = useState(false);
 
-  const generationTimersRef = useRef<Array<ReturnType<typeof setTimeout>>>([]);
+  const generationAbortRef = useRef<AbortController | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -167,16 +147,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    let cancelled = false;
-    fetch('/api/public/assistant-context')
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((payload) => { if (!cancelled && payload.success && payload.data) setCommercialContext(payload.data); })
-      .catch(() => { if (!cancelled) setCommercialContext(null); });
-    return () => { cancelled = true; };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen) return;
     historyReadyRef.current = false;
     const stored = listAssistantConversations(historyScope);
     setConversations(stored);
@@ -194,7 +164,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   }, [isOpen, historyScope]);
 
   useEffect(() => {
-    if (!isOpen || !historyReadyRef.current || !messages.length) return;
+    if (!isOpen || isGenerating || !historyReadyRef.current || !messages.length) return;
     const existing = conversations.find((item) => item.id === conversationId);
     const firstUserMessage = messages.find((message) => message.role === 'user')?.text || 'Nouvelle conversation';
     const now = new Date().toISOString();
@@ -206,7 +176,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       updatedAt: now,
     });
     setConversations(next);
-  }, [messages, conversationId, historyScope, isOpen]);
+  }, [messages, conversationId, historyScope, isOpen, isGenerating]);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -215,34 +185,57 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const stopGeneration = () => {
-    generationTimersRef.current.forEach(clearTimeout);
-    generationTimersRef.current = [];
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
     setIsGenerating(false);
     setMotionState('idle');
   };
 
-  const scheduleReply = (sourceText: string) => {
+  const startAssistantReply = async (sourceMessages: AssistantMessage[], responseId: string) => {
     stopGeneration();
+    const controller = new AbortController();
+    generationAbortRef.current = controller;
     setIsGenerating(true);
     setMotionState('thinking');
-    generationTimersRef.current = [
-      setTimeout(() => setMotionState('analyzing'), 400),
-      setTimeout(() => setMotionState('reasoning'), 800),
-      setTimeout(() => setMotionState('creating'), 1200),
-      setTimeout(() => {
-        setMessages((current) => [
-          ...current,
-          {
-            id: `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-            role: 'assistant',
-            text: createReply(sourceText, commercialContext),
-          },
-        ]);
+    try {
+      await streamAssistantChat({
+        conversationId,
+        messages: sourceMessages,
+        csrfToken: customerCsrfToken,
+        signal: controller.signal,
+        onEvent: (event) => {
+          if (event.type === 'state') setMotionState(event.state);
+          if (event.type === 'delta') {
+            setMessages((current) => current.map((message) => message.id === responseId ? { ...message, text: message.text + event.text } : message));
+          }
+          if (event.type === 'tool') {
+            setMessages((current) => current.map((message) => {
+              if (message.id !== responseId) return message;
+              if (event.name === 'calculate_price') return { ...message, priceBreakdown: (event.data.breakdown || event.data) as any };
+              if (event.name === 'get_order_status') {
+                const orderStatuses = Array.isArray(event.data.orders) ? event.data.orders : event.data.order ? [event.data.order] : [];
+                return { ...message, orderStatuses: orderStatuses as any };
+              }
+              if (event.name === 'search_products') return { ...message, products: (event.data.products || []) as AyrovixCandidate[] };
+              if (event.name === 'escalate_to_human') return { ...message, supportTicket: (event.data.ticket || event.data) as any };
+              return message;
+            }));
+          }
+        },
+      });
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        setMessages((current) => current.map((message) => message.id === responseId
+          ? { ...message, text: message.text || error?.message || 'Je rencontre un problème de connexion. Réessayez dans un instant.' }
+          : message));
+      }
+    } finally {
+      if (generationAbortRef.current === controller) {
+        generationAbortRef.current = null;
         setIsGenerating(false);
         setMotionState('idle');
-        generationTimersRef.current = [];
-      }, 1600),
-    ];
+      }
+    }
   };
 
   useEffect(() => {
@@ -273,8 +266,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => {
     if (isOpen) return;
-    generationTimersRef.current.forEach(clearTimeout);
-    generationTimersRef.current = [];
+    generationAbortRef.current?.abort();
+    generationAbortRef.current = null;
     setIsGenerating(false);
     setMotionState('idle');
     setIsRecording(false);
@@ -284,7 +277,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   }, [isOpen]);
 
   useEffect(() => () => {
-    generationTimersRef.current.forEach(clearTimeout);
+    generationAbortRef.current?.abort();
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
     if (recordTimerRef.current) clearInterval(recordTimerRef.current);
@@ -307,19 +300,19 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if ((!text && attachments.length === 0) || isGenerating) return;
     const sentAttachments = attachments.map((attachment) => ({ ...attachment }));
     const displayText = text || (sentAttachments.length > 1 ? 'Pièces jointes' : 'Pièce jointe');
-    setMessages((current) => [
-      ...current,
-      {
-        id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        role: 'user',
-        text: displayText,
-        fromVoice,
-        attachments: sentAttachments,
-      },
-    ]);
+    const userMessage: AssistantMessage = {
+      id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      role: 'user',
+      text: displayText,
+      fromVoice,
+      attachments: sentAttachments,
+    };
+    const responseId = `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const sourceMessages = [...messages, userMessage];
+    setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '' }]);
     setInput('');
     setAttachments([]);
-    scheduleReply(displayText);
+    void startAssistantReply(sourceMessages, responseId);
   };
 
   const finishRecording = () => {
@@ -341,6 +334,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setAttachments([]);
     setFeedback({});
     setFeedbackComments({});
+    setSelectedProduct(null);
     setIsMenuOpen(false);
     showToast('Nouvelle conversation');
   };
@@ -351,6 +345,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setMessages(conversation.messages);
     setFeedback({});
     setFeedbackComments({});
+    setSelectedProduct(null);
     setIsMenuOpen(false);
   };
 
@@ -410,9 +405,78 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const handleRegenerate = (messageId: string) => {
     if (isGenerating) return;
     const messageIndex = messages.findIndex((message) => message.id === messageId);
-    const source = [...messages.slice(0, messageIndex)].reverse().find((message) => message.role === 'user');
-    setMessages((current) => current.filter((message) => message.id !== messageId));
-    scheduleReply(source?.text || 'Aide AYROVI');
+    if (messageIndex < 0) return;
+    const sourceMessages = messages.slice(0, messageIndex);
+    const responseId = `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '' }]);
+    void startAssistantReply(sourceMessages, responseId);
+  };
+
+  const handleSelectProduct = async (messageId: string, candidate: AyrovixCandidate) => {
+    if (productBusyId) return;
+    setProductBusyId(candidate.id);
+    try {
+      let product = candidateToProduct(candidate);
+      if (candidate.kind === 'external' && candidate.sourceUrl) {
+        const result = await analyzeUrl(candidate.sourceUrl, 'url', undefined, false);
+        if (result.eventId) void markChosen(result.eventId);
+        product = {
+          ...result.product,
+          title: candidate.title || result.product.title,
+          image: result.product.image || candidate.image,
+          images: result.product.images.length ? result.product.images : (candidate.images || []),
+          source: candidate.source || result.product.source,
+          sourceUrl: candidate.sourceUrl,
+          price: candidate.price ?? result.product.price,
+          currency: candidate.currency ?? result.product.currency,
+          priceTnd: candidate.priceTnd ?? result.product.priceTnd,
+          priceToken: candidate.priceToken || result.product.priceToken,
+          colors: result.product.colors.length ? result.product.colors : candidate.colors,
+          sizes: result.product.sizes.length ? result.product.sizes : candidate.sizes,
+        };
+      }
+      setSelectedProduct({ messageId, product, priceVerified: product.priceVerificationStatus === 'VERIFIED' });
+    } catch (error: any) {
+      setSelectedProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
+      showToast(error?.message || 'Le lien sera vérifié manuellement par AYROVI.');
+    } finally { setProductBusyId(''); }
+  };
+
+  const handleProductOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
+    const product = selectedProduct?.product;
+    if (!product) return;
+    const finalPrice = option?.price ?? product.price;
+    const finalCurrency = option?.currency ?? product.currency;
+    const priceToken = option?.priceToken || product.priceToken || '';
+    if (finalPrice == null || !priceToken) {
+      showToast('Le devis sécurisé a expiré. Relancez la recherche produit dans le chat.');
+      return;
+    }
+    const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
+    setIsOrdering(true);
+    try {
+      await onOrder({
+        store: toStoreKey(product.sourceUrl || product.source || manualUrl),
+        externalId: option?.id || null,
+        url: manualUrl,
+        referenceUrl: product.sourceUrl || '',
+        title: product.title,
+        imageUrl: product.image || '',
+        sourcePrice: finalPrice,
+        sourceCurrency: finalCurrency || 'EUR',
+        priceTND: option?.priceTnd ?? product.priceTnd ?? 0,
+        variant: option?.label || variant || undefined,
+        requestedSize: size,
+        requestedColor: color,
+        customerNote,
+        priceVerificationStatus: product.priceVerificationStatus || 'PENDING_MANUAL',
+        priceToken,
+        quantity,
+      });
+      setSelectedProduct(null);
+      showToast('Produit ajouté au panier.');
+    } catch (error: any) { showToast(error?.message || "L’article n’a pas pu être ajouté au panier."); }
+    finally { setIsOrdering(false); }
   };
 
   const persistFeedback = async (message: AssistantMessage, rating: FeedbackValue, comment: string) => {
@@ -485,11 +549,17 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isDark={isDark}
           copiedId={copiedId}
           feedback={feedback}
+          selectedProduct={selectedProduct}
+          productBusyId={productBusyId}
+          isOrdering={isOrdering}
           onPrompt={(prompt) => sendMessage(prompt)}
           onCopy={handleCopy}
           onRegenerate={handleRegenerate}
           onFeedback={handleFeedback}
           onOpenComment={setFeedbackMessage}
+          onOpenLens={onOpenLens}
+          onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
+          onProductOrder={(selection) => void handleProductOrder(selection)}
         />
 
         <AssistantComposer

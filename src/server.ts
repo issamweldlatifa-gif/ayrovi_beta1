@@ -12,6 +12,7 @@ import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
 import { createCustomerRouter } from './customer/routes';
+import { createAssistantRouter } from './assistant/routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,6 +69,7 @@ app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
+app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
 const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free; do not consume the paid-analysis quota.
@@ -119,6 +121,7 @@ app.use('/api', (_req, res, next) => {
 app.use('/api/admin', createAdminRouter(db));
 app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
 app.use('/api/customer', createCustomerRouter(db));
+app.use('/api/assistant', createAssistantRouter(db));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 

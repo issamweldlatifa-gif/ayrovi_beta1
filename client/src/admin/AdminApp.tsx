@@ -24,6 +24,7 @@ const labels: Record<string, string> = {
   IMAGE: 'Image', VIDEO: 'Vidéo', PUBLISHED: 'Publié', EXPIRED: 'Expiré', NEW_ARRIVAL: 'Nouvel arrivage', NEW_BRAND: 'Nouvelle marque', PROMOTION: 'Promotion',
   DELIVERY: 'Livraison', AYROVI: 'AYROVI', INFORMATION: 'Information', FASHION: 'Mode', SPORT_LIFESTYLE: 'Sport & lifestyle', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison',
   FAQ: 'FAQ', PREDEFINED_RESPONSE: 'Réponse prédéfinie', PAYMENT: 'Paiement', BRAND: 'Marque', ARRIVAL: 'Arrivage', GENERAL: 'Général',
+  PENDING: 'En attente', IN_PROGRESS: 'En cours', RESOLVED: 'Résolu', CLOSED: 'Fermé', NORMAL: 'Normale', HIGH: 'Haute',
 };
 
 const options = (values: string[]) => values.map((value) => ({ value, label: labels[value] || value }));
@@ -124,6 +125,7 @@ const navGroups = [
   ]},
   { label: 'Commerce', items: [
     { id: 'orders', label: 'Commandes', icon: Package, permission: 'commerce:read' as Permission }, { id: 'lens-requests', label: 'Demandes Lens', icon: Sparkles, permission: 'commerce:read' as Permission },
+    { id: 'assistant-support', label: 'Support IA', icon: MessageSquare, permission: 'commerce:read' as Permission },
     { id: 'customers', label: 'Clients', icon: User, permission: 'commerce:read' as Permission }, { id: 'pricing', label: 'Prix & taux', icon: Calculator, permission: 'commerce:read' as Permission }, { id: 'reports', label: 'Rapports', icon: ChartLine, permission: 'reports:read' as Permission },
   ]},
   { label: 'Système', items: [
@@ -431,6 +433,65 @@ const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = 
   </>;
 };
 
+const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }> = ({ canWrite, requestedId }) => {
+  const [rows, setRows] = useState<any[]>([]);
+  const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const [toast, setToast] = useState<any>(null);
+  const load = useCallback(async (page = 1) => {
+    setLoading(true);
+    try {
+      const result = await adminApi<any>(`/assistant-support?${queryString({ page, pageSize: 20, search, status })}`);
+      setRows(result.data || []);
+      setPagination(result.pagination);
+    } catch (error: any) { setToast({ message: error.message, tone: 'error' }); }
+    finally { setLoading(false); }
+  }, [search, status]);
+  useEffect(() => { const timer = setTimeout(() => void load(), 250); return () => clearTimeout(timer); }, [load]);
+  const open = async (row: any) => {
+    try { setSelected((await adminApi<any>(`/assistant-support/${row.id}`)).data); }
+    catch (error: any) { setToast({ message: error.message, tone: 'error' }); }
+  };
+  useEffect(() => { if (requestedId) void open({ id: requestedId }); }, [requestedId]);
+  const save = async () => {
+    if (!selected || !canWrite) return;
+    setBusy(true);
+    try {
+      const result = await adminApi<any>(`/assistant-support/${selected.id}`, {
+        method: 'PUT', body: JSON.stringify({ status: selected.status, priority: selected.priority, adminNote: selected.admin_note || '' }),
+      });
+      setSelected({ ...selected, ...result.data });
+      await load(pagination.page);
+      setToast({ message: 'Ticket support mis à jour et audité.', tone: 'success' });
+    } catch (error: any) { setToast({ message: error.message, tone: 'error' }); }
+    finally { setBusy(false); }
+  };
+  return <>
+    <PageHeader title="Support IA" description="Demandes transférées par Claude à l’équipe AYROVI, avec identité vérifiée ou contact visiteur." />
+    <section className="admin-list-card">
+      <div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client, contact ou motif…"/><Select value={status} onChange={event=>setStatus(event.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['PENDING','IN_PROGRESS','RESOLVED','CLOSED'])]}/></div>
+      <DataTable rows={rows} loading={loading} emptyText="Aucun ticket support." onRowClick={open} columns={[
+        {key:'reason',label:'Demande',render:row=><div><strong>{row.reason}</strong><small className="admin-block-small">{row.id}</small></div>},
+        {key:'contact',label:'Client',render:row=><div>{row.account_name||row.contact}<small className="admin-block-small">{row.account_name?row.contact:'Visiteur'}</small></div>},
+        {key:'priority',label:'Priorité',render:row=><StatusBadge status={row.priority}/>},
+        {key:'status',label:'Statut',render:row=><StatusBadge status={row.status}/>},
+        {key:'created_at',label:'Créé le',render:row=>formatDate(row.created_at,true)},
+      ]}/><Pagination {...pagination} onChange={load}/>
+    </section>
+    <Modal open={Boolean(selected)} title="Ticket support IA" onClose={()=>setSelected(null)} wide footer={selected&&canWrite?<><Button variant="secondary" onClick={()=>setSelected(null)}>Fermer</Button><Button busy={busy} onClick={save}>Enregistrer</Button></>:undefined}>
+      {selected&&<div className="admin-order-detail">
+        <div className="admin-order-summary"><article><span>Client</span><strong>{selected.account_name||selected.contact}</strong><small>{selected.account_name?selected.contact:'Visiteur'}</small></article><article><span>Priorité</span><strong>{selected.priority}</strong><small>{formatDate(selected.created_at,true)}</small></article><article><span>Assigné à</span><strong>{selected.assigned_name||'Non assigné'}</strong><small>{selected.id}</small></article></div>
+        <section className="admin-card" style={{marginBottom:16}}><h3>Motif</h3><p className="admin-block-small">{selected.reason}</p><h3 style={{marginTop:16}}>Contexte transmis</h3><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:13,lineHeight:1.6,background:'#f7f7fa',padding:14,borderRadius:12}}>{selected.context_excerpt||'Aucun contexte enregistré.'}</pre></section>
+        <div className="admin-form-row"><Field label="Statut"><Select disabled={!canWrite||busy} value={selected.status} onChange={event=>setSelected({...selected,status:event.target.value})} options={options(['PENDING','IN_PROGRESS','RESOLVED','CLOSED'])}/></Field><Field label="Priorité"><Select disabled={!canWrite||busy} value={selected.priority} onChange={event=>setSelected({...selected,priority:event.target.value})} options={options(['NORMAL','HIGH'])}/></Field><Field label="Note interne" full><textarea rows={4} disabled={!canWrite||busy} value={selected.admin_note||''} onChange={event=>setSelected({...selected,admin_note:event.target.value})}/></Field></div>
+      </div>}
+    </Modal>{toast&&<Toast message={toast.message} tone={toast.tone}/>}
+  </>;
+};
+
 const CustomersPage: React.FC<{ canWrite?: boolean }> = ({canWrite=false}) => {
   const [tab,setTab]=useState<'accounts'|'files'>('accounts');
   const [rows,setRows]=useState<any[]>([]); const [page,setPage]=useState({page:1,totalPages:1,total:0}); const [search,setSearch]=useState(''); const [loading,setLoading]=useState(true); const [selected,setSelected]=useState<any>(null);
@@ -503,7 +564,7 @@ const NotificationsBell:React.FC<{onNavigate:(section:string,request?:string)=>v
   const load=useCallback(async()=>{try{const r=await adminApi<any>('/notifications?limit=20');setRows(r.data||[]);setUnread(Number(r.unread)||0);}catch{/* صامت */}},[]);
   useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[load]);
   const markAll=async()=>{try{await adminApi('/notifications/read-all',{method:'POST'});await load();}catch{/* */}};
-  const openItem=async(item:any)=>{try{const r=await adminApi<any>(`/notifications/${item.id}/read`,{method:'POST'});setUnread(Number(r.unread)||0);}catch{/* */}setOpen(false);const action=String(item.action_url||'');if(action.includes('section=lens-requests')){const target=new URL(action,location.origin);onNavigate('lens-requests',target.searchParams.get('request')||undefined);}else if(action.includes('tab=orders'))onNavigate('orders');};
+  const openItem=async(item:any)=>{try{const r=await adminApi<any>(`/notifications/${item.id}/read`,{method:'POST'});setUnread(Number(r.unread)||0);}catch{/* */}setOpen(false);const action=String(item.action_url||'');if(action.includes('section=lens-requests')){const target=new URL(action,location.origin);onNavigate('lens-requests',target.searchParams.get('request')||undefined);}else if(action.includes('section=assistant-support')){const target=new URL(action,location.origin);onNavigate('assistant-support',target.searchParams.get('ticket')||undefined);}else if(action.includes('tab=orders'))onNavigate('orders');};
   return <div className="admin-bell"><button className="admin-icon-button" onClick={()=>{setOpen(!open);if(!open)void load();}} aria-label="Notifications"><Bell/>{unread>0&&<b className="admin-bell-badge">{unread>99?'99+':unread}</b>}</button>
   {open&&<div className="admin-bell-panel"><header><strong>Notifications</strong>{unread>0&&<button onClick={markAll}>Tout marquer lu</button>}</header>
   <div className="admin-bell-list">{rows.length===0&&<p className="admin-bell-empty">Aucune notification.</p>}{rows.map(item=><button key={item.id} className={item.read_at?'':'is-unread'} onClick={()=>openItem(item)}><strong>{item.title}</strong><span>{item.message}</span><time>{formatDate(item.created_at,true)}</time></button>)}</div></div>}</div>;
@@ -599,7 +660,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
   const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string,request?:string)=>{setSection(id);setRequestedReview(request||'');setMobile(false);const params=new URLSearchParams({section:id});if(request)params.set('request',request);history.pushState({},'',`/admin?${params}`);};
   useEffect(()=>{const pop=()=>{const params=new URLSearchParams(location.search);setSection(params.get('section')||'dashboard');setRequestedReview(params.get('request')||'');};addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
   return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><FigLeaf/><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={section===id?'is-active':''} onClick={()=>navigate(id)}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank"><Globe2/>Voir le site public</a><span>AYROVI v3.1 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
   <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><NotificationsBell onNavigate={navigate}/><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
 };

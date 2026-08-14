@@ -431,6 +431,65 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     return res.json({ success: true, data: updated });
   });
 
+  router.get('/assistant-support', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const page = parsePositiveInteger(req.query.page, 1, 100000);
+    const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
+    const search = String(req.query.search || '').trim().slice(0, 160);
+    const status = ['PENDING','IN_PROGRESS','RESOLVED','CLOSED'].includes(String(req.query.status)) ? String(req.query.status) : '';
+    const filters: string[] = [];
+    const params: any[] = [];
+    if (search) {
+      filters.push('(t.id LIKE ? OR t.reason LIKE ? OR t.contact LIKE ? OR a.display_name LIKE ?)');
+      params.push(...Array(4).fill(`%${search}%`));
+    }
+    if (status) { filters.push('t.status=?'); params.push(status); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const total = Number(db.get<any>(`SELECT COUNT(*) count FROM assistant_support_tickets t
+      LEFT JOIN customer_accounts a ON a.id=t.account_id ${where}`, ...params)?.count || 0);
+    const rows = db.all<any>(`SELECT t.id,t.conversation_id,t.account_id,t.contact,t.reason,t.status,t.priority,
+      t.assigned_to,t.created_at,t.updated_at,t.resolved_at,a.display_name account_name,u.name assigned_name
+      FROM assistant_support_tickets t
+      LEFT JOIN customer_accounts a ON a.id=t.account_id LEFT JOIN admin_users u ON u.id=t.assigned_to
+      ${where} ORDER BY CASE t.priority WHEN 'HIGH' THEN 0 ELSE 1 END,t.created_at DESC LIMIT ? OFFSET ?`,
+    ...params, pageSize, (page - 1) * pageSize);
+    return res.json({ success: true, data: rows, pagination: { page, pageSize, total, totalPages: Math.max(1, Math.ceil(total / pageSize)) } });
+  });
+
+  router.get('/assistant-support/:id', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const row = db.get<any>(`SELECT t.id,t.conversation_id,t.account_id,t.contact,t.reason,t.context_excerpt,t.status,t.priority,
+      t.assigned_to,t.admin_note,t.created_at,t.updated_at,t.resolved_at,a.display_name account_name,a.email account_email,a.phone account_phone,u.name assigned_name
+      FROM assistant_support_tickets t LEFT JOIN customer_accounts a ON a.id=t.account_id
+      LEFT JOIN admin_users u ON u.id=t.assigned_to WHERE t.id=?`, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Ticket support introuvable.' });
+    return res.json({ success: true, data: row });
+  });
+
+  router.put('/assistant-support/:id', requireAdmin(db, 'orders:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM assistant_support_tickets WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Ticket support introuvable.' });
+    const status = ['PENDING','IN_PROGRESS','RESOLVED','CLOSED'].includes(String(req.body?.status)) ? String(req.body.status) : existing.status;
+    const priority = ['NORMAL','HIGH'].includes(String(req.body?.priority)) ? String(req.body.priority) : existing.priority;
+    const adminNote = typeof req.body?.adminNote === 'string'
+      ? req.body.adminNote.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 3000)
+      : existing.admin_note;
+    const assignee = status === 'PENDING' ? existing.assigned_to : admin(req).id;
+    const resolvedAt = ['RESOLVED','CLOSED'].includes(status) ? (existing.resolved_at || new Date().toISOString()) : null;
+    const now = new Date().toISOString();
+    db.run(`UPDATE assistant_support_tickets SET status=?,priority=?,admin_note=?,assigned_to=?,resolved_at=?,updated_at=? WHERE id=?`,
+    status, priority, adminNote, assignee, resolvedAt, now, existing.id);
+    const updated = db.get<any>('SELECT * FROM assistant_support_tickets WHERE id=?', existing.id);
+    audit(db, req, 'UPDATE', 'ASSISTANT_SUPPORT', existing.id, existing, updated);
+    if (existing.account_id && existing.status !== status && status === 'RESOLVED') {
+      db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,?,?,?,?,?)`, `notification_${randomUUID()}`, existing.account_id, 'GENERAL',
+      'Votre demande de support a été traitée', 'L’équipe AYROVI a traité votre demande envoyée depuis l’assistant.', '/account?tab=notifications', now);
+    }
+    return res.json({ success: true, data: {
+      id: updated.id, status: updated.status, priority: updated.priority, admin_note: updated.admin_note,
+      assigned_to: updated.assigned_to, resolved_at: updated.resolved_at, updated_at: updated.updated_at,
+    } });
+  });
+
   for (const [resource, config] of Object.entries(resources)) {
     router.get(`/${resource}`, requireAdmin(db, resource === 'ai-knowledge' ? 'settings:write' : 'content:read'), (req, res) => {
       const page = parsePositiveInteger(req.query.page, 1, 100000);

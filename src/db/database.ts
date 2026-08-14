@@ -552,6 +552,26 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_feedback_account ON assistant_feedback(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_feedback_rating ON assistant_feedback(rating, created_at DESC);
 
+      CREATE TABLE IF NOT EXISTS assistant_support_tickets (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+        guest_session_hash TEXT NOT NULL DEFAULT '',
+        contact TEXT NOT NULL DEFAULT '',
+        reason TEXT NOT NULL,
+        context_excerpt TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','IN_PROGRESS','RESOLVED','CLOSED')),
+        priority TEXT NOT NULL DEFAULT 'NORMAL' CHECK(priority IN ('NORMAL','HIGH')),
+        assigned_to TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+        admin_note TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_assistant_support_status ON assistant_support_tickets(status, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
         user_id TEXT,
