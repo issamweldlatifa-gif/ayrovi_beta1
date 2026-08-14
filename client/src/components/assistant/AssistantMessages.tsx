@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, ThumbsDown, ThumbsUp } from '../QatafoIcons';
+import { Calculator, Camera, Check, Copy, MessageSquare, Package, PackageCheck, RefreshCw, Search, Share2, ShoppingBag, Sparkles, ThumbsDown, ThumbsUp } from '../QatafoIcons';
 import { AyroviMotion, AyroviMotionState } from '../AyroviMotion';
 import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
@@ -26,12 +26,12 @@ interface AssistantMessagesProps {
 }
 
 const quickPrompts = [
-  { icon: '✨', text: 'Découvrir AYROVI', prompt: 'Présente-moi les services AYROVI.' },
-  { icon: '📦', text: 'Suivre une commande', prompt: 'Je veux suivre ma commande.' },
-  { icon: '🧮', text: 'Calculer un prix', prompt: 'Je veux calculer le prix final d’un produit.' },
-  { icon: '📸', text: 'Utiliser Lens', prompt: 'Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.' },
-  { icon: '🎫', text: 'Contacter le support', prompt: 'J’ai besoin d’aide du support AYROVI.' },
-  { icon: '🛍️', text: 'Rechercher un produit', prompt: 'Aide-moi à rechercher un produit à acheter.' },
+  { icon: Sparkles, text: 'Découvrir AYROVI', prompt: 'Présente-moi les services AYROVI.' },
+  { icon: Package, text: 'Suivre une commande', prompt: 'Je veux suivre ma commande.' },
+  { icon: Calculator, text: 'Calculer un prix', prompt: 'Je veux calculer le prix final d’un produit.' },
+  { icon: Camera, text: 'Utiliser Lens', prompt: 'Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.' },
+  { icon: MessageSquare, text: 'Contacter le support', prompt: 'J’ai besoin d’aide du support AYROVI.' },
+  { icon: Search, text: 'Rechercher un produit', prompt: 'Aide-moi à rechercher un produit à acheter.' },
 ];
 
 const cleanAssistantText = (text: string) => text.replaceAll('[[OPEN_LENS]]', '').trim();
@@ -91,9 +91,16 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
         {!hasMessages ? (
           <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
             <AyroviMotion state="idle" size={112} />
-            <p className={`mt-5 max-w-md text-[15px] leading-7 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Posez votre question à Claude pour suivre une commande, calculer un prix, rechercher un produit ou contacter AYROVI.</p>
+            <p className={`mt-5 max-w-md text-[15px] leading-7 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Posez votre question à l’assistant AYROVI pour suivre une commande, calculer un prix, rechercher un produit ou contacter notre équipe.</p>
             <div className="mt-7 grid w-full max-w-xl grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {quickPrompts.map((item) => <button key={item.text} type="button" onClick={() => onPrompt(item.prompt)} className={`min-h-[76px] rounded-2xl border p-3 text-left text-xs font-bold leading-5 transition active:scale-[0.98] ${isDark ? 'border-white/10 bg-white/[0.04] text-zinc-200 hover:bg-white/[0.08]' : 'border-zinc-200 bg-white text-zinc-700 shadow-sm hover:border-violet-200 hover:shadow-md'}`}><span className="mb-1 block text-xl">{item.icon}</span>{item.text}</button>)}
+              {quickPrompts.map((item) => {
+                const Icon = item.icon;
+                return <button key={item.text} type="button" onClick={() => onPrompt(item.prompt)} className={`group relative min-h-[88px] overflow-hidden rounded-2xl border p-3.5 text-left text-xs font-extrabold leading-5 transition duration-300 active:scale-[0.98] ${isDark ? 'border-violet-400/20 bg-gradient-to-br from-violet-500/[0.14] via-fuchsia-500/[0.06] to-transparent text-zinc-100 shadow-[0_12px_36px_rgba(124,58,237,0.12)] hover:border-violet-400/45 hover:shadow-[0_14px_40px_rgba(124,58,237,0.22)]' : 'border-violet-200/80 bg-gradient-to-br from-white via-violet-50/90 to-fuchsia-50/80 text-zinc-800 shadow-[0_12px_32px_rgba(109,40,217,0.10)] hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-[0_16px_38px_rgba(109,40,217,0.18)]'}`}>
+                  <span aria-hidden="true" className="absolute -right-7 -top-8 h-20 w-20 rounded-full bg-violet-500/20 blur-2xl transition duration-300 group-hover:scale-125 group-hover:bg-fuchsia-500/25" />
+                  <span className={`relative mb-2 grid h-9 w-9 place-items-center rounded-xl border transition duration-300 group-hover:scale-105 ${isDark ? 'border-violet-300/20 bg-violet-400/15 text-violet-300' : 'border-violet-200 bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-[0_7px_18px_rgba(124,58,237,0.28)]'}`}><Icon size={17}/></span>
+                  <span className="relative block">{item.text}</span>
+                </button>;
+              })}
             </div>
           </div>
         ) : (
@@ -105,7 +112,6 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
               const isLastAssistantStreaming = isGenerating && index === messages.length - 1 && message.role === 'assistant';
               return <div key={message.id} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={message.role === 'user' ? 'max-w-[82%]' : hasPresentation ? 'w-full max-w-[96%]' : 'max-w-[86%]'}>
-                  {message.role === 'assistant' && <div className="mb-1.5 flex items-center gap-2 px-1"><span className="grid h-6 w-6 place-items-center"><AyroviMotion state={isLastAssistantStreaming ? motionState : 'idle'} size={24}/></span><span className={`text-[11px] font-bold ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>AYROVI avec Claude</span></div>}
                   <div className={`rounded-[22px] px-4 py-3 text-[14px] leading-6 ${message.role === 'user' ? 'rounded-br-md bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-md' : isDark ? 'rounded-bl-md border border-white/10 bg-white/[0.055] text-zinc-100' : 'rounded-bl-md border border-zinc-200 bg-white text-zinc-800 shadow-sm'}`}>
                     {assistantText && <p className="whitespace-pre-wrap">{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-xl border border-white/15 bg-black/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
@@ -116,7 +122,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                 </div>
               </div>;
             })}
-            {isGenerating && visibleMessageCount <= messages.length && <div className="flex items-center gap-3 px-1 py-1"><AyroviMotion state={motionState} size={38}/><div><p className={`text-xs font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>{motionState === 'thinking' ? 'Claude réfléchit…' : motionState === 'analyzing' ? 'Analyse des informations…' : motionState === 'reasoning' ? 'Vérification des données…' : 'Création de la réponse…'}</p><span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Les données de commande et de prix ne sont jamais inventées.</span></div></div>}
+            {isGenerating && visibleMessageCount <= messages.length && <div className={`flex items-center gap-3 rounded-2xl border px-3.5 py-3 ${isDark ? 'border-violet-400/15 bg-violet-500/[0.07]' : 'border-violet-100 bg-violet-50/60'}`}><span className="relative flex h-8 w-8 shrink-0 items-center justify-center"><span className="absolute h-7 w-7 animate-ping rounded-full bg-violet-500/15"/><span className="relative h-2.5 w-2.5 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 shadow-[0_0_16px_rgba(124,58,237,0.65)]"/></span><div><p className={`text-xs font-bold ${isDark ? 'text-zinc-200' : 'text-violet-950'}`}>{motionState === 'thinking' ? 'Réflexion en cours…' : motionState === 'analyzing' ? 'Analyse des informations…' : motionState === 'reasoning' ? 'Vérification des données…' : 'Création de la réponse…'}</p><span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-500'}`}>Les données de commande et de prix ne sont jamais inventées.</span></div></div>}
           </div>
         )}
         <div ref={bottomRef}/>
