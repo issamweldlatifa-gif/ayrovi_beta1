@@ -3,6 +3,7 @@ import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
 import { QatafoDatabase as AyroviDatabase } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
+import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
 import { calculatePrice } from '../services/pricing';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
@@ -401,6 +402,7 @@ export function createApiRouter(
     const normalizedPaymentMethod = paymentCode as 'COD' | 'D17' | 'FLOUCI';
 
     try {
+      recordLearningEvent(db, { type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
       const result = db.createOrderFromCart(sessionId, {
         name: name.trim(),
         phone: deliveryPhone,

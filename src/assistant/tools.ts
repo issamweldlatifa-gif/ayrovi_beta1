@@ -7,6 +7,8 @@ import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/pri
 import { extractProductFromUrl, sanitizeProductUrl } from '../ayrovix/services/product';
 import { anthropicExternalSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
 import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
+import { runLensPipeline, type LensStandardResult } from '../ayrovix/services/lensPipeline';
+import { recordLearningEvent } from './learning';
 import { scanCodeFromImage, type AyrovixScannedCode } from '../ayrovix/services/codeScanner';
 import type { AyrovixCandidate, AyrovixProduct } from '../ayrovix/types';
 
@@ -380,8 +382,12 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     return { modelResult: { success: false, code: 'LENS_INPUT_REQUIRED', message: 'Demandez une image, un lien ou une description du produit.' } };
   }
 
-  const visual = attachment?.data
-    ? await serpApiVisualSearch(Buffer.from(attachment.data, 'base64'), 8).catch(() => [])
+  // Pipeline Lens complète (Vision + OCR + codes + Google Lens) sur l'image jointe.
+  const lens: LensStandardResult | null = attachment?.data
+    ? await runLensPipeline(context.db, Buffer.from(attachment.data, 'base64'), attachment.mediaType).catch(() => null)
+    : null;
+  const visual = lens
+    ? await serpApiVisualSearch(Buffer.from(attachment.data!, 'base64'), 8).catch(() => [])
     : attachment?.url
       ? await serpApiVisualSearchUrl(attachment.url, 8).catch(() => [])
       : [];
@@ -458,19 +464,38 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
   }) : null);
 
   const modelProducts = products.map(({ priceToken: _token, images: _images, image: _image, ...product }) => product);
+  const lensPricing = lens?.pricing ?? null;
+  const suggestedActions: Array<{ label: string; prompt: string }> = [];
+  if (lensPricing?.sale_price || lensPricing?.total_price) {
+    suggestedActions.push({ label: 'Calculer le prix en TND', prompt: 'Calcule le prix total en dinars tunisiens pour ce produit.' });
+    suggestedActions.push({ label: 'Vérifier le prix', prompt: 'Vérifie le prix de ce produit, sur le web si nécessaire.' });
+    suggestedActions.push({ label: 'Commander ce produit', prompt: 'Je veux commander ce produit.' });
+  } else if (lens?.identification && lens.identification.confidence >= 0.35) {
+    suggestedActions.push({ label: 'Identifier le produit', prompt: 'Donne-moi plus de détails sur ce produit et où le trouver.' });
+  }
   return {
     modelResult: {
       success: true,
       mode: 'image',
       query,
+      lensResult: lens ? {
+        pricing: lens.pricing, confidence: lens.confidence, verified: lens.verified,
+        warnings: lens.warnings, url: lens.url, seller: lens.seller,
+        products: lens.products.slice(0, 6), cacheHit: lens.cache_hit,
+      } : null,
+      suggestedActions,
       imageAnalyzed: Boolean(attachment),
       detectedPrice: detectedProduct ? { price: detectedProduct.price, currency: detectedProduct.currency, totalTnd: detectedProduct.priceTnd } : null,
       products: modelProducts,
-      instruction: products.length || activeProduct
+      instruction: (products.length || activeProduct
         ? 'Use only these AYROVIX results. The product/order form is rendered inside chat when a reliable price exists; the customer confirms link, variant and quantity without opening Lens.'
-        : 'AYROVIX found no real result. Do not invent a product, price, size or color.',
+        : 'AYROVIX found no real result. Do not invent a product, price, size or color.')
+        + (lensPricing?.sale_price || lensPricing?.total_price
+          ? ' If the customer asks for the TND/final price, call calculate_price directly with lensResult.pricing values — never ask them to retype the price. Never present total_price as the product price.'
+          : '')
+        + (lens && lens.confidence < 0.7 ? ' Confidence is low: say what was read, mention uncertainty, and offer web verification or a clearer photo. Never guess.' : ''),
     },
-    presentation: { query, product: activeProduct, products, source: 'image' },
+    presentation: { query, product: activeProduct, products, source: 'image', lens, suggestedActions },
   };
 }
 
@@ -502,6 +527,7 @@ function escalateToHuman(input: any, context: AssistantToolContext): AssistantTo
     VALUES (?,'SYSTEM',?,?,?,?)`, `notification_${randomUUID()}`, 'Nouvelle demande de support IA',
   reason.slice(0, 220), `/admin?section=assistant-support&ticket=${encodeURIComponent(id)}`, now);
   const ticket = { id, status: 'PENDING', priority, createdAt: now, duplicate: false };
+  if (!ticket.duplicate) recordLearningEvent(context.db, { type: 'HUMAN_INTERVENTION', conversationId: context.conversationId, success: false, meta: { reason: reason.slice(0, 120) } });
   return { modelResult: { success: true, ticket }, presentation: { ticket } };
 }
 

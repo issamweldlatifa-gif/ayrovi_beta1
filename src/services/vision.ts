@@ -20,6 +20,11 @@ async function getOcrWorker() {
   return ocrWorkerPromise;
 }
 
+/** OCR public pour la Lens pipeline (deuxième opinion + petit texte). */
+export async function ocrRecognize(imageBuffer: Buffer): Promise<string> {
+  return recognizeText(imageBuffer);
+}
+
 async function recognizeText(imageBuffer: Buffer): Promise<string> {
   // Tests use the self-terminating helper so the suite never retains a worker thread.
   if (process.env.NODE_ENV === 'test') {

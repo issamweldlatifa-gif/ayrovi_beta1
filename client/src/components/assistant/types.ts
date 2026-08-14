@@ -48,6 +48,8 @@ export interface AssistantMessage {
   products?: import('../../ayrovix/types').AyrovixCandidate[];
   priceBreakdown?: AssistantPriceBreakdown;
   orderStatuses?: AssistantOrderStatus[];
+  suggestedActions?: Array<{ label: string; prompt: string }>;
+  lensSummary?: { confidence: number; verified: boolean; warnings: string[] } | null;
   supportTicket?: AssistantSupportTicket;
 }
 

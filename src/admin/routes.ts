@@ -3,6 +3,12 @@ import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase } from '../db/database';
+import multer from 'multer';
+import { normalizeUploadedImage } from '../services/imageValidation';
+import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
+import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
+import { ocrRecognize } from '../services/vision';
+import { discoveryAggregates, recordLensEvaluation } from '../assistant/learning';
 import { calculatePrice } from '../services/pricing';
 import { generateInvoicePdf, invoiceEmailHtml, uploadsDir } from '../services/invoice';
 import { sendMail } from '../services/mailer';
@@ -462,6 +468,61 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       LEFT JOIN admin_users u ON u.id=t.assigned_to WHERE t.id=?`, req.params.id);
     if (!row) return res.status(404).json({ success: false, error: 'Ticket support introuvable.' });
     return res.json({ success: true, data: row });
+  });
+
+  /* ===== AYROVI Lens Test Lab + AI Discovery (évaluation humaine, aucun auto-changement) ===== */
+  const labUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 6 * 1024 * 1024, files: 1 } });
+
+  router.post('/lens-lab/run', requireAdmin(db, 'settings:write'), labUpload.single('image'), async (req, res) => {
+    const file = req.file;
+    if (!file?.buffer?.length) return res.status(400).json({ success: false, error: 'Image requise.' });
+    try {
+      const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
+      const started = Date.now();
+      const lens = await runLensPipeline(db, normalized.buffer, normalized.mimeType);
+      const ocrText = await ocrRecognize(normalized.buffer).catch(() => '');
+      const ocr = ocrText ? analyzeOcrText(ocrText) : null;
+      const durationMs = Date.now() - started;
+      const id = `lab_${randomUUID()}`;
+      db.run(`INSERT INTO lens_lab_runs (id,image_hash,question,result_json,duration_ms,created_at) VALUES (?,?,?,?,?,?)`,
+        id, hashImage(normalized.buffer), String(req.body?.question || '').slice(0, 300),
+        JSON.stringify({ lens, ocr }).slice(0, 20000), durationMs, new Date().toISOString());
+      res.json({ success: true, data: { id, lens, ocr, durationMs } });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error?.message || 'Analyse impossible.' });
+    }
+  });
+
+  router.get('/lens-lab/history', requireAdmin(db, 'reports:read'), (req, res) => {
+    const rows = db.all<any>(`SELECT id,image_hash,question,duration_ms,created_at,result_json FROM lens_lab_runs ORDER BY created_at DESC LIMIT 30`);
+    res.json({ success: true, data: rows.map((row) => {
+      let pricing = null; let confidence = 0; let verified = false;
+      try { const parsed = JSON.parse(row.result_json); pricing = parsed?.lens?.pricing || null; confidence = parsed?.lens?.confidence || 0; verified = Boolean(parsed?.lens?.verified); } catch { /* */ }
+      return { id: row.id, imageHash: row.image_hash, question: row.question, durationMs: row.duration_ms, createdAt: row.created_at, pricing, confidence, verified };
+    }) });
+  });
+
+  router.post('/lens-lab/:id/evaluate', requireAdmin(db, 'settings:write'), (req, res) => {
+    const run = db.get<any>(`SELECT * FROM lens_lab_runs WHERE id=?`, req.params.id);
+    if (!run) return res.status(404).json({ success: false, error: 'Run introuvable.' });
+    const expectedPrice = Number(req.body?.expectedPrice);
+    if (!Number.isFinite(expectedPrice) || expectedPrice <= 0) return res.status(400).json({ success: false, error: 'Prix attendu invalide.' });
+    const expectedCurrency = /^[A-Z]{3}$/.test(String(req.body?.expectedCurrency || '').toUpperCase()) ? String(req.body.expectedCurrency).toUpperCase() : null;
+    let actual: any = {};
+    try { actual = JSON.parse(run.result_json)?.lens || {}; } catch { /* */ }
+    const detected = actual?.pricing?.sale_price ?? actual?.pricing?.total_price ?? null;
+    const errorType = String(req.body?.errorType || '').trim() || (detected == null ? 'PRICE_MISSED' : 'NONE');
+    recordLensEvaluation(db, {
+      imageHash: run.image_hash,
+      expected: { price: expectedPrice, currency: expectedCurrency },
+      actual: { price: detected, currency: actual?.pricing?.currency || null, confidence: actual?.confidence || 0 },
+      errorType, note: String(req.body?.note || '').slice(0, 500), source: 'lab',
+    });
+    res.json({ success: true, data: { errorType } });
+  });
+
+  router.get('/ai-discovery', requireAdmin(db, 'reports:read'), (_req, res) => {
+    res.json({ success: true, data: discoveryAggregates(db) });
   });
 
   router.put('/assistant-support/:id', requireAdmin(db, 'orders:write'), (req, res) => {

@@ -25,6 +25,7 @@ interface AssistantMessagesProps {
   onSelectProduct: (messageId: string, candidate: AyrovixCandidate) => void;
   onProductOrder: (selection: AyrovixOrderSelection) => void;
   customerFirstName?: string;
+  analyzingImage?: boolean;
 }
 
 const primaryActions = [
@@ -84,7 +85,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   messages, isGenerating, motionState, isDark, copiedId, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
-  customerFirstName,
+  customerFirstName, analyzingImage,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasMessages = messages.length > 0;
@@ -172,13 +173,15 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                     {assistantText && <p className="whitespace-pre-wrap">{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-xl border border-white/15 bg-black/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder}/>}
+                    {message.role === 'assistant' && message.lensSummary && <p className={`mt-2 text-[10px] font-bold uppercase tracking-[0.12em] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>Lecture image : confiance {Math.round(message.lensSummary.confidence * 100)}%{message.lensSummary.verified ? ' · vérifiée' : ''}{message.lensSummary.warnings.length ? ` · ${message.lensSummary.warnings[0]}` : ''}</p>}
+                    {message.role === 'assistant' && !isGenerating && Boolean(message.suggestedActions?.length) && <div className="mt-2.5 flex flex-wrap gap-2">{(message.suggestedActions || []).map((action) => <button key={action.label} type="button" onClick={() => onPrompt(action.prompt)} className={`min-h-9 rounded-full border px-3.5 text-[11px] font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10' : 'border-brand/25 bg-white text-brand-dark hover:bg-brand/5'}`}>{action.label}</button>)}</div>}
                     {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 text-xs font-extrabold text-white"><Sparkles size={16}/> Ouvrir AYROVIX Lens</button>}
                   </div>
                   {message.role === 'assistant' && !isLastAssistantStreaming && <div className="mt-1.5 flex items-center gap-0.5 px-1"><button type="button" onClick={() => onCopy(message)} aria-label="Copier" className={`rounded-lg p-1.5 transition ${isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700'}`}>{copiedId === message.id ? <Check size={15}/> : <Copy size={15}/>}</button><button type="button" onClick={() => onRegenerate(message.id)} aria-label="Régénérer" className={`rounded-lg p-1.5 transition ${isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700'}`}><RefreshCw size={15}/></button><button type="button" aria-label="Lire" className={`rounded-lg p-1.5 transition ${isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-white' : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700'}`} onClick={() => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(assistantText))}><Volume2 size={15}/></button><ShareAction message={message} isDark={isDark}/><span className={`mx-1 h-4 w-px ${isDark ? 'bg-white/10' : 'bg-zinc-200'}`}/><button type="button" onClick={() => onFeedback(message, 'up')} aria-label="Utile" className={`rounded-lg p-1.5 ${feedback[message.id] === 'up' ? 'bg-emerald-100 text-emerald-700' : isDark ? 'text-zinc-400 hover:bg-white/5' : 'text-zinc-400 hover:bg-zinc-100'}`}><ThumbsUp size={15}/></button><button type="button" onClick={() => onFeedback(message, 'down')} aria-label="Pas utile" className={`rounded-lg p-1.5 ${feedback[message.id] === 'down' ? 'bg-rose-100 text-rose-700' : isDark ? 'text-zinc-400 hover:bg-white/5' : 'text-zinc-400 hover:bg-zinc-100'}`}><ThumbsDown size={15}/></button><button type="button" onClick={() => onOpenComment(message)} className={`ml-1 rounded-lg px-2 py-1 text-[10px] font-bold ${isDark ? 'text-zinc-500 hover:bg-white/5' : 'text-zinc-400 hover:bg-zinc-100'}`}>Commenter</button></div>}
                 </div>
               </div>;
             })}
-            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={40} label="AYROVI prépare la réponse"/><div><p className={`text-xs font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>{motionState === 'thinking' ? 'AYROVI réfléchit…' : motionState === 'analyzing' ? 'Analyse des informations…' : motionState === 'reasoning' ? 'Vérification des données…' : 'Création de la réponse…'}</p><span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Les données de commande et de prix ne sont jamais inventées.</span></div></div>}
+            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={40} label="AYROVI prépare la réponse"/><div><p className={`text-xs font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>{motionState === 'thinking' ? 'AYROVI réfléchit…' : motionState === 'analyzing' ? (analyzingImage ? 'Analyse de votre image…' : 'Analyse des informations…') : motionState === 'reasoning' ? (analyzingImage ? 'Lecture des prix et vérification…' : 'Vérification des données…') : 'Création de la réponse…'}</p><span className={`text-[10px] ${isDark ? 'text-zinc-500' : 'text-zinc-400'}`}>Les données de commande et de prix ne sont jamais inventées.</span></div></div>}
           </div>
         )}
         <div ref={bottomRef}/>

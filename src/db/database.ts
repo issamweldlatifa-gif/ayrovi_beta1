@@ -572,6 +572,46 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
 
+      CREATE TABLE IF NOT EXISTS lens_analysis_cache (
+        image_hash TEXT PRIMARY KEY,
+        result_json TEXT NOT NULL,
+        model TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS lens_evaluations (
+        id TEXT PRIMARY KEY,
+        image_hash TEXT NOT NULL DEFAULT '',
+        expected_json TEXT NOT NULL DEFAULT '{}',
+        actual_json TEXT NOT NULL DEFAULT '{}',
+        error_type TEXT NOT NULL DEFAULT 'NONE',
+        note TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT 'lab',
+        created_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS ai_learning_events (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL DEFAULT '',
+        owner_hash TEXT NOT NULL DEFAULT '',
+        event_type TEXT NOT NULL,
+        tool_names TEXT NOT NULL DEFAULT '',
+        success INTEGER NOT NULL DEFAULT 0,
+        confidence REAL NOT NULL DEFAULT 0,
+        meta_json TEXT NOT NULL DEFAULT '{}',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_ai_learning_type ON ai_learning_events(event_type, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS lens_lab_runs (
+        id TEXT PRIMARY KEY,
+        image_hash TEXT NOT NULL DEFAULT '',
+        question TEXT NOT NULL DEFAULT '',
+        result_json TEXT NOT NULL,
+        duration_ms INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS audit_logs (
         id TEXT PRIMARY KEY,
         user_id TEXT,

@@ -43,7 +43,10 @@ Règles obligatoires :
 - Un code modèle n'est accepté que s'il est lisible dans l'image.
 - Pour une photo de produit sans prix visible, detected_price.label doit être "none" et amount/confidence à 0.
 - Pour un prix barré, utilise label "old_price"; pour le prix actuel "product_price"; pour le total d'un panier "cart_total".
-- Si plusieurs prix sont visibles, choisis le prix actuel du produit; n'utilise jamais le plus grand nombre par défaut.
+- Si plusieurs prix sont visibles, remplis pricing : sale_price = prix actuel, original_price = prix barré/avant, shipping_price = livraison, total_price = total panier, discount_percent = remise lisible. Ne calcule jamais un prix manquant.
+- detected_price doit refléter sale_price (ou total_price pour un panier). N'utilise jamais le plus grand nombre par défaut.
+- Si plusieurs produits distincts sont visibles, liste-les dans products avec leur prix propre (6 maximum).
+- url et seller seulement s'ils sont lisibles dans l'image (barre d'adresse, logo boutique).
 - Si l'image montre plusieurs produits ou un panier, input_kind doit être "cart_screenshot".
 - Si aucun produit n'est identifiable, confidence vaut 0 et description vaut "PRODUIT_NON_IDENTIFIE".
 - La description doit être une phrase factuelle courte en français.`;
@@ -76,10 +79,41 @@ const IDENTIFICATION_SCHEMA = {
       required: ['amount', 'currency', 'label', 'confidence'],
       additionalProperties: false,
     },
+    pricing: {
+      type: 'object',
+      properties: {
+        sale_price: { type: ['number', 'null'] },
+        original_price: { type: ['number', 'null'] },
+        shipping_price: { type: ['number', 'null'] },
+        total_price: { type: ['number', 'null'] },
+        currency: { type: ['string', 'null'] },
+        discount_percent: { type: ['number', 'null'] },
+      },
+      required: ['sale_price', 'original_price', 'shipping_price', 'total_price', 'currency', 'discount_percent'],
+      additionalProperties: false,
+    },
+    products: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          brand: { type: ['string', 'null'] },
+          category: { type: 'string' },
+          price: { type: ['number', 'null'] },
+          currency: { type: ['string', 'null'] },
+        },
+        required: ['name', 'brand', 'category', 'price', 'currency'],
+        additionalProperties: false,
+      },
+    },
+    url: { type: ['string', 'null'] },
+    seller: { type: ['string', 'null'] },
   },
   required: [
     'input_kind', 'category', 'brand', 'model', 'color', 'visible_text',
     'possible_model_codes', 'description', 'confidence', 'detected_price',
+    'pricing', 'products', 'url', 'seller',
   ],
   additionalProperties: false,
 };
@@ -102,9 +136,48 @@ function parseIdentification(raw: string): AyrovixIdentification {
   const priceConfidence = Number(parsed?.detected_price?.confidence);
   const priceAmount = Number(parsed?.detected_price?.amount);
   const currency = String(parsed?.detected_price?.currency || '').trim().toUpperCase();
+  const numOrNull = (value: unknown): number | null => {
+    const n = Number(value);
+    return Number.isFinite(n) && n > 0 && n < 1_000_000 ? Math.round(n * 100) / 100 : null;
+  };
+  const rawPricing = parsed?.pricing && typeof parsed.pricing === 'object' ? parsed.pricing : {};
+  const pricingCurrency = /^[A-Z]{3}$/.test(String(rawPricing.currency || '').trim().toUpperCase())
+    ? String(rawPricing.currency).trim().toUpperCase() : null;
+  const pricing = {
+    sale_price: numOrNull(rawPricing.sale_price),
+    original_price: numOrNull(rawPricing.original_price),
+    shipping_price: numOrNull(rawPricing.shipping_price),
+    total_price: numOrNull(rawPricing.total_price),
+    currency: pricingCurrency,
+    discount_percent: (() => { const d = Number(rawPricing.discount_percent); return Number.isFinite(d) && d > 0 && d <= 95 ? d : null; })(),
+  };
+  const products = (Array.isArray(parsed?.products) ? parsed.products : [])
+    .filter((item: any) => typeof item?.name === 'string' && item.name.trim())
+    .slice(0, 6)
+    .map((item: any) => ({
+      name: String(item.name).trim().slice(0, 140),
+      brand: typeof item.brand === 'string' && item.brand.trim() ? item.brand.trim().slice(0, 80) : null,
+      category: typeof item.category === 'string' ? item.category.trim().slice(0, 60) : 'product',
+      price: numOrNull(item.price),
+      currency: /^[A-Z]{3}$/.test(String(item.currency || '').trim().toUpperCase()) ? String(item.currency).trim().toUpperCase() : null,
+    }));
+  const urlRaw = typeof parsed?.url === 'string' ? parsed.url.trim().slice(0, 500) : '';
+  const url = /^https?:\/\//i.test(urlRaw) ? urlRaw : null;
+  const seller = typeof parsed?.seller === 'string' && parsed.seller.trim() ? parsed.seller.trim().slice(0, 80) : null;
   const inputKinds = new Set(['product_photo', 'product_screenshot', 'cart_screenshot', 'barcode', 'other']);
   const priceLabels = new Set(['none', 'product_price', 'old_price', 'cart_total']);
+  // detected_price dérivé du bloc pricing quand il est plus riche que l'ancien champ.
+  const pricingSale = pricing.sale_price ?? null;
+  const effectiveAmount = pricingSale ?? priceAmount;
+  const effectiveCurrency = pricing.currency ?? (/^[A-Z]{3}$/.test(currency) ? currency : '');
+  const effectiveLabel = pricingSale != null
+    ? 'product_price'
+    : (priceLabels.has(parsed?.detected_price?.label) ? parsed.detected_price.label : 'none');
   return {
+    pricing,
+    products,
+    url,
+    seller,
     input_kind: inputKinds.has(parsed.input_kind) ? parsed.input_kind : 'other',
     category: typeof parsed.category === 'string' ? parsed.category.trim().toLowerCase().slice(0, 60) : 'product',
     brand: typeof parsed.brand === 'string' && parsed.brand.trim() ? parsed.brand.trim().slice(0, 80) : null,
@@ -115,9 +188,9 @@ function parseIdentification(raw: string): AyrovixIdentification {
     description: typeof parsed.description === 'string' ? parsed.description.trim().slice(0, 400) : '',
     confidence: Number.isFinite(confidence) ? Math.min(1, Math.max(0, confidence)) : 0,
     detected_price: {
-      amount: Number.isFinite(priceAmount) && priceAmount > 0 && priceAmount < 1_000_000 ? priceAmount : 0,
-      currency: /^[A-Z]{3}$/.test(currency) ? currency : '',
-      label: priceLabels.has(parsed?.detected_price?.label) ? parsed.detected_price.label : 'none',
+      amount: Number.isFinite(effectiveAmount) && effectiveAmount > 0 && effectiveAmount < 1_000_000 ? effectiveAmount : 0,
+      currency: /^[A-Z]{3}$/.test(effectiveCurrency) ? effectiveCurrency : '',
+      label: effectiveLabel,
       confidence: Number.isFinite(priceConfidence) ? Math.min(1, Math.max(0, priceConfidence)) : 0,
     },
   };

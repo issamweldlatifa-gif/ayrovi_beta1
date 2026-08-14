@@ -86,6 +86,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [attachments, setAttachments] = useState<AssistantAttachment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [motionState, setMotionState] = useState<AyroviMotionState>('idle');
+  const [lensActive, setLensActive] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [voiceReady, setVoiceReady] = useState<boolean | null>(null);
@@ -223,7 +224,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     const controller = new AbortController();
     generationAbortRef.current = controller;
     setIsGenerating(true);
-    setMotionState('thinking');
+    setMotionState('thinking'); setLensActive(false);
     try {
       await streamAssistantChat({
         conversationId,
@@ -253,7 +254,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           if (event.type === 'delta') {
             setMessages((current) => current.map((message) => message.id === responseId ? { ...message, text: message.text + event.text } : message));
           }
-          if (event.type === 'tool') {
+          if (event.type === 'tool') { if (event.name === 'lens_search') setLensActive(true);
             if (event.name === 'lens_search' && event.data.product) {
               const product = event.data.product as AyrovixProduct;
               setSelectedProduct({
@@ -269,7 +270,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 const orderStatuses = Array.isArray(event.data.orders) ? event.data.orders : event.data.order ? [event.data.order] : [];
                 return { ...message, orderStatuses: orderStatuses as any };
               }
-              if (event.name === 'search_products' || event.name === 'lens_search') return { ...message, products: (event.data.products || []) as AyrovixCandidate[] };
+              if (event.name === 'search_products' || event.name === 'lens_search') return {
+                ...message,
+                products: (event.data.products || []) as AyrovixCandidate[],
+                suggestedActions: Array.isArray(event.data.suggestedActions) ? event.data.suggestedActions : undefined,
+                lensSummary: event.data.lens ? { confidence: Number(event.data.lens.confidence || 0), verified: Boolean(event.data.lens.verified), warnings: Array.isArray(event.data.lens.warnings) ? event.data.lens.warnings : [] } : null,
+              };
               if (event.name === 'escalate_to_human') return { ...message, supportTicket: (event.data.ticket || event.data) as any };
               return message;
             }));
@@ -750,6 +756,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           selectedProduct={selectedProduct}
           productBusyId={productBusyId}
           isOrdering={isOrdering}
+          analyzingImage={lensActive}
           onPrompt={(prompt) => sendMessage(prompt)}
           onCopy={handleCopy}
           onRegenerate={handleRegenerate}

@@ -21,6 +21,17 @@ export interface AyrovixIdentification {
     label: 'none' | 'product_price' | 'old_price' | 'cart_total';
     confidence: number;
   };
+  pricing?: {
+    sale_price: number | null;
+    original_price: number | null;
+    shipping_price: number | null;
+    total_price: number | null;
+    currency: string | null;
+    discount_percent: number | null;
+  };
+  products?: Array<{ name: string; brand: string | null; category: string; price: number | null; currency: string | null }>;
+  url?: string | null;
+  seller?: string | null;
 }
 
 export type AyrovixChannel = 'image' | 'url' | 'qr';

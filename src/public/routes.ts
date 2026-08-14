@@ -3,6 +3,7 @@ import { Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
+import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -240,7 +241,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       ON CONFLICT(id) DO UPDATE SET rating=excluded.rating,comment=excluded.comment,
         response_excerpt=excluded.response_excerpt,updated_at=excluded.updated_at`,
     id, customer?.id || null, guestSessionHash, conversationId, messageId, rating, comment, responseExcerpt, now, now);
-    res.status(201).json({ success: true, data: { rating, hasComment: Boolean(comment), updatedAt: now } });
+    recordLearningEvent(db, {
+    type: rating === 'up' ? 'FEEDBACK_UP' : 'FEEDBACK_DOWN',
+    conversationId, ownerHash: ownerHashOf(customer?.id || null, String(req.headers['x-session-id'] || '')),
+    success: rating === 'up', meta: { hasComment: Boolean(comment) },
+  });
+  res.status(201).json({ success: true, data: { rating, hasComment: Boolean(comment), updatedAt: now } });
   });
 
   return router;
