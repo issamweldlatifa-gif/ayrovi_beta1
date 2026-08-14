@@ -339,6 +339,11 @@ export const Plug = createIcon('Plug', <>
   <path d="M8.5 4.2v4M15.5 4.2v4M6.5 8.2h11v2.2a5.5 5.5 0 0 1-11 0V8.2zM12 15.9v4" />
 </>);
 
+export const Volume2 = createIcon('Volume2', <>
+  <path d="M5 10h3l4-3.3v10.6L8 14H5v-4z" />
+  <path d="M15.2 9.1a4.2 4.2 0 0 1 0 5.8" />
+  <path d="M17.7 6.8a7.4 7.4 0 0 1 0 10.4" />
+</>);
 export const Mic = createIcon('Mic', <>
   <rect x="8.4" y="3.5" width="7.2" height="11.3" rx="3.6" />
   <path d="M5.7 11.8a6.3 6.3 0 0 0 12.6 0M12 18.1v2.4M9.2 20.5h5.6" />

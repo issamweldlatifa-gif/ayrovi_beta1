@@ -229,8 +229,110 @@
   100% { transform: translate(0, 0) scale(1); opacity: 1; }
 }
 
+/* Purple assistant identity used in the navbar, replies and active generation state. */
+.assistant-motion-badge {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 14px;
+  background: var(--ayrovi-gradient);
+  box-shadow:
+    0 9px 22px -11px rgba(80, 37, 209, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  isolation: isolate;
+}
+
+.assistant-motion-badge::before {
+  position: absolute;
+  width: 72%;
+  height: 72%;
+  border-radius: 999px;
+  background: rgba(158, 125, 255, 0.56);
+  content: '';
+  filter: blur(11px);
+  transform: translate(28%, -30%);
+  z-index: -1;
+}
+
+.assistant-motion-badge[data-active='true'] {
+  animation: assistantMotionBadgeGlow 1.55s ease-in-out infinite;
+}
+
+/* Branded task cards: no emoji, just AYROVI vector icons and the purple light effect. */
+.assistant-quick-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(103, 61, 230, 0.24);
+  background:
+    radial-gradient(circle at 88% 8%, rgba(126, 87, 255, 0.22), transparent 42%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(245, 241, 255, 0.95));
+  box-shadow:
+    0 16px 32px -25px rgba(80, 37, 209, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+.assistant-quick-card::before {
+  position: absolute;
+  top: -36px;
+  right: -30px;
+  width: 88px;
+  height: 88px;
+  border-radius: 999px;
+  background: rgba(103, 61, 230, 0.19);
+  content: '';
+  filter: blur(20px);
+  transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease;
+  z-index: -1;
+}
+
+.assistant-quick-card:hover {
+  border-color: rgba(103, 61, 230, 0.48);
+  box-shadow: 0 20px 38px -23px rgba(80, 37, 209, 0.82);
+  transform: translateY(-2px);
+}
+
+.assistant-quick-card:hover::before {
+  opacity: 0.9;
+  transform: scale(1.35);
+}
+
+.assistant-quick-card--dark {
+  border-color: rgba(158, 125, 255, 0.28);
+  background:
+    radial-gradient(circle at 88% 8%, rgba(126, 87, 255, 0.22), transparent 44%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(103, 61, 230, 0.13));
+  box-shadow: 0 18px 38px -27px rgba(126, 87, 255, 0.95);
+}
+
+.assistant-quick-card__icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 11px;
+  color: #ffffff;
+  background: var(--ayrovi-gradient);
+  box-shadow: 0 9px 20px -11px rgba(80, 37, 209, 0.95);
+}
+
+@keyframes assistantMotionBadgeGlow {
+  0%, 100% {
+    box-shadow: 0 9px 22px -11px rgba(80, 37, 209, 0.9), 0 0 0 0 rgba(103, 61, 230, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  50% {
+    box-shadow: 0 12px 27px -9px rgba(80, 37, 209, 0.95), 0 0 0 6px rgba(103, 61, 230, 0), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ayrovi-motion__piece {
+  .ayrovi-motion__piece,
+  .assistant-motion-badge,
+  .assistant-quick-card {
     animation: none !important;
     transition-duration: 1ms !important;
     transform: none !important;

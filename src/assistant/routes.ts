@@ -38,7 +38,7 @@ export function createAssistantRouter(db: QatafoDatabase): Router {
 
   router.post('/chat', optionalCustomer(db), async (req: Request, res: Response) => {
     if (!assistantAiReady()) {
-      return res.status(503).json({ success: false, code: 'ASSISTANT_UNAVAILABLE', error: 'L’assistant Claude n’est pas encore activé.' });
+      return res.status(503).json({ success: false, code: 'ASSISTANT_UNAVAILABLE', error: 'L’assistant AYROVI n’est pas encore disponible.' });
     }
     const sessionId = validSessionId(req);
     const conversationId = String(req.body?.conversationId || '').trim();
@@ -70,7 +70,7 @@ export function createAssistantRouter(db: QatafoDatabase): Router {
         type: 'error',
         code: error instanceof AssistantUnavailableError ? error.code : 'ASSISTANT_ERROR',
         message: error instanceof AssistantUnavailableError
-          ? 'Claude ne répond pas pour le moment. Réessayez dans quelques instants.'
+          ? 'L’assistant AYROVI ne répond pas pour le moment. Réessayez dans quelques instants.'
           : 'La réponse n’a pas pu être générée.',
       });
     } finally {

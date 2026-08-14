@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowLeft, History } from '../QatafoIcons';
-import { AyroviMotion, AyroviMotionState } from '../AyroviMotion';
+import { AyroviMotionState } from '../AyroviMotion';
+import { AssistantBrandMark } from './AssistantBrandMark';
 
 interface AssistantHeaderProps {
   isDark: boolean;
@@ -18,8 +19,6 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({
   const iconButton = isDark
     ? 'text-zinc-300 hover:bg-white/7 hover:text-white'
     : 'text-zinc-700 hover:bg-black/[0.045] hover:text-zinc-950';
-  const isActive = motionState !== 'idle';
-  const logoColor = isActive ? '#7c3aed' : isDark ? '#fafafa' : '#0a0a0a';
 
   return (
     <header className={`relative z-20 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-3 pb-2.5 pt-[max(1rem,env(safe-area-inset-top))] sm:px-[18px] ${isDark ? 'border-white/8 bg-[#1a1a1f]' : 'border-[#ebe9e5] bg-[#fbfaf8]'}`}>
@@ -33,12 +32,9 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({
         <span className="hidden min-[360px]:inline">Retour</span>
       </button>
 
-      <div className={`flex min-w-0 items-center justify-center gap-2 font-extrabold tracking-[-0.045em] ${isDark ? 'text-zinc-50' : 'text-[#111111]'}`} aria-label="Assistant AYROVI">
-        <span className="relative grid h-8 w-8 place-items-center">
-          <span className={`pointer-events-none absolute inset-0 rounded-full bg-violet-500/30 blur-md transition duration-500 ${isActive ? 'scale-110 opacity-100' : 'scale-75 opacity-0'}`} />
-          <AyroviMotion state={motionState} size={28} color={logoColor} className="relative transition-[fill,filter] duration-500" />
-        </span>
-        <span className={`text-[15px] leading-none transition-colors duration-500 ${isActive ? 'text-violet-600' : ''}`}>AYROVI</span>
+      <div className={`flex min-w-0 items-center justify-center gap-2.5 font-extrabold tracking-[-0.045em] ${isDark ? 'text-zinc-50' : 'text-[#111111]'}`} aria-label="AYROVI Assistant">
+        <AssistantBrandMark state={motionState} size={35} />
+        <span className="text-[15px] leading-none">AYROVI</span>
       </div>
 
       <button
