@@ -717,7 +717,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-[#4b5563] mb-1">
+                  <label className="block text-xs font-bold text-muted mb-1">
                     Taille / Couleur :
                   </label>
                   <input
@@ -730,7 +730,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#4b5563] mb-1">
+                  <label className="block text-xs font-bold text-muted mb-1">
                     Quantité :
                   </label>
                   <div className="flex items-center gap-3">

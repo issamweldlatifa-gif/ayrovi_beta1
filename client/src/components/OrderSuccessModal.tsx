@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { MessageSquare, PackageCheck, Copy } from './QatafoIcons';
+import { MessageSquare, PackageCheck, Copy, CreditCard, Share2 as Share } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { OrderResult } from '../types';
 
@@ -88,7 +88,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           <button
             type="button"
             onClick={() => void handleCopyOrderNumber()}
-            className="p-2 rounded-xl bg-white border border-line text-[#4b5563] hover:text-ink shadow-xs transition-colors"
+            className="p-2 rounded-xl bg-white border border-line text-muted hover:text-ink shadow-xs transition-colors"
             title="Copier le numéro"
             aria-label="Copier le numéro de commande"
           >
@@ -134,7 +134,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
                 onClick={onOpenAccount}
                 className="w-full bg-amber-600 hover:bg-amber-700 active:scale-95 text-white font-bold py-3 px-4 rounded-2xl text-xs transition-all flex items-center justify-center gap-2"
               >
-                {result.deposit.method === 'CARD' ? '💳 Payer l’acompte par carte' : '📤 Envoyer ma preuve de paiement'}
+                {result.deposit.method === 'CARD' ? <><CreditCard className="h-4 w-4" />Payer l’acompte par carte</> : <><Share className="h-4 w-4" />Envoyer ma preuve de paiement</>}
               </button>
             )}
           </div>

@@ -7,6 +7,7 @@ import type {
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { rememberAyrovixHistory } from '../services/history';
+import { ShoppingBag, Sparkles, Check } from '../../components/QatafoIcons';
 import { LiveCamera } from './LiveCamera';
 import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
@@ -458,7 +459,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           </div>
           <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-extrabold text-ink">
             <span>AYROVIX</span>
-            <span className="grid h-7 w-7 place-items-center text-[#0a0a0a]">
+            <span className="grid h-7 w-7 place-items-center text-ink">
               <AyrovixNavIcon size={26}/>
             </span>
           </div>
@@ -557,7 +558,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                           {candidatesView.detectedPrice.title || candidatesView.queryLabel || 'Produit détecté par Claude'}
                         </h3>
                         <p className="mt-1 text-[11px] text-muted">
-                          {candidatesView.detectedPrice.isCartScreenshot ? '🛒 Panier repéré — total calculé' : '✨ Produit repéré sur l’image'} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
+                          {candidatesView.detectedPrice.isCartScreenshot ? <span className="inline-flex items-center gap-1"><ShoppingBag className="h-3.5 w-3.5" />Panier repéré — total calculé</span> : <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" />Produit repéré sur l’image</span>} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
                         </p>
                       </div>
                       <div className="flex items-end justify-between rounded-2xl bg-amber-50 p-3.5 border border-amber-200">
@@ -663,7 +664,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
               </p>
               <div className="flex justify-center gap-2.5">
                 <button type="button" onClick={copyBarcode} className="min-h-[46px] rounded-xl border border-line px-5 text-xs font-bold text-ink">
-                  {copied ? 'Copié ✓' : 'Copier le code'}
+                  {copied ? <span className="inline-flex items-center gap-1.5">Copié<Check className="h-3.5 w-3.5" /></span> : 'Copier le code'}
                 </button>
                 <button type="button" onClick={reset} className="bg-brand-gradient min-h-[46px] rounded-xl px-5 text-xs font-extrabold text-white">Photographier le produit</button>
               </div>

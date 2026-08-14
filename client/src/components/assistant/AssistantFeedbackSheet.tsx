@@ -38,14 +38,14 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
         ? 'border-brand bg-brand/10 text-brand-dark'
         : 'border-red-400 bg-red-50 text-red-700'
       : isDark
-        ? 'border-zinc-700 bg-[#26262e] text-zinc-300 hover:border-zinc-500'
+        ? 'border-zinc-700 bg-ink text-zinc-300 hover:border-zinc-500'
         : 'border-[#e5e2dc] bg-white text-zinc-700 hover:border-zinc-400'
   }`;
 
   return (
     <div className="absolute inset-0 z-[65] flex items-end justify-center bg-black/40 px-3 backdrop-blur-[2px] sm:items-center" role="dialog" aria-modal="true" aria-label="Commenter la réponse">
       <button type="button" className="absolute inset-0" onClick={onClose} aria-label="Fermer" />
-      <section className={`assistant-sheet relative z-10 w-full max-w-md rounded-t-[26px] p-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] shadow-[0_-16px_48px_rgba(20,20,30,0.2)] sm:rounded-[24px] ${isDark ? 'bg-[#232329]' : 'bg-[#fbfaf8]'}`}>
+      <section className={`assistant-sheet relative z-10 w-full max-w-md rounded-t-[26px] p-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] shadow-[0_-16px_48px_rgba(20,20,30,0.2)] sm:rounded-[24px] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <h3 className={`text-base font-bold ${isDark ? 'text-zinc-50' : 'text-zinc-950'}`}>Votre avis nous aide</h3>
@@ -66,7 +66,7 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
             onChange={(event) => setComment(event.target.value.slice(0, 1500))}
             rows={4}
             placeholder="Qu’est-ce qui était utile ou à améliorer ?"
-            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 ${isDark ? 'border-zinc-700 bg-[#1a1a1f] text-zinc-100 placeholder:text-zinc-600' : 'border-[#e3e0da] bg-white text-zinc-900 placeholder:text-zinc-400'}`}
+            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 ${isDark ? 'border-zinc-700 bg-ink text-zinc-100 placeholder:text-zinc-600' : 'border-[#e3e0da] bg-white text-zinc-900 placeholder:text-zinc-400'}`}
           />
           <span className="mt-1 block text-right text-[10px] tabular-nums text-zinc-500">{comment.length}/1500</span>
         </label>
@@ -75,7 +75,7 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
           type="button"
           disabled={!rating || isSaving}
           onClick={() => rating && onSave(rating, comment.trim())}
-          className={`mt-3 flex w-full items-center justify-center rounded-[14px] px-4 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${isDark ? 'bg-zinc-100 text-zinc-950' : 'bg-[#151515] text-white'}`}
+          className={`mt-3 flex w-full items-center justify-center rounded-[14px] px-4 py-3 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-40 ${isDark ? 'bg-zinc-100 text-zinc-950' : 'bg-ink text-white'}`}
         >
           {isSaving ? 'Envoi…' : 'Envoyer mon avis'}
         </button>

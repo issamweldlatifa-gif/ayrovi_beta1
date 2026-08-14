@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
+import { CheckCircle2 as CheckCircle, Hourglass } from '../../components/QatafoIcons';
 
 export interface AyrovixOrderSelection {
   size: string;
@@ -135,10 +136,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           </div>
 
           {priceVerified ? (
-            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">✅ Prix confirmé</p>
+            <p className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800"><CheckCircle className="h-3.5 w-3.5 shrink-0" />Prix confirmé</p>
           ) : (
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900">
-              <p>⏳ Prix estimé — en attente de vérification manuelle par notre équipe. Vous pouvez commander et payer l'acompte de {depositPercent}% maintenant.</p>
+              <p className="flex items-start gap-1.5"><Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />Prix estimé — en attente de vérification manuelle par notre équipe. Vous pouvez commander et payer l'acompte de {depositPercent}% maintenant.</p>
               {verificationReason(product.verificationFailureCode) && <p className="mt-1 font-medium">Motif : {verificationReason(product.verificationFailureCode)}.</p>}
             </div>
           )}

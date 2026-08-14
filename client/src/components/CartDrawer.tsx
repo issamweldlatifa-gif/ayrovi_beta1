@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package } from './QatafoIcons';
+import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package, Hourglass } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem } from '../types';
 
@@ -132,7 +132,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">Lien produit fourni</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
-                      <p className="mt-1 text-[10px] font-bold text-amber-700">⏳ Vérification manuelle après acompte</p>
+                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-amber-700"><Hourglass className="h-3 w-3 shrink-0" />Vérification manuelle après acompte</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">

@@ -10,7 +10,7 @@ const BENEFITS = [
       'Un taux clair et garanti vous permet de connaître le montant exact en Dinars dès la validation de votre panier.',
     icon: ArrowRightLeft,
     iconClassName: 'bg-accent text-ink',
-    accentClassName: 'from-accent to-[#ff9f43]',
+    accentClassName: 'from-accent to-accent-deep',
   },
   {
     step: '02',
@@ -19,7 +19,7 @@ const BENEFITS = [
       "Toutes les démarches administratives, taxes d’importation et dédouanement sont entièrement prises en charge.",
     icon: ShieldCheck,
     iconClassName: 'bg-brand text-white',
-    accentClassName: 'from-brand to-[#9b7cf7]',
+    accentClassName: 'from-brand to-brand-light',
   },
   {
     step: '03',
@@ -27,8 +27,8 @@ const BENEFITS = [
     description:
       "Expédition sécurisée jusqu’à votre domicile partout en Tunisie avec option de paiement en espèces à la livraison.",
     icon: Truck,
-    iconClassName: 'bg-emerald-500 text-white',
-    accentClassName: 'from-emerald-500 to-[#43b1de]',
+    iconClassName: 'bg-ink text-white',
+    accentClassName: 'from-ink to-brand',
   },
 ];
 
@@ -47,7 +47,7 @@ export const AboutSection: React.FC = () => {
           >
             La simplicité d’un achat local pour vos marques mondiales
           </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-[#697180] sm:text-base">
+          <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">
             Plus besoin de carte bancaire internationale ni de formalités douanières complexes.
             AYROVI s’occupe de l’importation de A à Z.
           </p>
@@ -55,7 +55,7 @@ export const AboutSection: React.FC = () => {
       </header>
 
       {/* One fixed portrait remains visible while the three cards scroll over it. */}
-      <div className="relative isolate min-h-[300svh] overflow-clip bg-[#edf9ff]">
+      <div className="relative isolate min-h-[300svh] overflow-clip bg-surface">
         <div className="sticky top-0 h-[100svh] overflow-hidden" aria-hidden="true">
           <img
             src={aboutParallaxImage}
@@ -90,7 +90,7 @@ export const AboutSection: React.FC = () => {
                   <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl lg:text-4xl">
                     {title}
                   </h3>
-                  <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-[#697180] sm:text-base sm:leading-8">
+                  <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-muted sm:text-base sm:leading-8">
                     {description}
                   </p>
                 </div>

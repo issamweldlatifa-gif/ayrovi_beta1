@@ -91,7 +91,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, isGenerating, motionState, selectedProduct]);
 
   return (
-    <main className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-[#1a1a1f] text-zinc-100' : 'bg-[#fbfaf8] text-zinc-900'}`}>
+    <main className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-ink text-zinc-100' : 'bg-surface text-zinc-900'}`}>
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-5 pt-5 sm:px-7">
         {!hasMessages ? (
           <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">

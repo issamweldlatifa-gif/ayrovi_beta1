@@ -20,7 +20,7 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({
     : 'text-zinc-700 hover:bg-black/[0.045] hover:text-zinc-950';
 
   return (
-    <header className={`relative z-20 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-3 pb-2.5 pt-[max(1rem,env(safe-area-inset-top))] sm:px-[18px] ${isDark ? 'border-white/8 bg-[#1a1a1f]' : 'border-[#ebe9e5] bg-[#fbfaf8]'}`}>
+    <header className={`relative z-20 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-2 border-b px-3 pb-2.5 pt-[max(1rem,env(safe-area-inset-top))] sm:px-[18px] ${isDark ? 'border-white/8 bg-ink' : 'border-[#ebe9e5] bg-surface'}`}>
       <button
         type="button"
         onClick={onBack}

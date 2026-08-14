@@ -41,8 +41,8 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
 }) => {
   const canSend = value.trim().length > 0 || attachments.length > 0;
   const surfaceButton = isDark
-    ? 'bg-[#26262e] text-zinc-400 hover:bg-[#2f2f38] hover:text-zinc-100'
-    : 'bg-[#f0f0ed] text-zinc-500 hover:bg-[#e8e8e5] hover:text-zinc-900';
+    ? 'bg-ink text-zinc-400 hover:bg-ink hover:text-zinc-100'
+    : 'bg-surface text-zinc-500 hover:bg-[#e8e8e5] hover:text-zinc-900';
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && !event.shiftKey) {
@@ -53,12 +53,12 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   };
 
   return (
-    <footer className={`shrink-0 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`}>
-      <div className={`rounded-[26px] px-4 pb-2.5 pt-3.5 shadow-[0_8px_20px_rgba(20,20,30,0.08)] ring-1 transition ${isDark ? 'bg-[#232329] ring-zinc-700/70' : 'bg-white ring-zinc-200'}`}>
+    <footer className={`shrink-0 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
+      <div className={`rounded-[26px] px-4 pb-2.5 pt-3.5 shadow-[0_8px_20px_rgba(20,20,30,0.08)] ring-1 transition ${isDark ? 'bg-ink ring-zinc-700/70' : 'bg-white ring-zinc-200'}`}>
         {attachments.length > 0 && (
           <div className="mb-2.5 flex flex-wrap gap-2">
             {attachments.map((attachment) => (
-              <div key={attachment.id} className={`flex max-w-[190px] items-center gap-2 rounded-[14px] py-1.5 pl-2 pr-1.5 text-xs ${isDark ? 'bg-[#2f2f38] text-zinc-200' : 'bg-[#f0f0ed] text-zinc-800'}`}>
+              <div key={attachment.id} className={`flex max-w-[190px] items-center gap-2 rounded-[14px] py-1.5 pl-2 pr-1.5 text-xs ${isDark ? 'bg-ink text-zinc-200' : 'bg-surface text-zinc-800'}`}>
                 {attachment.preview ? <img src={attachment.preview} alt="" className="h-6 w-6 shrink-0 rounded-md object-cover" /> : <FileText className="h-4 w-4 shrink-0 text-zinc-400" />}
                 <span className="truncate">{attachment.name}</span>
                 <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:text-zinc-800" aria-label={`Retirer ${attachment.name}`}><X className="h-3.5 w-3.5" /></button>
@@ -80,7 +80,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           </div>
         ) : isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
-            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-[#7638fa]/25 border-t-[#7638fa]" />
+            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-brand/25 border-t-[#7638fa]" />
             <span className={`text-sm ${isDark ? 'text-zinc-300' : 'text-zinc-600'}`}>Transcription du message vocal…</span>
           </div>
         ) : (

@@ -60,9 +60,9 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
   return (
     <>
       <button type="button" onClick={onClose} className="absolute inset-0 z-30 bg-black/40 backdrop-blur-[2px]" aria-label="Fermer l’historique" />
-      <aside className={`assistant-side-menu absolute inset-y-0 right-0 z-40 flex w-[91%] max-w-[430px] flex-col px-[18px] pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-[-8px_0_24px_rgba(20,20,30,0.16)] ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`} role="dialog" aria-modal="true" aria-label="Historique et menu AYROVI">
+      <aside className={`assistant-side-menu absolute inset-y-0 right-0 z-40 flex w-[91%] max-w-[430px] flex-col px-[18px] pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-[-8px_0_24px_rgba(20,20,30,0.16)] ${isDark ? 'bg-ink' : 'bg-surface'}`} role="dialog" aria-modal="true" aria-label="Historique et menu AYROVI">
         <div className="flex items-center gap-3 pb-3">
-          <button type="button" onClick={onClose} className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 ${isDark ? 'bg-[#26262e] text-zinc-300' : 'bg-[#f0f0ed] text-zinc-700'}`} aria-label="Retour au chat">
+          <button type="button" onClick={onClose} className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 ${isDark ? 'bg-ink text-zinc-300' : 'bg-surface text-zinc-700'}`} aria-label="Retour au chat">
             <ArrowLeft className="h-[18px] w-[18px]" />
           </button>
           <div>
@@ -71,7 +71,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
           </div>
         </div>
 
-        <button type="button" onClick={onNewConversation} className={`mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-bold transition active:scale-[0.99] ${isDark ? 'bg-zinc-100 text-zinc-950 hover:bg-white' : 'bg-[#151515] text-white hover:bg-black'}`}>
+        <button type="button" onClick={onNewConversation} className={`mt-1 flex w-full items-center justify-center gap-2 rounded-[14px] px-4 py-3 text-sm font-bold transition active:scale-[0.99] ${isDark ? 'bg-zinc-100 text-zinc-950 hover:bg-white' : 'bg-ink text-white hover:bg-black'}`}>
           <PenSquare className="h-4 w-4" /> Nouvelle conversation
         </button>
 

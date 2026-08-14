@@ -7,6 +7,7 @@
   --color-brand-light: var(--ayrovi-purple-light);
   --color-brand-deep: var(--ayrovi-deep);
   --color-accent: var(--ayrovi-yellow);
+  --color-accent-deep: var(--ayrovi-accent-deep);
   --color-ink: var(--ayrovi-ink);
   --color-muted: var(--ayrovi-muted);
   --color-surface: var(--ayrovi-surface);
@@ -20,6 +21,7 @@
     --ayrovi-purple-dark: #5025d1;
     --ayrovi-purple-light: #7e57ff;
     --ayrovi-yellow: #fbbf24;
+    --ayrovi-accent-deep: #ff9f43;
     --ayrovi-deep: #24104f;
     --ayrovi-gradient: linear-gradient(135deg, #24104f 0%, #673de6 100%);
     --ayrovi-ink: #1d2130;

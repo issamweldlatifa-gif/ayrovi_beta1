@@ -26,10 +26,10 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
   if (!isOpen) return null;
 
   const rowClass = `flex w-full items-center justify-between rounded-[18px] p-3 text-left transition ${
-    isDark ? 'bg-[#26262e] hover:bg-[#2f2f38]' : 'bg-[#f6f6f4] hover:bg-[#ececea]'
+    isDark ? 'bg-ink hover:bg-ink' : 'bg-surface hover:bg-[#ececea]'
   }`;
   const iconClass = `flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-sm ${
-    isDark ? 'bg-[#232329] text-zinc-300' : 'bg-white text-zinc-600'
+    isDark ? 'bg-ink text-zinc-300' : 'bg-white text-zinc-600'
   }`;
 
   const chooseFile = (kind: 'image' | 'file') => {
@@ -46,11 +46,11 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
   return (
     <>
       <button type="button" onClick={onClose} className="absolute inset-0 z-40 bg-black/45 backdrop-blur-[2px]" aria-label="Fermer" />
-      <section className={`assistant-sheet absolute inset-x-0 bottom-0 z-50 max-h-[82%] overflow-y-auto rounded-t-[28px] px-5 pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_32px_rgba(20,20,30,0.16)] ${isDark ? 'bg-[#232329]' : 'bg-white'}`} role="dialog" aria-modal="true" aria-label="Ajouter au chat">
+      <section className={`assistant-sheet absolute inset-x-0 bottom-0 z-50 max-h-[82%] overflow-y-auto rounded-t-[28px] px-5 pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-[0_-12px_32px_rgba(20,20,30,0.16)] ${isDark ? 'bg-ink' : 'bg-white'}`} role="dialog" aria-modal="true" aria-label="Ajouter au chat">
         <div className={`mx-auto my-2 h-1 w-10 rounded-full ${isDark ? 'bg-zinc-700' : 'bg-zinc-200'}`} />
         <div className="relative mb-5 flex items-center justify-center">
           <h2 className={`text-base font-bold ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}>Ajouter au chat</h2>
-          <button type="button" onClick={onClose} className={`absolute right-0 flex h-8 w-8 items-center justify-center rounded-full ${isDark ? 'bg-[#2f2f38] text-zinc-300' : 'bg-[#f6f6f4] text-zinc-600'}`} aria-label="Fermer">
+          <button type="button" onClick={onClose} className={`absolute right-0 flex h-8 w-8 items-center justify-center rounded-full ${isDark ? 'bg-ink text-zinc-300' : 'bg-surface text-zinc-600'}`} aria-label="Fermer">
             <X className="h-4 w-4" />
           </button>
         </div>

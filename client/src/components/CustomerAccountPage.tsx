@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, Heart, Home, Loader2, LogOut,
-  MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X,
+  MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X, Hourglass, AlertCircle, ArrowDown,
 } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -75,7 +75,7 @@ function Empty({ icon: Icon, title, text }: { icon: React.ComponentType<any>; ti
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="block"><span className="mb-1.5 block text-xs font-black text-[#342d40]">{label}</span>{children}</label>;
+  return <label className="block"><span className="mb-1.5 block text-xs font-black text-ink">{label}</span>{children}</label>;
 }
 
 const inputClass = 'w-full rounded-none border border-slate-200 bg-white px-3.5 py-3 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10';
@@ -322,7 +322,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         <button type="button" onClick={() => setPhoneLoginOpen(true)} className="mt-5 w-full py-2 text-xs font-black text-brand">Utiliser mon numéro de téléphone (SMS)</button>
       )}
       {challengeId && <form onSubmit={verifyCode} className="space-y-4">
-        <div className="border border-brand/20 bg-brand/5 p-4 text-center"><p className="text-xs font-bold text-slate-500">Code envoyé au</p><strong className="mt-1 block text-base text-[#342d40]">{maskedPhone}</strong></div>
+        <div className="border border-brand/20 bg-brand/5 p-4 text-center"><p className="text-xs font-bold text-slate-500">Code envoyé au</p><strong className="mt-1 block text-base text-ink">{maskedPhone}</strong></div>
         <Field label="Code à 6 chiffres"><input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" className={`${inputClass} text-center font-mono text-2xl tracking-[0.35em]`} required /></Field>
         {developmentCode && <button type="button" onClick={() => setCode(developmentCode)} className="w-full border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">Mode développement — utiliser {developmentCode}</button>}
         <button disabled={authBusy || code.length !== 6} className="flex w-full items-center justify-center gap-2 bg-brand px-4 py-3.5 text-sm font-black text-white disabled:opacity-50">{authBusy && <Loader2 className="h-4 w-4 animate-spin" />}Valider et activer mon compte</button>
@@ -407,16 +407,16 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
 <div className="flex items-center justify-between text-xs"><span className="font-bold text-slate-500">Acompte à payer</span><strong>{money(orderDetail.deposit_amount_tnd)}</strong></div>
 <div className="flex items-center justify-between text-xs"><span className="font-bold text-slate-500">Solde à la livraison</span><strong>{money(Math.max(0, Number(orderDetail.total_tnd) - Number(orderDetail.deposit_amount_tnd || 0)))}</strong></div>
 <div className={`border p-3 text-xs font-bold ${orderDetail.deposit_status === 'PAID' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : orderDetail.deposit_status === 'SUBMITTED' ? 'border-blue-200 bg-blue-50 text-blue-800' : orderDetail.deposit_status === 'REJECTED' ? 'border-red-200 bg-red-50 text-red-700' : 'border-amber-200 bg-amber-50 text-amber-800'}`}>
-{orderDetail.deposit_status === 'PAID' && <>✓ Acompte confirmé — commande en préparation.</>}
-{orderDetail.deposit_status === 'SUBMITTED' && <>⏳ Preuve reçue — vérification par notre équipe en cours.</>}
-{orderDetail.deposit_status === 'REJECTED' && <>✕ Reçu refusé{orderDetail.deposit_review_note ? ` : ${orderDetail.deposit_review_note}` : ''} — veuillez en téléverser un nouveau.</>}
-{orderDetail.deposit_status === 'PENDING' && <>⚠️ Acompte non réglé — votre commande n’est pas encore confirmée.</>}
+{orderDetail.deposit_status === 'PAID' && <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 shrink-0" />Acompte confirmé — commande en préparation.</span>}
+{orderDetail.deposit_status === 'SUBMITTED' && <span className="flex items-center gap-1.5"><Hourglass className="h-3.5 w-3.5 shrink-0" />Preuve reçue — vérification par notre équipe en cours.</span>}
+{orderDetail.deposit_status === 'REJECTED' && <span className="flex items-center gap-1.5"><X className="h-3.5 w-3.5 shrink-0" />Reçu refusé{orderDetail.deposit_review_note ? ` : ${orderDetail.deposit_review_note}` : ''} — veuillez en téléverser un nouveau.</span>}
+{orderDetail.deposit_status === 'PENDING' && <span className="flex items-center gap-1.5"><AlertCircle className="h-3.5 w-3.5 shrink-0" />Acompte non réglé — votre commande n’est pas encore confirmée.</span>}
 </div>
 {['PENDING','REJECTED'].includes(orderDetail.deposit_status) && orderDetail.payment_method !== 'CARD' && <div className="space-y-2"><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => setProofFile(e.target.files?.[0] || null)} className="block w-full text-xs text-slate-500 file:mr-3 file:border-0 file:bg-brand file:px-3 file:py-2 file:text-xs file:font-black file:text-white" /><button disabled={!proofFile || proofBusy} onClick={uploadDepositProof} className="flex w-full items-center justify-center gap-2 bg-brand px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">{proofBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Envoyer la preuve d’acompte (capture / reçu)</button></div>}
 {orderDetail.deposit_status === 'PENDING' && orderDetail.payment_method === 'CARD' && <p className="text-[11px] leading-5 text-slate-500">Paiement carte : notre équipe vous contacte immédiatement pour le règlement sécurisé de l’acompte, ou téléversez le reçu ci-contre si vous avez déjà payé.</p>}
 {['PENDING','REJECTED'].includes(orderDetail.deposit_status) && orderDetail.payment_method === 'CARD' && <div className="space-y-2"><input type="file" accept="image/jpeg,image/png,image/webp,application/pdf" onChange={(e) => setProofFile(e.target.files?.[0] || null)} className="block w-full text-xs text-slate-500 file:mr-3 file:border-0 file:bg-brand file:px-3 file:py-2 file:text-xs file:font-black file:text-white" /><button disabled={!proofFile || proofBusy} onClick={uploadDepositProof} className="flex w-full items-center justify-center gap-2 bg-brand px-4 py-2.5 text-xs font-black text-white disabled:opacity-50">{proofBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}Envoyer le reçu du paiement carte</button></div>}
 {orderDetail.tracking_code && <div className="flex items-center justify-between border border-dashed border-brand bg-brand/5 p-3"><span className="text-[10px] font-black uppercase tracking-widest text-brand">Code de suivi</span><strong className="font-mono text-sm text-brand-dark">{orderDetail.tracking_code}</strong></div>}
-{orderDetail.invoice_number && <a href={`/api/customer/account/orders/${orderDetail.id}/invoice`} className="flex w-full items-center justify-center gap-2 border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-xs font-black text-emerald-700">⬇️ Télécharger ma facture ({orderDetail.invoice_number})</a>}
+{orderDetail.invoice_number && <a href={`/api/customer/account/orders/${orderDetail.id}/invoice`} className="flex w-full items-center justify-center gap-2 border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-xs font-black text-emerald-700"><ArrowDown className="h-4 w-4" />Télécharger ma facture ({orderDetail.invoice_number})</a>}
 </div>}
 <div className="mt-3"><Status value={orderDetail.payment_status} /></div></section></div><section className="border border-slate-200 bg-white p-5"><h3 className="mb-4 font-black">Suivi</h3><div className="space-y-4">{orderDetail.history?.map((item: any) => <div key={item.id} className="flex gap-3"><span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-brand" /><div><Status value={item.to_status} /><p className="mt-1 text-xs text-slate-500">{item.note}</p><time className="text-[10px] text-slate-400">{date(item.created_at, true)}</time></div></div>)}</div></section></main></div>}
   </div>;

@@ -106,7 +106,7 @@ export const PublicCmsSections: React.FC = () => {
   const activeDefinition = pageDefinitions.find((page) => page.id === activePage);
 
   const renderPageContent = (page: CmsPage) => {
-    if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-[#e8e3f1]" /><div className="h-96 animate-pulse bg-[#e8e3f1]" /></div>;
+    if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-brand-light/20" /><div className="h-96 animate-pulse bg-brand-light/20" /></div>;
 
     if (page === 'arrivals') return activeArrivals.length ? (
       <div className="grid gap-5 lg:grid-cols-2">

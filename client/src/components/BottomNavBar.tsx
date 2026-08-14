@@ -12,7 +12,6 @@ interface BottomNavBarProps {
 
 const NAV_ITEM =
   'flex h-12 min-w-0 flex-col items-center justify-center gap-0.5 rounded-[17px] text-[9.5px] font-bold leading-none transition-all duration-200 active:scale-[0.95]';
-const navFont: React.CSSProperties = { fontFamily: "'Tajawal', var(--ayrovi-font)" };
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   isAiDrawerOpen,
@@ -46,14 +45,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     <>
       {isVisionOpen && (
         <section
-          className="fixed inset-0 z-[90] grid place-items-center overflow-hidden bg-[rgba(245,242,252,0.58)] px-5 backdrop-blur-[28px] backdrop-saturate-150"
+          className="fixed inset-0 z-[90] grid place-items-center overflow-hidden bg-brand-light/15 px-5 backdrop-blur-[28px] backdrop-saturate-150"
           role="dialog"
           aria-modal="true"
           aria-label="Ayvisi Vision — bientôt disponible"
           dir="rtl"
         >
           <div className="pointer-events-none absolute -left-24 top-[12%] h-72 w-72 rounded-full bg-brand/20 blur-3xl" />
-          <div className="pointer-events-none absolute -right-28 bottom-[8%] h-80 w-80 rounded-full bg-fuchsia-300/20 blur-3xl" />
+          <div className="pointer-events-none absolute -right-28 bottom-[8%] h-80 w-80 rounded-full bg-brand-light/20 blur-3xl" />
           <button
             type="button"
             onClick={() => setIsVisionOpen(false)}
@@ -63,7 +62,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             <X size={20}/>
           </button>
 
-          <div className="relative w-full max-w-sm overflow-hidden rounded-[30px] border border-white/75 bg-white/42 px-6 py-10 text-center shadow-[0_28px_80px_-34px_rgba(56,25,115,0.45)] backdrop-blur-2xl" style={navFont}>
+          <div className="relative w-full max-w-sm overflow-hidden rounded-[30px] border border-white/75 bg-white/42 px-6 py-10 text-center shadow-[0_28px_80px_-34px_rgba(56,25,115,0.45)] backdrop-blur-2xl">
             <div className="relative mx-auto grid h-24 w-24 place-items-center">
               <span className="absolute inset-1 animate-pulse rounded-full border border-brand/20 bg-brand/10" />
               <span className="absolute inset-4 rounded-full border border-brand/20 bg-white/45 backdrop-blur-md" />
@@ -85,13 +84,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           className="grid h-[60px] grid-cols-3 items-center gap-1 rounded-[29px] border border-white/65 bg-white/52 p-1.5 shadow-[0_18px_50px_-24px_rgba(25,16,55,0.5)] backdrop-blur-[26px] backdrop-saturate-150"
           aria-label="Navigation principale"
           dir="rtl"
-          style={navFont}
         >
           {/* RTL order: AYROVIX appears on the right. */}
           <button
             type="button"
             onClick={onOpenLens}
-            className={`${NAV_ITEM} text-[#0a0a0a] hover:bg-white/45 hover:shadow-sm`}
+            className={`${NAV_ITEM} text-ink hover:bg-white/45 hover:shadow-sm`}
             aria-label="Ouvrir Ayrovix"
           >
             <AyrovixNavIcon size={25}/>
@@ -101,7 +99,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           <button
             type="button"
             onClick={onToggleAiDrawer}
-            className={`${NAV_ITEM} text-[#0a0a0a] ${isAiDrawerOpen ? 'bg-white/70 shadow-[0_9px_22px_-14px_rgba(15,15,20,0.55)]' : 'hover:bg-white/45 hover:shadow-sm'}`}
+            className={`${NAV_ITEM} text-ink ${isAiDrawerOpen ? 'bg-white/70 shadow-[0_9px_22px_-14px_rgba(15,15,20,0.55)]' : 'hover:bg-white/45 hover:shadow-sm'}`}
             aria-label="Ouvrir Ayrovi"
             aria-pressed={isAiDrawerOpen}
           >
@@ -113,7 +111,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           <button
             type="button"
             onClick={() => setIsVisionOpen(true)}
-            className={`${NAV_ITEM} text-[#0a0a0a] hover:bg-white/45 hover:shadow-sm`}
+            className={`${NAV_ITEM} text-ink hover:bg-white/45 hover:shadow-sm`}
             aria-label="Ouvrir Ayvisi Vision"
           >
             <AyvisiNavIcon size={26}/>
