@@ -26,8 +26,8 @@ app.use((_req, res, next) => {
   res.setHeader('Content-Security-Policy', `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; ${frameAncestors} base-uri 'self'; form-action 'self'`);
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // Caméra autorisée pour notre origine (AYROVIX Lens) ; le reste des API sensibles reste bloqué.
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(), geolocation=(), payment=()');
+  // Camera and microphone are limited to our own origin for Lens and AYROVI voice.
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
   if (isProd) {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
@@ -122,7 +122,7 @@ app.use('/api', (_req, res, next) => {
 app.use('/api/admin', createAdminRouter(db));
 app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
 app.use('/api/customer', createCustomerRouter(db));
-app.use('/api/assistant', createAssistantRouter(db));
+app.use('/api/assistant', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 

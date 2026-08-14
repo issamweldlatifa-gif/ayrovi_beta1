@@ -86,6 +86,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [motionState, setMotionState] = useState<AyroviMotionState>('idle');
   const [isRecording, setIsRecording] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceReady, setVoiceReady] = useState<boolean | null>(null);
   const [recordSeconds, setRecordSeconds] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAttachmentSheetOpen, setIsAttachmentSheetOpen] = useState(false);
@@ -120,6 +121,16 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const pageRef = useRef<HTMLElement>(null);
 
   useBodyScrollLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const controller = new AbortController();
+    fetch('/api/assistant/status', { credentials: 'same-origin', signal: controller.signal })
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((payload) => setVoiceReady(payload?.data?.voiceReady === true))
+      .catch(() => { if (!controller.signal.aborted) setVoiceReady(null); });
+    return () => controller.abort();
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -241,6 +252,14 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             setMessages((current) => current.map((message) => message.id === responseId ? { ...message, text: message.text + event.text } : message));
           }
           if (event.type === 'tool') {
+            if (event.name === 'lens_search' && event.data.product) {
+              const product = event.data.product as AyrovixProduct;
+              setSelectedProduct({
+                messageId: responseId,
+                product,
+                priceVerified: product.priceVerificationStatus === 'VERIFIED' || product.priceVerified === true,
+              });
+            }
             setMessages((current) => current.map((message) => {
               if (message.id !== responseId) return message;
               if (event.name === 'calculate_price') return { ...message, priceBreakdown: (event.data.breakdown || event.data) as any };
@@ -416,6 +435,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const startRecording = async () => {
     if (isGenerating || isTranscribing || isRecording || voiceCapturePendingRef.current) return;
+    if (voiceReady === false) {
+      showToast('Le service vocal AYROVI n’est pas encore activé');
+      return;
+    }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       showToast('L’enregistrement vocal n’est pas compatible avec ce navigateur');
       return;

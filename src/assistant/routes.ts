@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
+import type { SmartLinkScraper } from '../scraper/scraper';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { parsePublicHttpUrl } from '../services/safeUrl';
 import {
@@ -89,13 +90,14 @@ function cleanMessages(value: unknown): AssistantConversationLine[] {
   return messages;
 }
 
-export function createAssistantRouter(db: QatafoDatabase): Router {
+export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScraper): Router {
   const router = Router();
 
   router.get('/status', (_req, res) => {
     res.json({ success: true, data: {
       ready: assistantAiReady(), provider: 'anthropic', streaming: true,
-      vision: true, lensTool: true, voiceReady: Boolean(process.env.GROQ_API_KEY?.trim()),
+      vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
+      voiceReady: Boolean(process.env.GROQ_API_KEY?.trim()),
     } });
   });
 
@@ -158,7 +160,7 @@ export function createAssistantRouter(db: QatafoDatabase): Router {
     res.on('close', () => { if (!res.writableEnded) controller.abort(); });
 
     try {
-      await runAssistantChat(db, { conversationId, sessionId, customer, messages, clientState }, emit, controller.signal);
+      await runAssistantChat(db, scraper, { conversationId, sessionId, customer, messages, clientState }, emit, controller.signal);
     } catch (error: any) {
       if (controller.signal.aborted || error?.name === 'AbortError') return;
       console.warn('[Assistant chat]', error?.message || 'stream failed');

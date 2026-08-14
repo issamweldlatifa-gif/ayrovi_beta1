@@ -1,14 +1,19 @@
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import sharp from 'sharp';
+import { BarcodeFormat, QRCodeWriter } from '@zxing/library';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { executeAssistantTool, type AssistantToolContext } from '../src/assistant/tools';
 import { selectAssistantModel } from '../src/assistant/service';
 import type { CustomerIdentity } from '../src/customer/auth';
+import { SmartLinkScraper } from '../src/scraper/scraper';
+import { scanCodeFromImage } from '../src/ayrovix/services/codeScanner';
 
 const originalAnthropicKey = process.env.ANTHROPIC_API_KEY;
 const originalSerpApiKey = process.env.SERPAPI_KEY;
 const originalGroqKey = process.env.GROQ_API_KEY;
+const testScraper = new SmartLinkScraper();
 const unique = (prefix: string) => `${prefix}_${randomUUID()}`;
 
 function customerIdentity(id: string, phone: string): CustomerIdentity {
@@ -20,7 +25,7 @@ function customerIdentity(id: string, phone: string): CustomerIdentity {
 
 function context(customer: CustomerIdentity | null, conversationId = unique('conversation')): AssistantToolContext {
   return {
-    db, customer, sessionId: unique('session'), conversationId,
+    db, scraper: testScraper, customer, sessionId: unique('session'), conversationId,
     messages: [{ role: 'user', text: 'J’ai besoin d’aide pour ma commande.' }],
     imageAttachments: [],
     webSearchEnabled: true,
@@ -61,9 +66,26 @@ function anthropicSse(events: any[]): Response {
   return new Response(payload, { status: 200, headers: { 'content-type': 'text/event-stream' } });
 }
 
+async function qrPng(value: string): Promise<Buffer> {
+  const matrix = new QRCodeWriter().encode(value, BarcodeFormat.QR_CODE, 320, 320, new Map());
+  const pixels = Buffer.alloc(matrix.getWidth() * matrix.getHeight() * 4);
+  for (let y = 0; y < matrix.getHeight(); y += 1) {
+    for (let x = 0; x < matrix.getWidth(); x += 1) {
+      const offset = (y * matrix.getWidth() + x) * 4;
+      const channel = matrix.get(x, y) ? 0 : 255;
+      pixels[offset] = channel;
+      pixels[offset + 1] = channel;
+      pixels[offset + 2] = channel;
+      pixels[offset + 3] = 255;
+    }
+  }
+  return sharp(pixels, { raw: { width: matrix.getWidth(), height: matrix.getHeight(), channels: 4 } }).png().toBuffer();
+}
+
 describe('AYROVI Claude assistant', () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
     if (originalAnthropicKey === undefined) delete process.env.ANTHROPIC_API_KEY;
     else process.env.ANTHROPIC_API_KEY = originalAnthropicKey;
     if (originalSerpApiKey === undefined) delete process.env.SERPAPI_KEY;
@@ -156,6 +178,81 @@ describe('AYROVI Claude assistant', () => {
       expect.objectContaining({ type: 'image', source: { type: 'url', url: 'https://cdn.example.org/products/shoe.webp' } }),
     ]));
     expect(requestBody.tools.some((tool: any) => tool.name === 'lens_search')).toBe(true);
+    expect(requestBody.tool_choice).toEqual({ type: 'tool', name: 'lens_search' });
+  });
+
+  test('manual URL confirmation in an active order does not force a new Lens extraction', async () => {
+    process.env.ANTHROPIC_API_KEY = 'assistant-order-test-key';
+    const fetchMock = vi.fn(async (_url: any, _init: any) => anthropicSse([
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Lien conservé pour la commande.' } },
+      { type: 'content_block_stop', index: 0 },
+      { type: 'message_stop' },
+    ]));
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', unique('assistant-session'))
+      .send({
+        conversationId: unique('conversation'),
+        state: { orderStage: 'PRODUCT_CONFIGURATION', activeProduct: { title: 'Produit actif' } },
+        messages: [{ role: 'user', text: 'Voici le lien exact https://shop.example.org/products/confirmed' }],
+      });
+    expect(response.status).toBe(200);
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body || '{}'));
+    expect(requestBody.tool_choice).toEqual({ type: 'auto' });
+  });
+
+  test('explicit product search deterministically forces the real search tool', async () => {
+    process.env.ANTHROPIC_API_KEY = 'assistant-search-test-key';
+    const fetchMock = vi.fn(async (_url: any, _init: any) => anthropicSse([
+      { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+      { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Recherche.' } },
+      { type: 'content_block_stop', index: 0 },
+      { type: 'message_stop' },
+    ]));
+    vi.stubGlobal('fetch', fetchMock);
+    await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', unique('assistant-session'))
+      .send({ conversationId: unique('conversation'), messages: [{ role: 'user', text: 'ابحث لي عن Nike Air Max 95' }] });
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body || '{}'));
+    expect(requestBody.tool_choice).toEqual({ type: 'tool', name: 'search_products' });
+  });
+
+  test('lens_search sends a pasted product URL through the real AYROVIX extractor and opens the in-chat order product', async () => {
+    vi.spyOn(testScraper, 'scrapeProduct').mockResolvedValue({
+      id: 'scraped_test', store: 'generic', storeName: 'Merchant Test',
+      url: 'https://shop.example.org/products/air-max-95', externalId: 'sku-95',
+      title: 'Nike Air Max 95', description: 'Chaussure test',
+      images: ['https://cdn.example.org/air-max-95.jpg'], mainImage: 'https://cdn.example.org/air-max-95.jpg',
+      sourcePrice: 180, sourceCurrency: 'EUR', convertedPriceTND: 0,
+      estimatedShippingTND: 0, serviceFeeTND: 0, totalPriceTND: 0,
+      variants: {
+        sizes: ['42'], colors: ['Noir'],
+        details: [{ id: 'variant-42', label: '42 / Noir', size: '42', color: 'Noir', available: true, price: 185 }],
+      },
+      availability: 'in_stock', brand: 'Nike', priceVerified: true,
+      verificationProvider: 'merchant', verificationMethod: 'structured-data', verificationFailureCode: null,
+      scrapedAt: new Date().toISOString(),
+    });
+    const result = await executeAssistantTool('lens_search', {
+      product_url: 'https://shop.example.org/products/air-max-95',
+    }, context(null));
+
+    expect(result.modelResult.success).toBe(true);
+    expect(result.modelResult.mode).toBe('url');
+    expect(result.presentation?.product.title).toBe('Nike Air Max 95');
+    expect(result.presentation?.product.priceToken).toBeTruthy();
+    expect(result.presentation?.product.variantOptions[0].priceToken).toBeTruthy();
+    expect(result.modelResult.product.priceToken).toBeUndefined();
+    expect(result.modelResult.product.variants[0].priceToken).toBeUndefined();
+    expect(testScraper.scrapeProduct).toHaveBeenCalledWith('https://shop.example.org/products/air-max-95');
+  });
+
+  test('server-side AYROVIX scanner reads QR links from assistant image attachments', async () => {
+    const code = await scanCodeFromImage(await qrPng('https://shop.example.org/products/qr-product'));
+    expect(code).toMatchObject({ kind: 'url', value: 'https://shop.example.org/products/qr-product' });
   });
 
   test('lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model', async () => {
@@ -186,11 +283,16 @@ describe('AYROVI Claude assistant', () => {
     expect(result.modelResult.imageAnalyzed).toBe(true);
     expect(result.presentation?.products[0].title).toBe('Nike Air Max Test');
     expect(result.presentation?.products[0].priceToken).toBeTruthy();
+    expect(result.presentation?.product.title).toBe('Nike Air Max Test');
+    expect(result.presentation?.product.priceToken).toBeTruthy();
+    expect(result.presentation?.product.priceTnd).toBeGreaterThan(0);
     expect(result.modelResult.products[0].priceToken).toBeUndefined();
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   test('voice endpoint validates audio and returns Groq Whisper transcription', async () => {
+    const page = await request(app).get('/');
+    expect(page.headers['permissions-policy']).toContain('microphone=(self)');
     delete process.env.GROQ_API_KEY;
     const unavailable = await request(app)
       .post('/api/assistant/transcribe')

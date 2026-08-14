@@ -1,11 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import type { CustomerIdentity } from '../customer/auth';
+import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice } from '../services/pricing';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/priceQuote';
+import { extractProductFromUrl, sanitizeProductUrl } from '../ayrovix/services/product';
 import { anthropicExternalSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
 import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
-import type { AyrovixCandidate } from '../ayrovix/types';
+import { scanCodeFromImage, type AyrovixScannedCode } from '../ayrovix/services/codeScanner';
+import type { AyrovixCandidate, AyrovixProduct } from '../ayrovix/types';
 
 export type AssistantToolName = 'get_order_status' | 'calculate_price' | 'search_products' | 'lens_search' | 'escalate_to_human';
 
@@ -24,6 +27,7 @@ export interface AssistantConversationLine {
 
 export interface AssistantToolContext {
   db: QatafoDatabase;
+  scraper: SmartLinkScraper;
   customer: CustomerIdentity | null;
   sessionId: string;
   conversationId: string;
@@ -79,12 +83,15 @@ export const ASSISTANT_TOOLS = [
   },
   {
     name: 'lens_search',
-    description: 'Use AYROVIX Lens as the external visual-shopping eye. For an attached shopping image, pass its attachment id plus only the product facts visibly read from that image. The tool returns real Google Lens/catalogue references and secure quotes; never invent a result.',
+    description: 'Run the complete AYROVIX Lens pipeline inside AYROVI: attached-image vision/OCR, Google Lens, product-link extraction, QR/barcode lookup, catalogue and secure quotes. Always pass a pasted merchant link as product_url. Never invent a result.',
     input_schema: {
       type: 'object',
       properties: {
         image_attachment_id: { type: 'string', description: 'Exact id shown beside the attached image.' },
-        query: { type: 'string', description: 'Product description, brand/model, code or pasted link context extracted from the conversation/image.' },
+        product_url: { type: 'string', description: 'Exact public product or merchant URL pasted by the customer or decoded from a QR code.' },
+        code_value: { type: 'string', description: 'QR text, EAN/UPC/barcode digits or product code visibly decoded from the image.' },
+        code_type: { type: 'string', enum: ['qr', 'barcode', 'product_code'] },
+        query: { type: 'string', description: 'Precise product description, brand/model or product code extracted from the conversation/image.' },
         detected_title: { type: 'string', description: 'Product title visibly identified in the image, if any.' },
         detected_brand: { type: 'string', description: 'Brand visibly identified in the image, if any.' },
         visible_price: { type: 'number', description: 'Current product price visibly shown in the image. Never use a crossed-out old price.' },
@@ -201,6 +208,12 @@ function calculateRealPrice(input: any, context: AssistantToolContext): Assistan
   return { modelResult: { success: true, breakdown }, presentation: { breakdown } };
 }
 
+function withCalculatedTnd(candidate: AyrovixCandidate, db: QatafoDatabase): AyrovixCandidate {
+  if (candidate.priceTnd != null || candidate.price == null || !candidate.currency) return candidate;
+  const breakdown = calculatePrice(db.getPricingRules(), candidate.price, candidate.currency);
+  return breakdown ? { ...candidate, priceTnd: breakdown.totalTND } : candidate;
+}
+
 function quoteCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
   const status: AyrovixQuoteStatus = candidate.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
@@ -210,6 +223,63 @@ function quoteCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
       ? createAyrovixPriceToken({ price: candidate.price, currency: candidate.currency, title: candidate.title, referenceUrl: candidate.sourceUrl, status })
       : null,
   };
+}
+
+function quoteProduct(product: AyrovixProduct): AyrovixProduct {
+  const status: AyrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
+  const token = (price: number | null, currency: string | null) => price != null && currency
+    ? createAyrovixPriceToken({ price, currency, title: product.title, referenceUrl: product.sourceUrl, status })
+    : null;
+  return {
+    ...product,
+    priceVerificationStatus: status,
+    priceToken: token(product.price, product.currency),
+    variantOptions: product.variantOptions?.map((option) => ({
+      ...option,
+      priceToken: token(option.price, option.currency),
+    })),
+  };
+}
+
+function modelProduct(product: AyrovixProduct) {
+  const { priceToken: _token, images: _images, image: _image, variantOptions, ...safe } = product;
+  return {
+    ...safe,
+    variants: variantOptions?.map(({ priceToken: _variantToken, ...option }) => option).slice(0, 40),
+  };
+}
+
+function publicProductUrl(raw: unknown): string {
+  const safe = sanitizeProductUrl(raw);
+  if (!safe) return '';
+  try {
+    const parsed = new URL(safe);
+    return parsed.username || parsed.password ? '' : parsed.toString();
+  } catch { return ''; }
+}
+
+function productUrlFromText(raw: unknown): string {
+  const text = cleanText(raw, 4096);
+  const match = text.match(/https?:\/\/[^\s"'<>]+/i)?.[0]?.replace(/[).,;!?]+$/, '');
+  return publicProductUrl(match || '');
+}
+
+async function searchByCode(value: string, context: AssistantToolContext): Promise<AyrovixCandidate[]> {
+  const local = catalogSearch(context.db, null, value, 5)
+    .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
+  const external = context.webSearchEnabled ? await anthropicExternalSearch(value, 8).catch(() => []) : [];
+  const seen = new Set<string>();
+  return [...local, ...external]
+    .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }))
+    .filter((candidate) => {
+      const key = `${candidate.sourceUrl}|${candidate.title.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => right.match - left.match)
+    .slice(0, 8)
+    .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
 }
 
 async function searchRealProducts(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
@@ -229,7 +299,7 @@ async function searchRealProducts(input: any, context: AssistantToolContext): Pr
     })
     .sort((left, right) => right.match - left.match)
     .slice(0, 8)
-    .map(quoteCandidate);
+    .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
   const modelItems = candidates.map(({ priceToken: _token, images: _images, ...candidate }) => candidate);
   return {
     modelResult: {
@@ -245,10 +315,64 @@ async function searchRealProducts(input: any, context: AssistantToolContext): Pr
 }
 
 async function lensSearch(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const latestUser = context.messages.filter((message) => message.role === 'user').at(-1);
   const attachmentId = cleanText(input?.image_attachment_id, 120);
-  const attachment = attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined;
-  const query = cleanText(input?.query || [input?.detected_brand, input?.detected_title].filter(Boolean).join(' '), 220);
-  if (!attachment && query.length < 2) {
+  const attachment = (attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined)
+    || latestUser?.attachments?.at(-1);
+  const rawQuery = cleanText(input?.query || [input?.detected_brand, input?.detected_title].filter(Boolean).join(' '), 220);
+  const suppliedCode = cleanText(input?.code_value, 200);
+  const possibleUrl = publicProductUrl(input?.product_url)
+    || productUrlFromText(input?.product_url)
+    || productUrlFromText(rawQuery)
+    || productUrlFromText(latestUser?.text);
+  // A direct image URL is already an image attachment and belongs to Google
+  // Lens, not to the merchant-page extractor.
+  const suppliedUrl = attachment?.url && possibleUrl === publicProductUrl(attachment.url) ? '' : possibleUrl;
+
+  let scannedCode: AyrovixScannedCode | null = null;
+  if (!suppliedUrl && !suppliedCode && attachment?.data) {
+    scannedCode = await scanCodeFromImage(Buffer.from(attachment.data, 'base64'));
+  }
+  const scannedUrl = scannedCode?.kind === 'url' ? publicProductUrl(scannedCode.value) : '';
+  const productUrl = suppliedUrl || scannedUrl;
+
+  if (productUrl) {
+    try {
+      const extracted = await extractProductFromUrl(context.db, context.scraper, productUrl);
+      const product = quoteProduct(extracted.product);
+      const products = extracted.alternates.slice(0, 8)
+        .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
+      return {
+        modelResult: {
+          success: true,
+          mode: scannedUrl ? 'qr_url' : 'url',
+          product: modelProduct(product),
+          alternatives: products.map(({ priceToken: _token, images: _images, image: _image, ...candidate }) => candidate),
+          instruction: 'The exact pasted-link product and order form are rendered inside the chat. Ask the customer to confirm the mandatory exact link, variant, quantity and note there; never redirect them to Lens.',
+        },
+        presentation: { query: product.title, product, products, source: scannedUrl ? 'qr' : 'url' },
+      };
+    } catch {
+      return { modelResult: { success: false, code: 'LENS_URL_FAILED', message: 'Le lien produit ne peut pas être analysé. Demandez un lien marchand public complet.' } };
+    }
+  }
+
+  const codeValue = suppliedCode || (scannedCode && scannedCode.kind !== 'url' ? scannedCode.value : '');
+  if (codeValue) {
+    const products = await searchByCode(codeValue, context);
+    return {
+      modelResult: {
+        success: true,
+        mode: scannedCode?.kind || cleanText(input?.code_type, 20) || 'product_code',
+        code: codeValue,
+        products: products.map(({ priceToken: _token, images: _images, image: _image, ...candidate }) => candidate),
+        instruction: products.length ? 'Present only these decoded-code results. The UI renders the real product cards.' : 'No real product matched this code. Do not invent one.',
+      },
+      presentation: { query: codeValue, products, source: scannedCode?.kind || 'code' },
+    };
+  }
+
+  if (!attachment && rawQuery.length < 2) {
     return { modelResult: { success: false, code: 'LENS_INPUT_REQUIRED', message: 'Demandez une image, un lien ou une description du produit.' } };
   }
 
@@ -257,11 +381,11 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     : attachment?.url
       ? await serpApiVisualSearchUrl(attachment.url, 8).catch(() => [])
       : [];
+  const query = rawQuery;
   const local = query.length >= 2
     ? catalogSearch(context.db, null, query, 5).map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }))
     : [];
-  // Claude web search is a fallback only after Google Lens/catalogue matching,
-  // never a replacement for the primary visual-search path.
+  // Text web search remains a fallback after Lens/catalogue, never the visual matcher.
   const external = context.webSearchEnabled && query.length >= 2 && visual.length === 0 && !local.some((candidate) => candidate.match >= 55)
     ? await anthropicExternalSearch(query, 6).catch(() => [])
     : [];
@@ -273,27 +397,28 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
   const visibleBreakdown = Number.isFinite(visiblePrice) && visiblePrice > 0
     ? calculatePrice(context.db.getPricingRules(), visiblePrice, visibleCurrency)
     : null;
-  const detectedCandidate: AyrovixCandidate | null = visibleBreakdown ? {
-    id: `assistant_vision_${randomUUID()}`,
-    kind: 'external',
+  const detectedProduct: AyrovixProduct | null = visibleBreakdown ? quoteProduct({
     title: detectedTitle,
     brand: detectedBrand,
     model: null,
-    colors: [],
-    sizes: [],
+    description: 'Produit et prix courant lus dans l’image par AYROVI. Le lien marchand exact reste obligatoire.',
+    image: visual[0]?.image || '',
+    images: visual[0]?.images || [],
     source: 'AYROVIX Vision',
     sourceUrl: '',
-    image: '',
-    images: [],
     price: visiblePrice,
     currency: visibleCurrency,
     priceTnd: visibleBreakdown.totalTND,
-    match: 65,
-  } : null;
+    exchangeRate: visibleBreakdown.exchangeRate,
+    colors: [],
+    sizes: [],
+    availability: 'unknown',
+    priceVerified: false,
+    priceVerificationStatus: 'PENDING_MANUAL',
+  }) : null;
 
   const seen = new Set<string>();
   const products = [
-    ...(detectedCandidate ? [detectedCandidate] : []),
     ...visual,
     ...local,
     ...external.map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
@@ -306,20 +431,42 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     })
     .sort((left, right) => right.match - left.match)
     .slice(0, 8)
-    .map(quoteCandidate);
+    .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
+  const strongCandidate = products.find((candidate) => candidate.match >= 80 && candidate.priceToken);
+  const activeProduct = detectedProduct || (strongCandidate ? quoteProduct({
+    title: strongCandidate.title,
+    brand: strongCandidate.brand,
+    model: strongCandidate.model,
+    description: '',
+    image: strongCandidate.image,
+    images: strongCandidate.images || [],
+    source: strongCandidate.source,
+    sourceUrl: strongCandidate.sourceUrl,
+    price: strongCandidate.price,
+    currency: strongCandidate.currency,
+    priceTnd: strongCandidate.priceTnd,
+    exchangeRate: null,
+    colors: strongCandidate.colors,
+    sizes: strongCandidate.sizes,
+    availability: strongCandidate.kind === 'catalog' ? 'in_stock' : 'unknown',
+    priceVerified: strongCandidate.kind === 'catalog',
+    priceVerificationStatus: strongCandidate.priceVerificationStatus,
+  }) : null);
 
   const modelProducts = products.map(({ priceToken: _token, images: _images, image: _image, ...product }) => product);
   return {
     modelResult: {
       success: true,
+      mode: 'image',
       query,
       imageAnalyzed: Boolean(attachment),
+      detectedPrice: detectedProduct ? { price: detectedProduct.price, currency: detectedProduct.currency, totalTnd: detectedProduct.priceTnd } : null,
       products: modelProducts,
-      instruction: products.length
-        ? 'Use only these AYROVIX Lens results. The UI displays cards and collects the mandatory manual link, quantity, color, size and note.'
-        : 'AYROVIX Lens found no real result. Do not invent a product, price, size or color.',
+      instruction: products.length || activeProduct
+        ? 'Use only these AYROVIX results. The product/order form is rendered inside chat when a reliable price exists; the customer confirms link, variant and quantity without opening Lens.'
+        : 'AYROVIX found no real result. Do not invent a product, price, size or color.',
     },
-    presentation: { query, products, source: attachment ? 'image' : 'text' },
+    presentation: { query, product: activeProduct, products, source: 'image' },
   };
 }
 
