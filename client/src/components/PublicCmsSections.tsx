@@ -1,82 +1,90 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { X, Calendar, Tag, Image as ImageIcon, FileText, ArrowRight } from './QatafoIcons';
+import React, { useEffect, useMemo, useState } from 'react';
+import heroHomme from '../assets/hero-homme.jpg';
+import heroFemme from '../assets/hero-femme.jpg';
+import heroEnfants from '../assets/hero-enfants.jpg';
+import { X } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import { getPublicHome } from '../services/publicApi';
-import { ErrorState, PageIntro, countdownParts, formatDate, useNow } from '../content/components';
-import { ArrivagesPage, PromotionsPage, StoriesPage, NewsPage, pageCounterLabel } from '../content/pages';
-import type { CatalogProduct, ContentActions, ContentHomeData, CmsPageId } from '../content/types';
-import type { ScrapedProduct, StoreType } from '../types';
 
-const emptyHome: ContentHomeData = { arrivals: [], products: [], promotions: [], stories: [], news: [] };
+interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
+type CmsPage = keyof HomeData;
 
-const pageDefinitions: Array<{ id: CmsPageId; label: string; eyebrow: string; description: string }> = [
-  { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les prochaines sélections AYROVI et leurs dates officielles.' },
-  { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et offres actuellement disponibles sur AYROVI.' },
+const emptyHome: HomeData = { arrivals: [], products: [], promotions: [], stories: [], news: [] };
+const localMedia: Record<string, string> = {
+  '/media/hero-homme.jpg': heroHomme,
+  '/media/hero-femme.jpg': heroFemme,
+  '/media/hero-enfants.jpg': heroEnfants,
+};
+const mediaSource = (value: unknown, fallback: string) => localMedia[String(value || '')] || String(value || fallback);
+const formatPrice = (value: unknown) => `${Number(value || 0).toLocaleString('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TND`;
+const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
+
+const pageDefinitions: Array<{
+  id: CmsPage;
+  label: string;
+  eyebrow: string;
+  description: string;
+}> = [
+  { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.' },
+  { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.' },
   { id: 'stories', label: 'Stories', eyebrow: 'À la une', description: 'Les nouveautés AYROVI dans un format visuel.' },
   { id: 'news', label: 'Actualités', eyebrow: 'Journal AYROVI', description: 'Les informations, arrivages et annonces de la plateforme.' },
 ];
 
-const toStore = (platform: string): StoreType => {
-  const value = platform.toLowerCase();
-  return (['shein', 'amazon', 'temu', 'aliexpress'] as StoreType[]).includes(value as StoreType) ? (value as StoreType) : 'generic';
-};
-
-export const catalogToScraped = (product: CatalogProduct): ScrapedProduct => ({
-  id: `catalog_${product.id}`,
-  store: toStore(product.sourcePlatform),
-  storeName: product.brandName || product.sourcePlatform,
-  url: product.sourceUrl || 'https://www.shein.com/',
-  externalId: product.id,
-  title: product.name,
-  description: product.description,
-  images: product.image ? [product.image] : [],
-  mainImage: product.image,
-  sourcePrice: product.originalPrice,
-  sourceCurrency: product.currency,
-  convertedPriceTND: product.finalPrice,
-  estimatedShippingTND: 0,
-  serviceFeeTND: 0,
-  totalPriceTND: product.finalPrice,
-  variants: { sizes: [], colors: [] },
-  availability: product.stockStatus === 'OUT_OF_STOCK' ? 'out_of_stock' : 'in_stock',
-  brand: product.brandName || null,
-  scrapedAt: new Date().toISOString(),
-});
-
-interface PublicCmsSectionsProps {
-  onOrderProduct: (product: ScrapedProduct) => void;
+function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
+  const [now, setNow] = useState(() => Date.now() + serverOffset);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now() + serverOffset), 1000);
+    return () => window.clearInterval(timer);
+  }, [serverOffset]);
+  const targetTime = new Date(target).getTime();
+  if (!target || !Number.isFinite(targetTime)) return null;
+  const totalSeconds = Math.max(0, Math.floor((targetTime - now) / 1000));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return (
+    <div className="mt-5 flex gap-2" aria-label={`Compte à rebours : ${days} jours, ${hours} heures, ${minutes} minutes`}>
+      {[[days, 'J'], [hours, 'H'], [minutes, 'MIN'], [seconds, 'SEC']].map(([value, label]) => (
+        <div key={String(label)} className="min-w-12 bg-white/10 px-2 py-2 text-center backdrop-blur-sm"><strong className="block text-lg font-black tabular-nums">{pad(Number(value))}</strong><span className="text-[8px] font-black uppercase tracking-[0.16em] text-white/55">{label}</span></div>
+      ))}
+    </div>
+  );
 }
 
-export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ onOrderProduct }) => {
-  const [home, setHome] = useState<ContentHomeData>(emptyHome);
+function EmptyContent({ label }: { label: string }) {
+  return <div className="border border-black/10 bg-white px-6 py-20 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">Aucun contenu {label.toLowerCase()} pour le moment.</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500">Cette page se remplira automatiquement dès qu’un contenu sera publié depuis l’espace Admin.</p></div>;
+}
+
+function PageIntro({ definition, count }: { definition: (typeof pageDefinitions)[number]; count: number }) {
+  return (
+    <div className="grid gap-8 border-b border-black/10 pb-10 sm:grid-cols-[1fr_auto] sm:items-end sm:pb-14">
+      <div><p className="text-xs font-black uppercase tracking-[0.22em] text-brand">{definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 text-5xl font-black leading-[0.9] tracking-[-0.055em] text-ink sm:text-7xl">{definition.label}</h1><p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">{definition.description}</p></div>
+      <div className="flex items-end gap-3"><strong className="text-5xl font-black tabular-nums text-brand">{String(count).padStart(2, '0')}</strong><span className="pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">contenus<br />publiés</span></div>
+    </div>
+  );
+}
+
+export const PublicCmsSections: React.FC = () => {
+  const [home, setHome] = useState<HomeData>(emptyHome);
   const [serverOffset, setServerOffset] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [activePage, setActivePage] = useState<CmsPageId | null>(null);
-  const [focusArrivalId, setFocusArrivalId] = useState<string | null>(null);
+  const [activePage, setActivePage] = useState<CmsPage | null>(null);
 
-  const load = useCallback(() => {
-    setLoaded(false);
-    setLoadFailed(false);
+  useEffect(() => {
+    let cancelled = false;
     const startedAt = Date.now();
     getPublicHome()
       .then((payload) => {
-        if (!payload.success || !payload.data) throw new Error('home');
-        const data = payload.data as Partial<ContentHomeData> & { promotions?: any[] };
-        // /home renvoie les promotions brutes : normalise les relations manquantes.
-        const promotions = (data.promotions || []).map((promo: any) => ({
-          ...promo,
-          arrival_ids: Array.isArray(promo.arrival_ids) ? promo.arrival_ids : [],
-          product_ids: Array.isArray(promo.product_ids) ? promo.product_ids : [],
-        }));
-        setHome({ ...emptyHome, ...data, promotions } as ContentHomeData);
+        if (cancelled || !payload.success || !payload.data) return;
+        setHome({ ...emptyHome, ...payload.data });
         if (payload.serverTime) setServerOffset(new Date(payload.serverTime).getTime() - Math.round((startedAt + Date.now()) / 2));
         setLoaded(true);
       })
-      .catch(() => { setLoadFailed(true); setLoaded(true); });
+      .catch(() => setLoaded(true));
+    return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
     if (!activePage) return undefined;
@@ -90,54 +98,48 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ onOrderPro
     };
   }, [activePage]);
 
-  const now = useNow(serverOffset);
-
   const activeArrivals = useMemo(
-    () => home.arrivals.filter((arrival) => new Date(arrival.expectedArrivalAt).getTime() > now),
-    [home.arrivals, now],
+    () => home.arrivals.filter((arrival) => new Date(arrival.expectedArrivalAt).getTime() > Date.now() + serverOffset),
+    [home.arrivals, serverOffset],
   );
-  const activePromotions = useMemo(
-    () => home.promotions.filter((promo) => new Date(promo.ends_at).getTime() > now),
-    [home.promotions, now],
-  );
-
-  const openPage = useCallback((page: CmsPageId, arrivalId?: string) => {
-    setFocusArrivalId(arrivalId || null);
-    setActivePage(page);
-  }, []);
-
-  const actions: ContentActions = useMemo(() => ({
-    onOrderProduct: (product) => onOrderProduct(catalogToScraped(product)),
-    onOpenPage: openPage,
-    onClose: () => setActivePage(null),
-  }), [onOrderProduct, openPage]);
-
+  const pageData: HomeData = { ...home, arrivals: activeArrivals };
   const activeDefinition = pageDefinitions.find((page) => page.id === activePage);
-  const pageCounts: Record<CmsPageId, number> = {
-    arrivals: activeArrivals.length,
-    promotions: activePromotions.length,
-    stories: home.stories.length,
-    news: home.news.length,
-  };
 
-  const nextPage = activePage ? pageDefinitions[pageDefinitions.findIndex((page) => page.id === activePage) + 1] : undefined;
-  const featuredStory = home.stories[0];
-  const latestNews = home.news[0];
-  const nextArrival = activeArrivals[0];
-  const activePromo = activePromotions[0];
+  const renderPageContent = (page: CmsPage) => {
+    if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-brand-light/20" /><div className="h-96 animate-pulse bg-brand-light/20" /></div>;
 
-  const renderPageContent = (page: CmsPageId) => {
-    if (loadFailed) return <ErrorState onRetry={load} />;
-    if (!loaded) return null; // le shell affiche le skeleton
-    if (page === 'arrivals') return <ArrivagesPage arrivals={activeArrivals} now={now} actions={actions} initialArrivalId={focusArrivalId} />;
-    if (page === 'promotions') return <PromotionsPage promotions={activePromotions} now={now} actions={actions} />;
-    if (page === 'stories') return <StoriesPage stories={home.stories} now={now} actions={actions} />;
-    return <NewsPage news={home.news} now={now} actions={actions} />;
+    if (page === 'arrivals') return activeArrivals.length ? (
+      <div className="grid gap-5 lg:grid-cols-2">
+        {activeArrivals.map((arrival, index) => (
+          <article key={arrival.id} className="relative min-h-[420px] overflow-hidden bg-brand-deep text-white shadow-[0_24px_60px_-32px_rgba(36,16,79,0.85)]">
+            <img src={mediaSource(arrival.mainImage, index % 2 ? heroFemme : heroHomme)} alt="" className="absolute inset-0 h-full w-full object-cover opacity-65" /><div className="absolute inset-0 bg-gradient-to-t from-[#160b30] via-brand-deep/30 to-black/10" />
+            <div className="relative flex min-h-[420px] flex-col justify-end p-7 sm:p-9"><div className="mb-auto flex items-center justify-between gap-3"><span className="bg-accent px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-ink">{arrival.type === 'EXPRESS' ? 'Express' : 'Standard'}</span>{arrival.badge && <span className="text-xs font-bold text-white/75">{arrival.badge}</span>}</div><h2 className="text-3xl font-black tracking-[-0.04em]">{arrival.name}</h2><p className="mt-2 max-w-lg text-sm leading-6 text-white/75">{arrival.description}</p><Countdown target={arrival.expectedArrivalAt} serverOffset={serverOffset} /></div>
+          </article>
+        ))}
+      </div>
+    ) : <EmptyContent label="Arrivages" />;
+
+    if (page === 'products') return home.products.length ? (
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {home.products.map((product) => <article key={product.id} className="overflow-hidden border border-black/7 bg-white shadow-[0_18px_50px_-38px_rgba(24,19,31,0.55)]"><div className="aspect-[4/5] overflow-hidden bg-[#eeeaf4]"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-brand-deep">{formatPrice(product.finalPrice)}</strong><span className={`text-[9px] font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-red-600' : 'text-emerald-700'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? 'Indisponible' : 'Disponible'}</span></div></div></article>)}
+      </div>
+    ) : <EmptyContent label="Produits" />;
+
+    if (page === 'promotions') return home.promotions.length ? (
+      <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => <article key={promotion.id} className="grid min-h-[420px] overflow-hidden bg-brand text-white shadow-[0_24px_70px_-36px_rgba(103,61,230,0.9)] sm:grid-cols-[1fr_42%]"><div className="flex flex-col justify-between p-7 sm:p-9"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-accent">Promotion en cours</p><h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">{promotion.name}</h2><p className="mt-3 text-sm leading-6 text-white/75">{promotion.description}</p></div><div>{promotion.promo_code && <span className="inline-block border border-white/25 bg-white/10 px-4 py-2 font-mono text-sm font-bold">Code : {promotion.promo_code}</span>}</div></div><img src={mediaSource(promotion.image, index % 2 ? heroFemme : heroEnfants)} alt="" className="h-60 w-full object-cover sm:h-full" /></article>)}</div>
+    ) : <EmptyContent label="Promotions" />;
+
+    if (page === 'stories') return home.stories.length ? (
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{home.stories.map((story) => <article key={story.id} className="group relative min-h-[500px] overflow-hidden bg-brand-deep text-white"><img src={mediaSource(story.media_url, heroFemme)} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/20" /><div className="absolute inset-x-0 bottom-0 p-6"><h2 className="text-2xl font-black leading-tight">{story.title}</h2><p className="mt-2 text-sm leading-6 text-white/75">{story.description}</p>{story.cta && <span className="mt-4 inline-block border-b border-accent pb-1 text-xs font-black uppercase tracking-widest">{story.cta}</span>}</div></article>)}</div>
+    ) : <EmptyContent label="Stories" />;
+
+    return home.news.length ? (
+      <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => <article key={item.id} className="border-t border-black/15 pt-5"><img src={mediaSource(item.image, heroHomme)} alt="" className="aspect-[16/10] w-full object-cover" /><p className="mt-5 text-[10px] font-black uppercase tracking-[0.16em] text-brand">{String(item.category || 'AYROVI').replaceAll('_', ' ')}</p><h2 className="mt-2 text-2xl font-black tracking-tight text-ink">{item.title}</h2><p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p><p className="mt-4 text-xs font-bold text-slate-400">{item.author}</p></article>)}</div>
+    ) : <EmptyContent label="Actualités" />;
   };
 
   return (
     <>
-      {/* ===== Homepage : navigation + intégration du contenu publié ===== */}
       <section id="arrivages" className="w-full border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
         <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
           <div className="grid w-full grid-cols-4 items-center">
@@ -145,105 +147,30 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ onOrderPro
               <button
                 key={definition.id}
                 type="button"
-                onClick={() => openPage(definition.id)}
+                onClick={() => setActivePage(definition.id)}
                 aria-label={`Ouvrir ${definition.label}`}
-                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-[clamp(0.62rem,3.55vw,2rem)] font-black tracking-[-0.035em] text-ink transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-[clamp(0.62rem,3.55vw,2rem)] font-black tracking-[-0.035em] text-[#050505] [font-weight:950] transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 {definition.label}
               </button>
             ))}
           </div>
-
-          {/* Tuiles dynamiques : le contenu publié vient de la base, jamais en dur */}
-          {loaded && !loadFailed && (nextArrival || activePromo || featuredStory || latestNews) && (
-            <div className="mt-4 grid gap-3 sm:mt-6 sm:grid-cols-2 lg:grid-cols-4">
-              {nextArrival && (
-                <button type="button" onClick={() => openPage('arrivals', nextArrival.id)} className="group border border-black/10 bg-surface p-4 text-left transition hover:border-brand">
-                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-brand"><Calendar className="h-3.5 w-3.5" />Prochain arrivage</p>
-                  <strong className="mt-2 block truncate text-sm font-black text-ink group-hover:text-brand">{nextArrival.name}</strong>
-                  <span className="mt-1 block text-[11px] font-bold tabular-nums text-muted">
-                    {(() => { const p = countdownParts(nextArrival.expectedArrivalAt, now); return p.expired ? 'En cours' : `J-${p.days} · ${String(p.hours).padStart(2, '0')}h ${String(p.minutes).padStart(2, '0')}`; })()}
-                  </span>
-                </button>
-              )}
-              {activePromo && (
-                <button type="button" onClick={() => openPage('promotions')} className="group border border-black/10 bg-surface p-4 text-left transition hover:border-brand">
-                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-brand"><Tag className="h-3.5 w-3.5" />Promotion</p>
-                  <strong className="mt-2 block truncate text-sm font-black text-ink group-hover:text-brand">{activePromo.name}</strong>
-                  <span className="mt-1 block text-[11px] font-black text-accent-deep">
-                    {activePromo.discount_type === 'PERCENTAGE' ? `-${Math.round(activePromo.value)}%` : `-${Number(activePromo.value).toFixed(2)} DT`}
-                    {activePromo.promo_code ? ` · ${activePromo.promo_code}` : ''}
-                  </span>
-                </button>
-              )}
-              {featuredStory && (
-                <button type="button" onClick={() => openPage('stories')} className="group border border-black/10 bg-surface p-4 text-left transition hover:border-brand">
-                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-brand"><ImageIcon className="h-3.5 w-3.5" />À la une</p>
-                  <strong className="mt-2 block truncate text-sm font-black text-ink group-hover:text-brand">{featuredStory.title}</strong>
-                  <span className="mt-1 block text-[11px] font-bold text-muted">{featuredStory.category}</span>
-                </button>
-              )}
-              {latestNews && (
-                <button type="button" onClick={() => openPage('news')} className="group border border-black/10 bg-surface p-4 text-left transition hover:border-brand">
-                  <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.18em] text-brand"><FileText className="h-3.5 w-3.5" />Journal</p>
-                  <strong className="mt-2 block truncate text-sm font-black text-ink group-hover:text-brand">{latestNews.title}</strong>
-                  <span className="mt-1 block text-[11px] font-bold text-muted">{formatDate(latestNews.published_at)}</span>
-                </button>
-              )}
-            </div>
-          )}
         </nav>
       </section>
 
-      {/* ===== Pages contenu plein écran ===== */}
       {activePage && activeDefinition && (
         <div className="fixed inset-0 z-[70] overflow-y-auto bg-surface" role="dialog" aria-modal="true" aria-labelledby={`cms-page-${activePage}`}>
           <header className="sticky top-0 z-20 border-b border-black/10 bg-white/95 backdrop-blur-xl">
             <div className="h-1 w-full bg-accent" />
             <div className="mx-auto grid h-16 max-w-7xl grid-cols-[52px_1fr_52px] items-center px-3 sm:h-20 sm:grid-cols-[70px_1fr_70px] sm:px-8">
-              <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label={`Fermer ${activeDefinition.label}`} className="grid h-11 w-11 place-items-center border border-line bg-white text-ink transition hover:border-brand hover:bg-brand hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
-              <div className="flex items-center justify-center gap-2.5 text-ink">
-                <span className="text-brand"><FigLogoIcon className="h-8 w-8 sm:h-9 sm:w-9" /></span>
-                <strong className="text-2xl font-black tracking-tight sm:text-3xl">AYROVI</strong>
-              </div>
-              <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-muted sm:text-[10px]">
-                {String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / {String(pageDefinitions.length).padStart(2, '0')}
-              </span>
+              <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label={`Fermer ${activeDefinition.label}`} className="grid h-11 w-11 place-items-center border border-[#ded8eb] bg-white text-ink transition hover:border-brand hover:bg-brand hover:text-white"><X className="h-5 w-5" /></button>
+              <div className="flex items-center justify-center gap-2.5 text-ink"><span className="text-brand"><FigLogoIcon className="h-8 w-8 sm:h-9 sm:w-9" /></span><strong className="text-2xl font-black tracking-tight sm:text-3xl">AYROVI</strong></div>
+              <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:text-[10px]">{String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / {String(pageDefinitions.length).padStart(2, '0')}</span>
             </div>
           </header>
-
           <main className="mx-auto min-h-[calc(100dvh-5rem)] max-w-7xl px-5 py-10 sm:px-8 sm:py-16">
-            <PageIntro
-              eyebrow={activeDefinition.eyebrow}
-              title={activeDefinition.label}
-              description={activeDefinition.description}
-              count={pageCounts[activePage]}
-              countLabel={pageCounterLabel(activePage, pageCounts[activePage])}
-            />
-
-            <div className="pt-8 sm:pt-12">
-              {!loaded && (
-                <div className="grid gap-5 sm:grid-cols-2" aria-busy="true">
-                  <div className="h-96 animate-pulse bg-brand-light/20" />
-                  <div className="h-96 animate-pulse bg-brand-light/20" />
-                </div>
-              )}
-              {loaded && renderPageContent(activePage)}
-            </div>
-
-            {/* Pagination discrète entre les 4 pages */}
-            {nextPage && (
-              <button
-                type="button"
-                onClick={() => openPage(nextPage.id)}
-                className="mt-14 flex w-full items-center justify-between border-t border-black/10 pt-6 text-left transition hover:text-brand"
-              >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted">Page suivante</span>
-                <span className="inline-flex items-center gap-2 text-xl font-black tracking-tight">{nextPage.label}<ArrowRight className="h-5 w-5" /></span>
-              </button>
-            )}
+            <PageIntro definition={activeDefinition} count={pageData[activePage].length} />
+            <div className="pt-8 sm:pt-12">{renderPageContent(activePage)}</div>
           </main>
         </div>
       )}

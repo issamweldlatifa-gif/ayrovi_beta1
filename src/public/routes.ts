@@ -175,11 +175,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const arrivals = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED') ORDER BY expected_arrival_at`).map(mapArrival);
     const products = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p LEFT JOIN product_arrivals pa ON pa.product_id=p.id
       WHERE p.status='ACTIVE' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 12`).map(mapProduct);
-    const promotions = db.all<any>(`SELECT p.*,
-      (SELECT GROUP_CONCAT(arrival_id) FROM promotion_arrivals WHERE promotion_id=p.id) arrival_ids,
-      (SELECT GROUP_CONCAT(product_id) FROM promotion_products WHERE promotion_id=p.id) product_ids
-      FROM promotions p WHERE p.status='ACTIVE' AND p.starts_at<=? AND p.ends_at>? ORDER BY p.starts_at DESC LIMIT 8`, now, now)
-      .map((row) => ({ ...row, arrival_ids: row.arrival_ids ? row.arrival_ids.split(',') : [], product_ids: row.product_ids ? row.product_ids.split(',') : [] }));
+    const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
     const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
     const news = db.all<any>(`SELECT * FROM news_items WHERE status='PUBLISHED' AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);
     res.json({ success: true, data: { hero, brands, arrivals, products, promotions, stories, news }, serverTime: now });
