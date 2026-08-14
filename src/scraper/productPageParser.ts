@@ -249,12 +249,20 @@ function collectNamedStrings(root: any, matcher: RegExp, output: string[], depth
 function absoluteImages(values: unknown[], baseUrl: string): string[] {
   const output: string[] = [];
   const seen = new Set<string>();
+  let base: URL | null = null;
+  try { base = new URL(baseUrl); } catch { base = null; }
   for (const raw of values.flatMap((value: any) => Array.isArray(value) ? value : [value])) {
     const candidate = typeof raw === 'object' ? raw?.url ?? raw?.src ?? raw?.contentUrl : raw;
+    // An empty candidate must never resolve to the page URL itself.
+    const value = String(candidate ?? '').trim();
+    if (!value) continue;
     try {
-      const url = new URL(String(candidate || ''), baseUrl);
+      const url = new URL(value, baseUrl);
       const normalized = url.toString();
       if (!['http:', 'https:'].includes(url.protocol) || seen.has(normalized)) continue;
+      // The product page (or any HTML document) is not a product image.
+      if (base && url.hostname === base.hostname && url.pathname === base.pathname) continue;
+      if (/\.(html?|xhtml|php|aspx?|jsp|cfm)$/i.test(url.pathname)) continue;
       seen.add(normalized);
       output.push(normalized);
       if (output.length >= 8) break;
