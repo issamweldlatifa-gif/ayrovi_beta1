@@ -125,9 +125,45 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const historyReadyRef = useRef(false);
+  const viewportFrameRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
   useBodyScrollLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const frame = viewportFrameRef.current;
+    if (!frame) return;
+    const viewport = window.visualViewport;
+    let animationFrame = 0;
+
+    const fitVisibleViewport = () => {
+      window.cancelAnimationFrame(animationFrame);
+      animationFrame = window.requestAnimationFrame(() => {
+        const height = Math.max(1, Math.round(viewport?.height || window.innerHeight));
+        const top = Math.max(0, Math.round(viewport?.offsetTop || 0));
+        const left = Math.max(0, Math.round(viewport?.offsetLeft || 0));
+        const width = Math.max(1, Math.round(viewport?.width || window.innerWidth));
+        frame.style.setProperty('--assistant-viewport-height', `${height}px`);
+        frame.style.setProperty('--assistant-viewport-top', `${top}px`);
+        frame.style.setProperty('--assistant-viewport-left', `${left}px`);
+        frame.style.setProperty('--assistant-viewport-width', `${width}px`);
+      });
+    };
+
+    fitVisibleViewport();
+    viewport?.addEventListener('resize', fitVisibleViewport);
+    viewport?.addEventListener('scroll', fitVisibleViewport);
+    window.addEventListener('resize', fitVisibleViewport);
+    window.addEventListener('orientationchange', fitVisibleViewport);
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      viewport?.removeEventListener('resize', fitVisibleViewport);
+      viewport?.removeEventListener('scroll', fitVisibleViewport);
+      window.removeEventListener('resize', fitVisibleViewport);
+      window.removeEventListener('orientationchange', fitVisibleViewport);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -426,8 +462,15 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   return (
-    <div className={`fixed inset-0 z-[80] overflow-hidden ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`} dir="ltr" role="dialog" aria-modal="true" aria-label="Assistant AYROVI">
-      <section ref={pageRef} tabIndex={-1} className={`relative flex h-screen h-[100dvh] min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`}>
+    <div
+      ref={viewportFrameRef}
+      className={`fixed z-[80] overflow-hidden overscroll-none [height:var(--assistant-viewport-height,100dvh)] [left:var(--assistant-viewport-left,0px)] [top:var(--assistant-viewport-top,0px)] [width:var(--assistant-viewport-width,100vw)] ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`}
+      dir="ltr"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Assistant AYROVI"
+    >
+      <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`}>
         <AssistantHeader
           isDark={isDark}
           motionState={motionState}

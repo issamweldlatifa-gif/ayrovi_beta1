@@ -124,3 +124,8 @@
 - Le menu fictif a été remplacé par les actions AYROVI essentielles : nouvelle conversation, historique local cloisonné invité/compte, commandes, Lens, compte, aide et thème sombre. Les badges et messages placeholder ont été supprimés.
 - Les taux factices ne sont plus récités : l'assistant renvoie vers le calcul Lens basé sur la configuration publiée et le total réel avant confirmation.
 - Validation locale : TypeScript ✅, **57/57** tests ✅ (dont feedback invité/compte + CSRF), build production ✅, audit npm 0 vulnérabilité ✅ et smoke API feedback ✅.
+
+## Correctif Chat — clavier mobile et barre de saisie (2026-08-14)
+- Le conteneur plein écran du chat suit maintenant le `VisualViewport` réel (hauteur, largeur et offsets) pendant les événements `resize`/`scroll` du clavier, avec `requestAnimationFrame` pour éviter les mises à jour saccadées.
+- Le viewport déclare `interactive-widget=resizes-content` sur les navigateurs compatibles; `window.innerHeight` reste le fallback.
+- Header et composer sont `shrink-0`, tandis que la liste des messages conserve `min-height: 0` et absorbe seule la réduction de hauteur. La barre de saisie reste donc entièrement au-dessus du clavier, y compris avec les safe areas iOS/Android.

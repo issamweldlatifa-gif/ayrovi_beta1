@@ -51,7 +51,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   };
 
   return (
-    <footer className={`px-4 pt-2 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`}>
+    <footer className={`shrink-0 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-[#1a1a1f]' : 'bg-[#fbfaf8]'}`}>
       <div className={`rounded-[26px] px-4 pb-2.5 pt-3.5 shadow-[0_8px_20px_rgba(20,20,30,0.08)] ring-1 transition ${isDark ? 'bg-[#232329] ring-zinc-700/70' : 'bg-white ring-zinc-200'}`}>
         {attachments.length > 0 && (
           <div className="mb-2.5 flex flex-wrap gap-2">
