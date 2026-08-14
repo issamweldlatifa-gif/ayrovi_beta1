@@ -352,6 +352,7 @@ export const App: React.FC = () => {
             historyScope={customerSession?.account.id || null}
             customerCsrfToken={customerSession?.csrfToken || ''}
             isAuthenticated={Boolean(customerSession)}
+            customerFirstName={customerSession?.account.displayName?.split(/\s+/)[0] || ''}
             onClose={() => setIsAiDrawerOpen(false)}
             onOpenLens={handleOpenLens}
             onOrder={handleAyrovixOrder}

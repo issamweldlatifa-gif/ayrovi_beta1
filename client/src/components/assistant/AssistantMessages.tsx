@@ -24,15 +24,19 @@ interface AssistantMessagesProps {
   onOpenLens: () => void;
   onSelectProduct: (messageId: string, candidate: AyrovixCandidate) => void;
   onProductOrder: (selection: AyrovixOrderSelection) => void;
+  customerFirstName?: string;
 }
 
-const quickPrompts = [
+const primaryActions = [
+  { icon: Camera, title: 'Analyser une image', subtitle: 'Produit ou screenshot', prompt: 'Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.' },
+  { icon: Calculator, title: 'Calculer un prix', subtitle: 'Estimez votre prix', prompt: 'Je veux calculer le prix final d’un produit.' },
+  { icon: Search, title: 'Rechercher un produit', subtitle: 'Trouvez et vérifiez', prompt: 'Aide-moi à rechercher un produit à acheter.' },
+  { icon: Package, title: 'Suivre une commande', subtitle: 'Voir votre commande', prompt: 'Je veux suivre ma commande.' },
+];
+
+const secondaryActions = [
   { icon: Sparkles, text: 'Découvrir AYROVI', prompt: 'Présente-moi les services AYROVI.' },
-  { icon: Package, text: 'Suivre une commande', prompt: 'Je veux suivre ma commande.' },
-  { icon: Calculator, text: 'Calculer un prix', prompt: 'Je veux calculer le prix final d’un produit.' },
-  { icon: Camera, text: 'Utiliser Lens', prompt: 'Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.' },
   { icon: MessageSquare, text: 'Contacter le support', prompt: 'J’ai besoin d’aide du support AYROVI.' },
-  { icon: Search, text: 'Rechercher un produit', prompt: 'Aide-moi à rechercher un produit à acheter.' },
 ];
 
 const cleanAssistantText = (text: string) => text.replaceAll('[[OPEN_LENS]]', '').trim();
@@ -80,6 +84,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   messages, isGenerating, motionState, isDark, copiedId, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
+  customerFirstName,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
   const hasMessages = messages.length > 0;
@@ -94,16 +99,55 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
     <main className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-ink text-zinc-100' : 'bg-surface text-zinc-900'}`}>
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-5 pt-5 sm:px-7">
         {!hasMessages ? (
-          <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
-            <AyroviMotion state="idle" size={112} color="#673de6" />
-            <p className={`mt-5 max-w-md text-[15px] leading-7 ${isDark ? 'text-zinc-400' : 'text-zinc-600'}`}>Posez votre question à AYROVI pour suivre une commande, calculer un prix, rechercher un produit ou contacter notre équipe.</p>
-            <div className="mt-7 grid w-full max-w-xl grid-cols-2 gap-2.5 sm:grid-cols-3">
-              {quickPrompts.map((item) => {
+          <div className="assistant-welcome flex flex-1 flex-col py-5 sm:py-8">
+            {/* Identité AI + accueil personnalisé */}
+            <div className="flex flex-col items-center text-center">
+              <AyroviMotion state="idle" size={92} color="#673de6" />
+              <p className={`mt-4 text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-violet-300' : 'text-brand'}`}>Ayrovi AI</p>
+              <h2 className={`mt-2 text-[26px] font-black leading-tight tracking-tight sm:text-3xl ${isDark ? 'text-zinc-50' : 'text-zinc-900'}`}>
+                Bonjour{customerFirstName ? ` ${customerFirstName}` : ''} 👋
+              </h2>
+              <p className={`mt-1.5 text-sm font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Que souhaitez-vous faire aujourd’hui ?</p>
+              <p className={`mt-3 max-w-sm text-[13px] leading-6 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                Je peux analyser vos produits, vérifier les prix, rechercher des articles et vous accompagner dans vos commandes.
+              </p>
+            </div>
+
+            {/* Actions primaires — 2×2, même famille d’icônes */}
+            <div className="mt-6 grid w-full grid-cols-2 gap-2.5">
+              {primaryActions.map((item) => {
                 const Icon = item.icon;
-                return <button key={item.text} type="button" onClick={() => onPrompt(item.prompt)} className={`assistant-quick-card min-h-[88px] rounded-2xl p-3 text-left text-xs font-extrabold leading-5 transition active:scale-[0.98] ${isDark ? 'assistant-quick-card--dark text-zinc-100' : 'text-zinc-800'}`}>
-                  <span className="assistant-quick-card__icon mb-2"><Icon size={18}/></span>
-                  <span className="relative z-[1]">{item.text}</span>
-                </button>;
+                return (
+                  <button
+                    key={item.title}
+                    type="button"
+                    onClick={() => onPrompt(item.prompt)}
+                    className={`assistant-quick-card min-h-[104px] rounded-2xl p-3.5 text-left transition active:scale-[0.98] ${isDark ? 'assistant-quick-card--dark text-zinc-100' : 'text-zinc-800'}`}
+                  >
+                    <span className="assistant-quick-card__icon mb-2.5"><Icon size={18}/></span>
+                    <span className="relative z-[1] block text-xs font-extrabold leading-5">{item.title}</span>
+                    <span className={`relative z-[1] mt-0.5 block text-[10px] font-semibold leading-4 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>{item.subtitle}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Actions secondaires — poids visuel léger */}
+            <div className="mt-4 flex items-center justify-center gap-1">
+              {secondaryActions.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <React.Fragment key={item.text}>
+                    {index > 0 && <span className={`mx-1.5 h-3.5 w-px ${isDark ? 'bg-white/10' : 'bg-zinc-200'}`} aria-hidden="true" />}
+                    <button
+                      type="button"
+                      onClick={() => onPrompt(item.prompt)}
+                      className={`flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold transition ${isDark ? 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200' : 'text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800'}`}
+                    >
+                      <Icon size={13} />{item.text}
+                    </button>
+                  </React.Fragment>
+                );
               })}
             </div>
           </div>

@@ -25,6 +25,7 @@ interface AiAssistantDrawerProps {
   historyScope?: string | null;
   customerCsrfToken?: string;
   isAuthenticated?: boolean;
+  customerFirstName?: string;
   onClose: () => void;
   onOpenLens: () => void;
   onOpenOrders: () => void;
@@ -73,6 +74,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   historyScope,
   customerCsrfToken = '',
   isAuthenticated = false,
+  customerFirstName = '',
   onClose,
   onOpenLens,
   onOpenOrders,
@@ -756,6 +758,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onOpenLens={onOpenLens}
           onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
           onProductOrder={(selection) => void handleProductOrder(selection)}
+          customerFirstName={customerFirstName}
         />
 
         <AssistantComposer

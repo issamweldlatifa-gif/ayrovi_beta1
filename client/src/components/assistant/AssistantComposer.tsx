@@ -89,7 +89,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             onChange={(event) => onChange(event.target.value)}
             onKeyDown={handleKeyDown}
             rows={1}
-            placeholder="Demandez à ayrovi..."
+            placeholder="Demandez n'importe quoi à AYROVI…"
             className={`mb-2 min-h-[42px] max-h-32 w-full resize-none bg-transparent py-1 text-[15px] leading-6 outline-none placeholder:text-zinc-400 ${isDark ? 'text-zinc-100' : 'text-zinc-900'}`}
             aria-label="Votre message"
           />
