@@ -25,7 +25,7 @@ export interface ScrapedProduct {
   totalPriceTND: number;
   variants: ProductVariants;
   selectedVariant?: string | null;
-  availability: 'in_stock' | 'limited' | 'out_of_stock';
+  availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   brand: string | null;
   scrapedAt: string;
 }
@@ -45,6 +45,12 @@ export interface AddToCartPayload {
   sourceCurrency: string;
   priceTND: number;
   variant?: string;
+  requestedSize?: string;
+  requestedColor?: string;
+  customerNote?: string;
+  referenceUrl?: string;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  priceToken?: string;
   quantity: number;
 }
 
@@ -62,6 +68,11 @@ export interface CartItem {
   lineTotalTND?: number;
   pricingVersion?: number;
   variant: string | null;
+  requestedSize: string;
+  requestedColor: string;
+  customerNote: string;
+  referenceUrl: string;
+  priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
   quantity: number;
   createdAt: string;
   updatedAt: string;

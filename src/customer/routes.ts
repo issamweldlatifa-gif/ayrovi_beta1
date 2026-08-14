@@ -130,8 +130,12 @@ function mergeAccounts(db: QatafoDatabase, sourceId: string, targetId: string): 
     db.run('UPDATE orders SET account_id=? WHERE account_id=?', targetId, sourceId);
     for (const item of db.all<any>('SELECT * FROM cart_items WHERE account_id=? ORDER BY created_at', sourceId)) {
       const existing = item.external_id
-        ? db.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND external_id=? AND IFNULL(variant,'')=IFNULL(?,'')`, targetId, item.store, item.external_id, item.variant || '')
-        : db.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND source_url=? AND title=? AND IFNULL(variant,'')=IFNULL(?,'')`, targetId, item.store, item.source_url, item.title, item.variant || '');
+        ? db.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND external_id=? AND source_url=?
+            AND IFNULL(variant,'')=IFNULL(?,'') AND requested_size=? AND requested_color=? AND customer_note=?`,
+          targetId, item.store, item.external_id, item.source_url, item.variant || '', item.requested_size || '', item.requested_color || '', item.customer_note || '')
+        : db.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND source_url=? AND title=?
+            AND IFNULL(variant,'')=IFNULL(?,'') AND requested_size=? AND requested_color=? AND customer_note=?`,
+          targetId, item.store, item.source_url, item.title, item.variant || '', item.requested_size || '', item.requested_color || '', item.customer_note || '');
       if (existing) {
         db.run('UPDATE cart_items SET quantity=?,updated_at=? WHERE id=?', Math.min(99, Number(existing.quantity) + Number(item.quantity)), now, existing.id);
         db.run('DELETE FROM cart_items WHERE id=?', item.id);

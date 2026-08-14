@@ -1,4 +1,5 @@
 export type StoreType = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
+export type PriceVerificationStatus = 'VERIFIED' | 'PENDING_MANUAL';
 
 export interface ProductVariantDetail {
   id?: string | null;
@@ -35,10 +36,14 @@ export interface ScrapedProduct {
   totalPriceTND: number;
   variants: ProductVariants;
   selectedVariant?: string | null;
-  availability: 'in_stock' | 'limited' | 'out_of_stock';
+  availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   brand: string | null;
   rating?: number | null;
   reviewsCount?: number | null;
+  priceVerified?: boolean;
+  verificationProvider?: string;
+  verificationMethod?: string;
+  verificationFailureCode?: string | null;
   scrapedAt: string;
 }
 
@@ -54,6 +59,11 @@ export interface CartItem {
   sourceCurrency: string;
   priceTND: number;
   variant: string | null;
+  requestedSize: string;
+  requestedColor: string;
+  customerNote: string;
+  referenceUrl: string;
+  priceVerificationStatus: PriceVerificationStatus;
   quantity: number;
   createdAt: string;
   updatedAt: string;
@@ -69,5 +79,11 @@ export interface AddToCartRequest {
   sourceCurrency: string;
   priceTND: number;
   variant?: string | null;
+  requestedSize?: string;
+  requestedColor?: string;
+  customerNote?: string;
+  referenceUrl?: string;
+  priceVerificationStatus?: PriceVerificationStatus;
+  priceToken?: string;
   quantity?: number;
 }

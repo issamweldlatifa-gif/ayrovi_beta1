@@ -8,7 +8,8 @@ export interface ParsedProductPage {
   images: string[];
   externalId: string;
   variants: ProductVariants;
-  availability: 'in_stock' | 'limited' | 'out_of_stock';
+  availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  priceSource: 'json_ld' | 'meta' | 'dom' | 'embedded_variant' | 'context_regex' | 'none';
 }
 
 const SIZE_NAME = /(?:^|\b)(?:size|sizes|taille|tailles|pointure|pointures|größe|shoe size)(?:\b|$)/i;
@@ -41,13 +42,54 @@ function unique(values: Array<string | null | undefined>, limit = 40): string[] 
 
 function parsePrice(raw: unknown): number {
   if (typeof raw === 'number') return Number.isFinite(raw) && raw > 0 && raw < 1_000_000 ? raw : 0;
-  const normalized = String(raw || '').replace(/\s/g, '').replace(/[^0-9,.-]/g, '');
+  let normalized = String(raw || '').replace(/[\s\u00a0]/g, '').replace(/[^0-9,.-]/g, '');
   if (!normalized) return 0;
-  const decimal = normalized.includes(',') && !normalized.includes('.')
-    ? normalized.replace(',', '.')
-    : normalized.replace(/,/g, '');
-  const value = Number.parseFloat(decimal);
+  const comma = normalized.lastIndexOf(',');
+  const dot = normalized.lastIndexOf('.');
+  if (comma >= 0 && dot >= 0) {
+    const decimalMark = comma > dot ? ',' : '.';
+    const thousandsMark = decimalMark === ',' ? /\./g : /,/g;
+    normalized = normalized.replace(thousandsMark, '').replace(decimalMark, '.');
+  } else {
+    const mark = comma >= 0 ? ',' : dot >= 0 ? '.' : '';
+    if (mark) {
+      const parts = normalized.split(mark);
+      const decimalDigits = parts[parts.length - 1].length;
+      normalized = decimalDigits === 3 && parts.length <= 2
+        ? parts.join('')
+        : `${parts.slice(0, -1).join('')}.${parts[parts.length - 1]}`;
+    }
+  }
+  const value = Number.parseFloat(normalized);
   return Number.isFinite(value) && value > 0 && value < 1_000_000 ? value : 0;
+}
+
+function currencyCode(raw: string): string {
+  const value = raw.toUpperCase();
+  if (value.includes('€') || value.includes('EUR')) return 'EUR';
+  if (value.includes('£') || value.includes('GBP')) return 'GBP';
+  if (value.includes('د.ت') || value.includes('TND') || value.includes('DT')) return 'TND';
+  if (value.includes('¥') || value.includes('JPY')) return 'JPY';
+  if (value.includes('$') || value.includes('USD')) return 'USD';
+  return '';
+}
+
+function contextualPrice(bodyText: string): { price: number; currency: string } | null {
+  const text = bodyText.replace(/\s+/g, ' ').slice(0, 500_000);
+  const patterns = [
+    /(?:prix|price|sale\s*price|our\s*price|prezzo|preis|السعر)\s*[:\-]?\s*(?:from|à\s*partir\s*de)?\s*([€$£¥]|EUR|USD|GBP|JPY|TND|DT|د\.ت)?\s*([0-9][0-9\s.,]{0,14})\s*([€$£¥]|EUR|USD|GBP|JPY|TND|DT|د\.ت)?/gi,
+    /([€$£¥]|EUR|USD|GBP|JPY|TND|DT|د\.ت)\s*([0-9][0-9\s.,]{0,14})\s*(?:prix|price)/gi,
+  ];
+  for (const pattern of patterns) {
+    for (const match of text.matchAll(pattern)) {
+      const context = text.slice(Math.max(0, Number(match.index) - 35), Number(match.index) + match[0].length + 20);
+      if (/(?:old|ancien|regular|list\s*price|was|before|barr[ée]|économisez|save\s+\d)/i.test(context)) continue;
+      const price = parsePrice(match[2]);
+      const currency = currencyCode(`${match[1] || ''} ${match[3] || ''}`);
+      if (price > 0 && currency) return { price, currency };
+    }
+  }
+  return null;
 }
 
 function moneyValue(raw: any, shopifyCents = false): number {
@@ -225,7 +267,10 @@ function availabilityFrom(productLd: any, details: ProductVariantDetail[]): Pars
   if (details.length) return 'in_stock';
   const offers = Array.isArray(productLd?.offers) ? productLd.offers : [productLd?.offers];
   const availability = offers.map((offer: any) => String(offer?.availability || '')).join(' ').toLowerCase();
-  return availability.includes('outofstock') ? 'out_of_stock' : 'in_stock';
+  if (availability.includes('outofstock')) return 'out_of_stock';
+  if (availability.includes('limitedavailability')) return 'limited';
+  if (availability.includes('instock')) return 'in_stock';
+  return 'unknown';
 }
 
 export function parseProductPageHtml(html: string, baseUrl: string, storeType: StoreType): ParsedProductPage {
@@ -281,14 +326,30 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
         : text('[itemprop="price"], [data-price], [class*="price"]');
     const details = variantsFromProduct(embeddedProduct);
     const detailPrices = details.map((detail) => detail.price || 0).filter((value) => value > 0);
-    const price = parsePrice(
-      meta('meta[property="product:price:amount"]') || meta('meta[property="og:price:amount"]')
-      || meta('meta[itemprop="price"]') || offers?.price || offers?.lowPrice || selectorPrice,
-    ) || (detailPrices.length ? Math.min(...detailPrices) : 0);
-    const currency = String(
-      meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]')
-      || offers?.priceCurrency || embeddedProduct?.currency || '',
-    ).trim().toUpperCase();
+    const jsonLdPrice = parsePrice(offers?.price || offers?.lowPrice);
+    const metaPrice = parsePrice(
+      meta('meta[property="product:price:amount"]') || meta('meta[property="og:price:amount"]') || meta('meta[itemprop="price"]'),
+    );
+    const domPrice = parsePrice(selectorPrice);
+    const variantFloor = detailPrices.length ? Math.min(...detailPrices) : 0;
+    const regexPrice = contextualPrice(document.body?.textContent || '');
+    const price = jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
+    const priceSource: ParsedProductPage['priceSource'] = jsonLdPrice ? 'json_ld'
+      : metaPrice ? 'meta'
+        : domPrice ? 'dom'
+          : variantFloor ? 'embedded_variant'
+            : regexPrice ? 'context_regex'
+              : 'none';
+    const metaCurrency = meta('meta[property="product:price:currency"]') || meta('meta[property="og:price:currency"]');
+    const currencyBySource: Record<ParsedProductPage['priceSource'], string> = {
+      json_ld: String(offers?.priceCurrency || metaCurrency || ''),
+      meta: String(metaCurrency || offers?.priceCurrency || ''),
+      dom: String(currencyCode(selectorPrice) || metaCurrency || offers?.priceCurrency || ''),
+      embedded_variant: String(embeddedProduct?.currency || metaCurrency || offers?.priceCurrency || ''),
+      context_regex: String(regexPrice?.currency || metaCurrency || offers?.priceCurrency || ''),
+      none: String(metaCurrency || offers?.priceCurrency || embeddedProduct?.currency || ''),
+    };
+    const currency = currencyCode(currencyBySource[priceSource]) || String(currencyBySource[priceSource]).trim().toUpperCase();
 
     const domSizes = Array.from(document.querySelectorAll(
       'select[name*="size" i] option, select[name*="taille" i] option, select[data-id*="size" i] option, #variation_size_name option, [data-testid*="size" i] button',
@@ -330,6 +391,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
       availability: availabilityFrom(productLd, details),
+      priceSource,
     };
   } finally {
     dom.window.close();

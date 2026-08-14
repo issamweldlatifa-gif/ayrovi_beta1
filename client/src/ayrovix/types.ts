@@ -33,6 +33,8 @@ export interface AyrovixCandidate {
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
+  priceToken?: string | null;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
   match: number;
 }
 
@@ -45,6 +47,7 @@ export interface AyrovixVariantOption {
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
+  priceToken?: string | null;
 }
 
 export interface AyrovixProduct {
@@ -64,6 +67,12 @@ export interface AyrovixProduct {
   sizes: string[];
   variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  priceVerified?: boolean;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  priceToken?: string | null;
+  verificationProvider?: string;
+  verificationMethod?: string;
+  verificationFailureCode?: string | null;
 }
 
 export interface AyrovixDetectedPrice {
@@ -77,6 +86,7 @@ export interface AyrovixDetectedPrice {
   brand: string | null;
   isCartScreenshot: boolean;
   imageUrl: string | null;
+  priceToken?: string | null;
 }
 
 export interface AyrovixImageResult {
@@ -128,5 +138,11 @@ export interface AyrovixOrderPayload {
   /** Ignoré par le serveur (le Calculator recalcule) — fourni pour compatibilité AddToCartPayload. */
   priceTND?: number;
   variant?: string;
+  requestedSize?: string;
+  requestedColor?: string;
+  customerNote?: string;
+  referenceUrl?: string;
+  priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  priceToken: string;
   quantity: number;
 }

@@ -41,6 +41,8 @@ export interface AyrovixCandidate {
   price: number | null;   // prix source (null si inconnu — jamais deviné)
   currency: string | null;
   priceTnd: number | null; // estimation "tout inclus" via le calculator AYROVI
+  priceToken?: string | null;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
   match: number;          // 0..99, score de correspondance déterministe
 }
 
@@ -53,6 +55,7 @@ export interface AyrovixVariantOption {
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
+  priceToken?: string | null;
 }
 
 /** Fiche produit confirmée, prête pour le Calculator puis le panier. */
@@ -73,6 +76,12 @@ export interface AyrovixProduct {
   sizes: string[];
   variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  priceVerified?: boolean;
+  priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  priceToken?: string | null;
+  verificationProvider?: string;
+  verificationMethod?: string;
+  verificationFailureCode?: string | null;
 }
 
 export interface AyrovixDetectedPrice {
@@ -86,6 +95,7 @@ export interface AyrovixDetectedPrice {
   brand: string | null;
   isCartScreenshot: boolean;
   imageUrl: string | null;
+  priceToken?: string | null;
 }
 
 export interface AyrovixAnalyzeImageResponse {

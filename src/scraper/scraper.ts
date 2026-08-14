@@ -1,6 +1,15 @@
 import { ScrapedProduct, StoreType, ProductVariants } from '../types';
 import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
-import { parseProductPageHtml } from './productPageParser';
+import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
+import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
+
+interface MerchantScrapeResult {
+  data: ParsedProductPage | null;
+  verified: boolean;
+  provider: 'direct' | 'none' | 'scraperapi' | 'scrapingbee' | 'brightdata';
+  method: ParsedProductPage['priceSource'] | 'none';
+  failureCode: string | null;
+}
 
 export class SmartLinkScraper {
   public static readonly RATES_TO_TND: Record<string, number> = {
@@ -38,12 +47,8 @@ export class SmartLinkScraper {
 
     const urlInfo = this.extractDeepUrlInfo(cleanUrl, store);
 
-    let liveData: any = null;
-    try {
-      liveData = await this.scrapeWithHttp(cleanUrl, store);
-    } catch (err: any) {
-      console.warn('[Live Scraper Note]', err.message);
-    }
+    const merchantResult = await this.scrapeWithHttp(cleanUrl, store);
+    const liveData = merchantResult.data;
     const detectedLiveCurrency = String(liveData?.currency || '').toUpperCase();
     if (detectedLiveCurrency && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
       currency = detectedLiveCurrency;
@@ -82,7 +87,9 @@ export class SmartLinkScraper {
       url: cleanUrl,
       externalId,
       title: title.trim(),
-      description: `Article extrait depuis ${storeName}. Vérifié par AYROVI.`,
+      description: merchantResult.verified
+        ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
+        : `Article extrait depuis ${storeName}. Prix en attente de vérification manuelle.`,
       images,
       mainImage: images.length > 0 ? images[0] : '',
       sourcePrice: Math.round(price * 100) / 100,
@@ -92,8 +99,12 @@ export class SmartLinkScraper {
       estimatedShippingTND,
       totalPriceTND,
       variants,
-      availability: liveData?.availability || 'in_stock',
+      availability: liveData?.availability || 'unknown',
       brand: urlInfo.brand || storeName.split(' ')[0],
+      priceVerified: merchantResult.verified && price > 0,
+      verificationProvider: merchantResult.provider,
+      verificationMethod: merchantResult.method,
+      verificationFailureCode: merchantResult.failureCode,
       scrapedAt: new Date().toISOString()
     };
   }
@@ -224,53 +235,55 @@ export class SmartLinkScraper {
     };
   }
 
-  private async scrapeWithHttp(url: string, storeType: StoreType): Promise<any> {
+  private async scrapeWithHttp(url: string, storeType: StoreType): Promise<MerchantScrapeResult> {
     const headers = {
       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 Version/17.4 Mobile/15E148 Safari/604.1',
       'Accept': 'text/html,application/xhtml+xml',
       'Accept-Language': 'fr-FR,fr;q=0.9,en;q=0.8',
     };
-    let directResult: any = null;
-    let directError: Error | null = null;
+    let directResult: ParsedProductPage | null = null;
+    let directFailure = 'DIRECT_PRICE_NOT_FOUND';
     try {
       const response = await fetchSafeRemote(url, { signal: AbortSignal.timeout(7_000), headers });
-      if (!response.ok) throw new Error(`REMOTE_HTTP_${response.status}`);
+      if (!response.ok) throw new Error(`DIRECT_HTTP_${response.status}`);
       const contentType = response.headers.get('content-type') || '';
       if (contentType && !contentType.includes('text/html') && !contentType.includes('application/xhtml+xml')) {
-        throw new Error('REMOTE_NOT_HTML');
+        throw new Error('DIRECT_NOT_HTML');
       }
       directResult = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
-      if (directResult.price > 0) return directResult;
+      if (directResult.price > 0) {
+        return { data: directResult, verified: true, provider: 'direct', method: directResult.priceSource, failureCode: null };
+      }
     } catch (error: any) {
-      directError = error instanceof Error ? error : new Error('REMOTE_UNAVAILABLE');
+      directFailure = String(error?.message || error?.code || 'DIRECT_UNAVAILABLE').slice(0, 80);
     }
 
-    // Optional fallback recommended by the technical brief for Akamai/Cloudflare
-    // shops. The key remains server-side; without it the normal safe fetch stays active.
-    const scraperApiKey = process.env.SCRAPERAPI_KEY?.trim();
-    if (scraperApiKey) {
-      const country = /^[a-z]{2}$/i.test(process.env.AYROVIX_SCRAPER_COUNTRY || '')
-        ? String(process.env.AYROVIX_SCRAPER_COUNTRY).toLowerCase()
-        : 'fr';
-      const params = new URLSearchParams({
-        api_key: scraperApiKey,
-        url,
-        render: 'true',
-        country_code: country,
-      });
-      const response = await fetch(`https://api.scraperapi.com/?${params.toString()}`, {
-        signal: AbortSignal.timeout(12_000),
-        headers: { 'Accept': 'text/html,application/xhtml+xml' },
-      });
-      if (response.ok) {
-        const proxied = parseProductPageHtml(await readLimitedText(response, 2_000_000), url, storeType);
-        if (proxied.price > 0 || !directResult) return proxied;
-      } else {
-        await response.body?.cancel().catch(() => undefined);
+    try {
+      const rendered = await fetchRenderedProductPage(url);
+      const parsed = parseProductPageHtml(rendered.html, url, storeType);
+      if (parsed.price > 0) {
+        return { data: parsed, verified: true, provider: rendered.provider, method: parsed.priceSource, failureCode: null };
       }
+      return {
+        data: parsed.title || parsed.images.length ? parsed : directResult,
+        verified: false,
+        provider: rendered.provider,
+        method: 'none',
+        failureCode: 'PRICE_NOT_FOUND_AFTER_RENDER',
+      };
+    } catch (error: any) {
+      const code = error instanceof RenderedPageError ? error.code : 'RENDER_UPSTREAM_ERROR';
+      const provider = error instanceof RenderedPageError && error.provider ? error.provider : 'none';
+      return {
+        data: directResult,
+        verified: false,
+        provider,
+        method: 'none',
+        failureCode: code === 'RENDER_PROVIDER_NOT_CONFIGURED' && directFailure !== 'DIRECT_PRICE_NOT_FOUND'
+          ? directFailure
+          : code,
+      };
     }
-    if (directResult) return directResult;
-    throw directError || new Error('REMOTE_UNAVAILABLE');
   }
 
   private detectStore(url: string): StoreType {

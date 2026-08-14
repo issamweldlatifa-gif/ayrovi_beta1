@@ -1,15 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
-  AyrovixCandidate, AyrovixDetectedPrice, AyrovixOrderPayload, AyrovixProduct, AyrovixReviewRequest, AyrovixUrlResult, AyrovixVariantOption,
+  AyrovixCandidate, AyrovixDetectedPrice, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
-import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, requestManualReview, AyrovixApiError } from '../services/lensApi';
+import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { LiveCamera } from './LiveCamera';
 import { LensCamera } from './LensCamera';
 import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
-import { ProductResult } from './ProductResult';
+import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -48,6 +48,9 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     price: candidate.price,
     currency: candidate.currency,
     priceTnd: candidate.priceTnd,
+    priceToken: candidate.priceToken || null,
+    priceVerified: candidate.priceVerificationStatus === 'VERIFIED',
+    priceVerificationStatus: candidate.priceVerificationStatus || 'PENDING_MANUAL',
     exchangeRate: null,
     colors: candidate.colors,
     sizes: candidate.sizes,
@@ -69,16 +72,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   const [error, setError] = useState<{ code: string; message: string } | null>(null);
   const [ordering, setOrdering] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [verifyLink, setVerifyLink] = useState('');
-  const [verifyingLink, setVerifyingLink] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [reviewContact, setReviewContact] = useState('');
-  const [reviewDesiredSize, setReviewDesiredSize] = useState('');
-  const [reviewDesiredColor, setReviewDesiredColor] = useState('');
-  const [reviewSubmitting, setReviewSubmitting] = useState(false);
-  const [reviewRequest, setReviewRequest] = useState<AyrovixReviewRequest | null>(null);
-  const [reviewError, setReviewError] = useState('');
   const previewRef = useRef<string | null>(null);
   const abortRef = useRef(0);
   const requestAbortRef = useRef<AbortController | null>(null);
@@ -117,30 +111,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     setError(null);
     setOrdering(false);
     setCopied(false);
-    setVerifyLink('');
-    setVerifyingLink(false);
     setVerifiedPriceUrl(false);
-    setReviewOpen(false);
-    setReviewContact('');
-    setReviewDesiredSize('');
-    setReviewDesiredColor('');
-    setReviewSubmitting(false);
-    setReviewRequest(null);
-    setReviewError('');
   };
 
   const handleClose = () => { reset(); onClose(); };
 
   const fail = (code: string, message: string) => { setError({ code, message }); setStage('error'); };
-  const clearReview = () => {
-    setReviewOpen(false);
-    setReviewDesiredSize('');
-    setReviewDesiredColor('');
-    setReviewSubmitting(false);
-    setReviewRequest(null);
-    setReviewError('');
-  };
-
   const handleImage = async (file: File, autoAnalyze: boolean) => {
     setError(null);
     const prepared = await prepareImage(file);
@@ -187,12 +163,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
     try {
       const result = await analyzeUrl(url, channel, controller.signal);
       if (abortRef.current !== token) return;
-      const merchantPriceVerified = Number.isFinite(result.product.price)
-        && Number(result.product.price) > 0 && Boolean(result.product.currency);
+      const merchantPriceVerified = result.product.priceVerificationStatus === 'VERIFIED';
       setUrlResult(result);
       setProduct(result.product);
       setVerifiedPriceUrl(merchantPriceVerified);
-      if (!merchantPriceVerified && result.product.sourceUrl) setVerifyLink(result.product.sourceUrl);
       setStage('product');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
@@ -255,7 +229,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
   };
 
   const handleChooseCandidate = async (candidate: AyrovixCandidate) => {
-    clearReview();
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
     if (candidate.sourceUrl && candidate.kind !== 'catalog') {
       const { controller, token } = startRequest();
@@ -264,122 +237,87 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
       try {
         const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal);
         if (abortRef.current !== token) return;
-        const merchantPriceVerified = Number.isFinite(result.product.price)
-          && Number(result.product.price) > 0 && Boolean(result.product.currency);
+        const lensProduct = candidateToProduct(candidate);
+        const extractedPrice = result.product.price;
+        const proposedPrice = lensProduct.price;
+        const samePrice = proposedPrice != null && extractedPrice != null
+          && Math.abs(extractedPrice - proposedPrice) <= Math.max(0.05, proposedPrice * 0.02)
+          && result.product.currency === lensProduct.currency;
         setUrlResult(result);
-        if (merchantPriceVerified) {
+        if (proposedPrice == null && extractedPrice != null) {
+          // A link/code result without a Lens price may use the directly extracted merchant quote.
           setProduct(result.product);
+          setVerifiedPriceUrl(result.product.priceVerificationStatus === 'VERIFIED');
         } else {
-          // Keep the useful Lens title/image, but never promote a Lens price to a verified merchant price.
-          const lensProduct = candidateToProduct(candidate);
+          // A Lens/Claude quote remains the order price. Auto-verification only confirms it and enriches real options.
           setProduct({
             ...lensProduct,
             description: result.product.description || lensProduct.description,
+            images: lensProduct.images.length ? lensProduct.images : result.product.images,
+            image: lensProduct.image || result.product.image,
             colors: result.product.colors.length ? result.product.colors : lensProduct.colors,
             sizes: result.product.sizes.length ? result.product.sizes : lensProduct.sizes,
+            variantOptions: undefined,
+            availability: result.product.availability,
+            verificationProvider: result.product.verificationProvider,
+            verificationMethod: result.product.verificationMethod,
+            verificationFailureCode: samePrice ? null : (result.product.verificationFailureCode || (extractedPrice != null ? 'PRICE_MISMATCH' : 'DIRECT_PRICE_NOT_FOUND')),
           });
-          setVerifyLink(candidate.sourceUrl);
+          setVerifiedPriceUrl(samePrice);
         }
-        setVerifiedPriceUrl(merchantPriceVerified);
         setStage('product');
         return;
       } catch (error: any) {
         if (controller.signal.aborted || error?.name === 'AbortError') return;
-        // Network/extraction failure: show the match, but require link verification before ordering.
-        setVerifyLink(candidate.sourceUrl);
+        // Network/extraction failure: keep the Lens match for manual team verification.
       } finally {
         finishRequest(controller);
       }
     }
     setProduct(candidateToProduct(candidate));
-    setVerifiedPriceUrl(candidate.kind === 'catalog');
+    setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
     setStage('product');
   };
 
-  const handleVerifyLink = async () => {
-    if (!verifyLink.trim() || !product) return;
-    const { controller } = startRequest();
-    setVerifyingLink(true);
-    try {
-      const result = await analyzeUrl(verifyLink.trim(), 'url', controller.signal);
-      if (!Number.isFinite(result.product.price) || Number(result.product.price) <= 0 || !result.product.currency) {
-        throw new Error("Le lien est accessible, mais son prix n'a pas pu être vérifié. Utilisez le lien direct de la fiche produit.");
-      }
-      setProduct(result.product);
-      setUrlResult(result);
-      setVerifiedPriceUrl(true);
-      setVerifyLink('');
-    } catch (e: any) {
-      if (!controller.signal.aborted && e?.name !== 'AbortError') alert(e?.message || 'Lien invalide');
-    } finally {
-      finishRequest(controller);
-      setVerifyingLink(false);
-    }
-  };
-
-  const handleReviewRequest = async () => {
-    if (!product) return;
-    const reviewSourceUrl = product.sourceUrl || verifyLink.trim();
-    if (!reviewSourceUrl) {
-      setReviewError('Collez le lien direct du produit à vérifier.');
-      return;
-    }
-    if (!reviewContact.trim()) {
-      setReviewError('Ajoutez un numéro de téléphone ou un e-mail pour être recontacté.');
-      return;
-    }
-    setReviewSubmitting(true);
-    setReviewError('');
-    try {
-      const saved = await requestManualReview({
-        eventId: urlResult?.eventId || candidatesView?.eventId,
-        sourceUrl: reviewSourceUrl,
-        title: product.title,
-        imageUrl: product.image || candidatesView?.detectedPrice?.imageUrl || undefined,
-        source: product.source,
-        lensPrice: product.price ?? candidatesView?.detectedPrice?.sourcePrice ?? null,
-        lensCurrency: product.currency ?? candidatesView?.detectedPrice?.sourceCurrency ?? null,
-        desiredSize: reviewDesiredSize,
-        desiredColor: reviewDesiredColor,
-        contact: reviewContact.trim(),
-      });
-      setReviewRequest(saved);
-    } catch (e: any) {
-      setReviewError(e instanceof AyrovixApiError ? e.message : "La demande n'a pas pu être enregistrée. Réessayez.");
-    } finally {
-      setReviewSubmitting(false);
-    }
-  };
-
-  const handleOrder = async ({ size, color, option }: { size: string; color: string; option: AyrovixVariantOption | null }) => {
+  const handleOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
     if (!product || (option?.price == null && product.price == null && !candidatesView?.detectedPrice)) return;
-    // Claude/Lens prices are estimates; only a local catalog price or a merchant-page price can be ordered.
-    if (!verifiedPriceUrl) {
-      alert('Vérifiez le lien direct de la fiche marchand avant de commander avec ce prix.');
-      return;
-    }
     if (urlResult?.eventId) markChosen(urlResult.eventId);
     const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
+    const detectedPrice = candidatesView?.detectedPrice;
+    const finalPrice = option?.price ?? product.price ?? detectedPrice?.sourcePrice ?? 0;
+    const finalCurrency = option?.currency ?? product.currency ?? detectedPrice?.sourceCurrency ?? 'EUR';
+    const priceToken = option?.priceToken || product.priceToken || detectedPrice?.priceToken || '';
+    const priceVerificationStatus = product.priceVerificationStatus || (verifiedPriceUrl ? 'VERIFIED' : 'PENDING_MANUAL');
+    if (!priceToken) {
+      setError({ code: 'QUOTE_UNAVAILABLE', message: 'Le devis sécurisé a expiré. Relancez AYROVIX Lens pour continuer.' });
+      setStage('error');
+      return;
+    }
     setOrdering(true);
     setError(null);
     try {
-      const finalPrice = option?.price ?? product.price ?? candidatesView?.detectedPrice?.sourcePrice ?? 0;
-      const finalCurrency = option?.currency ?? product.currency ?? candidatesView?.detectedPrice?.sourceCurrency ?? 'EUR';
       await onOrder({
-        store: toStoreKey(product.sourceUrl || product.source || verifyLink || ''),
+        store: toStoreKey(product.sourceUrl || product.source || manualUrl),
         externalId: option?.id || null,
-        url: product.sourceUrl || verifyLink || '',
+        url: manualUrl,
+        referenceUrl: product.sourceUrl || '',
         title: product.title,
-        imageUrl: product.image || candidatesView?.detectedPrice?.imageUrl || '',
+        imageUrl: product.image || detectedPrice?.imageUrl || '',
         sourcePrice: finalPrice,
         sourceCurrency: finalCurrency,
-        priceTND: option?.priceTnd ?? product.priceTnd ?? candidatesView?.detectedPrice?.totalPriceTND ?? 0,
+        priceTND: option?.priceTnd ?? product.priceTnd ?? detectedPrice?.totalPriceTND ?? 0,
         variant: option?.label || variant || undefined,
-        quantity: 1,
+        requestedSize: size,
+        requestedColor: color,
+        customerNote,
+        priceVerificationStatus,
+        priceToken,
+        quantity,
       });
       handleClose();
-    } catch {
-      setError({ code: 'ORDER_FAILED', message: "L'article n'a pas pu être ajouté au panier. Réessayez." });
+    } catch (cause: any) {
+      setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
+      setStage('error');
       setOrdering(false);
     }
   };
@@ -544,7 +482,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                         onClick={() => {
                           const detected = candidatesView!.detectedPrice!;
                           setProduct({
-                            title: detected.title || candidatesView!.queryLabel || 'Produit repéré par AYROVIX',
+                            title: detected.title || 'Produit détecté par AYROVIX',
                             brand: detected.brand,
                             model: null,
                             description: detected.isCartScreenshot ? `Panier: ${detected.sourcePrice} ${detected.sourceCurrency} - ${detected.title}` : `${detected.title} — Prix repéré ${detected.sourcePrice} ${detected.sourceCurrency}`,
@@ -555,6 +493,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                             price: detected.sourcePrice,
                             currency: detected.sourceCurrency,
                             priceTnd: detected.totalPriceTND,
+                            priceToken: detected.priceToken || null,
+                            priceVerified: false,
+                            priceVerificationStatus: 'PENDING_MANUAL',
                             exchangeRate: null,
                             colors: [],
                             sizes: [],
@@ -567,7 +508,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                       >
                         Commander avec ce prix • {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || candidatesView.detectedPrice.sourcePrice.toFixed(2)} DT
                       </button>
-                      <p className="text-center text-[10px] font-semibold text-amber-800">⚠️ Avant commande, collez le lien du produit pour vérification (comme demandé).</p>
+                      <p className="text-center text-[10px] font-semibold text-amber-800">Le lien exact sera demandé à l'étape suivante pour l'achat manuel.</p>
                     </div>
                   </div>
 
@@ -587,7 +528,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
                 <div className="space-y-4 rounded-[22px] border border-dashed border-line p-6 text-center">
                   <p className="text-sm font-extrabold text-ink">Aucune correspondance externe</p>
                   {candidatesView.detectedPrice && candidatesView.detectedPrice.sourcePrice > 0 ? (
-                    <p className="text-xs text-muted">Utilisez le prix visible ci-dessus puis vérifiez le lien avant commande.</p>
+                    <p className="text-xs text-muted">Utilisez le prix visible ci-dessus ; notre équipe le vérifiera manuellement après l'acompte.</p>
                   ) : (
                     <p className="text-xs leading-relaxed text-muted">Essayez le lien direct de la page boutique pour un calcul exact.</p>
                   )}
@@ -601,101 +542,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, onO
             <div className="mx-auto max-w-md space-y-5">
               <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
-              {verifiedPriceUrl ? (
-                <div className="rounded-[16px] border border-emerald-200 bg-emerald-50 px-4 py-3">
-                  <p className="text-[11px] font-bold text-emerald-800">✅ Prix confirmé par la source sélectionnée</p>
-                  <p className="mt-1 text-[10px] text-emerald-700">Source : {product.source}. Les tailles et couleurs ne sont affichées que si la source les fournit.</p>
-                </div>
-              ) : (
-                <div className="rounded-[20px] border border-brand/20 bg-brand-light/30 p-4">
-                  <p className="text-xs font-extrabold text-ink">🔗 Prix marchand non confirmé automatiquement</p>
-                  <p className="mt-1 text-[11px] text-muted">Ce magasin protège sa page ou ne publie pas de prix exploitable. Essayez le lien direct ou revenez aux autres résultats Lens.</p>
-                  <div className="mt-2 flex gap-2">
-                    <input
-                      type="url"
-                      value={verifyLink}
-                      onChange={(e)=>setVerifyLink(e.target.value)}
-                      placeholder="https://..."
-                      className="min-h-[44px] flex-1 rounded-xl border border-line bg-white px-3 text-sm"
-                    />
-                    <button type="button" onClick={handleVerifyLink} disabled={verifyingLink || !verifyLink.trim()} className="min-h-[44px] rounded-xl bg-ink px-4 text-xs font-bold text-white disabled:opacity-40">
-                      {verifyingLink ? '...' : 'Vérifier'}
-                    </button>
-                  </div>
-                  {candidatesView?.list.length ? (
-                    <button type="button" onClick={() => setStage('candidates')} className="mt-2 min-h-[42px] w-full rounded-xl border border-line bg-white px-4 text-xs font-bold text-ink">
-                      Retour aux autres résultats
-                    </button>
-                  ) : null}
-
-                  {!reviewRequest && !reviewOpen && (
-                    <button
-                      type="button"
-                      onClick={() => { setReviewOpen(true); setReviewError(''); }}
-                      className="mt-2 min-h-[46px] w-full rounded-xl bg-brand px-4 text-xs font-extrabold text-white"
-                    >
-                      Demander la vérification du prix
-                    </button>
-                  )}
-
-                  {reviewOpen && !reviewRequest && (
-                    <div className="mt-3 space-y-2.5 rounded-2xl border border-line bg-white p-3.5">
-                      <div>
-                        <p className="text-xs font-extrabold text-ink">AYROVI vérifie ce produit pour vous</p>
-                        <p className="mt-0.5 text-[10px] leading-relaxed text-muted">La demande sera enregistrée et envoyée à notre équipe. Aucun prix Lens ne sera utilisé pour le paiement.</p>
-                      </div>
-                      {!product.sourceUrl && (
-                        <input
-                          type="url"
-                          value={verifyLink}
-                          onChange={(e) => setVerifyLink(e.target.value)}
-                          placeholder="Lien direct du produit *"
-                          className="min-h-[44px] w-full rounded-xl border border-line bg-surface px-3 text-sm"
-                        />
-                      )}
-                      <input
-                        type="text"
-                        value={reviewContact}
-                        onChange={(e) => setReviewContact(e.target.value)}
-                        placeholder="Téléphone ou e-mail *"
-                        autoComplete="email"
-                        className="min-h-[44px] w-full rounded-xl border border-line bg-surface px-3 text-sm"
-                      />
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          value={reviewDesiredSize}
-                          onChange={(e) => setReviewDesiredSize(e.target.value)}
-                          placeholder="Taille souhaitée"
-                          className="min-h-[42px] min-w-0 rounded-xl border border-line bg-surface px-3 text-xs"
-                        />
-                        <input
-                          type="text"
-                          value={reviewDesiredColor}
-                          onChange={(e) => setReviewDesiredColor(e.target.value)}
-                          placeholder="Couleur souhaitée"
-                          className="min-h-[42px] min-w-0 rounded-xl border border-line bg-surface px-3 text-xs"
-                        />
-                      </div>
-                      {reviewError && <p role="alert" className="text-[11px] font-semibold text-red-600">{reviewError}</p>}
-                      <div className="flex gap-2">
-                        <button type="button" onClick={() => setReviewOpen(false)} disabled={reviewSubmitting} className="min-h-[44px] rounded-xl border border-line px-4 text-xs font-bold text-ink disabled:opacity-50">Annuler</button>
-                        <button type="button" onClick={() => void handleReviewRequest()} disabled={reviewSubmitting} className="min-h-[44px] flex-1 rounded-xl bg-brand px-4 text-xs font-extrabold text-white disabled:opacity-50">
-                          {reviewSubmitting ? 'Enregistrement…' : 'Envoyer la demande'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {reviewRequest && (
-                    <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5" role="status">
-                      <p className="text-xs font-extrabold text-emerald-800">✓ Demande enregistrée</p>
-                      <p className="mt-1 text-[10px] leading-relaxed text-emerald-700">Notre équipe a reçu votre demande et vous contactera après vérification du prix, du stock et de la variante.</p>
-                      <p className="mt-2 font-mono text-[10px] font-bold text-emerald-900">Réf. {reviewRequest.id}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              {!verifiedPriceUrl && candidatesView?.list.length ? (
+                <button type="button" onClick={() => setStage('candidates')} className="min-h-[42px] w-full rounded-xl border border-line bg-white px-4 text-xs font-bold text-ink">
+                  Retour aux autres résultats
+                </button>
+              ) : null}
 
               {urlResult && urlResult.alternates.length > 0 && (
                 <section>

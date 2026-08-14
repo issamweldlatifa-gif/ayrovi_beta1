@@ -21,14 +21,14 @@ const statusLabels: Record<string, string> = {
   PENDING: 'En attente', IN_REVIEW: 'En cours', QUOTED: 'Devis envoyé', REJECTED: 'Refusée', FAILED: 'Échoué', REFUNDED: 'Remboursé', PREPARING: 'Préparation', SHIPPED: 'Expédié', RETURNED: 'Retourné',
   STANDARD: 'Standard', EXPRESS: 'Express', SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',
   // حالات العربون (dépôt)
-  NONE: '—', SUBMITTED: 'Preuve reçue',
+  NONE: '—', SUBMITTED: 'Preuve reçue', VERIFIED: 'Prix confirmé', PENDING_MANUAL: 'À vérifier manuellement',
 };
 
 export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const normalized = String(status || '').toUpperCase();
-  const tone = ['ACTIVE','PAID','DELIVERED','PUBLISHED','AVAILABLE','COMPLETED','QUOTED'].includes(normalized) ? 'success'
+  const tone = ['ACTIVE','PAID','DELIVERED','PUBLISHED','AVAILABLE','COMPLETED','QUOTED','VERIFIED'].includes(normalized) ? 'success'
     : ['CANCELLED','FAILED','OUT_OF_STOCK','ARCHIVED','EXPIRED','BLOCKED','REJECTED'].includes(normalized) ? 'danger'
-      : ['SCHEDULED','PAYMENT_PENDING','PENDING','LIMITED','EXPRESS'].includes(normalized) ? 'warning' : 'neutral';
+      : ['SCHEDULED','PAYMENT_PENDING','PENDING','PENDING_MANUAL','LIMITED','EXPRESS'].includes(normalized) ? 'warning' : 'neutral';
   return <span className={`status-badge status-badge--${tone}`}>{statusLabels[normalized] || status}</span>;
 };
 

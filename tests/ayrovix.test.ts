@@ -7,6 +7,8 @@ import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { anthropicWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
+import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
+import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { getAyrovixStats } from '../src/ayrovix/events';
 import { isUnsafeIpAddress, resolveSafeHttpUrl } from '../src/services/safeUrl';
 import type { AyrovixIdentification } from '../src/ayrovix/types';
@@ -188,7 +190,7 @@ describe('AYROVIX Lens', () => {
       ]}}</script>
     </head><body><h1>Sneaker Test</h1></body></html>`;
     const parsed = parseProductPageHtml(html, 'https://shop.example.org/item', 'generic');
-    expect(parsed).toMatchObject({ title: 'Sneaker Test', price: 129.99, currency: 'EUR', externalId: 'SKU-42' });
+    expect(parsed).toMatchObject({ title: 'Sneaker Test', price: 129.99, currency: 'EUR', externalId: 'SKU-42', priceSource: 'json_ld' });
     expect(parsed.images[0]).toBe('https://shop.example.org/products/shoe.jpg');
     expect(parsed.variants.sizes).toEqual(['42 EU', '44 EU']);
     expect(parsed.variants.colors).toEqual(['Noir', 'Blanc']);
@@ -196,6 +198,86 @@ describe('AYROVIX Lens', () => {
       expect.objectContaining({ id: '1', size: '42 EU', color: 'Noir', price: 129.99, available: true }),
       expect.objectContaining({ id: '3', size: '44 EU', color: 'Blanc', price: 139.99, available: true }),
     ]);
+  });
+
+  test('parser prix : JSON-LD précède meta, puis regex prix contextuel en dernier recours', () => {
+    const prioritized = parseProductPageHtml(`<!doctype html><html><head>
+      <meta property="og:title" content="Produit prioritaire"><meta property="product:price:amount" content="49.90"><meta property="product:price:currency" content="USD">
+      <script type="application/ld+json">{"@type":"Product","name":"Produit prioritaire","offers":{"price":"79.95","priceCurrency":"EUR"}}</script>
+    </head><body>Prix : 29,90 €</body></html>`, 'https://shop.example.org/p/priority', 'generic');
+    expect(prioritized).toMatchObject({ price: 79.95, currency: 'EUR', priceSource: 'json_ld' });
+
+    const contextual = parseProductPageHtml('<html><head><title>Produit contextuel</title></head><body><strong>Prix : 1 299,50 EUR</strong></body></html>', 'https://shop.example.org/p/context', 'generic');
+    expect(contextual).toMatchObject({ price: 1299.5, currency: 'EUR', priceSource: 'context_regex' });
+  });
+
+  test('devis signé : lie prix, devise, titre, lien et statut et refuse altération ou expiration', () => {
+    const quote = { price: 89.99, currency: 'EUR', title: 'Robe noire', referenceUrl: 'https://shop.example.org/robe', status: 'PENDING_MANUAL' as const };
+    const token = createAyrovixPriceToken(quote);
+    expect(token).toBeTruthy();
+    expect(verifyAyrovixPriceToken(token, quote)).toBe(true);
+    expect(verifyAyrovixPriceToken(token, { ...quote, price: 8.99 })).toBe(false);
+    expect(verifyAyrovixPriceToken(token, { ...quote, referenceUrl: 'https://evil.example/other' })).toBe(false);
+    expect(verifyAyrovixPriceToken(createAyrovixPriceToken(quote, -1), quote)).toBe(false);
+  });
+
+  test('rendu headless : ScraperAPI reçoit render=true et les erreurs conservent fournisseur et cause', async () => {
+    const previous = {
+      scraperApi: process.env.SCRAPERAPI_KEY,
+      scrapingBee: process.env.SCRAPINGBEE_API_KEY,
+      brightToken: process.env.BRIGHTDATA_API_TOKEN,
+      brightZone: process.env.BRIGHTDATA_UNLOCKER_ZONE,
+      provider: process.env.AYROVIX_RENDER_PROVIDER,
+    };
+    process.env.SCRAPERAPI_KEY = 'scraper-api-test';
+    delete process.env.SCRAPINGBEE_API_KEY;
+    delete process.env.BRIGHTDATA_API_TOKEN;
+    delete process.env.BRIGHTDATA_UNLOCKER_ZONE;
+    process.env.AYROVIX_RENDER_PROVIDER = 'scraperapi';
+    try {
+      const fetchMock = vi.fn(async (url: string) => {
+        const requestUrl = new URL(url);
+        expect(requestUrl.searchParams.get('render')).toBe('true');
+        expect(requestUrl.searchParams.get('url')).toBe('https://www.amazon.fr/dp/TEST');
+        return new Response('<html><body><span>Prix : 44,90 EUR</span></body></html>', { status: 200 });
+      });
+      vi.stubGlobal('fetch', fetchMock);
+      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST')).resolves.toMatchObject({ provider: 'scraperapi' });
+
+      vi.stubGlobal('fetch', vi.fn(async () => new Response('Forbidden', { status: 403 })));
+      await expect(fetchRenderedProductPage('https://fr.shein.com/test')).rejects.toMatchObject({
+        name: 'RenderedPageError', code: 'RENDER_ACCESS_DENIED', provider: 'scraperapi',
+      } satisfies Partial<RenderedPageError>);
+
+      delete process.env.SCRAPERAPI_KEY;
+      process.env.SCRAPINGBEE_API_KEY = 'bee-test';
+      process.env.AYROVIX_RENDER_PROVIDER = 'scrapingbee';
+      vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+        const requestUrl = new URL(url);
+        expect(requestUrl.hostname).toBe('app.scrapingbee.com');
+        expect(requestUrl.searchParams.get('render_js')).toBe('true');
+        return new Response('<html><body>Prix : 60 EUR</body></html>', { status: 200 });
+      }));
+      await expect(fetchRenderedProductPage('https://fr.shein.com/test')).resolves.toMatchObject({ provider: 'scrapingbee' });
+
+      delete process.env.SCRAPINGBEE_API_KEY;
+      process.env.BRIGHTDATA_API_TOKEN = 'bright-token';
+      process.env.BRIGHTDATA_UNLOCKER_ZONE = 'unlocker-zone';
+      process.env.AYROVIX_RENDER_PROVIDER = 'brightdata';
+      vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit = {}) => {
+        expect(url).toBe('https://api.brightdata.com/request');
+        expect((init.headers as Record<string, string>).Authorization).toBe('Bearer bright-token');
+        expect(JSON.parse(String(init.body))).toMatchObject({ zone: 'unlocker-zone', url: 'https://www.amazon.fr/dp/TEST', format: 'raw' });
+        return new Response('<html><body>Prix : 60 EUR</body></html>', { status: 200 });
+      }));
+      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST')).resolves.toMatchObject({ provider: 'brightdata' });
+    } finally {
+      restoreEnv('SCRAPERAPI_KEY', previous.scraperApi);
+      restoreEnv('SCRAPINGBEE_API_KEY', previous.scrapingBee);
+      restoreEnv('BRIGHTDATA_API_TOKEN', previous.brightToken);
+      restoreEnv('BRIGHTDATA_UNLOCKER_ZONE', previous.brightZone);
+      restoreEnv('AYROVIX_RENDER_PROVIDER', previous.provider);
+    }
   });
 
   test('image → identification Claude (simulée) → candidats catalogue → événement → choix', async () => {
@@ -219,6 +301,8 @@ describe('AYROVIX Lens', () => {
       expect(data.candidates[0].match).toBeGreaterThanOrEqual(35);
       expect(data.candidates[0].title).toContain('Nike');
       expect(data.candidates[0].priceTnd).toBeGreaterThan(0);
+      expect(data.candidates[0].priceToken).toMatch(/^[^.]+\.[^.]+$/);
+      expect(data.candidates[0].priceVerificationStatus).toBe('VERIFIED');
       expect(data.eventId).toMatch(/^ayx_/);
 
       const event = db.get<any>('SELECT * FROM ayrovix_events WHERE id=?', data.eventId);
@@ -258,6 +342,7 @@ describe('AYROVIX Lens', () => {
         isCartScreenshot: false,
       });
       expect(response.body.data.detectedPrice.totalPriceTND).toBeGreaterThan(0);
+      expect(response.body.data.detectedPrice.priceToken).toMatch(/^[^.]+\.[^.]+$/);
       const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
       expect(requestBody.output_config.format.type).toBe('json_schema');
       const schemaJson = JSON.stringify(requestBody.output_config.format.schema);

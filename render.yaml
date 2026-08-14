@@ -58,6 +58,22 @@ services:
         value: true
       - key: AYROVIX_PROVIDER_TIMEOUT_MS
         value: 12000
+      - key: AYROVIX_QUOTE_SECRET
+        sync: false
+      - key: AYROVIX_RENDER_PROVIDER
+        value: auto
+      - key: AYROVIX_RENDER_TIMEOUT_MS
+        value: 18000
+      - key: AYROVIX_SCRAPER_COUNTRY
+        value: fr
+      - key: SCRAPERAPI_KEY
+        sync: false
+      - key: SCRAPINGBEE_API_KEY
+        sync: false
+      - key: BRIGHTDATA_API_TOKEN
+        sync: false
+      - key: BRIGHTDATA_UNLOCKER_ZONE
+        sync: false
       - key: AYROVIX_OCR_TIMEOUT_MS
         value: 7000
       - key: AYROVIX_SEARCH_TIMEOUT_MS

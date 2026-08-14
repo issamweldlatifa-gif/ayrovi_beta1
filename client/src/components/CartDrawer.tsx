@@ -122,6 +122,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         {item.variant}
                       </p>
                     )}
+                    {(item.requestedSize || item.requestedColor) && (
+                      <p className="mt-0.5 text-[10px] font-semibold text-muted">
+                        {[item.requestedSize && `Taille ${item.requestedSize}`, item.requestedColor && `Couleur ${item.requestedColor}`].filter(Boolean).join(' · ')}
+                      </p>
+                    )}
+                    {item.customerNote && <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted">Note : {item.customerNote}</p>}
+                    {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && (
+                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">Lien produit fourni</a>
+                    )}
+                    {item.priceVerificationStatus === 'PENDING_MANUAL' && (
+                      <p className="mt-1 text-[10px] font-bold text-amber-700">⏳ Vérification manuelle après acompte</p>
+                    )}
 
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="text-xs font-black text-brand">

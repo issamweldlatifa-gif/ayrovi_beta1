@@ -1,42 +1,86 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
-import { ProductVariants } from './ProductVariants';
+
+export interface AyrovixOrderSelection {
+  size: string;
+  color: string;
+  option: AyrovixVariantOption | null;
+  quantity: number;
+  customerNote: string;
+  manualUrl: string;
+}
 
 interface ProductResultProps {
   product: AyrovixProduct;
   ordering: boolean;
   priceVerified: boolean;
-  onOrder: (variant: { size: string; color: string; option: AyrovixVariantOption | null }) => void;
+  onOrder: (selection: AyrovixOrderSelection) => void;
 }
 
 const AVAILABILITY: Record<string, { label: string; cls: string }> = {
   in_stock: { label: 'Disponible', cls: 'bg-emerald-50 text-emerald-700' },
   limited: { label: 'Stock limité', cls: 'bg-amber-50 text-amber-700' },
-  out_of_stock: { label: 'Rupture', cls: 'bg-red-50 text-red-600' },
+  out_of_stock: { label: 'Rupture signalée', cls: 'bg-red-50 text-red-600' },
   unknown: { label: 'Disponibilité à confirmer', cls: 'bg-slate-100 text-slate-500' },
 };
+const STANDARD_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
-/** Fiche produit confirmée — puis passage direct au Calculator AYROVI existant. */
+function verificationReason(code?: string | null): string {
+  if (!code) return '';
+  if (code === 'RENDER_PROVIDER_NOT_CONFIGURED') return "le service de rendu marchand n'est pas configuré";
+  if (code === 'RENDER_ACCESS_DENIED' || /HTTP_(?:401|403)/.test(code)) return 'la boutique bloque les consultations automatisées';
+  if (code === 'RENDER_RATE_LIMITED' || /HTTP_429/.test(code)) return 'la boutique ou le fournisseur limite temporairement les requêtes';
+  if (code === 'RENDER_TIMEOUT' || code.includes('TIMEOUT')) return "la page marchand n'a pas répondu à temps";
+  if (code === 'PRICE_MISMATCH') return 'le prix marchand lu diffère du prix proposé par Lens';
+  if (code === 'PRICE_NOT_FOUND_AFTER_RENDER' || code === 'DIRECT_PRICE_NOT_FOUND') return "aucun prix exploitable n'a été trouvé dans la fiche";
+  if (code === 'MERCHANT_EXTRACTION_FAILED') return "la fiche marchand n'a pas pu être lue";
+  return `vérification automatique indisponible (${code})`;
+}
+
+function validPublicUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value.trim());
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/** Product review plus the non-blocking manual-purchase request captured with the cart item. */
 export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering, priceVerified, onOrder }) => {
-  const [size, setSize] = useState('');
+  const [sizeChoice, setSizeChoice] = useState('');
+  const [customSize, setCustomSize] = useState('');
   const [color, setColor] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [customerNote, setCustomerNote] = useState('');
+  const [manualUrl, setManualUrl] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
   const options = (product.variantOptions || []).filter((option) => option.available);
-  const needsSize = product.sizes.length > 0;
-  const needsColor = product.colors.length > 0;
-  const selectedOption = options.find((option) =>
-    (!option.size || option.size === size) && (!option.color || option.color === color),
-  ) || null;
-  const variantSelectionComplete = (!needsSize || Boolean(size)) && (!needsColor || Boolean(color));
+  const requestedSize = sizeChoice === '__other__' ? customSize.trim() : sizeChoice;
+  const selectedOption = (requestedSize || color) ? (options.find((option) =>
+    (!requestedSize || Boolean(option.size && option.size.toLocaleLowerCase() === requestedSize.toLocaleLowerCase()))
+    && (!color || Boolean(option.color && option.color.toLocaleLowerCase() === color.toLocaleLowerCase())),
+  ) || null) : null;
   const selectedPrice = selectedOption?.price ?? product.price;
   const selectedCurrency = selectedOption?.currency ?? product.currency;
   const selectedPriceTnd = selectedOption?.priceTnd ?? product.priceTnd;
-  const canOrder = priceVerified && product.availability !== 'out_of_stock'
-    && variantSelectionComplete && (!options.length || Boolean(selectedOption))
-    && selectedPrice != null && selectedCurrency != null;
+  const isUrlValid = validPublicUrl(manualUrl);
+  const canOrder = selectedPrice != null && selectedCurrency != null && isUrlValid && quantity >= 1 && quantity <= 99;
   const imageUrls = [...new Set([...(product.images || []), product.image].filter(Boolean))];
-  useEffect(() => setImageIndex(0), [product.sourceUrl, product.image]);
+  const sizeOptions = useMemo(() => [...new Set([...product.sizes, ...STANDARD_SIZES])], [product.sizes]);
+
+  useEffect(() => {
+    setImageIndex(0);
+    setSizeChoice('');
+    setCustomSize('');
+    setColor('');
+    setQuantity(1);
+    setCustomerNote('');
+    setManualUrl('');
+    setSubmitted(false);
+  }, [product.sourceUrl, product.image]);
 
   return (
     <div className="space-y-4">
@@ -58,13 +102,13 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div>
             <h3 className="text-[15px] font-extrabold leading-snug text-ink">{product.title}</h3>
             <p className="mt-0.5 text-xs font-semibold text-muted">
-              {[product.brand, product.model, product.colors.length ? product.colors.join(' / ') : null].filter(Boolean).join(' · ') || 'Produit identifié par AYROVIX'}
+              {[product.brand, product.model].filter(Boolean).join(' · ') || 'Produit identifié par AYROVIX'}
             </p>
           </div>
 
           <div className="flex items-end justify-between gap-3 rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Prix source</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">Prix proposé</p>
               <p className="text-sm font-bold text-ink">
                 {selectedPrice != null && selectedCurrency ? `${selectedPrice.toFixed(2)} ${selectedCurrency}` : '—'}
               </p>
@@ -78,57 +122,97 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </div>
           </div>
 
+          {priceVerified ? (
+            <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">✅ Prix confirmé</p>
+          ) : (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-900">
+              <p>⏳ Prix estimé — en attente de vérification manuelle par notre équipe. Vous pouvez commander et payer l'acompte de 20% maintenant.</p>
+              {verificationReason(product.verificationFailureCode) && <p className="mt-1 font-medium">Motif : {verificationReason(product.verificationFailureCode)}.</p>}
+            </div>
+          )}
           {product.description ? <p className="text-xs leading-relaxed text-muted">{product.description}</p> : null}
         </div>
       </div>
 
-      <ProductVariants
-        sizes={product.sizes}
-        colors={product.colors}
-        size={size}
-        color={color}
-        options={options}
-        onSize={(value) => {
-          setSize(value);
-          if (color && options.length && !options.some((option) => option.available && option.size === value && option.color === color)) setColor('');
-        }}
-        onColor={(value) => {
-          setColor(value);
-          if (size && options.length && !options.some((option) => option.available && option.color === value && option.size === size)) setSize('');
-        }}
-      />
-      {needsSize && !size && <p className="text-[11px] font-semibold text-amber-600">Choisissez votre taille pour continuer.</p>}
-      {needsColor && !color && <p className="text-[11px] font-semibold text-amber-600">Choisissez votre couleur pour continuer.</p>}
-      {options.length > 0 && variantSelectionComplete && !selectedOption && <p className="text-[11px] font-semibold text-red-600">Cette combinaison n'est pas disponible. Choisissez une autre variante.</p>}
-      {selectedOption?.price != null && <p className="text-[10px] font-semibold text-emerald-700">Prix vérifié pour la variante choisie.</p>}
-      {!priceVerified && product.price != null && (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-800">
-          Prix indicatif Google Lens — vérifiez la fiche marchand ci-dessous pour activer la commande.
-        </p>
-      )}
+      <div className="space-y-3 rounded-[22px] border border-line bg-white p-4">
+        <div>
+          <h4 className="text-sm font-extrabold text-ink">Détails de votre demande</h4>
+          <p className="mt-0.5 text-[11px] leading-relaxed text-muted">Ces informations seront transmises à l'équipe d'achat avec votre commande.</p>
+        </div>
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-bold text-ink">Lien exact du produit <span className="text-red-500">*</span></span>
+          <input
+            type="url"
+            value={manualUrl}
+            onChange={(event) => setManualUrl(event.target.value)}
+            onBlur={() => setSubmitted(true)}
+            placeholder="https://boutique.com/produit-exact"
+            autoComplete="url"
+            className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-brand"
+            aria-invalid={submitted && !isUrlValid}
+            required
+          />
+          <span className="mt-1 block text-[10px] text-muted">Le lien sert uniquement à l'achat manuel. Saisir ce lien ne relance pas l'extraction du prix.</span>
+          {submitted && !isUrlValid && <span className="mt-1 block text-[11px] font-semibold text-red-600">Ajoutez un lien public complet commençant par http:// ou https://.</span>}
+        </label>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <span className="mb-1.5 block text-xs font-bold text-ink">Quantité <span className="text-red-500">*</span></span>
+            <div className="flex min-h-[46px] items-center rounded-xl border border-line bg-white">
+              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label="Diminuer la quantité" className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">−</button>
+              <input type="number" min={1} max={99} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} aria-label="Quantité" className="h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none" required />
+              <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label="Augmenter la quantité" className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">+</button>
+            </div>
+          </div>
+          <label className="block">
+            <span className="mb-1.5 block text-xs font-bold text-ink">Couleur <span className="font-medium text-muted">(optionnel)</span></span>
+            <input list="ayrovix-colors" value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder="Ex. Noir" className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
+            {product.colors.length > 0 && <datalist id="ayrovix-colors">{product.colors.map((item) => <option key={item} value={item} />)}</datalist>}
+          </label>
+        </div>
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-bold text-ink">Taille <span className="font-medium text-muted">(optionnel)</span></span>
+          <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand">
+            <option value="">Sans préférence</option>
+            {sizeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+            <option value="__other__">Autre</option>
+          </select>
+        </label>
+        {sizeChoice === '__other__' && (
+          <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder="Précisez la taille souhaitée" aria-label="Autre taille" className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
+        )}
+
+        {product.sizes.length > 0 || product.colors.length > 0 ? (
+          <p className="rounded-xl bg-surface px-3 py-2 text-[10px] leading-relaxed text-muted">
+            Options détectées sur la fiche : {[product.sizes.length ? `tailles ${product.sizes.join(', ')}` : '', product.colors.length ? `couleurs ${product.colors.join(', ')}` : ''].filter(Boolean).join(' · ')}. La disponibilité finale sera confirmée par l'équipe.
+          </p>
+        ) : null}
+
+        <label className="block">
+          <span className="mb-1.5 block text-xs font-bold text-ink">Commentaire spécial <span className="font-medium text-muted">(optionnel)</span></span>
+          <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder="Ex. emballage cadeau, variante précise…" className="w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand" />
+        </label>
+      </div>
 
       <div className="sticky bottom-3 flex gap-2.5">
         {product.sourceUrl && (
-          <a
-            href={product.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-line bg-white px-4 text-sm font-bold text-ink transition hover:border-ink"
-          >
-            Voir le produit
+          <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[52px] items-center justify-center rounded-2xl border border-line bg-white px-4 text-sm font-bold text-ink transition hover:border-ink">
+            Voir la référence
           </a>
         )}
         <button
           type="button"
-          onClick={() => onOrder({ size, color, option: selectedOption })}
-          disabled={!canOrder || ordering}
+          onClick={() => {
+            setSubmitted(true);
+            if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
+          }}
+          disabled={ordering || selectedPrice == null || selectedCurrency == null}
           className="bg-brand-gradient flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98] disabled:opacity-45"
         >
-          {ordering ? (
-            <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> Ajout au panier…</>
-          ) : (
-            <>Commander · via le Calculator AYROVI</>
-          )}
+          {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> Ajout au panier…</> : <>Commander · acompte 20%</>}
         </button>
       </div>
     </div>

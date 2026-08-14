@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import request from 'supertest';
 import { app, db, scraper } from '../src/server';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
+import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -261,6 +262,63 @@ describe('AYROVI platform', () => {
     const response = await request(app).get('/api/cart/items');
     expect(response.status).toBe(400);
     expect(response.body.success).toBe(false);
+  });
+
+  test('Lens order keeps the mandatory manual link and request fields, while signed estimate tampering is rejected', async () => {
+    const sessionId = uniqueSession('lens-manual-order');
+    const accountId = `account_lens_manual_${Date.now()}`;
+    const title = 'Article Lens à acheter manuellement';
+    const referenceUrl = 'https://www.google.com/shopping/product/reference';
+    const quote = {
+      price: 57.5,
+      currency: 'EUR',
+      title,
+      referenceUrl,
+      status: 'PENDING_MANUAL' as const,
+    };
+    const priceToken = createAyrovixPriceToken(quote);
+    const payload = {
+      store: 'generic', externalId: null, url: 'https://www.amazon.fr/dp/EXACTITEM', title,
+      imageUrl: 'https://images.example/item.jpg', sourcePrice: quote.price, sourceCurrency: quote.currency,
+      priceTND: 1, variant: 'Taille: XXL · Couleur: Noir', requestedSize: 'XXL', requestedColor: 'Noir',
+      customerNote: 'Emballage cadeau, sans prix visible.', referenceUrl,
+      priceVerificationStatus: quote.status, priceToken, quantity: 2,
+    };
+    try {
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(payload);
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      expect(added.body.cartItem).toMatchObject({
+        sourceUrl: payload.url, requestedSize: 'XXL', requestedColor: 'Noir', customerNote: payload.customerNote,
+        referenceUrl, priceVerificationStatus: 'PENDING_MANUAL', quantity: 2,
+      });
+      expect(added.body.cartItem.priceTND).not.toBe(1); // toujours recalculé côté serveur
+
+      const tampered = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-tampered`).send({ ...payload, sourcePrice: 5.75 });
+      expect(tampered.status).toBe(400);
+      expect(tampered.body.code).toBe('INVALID_AYROVIX_PRICE_TOKEN');
+
+      const noManualLink = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-link`).send({ ...payload, url: '' });
+      expect(noManualLink.status).toBe(400);
+      expect(noManualLink.body.code).toBe('MANUAL_PRODUCT_URL_REQUIRED');
+
+      const now = new Date().toISOString();
+      db.run("INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at) VALUES (?,?,'ACTIVE',?,?)", accountId, 'Client Lens', now, now);
+      expect(db.attachCartToAccount(sessionId, accountId)).toBe(1);
+      const order = db.createOrderFromCart(sessionId, {
+        name: 'Client Lens', phone: '+216 98 765 432', governorate: 'Tunis', address: 'Avenue de Tunis', paymentMethod: 'BANK_TRANSFER',
+      }, accountId);
+      expect(order.deposit.percent).toBe(20);
+      const snapshot = db.get<any>('SELECT * FROM order_items WHERE order_id=?', order.orderId);
+      expect(snapshot).toMatchObject({
+        source_url: payload.url, requested_size: 'XXL', requested_color: 'Noir', customer_note: payload.customerNote,
+        reference_url: referenceUrl, price_verification_status: 'PENDING_MANUAL', quantity: 2,
+      });
+    } finally {
+      db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
+      db.clearCart(sessionId);
+      db.clearCart(`${sessionId}-tampered`);
+      db.clearCart(`${sessionId}-link`);
+    }
   });
 
   test('cart and checkout remain isolated between client sessions', async () => {

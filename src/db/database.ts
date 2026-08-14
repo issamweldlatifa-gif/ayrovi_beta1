@@ -136,6 +136,11 @@ export class QatafoDatabase {
         source_currency TEXT NOT NULL,
         price_tnd REAL NOT NULL,
         variant TEXT,
+        requested_size TEXT NOT NULL DEFAULT '',
+        requested_color TEXT NOT NULL DEFAULT '',
+        customer_note TEXT NOT NULL DEFAULT '',
+        reference_url TEXT NOT NULL DEFAULT '',
+        price_verification_status TEXT NOT NULL DEFAULT 'VERIFIED',
         quantity INTEGER NOT NULL DEFAULT 1,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
@@ -352,6 +357,11 @@ export class QatafoDatabase {
         source_url TEXT NOT NULL DEFAULT '',
         image_url TEXT NOT NULL DEFAULT '',
         variant TEXT,
+        requested_size TEXT NOT NULL DEFAULT '',
+        requested_color TEXT NOT NULL DEFAULT '',
+        customer_note TEXT NOT NULL DEFAULT '',
+        reference_url TEXT NOT NULL DEFAULT '',
+        price_verification_status TEXT NOT NULL DEFAULT 'VERIFIED',
         quantity INTEGER NOT NULL,
         original_price REAL NOT NULL,
         currency TEXT NOT NULL,
@@ -545,6 +555,16 @@ export class QatafoDatabase {
     // Existing installations need additive migrations because CREATE TABLE IF NOT EXISTS
     // does not add new ownership columns to cart/order tables.
     this.ensureColumn('cart_items', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE');
+    this.ensureColumn('cart_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('cart_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('cart_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('cart_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
+    this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('order_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('order_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
     this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.rebuildTableIfLegacy('orders', 'deposit_discount_tnd', ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
@@ -799,6 +819,11 @@ export class QatafoDatabase {
       sourceCurrency: row.source_currency,
       priceTND: Number(row.price_tnd),
       variant: row.variant,
+      requestedSize: String(row.requested_size || ''),
+      requestedColor: String(row.requested_color || ''),
+      customerNote: String(row.customer_note || ''),
+      referenceUrl: String(row.reference_url || ''),
+      priceVerificationStatus: row.price_verification_status === 'PENDING_MANUAL' ? 'PENDING_MANUAL' : 'VERIFIED',
       quantity: Number(row.quantity),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
@@ -817,9 +842,9 @@ export class QatafoDatabase {
     owner.value = accountId || sessionId;
     if (item.externalId) {
       const existing = this.get<any>(`
-        SELECT * FROM cart_items WHERE ${owner.clause} AND store = ? AND external_id = ?
-          AND IFNULL(variant, '') = IFNULL(?, '')
-      `, owner.value, item.store, item.externalId, item.variant || '');
+        SELECT * FROM cart_items WHERE ${owner.clause} AND store = ? AND external_id = ? AND source_url = ?
+          AND IFNULL(variant, '') = IFNULL(?, '') AND requested_size = ? AND requested_color = ? AND customer_note = ?
+      `, owner.value, item.store, item.externalId, item.url, item.variant || '', item.requestedSize || '', item.requestedColor || '', item.customerNote || '');
       if (existing) {
         const newQty = Number(existing.quantity) + (item.quantity || 1);
         if (newQty > 99) throw new RangeError('CART_QUANTITY_LIMIT');
@@ -832,10 +857,12 @@ export class QatafoDatabase {
     const id = `ayr_${randomUUID().substring(0, 8)}`;
     this.run(`INSERT INTO cart_items (
       id, session_id, account_id, store, external_id, source_url, title, image_url,
-      source_price, source_currency, price_tnd, variant, quantity, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      source_price, source_currency, price_tnd, variant, requested_size, requested_color, customer_note,
+      reference_url, price_verification_status, quantity, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     id, sessionId, accountId || null, item.store, item.externalId || null, item.url, item.title, item.imageUrl,
-    item.sourcePrice, item.sourceCurrency, item.priceTND, item.variant || null, item.quantity || 1, now, now);
+    item.sourcePrice, item.sourceCurrency, item.priceTND, item.variant || null, item.requestedSize || '', item.requestedColor || '',
+    item.customerNote || '', item.referenceUrl || '', item.priceVerificationStatus || 'VERIFIED', item.quantity || 1, now, now);
     return this.getItemById(id, sessionId, accountId)!;
   }
 
@@ -879,8 +906,12 @@ export class QatafoDatabase {
       let attached = 0;
       for (const item of guestItems) {
         const existing = item.external_id
-          ? this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND external_id=? AND IFNULL(variant,'')=IFNULL(?,'')`, accountId, item.store, item.external_id, item.variant || '')
-          : this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND source_url=? AND title=? AND IFNULL(variant,'')=IFNULL(?,'')`, accountId, item.store, item.source_url, item.title, item.variant || '');
+          ? this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND external_id=? AND source_url=?
+              AND IFNULL(variant,'')=IFNULL(?,'') AND requested_size=? AND requested_color=? AND customer_note=?`,
+            accountId, item.store, item.external_id, item.source_url, item.variant || '', item.requested_size || '', item.requested_color || '', item.customer_note || '')
+          : this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND source_url=? AND title=?
+              AND IFNULL(variant,'')=IFNULL(?,'') AND requested_size=? AND requested_color=? AND customer_note=?`,
+            accountId, item.store, item.source_url, item.title, item.variant || '', item.requested_size || '', item.requested_color || '', item.customer_note || '');
         if (existing) {
           const quantity = Math.min(99, Number(existing.quantity) + Number(item.quantity));
           this.run('UPDATE cart_items SET quantity=?,updated_at=? WHERE id=?', quantity, new Date().toISOString(), existing.id);
@@ -966,12 +997,14 @@ export class QatafoDatabase {
 
       for (const { item, price } of breakdowns) {
         this.run(`INSERT INTO order_items (
-          id,order_id,product_id,arrival_id,product_name,source_platform,source_url,image_url,variant,quantity,
+          id,order_id,product_id,arrival_id,product_name,source_platform,source_url,image_url,variant,
+          requested_size,requested_color,customer_note,reference_url,price_verification_status,quantity,
           original_price,currency,exchange_rate,converted_price_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,
           discount_tnd,total_tnd,pricing_snapshot,created_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         `order_item_${randomUUID()}`, orderId, null, null, item.title, item.store.toUpperCase(), item.sourceUrl,
-        item.imageUrl, item.variant, item.quantity, item.sourcePrice, item.sourceCurrency, price.exchangeRate,
+        item.imageUrl, item.variant, item.requestedSize, item.requestedColor, item.customerNote, item.referenceUrl,
+        item.priceVerificationStatus, item.quantity, item.sourcePrice, item.sourceCurrency, price.exchangeRate,
         price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.expressFeeTND,
         price.discountTND, price.totalTND, JSON.stringify(price), now);
       }

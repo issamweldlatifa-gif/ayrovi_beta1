@@ -53,14 +53,19 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     images: scraped.images || [],
     source: scraped.storeName,
     sourceUrl: scraped.url,
-    price: scraped.sourcePrice,
-    currency: scraped.sourceCurrency,
+    price: scraped.sourcePrice > 0 ? scraped.sourcePrice : null,
+    currency: scraped.sourcePrice > 0 ? scraped.sourceCurrency : null,
     priceTnd: tnd?.priceTnd ?? (Number.isFinite(scraped.totalPriceTND) && scraped.totalPriceTND > 0 ? scraped.totalPriceTND : null),
     exchangeRate: tnd?.exchangeRate ?? null,
     colors: scraped.variants?.colors || [],
     sizes: scraped.variants?.sizes || [],
     variantOptions,
     availability: scraped.availability || 'unknown',
+    priceVerified: Boolean(scraped.priceVerified),
+    priceVerificationStatus: scraped.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL',
+    verificationProvider: scraped.verificationProvider || 'none',
+    verificationMethod: scraped.verificationMethod || 'none',
+    verificationFailureCode: scraped.verificationFailureCode || null,
   };
 }
 
@@ -88,6 +93,9 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
       colors: [],
       sizes: [],
       availability: 'unknown',
+      priceVerified: false,
+      priceVerificationStatus: 'PENDING_MANUAL',
+      verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
     };
   } catch {
     return {
@@ -106,6 +114,9 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
       colors: [],
       sizes: [],
       availability: 'unknown',
+      priceVerified: false,
+      priceVerificationStatus: 'PENDING_MANUAL',
+      verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
     };
   }
 }
@@ -121,12 +132,15 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
 
   try {
     const scraped = await scraper.scrapeProduct(url);
-    if (scraped && scraped.title && Number.isFinite(scraped.sourcePrice) && scraped.sourcePrice > 0) {
-      const alternates = catalogSearch(db, null, scraped.title, 4)
+    if (scraped?.title) {
+      const catalog = catalogSearch(db, null, scraped.title, 4);
+      const external = scraped.sourcePrice > 0 ? [] : await anthropicExternalSearch(scraped.title, 6).catch(() => []);
+      const alternates = [...catalog, ...external]
         .map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) }))
-        .sort((a, b) => b.match - a.match);
-      // The direct merchant page already supplied the authoritative product.
-      // Do not add a paid text search (and 7–12 s latency) merely for alternatives.
+        .sort((a, b) => b.match - a.match)
+        .slice(0, 8);
+      // A rendered/direct merchant price avoids a paid text search. If the
+      // price is still absent, return the real page diagnostics plus alternates.
       return { product: toAyrovixProduct(db, scraped), alternates };
     }
   } catch (e) {

@@ -10,9 +10,10 @@ import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitize
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import { createAyrovixReviewRequest, getAyrovixReviewForOwner } from './reviews';
 import { resolveCustomer } from '../customer/auth';
-import type { AyrovixCandidate, AyrovixChannel } from './types';
+import type { AyrovixCandidate, AyrovixChannel, AyrovixDetectedPrice, AyrovixProduct } from './types';
 import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
+import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 
 /**
  * AYROVIX public API — Claude powers visual understanding, visible-price
@@ -66,6 +67,41 @@ function publicReview(row: any) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     duplicate: Boolean(row.duplicate),
+  };
+}
+
+function quoteToken(price: number | null, currency: string | null, title: string, referenceUrl: string, status: AyrovixQuoteStatus): string | null {
+  if (price == null || !currency) return null;
+  return createAyrovixPriceToken({ price, currency, title, referenceUrl, status });
+}
+
+function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
+  const status: AyrovixQuoteStatus = candidate.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
+  return {
+    ...candidate,
+    priceVerificationStatus: status,
+    priceToken: quoteToken(candidate.price, candidate.currency, candidate.title, candidate.sourceUrl, status),
+  };
+}
+
+function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
+  const status: AyrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
+  return {
+    ...product,
+    priceVerificationStatus: status,
+    priceToken: quoteToken(product.price, product.currency, product.title, product.sourceUrl, status),
+    variantOptions: product.variantOptions?.map((option) => ({
+      ...option,
+      priceToken: quoteToken(option.price, option.currency, product.title, product.sourceUrl, status),
+    })),
+  };
+}
+
+function tokenizedDetectedPrice(price: AyrovixDetectedPrice | null): AyrovixDetectedPrice | null {
+  if (!price) return null;
+  return {
+    ...price,
+    priceToken: quoteToken(price.sourcePrice, price.sourceCurrency, price.title, '', 'PENDING_MANUAL'),
   };
 }
 
@@ -142,6 +178,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const candidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && query
         ? await searchCandidates(db, identification, query, visualCandidates)
         : [];
+      const securedCandidates = candidates.map(tokenizedCandidate);
+      const securedPrice = tokenizedDetectedPrice(priceResult);
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
         brand: identification.brand,
@@ -154,10 +192,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         data: {
           identification,
           query,
-          candidates,
+          candidates: securedCandidates,
           eventId,
-          detectedPrice: priceResult,
-          message: priceResult
+          detectedPrice: securedPrice,
+          message: securedPrice
             ? isCartScreenshot
               ? `Total visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Un lien produit reste obligatoire avant commande.`
               : `Prix visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Le lien marchand permettra de le vérifier.`
@@ -187,7 +225,14 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         query: result.product.title,
         candidatesCount: 1 + result.alternates.length,
       });
-      return res.json({ success: true, data: { ...result, eventId } });
+      return res.json({
+        success: true,
+        data: {
+          product: tokenizedProduct(result.product),
+          alternates: result.alternates.map(tokenizedCandidate),
+          eventId,
+        },
+      });
     } catch (error: any) {
       if (error instanceof InvalidUrlError || error?.code === 'INVALID_URL') {
         return res.status(400).json({ success: false, code: 'INVALID_URL', error: 'Ce lien ne peut pas être analysé. Vérifiez le format.' });
@@ -206,9 +251,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
                 description: 'Lien partagé — résultats Claude Web Search à confirmer.',
                 image: '', images: [], source: 'Web', sourceUrl: String(url || ''),
                 price: null, currency: null, priceTnd: null, exchangeRate: null,
-                colors: [], sizes: [], availability: 'unknown',
+                colors: [], sizes: [], availability: 'unknown', priceVerified: false,
+                priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
               },
-              alternates: candidates,
+              alternates: candidates.map(tokenizedCandidate),
               eventId: recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length }),
               fallback: true,
             },
@@ -228,7 +274,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     try {
       const candidates = await searchByCodeOrText(db, value);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
-      return res.json({ success: true, data: { code: value, candidates, eventId } });
+      return res.json({ success: true, data: { code: value, candidates: candidates.map(tokenizedCandidate), eventId } });
     } catch (error: any) {
       console.warn('[AYROVIX analyze-code]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'CODE_SEARCH_FAILED', error: 'La recherche de ce QR code a échoué.' });
@@ -243,7 +289,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     try {
       const candidates = await searchByCodeOrText(db, code);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
-      return res.json({ success: true, data: { code, candidates, eventId } });
+      return res.json({ success: true, data: { code, candidates: candidates.map(tokenizedCandidate), eventId } });
     } catch (error: any) {
       console.warn('[AYROVIX analyze-barcode]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'BARCODE_SEARCH_FAILED', error: 'La recherche par code a échoué. Essayez avec une photo.' });

@@ -45,12 +45,12 @@
 - Server `src/ayrovix/` : `services/ai.ts` (Claude Vision, clé ANTHROPIC_API_KEY server-side only, jamais de VITE_*), `services/search.ts` (fournisseurs interchangeables : catalogue AYROVI toujours actif + Google Shopping optionnel via SERPAPI_KEY ; scoring déterministe code>marque>modèle>couleurs), `services/product.ts` (URL → scraper existant, SSRF bloqué, jamais de données devinées), `services/currency.ts` (réutilise pricing_config versionné), `events.ts` (analytics anonymes).
 - API : POST /api/ayrovix/analyze-image (multer 6 Mo, JPEG/PNG/WebP/GIF), /analyze-url (canal url|qr), /choose ; rate-limit 12/10 min ; 503 AYROVIX_UNAVAILABLE sans clé.
 - Admin : GET /api/admin/ayrovix/stats (reports:read) + carte AYROVIX dans Rapports (analyses 7j, taux de correspondance, top marques/requêtes).
-- Client `client/src/ayrovix/` : LensLauncher (sheet plein écran, state machine home→preview→analyzing→candidates→product), LensCamera (capture=environment + fallback), LensUpload, QRScanner (BarcodeDetector natif + repli jsqr), ProductCandidates (plusieurs candidats, % match, jamais de réponse unique), ProductResult + ProductVariants. Commander → handleAddToCart existant → panier → checkout dépôt existant.
+- Client `client/src/ayrovix/` : LensLauncher (sheet plein écran, state machine home→preview→analyzing→candidates→product), LensCamera (capture=environment + fallback), LensUpload, QRScanner (BarcodeDetector natif + repli `@zxing/library` multi-format), ProductCandidates (plusieurs candidats, % match, jamais de réponse unique), ProductResult + ProductVariants. Commander → handleAddToCart existant → panier → checkout dépôt existant.
 - Env : ANTHROPIC_API_KEY / ANTHROPIC_MODEL / SERPAPI_KEY documentés dans .env.example. Tests 38/38 (image sans clé→503, mime→415, query builder, scoring, flux simulé end-to-end, SSRF QR).
 
 ## AYROVIX Lens V1.1 — expérience caméra live façon Amazon Lens (2026-08-13)
 - Refonte UX : Lens ouvre DÉSORMAIS la caméra en direct (plus de menu) — barre haute (fermer · AYROVIX Lens · torche si supportée), viseur à coins + lens-scan, obturateur 74px.
-- 3 modes en bas : **Recherche** (capture frame → préparation 1400px → analyse Claude immédiate), **Importer** (galerie → même pipeline), **Code** (scan live QR + codes-barres EAN/UPC/Code128 via BarcodeDetector natif, repli jsQR pour QR ; zone « coller un lien » intégrée).
+- 3 modes en bas : **Recherche** (capture frame → préparation 1400px → analyse Claude immédiate), **Importer** (galerie → même pipeline), **Code** (scan live QR + codes-barres EAN/UPC/Code128 via BarcodeDetector natif, repli client `@zxing/library` multi-format ; zone « coller un lien » intégrée).
 - QR avec URL → /analyze-url (canal qr) · code-barres → NOUVEAU POST /api/ayrovix/analyze-barcode (validation 6-14 chiffres, recherche SerpAPI si clé ; sinon réponse propre + carte code avec Copier/Photographier — jamais d'invention).
 - Sans caméra/permission refusée → menu de repli (photo, import, lien). Un seul flux getUserMedia pour toute la session ; tracks stoppés à la fermeture.
 - Tests 39/39 (validation barcode + réponse sans fournisseur). QRScanner.tsx supprimé : le scan vit dans LiveCamera (une seule caméra).
@@ -99,3 +99,12 @@
 - أضيفت قائمة إدارة **Demandes Lens** مع البحث والتصفية والتفاصيل، وتأكيد السعر/العملة/الvariant والرابط والحالة، ورسالة عميل منفصلة عن الملاحظة الداخلية. التحديثات محمية بصلاحيات وCSRF ومسجلة في audit.
 - يظل السعر الظاهر من Lens غير قابل للسلة أو الدفع. المسار المقبول هو سعر merchant/variant مؤكد، أو طلب مراجعة محفوظ.
 - التحقق المحلي: TypeScript ✅، **51/51** اختبارًا ✅، build إنتاجي ✅، و0 ثغرات npm ✅.
+
+## AYROVIX Lens V2.4 — commande non bloquante et achat manuel (2026-08-14, état courant)
+- Cette section remplace explicitement le blocage de commande décrit en V2.1/V2.3 : un prix Lens/Claude/Google Lens estimé peut alimenter le panier et l’acompte de 20%; l’équipe garde la validation humaine avant achat.
+- Le lien exact saisi par le client est obligatoire dans tous les cas. Il ne relance aucune extraction et est conservé séparément de la référence Lens avec quantité, taille, couleur et commentaire dans le panier, le snapshot de commande, l’espace client et le détail Admin.
+- Les devis AYROVIX sont signés côté serveur (HMAC, expiration 30 minutes) sur prix/devise/titre/référence/statut; le panier recalcule toujours le prix TND et refuse toute altération du devis.
+- La vérification automatique tente le fetch direct puis un rendu JavaScript via ScraperAPI, ScrapingBee ou Bright Data. Les diagnostics fournisseur/timeout/blocage/absence de prix sont structurés; le parser priorise JSON-LD Product, meta prix, DOM/variants puis regex contextuelle.
+- Le résultat affiche `✅ Prix confirmé` en cas de succès ou un avertissement informatif `⏳` avec motif réel; l’échec n’est plus un blocker. Le prix Lens proposé reste inchangé quand la vérification automatique enrichit la fiche.
+- Le scan navigateur utilise désormais `@zxing/library@0.21.3` en fallback multi-format (QR, EAN/UPC, Code128/39/93, ITF, Data Matrix, Aztec, PDF417) après BarcodeDetector natif; aucun frame ne quitte le navigateur.
+- Validation locale : TypeScript ✅, **55/55** tests ✅, build production ✅, audit npm 0 vulnérabilité ✅ et smoke API devis → panier ✅.

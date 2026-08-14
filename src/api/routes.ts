@@ -7,7 +7,8 @@ import { AddToCartRequest } from '../types';
 import { calculatePrice } from '../services/pricing';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
-import { isUnsafeHostname, UnsafeUrlError } from '../services/safeUrl';
+import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
+import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -181,6 +182,27 @@ export function createApiRouter(
     const sourceCurrency = typeof item.sourceCurrency === 'string' ? item.sourceCurrency.trim().toUpperCase() : '';
     const calculatedPrice = calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency);
     const calculatedPriceTND = calculatedPrice?.totalTND ?? null;
+    const ayrovixItem = typeof item.priceVerificationStatus === 'string' || typeof item.priceToken === 'string';
+    const priceVerificationStatus = item.priceVerificationStatus === 'PENDING_MANUAL' ? 'PENDING_MANUAL' : 'VERIFIED';
+    const requestedSize = String(item.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
+    const requestedColor = String(item.requestedColor || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
+    const customerNote = String(item.customerNote || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
+    const referenceUrl = String(item.referenceUrl || '').trim();
+    let manualUrlValid = true;
+    let referenceUrlValid = true;
+    if (ayrovixItem) {
+      try { parsePublicHttpUrl(item.url); } catch { manualUrlValid = false; }
+      if (referenceUrl) {
+        try { parsePublicHttpUrl(referenceUrl); } catch { referenceUrlValid = false; }
+      }
+    }
+    const quoteValid = !ayrovixItem || verifyAyrovixPriceToken(item.priceToken, {
+      price: sourcePrice,
+      currency: sourceCurrency,
+      title: item.title,
+      referenceUrl,
+      status: priceVerificationStatus,
+    });
 
     if (
       typeof item.title !== 'string' || !item.title.trim() || item.title.length > 500 ||
@@ -190,12 +212,21 @@ export function createApiRouter(
       !Number.isFinite(sourcePrice) || sourcePrice <= 0 || sourcePrice > 1_000_000 ||
       calculatedPriceTND === null ||
       !Number.isInteger(quantity) || quantity < 1 || quantity > 99 ||
+      !manualUrlValid || !referenceUrlValid || !quoteValid ||
+      (item.requestedSize != null && typeof item.requestedSize !== 'string') ||
+      (item.requestedColor != null && typeof item.requestedColor !== 'string') ||
+      (item.customerNote != null && typeof item.customerNote !== 'string') ||
       (item.externalId != null && (typeof item.externalId !== 'string' || item.externalId.length > 300)) ||
       (item.variant != null && (typeof item.variant !== 'string' || item.variant.length > 500))
     ) {
       return res.status(400).json({
         success: false,
-        error: 'Données produit incomplètes ou invalides.'
+        code: !quoteValid ? 'INVALID_AYROVIX_PRICE_TOKEN' : !manualUrlValid ? 'MANUAL_PRODUCT_URL_REQUIRED' : 'INVALID_CART_ITEM',
+        error: !quoteValid
+          ? 'Le prix AYROVIX a expiré ou a été modifié. Relancez Lens.'
+          : !manualUrlValid
+            ? 'Le lien produit fourni par le client est obligatoire et doit être public.'
+            : 'Données produit incomplètes ou invalides.'
       });
     }
 
@@ -209,6 +240,11 @@ export function createApiRouter(
       sourceCurrency,
       priceTND: calculatedPriceTND,
       variant: item.variant?.trim() || null,
+      requestedSize,
+      requestedColor,
+      customerNote,
+      referenceUrl,
+      priceVerificationStatus,
       quantity,
     };
 
