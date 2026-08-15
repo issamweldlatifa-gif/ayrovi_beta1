@@ -109,6 +109,7 @@ export const PublicCmsSections: React.FC = () => {
 
   const handleStoryCta = (cta: StoryCta) => {
     if (cta.action === 'promotions') { setActivePage('promotions'); return; }
+    if (cta.action === 'product') { setActivePage('arrivals'); return; }
     if (cta.action === 'url' && /^https?:\/\//i.test(cta.targetId || '')) { window.open(cta.targetId, '_blank', 'noopener'); return; }
     setActivePage('arrivals');
   };

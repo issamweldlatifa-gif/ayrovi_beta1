@@ -87,7 +87,13 @@ export function mapDbStories(rows: any[]): Story[] {
         url: String(row.media_url),
       },
       caption: String(row.description || row.title || ''),
-      cta: row.cta ? { label: String(row.cta), action: row.arrival_id ? 'arrivages' : row.promotion_id ? 'promotions' : 'url', targetId: String(row.arrival_id || row.promotion_id || row.target_url || '') } : undefined,
+      cta: row.cta || row.product_id || row.arrival_id || row.promotion_id
+        ? {
+            label: String(row.cta || (row.product_id ? 'Voir le produit' : 'Découvrir')),
+            action: row.product_id ? 'product' : row.arrival_id ? 'arrivages' : row.promotion_id ? 'promotions' : 'url',
+            targetId: String(row.product_id || row.arrival_id || row.promotion_id || row.target_url || ''),
+          }
+        : undefined,
       createdAt: String(row.publish_at || new Date().toISOString()),
       expiresAt: String(row.expires_at || new Date(Date.now() + 86400000).toISOString()),
       seen: Boolean(seen[String(row.id)]),
