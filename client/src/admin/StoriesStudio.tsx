@@ -158,7 +158,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
         reader.readAsDataURL(file);
       });
       const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
-      setForm((f: any) => ({ ...f, media_url: result.data?.url || f.media_url }));
+      setForm((f: any) => ({ ...f, media_url: result.data?.url || f.media_url, media_type: file.type.startsWith('video/') ? 'VIDEO' : f.media_type }));
     } catch (e: any) { setError(e?.message || 'Upload impossible.'); }
     finally { setUploading(false); }
   };
@@ -273,7 +273,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                 <input value={form.media_url} onChange={(e) => setForm({ ...form, media_url: e.target.value })} placeholder="/media/… ou https://…" style={{ flex: 1 }} />
                 <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d5d2e4', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: '#fff' }}>
                   <ArrowUp size={14} />{uploading ? '…' : 'Uploader'}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMedia(f); }} />
+                  <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMedia(f); }} />
                 </label>
               </div>
             </Field>

@@ -35,7 +35,14 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
 
 const PostMedia: React.FC<{ post: StoryPost }> = ({ post }) => {
   const [slide, setSlide] = useState(0);
+  const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+
+  const toggleVideo = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) { void video.play().catch(() => undefined); } else { video.pause(); }
+  };
 
   // Autoplay muted dans le viewport, pause en dehors (Intersection Observer).
   useEffect(() => {
@@ -67,7 +74,27 @@ const PostMedia: React.FC<{ post: StoryPost }> = ({ post }) => {
     );
   }
   if (post.type === 'video' || post.media[0]?.type === 'video') {
-    return <video ref={videoRef} src={post.media[0].url} muted loop playsInline className="aspect-[4/5] w-full bg-black object-contain" />;
+    return (
+      <button type="button" onClick={toggleVideo} aria-label={playing ? 'Mettre en pause' : 'Lire la vidéo'} className="relative block w-full">
+        <video
+          ref={videoRef}
+          src={post.media[0].url}
+          muted
+          loop
+          playsInline
+          onPlay={() => setPlaying(true)}
+          onPause={() => setPlaying(false)}
+          className="aspect-[4/5] w-full bg-black object-contain"
+        />
+        {!playing && (
+          <span className="absolute inset-0 grid place-items-center">
+            <span className="grid h-16 w-16 place-items-center rounded-full bg-black/50 text-white backdrop-blur-sm">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
+            </span>
+          </span>
+        )}
+      </button>
+    );
   }
   return <img src={post.media[0].url} alt="" loading="lazy" className="aspect-[4/5] w-full object-cover" />;
 };

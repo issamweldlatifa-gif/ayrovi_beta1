@@ -1148,11 +1148,15 @@ export function createAdminRouter(db: QatafoDatabase): Router {
 
   router.post('/uploads', requireAdmin(db, 'content:write'), (req, res) => {
     const dataUrl = String(req.body?.dataUrl || '');
-    const match = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
-    if (!match) return res.status(400).json({ success: false, error: 'Image PNG, JPEG, WEBP ou GIF invalide.' });
+    const img = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+    const vid = /^data:video\/(mp4|webm|ogg|x-m4v|quicktime);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+    const match = img || vid;
+    if (!match) return res.status(400).json({ success: false, error: 'Format non supporté. Images : PNG/JPEG/WEBP/GIF · Vidéos : MP4/WEBM/OGG/M4V.' });
     const buffer = Buffer.from(match[2], 'base64');
-    if (!buffer.length || buffer.length > 4 * 1024 * 1024) return res.status(400).json({ success: false, error: 'L’image doit peser moins de 4 Mo.' });
-    const extension = match[1] === 'jpeg' ? 'jpg' : match[1];
+    const isVideo = Boolean(vid);
+    const maxBytes = isVideo ? 12 * 1024 * 1024 : 4 * 1024 * 1024;
+    if (!buffer.length || buffer.length > maxBytes) return res.status(400).json({ success: false, error: isVideo ? 'La vidéo doit peser moins de 12 Mo.' : 'L’image doit peser moins de 4 Mo.' });
+    const extension = match[1] === 'jpeg' ? 'jpg' : match[1] === 'x-m4v' ? 'm4v' : match[1] === 'quicktime' ? 'mov' : match[1];
     const directory = path.resolve(process.cwd(), 'data', 'uploads');
     fs.mkdirSync(directory, { recursive: true });
     const filename = `${Date.now()}-${randomUUID()}.${extension}`;
