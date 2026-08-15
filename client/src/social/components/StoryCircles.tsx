@@ -1,0 +1,55 @@
+import React from 'react';
+import { FigLeaf } from '../../components/QatafoIcons';
+import type { Story, StoryPublisher } from '../types';
+
+export interface StoryGroup {
+  publisher: StoryPublisher;
+  stories: Story[];
+  hasUnseen: boolean;
+}
+
+export function groupByPublisher(stories: Story[]): StoryGroup[] {
+  const order: StoryGroup[] = [];
+  const byId = new Map<string, StoryGroup>();
+  for (const story of stories) {
+    let group = byId.get(story.publisher.id);
+    if (!group) {
+      group = { publisher: story.publisher, stories: [], hasUnseen: false };
+      byId.set(story.publisher.id, group);
+      order.push(group);
+    }
+    group.stories.push(story);
+    if (!story.seen) group.hasUnseen = true;
+  }
+  order.sort((a, b) => Number(Boolean(b.publisher.official)) - Number(Boolean(a.publisher.official)));
+  return order;
+}
+
+const Avatar: React.FC<{ publisher: StoryPublisher; size: number }> = ({ publisher, size }) => (
+  publisher.official
+    ? <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand to-brand-dark text-white" style={{ width: size, height: size, borderRadius: '50%' }}><FigLeaf size={Math.round(size * 0.55)} /></span>
+    : publisher.avatar
+      ? <img src={publisher.avatar} alt="" loading="lazy" className="h-full w-full object-cover" style={{ borderRadius: '50%' }} />
+      : <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-light to-accent text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>
+);
+
+export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = ({ group, onOpen }) => (
+  <button type="button" onClick={onOpen} className="flex w-16 shrink-0 flex-col items-center gap-1.5" aria-label={`Stories de ${group.publisher.name}`}>
+    <span className={`rounded-full p-[2.5px] ${group.hasUnseen ? 'bg-gradient-to-tr from-brand via-brand-light to-accent' : 'bg-line'}`}>
+      <span className="block rounded-full bg-white p-[2px]">
+        <Avatar publisher={group.publisher} size={54} />
+      </span>
+    </span>
+    <span className="w-full truncate text-center text-[10px] font-bold text-ink">{group.publisher.name}</span>
+  </button>
+);
+
+export const StoryCircles: React.FC<{ groups: StoryGroup[]; onOpen: (index: number) => void }> = ({ groups, onOpen }) => (
+  <div className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-4 pb-1 sm:px-6" role="list" aria-label="Stories">
+    {groups.map((group, index) => (
+      <div role="listitem" key={group.publisher.id} className="shrink-0">
+        <StoryCircle group={group} onOpen={() => onOpen(index)} />
+      </div>
+    ))}
+  </div>
+);

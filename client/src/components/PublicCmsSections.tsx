@@ -5,6 +5,8 @@ import heroEnfants from '../assets/hero-enfants.jpg';
 import { X } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import { getPublicHome } from '../services/publicApi';
+import { StoryTab } from '../social/StoryTab';
+import type { StoryCta } from '../social/types';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
 type CmsPage = keyof HomeData;
@@ -105,6 +107,12 @@ export const PublicCmsSections: React.FC = () => {
   const pageData: HomeData = { ...home, arrivals: activeArrivals };
   const activeDefinition = pageDefinitions.find((page) => page.id === activePage);
 
+  const handleStoryCta = (cta: StoryCta) => {
+    if (cta.action === 'promotions') { setActivePage('promotions'); return; }
+    if (cta.action === 'url' && /^https?:\/\//i.test(cta.targetId || '')) { window.open(cta.targetId, '_blank', 'noopener'); return; }
+    setActivePage('arrivals');
+  };
+
   const renderPageContent = (page: CmsPage) => {
     if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-brand-light/20" /><div className="h-96 animate-pulse bg-brand-light/20" /></div>;
 
@@ -129,9 +137,7 @@ export const PublicCmsSections: React.FC = () => {
       <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => <article key={promotion.id} className="grid min-h-[420px] overflow-hidden bg-brand text-white shadow-[0_24px_70px_-36px_rgba(103,61,230,0.9)] sm:grid-cols-[1fr_42%]"><div className="flex flex-col justify-between p-7 sm:p-9"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-accent">Promotion en cours</p><h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">{promotion.name}</h2><p className="mt-3 text-sm leading-6 text-white/75">{promotion.description}</p></div><div>{promotion.promo_code && <span className="inline-block border border-white/25 bg-white/10 px-4 py-2 font-mono text-sm font-bold">Code : {promotion.promo_code}</span>}</div></div><img src={mediaSource(promotion.image, index % 2 ? heroFemme : heroEnfants)} alt="" className="h-60 w-full object-cover sm:h-full" /></article>)}</div>
     ) : <EmptyContent label="Promotions" />;
 
-    if (page === 'stories') return home.stories.length ? (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">{home.stories.map((story) => <article key={story.id} className="group relative min-h-[500px] overflow-hidden bg-brand-deep text-white"><img src={mediaSource(story.media_url, heroFemme)} alt="" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" /><div className="absolute inset-0 bg-gradient-to-t from-black/95 via-transparent to-black/20" /><div className="absolute inset-x-0 bottom-0 p-6"><h2 className="text-2xl font-black leading-tight">{story.title}</h2><p className="mt-2 text-sm leading-6 text-white/75">{story.description}</p>{story.cta && <span className="mt-4 inline-block border-b border-accent pb-1 text-xs font-black uppercase tracking-widest">{story.cta}</span>}</div></article>)}</div>
-    ) : <EmptyContent label="Stories" />;
+    if (page === 'stories') return <StoryTab onCta={handleStoryCta} />;
 
     return home.news.length ? (
       <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => <article key={item.id} className="border-t border-black/15 pt-5"><img src={mediaSource(item.image, heroHomme)} alt="" className="aspect-[16/10] w-full object-cover" /><p className="mt-5 text-[10px] font-black uppercase tracking-[0.16em] text-brand">{String(item.category || 'AYROVI').replaceAll('_', ' ')}</p><h2 className="mt-2 text-2xl font-black tracking-tight text-ink">{item.title}</h2><p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p><p className="mt-4 text-xs font-bold text-slate-400">{item.author}</p></article>)}</div>
