@@ -39,7 +39,7 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-2xl">
+    <div className="w-full">
       {/* ===== Story circles ===== */}
       <div className="pt-4">
         {state === 'loading' && (

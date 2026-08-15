@@ -122,11 +122,6 @@ export const StoryPostCard: React.FC<{
         <button type="button" onClick={() => onOpenComments(post)} className="mt-1.5 text-sm font-semibold text-muted transition hover:text-brand">
           Voir les {post.commentsCount} commentaires
         </button>
-        {post.cta && (
-          <button type="button" onClick={() => onCta(post.cta as StoryCta)} className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-ink text-xs font-black uppercase tracking-widest text-white transition hover:bg-brand active:scale-[0.98]">
-            {post.cta.label}<ArrowRight size={14} />
-          </button>
-        )}
       </div>
     </article>
   );

@@ -171,7 +171,16 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       </section>
 
       {activePage && activeDefinition && (
-        <div className="fixed inset-0 z-[70] overflow-y-auto bg-surface" role="dialog" aria-modal="true" aria-labelledby={`cms-page-${activePage}`}>
+        <div className={`fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} role="dialog" aria-modal="true" aria-labelledby={`cms-page-${activePage}`}>
+          {activePage === 'stories' ? (
+            <header className="sticky top-0 z-20 border-b border-white/40 bg-white/55 backdrop-blur-xl">
+              <div className="grid h-14 grid-cols-[52px_1fr_52px] items-center px-3">
+                <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label="Retour" className="grid h-10 w-10 place-items-center rounded-full bg-white/60 text-ink transition hover:bg-white active:scale-90"><X className="h-5 w-5" /></button>
+                <strong className="text-center text-lg font-black tracking-tight text-ink">Stories</strong>
+                <span />
+              </div>
+            </header>
+          ) : (
           <header className="sticky top-0 z-20 border-b border-black/10 bg-white/95 backdrop-blur-xl">
             <div className="h-1 w-full bg-accent" />
             <div className="mx-auto grid h-16 max-w-7xl grid-cols-[52px_1fr_52px] items-center px-3 sm:h-20 sm:grid-cols-[70px_1fr_70px] sm:px-8">
@@ -180,9 +189,10 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
               <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:text-[10px]">{String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / {String(pageDefinitions.length).padStart(2, '0')}</span>
             </div>
           </header>
-          <main className="mx-auto min-h-[calc(100dvh-5rem)] max-w-7xl px-5 py-10 sm:px-8 sm:py-16">
-            <PageIntro definition={activeDefinition} count={pageData[activePage].length} />
-            <div className="pt-8 sm:pt-12">{renderPageContent(activePage)}</div>
+          )}
+          <main className={activePage === 'stories' ? 'min-h-[calc(100dvh-3.5rem)] w-full' : 'mx-auto min-h-[calc(100dvh-5rem)] max-w-7xl px-5 py-10 sm:px-8 sm:py-16'}>
+            {activePage !== 'stories' && <PageIntro definition={activeDefinition} count={pageData[activePage].length} />}
+            <div className={activePage === 'stories' ? '' : 'pt-8 sm:pt-12'}>{renderPageContent(activePage)}</div>
           </main>
         </div>
       )}

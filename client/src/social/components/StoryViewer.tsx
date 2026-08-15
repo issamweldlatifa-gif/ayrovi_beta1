@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, ArrowRight, Heart, HeartFilled, MessageSquare, Share2 } from '../../components/QatafoIcons';
-import { likePost, sharePost } from '../storyService';
+import { fetchCounts, likePost, sharePost } from '../storyService';
 import type { Story } from '../types';
 import { FigLeaf } from '../../components/QatafoIcons';
 import { markStoryAsSeen, timeAgo } from '../storyService';
@@ -20,6 +20,7 @@ export const StoryViewer: React.FC<{
   onSeenChange: () => void;
 }> = ({ groups, startIndex, isAuthenticated, onRequireAuth, onOpenComments, onClose, onCta, onSeenChange }) => {
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
+  const [counts, setCounts] = useState<Record<string, { likes: number; comments: number; views: number; shares: number }>>({});
   const [groupIndex, setGroupIndex] = useState(startIndex);
   const [storyIndex, setStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
@@ -46,6 +47,13 @@ export const StoryViewer: React.FC<{
 
   const group = groups[groupIndex];
   const story = group?.stories[storyIndex];
+
+  useEffect(() => {
+    if (!group) return;
+    let cancelled = false;
+    fetchCounts(group.stories.map((item) => item.id)).then((result) => { if (!cancelled) setCounts(result); });
+    return () => { cancelled = true; };
+  }, [groupIndex]);
 
   const goNext = useCallback(() => {
     setProgress(0);
@@ -165,32 +173,26 @@ export const StoryViewer: React.FC<{
         <button type="button" aria-label="Story suivante" className="absolute inset-y-0 right-0 w-2/3" onClick={goNext} />
       </div>
 
-      {/* Rail d'interactions professionnel (like / commentaire / partage) */}
-      <div className="absolute bottom-24 right-2.5 z-20 flex flex-col items-center gap-4">
+      {/* Rail d'interactions style TikTok : icône + compteur */}
+      <div className="absolute bottom-20 right-2 z-20 flex flex-col items-center gap-5">
         <button type="button" aria-label="J'aime" onClick={() => void toggleLike(story)} className={`flex flex-col items-center gap-1 transition active:scale-90 ${likedIds[story.id] ? 'heart-pop text-brand' : 'text-white'}`}>
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-black/45">{likedIds[story.id] ? <HeartFilled size={22} /> : <Heart size={22} />}</span>
+          {likedIds[story.id] ? <HeartFilled size={32} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]" /> : <Heart size={32} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]" />}
+          <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{((counts[story.id]?.likes || 0) + (likedIds[story.id] ? 1 : 0))}</span>
         </button>
-        <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(story.id) : onRequireAuth())} className="text-white transition active:scale-90">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-black/45"><MessageSquare size={21} /></span>
+        <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(story.id) : onRequireAuth())} className="flex flex-col items-center gap-1 text-white transition active:scale-90">
+          <MessageSquare size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]" />
+          <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{counts[story.id]?.comments || 0}</span>
         </button>
-        <button type="button" aria-label="Partager" onClick={() => void sharePost({ id: story.id, publisher: group.publisher, type: story.media.type === 'video' ? 'video' : 'image', media: [story.media], likesCount: 0, commentsCount: 0, sharesCount: 0, likedByCurrentUser: false, createdAt: story.createdAt })} className="text-white transition active:scale-90">
-          <span className="grid h-11 w-11 place-items-center rounded-full bg-black/45"><Share2 size={21} /></span>
+        <button type="button" aria-label="Partager" onClick={() => void sharePost({ id: story.id, publisher: group.publisher, type: story.media.type === 'video' ? 'video' : 'image', media: [story.media], likesCount: 0, commentsCount: 0, sharesCount: 0, likedByCurrentUser: false, createdAt: story.createdAt })} className="flex flex-col items-center gap-1 text-white transition active:scale-90">
+          <Share2 size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.45)]" />
+          <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{counts[story.id]?.shares || 0}</span>
         </button>
       </div>
 
-      {/* Caption + CTA */}
-      {(story.caption || story.cta) && (
+      {/* Caption uniquement (expérience sociale, pas de redirection) */}
+      {(story.caption) && (
         <div className="absolute inset-x-0 bottom-0 z-20 bg-gradient-to-t from-black/85 to-transparent px-5 pb-6 pt-14">
-          {story.caption && <p className="text-sm font-semibold leading-6 text-white">{story.caption}</p>}
-          {story.cta && (
-            <button
-              type="button"
-              onClick={() => { onCta(story.cta as StoryCta); onClose(); }}
-              className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-6 text-xs font-black uppercase tracking-widest text-ink transition active:scale-95"
-            >
-              {story.cta.label || 'Découvrir'}<ArrowRight size={14} />
-            </button>
-          )}
+          <p className="pr-14 text-sm font-semibold leading-6 text-white">{story.caption}</p>
         </div>
       )}
     </div>
