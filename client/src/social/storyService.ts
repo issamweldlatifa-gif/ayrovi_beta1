@@ -125,11 +125,28 @@ export function storiesToPosts(stories: Story[]): StoryPost[] {
 /* Contrat d'API (identique au futur backend social)                   */
 /* ------------------------------------------------------------------ */
 
+/** Stories de démonstration (canaux) — utilisées uniquement tant que le backend
+ *  ne fournit pas de catégorisation/publishers ; retirées automatiquement ensuite. */
+function demoChannelStories(): Story[] {
+  const now = Date.now();
+  const iso = (offset: number) => new Date(now + offset).toISOString();
+  const seen = loadSeen();
+  const base = { createdAt: iso(-2 * 3600000), expiresAt: iso(22 * 3600000), seen: false };
+  return [
+    { ...base, id: 'demo_style_1', publisher: CHANNELS.STYLE, media: { type: 'image', url: '/media/hero-enfants.jpg' }, caption: 'Les tendances de la semaine, repérées pour vous.', seen: Boolean(seen.demo_style_1) },
+    { ...base, id: 'demo_promo_1', publisher: CHANNELS.PROMO, media: { type: 'image', url: '/media/hero-homme.jpg' }, caption: 'Offre en cours sur la sélection #08.', cta: { label: 'Découvrir', action: 'promotions' }, seen: Boolean(seen.demo_promo_1) },
+    { ...base, id: 'demo_actus_1', publisher: CHANNELS.INFO, media: { type: 'image', url: '/media/hero-femme.jpg' }, caption: 'Tout savoir avant de commander avec AYROVI.', cta: { label: 'Voir l’arrivage', action: 'arrivages' }, seen: Boolean(seen.demo_actus_1) },
+  ];
+}
+
 export async function getStories(): Promise<Story[]> {
   const response = await fetch('/api/public/stories');
   const payload = await response.json();
   if (!response.ok || !payload?.success) throw new Error('stories unavailable');
-  const stories = mapDbStories(Array.isArray(payload.data) ? payload.data : []);
+  const rows = Array.isArray(payload.data) ? payload.data : [];
+  const stories = mapDbStories(rows);
+  // Backend sans catégorisation : enrichit avec les canaux de démonstration.
+  if (!rows.some((row: any) => row && row.category)) stories.push(...demoChannelStories());
   // Une story vidéo de démonstration pour le viewer (backend-ready : retirée
   // automatiquement quand de vraies vidéos seront publiées).
   if (!stories.some((story) => story.media.type === 'video')) {
