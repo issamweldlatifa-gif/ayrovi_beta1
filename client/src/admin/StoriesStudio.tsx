@@ -46,7 +46,8 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
       </header>
       {error && <div className="admin-error">{error}</div>}
       <section className="admin-card">
-        <table className="admin-table">
+        <div className="no-scrollbar overflow-x-auto">
+        <table className="admin-table" style={{ minWidth: 720 }}>
           <thead><tr>
             <th>Story</th><th>Canal</th><th>Statut</th>
             <th><Eye size={14} /> Vues</th><th><Heart size={14} /> Likes</th>
@@ -72,6 +73,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
             {!rows.length && <tr><td colSpan={8} className="admin-block-small">Aucune story. Créez-en depuis « Éditer le contenu ».</td></tr>}
           </tbody>
         </table>
+        </div>
       </section>
     </div>
   );
