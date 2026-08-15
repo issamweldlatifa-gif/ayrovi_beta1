@@ -6,7 +6,7 @@ describe('Story Tab service', () => {
     expect(publisherFor('ARRIVAGE')).toBe(OFFICIAL);
     expect(publisherFor('STYLE').id).toBe('pub_style');
     expect(publisherFor('INCONNU').name).toBe('Inconnu');
-    expect(publisherFor('INCONNU').id).toBe('pub-inconnu');
+    expect(publisherFor('INCONNU').id).toBe('pub_inconnu');
   });
 
   test('mapDbStories : mapping backend → Story (seen false, cta dérivé)', () => {
