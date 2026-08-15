@@ -212,6 +212,11 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     } });
   });
 
+  router.get('/story-publishers', (_req, res) => {
+    const rows = db.all<any>(`SELECT slug,name,subtitle,avatar,official FROM story_publishers ORDER BY official DESC, name`);
+    res.json({ success: true, data: rows });
+  });
+
   /* ===== Social Stories — interactions persistantes (cahier des charges §6) ===== */
   router.get('/social/counts', (req, res) => {
     const ids = String(req.query.ids || '').split(',').map((v) => v.trim()).filter(Boolean).slice(0, 60);

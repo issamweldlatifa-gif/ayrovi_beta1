@@ -521,6 +521,41 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { errorType } });
   });
 
+  router.get('/story-publishers', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: db.all<any>(`SELECT * FROM story_publishers ORDER BY official DESC, name`) });
+  });
+
+  router.post('/story-publishers', requireAdmin(db, 'content:write'), (req, res) => {
+    const name = String(req.body?.name || '').trim().slice(0, 60);
+    if (name.length < 2) return res.status(400).json({ success: false, error: 'Nom requis.' });
+    const slug = String(req.body?.slug || name).toUpperCase().replace(/[^A-Z0-9]+/g, '-').slice(0, 40) || 'CANAL';
+    const now = new Date().toISOString();
+    const id = `pub_${randomUUID().slice(0, 8)}`;
+    try {
+      db.run(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,0,?,?)`,
+        id, slug, name, String(req.body?.subtitle || '').slice(0, 60), String(req.body?.avatar || '').slice(0, 500), now, now);
+      res.status(201).json({ success: true, data: { id } });
+    } catch { res.status(409).json({ success: false, error: 'Ce canal existe déjà.' }); }
+  });
+
+  router.put('/story-publishers/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>(`SELECT * FROM story_publishers WHERE id=?`, req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Canal introuvable.' });
+    const name = String(req.body?.name ?? existing.name).trim().slice(0, 60);
+    db.run(`UPDATE story_publishers SET name=?, subtitle=?, avatar=?, updated_at=? WHERE id=?`,
+      name || existing.name, String(req.body?.subtitle ?? existing.subtitle).slice(0, 60),
+      String(req.body?.avatar ?? existing.avatar).slice(0, 500), new Date().toISOString(), req.params.id);
+    res.json({ success: true });
+  });
+
+  router.delete('/story-publishers/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>(`SELECT * FROM story_publishers WHERE id=?`, req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Canal introuvable.' });
+    if (existing.official) return res.status(400).json({ success: false, error: 'Le canal officiel ne peut pas être supprimé.' });
+    db.run(`DELETE FROM story_publishers WHERE id=?`, req.params.id);
+    res.json({ success: true });
+  });
+
   router.get('/stories-stats', requireAdmin(db, 'content:read'), (_req, res) => {
     const rows = db.all<any>(`SELECT target_id, type, COUNT(*) n FROM story_interactions GROUP BY target_id, type`);
     const stats: Record<string, any> = {};

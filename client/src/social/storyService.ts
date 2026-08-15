@@ -92,13 +92,32 @@ function loadSeen(): Record<string, boolean> {
 /* Mapping du contenu publié                                           */
 /* ------------------------------------------------------------------ */
 
-export function mapDbStories(rows: any[]): Story[] {
+export async function getStoryPublishers(): Promise<StoryPublisher[]> {
+  try {
+    const res = await fetch('/api/public/story-publishers');
+    const payload = await res.json();
+    if (payload?.success && Array.isArray(payload.data)) {
+      return payload.data.map((row: any) => ({
+        id: String(row.slug),
+        name: String(row.name),
+        avatar: String(row.avatar || ''),
+        subtitle: String(row.subtitle || ''),
+        verified: Boolean(row.official),
+        official: Boolean(row.official),
+      }));
+    }
+  } catch { /* fallback derivation */ }
+  return [];
+}
+
+export function mapDbStories(rows: any[], publishers: StoryPublisher[] = []): Story[] {
   const seen = loadSeen();
+  const bySlug = new Map(publishers.map((pub) => [pub.id.toUpperCase(), pub]));
   return rows
     .filter((row) => row && row.media_url)
     .map((row) => ({
       id: String(row.id),
-      publisher: publisherFor(String(row.category || '')),
+      publisher: bySlug.get(String(row.category || '').toUpperCase()) || publisherFor(String(row.category || '')),
       media: {
         type: row.media_type === 'VIDEO' ? 'video' as const : 'image' as const,
         url: String(row.media_url),
@@ -143,12 +162,12 @@ export function storiesToPosts(stories: Story[]): StoryPost[] {
 /* ------------------------------------------------------------------ */
 
 export async function getStories(): Promise<Story[]> {
-  const response = await fetch('/api/public/stories');
+  const [response, publishers] = await Promise.all([fetch('/api/public/stories'), getStoryPublishers()]);
   const payload = await response.json();
   if (!response.ok || !payload?.success) throw new Error('stories unavailable');
   const rows = Array.isArray(payload.data) ? payload.data : [];
-  // 100% backend-driven : tout le contenu vient de l'Admin (cahier des charges).
-  return mapDbStories(rows);
+  // 100% backend-driven : contenu + couvertures de cercles viennent de l'Admin.
+  return mapDbStories(rows, publishers);
 }
 
 export async function getStoryFeed(): Promise<StoryPost[]> {

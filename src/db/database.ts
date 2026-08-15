@@ -572,7 +572,18 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
 
-      CREATE TABLE IF NOT EXISTS story_interactions (
+      CREATE TABLE IF NOT EXISTS story_publishers (
+        id TEXT PRIMARY KEY,
+        slug TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        subtitle TEXT NOT NULL DEFAULT '',
+        avatar TEXT NOT NULL DEFAULT '',
+        official INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS story_interactions(
         id TEXT PRIMARY KEY,
         target_id TEXT NOT NULL,
         target_kind TEXT NOT NULL DEFAULT 'story' CHECK(target_kind IN ('story','post')),
@@ -651,6 +662,15 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
     // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
+    if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
+      const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
+      const nowP = new Date().toISOString();
+      ins.run('pub_ayrovi', 'ARRIVAGE', 'Ayrovi', 'Official', '', 1, nowP, nowP);
+      ins.run('pub_new', 'NEW', 'Nouveautés', 'Channel', '', 0, nowP, nowP);
+      ins.run('pub_style', 'STYLE', 'Style', 'Channel', '', 0, nowP, nowP);
+      ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
+      ins.run('pub_promo', 'PROMO', 'Promos', 'Store', '', 0, nowP, nowP);
+    }
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");

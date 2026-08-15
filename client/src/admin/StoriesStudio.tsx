@@ -20,6 +20,60 @@ const toLocal = (iso: string) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
+const PublisherRow: React.FC<{ pub: any; onChanged: () => void }> = ({ pub, onChanged }) => {
+  const [name, setName] = useState(pub.name);
+  const [busy, setBusy] = useState(false);
+  const saveRow = async (avatar?: string) => {
+    setBusy(true);
+    try {
+      await adminApi(`/story-publishers/${pub.id}`, { method: 'PUT', body: JSON.stringify({ name, avatar: avatar ?? pub.avatar }) });
+      onChanged();
+    } finally { setBusy(false); }
+  };
+  const uploadAvatar = async (file: File) => {
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('read'));
+      reader.readAsDataURL(file);
+    });
+    const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
+    if (result.data?.url) await saveRow(result.data.url);
+  };
+  return (
+    <div style={{ border: '1px solid #e2e0ee', borderRadius: 14, padding: 12, display: 'flex', gap: 12, alignItems: 'center', background: '#fff' }}>
+      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-tr from-brand to-brand-light text-white">
+        {pub.avatar ? <img src={pub.avatar} alt="" className="h-14 w-14 rounded-full object-cover" /> : <span className="text-sm font-black">{pub.name.slice(0, 2).toUpperCase()}</span>}
+      </span>
+      <div style={{ flex: 1 }}>
+        <input value={name} onChange={(e) => setName(e.target.value)} disabled={Boolean(pub.official)} style={{ width: '100%', fontWeight: 700 }} />
+        <div className="admin-block-small">{pub.slug}{pub.official ? ' · officiel' : ''}</div>
+      </div>
+      <label style={{ cursor: 'pointer', border: '1px solid #d5d2e4', borderRadius: 10, padding: '7px 10px', fontSize: 11, fontWeight: 700 }}>
+        {busy ? '…' : 'Couverture'}
+        <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadAvatar(f); }} />
+      </label>
+      {!pub.official && <Button variant="danger" busy={busy} onClick={async () => { if (window.confirm('Supprimer ce canal ?')) { await adminApi(`/story-publishers/${pub.id}`, { method: 'DELETE' }); onChanged(); } }}><Trash2 size={14} /></Button>}
+    </div>
+  );
+};
+
+const NewPublisherRow: React.FC<{ onChanged: () => void }> = ({ onChanged }) => {
+  const [name, setName] = useState('');
+  const create = async () => {
+    if (name.trim().length < 2) return;
+    await adminApi('/story-publishers', { method: 'POST', body: JSON.stringify({ name: name.trim() }) });
+    setName('');
+    onChanged();
+  };
+  return (
+    <>
+      <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nouveau canal (Sneakers, Beauty, Tech…)" style={{ flex: 1 }} />
+      <Button onClick={() => void create()}>Créer le canal</Button>
+    </>
+  );
+};
+
 /** Gestion complète des Stories : création, édition, upload média, publication, stats. */
 export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onEditContent }) => {
   const [rows, setRows] = useState<any[]>([]);
@@ -29,6 +83,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
   const [form, setForm] = useState<any | null>(null);
+  const [publishers, setPublishers] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const load = useCallback(() => {
@@ -37,11 +92,13 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
       adminApi<any>('/stories-stats').catch(() => ({ data: {} })),
       adminApi<any>('/arrivals?pageSize=50').catch(() => ({ data: [] })),
       adminApi<any>('/promotions?pageSize=50').catch(() => ({ data: [] })),
-    ]).then(([list, stat, arr, pro]) => {
+      adminApi<any>('/story-publishers').catch(() => ({ data: [] })),
+    ]).then(([list, stat, arr, pro, pubs]) => {
       setRows(Array.isArray(list.data) ? list.data : []);
       setStats(stat.data || {});
       setArrivals(Array.isArray(arr.data) ? arr.data : []);
       setPromotions(Array.isArray(pro.data) ? pro.data : []);
+      setPublishers(Array.isArray(pubs.data) ? pubs.data : []);
     }).catch(() => setError('Impossible de charger les stories.'));
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -50,6 +107,9 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
     if (!form) return;
     if (form.title.trim().length < 3 || !form.media_url) { setError('Titre et média obligatoires.'); return; }
     setBusy('save');
+    if (form.category && !publishers.some((pub) => pub.slug === form.category.toUpperCase())) {
+      try { await adminApi('/story-publishers', { method: 'POST', body: JSON.stringify({ name: form.category }) }); } catch { /* existe déjà */ }
+    }
     const payload = {
       title: form.title, category: form.category, media_type: form.media_type, media_url: form.media_url,
       description: form.description, cta: form.cta, priority: Number(form.priority) || 0, status: form.status,
@@ -150,6 +210,17 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
         </div>
       </section>
 
+      <section className="admin-card" style={{ marginTop: 14 }}>
+        <h3>Canaux & couvertures des cercles (Highlights)</h3>
+        <p className="admin-block-small">L'image choisie ici est celle affichée dans la circle du tab Stories — comme les Highlights Instagram.</p>
+        <div className="admin-grid-2" style={{ marginTop: 10 }}>
+          {publishers.map((pub) => (
+            <PublisherRow key={pub.id} pub={pub} onChanged={load} />
+          ))}
+        </div>
+        <div className="admin-actions"><NewPublisherRow onChanged={load} /></div>
+      </section>
+
       <Modal open={Boolean(form)} title={form?.id ? 'Éditer la story' : 'Nouvelle story'} onClose={() => setForm(null)} wide
         footer={<>
           <Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button>
@@ -159,11 +230,11 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
           <div className="admin-grid-2">
             <Field label="Titre" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
             <Field label="Canal (publisher)">
-              <select value={KNOWN_CATEGORIES.includes(form.category) || form.category === '__custom' ? form.category : '__custom'} onChange={(e) => {
+              <select value={publishers.some((pub) => pub.slug === form.category) || form.category === '__custom' ? form.category : '__custom'} onChange={(e) => {
                 if (e.target.value === '__custom') setForm({ ...form, category: '' });
                 else setForm({ ...form, category: e.target.value });
               }}>
-                {CHANNELS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                {publishers.map((pub) => <option key={pub.id} value={pub.slug}>{pub.name}{pub.official ? ' ✓' : ''}</option>)}
                 <option value="__custom">+ Canal personnalisé…</option>
               </select>
             </Field>
