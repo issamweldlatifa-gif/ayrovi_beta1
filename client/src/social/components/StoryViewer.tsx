@@ -148,7 +148,7 @@ export const StoryViewer: React.FC<{
         }}
       >
         {story.media.type === 'image' ? (
-          <img src={story.media.url} alt="" className="h-full w-full object-contain" draggable={false} />
+          <img src={story.media.url} alt="" className="h-full w-full object-cover" draggable={false} />
         ) : videoFailed ? (
           <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-deep via-brand to-brand-light">
             <p className="px-8 text-center text-sm font-bold text-white/80">Vidéo indisponible sur cet appareil — touchez pour continuer.</p>
@@ -157,7 +157,7 @@ export const StoryViewer: React.FC<{
           <video
             ref={videoRef}
             src={story.media.url}
-            className="h-full w-full object-contain"
+            className="h-full w-full object-cover"
             autoPlay
             muted
             playsInline

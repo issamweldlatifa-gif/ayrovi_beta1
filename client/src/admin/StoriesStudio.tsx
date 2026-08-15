@@ -105,7 +105,6 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
         </div>
         <div className="admin-actions" style={{ marginTop: 0 }}>
           <Button onClick={() => { setError(''); setForm({ ...emptyForm, publish_at: toLocal(new Date().toISOString()) }); }}><Plus size={15} />Nouvelle story</Button>
-          <Button variant="secondary" onClick={onEditContent}><Pencil size={15} />Édition avancée</Button>
         </div>
       </header>
       {error && <div className="admin-error">{error}</div>}

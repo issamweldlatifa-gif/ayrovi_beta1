@@ -131,19 +131,6 @@ export function storiesToPosts(stories: Story[]): StoryPost[] {
   });
 }
 
-/** Stories de démonstration (canaux) — retirées dès que le backend publie des canaux réels. */
-function demoChannelStories(): Story[] {
-  const now = Date.now();
-  const iso = (offset: number) => new Date(now + offset).toISOString();
-  const seen = loadSeen();
-  const base = { createdAt: iso(-2 * 3600000), expiresAt: iso(22 * 3600000) };
-  return [
-    { ...base, id: 'demo_style_1', publisher: CHANNELS.STYLE, media: { type: 'image', url: '/media/hero-enfants.jpg' }, caption: 'Les tendances de la semaine, repérées pour vous.', seen: Boolean(seen.demo_style_1) },
-    { ...base, id: 'demo_promo_1', publisher: CHANNELS.PROMO, media: { type: 'image', url: '/media/hero-homme.jpg' }, caption: 'Offre en cours sur la sélection #08.', cta: { label: 'Découvrir', action: 'promotions' }, seen: Boolean(seen.demo_promo_1) },
-    { ...base, id: 'demo_actus_1', publisher: CHANNELS.INFO, media: { type: 'image', url: '/media/hero-femme.jpg' }, caption: 'Tout savoir avant de commander avec AYROVI.', cta: { label: 'Voir l’arrivage', action: 'arrivages' }, seen: Boolean(seen.demo_actus_1) },
-  ];
-}
-
 /* ------------------------------------------------------------------ */
 /* Contrat d'API                                                       */
 /* ------------------------------------------------------------------ */
@@ -153,22 +140,8 @@ export async function getStories(): Promise<Story[]> {
   const payload = await response.json();
   if (!response.ok || !payload?.success) throw new Error('stories unavailable');
   const rows = Array.isArray(payload.data) ? payload.data : [];
-  const stories = mapDbStories(rows);
-  if (!rows.some((row: any) => row && row.category && row.category !== 'ARRIVAGE')) {
-    stories.push(...demoChannelStories());
-  }
-  if (!stories.some((story) => story.media.type === 'video')) {
-    stories.splice(1, 0, {
-      id: 'story_demo_video',
-      publisher: OFFICIAL,
-      media: { type: 'video', url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4' },
-      caption: 'La sélection AYROVI en mouvement.',
-      createdAt: new Date(Date.now() - 3600000).toISOString(),
-      expiresAt: new Date(Date.now() + 86400000).toISOString(),
-      seen: Boolean(loadSeen().story_demo_video),
-    });
-  }
-  return stories;
+  // 100% backend-driven : tout le contenu vient de l'Admin (cahier des charges).
+  return mapDbStories(rows);
 }
 
 export async function getStoryFeed(): Promise<StoryPost[]> {
