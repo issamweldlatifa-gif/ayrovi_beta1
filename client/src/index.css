@@ -268,13 +268,11 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border: 1px solid rgba(103, 61, 230, 0.16);
-  background:
-    radial-gradient(circle at 88% 8%, rgba(126, 87, 255, 0.12), transparent 42%),
-    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(247, 244, 255, 0.92));
+  border: 1px solid rgba(103, 61, 230, 0.18);
+  background: #ffffff;
   box-shadow:
     0 10px 24px -20px rgba(80, 37, 209, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .assistant-quick-card::before {
@@ -287,6 +285,7 @@
   background: rgba(103, 61, 230, 0.12);
   content: '';
   filter: blur(20px);
+  opacity: 0;
   transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 420ms ease;
   z-index: -1;
 }
