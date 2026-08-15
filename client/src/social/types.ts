@@ -22,6 +22,7 @@ export interface Story {
   id: string;
   publisher: StoryPublisher;
   media: StoryMedia;
+  mediaList?: StoryMedia[];
   caption?: string;
   cta?: StoryCta;
   createdAt: string;

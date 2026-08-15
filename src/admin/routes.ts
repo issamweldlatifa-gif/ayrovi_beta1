@@ -81,9 +81,10 @@ const resources: Record<string, ResourceConfig> = {
   },
   stories: {
     table: 'stories', module: 'STORIES', prefix: 'story', permission: 'content:write',
-    fields: ['category','media_type','media_url','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
+    fields: ['category','media_type','media_url','secondary_images','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
     required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta'],
     sortable: ['title','media_type','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
+    jsonFields: ['secondary_images'],
     enums: { category: ['ARRIVAGE','NEW','STYLE','INFO','PROMO'], media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'] },
     softDelete: { status: 'EXPIRED' },
   },

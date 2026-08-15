@@ -29,7 +29,7 @@ const pageDefinitions: Array<{
 }> = [
   { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.' },
   { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.' },
-  { id: 'stories', label: 'Stories', eyebrow: 'À la une', description: 'Les nouveautés AYROVI dans un format visuel.' },
+  { id: 'stories', label: 'Social', eyebrow: 'Social Ayrovi', description: 'Stories et publications de la communauté AYROVI.' },
   { id: 'news', label: 'Actualités', eyebrow: 'Journal AYROVI', description: 'Les informations, arrivages et annonces de la plateforme.' },
 ];
 
@@ -176,7 +176,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
             <header className="sticky top-0 z-20 border-b border-white/40 bg-white/55 backdrop-blur-xl">
               <div className="grid h-14 grid-cols-[52px_1fr_52px] items-center px-3">
                 <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label="Retour" className="grid h-10 w-10 place-items-center rounded-full bg-white/60 text-ink transition hover:bg-white active:scale-90"><X className="h-5 w-5" /></button>
-                <strong className="text-center text-lg font-black tracking-tight text-ink">Stories</strong>
+                <strong className="text-center text-lg font-black tracking-tight text-ink">Social Ayrovi</strong>
                 <span />
               </div>
             </header>

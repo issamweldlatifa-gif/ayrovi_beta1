@@ -122,6 +122,12 @@ export function mapDbStories(rows: any[], publishers: StoryPublisher[] = []): St
         type: row.media_type === 'VIDEO' ? 'video' as const : 'image' as const,
         url: String(row.media_url),
       },
+      mediaList: (() => {
+        const type = row.media_type === 'VIDEO' ? 'video' as const : 'image' as const;
+        let extra: string[] = [];
+        try { extra = Array.isArray(JSON.parse(row.secondary_images || '[]')) ? JSON.parse(row.secondary_images) : []; } catch { /* */ }
+        return [{ type, url: String(row.media_url) }, ...extra.filter((u) => /^https?:\/\//.test(u) || String(u).startsWith('/')).map((u) => ({ type: 'image' as const, url: String(u) }))];
+      })(),
       caption: String(row.description || row.title || ''),
       cta: row.cta || row.product_id || row.arrival_id || row.promotion_id
         ? {
@@ -140,16 +146,16 @@ export function storiesToPosts(stories: Story[]): StoryPost[] {
   const state = loadState();
   return stories.map((story) => {
     const like = state.likes[story.id];
-    const comments = state.comments[story.id] || [];
     return {
       id: story.id,
       publisher: story.publisher,
       type: story.media.type === 'video' ? 'video' as const : 'image' as const,
-      media: [story.media],
+      media: story.mediaList?.length ? story.mediaList : [story.media],
       caption: story.caption,
-      likesCount: like ? like.count : baseCount(story.id, 7),
-      commentsCount: comments.length + (baseCount(story.id, 13) % 14),
-      sharesCount: (state.shares[story.id] || 0) + (baseCount(story.id, 29) % 9),
+      // Compteurs 100% réels (base de données), aucun chiffre fictif.
+      likesCount: 0,
+      commentsCount: 0,
+      sharesCount: 0,
       likedByCurrentUser: Boolean(like?.liked),
       cta: story.cta,
       createdAt: story.createdAt,
@@ -282,9 +288,14 @@ export async function fetchCounts(ids: string[]): Promise<Record<string, { likes
   return {};
 }
 
+export function postPublicUrl(id: string): string {
+  return `${window.location.origin}/?post=${encodeURIComponent(id)}`;
+}
+
 export function sharePost(post: StoryPost): Promise<boolean> {
-  const text = `${post.publisher.name} sur AYROVI — ${post.caption || 'Découvrez la sélection AYROVI.'}`;
+  const url = postPublicUrl(post.id);
+  const text = `${post.publisher.name} sur AYROVI Social — ${post.caption || 'Découvrez la sélection AYROVI.'}`;
   recordShare(post.id);
-  if (navigator.share) return navigator.share({ title: 'AYROVI', text }).then(() => true).catch(() => false);
-  return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
+  if (navigator.share) return navigator.share({ title: 'AYROVI Social', text, url }).then(() => true).catch(() => false);
+  return navigator.clipboard.writeText(url).then(() => true).catch(() => false);
 }

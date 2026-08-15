@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { X, ArrowRight, Heart, HeartFilled, MessageSquare, Share2 } from '../../components/QatafoIcons';
 import { fetchCounts, likePost, sharePost } from '../storyService';
 import type { Story } from '../types';
-import { FigLeaf } from '../../components/QatafoIcons';
 import { markStoryAsSeen, timeAgo } from '../storyService';
 import type { StoryCta } from '../types';
 import type { StoryGroup } from './StoryCircles';
@@ -121,8 +120,8 @@ export const StoryViewer: React.FC<{
 
       {/* Header publisher */}
       <div className="absolute inset-x-0 top-6 z-20 flex items-center gap-2.5 px-4">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand to-brand-dark text-white">
-          {group.publisher.official ? <FigLeaf size={20} /> : <span className="text-xs font-black">{group.publisher.name.slice(0, 2).toUpperCase()}</span>}
+        <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
+          {group.publisher.official ? <img src="/media/logo-ayrovi.jpg" alt="" className="h-9 w-9 object-cover" /> : group.publisher.avatar ? <img src={group.publisher.avatar} alt="" className="h-9 w-9 object-cover" /> : <span className="text-xs font-black text-white">{group.publisher.name.slice(0, 2).toUpperCase()}</span>}
         </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-extrabold text-white">{group.publisher.name}{group.publisher.verified && <span className="ml-1 text-accent">✓</span>}</p>

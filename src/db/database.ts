@@ -662,6 +662,7 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
     // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
+    this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM story_publishers').get() as any).count === 0) {
       const ins = this.db.prepare(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)`);
       const nowP = new Date().toISOString();

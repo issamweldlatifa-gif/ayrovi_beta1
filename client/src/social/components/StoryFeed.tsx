@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, Heart, HeartFilled, MessageSquare, MoreVertical, Share2 } from '../../components/QatafoIcons';
-import { FigLeaf } from '../../components/QatafoIcons';
+import { ArrowRight, Bookmark, CheckCircle2, Heart, HeartFilled, MessageSquare, MoreVertical, Share2 } from '../../components/QatafoIcons';
+import { postPublicUrl } from '../storyService';
 import { likePost, sharePost, timeAgo } from '../storyService';
 import type { StoryCta, StoryPost } from '../types';
 
@@ -8,8 +8,8 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand to-brand-dark text-white">
-        {post.publisher.official ? <FigLeaf size={22} /> : <span className="text-xs font-black">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+      <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
+        {post.publisher.official ? <img src="/media/logo-ayrovi.jpg" alt="" className="h-10 w-10 object-cover" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-white">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
@@ -77,7 +77,20 @@ const PostActions: React.FC<{
   liked: boolean;
   onLike: () => void;
   onComment: () => void;
-}> = ({ post, liked, onLike, onComment }) => (
+}> = ({ post, liked, onLike, onComment }) => {
+  const [saved, setSaved] = React.useState(() => {
+    try { return JSON.parse(localStorage.getItem('ayrovi_saved') || '[]').includes(post.id); } catch { return false; }
+  });
+  const toggleSave = () => {
+    const next = !saved;
+    setSaved(next);
+    try {
+      const list: string[] = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      const updated = next ? [...new Set([...list, post.id])] : list.filter((id: string) => id !== post.id);
+      localStorage.setItem('ayrovi_saved', JSON.stringify(updated));
+    } catch { /* */ }
+  };
+  return (
   <div className="flex items-center gap-1 px-3 pt-3">
     <button type="button" onClick={onLike} aria-label={liked ? 'Ne plus aimer' : 'Aimer'} className={`grid h-10 w-10 place-items-center rounded-full transition active:scale-90 ${liked ? 'heart-pop text-brand' : 'text-ink hover:bg-surface'}`}>
       {liked ? <HeartFilled size={21} /> : <Heart size={21} />}
@@ -88,8 +101,11 @@ const PostActions: React.FC<{
     <button type="button" onClick={() => void sharePost(post)} aria-label="Partager" className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">
       <Share2 size={20} />
     </button>
+    <button type="button" onClick={toggleSave} aria-label="Enregistrer" className={`ml-auto grid h-10 w-10 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-brand' : 'text-ink hover:bg-surface'}`}>
+      <Bookmark size={20} className={saved ? 'fill-current' : ''} />
+    </button>
   </div>
-);
+);};
 
 export const StoryPostCard: React.FC<{
   post: StoryPost;

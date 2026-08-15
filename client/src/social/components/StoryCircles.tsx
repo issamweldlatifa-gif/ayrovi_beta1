@@ -1,5 +1,4 @@
 import React from 'react';
-import { FigLeaf } from '../../components/QatafoIcons';
 import type { Story, StoryPublisher } from '../types';
 
 export interface StoryGroup {
@@ -27,7 +26,7 @@ export function groupByPublisher(stories: Story[]): StoryGroup[] {
 
 const Avatar: React.FC<{ publisher: StoryPublisher; size: number }> = ({ publisher, size }) => (
   publisher.official
-    ? <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand to-brand-dark text-white" style={{ width: size, height: size, borderRadius: '50%' }}><FigLeaf size={Math.round(size * 0.55)} /></span>
+    ? <img src="/media/logo-ayrovi.jpg" alt="" loading="lazy" className="h-full w-full bg-white object-cover" style={{ borderRadius: '50%' }} />
     : publisher.avatar
       ? <img src={publisher.avatar} alt="" loading="lazy" className="h-full w-full object-cover" style={{ borderRadius: '50%' }} />
       : <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-light to-accent text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>

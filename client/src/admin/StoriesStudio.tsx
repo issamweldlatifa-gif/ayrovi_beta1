@@ -11,8 +11,10 @@ const CHANNELS = [
 const emptyForm = {
   id: '', title: '', category: 'ARRIVAGE', media_type: 'IMAGE', media_url: '', description: '',
   cta: '', arrival_id: '', promotion_id: '', product_id: '', publish_at: '', expires_at: '', priority: 0, status: 'PUBLISHED',
+  secondary_images: [] as string[],
 };
 
+const safeJson = (raw: any): string[] => { try { const v = JSON.parse(raw || '[]'); return Array.isArray(v) ? v : []; } catch { return []; } };
 const toLocal = (iso: string) => {
   if (!iso) return '';
   const d = new Date(iso);
@@ -113,6 +115,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
     const payload = {
       title: form.title, category: form.category, media_type: form.media_type, media_url: form.media_url,
       description: form.description, cta: form.cta, priority: Number(form.priority) || 0, status: form.status,
+      secondary_images: form.secondary_images || [],
       arrival_id: form.arrival_id || null, promotion_id: form.promotion_id || null, product_id: form.product_id || null,
       publish_at: form.publish_at ? new Date(form.publish_at).toISOString() : new Date().toISOString(),
       expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
@@ -124,6 +127,25 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
       load();
     } catch (e: any) { setError(e?.message || 'Enregistrement impossible.'); }
     finally { setBusy(''); }
+  };
+
+  const uploadMany = async (files: FileList) => {
+    setUploading(true);
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(files).slice(0, 10)) {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error('Lecture impossible'));
+          reader.readAsDataURL(file);
+        });
+        const result = await adminApi<any>('/uploads', { method: 'POST', body: JSON.stringify({ dataUrl }) });
+        if (result.data?.url) urls.push(result.data.url);
+      }
+      setForm((f: any) => ({ ...f, secondary_images: [...(f.secondary_images || []), ...urls] }));
+    } catch (e: any) { setError(e?.message || 'Upload impossible.'); }
+    finally { setUploading(false); }
   };
 
   const uploadMedia = async (file: File) => {
@@ -194,7 +216,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                     <td>{st.views}</td><td>{st.likes}</td><td>{st.comments}</td><td>{st.shares}</td>
                     <td>
                       <div className="admin-actions" style={{ marginTop: 0 }}>
-                        <Button variant="ghost" onClick={() => { setError(''); setForm({ ...emptyForm, ...row, publish_at: toLocal(row.publish_at), expires_at: toLocal(row.expires_at || '') }); }}><Pencil size={14} /></Button>
+                        <Button variant="ghost" onClick={() => { setError(''); setForm({ ...emptyForm, ...row, secondary_images: safeJson(row.secondary_images), publish_at: toLocal(row.publish_at), expires_at: toLocal(row.expires_at || '') }); }}><Pencil size={14} /></Button>
                         {row.status !== 'PUBLISHED'
                           ? <Button busy={busy === row.id} onClick={() => void setStatus(row.id, 'PUBLISHED')}>Publier</Button>
                           : <Button variant="ghost" busy={busy === row.id} onClick={() => void setStatus(row.id, 'EXPIRED')}><Box size={14} /></Button>}
@@ -254,6 +276,24 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                   <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMedia(f); }} />
                 </label>
               </div>
+            </Field>
+            <Field label="Images supplémentaires (carousel, comme Instagram)" full>
+              <div className="admin-actions" style={{ marginTop: 0 }}>
+                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d5d2e4', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: '#fff' }}>
+                  <ArrowUp size={14} />{uploading ? '…' : 'Ajouter des images'}
+                  <input type="file" multiple accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { if (e.target.files?.length) void uploadMany(e.target.files); e.target.value = ''; }} />
+                </label>
+              </div>
+              {form.secondary_images?.length > 0 && (
+                <div className="no-scrollbar flex gap-2 overflow-x-auto" style={{ marginTop: 8 }}>
+                  {form.secondary_images.map((url: string, i: number) => (
+                    <span key={i} style={{ position: 'relative' }}>
+                      <img src={url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover' }} />
+                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, right: -6, background: '#b91c1c', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800 }}>✕</button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </Field>
             <Field label="Caption" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
             <Field label="CTA (label, optionnel)"><input value={form.cta} onChange={(e) => setForm({ ...form, cta: e.target.value })} placeholder="Découvrir / Voir le produit" /></Field>
