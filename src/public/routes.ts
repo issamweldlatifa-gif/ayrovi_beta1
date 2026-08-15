@@ -212,6 +212,29 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     } });
   });
 
+  router.get('/social/publications', (_req, res) => {
+    const rows = db.all<any>(`SELECT * FROM publications WHERE status='publie' ORDER BY publish_at DESC`);
+    res.json({ success: true, data: rows });
+  });
+
+  router.get('/social/reels', (_req, res) => {
+    const rows = db.all<any>(`SELECT * FROM reels WHERE status='publie' ORDER BY publish_at DESC`);
+    res.json({ success: true, data: rows });
+  });
+
+  router.post('/social/reels/:id/view', (req, res) => {
+    db.run(`UPDATE reels SET views=views+1 WHERE id=?`, req.params.id);
+    res.json({ success: true });
+  });
+
+  router.post('/social/reels/:id/like', (req, res) => {
+    const row = db.get<any>(`SELECT id,likes FROM reels WHERE id=?`, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Reel introuvable.' });
+    const delta = req.body?.unlike ? -1 : 1;
+    db.run(`UPDATE reels SET likes=MAX(0, likes+?) WHERE id=?`, delta, req.params.id);
+    res.json({ success: true, data: { likes: Math.max(0, row.likes + delta) } });
+  });
+
   router.get('/story-publishers', (_req, res) => {
     const rows = db.all<any>(`SELECT slug,name,subtitle,avatar,official FROM story_publishers ORDER BY official DESC, name`);
     res.json({ success: true, data: rows });

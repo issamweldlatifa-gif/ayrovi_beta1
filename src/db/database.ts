@@ -583,6 +583,34 @@ export class QatafoDatabase {
         updated_at TEXT NOT NULL
       );
 
+      CREATE TABLE IF NOT EXISTS publications (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        subtitle TEXT NOT NULL DEFAULT '',
+        channel_id TEXT NOT NULL REFERENCES story_publishers(id) ON DELETE CASCADE,
+        image_url TEXT NOT NULL,
+        remark TEXT NOT NULL DEFAULT '',
+        publish_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'brouillon' CHECK(status IN ('brouillon','publie','archive')),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
+      CREATE TABLE IF NOT EXISTS reels (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        channel_id TEXT NOT NULL REFERENCES story_publishers(id) ON DELETE CASCADE,
+        description TEXT NOT NULL DEFAULT '',
+        video_url TEXT NOT NULL,
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        publish_at TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'brouillon' CHECK(status IN ('brouillon','publie','archive')),
+        views INTEGER NOT NULL DEFAULT 0,
+        likes INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+
       CREATE TABLE IF NOT EXISTS story_interactions(
         id TEXT PRIMARY KEY,
         target_id TEXT NOT NULL,
@@ -672,6 +700,29 @@ export class QatafoDatabase {
       ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_promo', 'PROMO', 'Promos', 'Store', '', 0, nowP, nowP);
     }
+    if ((this.db.prepare('SELECT COUNT(*) AS count FROM publications').get() as any).count === 0) {
+      const insP = this.db.prepare(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`);
+      const nowPub = new Date().toISOString();
+      insP.run('pub_post_01', 'Nouvel arrivage #08 disponible', 'La sélection mode & lifestyle de la semaine', 'pub_ayrovi', '/media/hero-femme.jpg', '', nowPub, 'publie', nowPub, nowPub);
+      insP.run('pub_post_02', 'Tendances du moment', 'Les pièces préférées de la communauté', 'pub_style', '/media/hero-enfants.jpg', 'Note interne : mettre à jour chaque vendredi.', nowPub, 'publie', nowPub, nowPub);
+    }
+    if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
+      const nowR = new Date().toISOString();
+      this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
+        .run('reel_demo_01', 'La sélection AYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
+    }
+    if ((this.db.prepare('SELECT COUNT(*) AS count FROM publications').get() as any).count === 0) {
+      const insP = this.db.prepare(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`);
+      const nowPub = new Date().toISOString();
+      insP.run('pub_post_01', 'Nouvel arrivage #08 disponible', 'La sélection mode & lifestyle de la semaine', 'pub_ayrovi', '/media/hero-femme.jpg', '', nowPub, 'publie', nowPub, nowPub);
+      insP.run('pub_post_02', 'Tendances du moment', 'Les pièces préférées de la communauté', 'pub_style', '/media/hero-enfants.jpg', 'Note interne : mettre à jour chaque vendredi.', nowPub, 'publie', nowPub, nowPub);
+    }
+    if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
+      const nowR = new Date().toISOString();
+      this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
+        .run('reel_demo_01', 'La sélection AYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
+    }
+
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");

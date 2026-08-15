@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bookmark, Heart, HeartFilled, MessageSquare, Share2, Volume2, VolumeX } from '../../components/QatafoIcons';
-import { fetchCounts, likePost, sharePost } from '../storyService';
+import { fetchCounts, likePost, likeReel, sharePost, viewReel } from '../storyService';
+import type { ReelItem } from '../storyService';
 import type { StoryPost } from '../types';
 
 /**
@@ -18,7 +19,7 @@ export const ReelsViewer: React.FC<{
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const [active, setActive] = useState(startIndex);
-  const [muted, setMuted] = useState(true);
+  const [muted, setMuted] = useState(false);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [counts, setCounts] = useState<Record<string, { likes: number; comments: number; shares: number }>>({});
 
@@ -32,8 +33,16 @@ export const ReelsViewer: React.FC<{
     items.forEach((item, i) => {
       const video = videoRefs.current.get(item.id);
       if (!video) return;
-      if (i === index) { void video.play().catch(() => undefined); }
-      else video.pause();
+      if (i === index) {
+        video.muted = muted;
+        video.play().catch(() => {
+          // Le navigateur bloque le son sans geste : repli en muet.
+          setMuted(true);
+          video.muted = true;
+          void video.play().catch(() => undefined);
+        });
+        if ('views' in (item as ReelItem)) viewReel(item.id);
+      } else video.pause();
     });
   };
 
@@ -57,8 +66,13 @@ export const ReelsViewer: React.FC<{
     if (!isAuthenticated) { onRequireAuth(); return; }
     const next = !liked[post.id];
     setLiked((current) => ({ ...current, [post.id]: next }));
-    const result = await likePost(post.id, next);
-    if (result.authRequired) { setLiked((current) => ({ ...current, [post.id]: !next })); onRequireAuth(); }
+    if ('views' in (post as ReelItem)) {
+      const total = await likeReel(post.id, !next);
+      if (total != null) setCounts((current) => ({ ...current, [post.id]: { likes: total, comments: 0, shares: 0 } }));
+    } else {
+      const result = await likePost(post.id, next);
+      if (result.authRequired) { setLiked((current) => ({ ...current, [post.id]: !next })); onRequireAuth(); }
+    }
   };
 
   return (
@@ -88,10 +102,10 @@ export const ReelsViewer: React.FC<{
             />
 
             {/* Rail latéral d'interactions */}
-            <div className="absolute bottom-24 right-2 z-20 flex flex-col items-center gap-5">
+            <div className="absolute bottom-24 left-2 z-20 flex flex-col items-center gap-5">
               <button type="button" aria-label="J'aime" onClick={() => void toggleLike(post)} className={`flex flex-col items-center gap-1 transition active:scale-90 ${liked[post.id] ? 'heart-pop text-brand' : 'text-white'}`}>
                 {liked[post.id] ? <HeartFilled size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" /> : <Heart size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />}
-                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{(counts[post.id]?.likes || 0) + (liked[post.id] ? 1 : 0)}</span>
+                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{('reelLikes' in (post as ReelItem) ? (counts[post.id]?.likes || (post as ReelItem).reelLikes) : (counts[post.id]?.likes || 0)) + (liked[post.id] ? 1 : 0)}</span>
               </button>
               <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(post.id) : onRequireAuth())} className="flex flex-col items-center gap-1 text-white transition active:scale-90">
                 <MessageSquare size={28} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
@@ -104,8 +118,9 @@ export const ReelsViewer: React.FC<{
               <SavedButton postId={post.id} />
             </div>
 
-            {/* Bas : publisher + caption */}
-            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-4 pb-6 pt-16 pr-16">
+            {/* Bas : publisher + caption + vues */}
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-4 pb-6 pt-16 pl-16">
+              {'views' in (post as ReelItem) && <p className="mb-1 text-[11px] font-bold text-white/70">▶ {(post as ReelItem).views.toLocaleString('fr-FR')} vues</p>}
               <div className="flex items-center gap-2.5">
                 <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
                   {post.publisher.official ? <img src="/media/logo-ayrovi.jpg" alt="" className="h-10 w-10 object-cover" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-white">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}

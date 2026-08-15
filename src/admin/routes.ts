@@ -522,6 +522,75 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { errorType } });
   });
 
+  /* ===== Social : Publications & Reels (cahier des charges) ===== */
+  const socialList = (table: string, res: Response) => {
+    res.json({ success: true, data: db.all<any>(`SELECT * FROM ${table} ORDER BY publish_at DESC`) });
+  };
+
+  router.get('/publications', requireAdmin(db, 'content:read'), (_req, res) => socialList('publications', res));
+  router.post('/publications', requireAdmin(db, 'content:write'), (req, res) => {
+    const title = String(req.body?.title || '').trim().slice(0, 150);
+    const channelId = String(req.body?.channel_id || '');
+    const imageUrl = String(req.body?.image_url || '').slice(0, 500);
+    if (!title || !imageUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
+      return res.status(400).json({ success: false, error: 'Titre, image et canal obligatoires.' });
+    }
+    const now = new Date().toISOString();
+    const id = `publication_${randomUUID()}`;
+    db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`,
+      id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
+      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+    res.status(201).json({ success: true, data: { id } });
+  });
+  router.put('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const row = db.get<any>(`SELECT * FROM publications WHERE id=?`, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Publication introuvable.' });
+    db.run(`UPDATE publications SET title=?, subtitle=?, image_url=?, remark=?, publish_at=?, status=?, updated_at=? WHERE id=?`,
+      String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.subtitle ?? row.subtitle).slice(0, 150),
+      String(req.body?.image_url ?? row.image_url).slice(0, 500), String(req.body?.remark ?? row.remark),
+      req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
+      ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
+      new Date().toISOString(), req.params.id);
+    res.json({ success: true });
+  });
+  router.delete('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    db.run(`DELETE FROM publications WHERE id=?`, req.params.id);
+    res.json({ success: true });
+  });
+
+  router.get('/reels', requireAdmin(db, 'content:read'), (_req, res) => socialList('reels', res));
+  router.post('/reels', requireAdmin(db, 'content:write'), (req, res) => {
+    const title = String(req.body?.title || '').trim().slice(0, 150);
+    const channelId = String(req.body?.channel_id || '');
+    const videoUrl = String(req.body?.video_url || '').slice(0, 500);
+    if (!title || !videoUrl || !db.get('SELECT id FROM story_publishers WHERE id=?', channelId)) {
+      return res.status(400).json({ success: false, error: 'Titre, vidéo et canal obligatoires.' });
+    }
+    const now = new Date().toISOString();
+    const id = `reel_${randomUUID()}`;
+    db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`,
+      id, title, channelId, String(req.body?.description || ''), videoUrl,
+      Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : 0,
+      req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+    res.status(201).json({ success: true, data: { id } });
+  });
+  router.put('/reels/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const row = db.get<any>(`SELECT * FROM reels WHERE id=?`, req.params.id);
+    if (!row) return res.status(404).json({ success: false, error: 'Reel introuvable.' });
+    db.run(`UPDATE reels SET title=?, description=?, video_url=?, duration_seconds=?, publish_at=?, status=?, updated_at=? WHERE id=?`,
+      String(req.body?.title ?? row.title).slice(0, 150), String(req.body?.description ?? row.description),
+      String(req.body?.video_url ?? row.video_url).slice(0, 500),
+      Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : row.duration_seconds,
+      req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
+      ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
+      new Date().toISOString(), req.params.id);
+    res.json({ success: true });
+  });
+  router.delete('/reels/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    db.run(`DELETE FROM reels WHERE id=?`, req.params.id);
+    res.json({ success: true });
+  });
+
   router.get('/story-publishers', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: db.all<any>(`SELECT * FROM story_publishers ORDER BY official DESC, name`) });
   });

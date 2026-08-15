@@ -176,6 +176,63 @@ export async function getStories(): Promise<Story[]> {
   return mapDbStories(rows, publishers);
 }
 
+export async function getPublications(): Promise<StoryPost[]> {
+  const [res, publishers] = await Promise.all([fetch('/api/public/social/publications'), getStoryPublishers()]);
+  const payload = await res.json();
+  if (!payload?.success) return [];
+  const bySlug = new Map(publishers.map((pub) => [pub.id, pub]));
+  const rows = Array.isArray(payload.data) ? payload.data : [];
+  return rows.map((row: any) => {
+    const channel = row.channel_id ? publishers.find((pub: any) => pub.id === row.channel_id) : null;
+    return {
+      id: String(row.id),
+      publisher: channel || OFFICIAL,
+      type: 'image' as const,
+      media: [{ type: 'image' as const, url: String(row.image_url) }],
+      caption: row.subtitle ? `${row.title} — ${row.subtitle}` : String(row.title),
+      likesCount: 0, commentsCount: 0, sharesCount: 0, likedByCurrentUser: false,
+      createdAt: String(row.publish_at),
+    };
+  });
+}
+
+export interface ReelItem extends StoryPost { views: number; reelLikes: number; }
+
+export async function getReels(): Promise<ReelItem[]> {
+  const [res, publishers] = await Promise.all([fetch('/api/public/social/reels'), getStoryPublishers()]);
+  const payload = await res.json();
+  if (!payload?.success) return [];
+  const rows = Array.isArray(payload.data) ? payload.data : [];
+  return rows.map((row: any) => {
+    const channel = row.channel_id ? publishers.find((pub: any) => pub.id === row.channel_id) : null;
+    return {
+      id: String(row.id),
+      publisher: channel || OFFICIAL,
+      type: 'video' as const,
+      media: [{ type: 'video' as const, url: String(row.video_url) }],
+      caption: row.description ? `${row.title} — ${row.description}` : String(row.title),
+      likesCount: 0, commentsCount: 0, sharesCount: 0, likedByCurrentUser: false,
+      createdAt: String(row.publish_at),
+      views: Number(row.views || 0),
+      reelLikes: Number(row.likes || 0),
+    };
+  });
+}
+
+export function viewReel(id: string): void {
+  fetch(`/api/public/social/reels/${encodeURIComponent(id)}/view`, { method: 'POST' }).catch(() => undefined);
+}
+
+export async function likeReel(id: string, unlike: boolean): Promise<number | null> {
+  try {
+    const res = await fetch(`/api/public/social/reels/${encodeURIComponent(id)}/like`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ unlike }),
+    });
+    const payload = await res.json();
+    return payload?.success ? Number(payload.data.likes) : null;
+  } catch { return null; }
+}
+
 export async function getStoryFeed(): Promise<StoryPost[]> {
   const stories = await getStories();
   const posts = storiesToPosts(stories);
