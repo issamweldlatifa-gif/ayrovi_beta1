@@ -5,7 +5,7 @@ import heroEnfants from '../assets/hero-enfants.jpg';
 import { X } from './QatafoIcons';
 import { FigLogoIcon } from './Icons';
 import { getPublicHome } from '../services/publicApi';
-import { StoryTab } from '../social/StoryTab';
+import { StoryTab, HomeStoryStrip } from '../social/StoryTab';
 import type { StoryCta } from '../social/types';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
@@ -68,7 +68,9 @@ function PageIntro({ definition, count }: { definition: (typeof pageDefinitions)
   );
 }
 
-export const PublicCmsSections: React.FC = () => {
+interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; }
+
+export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount }) => {
   const [home, setHome] = useState<HomeData>(emptyHome);
   const [serverOffset, setServerOffset] = useState(0);
   const [loaded, setLoaded] = useState(false);
@@ -138,7 +140,7 @@ export const PublicCmsSections: React.FC = () => {
       <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => <article key={promotion.id} className="grid min-h-[420px] overflow-hidden bg-brand text-white shadow-[0_24px_70px_-36px_rgba(103,61,230,0.9)] sm:grid-cols-[1fr_42%]"><div className="flex flex-col justify-between p-7 sm:p-9"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-accent">Promotion en cours</p><h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">{promotion.name}</h2><p className="mt-3 text-sm leading-6 text-white/75">{promotion.description}</p></div><div>{promotion.promo_code && <span className="inline-block border border-white/25 bg-white/10 px-4 py-2 font-mono text-sm font-bold">Code : {promotion.promo_code}</span>}</div></div><img src={mediaSource(promotion.image, index % 2 ? heroFemme : heroEnfants)} alt="" className="h-60 w-full object-cover sm:h-full" /></article>)}</div>
     ) : <EmptyContent label="Promotions" />;
 
-    if (page === 'stories') return <StoryTab onCta={handleStoryCta} />;
+    if (page === 'stories') return <StoryTab isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />;
 
     return home.news.length ? (
       <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => <article key={item.id} className="border-t border-black/15 pt-5"><img src={mediaSource(item.image, heroHomme)} alt="" className="aspect-[16/10] w-full object-cover" /><p className="mt-5 text-[10px] font-black uppercase tracking-[0.16em] text-brand">{String(item.category || 'AYROVI').replaceAll('_', ' ')}</p><h2 className="mt-2 text-2xl font-black tracking-tight text-ink">{item.title}</h2><p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p><p className="mt-4 text-xs font-bold text-slate-400">{item.author}</p></article>)}</div>
@@ -147,6 +149,9 @@ export const PublicCmsSections: React.FC = () => {
 
   return (
     <>
+      {/* Strip stories au-dessus des cartes (cahier des charges §7) */}
+      <HomeStoryStrip isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />
+
       <section id="arrivages" className="w-full border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
         <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
           <div className="grid w-full grid-cols-4 items-center">

@@ -572,6 +572,19 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
 
+      CREATE TABLE IF NOT EXISTS story_interactions (
+        id TEXT PRIMARY KEY,
+        target_id TEXT NOT NULL,
+        target_kind TEXT NOT NULL DEFAULT 'story' CHECK(target_kind IN ('story','post')),
+        type TEXT NOT NULL CHECK(type IN ('like','comment','view','share')),
+        account_id TEXT,
+        guest_hash TEXT,
+        text TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_story_interactions_target ON story_interactions(target_id, type);
+      CREATE INDEX IF NOT EXISTS idx_story_interactions_account ON story_interactions(account_id, type);
+
       CREATE TABLE IF NOT EXISTS lens_analysis_cache (
         image_hash TEXT PRIMARY KEY,
         result_json TEXT NOT NULL,
@@ -636,6 +649,8 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
+    // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
+    this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");

@@ -81,10 +81,10 @@ const resources: Record<string, ResourceConfig> = {
   },
   stories: {
     table: 'stories', module: 'STORIES', prefix: 'story', permission: 'content:write',
-    fields: ['media_type','media_url','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
+    fields: ['category','media_type','media_url','title','description','cta','target_url','product_id','arrival_id','promotion_id','publish_at','expires_at','priority','status'],
     required: ['media_type','media_url','title','publish_at','status'], searchable: ['title','description','cta'],
     sortable: ['title','media_type','publish_at','expires_at','priority','status','created_at'], defaultSort: 'priority',
-    enums: { media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'] },
+    enums: { category: ['ARRIVAGE','NEW','STYLE','INFO','PROMO'], media_type: ['IMAGE','VIDEO'], status: ['DRAFT','SCHEDULED','PUBLISHED','EXPIRED'] },
     softDelete: { status: 'EXPIRED' },
   },
   news: {
@@ -519,6 +519,16 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       errorType, note: String(req.body?.note || '').slice(0, 500), source: 'lab',
     });
     res.json({ success: true, data: { errorType } });
+  });
+
+  router.get('/stories-stats', requireAdmin(db, 'content:read'), (_req, res) => {
+    const rows = db.all<any>(`SELECT target_id, type, COUNT(*) n FROM story_interactions GROUP BY target_id, type`);
+    const stats: Record<string, any> = {};
+    for (const row of rows) {
+      stats[row.target_id] = stats[row.target_id] || { views: 0, likes: 0, comments: 0, shares: 0 };
+      stats[row.target_id][`${row.type}s`] = Number(row.n);
+    }
+    res.json({ success: true, data: stats });
   });
 
   router.get('/ai-discovery', requireAdmin(db, 'reports:read'), (_req, res) => {

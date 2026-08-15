@@ -11,6 +11,7 @@ import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { Footer } from './components/Footer';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct, CartItem, OrderResult, CustomerSession } from './types';
 import { getSessionId } from './utils/session';
+import { configureSocial } from './social/storyService';
 import { customerApi } from './customer/api';
 import { getCommerceConfig } from './services/publicApi';
 
@@ -124,6 +125,9 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (!isCustomerSessionLoading) void fetchCart();
   }, [isCustomerSessionLoading, customerSession?.account.id]);
+
+  // Jeton CSRF pour les interactions sociales authentifiées (likes/comments/vues).
+  useEffect(() => { configureSocial({ csrfToken: customerSession?.csrfToken || '' }); }, [customerSession?.csrfToken]);
 
   const totalCartTND = cartItems.reduce((sum, item) => sum + (item.lineTotalTND ?? item.priceTND * item.quantity), 0);
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -307,7 +311,7 @@ export const App: React.FC = () => {
       <HeroSlider />
 
       {/* Backend-managed arrivals, stories, products, promotions and news */}
-      <PublicCmsSections />
+      <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); setIsAccountOpen(true); }} />
 
       {/* Partner Brands Marquee Slider Container with generous spacing */}
       <PartnerBrandsSlider />

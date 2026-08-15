@@ -93,26 +93,29 @@ const PostActions: React.FC<{
 
 export const StoryPostCard: React.FC<{
   post: StoryPost;
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
   onOpenComments: (post: StoryPost) => void;
   onCta: (cta: StoryCta) => void;
-  onLikeChange: (postId: string, liked: boolean, likesCount: number) => void;
-}> = ({ post, onOpenComments, onCta, onLikeChange }) => {
+}> = ({ post, isAuthenticated, onRequireAuth, onOpenComments, onCta }) => {
   const [liked, setLiked] = useState(post.likedByCurrentUser);
   const [likesCount, setLikesCount] = useState(post.likesCount);
 
-  const toggleLike = () => {
+  // Invités : lecture seule — toute tentative d'interaction guide vers l'inscription (§5).
+  const toggleLike = async () => {
+    if (!isAuthenticated) { onRequireAuth(); return; }
     const next = !liked;
-    setLiked(next); // optimistic
-    const result = likePost(post.id, next);
-    setLikesCount(result.likesCount);
-    onLikeChange(post.id, next, result.likesCount);
+    setLiked(next); // optimistic UI
+    const result = await likePost(post.id, next);
+    if (result.authRequired) { setLiked(!next); onRequireAuth(); return; }
+    setLikesCount((current) => Math.max(0, current + (next ? 1 : -1)));
   };
 
   return (
     <article className="border-b border-line bg-white pb-4">
       <PostHeader post={post} />
       <PostMedia post={post} />
-      <PostActions post={post} liked={liked} onLike={toggleLike} onComment={() => onOpenComments(post)} />
+      <PostActions post={post} liked={liked} onLike={() => void toggleLike()} onComment={() => (isAuthenticated ? onOpenComments(post) : onRequireAuth())} />
       <div className="px-4 sm:px-5">
         <p className="pt-1 text-sm font-extrabold text-ink">{likesCount.toLocaleString('fr-FR')} j'aime</p>
         {post.caption && <p className="mt-1.5 text-sm leading-6 text-ink/90"><span className="font-extrabold">{post.publisher.name}</span> {post.caption}</p>}

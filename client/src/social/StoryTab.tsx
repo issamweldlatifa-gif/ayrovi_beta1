@@ -7,16 +7,18 @@ import { StoryViewer } from './components/StoryViewer';
 import { StoryPostCard } from './components/StoryFeed';
 import { CommentSheet } from './components/CommentSheet';
 
-interface StoryTabProps {
+interface SocialProps {
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
   onCta: (cta: StoryCta) => void;
 }
 
-export const StoryTab: React.FC<StoryTabProps> = ({ onCta }) => {
+export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth, onCta }) => {
   const [stories, setStories] = useState<Story[]>([]);
   const [posts, setPosts] = useState<StoryPost[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [commentPostId, setCommentPostId] = useState<string | null>(null);
+  const [commentId, setCommentId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setState('loading');
@@ -32,7 +34,6 @@ export const StoryTab: React.FC<StoryTabProps> = ({ onCta }) => {
   useEffect(() => { load(); }, [load]);
 
   const groups = React.useMemo(() => groupByPublisher(stories), [stories]);
-
   const refreshSeen = useCallback(() => {
     setStories((current) => current.map((story) => ({ ...story, seen: true })));
   }, []);
@@ -98,24 +99,89 @@ export const StoryTab: React.FC<StoryTabProps> = ({ onCta }) => {
           <StoryPostCard
             key={post.id}
             post={post}
-            onOpenComments={(target) => setCommentPostId(target.id)}
+            isAuthenticated={isAuthenticated}
+            onRequireAuth={onRequireAuth}
+            onOpenComments={(target) => setCommentId(target.id)}
             onCta={onCta}
-            onLikeChange={() => undefined}
           />
         ))}
       </div>
 
-      {/* ===== Overlays ===== */}
-      {viewerIndex != null && groups[viewerIndex] && (
-        <StoryViewer
-          groups={groups}
-          startIndex={viewerIndex}
-          onClose={() => setViewerIndex(null)}
-          onCta={onCta}
-          onSeenChange={refreshSeen}
-        />
-      )}
-      {commentPostId && <CommentSheet postId={commentPostId} onClose={() => setCommentPostId(null)} />}
+      <SharedOverlays
+        viewerIndex={viewerIndex}
+        setViewerIndex={setViewerIndex}
+        groups={groups}
+        refreshSeen={refreshSeen}
+        commentId={commentId}
+        setCommentId={setCommentId}
+        isAuthenticated={isAuthenticated}
+        onRequireAuth={() => { setViewerIndex(null); setCommentId(null); onRequireAuth(); }}
+        onCta={onCta}
+      />
     </div>
   );
 };
+
+/** Bande de stories compacte pour la page d'accueil (strip au-dessus des cartes). */
+export const HomeStoryStrip: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth, onCta }) => {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [ready, setReady] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [commentId, setCommentId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    getStories().then((loaded) => { if (!cancelled) { setStories(loaded); setReady(true); } }).catch(() => setReady(true));
+    return () => { cancelled = true; };
+  }, []);
+
+  const groups = React.useMemo(() => groupByPublisher(stories), [stories]);
+  if (!ready || groups.length === 0) return null;
+
+  return (
+    <div className="border-b border-line bg-white py-3">
+      <StoryCircles groups={groups} onOpen={(index) => setViewerIndex(index)} />
+      <SharedOverlays
+        viewerIndex={viewerIndex}
+        setViewerIndex={setViewerIndex}
+        groups={groups}
+        refreshSeen={() => setStories((current) => current.map((story) => ({ ...story, seen: true })))}
+        commentId={commentId}
+        setCommentId={setCommentId}
+        isAuthenticated={isAuthenticated}
+        onRequireAuth={() => { setViewerIndex(null); setCommentId(null); onRequireAuth(); }}
+        onCta={onCta}
+      />
+    </div>
+  );
+};
+
+const SharedOverlays: React.FC<{
+  viewerIndex: number | null;
+  setViewerIndex: (index: number | null) => void;
+  groups: ReturnType<typeof groupByPublisher>;
+  refreshSeen: () => void;
+  commentId: string | null;
+  setCommentId: (id: string | null) => void;
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
+  onCta: (cta: StoryCta) => void;
+}> = ({ viewerIndex, setViewerIndex, groups, refreshSeen, commentId, setCommentId, isAuthenticated, onRequireAuth, onCta }) => (
+  <>
+    {viewerIndex != null && groups[viewerIndex] && (
+      <StoryViewer
+        groups={groups}
+        startIndex={viewerIndex}
+        isAuthenticated={isAuthenticated}
+        onRequireAuth={onRequireAuth}
+        onOpenComments={(storyId) => setCommentId(storyId)}
+        onClose={() => setViewerIndex(null)}
+        onCta={onCta}
+        onSeenChange={refreshSeen}
+      />
+    )}
+    {commentId && (
+      <CommentSheet postId={commentId} isAuthenticated={isAuthenticated} onRequireAuth={onRequireAuth} onClose={() => setCommentId(null)} />
+    )}
+  </>
+);

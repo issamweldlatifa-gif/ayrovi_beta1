@@ -1,13 +1,23 @@
 import type { Story, StoryComment, StoryPost, StoryPublisher } from './types';
 
 /**
- * AYROVI Story Tab — service couche social.
- * Contenu éditorial réel depuis /api/public (stories publiées par l'Admin),
- * couche sociale (likes, commentaires, vu) en mock local persistant,
- * avec le même contrat d'API qu'un futur backend social.
+ * AYROVI Story Tab — service social backend-ready.
+ * Contenu éditorial réel via /api/public ; interactions (likes, commentaires,
+ * vues, partages) persistées côté serveur via /api/public/social/*, avec
+ * fallback local hors-ligne. Invités : lecture seule (auth requise pour agir).
  */
 
 const LS_KEY = 'ayrovi_social_v1';
+
+let csrfToken = '';
+/** Fourni par l'App (session client) pour les interactions authentifiées. */
+export function configureSocial(opts: { csrfToken?: string }): void {
+  csrfToken = opts.csrfToken || '';
+}
+const jsonHeaders = () => ({
+  'content-type': 'application/json',
+  ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
+});
 const SEEN_KEY = 'ayrovi_stories_seen_v1';
 
 export const OFFICIAL: StoryPublisher = {
@@ -30,7 +40,7 @@ const CHANNELS: Record<string, StoryPublisher> = {
 export const publisherFor = (category: string): StoryPublisher => CHANNELS[category] || OFFICIAL;
 
 /* ------------------------------------------------------------------ */
-/* État social local (mock backend-ready)                              */
+/* État local (fallback hors-ligne)                                    */
 /* ------------------------------------------------------------------ */
 
 interface SocialState {
@@ -51,7 +61,7 @@ function saveState(state: SocialState) {
   try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch { /* private mode */ }
 }
 
-/** Compte de base déterministe (même nombre pour tout le monde, pas de random visible). */
+/** Compte de base déterministe (seed visuel stable, ajouté aux compteurs serveur). */
 export function baseCount(id: string, salt: number): number {
   let hash = salt;
   for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
@@ -72,7 +82,7 @@ function loadSeen(): Record<string, boolean> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mapping du contenu publié (backend réel)                            */
+/* Mapping du contenu publié                                           */
 /* ------------------------------------------------------------------ */
 
 export function mapDbStories(rows: any[]): Story[] {
@@ -121,17 +131,12 @@ export function storiesToPosts(stories: Story[]): StoryPost[] {
   });
 }
 
-/* ------------------------------------------------------------------ */
-/* Contrat d'API (identique au futur backend social)                   */
-/* ------------------------------------------------------------------ */
-
-/** Stories de démonstration (canaux) — utilisées uniquement tant que le backend
- *  ne fournit pas de catégorisation/publishers ; retirées automatiquement ensuite. */
+/** Stories de démonstration (canaux) — retirées dès que le backend publie des canaux réels. */
 function demoChannelStories(): Story[] {
   const now = Date.now();
   const iso = (offset: number) => new Date(now + offset).toISOString();
   const seen = loadSeen();
-  const base = { createdAt: iso(-2 * 3600000), expiresAt: iso(22 * 3600000), seen: false };
+  const base = { createdAt: iso(-2 * 3600000), expiresAt: iso(22 * 3600000) };
   return [
     { ...base, id: 'demo_style_1', publisher: CHANNELS.STYLE, media: { type: 'image', url: '/media/hero-enfants.jpg' }, caption: 'Les tendances de la semaine, repérées pour vous.', seen: Boolean(seen.demo_style_1) },
     { ...base, id: 'demo_promo_1', publisher: CHANNELS.PROMO, media: { type: 'image', url: '/media/hero-homme.jpg' }, caption: 'Offre en cours sur la sélection #08.', cta: { label: 'Découvrir', action: 'promotions' }, seen: Boolean(seen.demo_promo_1) },
@@ -139,16 +144,19 @@ function demoChannelStories(): Story[] {
   ];
 }
 
+/* ------------------------------------------------------------------ */
+/* Contrat d'API                                                       */
+/* ------------------------------------------------------------------ */
+
 export async function getStories(): Promise<Story[]> {
   const response = await fetch('/api/public/stories');
   const payload = await response.json();
   if (!response.ok || !payload?.success) throw new Error('stories unavailable');
   const rows = Array.isArray(payload.data) ? payload.data : [];
   const stories = mapDbStories(rows);
-  // Backend sans catégorisation : enrichit avec les canaux de démonstration.
-  if (!rows.some((row: any) => row && row.category)) stories.push(...demoChannelStories());
-  // Une story vidéo de démonstration pour le viewer (backend-ready : retirée
-  // automatiquement quand de vraies vidéos seront publiées).
+  if (!rows.some((row: any) => row && row.category && row.category !== 'ARRIVAGE')) {
+    stories.push(...demoChannelStories());
+  }
   if (!stories.some((story) => story.media.type === 'video')) {
     stories.splice(1, 0, {
       id: 'story_demo_video',
@@ -165,7 +173,18 @@ export async function getStories(): Promise<Story[]> {
 
 export async function getStoryFeed(): Promise<StoryPost[]> {
   const stories = await getStories();
-  return storiesToPosts(stories);
+  const posts = storiesToPosts(stories);
+  // Compteurs persistants côté serveur, fusionnés avec la seed visuelle.
+  const remote = await fetchCounts(posts.map((post) => post.id));
+  for (const post of posts) {
+    const counts = remote[post.id];
+    if (counts) {
+      post.likesCount += counts.likes;
+      post.commentsCount += counts.comments;
+      post.sharesCount += counts.shares;
+    }
+  }
+  return posts;
 }
 
 export function markStoryAsSeen(id: string): void {
@@ -174,22 +193,54 @@ export function markStoryAsSeen(id: string): void {
     seen[id] = true;
     sessionStorage.setItem(SEEN_KEY, JSON.stringify(seen));
   } catch { /* session only */ }
+  recordView(id);
 }
 
-export function likePost(id: string, liked: boolean): { likesCount: number } {
+export interface LikeResult { liked: boolean; likesCount: number; authRequired?: boolean }
+
+export async function likePost(id: string, liked: boolean): Promise<LikeResult> {
+  const remote = await likePostRemote(id);
+  if (remote && !remote.authRequired) return remote;
+  if (remote?.authRequired) return { ...remote, likesCount: 0 };
   const state = loadState();
   const current = state.likes[id] || { liked: false, count: baseCount(id, 7) };
   const next = { liked, count: current.count + (liked && !current.liked ? 1 : !liked && current.liked ? -1 : 0) };
   state.likes[id] = next;
   saveState(state);
-  return { likesCount: next.count };
+  return { liked: next.liked, likesCount: next.count };
 }
 
-export function getComments(id: string): StoryComment[] {
+export async function likePostRemote(id: string): Promise<LikeResult | null> {
+  try {
+    const res = await fetch('/api/public/social/interact', {
+      method: 'POST', headers: jsonHeaders(),
+      body: JSON.stringify({ targetId: id, type: 'like' }),
+    });
+    const payload = await res.json();
+    if (res.status === 401) return { liked: false, likesCount: 0, authRequired: true };
+    if (payload?.success) return payload.data;
+  } catch { /* offline */ }
+  return null;
+}
+
+export async function getComments(id: string): Promise<StoryComment[]> {
+  const remote = await getCommentsRemote(id);
+  if (remote) return remote;
   return loadState().comments[id] || [];
 }
 
-export function addComment(id: string, text: string): StoryComment {
+export async function getCommentsRemote(id: string): Promise<StoryComment[] | null> {
+  try {
+    const res = await fetch(`/api/public/social/comments?targetId=${encodeURIComponent(id)}`);
+    const payload = await res.json();
+    if (payload?.success) return payload.data;
+  } catch { /* offline */ }
+  return null;
+}
+
+export async function addComment(id: string, text: string): Promise<StoryComment | { authRequired: true }> {
+  const remote = await addCommentRemote(id, text);
+  if (remote) return remote;
   const state = loadState();
   const comment: StoryComment = {
     id: `cmt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -202,8 +253,39 @@ export function addComment(id: string, text: string): StoryComment {
   return comment;
 }
 
+export async function addCommentRemote(id: string, text: string): Promise<StoryComment | { authRequired: true } | null> {
+  try {
+    const res = await fetch('/api/public/social/interact', {
+      method: 'POST', headers: jsonHeaders(),
+      body: JSON.stringify({ targetId: id, type: 'comment', text }),
+    });
+    const payload = await res.json();
+    if (res.status === 401) return { authRequired: true };
+    if (payload?.success) return payload.data;
+  } catch { /* offline */ }
+  return null;
+}
+
+export function recordView(id: string): void {
+  fetch('/api/public/social/interact', { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ targetId: id, type: 'view' }) }).catch(() => undefined);
+}
+
+export function recordShare(id: string): void {
+  fetch('/api/public/social/interact', { method: 'POST', headers: jsonHeaders(), body: JSON.stringify({ targetId: id, type: 'share' }) }).catch(() => undefined);
+}
+
+export async function fetchCounts(ids: string[]): Promise<Record<string, { likes: number; comments: number; views: number; shares: number }>> {
+  try {
+    const res = await fetch(`/api/public/social/counts?ids=${ids.join(',')}`);
+    const payload = await res.json();
+    if (payload?.success) return payload.data;
+  } catch { /* offline */ }
+  return {};
+}
+
 export function sharePost(post: StoryPost): Promise<boolean> {
   const text = `${post.publisher.name} sur AYROVI — ${post.caption || 'Découvrez la sélection AYROVI.'}`;
+  recordShare(post.id);
   if (navigator.share) return navigator.share({ title: 'AYROVI', text }).then(() => true).catch(() => false);
   return navigator.clipboard.writeText(text).then(() => true).catch(() => false);
 }

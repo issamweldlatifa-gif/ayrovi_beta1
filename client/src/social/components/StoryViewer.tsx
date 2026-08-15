@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { X, ArrowRight } from '../../components/QatafoIcons';
+import { X, ArrowRight, Heart, HeartFilled, MessageSquare, Share2 } from '../../components/QatafoIcons';
+import { likePost, sharePost } from '../storyService';
+import type { Story } from '../types';
 import { FigLeaf } from '../../components/QatafoIcons';
 import { markStoryAsSeen, timeAgo } from '../storyService';
 import type { StoryCta } from '../types';
@@ -10,16 +12,37 @@ const IMAGE_DURATION = 5000;
 export const StoryViewer: React.FC<{
   groups: StoryGroup[];
   startIndex: number;
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
+  onOpenComments: (storyId: string) => void;
   onClose: () => void;
   onCta: (cta: StoryCta) => void;
   onSeenChange: () => void;
-}> = ({ groups, startIndex, onClose, onCta, onSeenChange }) => {
+}> = ({ groups, startIndex, isAuthenticated, onRequireAuth, onOpenComments, onClose, onCta, onSeenChange }) => {
+  const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
   const [groupIndex, setGroupIndex] = useState(startIndex);
   const [storyIndex, setStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const touchX = useRef<number | null>(null);
+  const touchY = useRef<number | null>(null);
+  const markedSeen = useRef<Set<string>>(new Set());
+
+  const markSeen = (id: string) => {
+    if (markedSeen.current.has(id)) return;
+    markedSeen.current.add(id);
+    markStoryAsSeen(id);
+    onSeenChange();
+  };
+
+  const toggleLike = async (target: Story) => {
+    if (!isAuthenticated) { onRequireAuth(); return; }
+    const next = !likedIds[target.id];
+    setLikedIds((current) => ({ ...current, [target.id]: next }));
+    const result = await likePost(target.id, next);
+    if (result.authRequired) { setLikedIds((current) => ({ ...current, [target.id]: !next })); onRequireAuth(); }
+  };
 
   const group = groups[groupIndex];
   const story = group?.stories[storyIndex];
@@ -48,8 +71,7 @@ export const StoryViewer: React.FC<{
 
   useEffect(() => {
     if (!story || (story.media.type === 'video' && !videoFailed)) return undefined;
-    markStoryAsSeen(story.id);
-    onSeenChange();
+    markSeen(story.id);
     const started = Date.now();
     const timer = window.setInterval(() => {
       const ratio = (Date.now() - started) / IMAGE_DURATION;
@@ -60,10 +82,7 @@ export const StoryViewer: React.FC<{
   }, [story?.id, videoFailed, goNext]);
 
   useEffect(() => {
-    if (story?.media.type === 'video') {
-      markStoryAsSeen(story.id);
-      onSeenChange();
-    }
+    if (story?.media.type === 'video') markSeen(story.id);
   }, [story?.id]);
 
   useEffect(() => {
@@ -107,13 +126,17 @@ export const StoryViewer: React.FC<{
       {/* Media + tap zones */}
       <div
         className="absolute inset-0"
-        onTouchStart={(event) => { touchX.current = event.touches[0].clientX; }}
+        onTouchStart={(event) => { touchX.current = event.touches[0].clientX; touchY.current = event.touches[0].clientY; }}
         onTouchEnd={(event) => {
-          if (touchX.current == null) return;
-          const delta = event.changedTouches[0].clientX - touchX.current;
-          if (delta > 48) goPrev();
-          else if (delta < -48) goNext();
-          touchX.current = null;
+          if (touchX.current == null || touchY.current == null) return;
+          const deltaX = event.changedTouches[0].clientX - touchX.current;
+          const deltaY = event.changedTouches[0].clientY - touchY.current;
+          // Swipe vertical continu (Reels) prioritaire ; horizontal en repli.
+          if (Math.abs(deltaY) > 56 && Math.abs(deltaY) > Math.abs(deltaX)) {
+            if (deltaY < 0) goNext(); else goPrev();
+          } else if (deltaX > 48) goPrev();
+          else if (deltaX < -48) goNext();
+          touchX.current = null; touchY.current = null;
         }}
       >
         {story.media.type === 'image' ? (
@@ -140,6 +163,19 @@ export const StoryViewer: React.FC<{
         )}
         <button type="button" aria-label="Story précédente" className="absolute inset-y-0 left-0 w-1/3" onClick={goPrev} />
         <button type="button" aria-label="Story suivante" className="absolute inset-y-0 right-0 w-2/3" onClick={goNext} />
+      </div>
+
+      {/* Rail d'interactions professionnel (like / commentaire / partage) */}
+      <div className="absolute bottom-24 right-2.5 z-20 flex flex-col items-center gap-4">
+        <button type="button" aria-label="J'aime" onClick={() => void toggleLike(story)} className={`flex flex-col items-center gap-1 transition active:scale-90 ${likedIds[story.id] ? 'heart-pop text-brand' : 'text-white'}`}>
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-black/45">{likedIds[story.id] ? <HeartFilled size={22} /> : <Heart size={22} />}</span>
+        </button>
+        <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(story.id) : onRequireAuth())} className="text-white transition active:scale-90">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-black/45"><MessageSquare size={21} /></span>
+        </button>
+        <button type="button" aria-label="Partager" onClick={() => void sharePost({ id: story.id, publisher: group.publisher, type: story.media.type === 'video' ? 'video' : 'image', media: [story.media], likesCount: 0, commentsCount: 0, sharesCount: 0, likedByCurrentUser: false, createdAt: story.createdAt })} className="text-white transition active:scale-90">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-black/45"><Share2 size={21} /></span>
+        </button>
       </div>
 
       {/* Caption + CTA */}

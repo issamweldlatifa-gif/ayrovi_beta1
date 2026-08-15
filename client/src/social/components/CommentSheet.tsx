@@ -1,20 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { X } from '../../components/QatafoIcons';
+import { User, X } from '../../components/QatafoIcons';
 import { addComment, getComments, timeAgo } from '../storyService';
 import type { StoryComment } from '../types';
 
-export const CommentSheet: React.FC<{ postId: string; onClose: () => void }> = ({ postId, onClose }) => {
+export const CommentSheet: React.FC<{
+  postId: string;
+  isAuthenticated: boolean;
+  onRequireAuth: () => void;
+  onClose: () => void;
+}> = ({ postId, isAuthenticated, onRequireAuth, onClose }) => {
   const [comments, setComments] = useState<StoryComment[]>([]);
   const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => { setComments(getComments(postId)); }, [postId]);
+  useEffect(() => { void getComments(postId).then(setComments); }, [postId]);
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const value = text.trim();
-    if (value.length < 2) return;
-    setComments((current) => [...current, addComment(postId, value)]);
-    setText('');
+    if (value.length < 2 || busy) return;
+    setBusy(true);
+    const result = await addComment(postId, value);
+    setBusy(false);
+    if (result && 'authRequired' in result) { onRequireAuth(); return; }
+    if (result) { setComments((current) => [...current, result]); setText(''); }
   };
 
   return (
@@ -35,15 +44,24 @@ export const CommentSheet: React.FC<{ postId: string; onClose: () => void }> = (
             </div>
           )) : <p className="py-8 text-center text-sm font-semibold text-muted">Aucun commentaire pour le moment. Soyez le premier !</p>}
         </div>
-        <form onSubmit={submit} className="flex items-center gap-2 border-t border-line px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <input
-            value={text}
-            onChange={(event) => setText(event.target.value)}
-            placeholder="Ajouter un commentaire…"
-            className="min-h-11 flex-1 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink outline-none transition focus:border-brand"
-          />
-          <button type="submit" disabled={text.trim().length < 2} className="min-h-11 rounded-full bg-brand px-5 text-xs font-black uppercase tracking-widest text-white transition active:scale-95 disabled:opacity-40">Publier</button>
-        </form>
+        {isAuthenticated ? (
+          <form onSubmit={(event) => void submit(event)} className="flex items-center gap-2 border-t border-line px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            <input
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              placeholder="Ajouter un commentaire…"
+              className="min-h-11 flex-1 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink outline-none transition focus:border-brand"
+            />
+            <button type="submit" disabled={text.trim().length < 2 || busy} className="min-h-11 rounded-full bg-brand px-5 text-xs font-black uppercase tracking-widest text-white transition active:scale-95 disabled:opacity-40">Publier</button>
+          </form>
+        ) : (
+          <div className="border-t border-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center">
+            <p className="text-sm font-semibold text-muted">Connectez-vous pour commenter et liker.</p>
+            <button type="button" onClick={onRequireAuth} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand px-6 text-xs font-black uppercase tracking-widest text-white transition active:scale-95">
+              <User size={15} />Créer un compte / Se connecter
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
