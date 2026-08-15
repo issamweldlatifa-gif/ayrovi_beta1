@@ -148,26 +148,33 @@ export const StoryViewer: React.FC<{
         }}
       >
         {story.media.type === 'image' ? (
-          <img src={story.media.url} alt="" className="h-full w-full object-cover" draggable={false} />
+          <>
+            {/* Fond : même image floutée plein écran (style Instagram) */}
+            <img src={story.media.url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
+            <img src={story.media.url} alt="" className="relative h-full w-full object-contain" draggable={false} />
+          </>
         ) : videoFailed ? (
           <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-deep via-brand to-brand-light">
             <p className="px-8 text-center text-sm font-bold text-white/80">Vidéo indisponible sur cet appareil — touchez pour continuer.</p>
           </div>
         ) : (
-          <video
-            ref={videoRef}
-            src={story.media.url}
-            className="h-full w-full object-cover"
-            autoPlay
-            muted
-            playsInline
-            onError={() => setVideoFailed(true)}
-            onEnded={goNext}
-            onTimeUpdate={(event) => {
-              const video = event.currentTarget;
-              if (video.duration) setProgress(video.currentTime / video.duration);
-            }}
-          />
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-brand-deep via-black to-black" />
+            <video
+              ref={videoRef}
+              src={story.media.url}
+              className="relative h-full w-full object-contain"
+              autoPlay
+              muted
+              playsInline
+              onError={() => setVideoFailed(true)}
+              onEnded={goNext}
+              onTimeUpdate={(event) => {
+                const video = event.currentTarget;
+                if (video.duration) setProgress(video.currentTime / video.duration);
+              }}
+            />
+          </>
         )}
         <button type="button" aria-label="Story précédente" className="absolute inset-y-0 left-0 w-1/3" onClick={goPrev} />
         <button type="button" aria-label="Story suivante" className="absolute inset-y-0 right-0 w-2/3" onClick={goNext} />

@@ -3,6 +3,7 @@ import { Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp }
 import { adminApi } from './api';
 import { Button, Field, Modal, StatusBadge } from './components';
 
+const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
 const CHANNELS = [
   ['ARRIVAGE', 'Ayrovi Official'], ['NEW', 'Nouveautés'], ['STYLE', 'Style'], ['INFO', 'Actus'], ['PROMO', 'Promos'],
 ] as const;
@@ -158,10 +159,17 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
           <div className="admin-grid-2">
             <Field label="Titre" required><input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
             <Field label="Canal (publisher)">
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+              <select value={KNOWN_CATEGORIES.includes(form.category) || form.category === '__custom' ? form.category : '__custom'} onChange={(e) => {
+                if (e.target.value === '__custom') setForm({ ...form, category: '' });
+                else setForm({ ...form, category: e.target.value });
+              }}>
                 {CHANNELS.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                <option value="__custom">+ Canal personnalisé…</option>
               </select>
             </Field>
+            {!KNOWN_CATEGORIES.includes(form.category) && (
+              <Field label="Nom du nouveau canal" full><input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder="Ex : Sneakers, Beauty, Tech…" /></Field>
+            )}
             <Field label="Type de média">
               <select value={form.media_type} onChange={(e) => setForm({ ...form, media_type: e.target.value })}>
                 <option value="IMAGE">Image</option><option value="VIDEO">Vidéo</option>

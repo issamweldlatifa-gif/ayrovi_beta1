@@ -37,7 +37,14 @@ const CHANNELS: Record<string, StoryPublisher> = {
   ARRIVAGE: OFFICIAL,
 };
 
-export const publisherFor = (category: string): StoryPublisher => CHANNELS[category] || OFFICIAL;
+export const publisherFor = (category: string): StoryPublisher => {
+  if (CHANNELS[category]) return CHANNELS[category];
+  const clean = String(category || '').trim();
+  if (!clean || clean === 'ARRIVAGE') return OFFICIAL;
+  // Canal personnalisé créé depuis l'Admin.
+  const name = clean.charAt(0).toUpperCase() + clean.slice(1);
+  return { id: `pub_${clean.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`, name, avatar: '', subtitle: 'Channel' };
+};
 
 /* ------------------------------------------------------------------ */
 /* État local (fallback hors-ligne)                                    */

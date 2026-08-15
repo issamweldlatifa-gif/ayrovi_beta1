@@ -4,7 +4,7 @@ import { FigLeaf } from '../../components/QatafoIcons';
 import { likePost, sharePost, timeAgo } from '../storyService';
 import type { StoryCta, StoryPost } from '../types';
 
-const PostHeader: React.FC<{ post: StoryPost }> = ({ post }) => {
+const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, light }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
@@ -12,14 +12,14 @@ const PostHeader: React.FC<{ post: StoryPost }> = ({ post }) => {
         {post.publisher.official ? <FigLeaf size={22} /> : <span className="text-xs font-black">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
-        <p className="flex items-center gap-1 text-sm font-extrabold text-ink">
+        <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
           {post.publisher.name}
-          {post.publisher.verified && <CheckCircle2 size={14} className="shrink-0 text-brand" />}
+          {post.publisher.verified && <CheckCircle2 size={14} className={`shrink-0 ${light ? 'text-accent' : 'text-brand'}`} />}
         </p>
-        <p className="text-[11px] font-semibold text-muted">{post.publisher.subtitle || 'Publisher'} · {timeAgo(post.createdAt)}</p>
+        <p className={`text-[11px] font-semibold ${light ? 'text-white/70' : 'text-muted'}`}>{post.publisher.subtitle || 'Publisher'} · {timeAgo(post.createdAt)}</p>
       </div>
       <div className="relative">
-        <button type="button" aria-label="Options du post" onClick={() => setMenuOpen((open) => !open)} className="grid h-9 w-9 place-items-center rounded-full text-muted transition hover:bg-surface active:scale-90">
+        <button type="button" aria-label="Options du post" onClick={() => setMenuOpen((open) => !open)} className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 ${light ? 'text-white hover:bg-white/15' : 'text-muted hover:bg-surface'}`}>
           <MoreVertical size={18} />
         </button>
         {menuOpen && (
@@ -111,10 +111,22 @@ export const StoryPostCard: React.FC<{
     setLikesCount((current) => Math.max(0, current + (next ? 1 : -1)));
   };
 
+  const isVideo = post.type === 'video' || post.media[0]?.type === 'video';
   return (
     <article className="border-b border-line bg-white pb-4">
-      <PostHeader post={post} />
-      <PostMedia post={post} />
+      {isVideo ? (
+        <div className="relative">
+          <PostMedia post={post} />
+          <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/60 to-transparent pb-6">
+            <PostHeader post={post} light />
+          </div>
+        </div>
+      ) : (
+        <>
+          <PostHeader post={post} />
+          <PostMedia post={post} />
+        </>
+      )}
       <PostActions post={post} liked={liked} onLike={() => void toggleLike()} onComment={() => (isAuthenticated ? onOpenComments(post) : onRequireAuth())} />
       <div className="px-4 sm:px-5">
         <p className="pt-1 text-sm font-extrabold text-ink">{likesCount.toLocaleString('fr-FR')} j'aime</p>
