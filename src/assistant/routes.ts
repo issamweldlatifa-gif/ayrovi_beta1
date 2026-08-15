@@ -12,10 +12,14 @@ import {
 } from './service';
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
 const voiceUpload = multer({ storage: multer.memoryStorage(), limits: { files: 1, fileSize: MAX_AUDIO_BYTES } });
 const IMAGE_TYPES = new Set<string>(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const MIME_ALIASES: Record<string, 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif'> = {
+  'image/jpg': 'image/jpeg', 'image/jpeg': 'image/jpeg', 'image/png': 'image/png',
+  'image/webp': 'image/webp', 'image/gif': 'image/gif',
+};
 const AUDIO_TYPES = new Set(['audio/webm', 'audio/ogg', 'audio/mpeg', 'audio/mp4', 'audio/wav', 'audio/x-m4a', 'audio/aac']);
 
 function validSessionId(req: Request): string {
@@ -49,12 +53,17 @@ function cleanImageAttachments(value: unknown): AssistantImageAttachment[] {
       continue;
     }
     const raw = String(item?.dataUrl || item?.preview || '');
-    const match = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/.exec(raw);
-    if (!match) continue;
-    const mediaType = match[1] as AssistantImageAttachment['mediaType'];
-    if (!IMAGE_TYPES.has(mediaType) || match[2].length > Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 8) continue;
+    // Tolérant : accepte les alias MIME (image/jpg) courants sur Android.
+    const match = /^data:(image\/[a-z0-9.+_-]+);base64,([A-Za-z0-9+/=]+)$/i.exec(raw);
+    if (!match) { console.warn('[Assistant] attachment ignoré : dataUrl invalide'); continue; }
+    const mediaType = MIME_ALIASES[match[1].toLowerCase()];
+    if (!mediaType) { console.warn(`[Assistant] attachment ignoré : MIME ${match[1]}`); continue; }
+    if (match[2].length > Math.ceil(MAX_IMAGE_BYTES * 4 / 3) + 8) { console.warn('[Assistant] attachment ignoré : trop volumineux'); continue; }
     const buffer = Buffer.from(match[2], 'base64');
-    if (!buffer.length || buffer.length > MAX_IMAGE_BYTES || !matchesImageSignature(buffer, mediaType)) continue;
+    if (!buffer.length || buffer.length > MAX_IMAGE_BYTES || !matchesImageSignature(buffer, mediaType)) {
+      console.warn('[Assistant] attachment ignoré : signature image invalide');
+      continue;
+    }
     result.push({ id, mediaType, data: buffer.toString('base64') });
   }
   return result;

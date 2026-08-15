@@ -525,6 +525,20 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: discoveryAggregates(db) });
   });
 
+  // Apprentissage approuvé : une suggestion de knowledge gap devient une entrée
+  // vérifiée de la base de connaissance uniquement par décision humaine.
+  router.post('/ai-suggestions/approve', requireAdmin(db, 'settings:write'), (req, res) => {
+    const question = String(req.body?.question || '').trim().slice(0, 240);
+    const answer = String(req.body?.answer || '').trim().slice(0, 1200);
+    const category = ['FAQ','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'].includes(String(req.body?.category)) ? String(req.body.category) : 'GENERAL';
+    if (question.length < 8 || answer.length < 8) return res.status(400).json({ success: false, error: 'Question et réponse requises.' });
+    const id = `ai_know_${randomUUID()}`;
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO ai_knowledge (id,category,question,answer,keywords,priority,active,created_at,updated_at)
+      VALUES (?,?,?,?,?,50,1,?,?)`, id, category, question, answer, JSON.stringify(question.toLowerCase().split(/\s+/).slice(0, 8)), now, now);
+    res.status(201).json({ success: true, data: { id } });
+  });
+
   router.put('/assistant-support/:id', requireAdmin(db, 'orders:write'), (req, res) => {
     const existing = db.get<any>('SELECT * FROM assistant_support_tickets WHERE id=?', req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: 'Ticket support introuvable.' });

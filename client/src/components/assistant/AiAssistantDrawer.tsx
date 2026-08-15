@@ -577,18 +577,55 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       showToast('Formats acceptés : JPEG, PNG, WebP ou GIF');
       return;
     }
-    const addFile = (preview?: string) => {
+    const addFile = (preview?: string, type = file.type) => {
       setAttachments((current) => [
         ...current,
-        { id: `file_${Date.now()}_${Math.random()}`, name: file.name, type: file.type, preview },
+        { id: `file_${Date.now()}_${Math.random()}`, name: file.name, type, preview },
       ]);
       setIsAttachmentSheetOpen(false);
     };
     void kind;
-    const reader = new FileReader();
-    reader.onload = () => addFile(typeof reader.result === 'string' ? reader.result : undefined);
-    reader.onerror = () => showToast('Impossible de lire cette image');
-    reader.readAsDataURL(file);
+    // Compression côté client : garantit que l'image atteint toujours le modèle
+    // (≤2,5 Mo → base64 sûr), quel que soit l'appareil ou la taille d'origine.
+    const compress = async (): Promise<{ dataUrl: string; type: string } | null> => {
+      try {
+        const bitmap = await createImageBitmap(file);
+        const maxEdge = 1600;
+        const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+        const width = Math.max(1, Math.round(bitmap.width * scale));
+        const height = Math.max(1, Math.round(bitmap.height * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d');
+        if (!context) return null;
+        context.drawImage(bitmap, 0, 0, width, height);
+        bitmap.close();
+        const toBlob = (type: string, quality?: number) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
+        let blob = await toBlob('image/png');
+        let type = 'image/png';
+        if (!blob || blob.size > 2.5 * 1024 * 1024) {
+          blob = await toBlob('image/jpeg', 0.85);
+          type = 'image/jpeg';
+        }
+        if (!blob) return null;
+        return { dataUrl: await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(new Error('read'));
+          reader.readAsDataURL(blob);
+        }), type };
+      } catch {
+        return null;
+      }
+    };
+    void compress().then((prepared) => {
+      if (prepared) { addFile(prepared.dataUrl, prepared.type); return; }
+      const reader = new FileReader();
+      reader.onload = () => addFile(typeof reader.result === 'string' ? reader.result : undefined);
+      reader.onerror = () => showToast('Impossible de lire cette image');
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleCopy = async (message: AssistantMessage) => {

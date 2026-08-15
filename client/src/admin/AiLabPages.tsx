@@ -140,6 +140,35 @@ export const LensLabPage: React.FC = () => {
 /* AI DISCOVERY — où l'AI excelle, échoue, gaps                        */
 /* ------------------------------------------------------------------ */
 
+const SuggestionRow: React.FC<{ question: string; count: number }> = ({ question, count }) => {
+  const [answer, setAnswer] = useState('');
+  const [category, setCategory] = useState('GENERAL');
+  const [state, setState] = useState<'idle' | 'busy' | 'done' | 'error'>('idle');
+  const approve = async () => {
+    setState('busy');
+    try {
+      await adminApi('/ai-suggestions/approve', { method: 'POST', body: JSON.stringify({ question, answer, category }) });
+      setState('done');
+    } catch { setState('error'); }
+  };
+  if (state === 'done') return <p className="admin-block-small" style={{ margin: '8px 0' }}>✓ Ajouté à la base de connaissance : {question}</p>;
+  return (
+    <div style={{ borderTop: '1px solid #ececf4', marginTop: 10, paddingTop: 10 }}>
+      <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>« {question} » <span className="admin-block-small">— posée {count}× sans réponse vérifiée</span></p>
+      <div className="admin-grid-2" style={{ marginTop: 8 }}>
+        <input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Réponse vérifiée à enseigner à l'Assistant…" />
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          {['GENERAL', 'FAQ', 'DELIVERY', 'PAYMENT', 'BRAND', 'ARRIVAL', 'PROMOTION'].map((c) => <option key={c}>{c}</option>)}
+        </select>
+      </div>
+      <div className="admin-actions">
+        <Button busy={state === 'busy'} disabled={answer.trim().length < 8} onClick={() => void approve()}>Approuver & enseigner</Button>
+        {state === 'error' && <span className="admin-error">Échec de l'ajout.</span>}
+      </div>
+    </div>
+  );
+};
+
 export const AiDiscoveryPage: React.FC = () => {
   const [data, setData] = useState<any | null>(null);
   const [busy, setBusy] = useState(true);
@@ -167,13 +196,30 @@ export const AiDiscoveryPage: React.FC = () => {
         <section className="admin-card"><h3>Outils en échec</h3>
           {data.toolFailures?.length ? <ul className="admin-list">{data.toolFailures.map((t: any) => <li key={t.tool}>{t.tool} — {t.count}</li>)}</ul> : <p className="admin-block-small">Aucun échec d'outil.</p>}
         </section>
-        <section className="admin-card"><h3>Termes fréquents des questions</h3>
-          {data.topQuestionTerms?.length ? <p className="admin-block-small">{data.topQuestionTerms.map((t: any) => `${t.term} (${t.count})`).join(' · ')}</p> : <p className="admin-block-small">Pas encore de signal.</p>}
-        </section>
-        <section className="admin-card"><h3>Événements (30 j)</h3>
-          <ul className="admin-list">{Object.entries(data.totals || {}).map(([type, count]) => <li key={type}>{type} — {String(count)}</li>)}</ul>
-        </section>
       </div>
+
+      <section className="admin-card" style={{ marginTop: 14 }}>
+        <h3>Suggestions d'apprentissage (approval humain requis)</h3>
+        <p className="admin-block-small">Questions répétées sans réponse vérifiée dans la base de connaissance. Approuvez avec une réponse pour l'ajouter à l'Assistant.</p>
+        {data.suggestions?.length ? data.suggestions.map((sug: any) => (
+          <SuggestionRow key={sug.id} question={sug.question} count={sug.count} />
+        )) : <p className="admin-block-small">Aucune suggestion pour le moment.</p>}
+      </section>
+
+      <section className="admin-card" style={{ marginTop: 14 }}>
+        <h3>Journal des actions AI (40 derniers)</h3>
+        <table className="admin-table"><thead><tr><th>Date</th><th>Événement</th><th>Outils</th><th>Question</th><th>Confiance</th><th>Succès</th></tr></thead>
+          <tbody>{(data.recentEvents || []).map((event: any, index: number) => (
+            <tr key={index}>
+              <td className="admin-block-small">{new Date(event.at).toLocaleString('fr-FR')}</td>
+              <td>{event.type}</td>
+              <td className="admin-block-small">{event.tools || '—'}</td>
+              <td className="admin-block-small">{event.question || '—'}</td>
+              <td>{event.confidence ? Math.round(event.confidence * 100) + '%' : '—'}</td>
+              <td>{event.success ? '✓' : '✗'}</td>
+            </tr>
+          ))}</tbody></table>
+      </section>
       <p className="admin-block-small" style={{ marginTop: 12 }}><ChartLine size={14} /> Ces données alimentent l'évaluation humaine : aucun prompt ni modèle n'est modifié automatiquement.</p>
     </div>
   );

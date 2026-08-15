@@ -112,8 +112,39 @@ export function discoveryAggregates(db: QatafoDatabase) {
       }
     } catch { /* skip */ }
   }
+  const recentEvents = db.all<any>(`SELECT event_type,tool_names,success,confidence,meta_json,created_at
+    FROM ai_learning_events ORDER BY created_at DESC LIMIT 40`).map((row) => {
+    let question = '';
+    try { question = String(JSON.parse(row.meta_json)?.question || ''); } catch { /* */ }
+    return { type: row.event_type, tools: row.tool_names, success: Boolean(row.success), confidence: row.confidence, question, at: row.created_at };
+  });
+
+  // Knowledge gaps : questions répétées sans correspondance dans la base vérifiée.
+  const knowledge = db.all<any>(`SELECT question FROM ai_knowledge WHERE active=1`);
+  const tokenize = (value: string) => value.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .split(/[^a-z0-9]+/).filter((token) => token.length > 2);
+  const kbTokens = knowledge.map((row) => new Set(tokenize(row.question)));
+  const questionCount = new Map<string, number>();
+  for (const row of turns) {
+    if (row.event_type !== 'CHAT_TURN') continue;
+    try {
+      const question = String(JSON.parse(row.meta_json)?.question || '').trim();
+      if (question.length >= 8) questionCount.set(question, (questionCount.get(question) || 0) + 1);
+    } catch { /* */ }
+  }
+  const suggestions: Array<{ id: string; question: string; count: number }> = [];
+  for (const [question, count] of [...questionCount.entries()].sort((a, b) => b[1] - a[1])) {
+    if (count < 2) continue;
+    const tokens = tokenize(question);
+    const covered = kbTokens.some((set) => set.size && tokens.filter((token) => set.has(token)).length / Math.max(1, tokens.length) > 0.5);
+    if (!covered) suggestions.push({ id: createHash('sha256').update(question).digest('hex').slice(0, 12), question, count });
+    if (suggestions.length >= 8) break;
+  }
+
   return {
     periodDays: 30,
+    recentEvents,
+    suggestions,
     totals: Object.fromEntries(byType),
     resolutionScore: resolutions ? Math.round((resolved / resolutions) * 100) / 100 : null,
     correctionCount: corrections,
