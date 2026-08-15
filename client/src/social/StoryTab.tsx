@@ -6,6 +6,7 @@ import { groupByPublisher, StoryCircles } from './components/StoryCircles';
 import { StoryViewer } from './components/StoryViewer';
 import { StoryPostCard } from './components/StoryFeed';
 import { CommentSheet } from './components/CommentSheet';
+import { ReelsViewer } from './components/ReelsViewer';
 
 interface SocialProps {
   isAuthenticated: boolean;
@@ -19,6 +20,9 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [commentId, setCommentId] = useState<string | null>(null);
+  const [reelsIndex, setReelsIndex] = useState<number | null>(null);
+
+  const videoPosts = posts.filter((post) => post.type === 'video' || post.media[0]?.type === 'video');
 
   const load = useCallback(() => {
     setState('loading');
@@ -102,10 +106,22 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
             isAuthenticated={isAuthenticated}
             onRequireAuth={onRequireAuth}
             onOpenComments={(target) => setCommentId(target.id)}
+            onOpenReels={(target) => setReelsIndex(Math.max(0, videoPosts.findIndex((v) => v.id === target.id)))}
             onCta={onCta}
           />
         ))}
       </div>
+
+      {reelsIndex != null && videoPosts[reelsIndex] && (
+        <ReelsViewer
+          items={videoPosts}
+          startIndex={reelsIndex}
+          isAuthenticated={isAuthenticated}
+          onRequireAuth={() => { setReelsIndex(null); onRequireAuth(); }}
+          onOpenComments={(postId) => setCommentId(postId)}
+          onClose={() => setReelsIndex(null)}
+        />
+      )}
 
       <SharedOverlays
         viewerIndex={viewerIndex}
@@ -115,7 +131,7 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
         commentId={commentId}
         setCommentId={setCommentId}
         isAuthenticated={isAuthenticated}
-        onRequireAuth={() => { setViewerIndex(null); setCommentId(null); onRequireAuth(); }}
+        onRequireAuth={() => { setViewerIndex(null); setCommentId(null); setReelsIndex(null); onRequireAuth(); }}
         onCta={onCta}
       />
     </div>

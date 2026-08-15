@@ -33,16 +33,9 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   );
 };
 
-const PostMedia: React.FC<{ post: StoryPost }> = ({ post }) => {
+const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => void }> = ({ post, onOpenReels }) => {
   const [slide, setSlide] = useState(0);
-  const [playing, setPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  const toggleVideo = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) { void video.play().catch(() => undefined); } else { video.pause(); }
-  };
 
   // Autoplay muted dans le viewport, pause en dehors (Intersection Observer).
   useEffect(() => {
@@ -75,24 +68,16 @@ const PostMedia: React.FC<{ post: StoryPost }> = ({ post }) => {
   }
   if (post.type === 'video' || post.media[0]?.type === 'video') {
     return (
-      <button type="button" onClick={toggleVideo} aria-label={playing ? 'Mettre en pause' : 'Lire la vidéo'} className="relative block w-full">
+      <button type="button" onClick={() => onOpenReels?.(post)} aria-label="Ouvrir la vidéo" className="relative block w-full">
         <video
           ref={videoRef}
           src={post.media[0].url}
           muted
           loop
           playsInline
-          onPlay={() => setPlaying(true)}
-          onPause={() => setPlaying(false)}
-          className="aspect-[4/5] w-full bg-black object-contain"
+          className="aspect-[9/14] w-full bg-black object-cover"
         />
-        {!playing && (
-          <span className="absolute inset-0 grid place-items-center">
-            <span className="grid h-16 w-16 place-items-center rounded-full bg-black/50 text-white backdrop-blur-sm">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" /></svg>
-            </span>
-          </span>
-        )}
+        <span className="absolute bottom-2 right-2 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white">Reels</span>
       </button>
     );
   }
@@ -139,8 +124,9 @@ export const StoryPostCard: React.FC<{
   isAuthenticated: boolean;
   onRequireAuth: () => void;
   onOpenComments: (post: StoryPost) => void;
+  onOpenReels?: (post: StoryPost) => void;
   onCta: (cta: StoryCta) => void;
-}> = ({ post, isAuthenticated, onRequireAuth, onOpenComments, onCta }) => {
+}> = ({ post, isAuthenticated, onRequireAuth, onOpenComments, onOpenReels, onCta }) => {
   const [liked, setLiked] = useState(post.likedByCurrentUser);
   const [likesCount, setLikesCount] = useState(post.likesCount);
 
@@ -159,7 +145,7 @@ export const StoryPostCard: React.FC<{
     <article className="border-b border-line bg-white pb-4">
       {isVideo ? (
         <div className="relative">
-          <PostMedia post={post} />
+          <PostMedia post={post} onOpenReels={onOpenReels} />
           <div className="absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/60 to-transparent pb-6">
             <PostHeader post={post} light />
           </div>

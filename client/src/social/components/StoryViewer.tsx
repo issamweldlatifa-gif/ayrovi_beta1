@@ -158,11 +158,10 @@ export const StoryViewer: React.FC<{
           </div>
         ) : (
           <>
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-deep via-black to-black" />
             <video
               ref={videoRef}
               src={story.media.url}
-              className="relative h-full w-full object-contain"
+              className="absolute inset-0 h-full w-full object-cover"
               autoPlay
               muted
               playsInline

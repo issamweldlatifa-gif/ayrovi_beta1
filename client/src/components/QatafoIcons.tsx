@@ -339,6 +339,11 @@ export const Plug = createIcon('Plug', <>
   <path d="M8.5 4.2v4M15.5 4.2v4M6.5 8.2h11v2.2a5.5 5.5 0 0 1-11 0V8.2zM12 15.9v4" />
 </>);
 
+export const VolumeX = createIcon('VolumeX', <>
+  <path d="M5 10h3l4-3.3v10.6L8 14H5v-4z" />
+  <path d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+</>);
+
 export const Volume2 = createIcon('Volume2', <>
   <path d="M5 10h3l4-3.3v10.6L8 14H5v-4z" />
   <path d="M15.2 9.1a4.2 4.2 0 0 1 0 5.8" />
