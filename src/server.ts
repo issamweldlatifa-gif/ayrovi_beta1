@@ -149,14 +149,51 @@ app.get('*', (_req, res) => {
   }
 });
 
+// ===== Content-Security-Policy : le client ne parle qu'à notre API =====
+app.use((_req, res, next) => {
+  res.setHeader('Content-Security-Policy',
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; " +
+    "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'");
+  next();
+});
+
+// Débit limité pour les interactions sociales (anti-flood likes/vues).
+app.use('/api/public/social/interact', rateLimit('social-interact', 120, 10 * 60_000));
+
+// ===== Gardes-fous de stabilité : journaliser sans tuer le processus =====
+process.on('unhandledRejection', (reason) => {
+  console.error('[unhandledRejection]', reason instanceof Error ? reason.stack || reason.message : String(reason));
+});
+process.on('uncaughtException', (error) => {
+  console.error('[uncaughtException]', error.stack || error.message);
+});
+
+// Nettoyage périodique : sessions clients expirées + défis OTP consommés/périmés.
+const housekeeping = setInterval(() => {
+  try {
+    const now = new Date().toISOString();
+    db.run(`DELETE FROM customer_sessions WHERE expires_at <= ?`, now);
+    db.run(`DELETE FROM customer_otp_challenges WHERE expires_at <= ?`, now);
+  } catch (error: any) { console.warn('[housekeeping]', error?.message || 'failed'); }
+}, 3600_000);
+housekeeping.unref?.();
+
 // Start Server
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(Number(PORT), '0.0.0.0', () => {
+  const server = app.listen(Number(PORT), '0.0.0.0', () => {
     console.log('====================================================');
     console.log(`🚀 AYROVI React + Vite Platform running`);
     console.log(`📍 Web Application: http://0.0.0.0:${PORT}/`);
     console.log('====================================================');
   });
+  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+    process.on(signal, () => {
+      console.log(`[shutdown] ${signal} reçu — fermeture propre…`);
+      server.close(() => process.exit(0));
+      setTimeout(() => process.exit(0), 4000).unref?.();
+    });
+  }
 }
 
 export { app, db, scraper, visionExtractor };
