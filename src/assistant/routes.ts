@@ -187,7 +187,10 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
 
   router.use((error: any, _req: Request, res: Response, next: (error?: any) => void) => {
     if (error instanceof multer.MulterError) {
-      return res.status(413).json({ success: false, code: 'AUDIO_TOO_LARGE', error: 'Le message vocal doit faire moins de 12 Mo.' });
+      const message = error.code === 'LIMIT_FILE_SIZE'
+        ? 'Le message vocal doit faire moins de 12 Mo.'
+        : 'Le fichier audio envoyé est invalide.';
+      return res.status(413).json({ success: false, code: error.code === 'LIMIT_FILE_SIZE' ? 'AUDIO_TOO_LARGE' : 'AUDIO_INVALID', error: message });
     }
     return next(error);
   });
