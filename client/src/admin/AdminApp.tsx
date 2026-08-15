@@ -121,7 +121,7 @@ const navGroups = [
   { label: 'Vue générale', items: [{ id: 'dashboard', label: 'Tableau de bord', icon: Home, permission: 'dashboard:read' as Permission }] },
   { label: 'Contenu', items: [
     { id: 'arrivals', label: 'Arrivages', icon: Calendar, permission: 'content:read' as Permission }, { id: 'products', label: 'Produits', icon: ShoppingBag, permission: 'content:read' as Permission },
-    { id: 'promotions', label: 'Promotions', icon: Gift, permission: 'content:read' as Permission }, { id: 'stories', label: 'Stories', icon: Image, permission: 'content:read' as Permission }, { id: 'stories-studio', label: 'Stories Studio', icon: ChartLine, permission: 'content:read' as Permission },
+    { id: 'promotions', label: 'Promotions', icon: Gift, permission: 'content:read' as Permission }, { id: 'stories-studio', label: 'Stories — إدارة وإحصائيات', icon: ChartLine, permission: 'content:read' as Permission }, { id: 'stories', label: 'Stories — إنشاء وتحرير', icon: Image, permission: 'content:read' as Permission },
     { id: 'news', label: 'Actualités', icon: FileText, permission: 'content:read' as Permission }, { id: 'brands', label: 'Marques', icon: Tag, permission: 'content:read' as Permission },
     { id: 'hero', label: 'Hero Slider', icon: Sparkles, permission: 'content:read' as Permission },
   ]},

@@ -171,7 +171,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       </section>
 
       {activePage && activeDefinition && (
-        <div className={`fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} role="dialog" aria-modal="true" aria-labelledby={`cms-page-${activePage}`}>
+        <div className={`no-scrollbar fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} role="dialog" aria-modal="true" aria-labelledby={`cms-page-${activePage}`}>
           {activePage === 'stories' ? (
             <header className="sticky top-0 z-20 border-b border-white/40 bg-white/55 backdrop-blur-xl">
               <div className="grid h-14 grid-cols-[52px_1fr_52px] items-center px-3">
