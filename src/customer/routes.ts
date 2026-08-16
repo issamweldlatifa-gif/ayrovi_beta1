@@ -21,7 +21,7 @@ import {
   safeEqualHash,
   setCustomerCookie,
 } from './auth';
-import { deliverOtp, phoneOtpAvailable } from './otp';
+import { deliverOtp, otpProviderName, phoneOtpAvailable, verifyProviderOtp } from './otp';
 
 const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_PHONE_WINDOW_MS = 15 * 60 * 1000;
@@ -281,11 +281,12 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
 
     const challengeId = `otp_${randomUUID()}`;
     const code = String(randomInt(100000, 1000000));
+    const provider = otpProviderName();
     const expiresAt = new Date(now.getTime() + OTP_TTL_MS).toISOString();
     db.run('UPDATE customer_otp_challenges SET consumed_at=? WHERE phone=? AND consumed_at IS NULL', now.toISOString(), phone);
     db.run(`INSERT INTO customer_otp_challenges
-      (id,phone,code_hash,expires_at,max_attempts,request_ip,created_at) VALUES (?,?,?,?,5,?,?)`,
-    challengeId, phone, keyedHash(`${challengeId}:${phone}:${code}`), expiresAt, ip, now.toISOString());
+      (id,phone,code_hash,provider,expires_at,max_attempts,request_ip,created_at) VALUES (?,?,?,?,?,5,?,?)`,
+    challengeId, phone, keyedHash(`${challengeId}:${phone}:${code}`), provider || 'local', expiresAt, ip, now.toISOString());
     try {
       const delivery = await deliverOtp(phone, code);
       return res.status(201).json({ success: true, data: {
@@ -294,14 +295,17 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         expiresInSeconds: OTP_TTL_MS / 1000,
         ...(delivery.developmentCode ? { developmentCode: delivery.developmentCode } : {}),
       } });
-    } catch (error) {
+    } catch (error: any) {
       db.run('DELETE FROM customer_otp_challenges WHERE id=?', challengeId);
-      console.error('[Customer OTP Delivery]', error);
+      console.error('[Customer OTP Delivery]', error?.message || error);
+      if (error?.message === 'OTP_RATE_LIMITED') {
+        return res.status(429).json({ success: false, code: 'OTP_RATE_LIMITED', error: 'Trop de demandes SMS. Réessayez plus tard.' });
+      }
       return res.status(503).json({ success: false, code: 'OTP_DELIVERY_FAILED', error: 'Le SMS n’a pas pu être envoyé. Réessayez.' });
     }
   });
 
-  router.post('/auth/otp/verify', (req, res) => {
+  router.post('/auth/otp/verify', async (req, res) => {
     if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
     const challengeId = String(req.body?.challengeId || '');
     const code = String(req.body?.code || '').replace(/\D/g, '');
@@ -309,12 +313,30 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const now = new Date().toISOString();
     if (!challenge || challenge.consumed_at || challenge.expires_at <= now) return res.status(400).json({ success: false, code: 'OTP_EXPIRED', error: 'Ce code a expiré. Demandez un nouveau SMS.' });
     if (Number(challenge.attempts) >= Number(challenge.max_attempts)) return res.status(429).json({ success: false, error: 'Trop de tentatives. Demandez un nouveau code.' });
-    db.run('UPDATE customer_otp_challenges SET attempts=attempts+1 WHERE id=?', challengeId);
-    if (code.length !== 6 || !safeEqualHash(`${challengeId}:${challenge.phone}:${code}`, challenge.code_hash)) {
+    if (code.length !== 6) {
+      db.run('UPDATE customer_otp_challenges SET attempts=attempts+1 WHERE id=?', challengeId);
       return res.status(400).json({ success: false, code: 'OTP_INVALID', error: 'Le code saisi est incorrect.' });
     }
+
+    let approved = false;
     try {
-      db.run('UPDATE customer_otp_challenges SET consumed_at=? WHERE id=? AND consumed_at IS NULL', now, challengeId);
+      const providerResult = await verifyProviderOtp(String(challenge.provider || 'local'), challenge.phone, code);
+      approved = providerResult ?? safeEqualHash(`${challengeId}:${challenge.phone}:${code}`, challenge.code_hash);
+    } catch (error: any) {
+      console.error('[Customer OTP Provider Verification]', error?.message || error);
+      if (error?.message === 'OTP_RATE_LIMITED') {
+        return res.status(429).json({ success: false, code: 'OTP_RATE_LIMITED', error: 'Trop de tentatives chez le fournisseur SMS. Réessayez plus tard.' });
+      }
+      return res.status(503).json({ success: false, code: 'OTP_VERIFICATION_FAILED', error: 'Le service SMS ne répond pas. Réessayez.' });
+    }
+    if (!approved) {
+      db.run('UPDATE customer_otp_challenges SET attempts=attempts+1 WHERE id=?', challengeId);
+      return res.status(400).json({ success: false, code: 'OTP_INVALID', error: 'Le code saisi est incorrect.' });
+    }
+
+    try {
+      const claimed = db.run('UPDATE customer_otp_challenges SET consumed_at=? WHERE id=? AND consumed_at IS NULL', now, challengeId);
+      if (!claimed.changes) return res.status(409).json({ success: false, code: 'OTP_ALREADY_USED', error: 'Ce code a déjà été utilisé.' });
       const { accountId, linked } = completePhoneVerification(db, req, challenge.phone);
       const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
       if (cartSession) db.attachCartToAccount(cartSession, accountId);

@@ -443,6 +443,7 @@ export class QatafoDatabase {
         id TEXT PRIMARY KEY,
         phone TEXT NOT NULL,
         code_hash TEXT NOT NULL,
+        provider TEXT NOT NULL DEFAULT 'local',
         expires_at TEXT NOT NULL,
         consumed_at TEXT,
         attempts INTEGER NOT NULL DEFAULT 0,
@@ -692,6 +693,7 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE');
     this.ensureColumn('cart_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('customers', 'normalized_phone', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('customer_otp_challenges', 'provider', "TEXT NOT NULL DEFAULT 'local'");
     const customersMissingNormalizedPhone = this.db.prepare(
       "SELECT id,phone FROM customers WHERE normalized_phone=''",
     ).all() as Array<{ id: string; phone: string }>;

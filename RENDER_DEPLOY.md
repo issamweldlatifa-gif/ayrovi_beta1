@@ -14,8 +14,8 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `PUBLIC_BASE_URL` : l’URL HTTPS publique finale, sans barre oblique terminale.
    - `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth Web créés dans Google Cloud.
    - `GOOGLE_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/google/callback`.
-   - `CUSTOMER_OTP_PROVIDER` : `webhook` en production.
-   - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : URL HTTPS et jeton Bearer de l’adaptateur SMS.
+   - `CUSTOMER_OTP_PROVIDER` : `twilio_verify` (déjà fixé par le Blueprint).
+   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` et `TWILIO_VERIFY_SERVICE_SID` : identifiants serveur Twilio Verify.
    - `ANTHROPIC_API_KEY` : clé serveur Claude pour l’identification, le prix visible et le fallback Web.
    - `SERPAPI_KEY` : clé serveur SerpApi pour les correspondances produit Google Lens.
    - `GROQ_API_KEY` : clé serveur Groq pour la transcription vocale de l’Assistant (optionnel mais recommandé).
@@ -59,18 +59,17 @@ Par défaut, la copie vérifiée par `PRAGMA quick_check` est écrite dans `data
 
 Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine AYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
 
-L’envoi SMS est volontairement indépendant du fournisseur. AYROVI appelle `CUSTOMER_OTP_WEBHOOK_URL` en `POST` avec `Authorization: Bearer <CUSTOMER_OTP_WEBHOOK_TOKEN>` et ce JSON :
+### Twilio Verify
 
-```json
-{
-  "to": "+21698123456",
-  "code": "123456",
-  "message": "Votre code AYROVI est 123456. Il expire dans 5 minutes.",
-  "purpose": "customer_login"
-}
-```
+1. Dans Twilio Console, créez un **Verify Service** et laissez le code à 6 chiffres.
+2. Vérifiez que l’envoi SMS vers la Tunisie est autorisé par les réglages Geo permissions du compte.
+3. Dans Render, configurez `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` et le SID du service `TWILIO_VERIFY_SERVICE_SID` (préfixe `VA`).
+4. Conservez `CUSTOMER_OTP_PROVIDER=twilio_verify`.
+5. Redéployez puis vérifiez que `/api/customer/auth/config` renvoie `phoneOtp.enabled=true`.
 
-L’adaptateur doit répondre avec un statut HTTP `2xx`. Il pourra ensuite traduire cette requête vers Twilio, Vonage ou un fournisseur tunisien sans modifier AYROVI. En développement seulement, l’absence de configuration active le fournisseur `console`; il affiche et renvoie le code de test. Ce mode est désactivé en production.
+AYROVI demande alors à Twilio d’envoyer le code et vérifie le code directement via Twilio Verify. Aucun code OTP ni secret Twilio n’est exposé au navigateur. Les limites AYROVI par téléphone/IP et la limite de cinq tentatives restent actives en plus des protections Twilio.
+
+L’ancien adaptateur HTTPS reste disponible en alternative : définissez `CUSTOMER_OTP_PROVIDER=webhook`, `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN`. En développement seulement, `console` affiche et renvoie le code de test; ce mode est interdit en production.
 
 Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La confirmation de commande exige une session client active, un jeton CSRF valide et un numéro tunisien de livraison valide à 8 chiffres. La vérification SMS du téléphone du profil est optionnelle; elle sert à la connexion OTP et au rattachement sécurisé des anciennes commandes.
 

@@ -14,6 +14,7 @@ import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
 import { createCustomerRouter } from './customer/routes';
+import { phoneOtpAvailable } from './customer/otp';
 import { createAssistantRouter } from './assistant/routes';
 
 const app = express();
@@ -181,7 +182,7 @@ app.get('/api/ready', (_req, res) => {
         assistant: Boolean(process.env.ANTHROPIC_API_KEY),
         visualSearch: Boolean(process.env.SERPAPI_KEY),
         voice: Boolean(process.env.GROQ_API_KEY),
-        sms: process.env.CUSTOMER_OTP_PROVIDER === 'console' || Boolean(process.env.CUSTOMER_OTP_WEBHOOK_URL),
+        sms: phoneOtpAvailable(),
         mail: Boolean(process.env.MAIL_PROVIDER && process.env.MAIL_API_KEY),
       },
     });

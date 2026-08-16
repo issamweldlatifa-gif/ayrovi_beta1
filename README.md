@@ -64,7 +64,7 @@ La description complète des fichiers, rôles, données et routes se trouve dans
 
 Le projet inclut un Blueprint `render.yaml` prêt pour Render avec Node.js, healthcheck, plan Starter et disque persistant partagé par SQLite et les médias Admin. Consultez [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md) pour la procédure complète.
 
-Variables de base obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DATABASE_PATH`, `CUSTOMER_AUTH_SECRET` et `PUBLIC_BASE_URL`. Google nécessite `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL`; l’OTP SMS nécessite les trois variables `CUSTOMER_OTP_*` décrites dans [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md). Aucun secret ne doit être exposé au frontend.
+Variables de base obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DATABASE_PATH`, `CUSTOMER_AUTH_SECRET` et `PUBLIC_BASE_URL`. Google nécessite `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL`; l’OTP SMS utilise Twilio Verify avec `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` et `TWILIO_VERIFY_SERVICE_SID`, comme décrit dans [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md). Aucun secret ne doit être exposé au frontend.
 
 Pour un autre hébergeur Node.js :
 

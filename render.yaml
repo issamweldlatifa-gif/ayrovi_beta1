@@ -33,7 +33,14 @@ services:
       - key: GOOGLE_CALLBACK_URL
         sync: false
       - key: CUSTOMER_OTP_PROVIDER
+        value: twilio_verify
+      - key: TWILIO_ACCOUNT_SID
         sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_VERIFY_SERVICE_SID
+        sync: false
+      # Alternative provider-independent adapter (unused while twilio_verify is selected).
       - key: CUSTOMER_OTP_WEBHOOK_URL
         sync: false
       - key: CUSTOMER_OTP_WEBHOOK_TOKEN
