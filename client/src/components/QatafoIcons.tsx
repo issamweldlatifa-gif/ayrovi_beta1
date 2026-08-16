@@ -75,6 +75,7 @@ export {
   Calculator,
   Link2,
   Image,
+  Video,
   Clipboard,
   Barcode,
   FileText,

@@ -37,6 +37,17 @@ import {
   listAyrovixReviews,
   updateAyrovixReview,
 } from '../ayrovix/reviews';
+import {
+  GenerateMagazineInput,
+  MagazineAgentProviderError,
+  MagazineAgentUnavailableError,
+  deleteMagazineDraft,
+  generateMagazineContent,
+  getMagazineDraft,
+  listMagazineDrafts,
+  magazineAgentCapabilities,
+  prepareMagazineDraft,
+} from '../magazine/service';
 
 interface ResourceConfig {
   table: string;
@@ -121,6 +132,7 @@ const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','OUT_FOR_DELIVERY','DE
 const adminRoles: AdminRole[] = ['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'];
 const ayrovixReviewStatuses: AyrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const magazineGenerationInFlight = new Set<string>();
 
 function parsePositiveInteger(value: unknown, fallback: number, max: number): number {
   const number = Number(value);
@@ -634,6 +646,121 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       stats[row.target_id][`${row.type}s`] = Number(row.n);
     }
     res.json({ success: true, data: stats });
+  });
+
+  /* ===== وكيل مجلتي — محرر Claude داخل الأدمين فقط ===== */
+  router.get('/magazine-agent/status', requireAdmin(db, 'content:read'), (_req, res) => {
+    const counts = db.get<any>(`SELECT COUNT(*) total,
+      SUM(CASE WHEN status='draft' THEN 1 ELSE 0 END) drafts,
+      SUM(CASE WHEN status='scheduled' THEN 1 ELSE 0 END) scheduled
+      FROM magazine_drafts`);
+    res.json({ success: true, data: { capabilities: magazineAgentCapabilities(), counts: {
+      total: Number(counts?.total || 0), drafts: Number(counts?.drafts || 0), scheduled: Number(counts?.scheduled || 0),
+    } } });
+  });
+
+  router.get('/magazine-drafts', requireAdmin(db, 'content:read'), (req, res) => {
+    const data = listMagazineDrafts(db, {
+      status: String(req.query.status || ''), type: String(req.query.type || ''),
+      limit: parsePositiveInteger(req.query.limit, 80, 200),
+    });
+    res.json({ success: true, data });
+  });
+
+  router.get('/magazine-drafts/:id', requireAdmin(db, 'content:read'), (req, res) => {
+    const draft = getMagazineDraft(db, req.params.id);
+    if (!draft) return res.status(404).json({ success: false, error: 'مسودة مجلتي غير موجودة.' });
+    res.json({ success: true, data: draft });
+  });
+
+  router.post('/magazine-agent/generate', requireAdmin(db, 'content:write'), async (req, res) => {
+    const actor = admin(req);
+    const lockKey = actor.id;
+    if (magazineGenerationInFlight.has(lockKey)) {
+      return res.status(409).json({ success: false, code: 'MAGAZINE_GENERATION_IN_PROGRESS', error: 'يوجد توليد جارٍ لهذا المحرر. انتظر اكتماله.' });
+    }
+    const command = typeof req.body?.command === 'string' ? req.body.command.trim().slice(0, 1200) : '';
+    if (command.length < 3) return res.status(400).json({ success: false, error: 'اكتب أمرًا واضحًا لوكيل مجلتي.' });
+    const conversationId = typeof req.body?.conversationId === 'string' && /^[A-Za-z0-9._:-]{8,160}$/.test(req.body.conversationId)
+      ? req.body.conversationId : `mag_conversation_${randomUUID()}`;
+    const batchTotal = Math.max(1, Math.min(10, Number(req.body?.batchTotal) || 1));
+    const batchIndex = Math.max(1, Math.min(batchTotal, Number(req.body?.batchIndex) || 1));
+    const history = Array.isArray(req.body?.history) ? req.body.history.slice(-8).map((line: any) => ({
+      role: line?.role === 'assistant' ? 'assistant' as const : 'user' as const,
+      text: String(line?.text || '').slice(0, 1000),
+    })).filter((line: any) => line.text.trim()) : [];
+    const previousTopics = Array.isArray(req.body?.previousTopics)
+      ? req.body.previousTopics.map((topic: any) => String(topic || '').trim().slice(0, 180)).filter(Boolean).slice(-20) : [];
+    const input: GenerateMagazineInput = {
+      command, conversationId,
+      batchId: typeof req.body?.batchId === 'string' ? req.body.batchId.slice(0, 160) : undefined,
+      batchIndex, batchTotal, history, previousTopics, adminId: actor.id,
+    };
+    magazineGenerationInFlight.add(lockKey);
+    try {
+      const result = await generateMagazineContent(db, input);
+      if (!result.needsClarification) {
+        audit(db, req, 'GENERATE', 'MAGAZINE_AGENT', result.batchId, null, {
+          command: command.slice(0, 300), batchIndex, batchTotal,
+          topic: result.output?.topic || '', draftIds: result.drafts.map((draft: any) => draft.id), model: result.model,
+        });
+      }
+      res.status(result.needsClarification ? 200 : 201).json({ success: true, data: result });
+    } catch (error: any) {
+      console.error('[Magazine Agent]', error?.message || error);
+      if (error instanceof MagazineAgentUnavailableError) return res.status(503).json({ success: false, code: error.code, error: error.message });
+      if (error instanceof MagazineAgentProviderError) return res.status(502).json({ success: false, code: error.code, error: error.message });
+      if (error?.message === 'MAGAZINE_COMMAND_REQUIRED') return res.status(400).json({ success: false, error: 'اكتب أمرًا واضحًا لوكيل مجلتي.' });
+      res.status(500).json({ success: false, code: 'MAGAZINE_GENERATION_FAILED', error: 'تعذر إنشاء المحتوى وحفظه. لم تُحفظ نتيجة ناقصة.' });
+    } finally {
+      magazineGenerationInFlight.delete(lockKey);
+    }
+  });
+
+  router.put('/magazine-drafts/:id/save', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM magazine_drafts WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'مسودة مجلتي غير موجودة.' });
+    let draft: any;
+    if (existing.target_id) {
+      // إلغاء أي جدولة سابقة داخل CMS أيضًا، لا مجرد تغيير شارة البطاقة.
+      draft = prepareMagazineDraft(db, existing.id, { status: 'draft', category: existing.category });
+    } else {
+      const now = new Date().toISOString();
+      db.run(`UPDATE magazine_drafts SET status='draft',scheduled_at=NULL,updated_at=? WHERE id=?`, now, existing.id);
+      draft = getMagazineDraft(db, existing.id);
+    }
+    audit(db, req, 'SAVE_DRAFT', 'MAGAZINE_AGENT', existing.id, { status: existing.status }, { status: 'draft' });
+    res.json({ success: true, data: draft });
+  });
+
+  router.put('/magazine-drafts/:id/prepare', requireAdmin(db, 'content:write'), (req, res) => {
+    const status = req.body?.status === 'scheduled' ? 'scheduled' as const : 'draft' as const;
+    try {
+      const draft = prepareMagazineDraft(db, req.params.id, {
+        status,
+        category: typeof req.body?.category === 'string' ? req.body.category.slice(0, 80) : 'AYROVI',
+        scheduledAt: typeof req.body?.scheduledAt === 'string' ? req.body.scheduledAt : null,
+      });
+      audit(db, req, 'TRANSFER_TO_CMS', 'MAGAZINE_AGENT', draft.id, null, {
+        status: draft.status, category: draft.category, scheduledAt: draft.scheduled_at,
+        targetResource: draft.target_resource, targetId: draft.target_id,
+      });
+      res.json({ success: true, data: draft });
+    } catch (error: any) {
+      if (error?.message === 'MAGAZINE_DRAFT_NOT_FOUND') return res.status(404).json({ success: false, error: 'مسودة مجلتي غير موجودة.' });
+      if (error?.message === 'MAGAZINE_SCHEDULE_INVALID') return res.status(400).json({ success: false, error: 'اختر تاريخ نشر مستقبليًا صالحًا.' });
+      if (error?.message === 'MAGAZINE_MEDIA_REQUIRED') return res.status(400).json({ success: false, error: 'لا يمكن جدولة هذا المحتوى قبل اختيار صورة مملوكة أو فيديو Pexels/Pixabay مرخص. احفظه كمسودة وأضف الوسيط من التبويب المناسب.' });
+      console.error('[Magazine transfer]', error?.message || error);
+      res.status(500).json({ success: false, error: 'تعذر نقل المسودة إلى مجلتي.' });
+    }
+  });
+
+  router.delete('/magazine-drafts/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM magazine_drafts WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'مسودة مجلتي غير موجودة.' });
+    deleteMagazineDraft(db, existing.id);
+    audit(db, req, 'DELETE', 'MAGAZINE_AGENT', existing.id, { title: existing.title, contentType: existing.content_type, status: existing.status, targetResource: existing.target_resource, targetId: existing.target_id }, null);
+    res.json({ success: true });
   });
 
   router.get('/ai-discovery', requireAdmin(db, 'reports:read'), (_req, res) => {

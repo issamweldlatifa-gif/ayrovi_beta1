@@ -31,7 +31,7 @@ const pageDefinitions: Array<{
   { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.' },
   { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.' },
   { id: 'stories', label: 'Social', eyebrow: 'Social Ayrovi', description: 'Stories et publications de la communauté AYROVI.' },
-  { id: 'news', label: 'Actualités', eyebrow: 'Journal AYROVI', description: 'Les informations, arrivages et annonces de la plateforme.' },
+  { id: 'news', label: 'مجلتي', eyebrow: 'مجلة AYROVI', description: 'موضة، اتجاهات واختيارات تحريرية تربط الإلهام بمنتجات AYROVI.' },
 ];
 
 function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
@@ -150,7 +150,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
     return home.news.length ? (
       <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => <article key={item.id} className="border-t border-black/15 pt-5"><img src={mediaSource(item.image, heroHomme)} alt="" className="aspect-[16/10] w-full object-cover" /><p className="mt-5 text-[10px] font-black uppercase tracking-[0.16em] text-brand">{String(item.category || 'AYROVI').replaceAll('_', ' ')}</p><h2 className="mt-2 text-2xl font-black tracking-tight text-ink">{item.title}</h2><p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p><p className="mt-4 text-xs font-bold text-slate-400">{item.author}</p></article>)}</div>
-    ) : <EmptyContent label="Actualités" />;
+    ) : <EmptyContent label="مجلتي" />;
   };
 
   return (

@@ -12,6 +12,8 @@ import {
 import './admin.css';
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
+import { MagazineAgentPage } from './MagazineAgentPage';
+import { MagazineDraftsPanel } from './MagazineDraftsPanel';
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
 
 type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'audit:read' | 'reports:read' | 'reports:write';
@@ -80,7 +82,7 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   news: {
-    title: 'Actualités', singular: 'actualité', description: 'Journal éditorial AYROVI relié aux arrivages et aux produits.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
+    title: 'مجلتي', singular: 'محتوى مجلتي', description: 'مجلة AYROVI التحريرية المرتبطة بالمنتجات، مع مسودات وكيل مجلتي ومراجعة بشرية قبل النشر.', endpoint: '/news', keyField: 'title', statusField: 'status', permission: 'content:write',
     defaults: { title: '', summary: '', content: '', image: '', category: 'AYROVI', arrival_id: '', product_id: '', author: 'Équipe AYROVI', published_at: new Date().toISOString(), status: 'DRAFT' },
     fields: [
       { key: 'title', label: 'Titre', type: 'text', required: true }, { key: 'category', label: 'Catégorie', type: 'select', options: ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'] },
@@ -123,7 +125,8 @@ const navGroups = [
   { label: 'Contenu', items: [
     { id: 'arrivals', label: 'Arrivages', icon: Calendar, permission: 'content:read' as Permission }, { id: 'products', label: 'Produits', icon: ShoppingBag, permission: 'content:read' as Permission },
     { id: 'promotions', label: 'Promotions', icon: Gift, permission: 'content:read' as Permission }, { id: 'social', label: 'Social', icon: ChartLine, permission: 'content:read' as Permission },
-    { id: 'news', label: 'Actualités', icon: FileText, permission: 'content:read' as Permission }, { id: 'brands', label: 'Marques', icon: Tag, permission: 'content:read' as Permission },
+    { id: 'news', label: 'مجلتي', icon: FileText, permission: 'content:read' as Permission }, { id: 'magazine-agent', label: 'وكيل مجلتي', icon: Sparkles, permission: 'content:read' as Permission },
+    { id: 'brands', label: 'Marques', icon: Tag, permission: 'content:read' as Permission },
     { id: 'hero', label: 'Hero Slider', icon: Sparkles, permission: 'content:read' as Permission },
   ]},
   { label: 'Commerce', items: [
@@ -262,6 +265,23 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
     <Modal open={modal} title={`${editing ? 'Modifier' : 'Créer'} ${definition.singular}`} onClose={() => setModal(false)} wide><ResourceForm definition={definition} value={form} onChange={setForm} onSubmit={save} busy={busy} /></Modal>
     <ConfirmDialog open={Boolean(archiveTarget)} title={`Archiver ${definition.singular}`} message="L’élément ne sera plus public mais ses références historiques seront préservées." confirmLabel="Archiver" busy={busy} onConfirm={archive} onCancel={() => setArchiveTarget(null)} />
     {toast && <Toast message={toast.message} tone={toast.tone} />}
+  </>;
+};
+
+const MagazinePage: React.FC<{
+  canWrite: boolean;
+  pendingDraftId?: string;
+  onPendingHandled: () => void;
+}> = ({ canWrite, pendingDraftId, onPendingHandled }) => {
+  const [cmsRevision, setCmsRevision] = useState(0);
+  return <>
+    <ContentPage key={`magazine-cms-${cmsRevision}`} resource="news" canWrite={canWrite} />
+    <MagazineDraftsPanel
+      canWrite={canWrite}
+      pendingDraftId={pendingDraftId}
+      onPendingHandled={onPendingHandled}
+      onCmsChanged={() => setCmsRevision((value) => value + 1)}
+    />
   </>;
 };
 
@@ -660,12 +680,14 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 };
 
 const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout})=>{
-  const initialParams=new URLSearchParams(location.search);const initial=initialParams.get('section')||'dashboard';const[section,setSection]=useState(initial);const[requestedReview,setRequestedReview]=useState(initialParams.get('request')||'');const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
+  const initialParams=new URLSearchParams(location.search);const initial=initialParams.get('section')||'dashboard';const[section,setSection]=useState(initial);const[requestedReview,setRequestedReview]=useState(initialParams.get('request')||'');const[pendingMagazineDraft,setPendingMagazineDraft]=useState('');const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
   const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string,request?:string)=>{setSection(id);setRequestedReview(request||'');setMobile(false);const params=new URLSearchParams({section:id});if(request)params.set('request',request);pushUrlPreservingNavigation(`/admin?${params}`);};
+  const openMagazineDraft=useCallback((draftId?:string)=>{setPendingMagazineDraft(draftId||'');navigate('news');},[]);
+  const clearPendingMagazineDraft=useCallback(()=>setPendingMagazineDraft(''),[]);
   useEffect(()=>{const pop=()=>{const params=new URLSearchParams(location.search);setSection(params.get('section')||'dashboard');setRequestedReview(params.get('request')||'');};addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
-  return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><img src="/media/logo-ayrovi.png" alt="AYROVI" style={{width:30,height:30,objectFit:"contain"}} /><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={section===id?'is-active':''} onClick={()=>navigate(id)}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank" rel="noopener noreferrer"><Globe2/>Voir le site public</a><span>AYROVI v3.3 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
+  return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><img src="/media/logo-ayrovi.png" alt="AYROVI" style={{width:30,height:30,objectFit:"contain"}} /><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={`${section===id?'is-active':''} ${id==='news'?'is-magazine-drop-target':''}`.trim()} onClick={()=>navigate(id)} onDragOver={id==='news'?(event)=>{event.preventDefault();event.dataTransfer.dropEffect='copy';}:undefined} onDrop={id==='news'?(event)=>{event.preventDefault();const draftId=event.dataTransfer.getData('application/x-ayrovi-magazine-draft')||event.dataTransfer.getData('text/plain');if(draftId.startsWith('mag_draft_'))openMagazineDraft(draftId);}:undefined}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank" rel="noopener noreferrer"><Globe2/>Voir le site public</a><span>AYROVI v3.4 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
   <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><NotificationsBell onNavigate={navigate}/><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
 };
 

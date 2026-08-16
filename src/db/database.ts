@@ -633,6 +633,32 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_story_interactions_target ON story_interactions(target_id, type);
       CREATE INDEX IF NOT EXISTS idx_story_interactions_account ON story_interactions(account_id, type);
 
+      CREATE TABLE IF NOT EXISTS magazine_drafts (
+        id TEXT PRIMARY KEY,
+        conversation_id TEXT NOT NULL DEFAULT '',
+        batch_id TEXT NOT NULL DEFAULT '',
+        content_type TEXT NOT NULL CHECK(content_type IN ('editorial','publication','story','reel')),
+        title TEXT NOT NULL,
+        summary TEXT NOT NULL DEFAULT '',
+        content_json TEXT NOT NULL DEFAULT '{}',
+        reference_media_json TEXT NOT NULL DEFAULT '[]',
+        stock_media_json TEXT NOT NULL DEFAULT '[]',
+        product_id TEXT REFERENCES products(id) ON DELETE SET NULL,
+        category TEXT NOT NULL DEFAULT 'AYROVI',
+        status TEXT NOT NULL DEFAULT 'draft' CHECK(status IN ('draft','scheduled','published','archived')),
+        scheduled_at TEXT,
+        target_resource TEXT,
+        target_id TEXT,
+        generated_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+        model TEXT NOT NULL DEFAULT '',
+        prompt_excerpt TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_magazine_drafts_status ON magazine_drafts(status, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_magazine_drafts_batch ON magazine_drafts(batch_id, content_type);
+      CREATE INDEX IF NOT EXISTS idx_magazine_drafts_product ON magazine_drafts(product_id, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS lens_analysis_cache (
         image_hash TEXT PRIMARY KEY,
         result_json TEXT NOT NULL,

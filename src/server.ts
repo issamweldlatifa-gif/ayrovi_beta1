@@ -85,6 +85,7 @@ function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: 
 }
 // Authentification & endpoints coûteux — plafonds volontairement généreux pour l'usage réel
 app.use('/api/admin/auth/login', rateLimit('admin-login', 10, 5 * 60_000));
+app.use('/api/admin/magazine-agent/generate', rateLimit('magazine-agent', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/customer/auth/otp/request', rateLimit('otp-request', 5, 60_000, (req) => `${req.ip}:${String(req.body?.phone || '').slice(0, 24)}`));
 app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
@@ -173,7 +174,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.3.0',
+    version: '3.4.0',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });
@@ -185,6 +186,9 @@ app.get('/api/ready', (_req, res) => {
       database: 'ok',
       capabilities: {
         assistant: Boolean(process.env.ANTHROPIC_API_KEY),
+        magazineAgent: Boolean(process.env.ANTHROPIC_API_KEY),
+        magazineImageSearch: Boolean(process.env.SERPAPI_KEY),
+        magazineStockVideo: Boolean(process.env.PEXELS_API_KEY || process.env.PIXABAY_API_KEY || process.env.ANTHROPIC_API_KEY),
         visualSearch: Boolean(process.env.SERPAPI_KEY),
         voice: Boolean(process.env.GROQ_API_KEY),
         googleLogin: customerAuthReady() && googleOAuthAvailable(),
