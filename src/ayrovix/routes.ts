@@ -15,6 +15,7 @@ import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
+import { filterDisplayableCandidates, withDisplayRating } from './services/candidatePolicy';
 
 /**
  * AYROVIX public API — Claude powers visual understanding, visible-price
@@ -77,12 +78,17 @@ function quoteToken(price: number | null, currency: string | null, title: string
 }
 
 function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
-  const status: AyrovixQuoteStatus = candidate.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
+  const normalized = withDisplayRating(candidate);
+  const status: AyrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
-    ...candidate,
+    ...normalized,
     priceVerificationStatus: status,
     priceToken: quoteToken(candidate.price, candidate.currency, candidate.title, candidate.sourceUrl, status),
   };
+}
+
+function tokenizedCandidates(items: AyrovixCandidate[]): AyrovixCandidate[] {
+  return filterDisplayableCandidates(items, 8).map(tokenizedCandidate);
 }
 
 function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
@@ -120,13 +126,7 @@ function rememberAuthenticatedHistory(
 }
 
 function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
-  const seen = new Set<string>();
-  return items.filter((item) => {
-    const key = `${item.sourceUrl || ''}|${item.title.toLowerCase()}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  }).sort((a, b) => b.match - a.match).slice(0, limit);
+  return filterDisplayableCandidates(items, limit);
 }
 
 async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {
@@ -198,7 +198,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const candidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && query
         ? await searchCandidates(db, identification, query, visualCandidates)
         : [];
-      const securedCandidates = candidates.map(tokenizedCandidate);
+      const securedCandidates = tokenizedCandidates(candidates);
       const securedPrice = tokenizedDetectedPrice(priceResult);
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
@@ -260,7 +260,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         candidatesCount: 1 + result.alternates.length,
       });
       const securedProduct = tokenizedProduct(result.product);
-      const securedAlternates = result.alternates.map(tokenizedCandidate);
+      const securedAlternates = tokenizedCandidates(result.alternates);
       const historyMatch = securedProduct.price != null ? null : securedAlternates[0];
       if (req.body?.recordHistory !== false) rememberAuthenticatedHistory(db, req, {
         eventId,
@@ -289,7 +289,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           const fallbackQuery = String(url || '').slice(0, 160);
           const candidates = await anthropicExternalSearch(fallbackQuery, 6);
           const eventId = recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length });
-          const securedAlternates = candidates.map(tokenizedCandidate);
+          const securedAlternates = tokenizedCandidates(candidates);
           const fallbackProduct: AyrovixProduct = {
             title: `Produit ${fallbackQuery.slice(0, 60)}`,
             brand: null,
@@ -333,7 +333,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const candidates = await searchByCodeOrText(db, value);
-      const securedCandidates = candidates.map(tokenizedCandidate);
+      const securedCandidates = tokenizedCandidates(candidates);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
@@ -357,7 +357,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const candidates = await searchByCodeOrText(db, code);
-      const securedCandidates = candidates.map(tokenizedCandidate);
+      const securedCandidates = tokenizedCandidates(candidates);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa6';
 import { Heart, MessageSquare, Package, ShieldCheck, Truck } from './QatafoIcons';
-import { FigLogoIcon } from './Icons';
+
 import ratesTransparencyImage from '../assets/rates-transparency.jpg';
 import { getCommerceConfig } from '../services/publicApi';
 
@@ -8,19 +9,6 @@ interface FooterProps {
   onOpenAccount?: () => void;
   onOpenAssistant?: () => void;
 }
-
-const FacebookGlyph = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}><path d="M13.5 21v-7.6h2.6l.4-2.9h-3V8.6c0-.8.3-1.4 1.5-1.4h1.6V4.6c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 3.9v2.1H7.8v2.9h2.6V21h3.1z" /></svg>
-);
-const InstagramGlyph = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden {...props}><rect x="3.6" y="3.6" width="16.8" height="16.8" rx="4.6" /><circle cx="12" cy="12" r="3.8" /><circle cx="17.1" cy="6.9" r="1.15" fill="currentColor" stroke="none" /></svg>
-);
-const TikTokGlyph = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}><path d="M16.6 3c.4 2 1.9 3.5 4 3.8v2.9c-1.5 0-2.9-.5-4-1.3v6.2c0 3.4-2.4 5.9-5.8 5.9A5.6 5.6 0 0 1 5 14.9c0-3.2 2.5-5.7 5.8-5.7l.8.05v3a2.8 2.8 0 0 0-.8-.13 2.75 2.75 0 0 0-2.7 2.8 2.7 2.7 0 0 0 2.7 2.75c1.6 0 2.7-1.2 2.7-2.9V3h3.1z" /></svg>
-);
-const WhatsAppGlyph = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden {...props}><path d="M12 3.3a8.6 8.6 0 0 0-7.4 12.9L3.4 20.6l4.5-1.2A8.6 8.6 0 1 0 12 3.3zm0 1.9a6.7 6.7 0 1 1-3.4 12.4l-.5-.3-2.2.6.6-2.1-.3-.5A6.7 6.7 0 0 1 12 5.2zm-2.5 3c-.2 0-.5.07-.7.34-.24.27-.94.9-.94 2.2 0 1.3.95 2.56 1.08 2.73.13.17 1.84 2.93 4.54 3.99 2.2.87 2.65.7 3.13.65.48-.04 1.54-.62 1.76-1.23.22-.6.22-1.13.15-1.24-.06-.1-.24-.17-.5-.3-.27-.12-1.55-.75-1.8-.84-.24-.09-.42-.13-.6.14-.17.27-.68.83-.84 1-.15.17-.3.2-.57.07a7.3 7.3 0 0 1-2.12-1.3 7.9 7.9 0 0 1-1.47-1.83c-.15-.27-.02-.41.12-.54.12-.12.26-.3.4-.45.13-.15.17-.26.26-.43.09-.17.04-.32-.02-.45-.06-.13-.58-1.44-.82-1.96-.2-.46-.41-.5-.58-.5l-.5.01z" /></svg>
-);
 
 const PayBadge: React.FC<{ label: string; className?: string }> = ({ label, className = '' }) => (
   <span className={`inline-flex h-8 min-w-[62px] items-center justify-center rounded-md px-2.5 text-[11px] font-black italic tracking-wide shadow-sm ${className}`}>{label}</span>
@@ -53,10 +41,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
   }, []);
 
   const socials = [
-    { id: 'facebook', url: channels.facebook, label: 'Facebook', Glyph: FacebookGlyph },
-    { id: 'instagram', url: channels.instagram, label: 'Instagram', Glyph: InstagramGlyph },
-    { id: 'tiktok', url: channels.tiktok, label: 'TikTok', Glyph: TikTokGlyph },
-    { id: 'whatsapp', url: channels.whatsapp, label: 'WhatsApp', Glyph: WhatsAppGlyph },
+    { id: 'facebook', url: channels.facebook, label: 'Facebook', Glyph: FaFacebookF },
+    { id: 'instagram', url: channels.instagram, label: 'Instagram', Glyph: FaInstagram },
+    { id: 'tiktok', url: channels.tiktok, label: 'TikTok', Glyph: FaTiktok },
+    { id: 'whatsapp', url: channels.whatsapp, label: 'WhatsApp', Glyph: FaWhatsapp },
   ].filter((item) => item.url && /^https?:\/\//i.test(item.url));
 
   const groups: Array<{ title: string; links: Array<{ label: string; href?: string; onClick?: () => void }> }> = [
@@ -118,11 +106,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
     <footer className="mt-16 border-t border-line bg-white pb-8 pt-12 text-muted">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-9 space-y-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-white shadow-xs">
-              <FigLogoIcon className="h-5 w-5" />
-            </div>
-            <span className="text-lg font-bold text-ink">AYROVI</span>
+          <div className="flex items-center gap-2.5">
+            <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain" />
+            <span className="text-lg font-extrabold tracking-[-0.04em] text-ink">AYROVI</span>
           </div>
           <p className="max-w-xl leading-relaxed text-muted">{footerAbout}</p>
         </div>

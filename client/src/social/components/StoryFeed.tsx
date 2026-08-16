@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Bookmark, CheckCircle2, Heart, HeartFilled, MessageSquare, MoreVertical, Share2 } from '../../components/QatafoIcons';
+import { motion } from 'motion/react';
+import { ArrowRight, Bookmark, CheckCircle2, Heart, HeartFilled, MessageSquare, MoreVertical, Share2, User } from '../../components/QatafoIcons';
 import { postPublicUrl } from '../storyService';
 import { likePost, sharePost, timeAgo } from '../storyService';
 import type { StoryCta, StoryPost } from '../types';
@@ -9,7 +10,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
       <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-        {post.publisher.official ? <img src="/media/logo-ayrovi.jpg" alt="" className="h-10 w-10 object-cover" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-white">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+        {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
@@ -19,7 +20,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
         <p className={`text-[11px] font-semibold ${light ? 'text-white/70' : 'text-muted'}`}>{post.publisher.subtitle || 'Publisher'} · {timeAgo(post.createdAt)}</p>
       </div>
       <div className="relative">
-        <button type="button" aria-label="Options du post" onClick={() => setMenuOpen((open) => !open)} className={`grid h-9 w-9 place-items-center rounded-full transition active:scale-90 ${light ? 'text-white hover:bg-white/15' : 'text-muted hover:bg-surface'}`}>
+        <button type="button" aria-label="Options du post" onClick={() => setMenuOpen((open) => !open)} className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${light ? 'text-white hover:bg-white/15' : 'text-muted hover:bg-surface'}`}>
           <MoreVertical size={18} />
         </button>
         {menuOpen && (
@@ -91,30 +92,31 @@ const PostActions: React.FC<{
   onComment: () => void;
 }> = ({ post, liked, onLike, onComment }) => {
   const [saved, setSaved] = React.useState(() => {
-    try { return JSON.parse(localStorage.getItem('ayrovi_saved') || '[]').includes(post.id); } catch { return false; }
+    try { const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]'); return Array.isArray(value) && value.includes(post.id); } catch { return false; }
   });
   const toggleSave = () => {
     const next = !saved;
     setSaved(next);
     try {
-      const list: string[] = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      const list: string[] = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string').slice(0, 500) : [];
       const updated = next ? [...new Set([...list, post.id])] : list.filter((id: string) => id !== post.id);
       localStorage.setItem('ayrovi_saved', JSON.stringify(updated));
     } catch { /* */ }
   };
   return (
   <div className="flex items-center gap-1 px-3 pt-3">
-    <button type="button" onClick={onLike} aria-label={liked ? 'Ne plus aimer' : 'Aimer'} className={`grid h-10 w-10 place-items-center rounded-full transition active:scale-90 ${liked ? 'heart-pop text-brand' : 'text-ink hover:bg-surface'}`}>
-      {liked ? <HeartFilled size={21} /> : <Heart size={21} />}
+    <button type="button" onClick={onLike} aria-label={liked ? 'Ne plus aimer' : 'Aimer'} className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${liked ? 'heart-pop text-brand' : 'text-ink hover:bg-surface'}`}>
+      {liked ? <HeartFilled size={24} /> : <Heart size={24} />}
     </button>
-    <button type="button" onClick={onComment} aria-label="Commenter" className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">
-      <MessageSquare size={20} />
+    <button type="button" onClick={onComment} aria-label="Commenter" className="grid h-12 w-12 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">
+      <MessageSquare size={23} />
     </button>
-    <button type="button" onClick={() => void sharePost(post)} aria-label="Partager" className="grid h-10 w-10 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">
-      <Share2 size={20} />
+    <button type="button" onClick={() => void sharePost(post)} aria-label="Partager" className="grid h-12 w-12 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">
+      <Share2 size={23} />
     </button>
-    <button type="button" onClick={toggleSave} aria-label="Enregistrer" className={`ml-auto grid h-10 w-10 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-brand' : 'text-ink hover:bg-surface'}`}>
-      <Bookmark size={20} className={saved ? 'fill-current' : ''} />
+    <button type="button" onClick={toggleSave} aria-label="Enregistrer" className={`ml-auto grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-brand' : 'text-ink hover:bg-surface'}`}>
+      <Bookmark size={23} className={saved ? 'fill-current' : ''} />
     </button>
   </div>
 );};
@@ -142,7 +144,7 @@ export const StoryPostCard: React.FC<{
 
   const isVideo = post.type === 'video' || post.media[0]?.type === 'video';
   return (
-    <article className="border-b border-line bg-white pb-4">
+    <motion.article initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, amount: 0.15 }} transition={{ duration: 0.32 }} className="border-b border-line bg-white pb-4">
       {isVideo ? (
         <div className="relative">
           <PostMedia post={post} onOpenReels={onOpenReels} />
@@ -160,10 +162,13 @@ export const StoryPostCard: React.FC<{
       <div className="px-4 sm:px-5">
         <p className="pt-1 text-sm font-extrabold text-ink">{likesCount.toLocaleString('fr-FR')} j'aime</p>
         {post.caption && <p className="mt-1.5 text-sm leading-6 text-ink/90"><span className="font-extrabold">{post.publisher.name}</span> {post.caption}</p>}
-        <button type="button" onClick={() => onOpenComments(post)} className="mt-1.5 text-sm font-semibold text-muted transition hover:text-brand">
-          Voir les {post.commentsCount} commentaires
+        {post.cta && <button type="button" onClick={() => onCta(post.cta!)} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand/10 px-4 text-xs font-extrabold text-brand-dark transition hover:bg-brand/15 active:scale-95">{post.cta.label}<ArrowRight size={16} /></button>}
+        <button type="button" onClick={() => (isAuthenticated ? onOpenComments(post) : onRequireAuth())} className="mt-3 flex min-h-12 w-full items-center gap-3 rounded-full border border-line bg-surface px-3 text-left text-sm font-semibold text-muted transition focus:border-brand hover:border-brand/40">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><User size={16} /></span>
+          <span className="min-w-0 flex-1 truncate">Ajouter un commentaire…</span>
+          {post.commentsCount > 0 && <span className="text-[11px] font-bold">{post.commentsCount}</span>}
         </button>
       </div>
-    </article>
+    </motion.article>
   );
 };

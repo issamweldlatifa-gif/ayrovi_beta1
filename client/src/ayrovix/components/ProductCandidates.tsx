@@ -1,5 +1,8 @@
 import React from 'react';
+import { motion } from 'motion/react';
+import { ArrowUpRight, Image as ImageIcon, Star } from '../../components/QatafoIcons';
 import type { AyrovixCandidate } from '../types';
+import { displayRating, isDisplayableCandidate } from '../services/resultPolicy';
 
 interface ProductCandidatesProps {
   candidates: AyrovixCandidate[];
@@ -7,84 +10,55 @@ interface ProductCandidatesProps {
 }
 
 const Placeholder: React.FC = () => (
-  <div className="flex h-full w-full items-center justify-center bg-surface text-muted">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-      <rect x="3" y="6" width="18" height="13" rx="2" /><path d="M8 6V5a4 4 0 0 1 8 0v1" />
-    </svg>
-  </div>
+  <div className="flex h-full w-full items-center justify-center bg-surface text-muted"><ImageIcon size={34} strokeWidth={1.5} /></div>
 );
 
 const CandidateImage: React.FC<{ candidate: AyrovixCandidate }> = ({ candidate }) => {
   const urls = [...new Set([...(candidate.images || []), candidate.image].filter(Boolean))];
   const [index, setIndex] = React.useState(0);
   if (!urls[index]) return <Placeholder />;
-  return (
-    <img
-      src={urls[index]}
-      alt=""
-      loading="lazy"
-      referrerPolicy="no-referrer"
-      onError={() => setIndex((current) => current + 1)}
-      className="h-full w-full object-cover"
-    />
-  );
+  return <img src={urls[index]} alt={candidate.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setIndex((current) => current + 1)} className="h-full w-full object-cover" />;
 };
 
-/**
- * Jamais de réponse unique : plusieurs candidats, le meilleur en tête —
- * c'est l'utilisateur qui confirme le bon produit (principe central AYROVIX).
- */
-export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates, onChoose }) => (
-  <div className="space-y-2.5">
-    {candidates.map((candidate, index) => (
-      <article
-        key={candidate.id}
-        className={`rounded-[20px] border bg-white p-3 transition ${index === 0 ? 'border-brand shadow-lg shadow-brand/10' : 'border-line'}`}
-      >
-        {index === 0 && (
-          <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-brand">Meilleure correspondance</p>
-        )}
-        <div className="flex gap-3">
-          <div className="relative h-[84px] w-[68px] flex-none overflow-hidden rounded-xl border border-line">
-            <CandidateImage candidate={candidate} />
-            <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${candidate.match >= 80 ? 'bg-ink text-white' : 'bg-white/90 text-ink border border-line'}`}>
-              {candidate.match}%
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <h4 className="line-clamp-2 text-[13px] font-bold leading-snug text-ink">{candidate.title}</h4>
-            <p className="mt-0.5 truncate text-[11px] font-semibold text-muted">
-              {candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}
-            </p>
-            <p className="mt-1 text-sm font-extrabold text-ink">
-              {candidate.price != null && candidate.currency
-                ? <>{candidate.price.toFixed(candidate.price % 1 ? 2 : 0)} {candidate.currency}
-                    {candidate.priceTnd != null && <span className="ml-1.5 font-bold text-brand">≈ {candidate.priceTnd.toFixed(2)} DT</span>}</>
-                : <span className="text-xs font-semibold text-muted">Prix à vérifier sur la fiche</span>}
-            </p>
-            <div className="mt-2 flex gap-2">
-              <button
-                type="button"
-                onClick={() => onChoose(candidate)}
-                // Le lien direct est ensuite analysé pour confirmer les données et le prix.
-                className="min-h-[40px] flex-1 rounded-xl bg-ink px-3 text-xs font-bold text-white transition active:scale-95 disabled:opacity-40"
-              >
-                {candidate.kind === 'external' ? 'Vérifier et choisir' : 'Choisir'}
-              </button>
-              {candidate.sourceUrl && (
-                <a
-                  href={candidate.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex min-h-[40px] items-center rounded-xl border border-line px-3 text-xs font-bold text-ink transition hover:border-ink"
-                >
-                  Voir le produit
-                </a>
-              )}
+/** Only actionable, priced merchant listings are rendered. */
+export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates, onChoose }) => {
+  const visible = candidates.filter(isDisplayableCandidate);
+  if (!visible.length) return null;
+  return (
+    <div className="space-y-2.5">
+      {visible.map((candidate, index) => {
+        const rating = displayRating(candidate);
+        const merchantRating = candidate.ratingKind === 'merchant';
+        return (
+          <motion.article
+            key={candidate.id}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.2) }}
+            className={`rounded-[20px] border bg-white p-3 transition-shadow ${index === 0 ? 'border-brand shadow-lg shadow-brand/10' : 'border-line hover:shadow-md'}`}
+          >
+            {index === 0 && <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-brand">Meilleure correspondance</p>}
+            <div className="flex gap-3">
+              <div className="relative h-[92px] w-[74px] flex-none overflow-hidden rounded-xl border border-line">
+                <CandidateImage candidate={candidate} />
+                <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${candidate.match >= 80 ? 'bg-ink text-white' : 'border border-line bg-white/90 text-ink'}`}>{candidate.match}%</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h4 className="line-clamp-2 text-[13px] font-bold leading-snug text-ink">{candidate.title}</h4>
+                <p className="mt-0.5 truncate text-[11px] font-semibold text-muted">{candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}</p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <p className="text-sm font-extrabold text-ink">{Number(candidate.price).toFixed(Number(candidate.price) % 1 ? 2 : 0)} {candidate.currency}{candidate.priceTnd != null && <span className="ml-1.5 font-bold text-brand">≈ {candidate.priceTnd.toFixed(2)} DT</span>}</p>
+                  <p className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700" title={merchantRating ? 'Note publiée par le marchand' : 'Score de pertinence converti sur 5'}><Star size={13} fill="currentColor" />{rating.toFixed(1)}/5 <span className="text-muted">{merchantRating ? 'marchand' : 'pertinence'}</span>{merchantRating && Number(candidate.ratingCount) > 0 ? <span className="text-muted">({Number(candidate.ratingCount).toLocaleString('fr-FR')})</span> : null}</p>
+                </div>
+                <div className="mt-2 flex gap-2">
+                  <button type="button" onClick={() => onChoose(candidate)} className="min-h-11 flex-1 rounded-xl bg-ink px-3 text-xs font-bold text-white transition active:scale-95">{candidate.kind === 'external' ? 'Vérifier et choisir' : 'Choisir'}</button>
+                  <a href={candidate.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center gap-1 rounded-xl border border-line px-3 text-xs font-bold text-ink transition hover:border-ink" aria-label={`Ouvrir ${candidate.title} chez ${candidate.source}`}>Lien <ArrowUpRight size={15} /></a>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      </article>
-    ))}
-  </div>
-);
+          </motion.article>
+        );
+      })}
+    </div>
+  );
+};

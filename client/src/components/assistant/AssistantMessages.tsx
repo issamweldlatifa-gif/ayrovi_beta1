@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
-import { Calculator, Camera, Check, Copy, MessageSquare, Package, PackageCheck, RefreshCw, Search, Share2, ShoppingBag, Sparkles, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
+import { ArrowUpRight, Calculator, Camera, Check, Copy, MessageSquare, Package, PackageCheck, RefreshCw, Search, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
 import { AyroviMotion, AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
 import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
 import { AssistantMessage, FeedbackValue } from './types';
+import { displayRating, isDisplayableCandidate } from '../../ayrovix/services/resultPolicy';
 
 interface AssistantMessagesProps {
   messages: AssistantMessage[];
@@ -40,7 +41,11 @@ const secondaryActions = [
   { icon: MessageSquare, text: 'Contacter le support', prompt: 'J’ai besoin d’aide du support AYROVI.' },
 ];
 
-const cleanAssistantText = (text: string) => text.replaceAll('[[OPEN_LENS]]', '').trim();
+const cleanAssistantText = (text: string) => text
+  .replaceAll('[[OPEN_LENS]]', '')
+  .replace(/\p{Extended_Pictographic}/gu, '')
+  .replace(/\s{2,}/g, ' ')
+  .trim();
 
 const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   const images = [...new Set([product.image, ...(product.images || [])].filter(Boolean))] as string[];
@@ -71,10 +76,14 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
       <div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-600 text-lg text-white">د.ت</span><div><p className="text-[11px] font-bold uppercase tracking-[.12em] text-emerald-600">Estimation AYROVI</p><strong className="text-xl">{message.priceBreakdown.totalTND.toFixed(2)} TND</strong></div></div>
       <dl className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t pt-3 text-xs ${isDark ? 'border-white/10 text-zinc-400' : 'border-emerald-100 text-zinc-600'}`}><dt>Produit converti</dt><dd className="text-right">{message.priceBreakdown.convertedPriceTND.toFixed(2)} TND</dd><dt>Douane</dt><dd className="text-right">{message.priceBreakdown.customsFeeTND.toFixed(2)} TND</dd><dt>Livraison</dt><dd className="text-right">{message.priceBreakdown.shippingFeeTND.toFixed(2)} TND</dd><dt>Service</dt><dd className="text-right">{message.priceBreakdown.serviceFeeTND.toFixed(2)} TND</dd>{message.priceBreakdown.expressFeeTND > 0 && <><dt>Express</dt><dd className="text-right">{message.priceBreakdown.expressFeeTND.toFixed(2)} TND</dd></>}</dl>
     </article>}
-    {message.products?.length ? <div className="grid gap-3 sm:grid-cols-2">
-      {message.products.map((product) => <article key={product.id} className={`overflow-hidden rounded-2xl border ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-zinc-200 bg-white'}`}>
+    {message.products?.some(isDisplayableCandidate) ? <div className="grid gap-3 sm:grid-cols-2">
+      {message.products.filter(isDisplayableCandidate).map((product) => <article key={product.id} className={`overflow-hidden rounded-2xl border ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-zinc-200 bg-white'}`}>
         <div className={`relative aspect-[4/3] ${isDark ? 'bg-white/5' : 'bg-zinc-50'}`}><CandidateImage product={product}/><span className="absolute left-2 top-2 rounded-full bg-zinc-950/80 px-2 py-1 text-[9px] font-bold text-white">{product.source}</span></div>
-        <div className="p-3"><h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3><div className="mt-2 flex items-end justify-between gap-2"><div>{product.price != null && <p className="text-sm font-black text-violet-600">{product.price} {product.currency}</p>}{product.priceTnd != null && <p className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>≈ {product.priceTnd.toFixed(2)} TND</p>}</div><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="min-h-9 rounded-xl bg-violet-600 px-3 text-[11px] font-extrabold text-white disabled:opacity-50">{productBusyId === product.id ? 'Vérification…' : 'Choisir'}</button></div></div>
+        <div className="p-3">
+          <h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-black text-violet-600">{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p>{product.priceTnd != null && <p className={`text-[10px] ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>≈ {product.priceTnd.toFixed(2)} TND</p>}<p className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-amber-600"><Star size={12} fill="currentColor" />{displayRating(product).toFixed(1)}/5 <span className={isDark ? 'text-zinc-400' : 'text-zinc-500'}>{product.ratingKind === 'merchant' ? 'marchand' : 'pertinence'}</span></p></div></div>
+          <div className="mt-3 flex gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-xl border px-3 text-[11px] font-extrabold ${isDark ? 'border-white/15 text-zinc-200' : 'border-zinc-200 text-zinc-700'}`}>Lien<ArrowUpRight size={14} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="min-h-10 flex-1 rounded-xl bg-violet-600 px-3 text-[11px] font-extrabold text-white disabled:opacity-50">{productBusyId === product.id ? 'Vérification…' : 'Choisir'}</button></div>
+        </div>
       </article>)}
     </div> : null}
     {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-2xl border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-violet-200 bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder}/></div>}
@@ -106,7 +115,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
               <AyroviMotion state="idle" size={92} color="#673de6" />
               <p className={`mt-4 text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-violet-300' : 'text-brand'}`}>Ayrovi AI</p>
               <h2 className={`mt-2 text-[26px] font-black leading-tight tracking-tight sm:text-3xl ${isDark ? 'text-zinc-50' : 'text-zinc-900'}`}>
-                Bonjour{customerFirstName ? ` ${customerFirstName}` : ''} 👋
+                Bonjour{customerFirstName ? ` ${customerFirstName}` : ''}
               </h2>
               <p className={`mt-1.5 text-sm font-bold ${isDark ? 'text-zinc-300' : 'text-zinc-700'}`}>Que souhaitez-vous faire aujourd’hui ?</p>
               <p className={`mt-3 max-w-sm text-[13px] leading-6 ${isDark ? 'text-zinc-400' : 'text-zinc-500'}`}>

@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
         </button>
 
         <div className="flex items-center gap-2.5">
-          <img src="/media/logo-ayrovi.jpg" alt="AYROVI" className="h-9 w-9 rounded-xl object-cover sm:h-10 sm:w-10" />
+          <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-10 w-10 object-contain sm:h-11 sm:w-11" />
           <span
             className={`text-2xl font-black tracking-tight transition-colors duration-300 sm:text-3xl ${
               hasPassedHero ? 'text-ink' : 'text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]'

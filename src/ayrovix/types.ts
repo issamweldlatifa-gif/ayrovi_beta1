@@ -54,6 +54,9 @@ export interface AyrovixCandidate {
   priceTnd: number | null; // estimation "tout inclus" via le calculator AYROVI
   priceToken?: string | null;
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  rating?: number | null; // 0..5 : note marchand si fournie, sinon qualité du match AYROVIX
+  ratingCount?: number | null;
+  ratingKind?: 'merchant' | 'match';
   match: number;          // 0..99, score de correspondance déterministe
 }
 
@@ -93,6 +96,9 @@ export interface AyrovixProduct {
   verificationProvider?: string;
   verificationMethod?: string;
   verificationFailureCode?: string | null;
+  rating?: number | null;
+  ratingCount?: number | null;
+  ratingKind?: 'merchant' | 'match' | 'listing-quality';
 }
 
 export interface AyrovixDetectedPrice {

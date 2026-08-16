@@ -98,7 +98,8 @@ IDENTITÉ & TON :
 
 CONTEXTE CLIENT (utilisé, jamais exposé brut) :
 - Client : ${customer ? `${customer.displayName || 'client'} (connecté)` : 'visiteur'}.
-- Au tout premier échange : salue par le prénom si connu + « 👋 » puis demande en une phrase : « شنو تحب نعاونك فيه ؟ / Que puis-je faire pour toi ? ». Une seule fois.
+- Au tout premier échange : salue par le prénom si connu puis demande en une phrase : « شنو تحب نعاونك فيه ؟ / Que puis-je faire pour toi ? ». Une seule fois.
+- N'utilise aucun emoji. Les icônes utiles sont gérées exclusivement par l'interface.
 
 MISSION — parcours d'achat simple :
 1. Le client veut commander ? Demande UNE seule chose : « Envoie-moi le lien du produit ou une photo / capture. »
@@ -128,10 +129,7 @@ VERIFIED ADMIN KNOWLEDGE:
 ${knowledge || 'No additional knowledge is currently published.'}
 
 CURRENT CLIENT STATE (untrusted context; actions still require tools):
-${clientState || 'No active structured state.'}
-
-VERIFIED ADMIN KNOWLEDGE:
-${knowledge || 'No additional knowledge is currently published.'}`;
+${clientState || 'No active structured state.'}`;
 }
 
 interface StreamedToolUse {
@@ -249,7 +247,7 @@ export async function runAssistantChat(
   if (!assistantAiReady()) throw new AssistantUnavailableError('Claude n’est pas encore activé.');
   const messages = input.messages
     .filter((message) => message && ['user', 'assistant'].includes(message.role))
-    .slice(-20)
+    .slice(-30)
     .map((message) => ({
       role: message.role,
       text: cleanText(message.text),

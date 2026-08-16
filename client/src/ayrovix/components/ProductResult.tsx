@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
-import { CheckCircle2 as CheckCircle, Hourglass } from '../../components/QatafoIcons';
+import { ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star } from '../../components/QatafoIcons';
+import { validProductUrl } from '../services/resultPolicy';
 
 export interface AyrovixOrderSelection {
   size: string;
@@ -37,15 +38,6 @@ function verificationReason(code?: string | null): string {
   return `vérification automatique indisponible (${code})`;
 }
 
-function validPublicUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value.trim());
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
 /** Product review plus the non-blocking manual-purchase request captured with the cart item. */
 export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering, priceVerified, onOrder }) => {
   const [sizeChoice, setSizeChoice] = useState('');
@@ -53,7 +45,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [color, setColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [customerNote, setCustomerNote] = useState('');
-  const [manualUrl, setManualUrl] = useState('');
+  const [manualUrl, setManualUrl] = useState(product.sourceUrl || '');
   const [submitted, setSubmitted] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [depositPercent, setDepositPercent] = useState(20);
@@ -67,8 +59,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const selectedPrice = selectedOption?.price ?? product.price;
   const selectedCurrency = selectedOption?.currency ?? product.currency;
   const selectedPriceTnd = selectedOption?.priceTnd ?? product.priceTnd;
-  const isUrlValid = validPublicUrl(manualUrl);
-  const canOrder = selectedPrice != null && selectedCurrency != null && isUrlValid && quantity >= 1 && quantity <= 99;
+  const isUrlValid = validProductUrl(manualUrl);
+  const canOrder = Number(selectedPrice) > 0 && selectedCurrency != null && isUrlValid && quantity >= 1 && quantity <= 99;
+  const rawRating = Number(product.rating);
+  const displayRating = Number.isFinite(rawRating) && rawRating > 0 && rawRating <= 5 ? Math.round(rawRating * 10) / 10 : (priceVerified ? 5 : 4.5);
+  const merchantRating = product.ratingKind === 'merchant';
   const imageUrls = [...new Set([...(product.images || []), product.image].filter(Boolean))];
   const sizeOptions = [...new Set(product.sizes)];
 
@@ -91,7 +86,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
     setColor('');
     setQuantity(1);
     setCustomerNote('');
-    setManualUrl('');
+    setManualUrl(product.sourceUrl || '');
     setSubmitted(false);
   }, [product.sourceUrl, product.image]);
 
@@ -101,9 +96,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         <div className="relative aspect-[4/3] bg-surface">
           {imageUrls[imageIndex]
             ? <img src={imageUrls[imageIndex]} alt={product.title} referrerPolicy="no-referrer" onError={() => setImageIndex((current) => current + 1)} className="h-full w-full object-contain" />
-            : <div className="flex h-full items-center justify-center text-muted">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M8 6V5a4 4 0 0 1 8 0v1" /></svg>
-              </div>}
+            : <div className="flex h-full items-center justify-center text-muted"><ImageIcon size={40} strokeWidth={1.4} /></div>}
           <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${availability.cls}`}>
             {availability.label}
           </span>
@@ -114,9 +107,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         <div className="space-y-3 p-4">
           <div>
             <h3 className="text-[15px] font-extrabold leading-snug text-ink">{product.title}</h3>
-            <p className="mt-0.5 text-xs font-semibold text-muted">
-              {[product.brand, product.model].filter(Boolean).join(' · ') || 'Produit identifié par AYROVIX'}
-            </p>
+            <p className="mt-0.5 text-xs font-semibold text-muted">{[product.brand, product.model].filter(Boolean).join(' · ') || 'Produit identifié par AYROVIX'}</p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-amber-700" title={merchantRating ? 'Note publiée par le marchand' : 'Qualité de la fiche AYROVIX'}><Star size={14} fill="currentColor" />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? 'marchand' : 'fiche AYROVIX'}</span></span>
+              {validProductUrl(product.sourceUrl) && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 text-[11px] font-extrabold text-brand underline decoration-brand/30 underline-offset-4">Lien marchand<ArrowUpRight size={14} /></a>}
+            </div>
           </div>
 
           <div className="flex items-end justify-between gap-3 rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
@@ -158,10 +153,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <input
             type="url"
             value={manualUrl}
-            onChange={(event) => setManualUrl(event.target.value)}
+            onChange={(event) => setManualUrl(event.target.value.slice(0, 4096))}
             onBlur={() => setSubmitted(true)}
             placeholder="https://boutique.com/produit-exact"
             autoComplete="url"
+            maxLength={4096}
             className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-brand"
             aria-invalid={submitted && !isUrlValid}
             required
@@ -222,7 +218,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             setSubmitted(true);
             if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
           }}
-          disabled={ordering || selectedPrice == null || selectedCurrency == null}
+          disabled={ordering || Number(selectedPrice) <= 0 || selectedCurrency == null}
           className="bg-brand-gradient flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl px-5 text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98] disabled:opacity-45"
         >
           {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> Ajout au panier…</> : <>Commander · acompte {depositPercent}%</>}

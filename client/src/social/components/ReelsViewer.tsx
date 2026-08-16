@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion } from 'motion/react';
 import { ArrowLeft, Bookmark, Heart, HeartFilled, MessageSquare, Share2, Volume2, VolumeX } from '../../components/QatafoIcons';
 import { fetchCounts, likePost, likeReel, sharePost, viewReel } from '../storyService';
 import type { ReelItem } from '../storyService';
@@ -101,7 +102,7 @@ export const ReelsViewer: React.FC<{
       {/* Flux vertical snap */}
       <div ref={containerRef} onScroll={onScroll} className="no-scrollbar h-full snap-y snap-mandatory overflow-y-auto">
         {items.map((post, index) => (
-          <section key={post.id} className="relative h-full w-full snap-start snap-always overflow-hidden">
+          <motion.section key={post.id} initial={{ opacity: 0.7, scale: 1.01 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ amount: 0.7 }} transition={{ duration: 0.24 }} className="relative h-full w-full snap-start snap-always overflow-hidden">
             <video
               ref={(el) => { if (el) videoRefs.current.set(post.id, el); else videoRefs.current.delete(post.id); }}
               src={post.media[0].url}
@@ -112,17 +113,17 @@ export const ReelsViewer: React.FC<{
               className="absolute inset-0 h-full w-full object-cover"
             />
 
-            {/* Rail latéral d'interactions */}
-            <div className="absolute bottom-24 left-2 z-20 flex flex-col items-center gap-5">
-              <button type="button" aria-label="J'aime" onClick={() => void toggleLike(post)} className={`flex flex-col items-center gap-1 transition active:scale-90 ${liked[post.id] ? 'heart-pop text-brand' : 'text-white'}`}>
+            {/* Rail Instagram : actions à droite, hors de la zone caption. */}
+            <div className="absolute bottom-24 right-2 z-20 flex flex-col items-center gap-3">
+              <button type="button" aria-label="J'aime" onClick={() => void toggleLike(post)} className={`flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full transition active:scale-90 ${liked[post.id] ? 'heart-pop text-brand-light' : 'text-white'}`}>
                 {liked[post.id] ? <HeartFilled size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" /> : <Heart size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />}
                 <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{'reelLikes' in (post as ReelItem) ? (counts[post.id]?.likes ?? (post as ReelItem).reelLikes) : (counts[post.id]?.likes ?? 0)}</span>
               </button>
-              <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(post.id) : onRequireAuth())} className="flex flex-col items-center gap-1 text-white transition active:scale-90">
+              <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(post.id) : onRequireAuth())} className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full text-white transition active:scale-90">
                 <MessageSquare size={28} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
                 <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{counts[post.id]?.comments || 0}</span>
               </button>
-              <button type="button" aria-label="Partager" onClick={() => void sharePost(post)} className="flex flex-col items-center gap-1 text-white transition active:scale-90">
+              <button type="button" aria-label="Partager" onClick={() => void sharePost(post)} className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full text-white transition active:scale-90">
                 <Share2 size={28} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
                 <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{counts[post.id]?.shares || 0}</span>
               </button>
@@ -130,17 +131,17 @@ export const ReelsViewer: React.FC<{
             </div>
 
             {/* Bas : publisher + caption + vues */}
-            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-4 pb-6 pt-16 pl-16">
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/30 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pr-20 pt-16">
               {'views' in (post as ReelItem) && <p className="mb-1 text-[11px] font-bold text-white/70">▶ {(post as ReelItem).views.toLocaleString('fr-FR')} vues</p>}
               <div className="flex items-center gap-2.5">
                 <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-                  {post.publisher.official ? <img src="/media/logo-ayrovi.jpg" alt="" className="h-10 w-10 object-cover" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-white">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+                  {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
                 </span>
                 <p className="text-sm font-extrabold text-white drop-shadow">{post.publisher.name}</p>
               </div>
               {post.caption && <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-white/90 drop-shadow">{post.caption}</p>}
             </div>
-          </section>
+          </motion.section>
         ))}
       </div>
     </div>
@@ -149,18 +150,19 @@ export const ReelsViewer: React.FC<{
 
 const SavedButton: React.FC<{ postId: string }> = ({ postId }) => {
   const [saved, setSaved] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('ayrovi_saved') || '[]').includes(postId); } catch { return false; }
+    try { const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]'); return Array.isArray(value) && value.includes(postId); } catch { return false; }
   });
   const toggle = () => {
     const next = !saved;
     setSaved(next);
     try {
-      const list: string[] = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      const list: string[] = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string').slice(0, 500) : [];
       localStorage.setItem('ayrovi_saved', JSON.stringify(next ? [...new Set([...list, postId])] : list.filter((id) => id !== postId)));
     } catch { /* */ }
   };
   return (
-    <button type="button" aria-label="Enregistrer" onClick={toggle} className={`flex flex-col items-center gap-1 transition active:scale-90 ${saved ? 'text-brand' : 'text-white'}`}>
+    <button type="button" aria-label="Enregistrer" onClick={toggle} className={`flex min-h-12 min-w-12 flex-col items-center justify-center rounded-full transition active:scale-90 ${saved ? 'text-accent' : 'text-white'}`}>
       <Bookmark size={28} className={`drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${saved ? 'fill-current' : ''}`} />
     </button>
   );

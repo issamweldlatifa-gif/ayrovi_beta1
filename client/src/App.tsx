@@ -84,12 +84,8 @@ export const App: React.FC = () => {
         root.style.setProperty('--ayrovi-purple-light', String(theme.primaryLight || theme.primary));
         if (theme.accent) root.style.setProperty('--ayrovi-yellow', String(theme.accent));
         if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
-        const fonts: Record<string, string> = {
-          jakarta: "'Plus Jakarta Sans', 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif",
-          inter: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif",
-          system: "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif",
-        };
-        root.style.setProperty('--ayrovi-font', fonts[String(theme.font)] || fonts.jakarta);
+        // AYROVI and AYROVIX intentionally share one typography system.
+        root.style.setProperty('--ayrovi-font', "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif");
       })
       .catch(() => undefined);
     return () => { active = false; };

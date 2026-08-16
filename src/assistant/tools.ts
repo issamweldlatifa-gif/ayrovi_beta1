@@ -11,6 +11,7 @@ import { runLensPipeline, type LensStandardResult } from '../ayrovix/services/le
 import { recordLearningEvent } from './learning';
 import { scanCodeFromImage, type AyrovixScannedCode } from '../ayrovix/services/codeScanner';
 import type { AyrovixCandidate, AyrovixProduct } from '../ayrovix/types';
+import { filterDisplayableCandidates, hasValidProductUrl, withDisplayRating } from '../ayrovix/services/candidatePolicy';
 
 export type AssistantToolName = 'get_order_status' | 'calculate_price' | 'search_products' | 'lens_search' | 'escalate_to_human';
 
@@ -217,9 +218,10 @@ function withCalculatedTnd(candidate: AyrovixCandidate, db: QatafoDatabase): Ayr
 }
 
 function quoteCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
-  const status: AyrovixQuoteStatus = candidate.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
+  const normalized = withDisplayRating(candidate);
+  const status: AyrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
-    ...candidate,
+    ...normalized,
     priceVerificationStatus: status,
     priceToken: candidate.price != null && candidate.currency
       ? createAyrovixPriceToken({ price: candidate.price, currency: candidate.currency, title: candidate.title, referenceUrl: candidate.sourceUrl, status })
@@ -270,18 +272,10 @@ async function searchByCode(value: string, context: AssistantToolContext): Promi
   const local = catalogSearch(context.db, null, value, 5)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
   const external = context.webSearchEnabled ? await anthropicExternalSearch(value, 8).catch(() => []) : [];
-  const seen = new Set<string>();
-  return [...local, ...external]
-    .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }))
-    .filter((candidate) => {
-      const key = `${candidate.sourceUrl}|${candidate.title.toLowerCase()}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort((left, right) => right.match - left.match)
-    .slice(0, 8)
-    .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
+  return filterDisplayableCandidates(
+    [...local, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) })),
+    8,
+  ).map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
 }
 
 async function searchRealProducts(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
@@ -290,18 +284,10 @@ async function searchRealProducts(input: any, context: AssistantToolContext): Pr
   const local = catalogSearch(context.db, null, query, 5)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }));
   const external = context.webSearchEnabled ? await anthropicExternalSearch(query, 6).catch(() => []) : [];
-  const seen = new Set<string>();
-  const candidates = [...local, ...external]
-    .map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }))
-    .filter((candidate) => {
-      const key = `${candidate.sourceUrl}|${candidate.title.toLowerCase()}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort((left, right) => right.match - left.match)
-    .slice(0, 8)
-    .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
+  const candidates = filterDisplayableCandidates(
+    [...local, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
+    8,
+  ).map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
   const modelItems = candidates.map(({ priceToken: _token, images: _images, ...candidate }) => candidate);
   return {
     modelResult: {
@@ -346,17 +332,20 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     try {
       const extracted = await extractProductFromUrl(context.db, context.scraper, productUrl);
       const product = quoteProduct(extracted.product);
-      const products = extracted.alternates.slice(0, 8)
+      const products = filterDisplayableCandidates(extracted.alternates, 8)
         .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
+      const productVisible = Number(product.price) > 0 && Boolean(product.currency) && hasValidProductUrl(product.sourceUrl);
       return {
         modelResult: {
           success: true,
           mode: urlCameFromQr ? 'qr_url' : 'url',
           product: modelProduct(product),
           alternatives: products.map(({ priceToken: _token, images: _images, image: _image, ...candidate }) => candidate),
-          instruction: 'The exact pasted-link product and order form are rendered inside the chat. Ask the customer to confirm the mandatory exact link, variant, quantity and note there; never redirect them to Lens.',
+          instruction: productVisible
+            ? 'The exact pasted-link product and order form are rendered inside the chat. Ask the customer to confirm the mandatory exact link, variant, quantity and note there; never redirect them to Lens.'
+            : 'No exact result with both a positive price and valid merchant link is available. Do not present the unpriced listing as a product result; offer only the priced alternatives.',
         },
-        presentation: { query: product.title, product, products, source: urlCameFromQr ? 'qr' : 'url' },
+        presentation: { query: product.title, product: productVisible ? product : undefined, products, source: urlCameFromQr ? 'qr' : 'url' },
       };
     } catch {
       return { modelResult: { success: false, code: 'LENS_URL_FAILED', message: 'Le lien produit ne peut pas être analysé. Demandez un lien marchand public complet.' } };
@@ -427,23 +416,15 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     priceVerificationStatus: 'PENDING_MANUAL',
   }) : null;
 
-  const seen = new Set<string>();
-  const products = [
+  const products = filterDisplayableCandidates([
     ...visual,
     ...local,
     ...external.map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
-  ]
-    .filter((candidate) => {
-      const key = candidate.sourceUrl ? candidate.sourceUrl : `${candidate.source}|${candidate.title.toLowerCase()}|${candidate.price || ''}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .sort((left, right) => right.match - left.match)
-    .slice(0, 8)
-    .map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
+  ], 8).map((candidate) => quoteCandidate(withCalculatedTnd(candidate, context.db)));
   const strongCandidate = products.find((candidate) => candidate.match >= 80 && candidate.priceToken);
-  const activeProduct = detectedProduct || (strongCandidate ? quoteProduct({
+  // OCR-only prices remain useful context, but are not rendered as purchasable
+  // results until a valid merchant URL exists.
+  const activeProduct = strongCandidate ? quoteProduct({
     title: strongCandidate.title,
     brand: strongCandidate.brand,
     model: strongCandidate.model,
@@ -461,7 +442,10 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     availability: strongCandidate.kind === 'catalog' ? 'in_stock' : 'unknown',
     priceVerified: strongCandidate.kind === 'catalog',
     priceVerificationStatus: strongCandidate.priceVerificationStatus,
-  }) : null);
+    rating: strongCandidate.rating,
+    ratingCount: strongCandidate.ratingCount,
+    ratingKind: strongCandidate.ratingKind,
+  }) : null;
 
   const modelProducts = products.map(({ priceToken: _token, images: _images, image: _image, ...product }) => product);
   const lensPricing = lens?.pricing ?? null;

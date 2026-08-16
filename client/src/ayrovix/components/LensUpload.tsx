@@ -1,10 +1,11 @@
 import React, { useRef } from 'react';
+import { Image as ImageIcon } from '../../components/QatafoIcons';
 
 interface LensUploadProps {
   onImage: (file: File) => void;
 }
 
-/** 🖼️ Importer une image — galerie du téléphone (capture WhatsApp, screenshot boutique…). */
+/** Importer une image — galerie du téléphone (capture WhatsApp, screenshot boutique…). */
 export const LensUpload: React.FC<LensUploadProps> = ({ onImage }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
@@ -28,9 +29,7 @@ export const LensUpload: React.FC<LensUploadProps> = ({ onImage }) => {
         className="flex w-full items-center gap-4 rounded-[22px] border border-line bg-white p-4 text-left transition hover:border-brand active:scale-[0.98]"
       >
         <span className="grid h-12 w-12 flex-none place-items-center rounded-2xl bg-brand-light text-brand">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-            <rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="2" /><path d="m21 15-4.5-4.5L6 21" />
-          </svg>
+          <ImageIcon size={24} strokeWidth={1.8} />
         </span>
         <span>
           <span className="block text-sm font-extrabold text-ink">Importer une image</span>

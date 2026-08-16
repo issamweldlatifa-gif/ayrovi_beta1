@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Image as ImageIcon } from '../components/QatafoIcons';
+import { Eye, Image as ImageIcon } from '../components/QatafoIcons';
 import { getPublications, getReels, getStories, getStoryFeed, type ReelItem } from './storyService';
 import type { Story, StoryCta, StoryPost } from './types';
 import { groupByPublisher, StoryCircles } from './components/StoryCircles';
@@ -100,9 +100,10 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
           <p className="px-4 pb-2 text-xs font-black uppercase tracking-[0.18em] text-brand">Reels</p>
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
             {reels.map((reel, index) => (
-              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-28 shrink-0 overflow-hidden rounded-xl bg-black" aria-label={reel.caption}>
+              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-36 shrink-0 overflow-hidden rounded-2xl bg-black shadow-md transition active:scale-[0.98] sm:w-40" aria-label={reel.caption || `Reel ${index + 1}`}>
                 <video src={reel.media[0].url} muted playsInline preload="metadata" className="aspect-[9/16] w-full object-cover opacity-90" />
-                <span className="absolute left-1.5 top-1.5 rounded-full bg-black/50 px-2 py-0.5 text-[9px] font-black text-white">▶ {reel.views.toLocaleString('fr-FR')}</span>
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-black text-white backdrop-blur"><Eye size={12} />{reel.views.toLocaleString('fr-FR')}</span>
+                {reel.caption && <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-10 text-left text-[11px] font-bold leading-4 text-white">{reel.caption}</span>}
               </button>
             ))}
           </div>

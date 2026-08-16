@@ -35,6 +35,9 @@ export interface AyrovixCandidate {
   priceTnd: number | null;
   priceToken?: string | null;
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  rating?: number | null;
+  ratingCount?: number | null;
+  ratingKind?: 'merchant' | 'match';
   match: number;
 }
 
@@ -73,6 +76,9 @@ export interface AyrovixProduct {
   verificationProvider?: string;
   verificationMethod?: string;
   verificationFailureCode?: string | null;
+  rating?: number | null;
+  ratingCount?: number | null;
+  ratingKind?: 'merchant' | 'match' | 'listing-quality';
 }
 
 export interface AyrovixDetectedPrice {

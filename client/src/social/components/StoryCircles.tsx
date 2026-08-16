@@ -26,7 +26,7 @@ export function groupByPublisher(stories: Story[]): StoryGroup[] {
 
 const Avatar: React.FC<{ publisher: StoryPublisher; size: number }> = ({ publisher, size }) => (
   publisher.official
-    ? <img src="/media/logo-ayrovi.jpg" alt="" loading="lazy" className="h-full w-full bg-white object-cover" style={{ borderRadius: '50%' }} />
+    ? <img src="/media/logo-ayrovi.png" alt="" loading="lazy" className="h-full w-full bg-white p-1 object-contain" style={{ borderRadius: '50%' }} />
     : publisher.avatar
       ? <img src={publisher.avatar} alt="" loading="lazy" className="h-full w-full object-cover" style={{ borderRadius: '50%' }} />
       : <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-light to-accent text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>

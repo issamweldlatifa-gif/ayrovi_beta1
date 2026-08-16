@@ -7,6 +7,7 @@ import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { anthropicWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
+import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
 import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
@@ -108,6 +109,21 @@ describe('AYROVIX Lens', () => {
     expect(buildSearchQuery(NIKE_ID)).toBe('Nike Air Max 95 navy grey sneakers');
     expect(buildSearchQuery({ ...NIKE_ID, possible_model_codes: ['DC9412-400'] })).toBe('Nike DC9412-400');
     expect(buildSearchQuery({ ...NIKE_ID, brand: null, model: null, color: [] })).toBe('sneakers');
+  });
+
+  test('politique résultats : prix positif + devise + lien public, avec note toujours visible', () => {
+    const base = {
+      kind: 'external', title: 'Produit test', brand: null, model: null, colors: [], sizes: [],
+      source: 'Test', image: '', priceTnd: null, match: 86,
+    } as const;
+    const results = filterDisplayableCandidates([
+      { ...base, id: 'ok', sourceUrl: 'https://shop.example.com/product/1', price: 29.9, currency: 'EUR' },
+      { ...base, id: 'no-price', sourceUrl: 'https://shop.example.com/product/2', price: null, currency: 'EUR' },
+      { ...base, id: 'private', sourceUrl: 'http://127.0.0.1/product/3', price: 10, currency: 'EUR' },
+      { ...base, id: 'credentials', sourceUrl: 'https://user:pass@shop.example.com/product/4', price: 10, currency: 'EUR' },
+    ] as any);
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ id: 'ok', rating: 4.3, ratingKind: 'match' });
   });
 
   test('scoreCandidate : le code article domine, la marque pèse, le catalogue est trié', () => {
@@ -479,7 +495,7 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('QR texte utilise Claude Web Search via /analyze-code', async () => {
+  test('QR texte exclut toute page Web Search sans prix et lien marchand exploitables', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-qr-search';
@@ -494,7 +510,14 @@ describe('AYROVIX Lens', () => {
       const response = await request(app).post('/api/ayrovix/analyze-code').send({ value: 'AYR-REF-2026' });
       expect(response.status).toBe(200);
       expect(response.body.data.code).toBe('AYR-REF-2026');
-      expect(response.body.data.candidates[0]).toMatchObject({ source: 'Amazon', kind: 'external' });
+      expect(response.body.data.candidates).not.toEqual(expect.arrayContaining([
+        expect.objectContaining({ source: 'Amazon', kind: 'external' }),
+      ]));
+      for (const candidate of response.body.data.candidates) {
+        expect(candidate.price).toBeGreaterThan(0);
+        expect(candidate.sourceUrl).toMatch(/^https?:\/\//);
+        expect(candidate.rating).toBeGreaterThan(0);
+      }
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
       restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);

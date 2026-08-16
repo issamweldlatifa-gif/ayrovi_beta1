@@ -5,6 +5,7 @@ import type { AyrovixCandidate, AyrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
 import { catalogSearch, scoreCandidate, anthropicExternalSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
+import { filterDisplayableCandidates } from './candidatePolicy';
 
 /**
  * AYROVIX product-link layer.
@@ -66,6 +67,9 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     verificationProvider: scraped.verificationProvider || 'none',
     verificationMethod: scraped.verificationMethod || 'none',
     verificationFailureCode: scraped.verificationFailureCode || null,
+    rating: Number.isFinite(Number((scraped as any).rating)) && Number((scraped as any).rating) > 0 && Number((scraped as any).rating) <= 5 ? Number((scraped as any).rating) : null,
+    ratingCount: Number.isFinite(Number((scraped as any).ratingCount)) ? Number((scraped as any).ratingCount) : null,
+    ratingKind: Number.isFinite(Number((scraped as any).rating)) ? 'merchant' : 'listing-quality',
   };
 }
 
@@ -135,10 +139,10 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     if (scraped?.title) {
       const catalog = catalogSearch(db, null, scraped.title, 4);
       const external = scraped.sourcePrice > 0 ? [] : await anthropicExternalSearch(scraped.title, 6).catch(() => []);
-      const alternates = [...catalog, ...external]
-        .map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) }))
-        .sort((a, b) => b.match - a.match)
-        .slice(0, 8);
+      const alternates = filterDisplayableCandidates(
+        [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) })),
+        8,
+      );
       // A rendered/direct merchant price avoids a paid text search. If the
       // price is still absent, return the real page diagnostics plus alternates.
       return { product: toAyrovixProduct(db, scraped), alternates };
@@ -161,8 +165,10 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
 
   const catalog = catalogSearch(db, null, query, 4);
   const external = await anthropicExternalSearch(query, 6).catch(() => []);
-  const all = [...catalog, ...external].map(c => ({ ...c, match: scoreCandidate(null, query, c) }))
-    .sort((a,b)=>b.match-a.match).slice(0,8);
+  const all = filterDisplayableCandidates(
+    [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
+    8,
+  );
 
   return { product: fallbackProduct, alternates: all };
 }

@@ -89,14 +89,16 @@
 }
 
 /* Unified icon rendering: fixed optical stroke at every responsive size. */
-.qatafo-icon {
+.qatafo-icon,
+.lucide {
   display: block;
   flex: 0 0 auto;
   overflow: visible;
   shape-rendering: geometricPrecision;
 }
 
-.qatafo-icon > * {
+.qatafo-icon > *,
+.lucide > * {
   vector-effect: non-scaling-stroke;
 }
 
@@ -153,13 +155,26 @@
 .brands-marquee-track {
   display: flex;
   width: max-content;
-  gap: 28px;
+  gap: 16px;
   will-change: transform;
-  animation: marqueeScroll 78s linear infinite;
+  animation: marqueeScroll 64s linear infinite;
+  transform: translateZ(0);
 }
 
-.brands-marquee-track:hover {
+.brands-marquee-track:hover,
+.brands-marquee-track:focus-within {
   animation-play-state: paused;
+}
+
+@media (min-width: 640px) {
+  .brands-marquee-track { gap: 20px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brands-marquee-track {
+    animation: none;
+    transform: none;
+  }
 }
 
 /* AYROVI eight-part motion mark — all active modes share the same soft settle. */

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import adidasLogo from '../assets/brands/adidas.jpg';
 import burberryLogo from '../assets/brands/burberry.jpg';
 import chanelLogo from '../assets/brands/chanel.jpg';
@@ -58,11 +59,11 @@ export const PartnerBrandsSlider: React.FC = () => {
         <div className="relative mb-8 flex items-center justify-between gap-4 px-6 sm:px-12"><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/55">Explorez les marques</p><span className="rounded-full border border-white/15 px-3 py-1.5 text-[10px] font-bold text-white/65">Défilement automatique</span></div>
         <div className="relative w-full overflow-hidden"><div className="brands-marquee-track px-5 sm:px-8">{allBrands.map((brand, index) => {
           const isDark = brand.surface === 'dark';
-          return <article key={`${brand.id}-${index}`} aria-hidden={index >= brands.length} className={`group relative h-[330px] w-[270px] flex-shrink-0 overflow-hidden rounded-[28px] border shadow-2xl transition duration-500 hover:-translate-y-2 sm:h-[400px] sm:w-[340px] sm:rounded-[32px] ${isDark ? 'border-white/15 bg-black hover:border-white/35' : 'border-black/10 bg-[#f7f7f7] hover:border-brand/40'}`}>
-            <span className={`absolute left-5 top-5 z-10 rounded-full px-3 py-1 text-[10px] font-extrabold tabular-nums tracking-[0.2em] backdrop-blur-md sm:left-6 sm:top-6 ${isDark ? 'bg-white/10 text-white/60' : 'bg-black/5 text-black/50'}`}>{String((index % brands.length) + 1).padStart(2, '0')}</span>
-            <div className="absolute inset-x-0 top-0 bottom-[92px] flex items-center justify-center overflow-hidden p-5 sm:bottom-[104px] sm:p-7"><img src={failed[brand.id] ? brand.fallback : brand.logo} onError={() => setFailed((current) => ({ ...current, [brand.id]: true }))} alt={`${brand.name} logo`} className="h-full w-full select-none object-contain transition duration-700 ease-out group-hover:scale-[1.04]" draggable={false} /></div>
-            <div className={`absolute inset-x-0 bottom-0 min-h-[92px] border-t px-6 py-5 sm:min-h-[104px] sm:px-7 sm:py-6 ${isDark ? 'border-white/10 bg-black text-white' : 'border-black/10 bg-white text-ink'}`}><span className="block text-[9px] font-extrabold uppercase tracking-[0.16em] text-brand sm:text-[10px]">{brand.category}</span><h3 className="mt-1.5 truncate text-xl font-black tracking-[-0.035em] sm:text-2xl">{brand.name}</h3></div>
-          </article>;
+          return <motion.article key={`${brand.id}-${index}`} aria-hidden={index >= brands.length} whileHover={{ y: -6, scale: 1.015 }} transition={{ type: 'spring', stiffness: 330, damping: 24 }} className={`group relative h-[250px] w-[200px] flex-shrink-0 overflow-hidden rounded-[24px] border shadow-xl sm:h-[290px] sm:w-[240px] sm:rounded-[28px] ${isDark ? 'border-white/15 bg-black hover:border-white/35' : 'border-black/10 bg-[#f7f7f7] hover:border-brand/40'}`}>
+            <span className={`absolute left-4 top-4 z-10 rounded-full px-2.5 py-1 text-[9px] font-extrabold tabular-nums tracking-[0.18em] backdrop-blur-md ${isDark ? 'bg-white/10 text-white/60' : 'bg-black/5 text-black/50'}`}>{String((index % brands.length) + 1).padStart(2, '0')}</span>
+            <div className="absolute inset-x-0 bottom-[76px] top-0 flex items-center justify-center overflow-hidden p-4 sm:bottom-[86px] sm:p-5"><img src={failed[brand.id] ? brand.fallback : brand.logo} onError={() => setFailed((current) => ({ ...current, [brand.id]: true }))} alt={`${brand.name} logo`} className="h-full w-full select-none object-contain transition duration-700 ease-out group-hover:scale-[1.04]" draggable={false} /></div>
+            <div className={`absolute inset-x-0 bottom-0 min-h-[76px] border-t px-4 py-4 sm:min-h-[86px] sm:px-5 ${isDark ? 'border-white/10 bg-black text-white' : 'border-black/10 bg-white text-ink'}`}><span className="block truncate text-[9px] font-extrabold uppercase tracking-[0.14em] text-brand">{brand.category}</span><h3 className="mt-1.5 truncate text-lg font-black tracking-[-0.035em] sm:text-xl">{brand.name}</h3></div>
+          </motion.article>;
         })}</div></div>
       </div>
     </section>

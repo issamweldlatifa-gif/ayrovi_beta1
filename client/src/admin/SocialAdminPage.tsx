@@ -42,22 +42,30 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
   const [rows, setRows] = useState<any[]>([]);
   const [form, setForm] = useState<any | null>(null);
   const [busy, setBusy] = useState('');
-  const load = useCallback(() => { adminApi<any>('/publications').then((r) => setRows(r.data || [])); }, []);
+  const [error, setError] = useState('');
+  const load = useCallback(() => { adminApi<any>('/publications').then((r) => setRows(r.data || [])).catch(() => setError('Impossible de charger les publications.')); }, []);
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
-    setBusy('save');
+    if (!form || String(form.title || '').trim().length < 2 || !form.channel_id || !String(form.image_url || '').trim()) {
+      setError('Titre, canal et image sont obligatoires.');
+      return;
+    }
+    setBusy('save'); setError('');
     try {
       if (form.id) await adminApi(`/publications/${form.id}`, { method: 'PUT', body: JSON.stringify(form) });
       else await adminApi('/publications', { method: 'POST', body: JSON.stringify(form) });
       setForm(null); load();
-    } finally { setBusy(''); }
+    } catch (reason: any) { setError(reason?.message || 'Enregistrement impossible.'); }
+    finally { setBusy(''); }
   };
 
   return (
     <section className="admin-card">
+      {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie' })}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
+        <span className="admin-block-small">Format conseillé : image verticale 4:5, titre court et canal actif.</span>
       </div>
       <div className="no-scrollbar overflow-x-auto">
         <table className="admin-table" style={{ minWidth: 640 }}>
@@ -107,24 +115,32 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
   const [rows, setRows] = useState<any[]>([]);
   const [form, setForm] = useState<any | null>(null);
   const [busy, setBusy] = useState('');
-  const load = useCallback(() => { adminApi<any>('/reels').then((r) => setRows(r.data || [])); }, []);
+  const [error, setError] = useState('');
+  const load = useCallback(() => { adminApi<any>('/reels').then((r) => setRows(r.data || [])).catch(() => setError('Impossible de charger les reels.')); }, []);
   useEffect(() => { load(); }, [load]);
 
   const save = async () => {
-    setBusy('save');
+    if (!form || String(form.title || '').trim().length < 2 || !form.channel_id || !String(form.video_url || '').trim()) {
+      setError('Titre, canal et vidéo sont obligatoires.');
+      return;
+    }
+    setBusy('save'); setError('');
     try {
       if (form.id) await adminApi(`/reels/${form.id}`, { method: 'PUT', body: JSON.stringify(form) });
       else await adminApi('/reels', { method: 'POST', body: JSON.stringify(form) });
       setForm(null); load();
-    } finally { setBusy(''); }
+    } catch (reason: any) { setError(reason?.message || 'Enregistrement impossible.'); }
+    finally { setBusy(''); }
   };
 
   const fmt = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
   return (
     <section className="admin-card">
+      {error && <div className="admin-error">{error}</div>}
       <div className="admin-actions" style={{ marginTop: 0 }}>
-        <Button onClick={() => setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie' })}><Plus size={15} />Ajouter</Button>
+        <Button onClick={() => { setError(''); setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
+        <span className="admin-block-small">Format conseillé : vidéo verticale 9:16, sous-titres lisibles et caption courte.</span>
       </div>
       <div className="no-scrollbar overflow-x-auto">
         <table className="admin-table" style={{ minWidth: 700 }}>

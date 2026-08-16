@@ -1,6 +1,7 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
+import { filterDisplayableCandidates } from './candidatePolicy';
 
 /**
  * AYROVIX text discovery. Claude Web Search is used for links, QR/barcodes and
@@ -80,7 +81,7 @@ export function catalogSearch(
             original_price, currency, final_price
      FROM products WHERE status='ACTIVE' ORDER BY updated_at DESC LIMIT 400`,
   );
-  return rows.map((row) => {
+  const candidates = rows.map((row) => {
     const title = `${row.brand_name ? `${row.brand_name} ` : ''}${row.name}`;
     const match = scoreCandidate(identification, query, { title: row.name, brand: row.brand_name });
     const estimated = estimateTnd(rules, Number(row.original_price) || null, String(row.currency || 'EUR'));
@@ -100,9 +101,8 @@ export function catalogSearch(
       priceTnd: Number(row.final_price) > 0 ? Number(row.final_price) : (estimated?.priceTnd ?? null),
       match,
     } satisfies AyrovixCandidate;
-  }).filter((candidate) => candidate.match >= 35)
-    .sort((a, b) => b.match - a.match)
-    .slice(0, limit);
+  }).filter((candidate) => candidate.match >= 35);
+  return filterDisplayableCandidates(candidates, limit);
 }
 
 function merchantLabel(sourceUrl: string): string {
@@ -251,13 +251,10 @@ export async function searchCandidates(
       match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)),
     };
   });
-  const seen = new Set<string>();
-  return [...catalog, ...rescored].filter((candidate) => {
-    const key = `${candidate.sourceUrl || ''}|${candidate.title.toLowerCase()}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return candidate.match >= 20;
-  }).sort((a, b) => b.match - a.match).slice(0, 8);
+  return filterDisplayableCandidates(
+    [...catalog, ...rescored].filter((candidate) => candidate.match >= 20),
+    8,
+  );
 }
 
 export interface AnthropicSearchHealth {

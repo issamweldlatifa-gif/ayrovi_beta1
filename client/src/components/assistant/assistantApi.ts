@@ -36,7 +36,7 @@ export async function streamAssistantChat(input: {
   onEvent: (event: AssistantApiEvent) => void;
 }): Promise<void> {
   let imageBudget = 2;
-  const serializedMessages = input.messages.slice(-20).reverse().map((message) => {
+  const serializedMessages = input.messages.slice(-30).reverse().map((message) => {
     const localImages = message.role === 'user' ? (message.attachments || [])
       .filter((attachment) => attachment.type.startsWith('image/') && attachment.preview?.startsWith('data:image/'))
       .slice(0, imageBudget)

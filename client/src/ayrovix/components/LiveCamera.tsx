@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
+import { Barcode, Camera, History, Image as ImageIcon, MoreVertical, X, Zap } from '../../components/QatafoIcons';
 
 interface LiveCameraProps {
   onPhoto: (file: File) => void;
@@ -114,16 +115,16 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const MODES: Array<{ id: CameraMode; label: string; icon: React.ReactNode; action?: () => void }> = [
     {
       id: 'search', label: 'Recherche',
-      icon: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="7" width="18" height="13" rx="3" /><circle cx="12" cy="13.5" r="3.5" /><path d="M8.5 7 10 4.5h4L15.5 7" /></svg>,
+      icon: <Camera size={19} strokeWidth={1.8} />,
     },
     {
       id: 'upload', label: 'Importer',
-      icon: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="3" /><circle cx="9" cy="9" r="2" /><path d="m21 15-4.5-4.5L6 21" /></svg>,
+      icon: <ImageIcon size={19} strokeWidth={1.8} />,
       action: pickFromGallery,
     },
     {
       id: 'code', label: 'Code',
-      icon: <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 6v12M8 6v12M12 6v12M17 6v12M20 6v12" strokeLinecap="round" /></svg>,
+      icon: <Barcode size={19} strokeWidth={1.8} />,
     },
   ];
 
@@ -136,7 +137,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <div className="flex items-center gap-1.5 justify-self-start">
           <button type="button" onClick={onClose} aria-label="Fermer AYROVIX"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M6 6l12 12M18 6 6 18" /></svg>
+            <X size={16} strokeWidth={2.2} />
           </button>
           <button
             type="button"
@@ -144,14 +145,14 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             aria-label={torchOn ? 'Éteindre le flash' : 'Allumer le flash'}
             className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-amber-300 text-black' : 'bg-white/15'}`}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.9"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5L13 2Z" /></svg>
+            <Zap size={16} strokeWidth={1.9} fill={torchOn ? 'currentColor' : 'none'} />
           </button>
         </div>
         <p className="whitespace-nowrap text-xs font-extrabold tracking-wide">AYROVIX Lens</p>
         <div className="flex items-center gap-1.5 justify-self-end">
           <button type="button" onClick={onHistory} aria-label="Historique Lens" title="Historique"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+            <History size={17} strokeWidth={1.9} />
           </button>
           <button
             type="button"
@@ -159,7 +160,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             aria-label="Informations AYROVIX Lens"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur"
           >
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="12" cy="19" r="1.8" /></svg>
+            <MoreVertical size={17} fill="currentColor" />
           </button>
         </div>
       </header>
@@ -264,7 +265,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             <div className="mb-4 flex items-center justify-between">
               <p className="text-base font-extrabold">AYROVIX Lens</p>
               <button type="button" onClick={() => navigation.back()} className="grid h-9 w-9 place-items-center rounded-full bg-white/10">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+                <X size={15} strokeWidth={2} />
               </button>
             </div>
             <section className="mb-5">

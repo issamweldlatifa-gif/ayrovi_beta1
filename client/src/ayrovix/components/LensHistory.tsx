@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { AyrovixHistoryItem } from '../types';
 import { loadAyrovixHistory, readLocalAyrovixHistory } from '../services/history';
+import { ArrowLeft, History, LensBox } from '../../components/QatafoIcons';
 
 interface LensHistoryProps {
   open: boolean;
@@ -30,7 +31,7 @@ const HistoryThumbnail: React.FC<{ item: AyrovixHistoryItem }> = ({ item }) => {
   if (item.imageUrl && !failed) {
     return <img src={item.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-cover" />;
   }
-  return <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 8V5.5A1.5 1.5 0 0 1 5.5 4H8M16 4h2.5A1.5 1.5 0 0 1 20 5.5V8M20 16v2.5a1.5 1.5 0 0 1-1.5 1.5H16M8 20H5.5A1.5 1.5 0 0 1 4 18.5V16"/><circle cx="12" cy="12" r="3"/></svg>;
+  return <LensBox size={25} strokeWidth={1.6} />;
 };
 
 export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, onRepeat, onNewScan }) => {
@@ -54,11 +55,11 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
     <div className="fixed inset-0 z-[95] flex flex-col bg-surface text-ink" role="dialog" aria-modal="true" aria-label="Historique AYROVIX Lens">
       <header className="grid min-h-[62px] grid-cols-[1fr_auto_1fr] items-center border-b border-line bg-white px-3 pt-[env(safe-area-inset-top)]">
         <button type="button" onClick={onClose} className="inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink" aria-label="Retour à AYROVIX Lens">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="m15 5-7 7 7 7" /></svg>
+          <ArrowLeft size={18} strokeWidth={2.1} />
           Retour
         </button>
         <div className="flex items-center gap-2 text-sm font-extrabold">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+          <History size={18} strokeWidth={1.9} />
           Historique
         </div>
         <span />
@@ -76,7 +77,7 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
           ) : items.length === 0 ? (
             <div className="rounded-[22px] border border-dashed border-line bg-white p-7 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-light text-brand">
-                <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+                <History size={25} strokeWidth={1.8} />
               </div>
               <h3 className="mt-3 text-sm font-extrabold">Aucune recherche pour le moment</h3>
               <p className="mt-1 text-xs text-muted">Photographiez, scannez ou collez le lien d'un produit.</p>

@@ -78,6 +78,11 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
     seen.add(sourceUrl);
     const extractedPrice = Number(row?.price?.extracted_value ?? row?.extracted_price);
     const currency = normalizeCurrency(row?.price?.currency ?? row?.currency);
+    // Never expose a visual match that cannot be purchased from an auditable
+    // priced listing. Continue scanning later Lens rows instead.
+    if (!Number.isFinite(extractedPrice) || extractedPrice <= 0 || !currency) continue;
+    const merchantRating = Number(row?.rating ?? row?.product_rating);
+    const ratingCount = Number(row?.reviews ?? row?.reviews_count);
     // Google-hosted thumbnails are less likely to reject browser hotlinking;
     // keep the merchant image as a fallback for the resilient client image.
     const images = [...new Set([row?.thumbnail, row?.image]
@@ -96,9 +101,12 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
       sourceUrl,
       image: images[0] || '',
       images,
-      price: Number.isFinite(extractedPrice) && extractedPrice > 0 ? extractedPrice : null,
+      price: extractedPrice,
       currency,
       priceTnd: null,
+      rating: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? merchantRating : null,
+      ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
+      ratingKind: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? 'merchant' : 'match',
       match: row?.exact_matches === true ? 99 : Math.max(72, 94 - index * 3),
     });
     if (results.length >= limit) break;

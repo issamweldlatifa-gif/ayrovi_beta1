@@ -7,7 +7,7 @@ import type {
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { rememberAyrovixHistory } from '../services/history';
-import { ShoppingBag, Sparkles, Check } from '../../components/QatafoIcons';
+import { AlertCircle, ArrowLeft, Barcode, Check, History, Image as ImageIcon, Link2, ShoppingBag, Sparkles, X } from '../../components/QatafoIcons';
 import { LiveCamera } from './LiveCamera';
 import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
@@ -15,6 +15,7 @@ import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
 import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
+import { isDisplayableProduct } from '../services/resultPolicy';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -54,6 +55,9 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     price: candidate.price,
     currency: candidate.currency,
     priceTnd: candidate.priceTnd,
+    rating: candidate.rating ?? null,
+    ratingCount: candidate.ratingCount ?? null,
+    ratingKind: candidate.ratingKind || 'match',
     priceToken: candidate.priceToken || null,
     priceVerified: candidate.priceVerificationStatus === 'VERIFIED',
     priceVerificationStatus: candidate.priceVerificationStatus || 'PENDING_MANUAL',
@@ -242,9 +246,18 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
         resultsCount: 1 + result.alternates.length, createdAt: new Date().toISOString(),
       }, historyScope);
       setUrlResult(result);
-      setProduct(result.product);
-      setVerifiedPriceUrl(merchantPriceVerified);
-      replaceStage('product');
+      if (isDisplayableProduct(result.product)) {
+        setProduct(result.product);
+        setVerifiedPriceUrl(merchantPriceVerified);
+        replaceStage('product');
+      } else if (result.alternates.length > 0) {
+        setProduct(null);
+        setCandidatesView({ queryLabel: result.product.title, list: result.alternates, eventId: result.eventId });
+        setVerifiedPriceUrl(false);
+        replaceStage('candidates');
+      } else {
+        fail('PRICED_RESULT_NOT_FOUND', 'Aucune offre avec un prix positif et un lien marchand valide n’a été trouvée. Essayez une photo plus nette ou un autre lien.');
+      }
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
@@ -462,12 +475,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
             {stage === 'home' ? (
               <button type="button" onClick={handleClose} aria-label="Fermer AYROVIX"
                 className="grid h-10 w-10 place-items-center rounded-full text-ink transition active:scale-95">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <X size={17} strokeWidth={2.1} />
               </button>
             ) : (
               <button type="button" onClick={goBack} aria-label="Retour"
                 className="inline-flex min-h-[42px] items-center gap-1 rounded-xl px-1.5 text-xs font-extrabold text-ink transition active:scale-95">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1"><path d="m15 5-7 7 7 7"/></svg>
+                <ArrowLeft size={18} strokeWidth={2.1} />
                 Retour
               </button>
             )}
@@ -480,7 +493,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           </div>
           <button type="button" onClick={() => navigation.pushLayer({ id: 'lens:history' })} aria-label="Historique Lens" title="Historique"
             className="grid h-10 w-10 place-items-center justify-self-end rounded-full text-ink transition active:scale-95">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+            <History size={18} strokeWidth={1.9} />
           </button>
         </header>
 
@@ -499,7 +512,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
               >
                 <label htmlFor="ayrovix-url-input" className="flex items-center gap-3 text-left">
                   <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-brand-light text-brand">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" /><path d="M14 10a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" /></svg>
+                    <Link2 size={20} strokeWidth={1.8} />
                   </span>
                   <span>
                     <span className="block text-sm font-extrabold text-ink">Lien du produit</span>
@@ -561,7 +574,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-muted">
-                          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="3" y="6" width="18" height="13" rx="2" /><path d="M8 6V5a4 4 0 0 1 8 0v1" /></svg>
+                          <ImageIcon size={40} strokeWidth={1.4} />
                         </div>
                       )}
                       <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-extrabold text-ink">Prix repéré</span>
@@ -670,7 +683,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           {stage === 'barcode' && barcode && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-light text-brand">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><path d="M4 6v12M8 6v12M12 6v12M17 6v12M20 6v12" strokeLinecap="round" /></svg>
+                <Barcode size={28} strokeWidth={1.8} />
               </div>
               <p className="text-sm font-extrabold text-ink">Code-barres détecté</p>
               <p className="mx-auto w-fit rounded-xl bg-surface px-5 py-3 font-mono text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
@@ -689,7 +702,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           {stage === 'error' && error && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-red-50 text-red-500">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8v5m0 3h.01"/></svg>
+                <AlertCircle size={28} strokeWidth={1.8} />
               </div>
               <p className="text-sm font-extrabold text-ink">{error.code === 'AYROVIX_UNAVAILABLE' ? 'AYROVIX arrive très bientôt' : 'Petit obstacle'}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>
