@@ -14,14 +14,16 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `PUBLIC_BASE_URL` : l’URL HTTPS publique finale, sans barre oblique terminale.
    - `GOOGLE_CLIENT_ID` et `GOOGLE_CLIENT_SECRET` : identifiants OAuth Web créés dans Google Cloud.
    - `GOOGLE_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/google/callback`.
-   - `CUSTOMER_OTP_PROVIDER` : `twilio_verify` (déjà fixé par le Blueprint).
-   - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` et `TWILIO_VERIFY_SERVICE_SID` : identifiants serveur Twilio Verify.
+   - `FACEBOOK_APP_ID` et `FACEBOOK_APP_SECRET` : identifiants de l’application AYROVI dans Meta Developers.
+   - `FACEBOOK_CALLBACK_URL` : exactement `https://VOTRE-DOMAINE/api/customer/auth/facebook/callback`.
+   - `CUSTOMER_OTP_PROVIDER` : `webhook` pour le fournisseur SMS tunisien.
+   - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : endpoint HTTPS et secret de l’adaptateur SMS.
    - `ANTHROPIC_API_KEY` : clé serveur Claude pour l’identification, le prix visible et le fallback Web.
    - `SERPAPI_KEY` : clé serveur SerpApi pour les correspondances produit Google Lens.
    - `GROQ_API_KEY` : clé serveur Groq pour la transcription vocale de l’Assistant (optionnel mais recommandé).
 5. Lancez le déploiement.
 
-Les identifiants Google, le secret client et le jeton SMS restent exclusivement dans les variables Render. Ils ne doivent jamais être préfixés par `VITE_` ni ajoutés au code frontend.
+Les identifiants Google/Meta, les secrets OAuth et le jeton SMS restent exclusivement dans les variables Render. Ils ne doivent jamais être préfixés par `VITE_` ni ajoutés au code frontend.
 
 Le build exécute `npm ci --include=dev && npm run build`, puis le service démarre avec `npm start`. L’option `--include=dev` est nécessaire pendant le build Render afin d’installer Vite, TypeScript et les autres outils de compilation, même lorsque `NODE_ENV=production`. Le Blueprint fixe Node.js 22. L’extraction de liens utilise un fetch HTML borné et sécurisé (JSON-LD/Open Graph), sans navigateur Chromium. Lens utilise Claude Haiku pour la compréhension et le prix visible, SerpApi Google Lens pour les correspondances visuelles avec images, puis Claude Web Search comme fallback texte. Les appels Claude Vision et Google Lens d'une photo sont parallélisés.
 
@@ -51,25 +53,32 @@ Le projet fournit une sauvegarde cohérente via l’API native SQLite de `better
 npm run backup
 ```
 
-Par défaut, la copie vérifiée par `PRAGMA quick_check` est écrite dans `data/backups` et les copies locales de plus de 14 jours sont supprimées. Variables optionnelles : `BACKUP_DIR` et `BACKUP_RETENTION_DAYS`.
+Par défaut, la copie vérifiée par `PRAGMA quick_check` est écrite dans `data/backups` et les copies locales de plus de 14 jours sont supprimées. `BACKUP_INTERVAL_HOURS=24` active l’exécution quotidienne dans le processus Render afin que la tâche accède au même disque persistant.
 
-**Important :** une copie sur le même disque Render ne protège pas contre la perte du disque. Planifiez une tâche quotidienne qui exécute ce script puis transfère la copie vers un stockage externe chiffré (S3/R2/B2). Testez une restauration au moins une fois par mois.
+Le script sait maintenant envoyer directement la copie vers AWS S3, Cloudflare R2 ou Backblaze B2 via l’API S3 signée côté serveur. Configurez :
 
-## Connexion client : Google et SMS OTP
+- `BACKUP_S3_ENDPOINT`, `BACKUP_S3_BUCKET`, `BACKUP_S3_REGION`.
+- `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY`.
+- `BACKUP_S3_PREFIX` (par défaut `ayrovi/sqlite`).
+- Après un premier test réussi, `BACKUP_REQUIRE_EXTERNAL=true` afin qu’un échec d’upload fasse échouer et signaler le job.
+
+Une copie locale seule ne protège pas contre la perte du disque. Activez une politique Lifecycle/Retention sur le bucket externe et testez une restauration au moins une fois par mois.
+
+## Connexion client : Google, Facebook et SMS OTP
 
 Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine AYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
 
-### Twilio Verify
+Dans Meta Developers, créez l’application AYROVI avec le cas d’usage **Authentication and account creation / Facebook Login**, puis ajoutez exactement `FACEBOOK_CALLBACK_URL` aux **Valid OAuth Redirect URIs**. Le flux utilise Graph API `v26.0`, les permissions minimales `public_profile,email`, un état anti-CSRF lié au navigateur, une validation serveur du jeton et l’identifiant Facebook app-scoped. Le jeton utilisateur n’est pas stocké. Avant de passer l’application Meta en Live, publiez les pages `/privacy.html` et `/data-deletion.html`, complétez l’identité juridique et rendez l’adresse de contact opérationnelle.
 
-1. Dans Twilio Console, créez un **Verify Service** et laissez le code à 6 chiffres.
-2. Vérifiez que l’envoi SMS vers la Tunisie est autorisé par les réglages Geo permissions du compte.
-3. Dans Render, configurez `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` et le SID du service `TWILIO_VERIFY_SERVICE_SID` (préfixe `VA`).
-4. Conservez `CUSTOMER_OTP_PROVIDER=twilio_verify`.
-5. Redéployez puis vérifiez que `/api/customer/auth/config` renvoie `phoneOtp.enabled=true`.
+### Fournisseur SMS tunisien
 
-AYROVI demande alors à Twilio d’envoyer le code et vérifie le code directement via Twilio Verify. Aucun code OTP ni secret Twilio n’est exposé au navigateur. Les limites AYROVI par téléphone/IP et la limite de cinq tentatives restent actives en plus des protections Twilio.
+1. Demandez une API OTP et un test à Orange Tunisie Messaging Pro et TunisieSMS.
+2. Vérifiez la livraison vers Orange, Ooredoo et Tunisie Telecom, le Sender ID et les Delivery Reports.
+3. Configurez un adaptateur HTTPS qui reçoit la requête AYROVI et appelle le fournisseur retenu.
+4. Dans Render, gardez `CUSTOMER_OTP_PROVIDER=webhook`, puis saisissez `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN`.
+5. Redéployez et vérifiez que `/api/customer/auth/config` renvoie `phoneOtp.enabled=true`.
 
-L’ancien adaptateur HTTPS reste disponible en alternative : définissez `CUSTOMER_OTP_PROVIDER=webhook`, `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN`. En développement seulement, `console` affiche et renvoie le code de test; ce mode est interdit en production.
+L’adaptateur Twilio Verify reste dans le code uniquement pour compatibilité éventuelle; il n’est plus le choix par défaut pour la Tunisie. En développement seulement, `console` affiche et renvoie le code de test; ce mode est interdit en production.
 
 Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La confirmation de commande exige une session client active, un jeton CSRF valide et un numéro tunisien de livraison valide à 8 chiffres. La vérification SMS du téléphone du profil est optionnelle; elle sert à la connexion OTP et au rattachement sécurisé des anciennes commandes.
 

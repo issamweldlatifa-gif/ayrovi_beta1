@@ -27,6 +27,7 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_PHONE_WINDOW_MS = 15 * 60 * 1000;
 const OTP_IP_WINDOW_MS = 15 * 60 * 1000;
 const GOOGLE_OAUTH_COOKIE = 'ayrovi_customer_oauth';
+const FACEBOOK_OAUTH_COOKIE = 'ayrovi_customer_facebook_oauth';
 
 function requestCookie(req: Request, name: string): string {
   const header = req.headers.cookie;
@@ -43,9 +44,17 @@ function requestCookie(req: Request, name: string): string {
   return '';
 }
 
+function oauthCookie(name: string, routePath: string, value: string, maxAgeSeconds: number): string {
+  const secure = process.env.NODE_ENV === 'production' || process.env.RENDER ? '; Secure' : '';
+  return `${name}=${encodeURIComponent(value)}; Path=${routePath}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure}`;
+}
+
 function googleOauthCookie(value: string, maxAgeSeconds: number): string {
-  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : '';
-  return `${GOOGLE_OAUTH_COOKIE}=${encodeURIComponent(value)}; Path=/api/customer/auth/google; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure}`;
+  return oauthCookie(GOOGLE_OAUTH_COOKIE, '/api/customer/auth/google', value, maxAgeSeconds);
+}
+
+function facebookOauthCookie(value: string, maxAgeSeconds: number): string {
+  return oauthCookie(FACEBOOK_OAUTH_COOKIE, '/api/customer/auth/facebook', value, maxAgeSeconds);
 }
 
 export function normalizeTunisianPhone(value: unknown): string | null {
@@ -67,12 +76,34 @@ function validReturnTo(value: unknown): string {
   return path.slice(0, 500);
 }
 
+function oauthBaseUrl(): string {
+  return String(process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').trim().replace(/\/$/, '');
+}
+
 function googleConfig() {
   const clientId = String(process.env.GOOGLE_CLIENT_ID || '').trim();
   const clientSecret = String(process.env.GOOGLE_CLIENT_SECRET || '').trim();
-  const baseUrl = String(process.env.PUBLIC_BASE_URL || process.env.RENDER_EXTERNAL_URL || '').trim().replace(/\/$/, '');
+  const baseUrl = oauthBaseUrl();
   const callbackUrl = String(process.env.GOOGLE_CALLBACK_URL || (baseUrl ? `${baseUrl}/api/customer/auth/google/callback` : '')).trim();
   return { clientId, clientSecret, callbackUrl, ready: Boolean(clientId && clientSecret && callbackUrl.startsWith('https://')) };
+}
+
+function facebookConfig() {
+  const appId = String(process.env.FACEBOOK_APP_ID || '').trim();
+  const appSecret = String(process.env.FACEBOOK_APP_SECRET || '').trim();
+  const baseUrl = oauthBaseUrl();
+  const callbackUrl = String(process.env.FACEBOOK_CALLBACK_URL || (baseUrl ? `${baseUrl}/api/customer/auth/facebook/callback` : '')).trim();
+  const configuredVersion = String(process.env.FACEBOOK_GRAPH_VERSION || 'v26.0').trim();
+  const graphVersion = /^v\d{1,2}\.\d{1,2}$/.test(configuredVersion) ? configuredVersion : 'v26.0';
+  return { appId, appSecret, callbackUrl, graphVersion, ready: Boolean(appId && appSecret && callbackUrl.startsWith('https://')) };
+}
+
+export function googleOAuthAvailable(): boolean {
+  return googleConfig().ready;
+}
+
+export function facebookOAuthAvailable(): boolean {
+  return facebookConfig().ready;
 }
 
 function publicAccount(row: any) {
@@ -248,9 +279,11 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
 
   router.get('/auth/config', (_req, res) => {
     const google = googleConfig();
+    const facebook = facebookConfig();
     res.json({ success: true, data: {
       phoneOtp: { enabled: customerAuthReady() && phoneOtpAvailable() },
       google: { enabled: customerAuthReady() && google.ready },
+      facebook: { enabled: customerAuthReady() && facebook.ready },
       checkoutRequiresAuthentication: true,
     } });
   });
@@ -364,8 +397,8 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateId = hashToken(state);
     const now = new Date();
     const current = resolveCustomer(db, req);
-    db.run(`INSERT INTO customer_oauth_states (id,account_id,cart_session_id,return_to,expires_at,created_at)
-      VALUES (?,?,?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
+      VALUES (?,?,'GOOGLE',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
     new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
     const params = new URLSearchParams({
       client_id: google.clientId,
@@ -386,7 +419,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const stateHash = hashToken(stateValue);
     const browserStateMatches = Boolean(stateValue && browserState && hashToken(browserState) === stateHash);
     const state = browserStateMatches
-      ? db.get<any>('SELECT * FROM customer_oauth_states WHERE id=? AND expires_at>?', stateHash, new Date().toISOString())
+      ? db.get<any>("SELECT * FROM customer_oauth_states WHERE id=? AND provider='GOOGLE' AND expires_at>?", stateHash, new Date().toISOString())
       : null;
     res.append('Set-Cookie', googleOauthCookie('', 0));
     const failure = () => res.redirect('/?customerAuth=error');
@@ -469,10 +502,160 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     }
   });
 
+  router.get('/auth/facebook/start', (req, res) => {
+    const facebook = facebookConfig();
+    if (!customerAuthReady() || !facebook.ready) return res.status(503).send('Connexion Facebook non configurée.');
+    const state = randomBytes(32).toString('base64url');
+    const stateId = hashToken(state);
+    const now = new Date();
+    const current = resolveCustomer(db, req);
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
+      VALUES (?,?,'FACEBOOK',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+    new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
+    const params = new URLSearchParams({
+      client_id: facebook.appId,
+      redirect_uri: facebook.callbackUrl,
+      response_type: 'code',
+      scope: 'public_profile,email',
+      state,
+    });
+    res.append('Set-Cookie', facebookOauthCookie(state, 10 * 60));
+    return res.redirect(`https://www.facebook.com/${facebook.graphVersion}/dialog/oauth?${params}`);
+  });
+
+  router.get('/auth/facebook/callback', async (req, res) => {
+    const facebook = facebookConfig();
+    const stateValue = String(req.query.state || '');
+    const browserState = requestCookie(req, FACEBOOK_OAUTH_COOKIE);
+    const stateHash = hashToken(stateValue);
+    const browserStateMatches = Boolean(stateValue && browserState && hashToken(browserState) === stateHash);
+    const state = browserStateMatches
+      ? db.get<any>("SELECT * FROM customer_oauth_states WHERE id=? AND provider='FACEBOOK' AND expires_at>?", stateHash, new Date().toISOString())
+      : null;
+    res.append('Set-Cookie', facebookOauthCookie('', 0));
+    const failure = () => res.redirect('/?customerAuth=facebook_error');
+    if (!customerAuthReady() || !facebook.ready || !state || typeof req.query.code !== 'string') return failure();
+    db.run('DELETE FROM customer_oauth_states WHERE id=?', state.id);
+    try {
+      const tokenUrl = new URL(`https://graph.facebook.com/${facebook.graphVersion}/oauth/access_token`);
+      tokenUrl.search = new URLSearchParams({
+        client_id: facebook.appId,
+        client_secret: facebook.appSecret,
+        redirect_uri: facebook.callbackUrl,
+        code: req.query.code,
+      }).toString();
+      const tokenResponse = await fetch(tokenUrl, {
+        headers: { Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!tokenResponse.ok) throw new Error('FACEBOOK_TOKEN_FAILED');
+      const tokens: any = await tokenResponse.json();
+      const accessToken = String(tokens.access_token || '');
+      if (!accessToken) throw new Error('FACEBOOK_TOKEN_INVALID');
+
+      // Confirm that Meta issued the token for this exact AYROVI app before trusting /me.
+      const debugUrl = new URL(`https://graph.facebook.com/${facebook.graphVersion}/debug_token`);
+      debugUrl.search = new URLSearchParams({
+        input_token: accessToken,
+        access_token: `${facebook.appId}|${facebook.appSecret}`,
+      }).toString();
+      const debugResponse = await fetch(debugUrl, { signal: AbortSignal.timeout(10_000) });
+      if (!debugResponse.ok) throw new Error('FACEBOOK_TOKEN_DEBUG_FAILED');
+      const debugPayload: any = await debugResponse.json();
+      const debugData = debugPayload?.data || {};
+      if (debugData.is_valid !== true || String(debugData.app_id || '') !== facebook.appId || !debugData.user_id) {
+        throw new Error('FACEBOOK_TOKEN_REJECTED');
+      }
+
+      const profileUrl = new URL(`https://graph.facebook.com/${facebook.graphVersion}/me`);
+      profileUrl.searchParams.set('fields', 'id,name,email,picture.width(256).height(256)');
+      const userResponse = await fetch(profileUrl, {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!userResponse.ok) throw new Error('FACEBOOK_USERINFO_FAILED');
+      const profile: any = await userResponse.json();
+      const subject = String(profile.id || '');
+      if (!subject || subject !== String(debugData.user_id) || !/^[A-Za-z0-9._-]{1,128}$/.test(subject)) {
+        throw new Error('FACEBOOK_IDENTITY_INVALID');
+      }
+      const rawEmail = String(profile.email || '').trim().toLowerCase();
+      const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(rawEmail) ? rawEmail.slice(0, 254) : '';
+      const displayName = String(profile.name || 'Client AYROVI').trim().slice(0, 100) || 'Client AYROVI';
+      const rawAvatar = profile.picture?.data?.is_silhouette ? '' : String(profile.picture?.data?.url || '');
+      const avatarUrl = rawAvatar.startsWith('https://') ? rawAvatar.slice(0, 1000) : '';
+      const now = new Date().toISOString();
+      const identityOwnerId = db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='FACEBOOK' AND provider_subject=?`, subject)?.account_id as string | undefined;
+
+      // Facebook email is optional and is not used as proof to merge accounts. A
+      // signed-in user may explicitly link; otherwise only the stable app-scoped ID
+      // can reopen an existing Facebook account.
+      let accountId = (state.account_id || identityOwnerId) as string | undefined;
+      if (state.account_id && identityOwnerId && state.account_id !== identityOwnerId) {
+        accountId = mergeAccounts(db, identityOwnerId, state.account_id);
+      }
+      if (!accountId) {
+        accountId = `account_${randomUUID()}`;
+        const emailOwner = email ? db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE', email) : null;
+        db.run(`INSERT INTO customer_accounts
+          (id,display_name,email,avatar_url,status,last_login_at,created_at,updated_at)
+          VALUES (?,?,?,?, 'ACTIVE',?,?,?)`, accountId, displayName, email && !emailOwner ? email : null, avatarUrl, now, now, now);
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Facebook est actif. Vous pouvez ajouter un téléphone à votre profil à tout moment.', '/compte');
+      } else {
+        const currentAccount = accountRow(db, accountId);
+        if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
+        const emailOwner = email
+          ? db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE AND id!=?', email, accountId)
+          : null;
+        const nextEmail = !currentAccount.email && email && !emailOwner ? email : currentAccount.email;
+        const nextAvatar = currentAccount.avatar_url || avatarUrl;
+        db.run(`UPDATE customer_accounts SET
+          display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
+          email=?,avatar_url=?,last_login_at=?,updated_at=? WHERE id=?`,
+        displayName, nextEmail || null, nextAvatar, now, now, accountId);
+      }
+      db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+        VALUES (?,?,'FACEBOOK',?,?)`, `identity_${randomUUID()}`, accountId, subject, now);
+      if (state.cart_session_id) db.attachCartToAccount(state.cart_session_id, accountId);
+      const prior = resolveCustomer(db, req) as any;
+      if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+      const session = createCustomerSession(db, accountId, req);
+      setCustomerCookie(res, session.token);
+      const returnTo = validReturnTo(state.return_to);
+      return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=facebook_success`);
+    } catch (error) {
+      console.error('[Customer Facebook OAuth]', error);
+      return failure();
+    }
+  });
+
   router.post('/auth/logout', requireCustomer(db), (req, res) => {
     destroyCustomerSession(db, req);
     clearCustomerCookie(res);
     return res.json({ success: true });
+  });
+
+  router.delete('/account', requireCustomer(db), (req, res) => {
+    if (String(req.body?.confirmation || '') !== 'SUPPRIMER') {
+      return res.status(400).json({ success: false, code: 'DELETION_CONFIRMATION_REQUIRED', error: 'Confirmez explicitement la suppression du compte.' });
+    }
+    const account = customerFromRequest(req);
+    db.transaction(() => {
+      // Les commandes et documents comptables restent dissociés du compte pour
+      // respecter les obligations opérationnelles; le profil, les identités OAuth,
+      // sessions, adresses, favoris et données personnelles de compte sont supprimés.
+      db.run('UPDATE orders SET account_id=NULL WHERE account_id=?', account.id);
+      db.run('DELETE FROM story_interactions WHERE account_id=?', account.id);
+      if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='assistant_feedback'")) {
+        db.run('DELETE FROM assistant_feedback WHERE account_id=?', account.id);
+      }
+      if (db.get<any>("SELECT 1 FROM sqlite_master WHERE type='table' AND name='assistant_support_tickets'")) {
+        db.run('DELETE FROM assistant_support_tickets WHERE account_id=?', account.id);
+      }
+      db.run('DELETE FROM customer_accounts WHERE id=?', account.id);
+    });
+    clearCustomerCookie(res);
+    return res.json({ success: true, data: { deleted: true } });
   });
 
   router.get('/account/overview', requireCustomer(db), (req, res) => {

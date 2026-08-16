@@ -218,7 +218,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
             <PayBadge label="Mandat postal" className="bg-[#f5c518] not-italic text-[#3d3d3d]" />
           </div>
           <p className="text-[11px] font-semibold text-white/70">
-            <a href="mailto:contact@ayrovi.tn" className="hover:text-white">Politique de confidentialité</a>
+            <a href="/privacy.html" className="hover:text-white">Politique de confidentialité</a>
+            <span className="mx-2 text-white/35">|</span>
+            <a href="/data-deletion.html" className="hover:text-white">Suppression des données</a>
             <span className="mx-2 text-white/35">|</span>
             <a href="mailto:contact@ayrovi.tn?subject=CGV" className="hover:text-white">CGV</a>
           </p>

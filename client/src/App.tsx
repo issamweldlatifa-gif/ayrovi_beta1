@@ -96,19 +96,21 @@ export const App: React.FC = () => {
         const result = await customerApi<any>('/api/customer/auth/me');
         const restored = result.data as CustomerSession;
         setCustomerSession(restored);
-        if (customerAuthResult === 'success') {
+        if (customerAuthResult === 'success' || customerAuthResult === 'facebook_success') {
           setIsAccountOpen(true);
           // La vérification du téléphone est OPTIONNELLE (Profil du compte) — jamais un préalable à la commande.
-          setAccountMessage('Connexion Google réussie. Bienvenue sur AYROVI !');
-        } else if (customerAuthResult === 'error') {
+          setAccountMessage(customerAuthResult === 'facebook_success'
+            ? 'Connexion Facebook réussie. Bienvenue sur AYROVI !'
+            : 'Connexion Google réussie. Bienvenue sur AYROVI !');
+        } else if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
           setIsAccountOpen(true);
-          setAccountMessage('Erreur : la connexion Google n’a pas abouti. Réessayez ou utilisez le code SMS.');
+          setAccountMessage(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`);
         }
       } catch {
         setCustomerSession(null);
-        if (customerAuthResult === 'error') {
+        if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
           setIsAccountOpen(true);
-          setAccountMessage('Erreur : la connexion Google n’a pas abouti. Réessayez ou utilisez le code SMS.');
+          setAccountMessage(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`);
         }
       } finally {
         if (customerAuthResult) {

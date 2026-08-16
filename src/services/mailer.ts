@@ -20,7 +20,10 @@ const SUPPORTED = new Set(['resend', 'brevo', 'sendgrid']);
 
 export function mailerReady(): boolean {
   const provider = (process.env.MAIL_PROVIDER || '').trim().toLowerCase();
-  return SUPPORTED.has(provider) && Boolean((process.env.MAIL_API_KEY || '').trim()) && Boolean((process.env.MAIL_FROM || '').trim());
+  const from = parseFrom((process.env.MAIL_FROM || '').trim());
+  return SUPPORTED.has(provider)
+    && Boolean((process.env.MAIL_API_KEY || '').trim())
+    && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(from.email);
 }
 
 function parseFrom(raw: string): { email: string; name?: string } {
@@ -34,7 +37,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
   const apiKey = (process.env.MAIL_API_KEY || '').trim();
   const from = (process.env.MAIL_FROM || '').trim() || 'AYROVI <no-reply@ayrovi.tn>';
 
-  if (!SUPPORTED.has(provider) || !apiKey) {
+  if (!mailerReady()) {
     console.info(`[Mail] (غير مفعّل — MAIL_PROVIDER=${provider || 'غير مضبوط'}) إلى=${input.to} الموضوع="${input.subject}"`);
     return { provider: provider || 'console', delivered: false, error: 'MAILER_NOT_CONFIGURED' };
   }

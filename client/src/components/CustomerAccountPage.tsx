@@ -23,7 +23,12 @@ interface CustomerAccountPageProps {
 }
 
 type Section = 'home' | 'profile' | 'addresses' | 'orders' | 'favorites' | 'cart' | 'notifications';
-type AuthConfig = { phoneOtp: { enabled: boolean }; google: { enabled: boolean }; checkoutRequiresAuthentication: boolean };
+type AuthConfig = {
+  phoneOtp: { enabled: boolean };
+  google: { enabled: boolean };
+  facebook: { enabled: boolean };
+  checkoutRequiresAuthentication: boolean;
+};
 
 type AddressDraft = {
   id?: string;
@@ -116,7 +121,9 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setError('');
       setNotice(initialMessage || '');
     }
-    customerApi<any>('/api/customer/auth/config').then((result) => setConfig(result.data)).catch(() => setConfig({ phoneOtp: { enabled: false }, google: { enabled: false }, checkoutRequiresAuthentication: true }));
+    customerApi<any>('/api/customer/auth/config').then((result) => setConfig(result.data)).catch(() => setConfig({
+      phoneOtp: { enabled: false }, google: { enabled: false }, facebook: { enabled: false }, checkoutRequiresAuthentication: true,
+    }));
   }, [isOpen, initialMessage, initialSection]);
 
   useEffect(() => {
@@ -210,6 +217,20 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     setNotice('Vous êtes déconnecté.');
   };
 
+  const deleteAccount = async () => {
+    if (!session || !confirm('Supprimer définitivement votre compte AYROVI ? Vos commandes comptables déjà créées seront conservées sans accès au compte.')) return;
+    setBusyId('delete-account'); setError('');
+    try {
+      await customerApi('/api/customer/account', {
+        method: 'DELETE', body: JSON.stringify({ confirmation: 'SUPPRIMER' }),
+      }, session.csrfToken);
+      onLoggedOut();
+      setSection('home'); setRows([]); setOverview(null);
+      setNotice('Votre compte et vos données de profil ont été supprimés.');
+    } catch (reason: any) { setError(reason.message); }
+    finally { setBusyId(''); }
+  };
+
   const saveProfile = async (event: React.FormEvent) => {
     event.preventDefault(); setBusyId('profile'); setError('');
     try {
@@ -296,18 +317,23 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   if (!isOpen) return null;
 
   const googleEnabled = Boolean(config?.google.enabled);
-  const googleStartHref = `/api/customer/auth/google/start?cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
-  const showPhoneLogin = phoneLinkOpen || phoneLoginOpen || (config !== null && !googleEnabled);
+  const facebookEnabled = Boolean(config?.facebook.enabled);
+  const socialLoginEnabled = googleEnabled || facebookEnabled;
+  const oauthQuery = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
+  const googleStartHref = `/api/customer/auth/google/start?${oauthQuery}`;
+  const facebookStartHref = `/api/customer/auth/facebook/start?${oauthQuery}`;
+  const showPhoneLogin = phoneLinkOpen || phoneLoginOpen || (config !== null && !socialLoginEnabled);
 
   const authPanel = (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-5 py-10 sm:px-8">
       <div className="mb-8 text-center"><span className="mx-auto grid h-16 w-16 place-items-center bg-brand text-white"><FigLogoIcon className="h-10 w-10" /></span><h1 className="mt-5 text-3xl font-black tracking-[-0.045em] text-ink">{phoneLinkOpen ? 'Vérifier mon téléphone' : 'Bienvenue chez AYROVI'}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{phoneLinkOpen ? 'Facultative — elle lie votre téléphone à votre compte pour retrouver vos commandes.' : 'Votre panier, vos commandes et vos adresses sur tous vos appareils.'}</p></div>
       {error && <div className="mb-4 border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>}
-      {/* Google est la méthode de connexion principale */}
+      {/* Connexions OAuth principales; Facebook reste masqué tant que Meta n'est pas configuré. */}
       {!challengeId && !phoneLinkOpen && <>
         <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} className={`flex w-full items-center justify-center gap-3 border px-4 py-3.5 text-sm font-black transition ${googleEnabled ? 'border-ink bg-ink text-white shadow-lg hover:bg-[#2b2340]' : 'pointer-events-none border-slate-300 bg-white text-ink opacity-50'}`}><span className="grid h-6 w-6 place-items-center rounded-full bg-white font-black text-[#4285f4]">G</span>Continuer avec Google</a>
-        {config !== null && !googleEnabled && <p className="mt-2 text-center text-xs text-slate-400">Google sera disponible dès que ses identifiants seront ajoutés sur Render.</p>}
-        {googleEnabled && !showPhoneLogin && <p className="mt-2 text-center text-xs text-slate-400">Connexion instantanée et sécurisée avec votre compte Google.</p>}
+        {facebookEnabled && <a href={facebookStartHref} className="mt-3 flex w-full items-center justify-center gap-3 border border-[#1877f2] bg-[#1877f2] px-4 py-3.5 text-sm font-black text-white shadow-lg transition hover:bg-[#0f69dc]"><span className="grid h-6 w-6 place-items-center rounded-full bg-white text-base font-black text-[#1877f2]">f</span>Continuer avec Facebook</a>}
+        {config !== null && !socialLoginEnabled && <p className="mt-2 text-center text-xs text-slate-400">La connexion sociale sera disponible dès que ses identifiants seront ajoutés sur Render.</p>}
+        {socialLoginEnabled && !showPhoneLogin && <p className="mt-2 text-center text-xs text-slate-400">Connexion instantanée et sécurisée, sans partager votre mot de passe avec AYROVI.</p>}
       </>}
       {/* Connexion par téléphone : secondaire (optionnelle) */}
       {!challengeId && showPhoneLogin && <>
@@ -318,7 +344,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
           {config?.phoneOtp.enabled === false && <p className="text-center text-xs font-semibold text-amber-700">L’envoi SMS doit être configuré sur le serveur.</p>}
         </form>
       </>}
-      {!challengeId && !phoneLinkOpen && googleEnabled && !showPhoneLogin && (
+      {!challengeId && !phoneLinkOpen && socialLoginEnabled && !showPhoneLogin && (
         <button type="button" onClick={() => setPhoneLoginOpen(true)} className="mt-5 w-full py-2 text-xs font-black text-brand">Utiliser mon numéro de téléphone (SMS)</button>
       )}
       {challengeId && <form onSubmit={verifyCode} className="space-y-4">
@@ -348,7 +374,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     </div>;
   };
 
-  const renderProfile = () => <form onSubmit={saveProfile} className="max-w-2xl space-y-5 border border-slate-200 bg-white p-5 sm:p-7"><div className="flex items-center gap-4 border-b border-slate-100 pb-5"><div className="grid h-16 w-16 place-items-center overflow-hidden bg-brand text-xl font-black text-white">{session!.account.avatarUrl ? <img src={session!.account.avatarUrl} alt="" className="h-full w-full object-cover" /> : (session!.account.displayName || 'AY').slice(0, 2).toUpperCase()}</div><div><h3 className="font-black text-ink">Identité du compte</h3><p className="text-xs text-slate-500">Votre compte est actif — la vérification du téléphone est facultative.</p></div></div><Field label="Nom et prénom"><input className={inputClass} value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} required /></Field><Field label="Adresse e-mail"><input type="email" className={inputClass} value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} placeholder="vous@exemple.com" /></Field><Field label="Téléphone (vérification facultative)"><div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-bold text-slate-600"><Phone className="h-4 w-4 text-brand" />{session!.account.phone || 'Non renseigné'}{session!.account.phoneVerified && <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-600" />}</div>{!session!.account.phoneVerified && <button type="button" onClick={() => setPhoneLinkOpen(true)} className="mt-2 flex w-full items-center justify-center gap-2 border border-dashed border-brand/50 bg-brand/5 px-4 py-2.5 text-xs font-black text-brand-dark hover:bg-brand/10"><ShieldCheck className="h-4 w-4" />Vérifier mon téléphone (facultatif — retrouvez vos commandes par SMS)</button>}</Field><label className="flex items-start gap-3 border border-slate-200 p-4"><input type="checkbox" checked={profile.marketingOptIn} onChange={(e) => setProfile({ ...profile, marketingOptIn: e.target.checked })} className="mt-0.5 h-4 w-4 accent-brand" /><span><strong className="block text-sm text-ink">Actualités et promotions AYROVI</strong><small className="text-xs leading-5 text-slate-500">Recevoir les offres et nouveaux arrivages.</small></span></label><button disabled={busyId === 'profile'} className="flex items-center gap-2 bg-brand px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busyId === 'profile' && <Loader2 className="h-4 w-4 animate-spin" />}Enregistrer le profil</button></form>;
+  const renderProfile = () => <form onSubmit={saveProfile} className="max-w-2xl space-y-5 border border-slate-200 bg-white p-5 sm:p-7"><div className="flex items-center gap-4 border-b border-slate-100 pb-5"><div className="grid h-16 w-16 place-items-center overflow-hidden bg-brand text-xl font-black text-white">{session!.account.avatarUrl ? <img src={session!.account.avatarUrl} alt="" className="h-full w-full object-cover" /> : (session!.account.displayName || 'AY').slice(0, 2).toUpperCase()}</div><div><h3 className="font-black text-ink">Identité du compte</h3><p className="text-xs text-slate-500">Votre compte est actif — la vérification du téléphone est facultative.</p></div></div><Field label="Nom et prénom"><input className={inputClass} value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} required /></Field><Field label="Adresse e-mail"><input type="email" className={inputClass} value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} placeholder="vous@exemple.com" /></Field><Field label="Téléphone (vérification facultative)"><div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-bold text-slate-600"><Phone className="h-4 w-4 text-brand" />{session!.account.phone || 'Non renseigné'}{session!.account.phoneVerified && <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-600" />}</div>{!session!.account.phoneVerified && <button type="button" onClick={() => setPhoneLinkOpen(true)} className="mt-2 flex w-full items-center justify-center gap-2 border border-dashed border-brand/50 bg-brand/5 px-4 py-2.5 text-xs font-black text-brand-dark hover:bg-brand/10"><ShieldCheck className="h-4 w-4" />Vérifier mon téléphone (facultatif — retrouvez vos commandes par SMS)</button>}</Field><label className="flex items-start gap-3 border border-slate-200 p-4"><input type="checkbox" checked={profile.marketingOptIn} onChange={(e) => setProfile({ ...profile, marketingOptIn: e.target.checked })} className="mt-0.5 h-4 w-4 accent-brand" /><span><strong className="block text-sm text-ink">Actualités et promotions AYROVI</strong><small className="text-xs leading-5 text-slate-500">Recevoir les offres et nouveaux arrivages.</small></span></label><button disabled={busyId === 'profile'} className="flex items-center gap-2 bg-brand px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busyId === 'profile' && <Loader2 className="h-4 w-4 animate-spin" />}Enregistrer le profil</button><section className="border-t border-red-100 pt-5"><h4 className="text-sm font-black text-red-700">Supprimer mon compte</h4><p className="mt-1 text-xs leading-5 text-slate-500">Supprime le profil, les connexions Google/Facebook, les sessions, adresses et favoris. Les documents de commande déjà créés restent archivés sans accès au compte.</p><button type="button" disabled={busyId === 'delete-account'} onClick={deleteAccount} className="mt-3 flex items-center gap-2 border border-red-300 px-4 py-2.5 text-xs font-black text-red-700 disabled:opacity-50">{busyId === 'delete-account' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Supprimer définitivement le compte</button></section></form>;
 
   const renderAddresses = () => <div className="space-y-4"><button onClick={() => editAddress()} className="flex items-center gap-2 bg-brand px-4 py-3 text-sm font-black text-white"><Plus className="h-4 w-4" />Ajouter une adresse</button>{rows.length ? <div className="grid gap-4 lg:grid-cols-2">{rows.map((address: CustomerAddress) => <article key={address.id} className="border border-slate-200 bg-white p-5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-black text-ink">{address.label}</h3>{Boolean(address.is_default) && <span className="bg-brand/10 px-2 py-1 text-[9px] font-black uppercase text-brand">Par défaut</span>}</div><p className="mt-3 text-sm font-bold">{address.recipient_name}</p><p className="mt-1 text-sm leading-6 text-slate-500">{address.address_line}<br />{address.city ? `${address.city}, ` : ''}{address.governorate}{address.postal_code ? ` ${address.postal_code}` : ''}<br />{address.phone}</p>{address.delivery_notes && <p className="mt-2 text-xs italic text-slate-400">{address.delivery_notes}</p>}</div><MapPin className="h-5 w-5 shrink-0 text-brand" /></div><div className="mt-5 flex gap-2 border-t border-slate-100 pt-4"><button onClick={() => editAddress(address)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-black text-brand"><Pencil className="h-3.5 w-3.5" />Modifier</button><button disabled={busyId === address.id} onClick={() => deleteAddress(address.id)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-black text-red-600"><Trash2 className="h-3.5 w-3.5" />Supprimer</button></div></article>)}</div> : <Empty icon={MapPin} title="Aucune adresse enregistrée" text="Ajoutez vos adresses de livraison pour accélérer la commande." />}</div>;
 

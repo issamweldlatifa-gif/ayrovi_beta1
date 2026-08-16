@@ -32,18 +32,27 @@ services:
         sync: false
       - key: GOOGLE_CALLBACK_URL
         sync: false
+      - key: FACEBOOK_APP_ID
+        sync: false
+      - key: FACEBOOK_APP_SECRET
+        sync: false
+      - key: FACEBOOK_CALLBACK_URL
+        sync: false
+      - key: FACEBOOK_GRAPH_VERSION
+        value: v26.0
+      # Tunisian SMS providers integrate through the provider-independent HTTPS adapter.
       - key: CUSTOMER_OTP_PROVIDER
-        value: twilio_verify
+        value: webhook
+      - key: CUSTOMER_OTP_WEBHOOK_URL
+        sync: false
+      - key: CUSTOMER_OTP_WEBHOOK_TOKEN
+        sync: false
+      # Optional legacy Twilio adapter; leave empty unless explicitly supported.
       - key: TWILIO_ACCOUNT_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN
         sync: false
       - key: TWILIO_VERIFY_SERVICE_SID
-        sync: false
-      # Alternative provider-independent adapter (unused while twilio_verify is selected).
-      - key: CUSTOMER_OTP_WEBHOOK_URL
-        sync: false
-      - key: CUSTOMER_OTP_WEBHOOK_TOKEN
         sync: false
       - key: MAIL_PROVIDER
         sync: false
@@ -51,6 +60,25 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      - key: BACKUP_INTERVAL_HOURS
+        value: 24
+      - key: BACKUP_RETENTION_DAYS
+        value: 14
+      # Optional encrypted-at-rest S3-compatible destination (Cloudflare R2, B2 or S3).
+      - key: BACKUP_S3_ENDPOINT
+        sync: false
+      - key: BACKUP_S3_BUCKET
+        sync: false
+      - key: BACKUP_S3_REGION
+        value: auto
+      - key: BACKUP_S3_ACCESS_KEY_ID
+        sync: false
+      - key: BACKUP_S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: BACKUP_S3_PREFIX
+        value: ayrovi/sqlite
+      - key: BACKUP_REQUIRE_EXTERNAL
+        value: 'false'
       - key: ANTHROPIC_API_KEY
         sync: false
       - key: ANTHROPIC_MODEL

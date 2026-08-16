@@ -7,8 +7,8 @@ AYROVI est une plateforme Express, React et SQLite de shopping international en 
 - Site public responsive avec Hero administrable, marques partenaires et une navigation textuelle simple sous le Hero pour Arrivages, Promotions, Stories et Actualités.
 - Chaque libellé CMS ouvre une page plein écran dédiée avec l’en-tête AYROVI, une fermeture explicite et uniquement le contenu backend de la catégorie choisie.
 - Lens pour extraire un prix depuis une image ou un lien, avec prévisualisation tarifaire calculée côté serveur.
-- Connexion client séparée de l’Admin par SMS OTP ou Google, avec activation immédiate après vérification.
-- Espace « Mon compte » complet : profil, adresses, historique détaillé, favoris, panier sauvegardé et notifications.
+- Connexion client séparée de l’Admin par Google, Facebook OAuth ou SMS OTP, avec validation OAuth côté serveur et état anti-CSRF lié au navigateur.
+- Espace « Mon compte » complet : profil, adresses, historique détaillé, favoris, panier sauvegardé, notifications et suppression autonome du compte.
 - Panier et checkout authentifié pour les 24 gouvernorats tunisiens. Le téléphone tunisien de livraison est validé au checkout; la vérification SMS du profil reste optionnelle. Les moyens configurés par défaut sont Carte, Flouci/D17, virement bancaire et mandat postal.
 - Rattachement sécurisé des anciennes commandes après vérification du numéro correspondant.
 - Moteur tarifaire centralisé EUR, USD, GBP, JPY et TND incluant douane, transport, service et supplément Express.
@@ -52,7 +52,7 @@ Les tarifs, moyens de paiement, gouvernorats et délais affichés publiquement p
 - `src/services/pricing.ts` : source tarifaire centralisée.
 - `src/api/routes.ts` : Lens, panier et checkout.
 - `src/public/routes.ts` : contenu CMS et configuration publique assainie.
-- `src/customer/` : sessions client, CSRF, OTP adaptable, Google OAuth et API du compte.
+- `src/customer/` : sessions client, CSRF, OTP adaptable, Google/Facebook OAuth et API du compte.
 - `src/admin/` : authentification, permissions et API Admin, isolées de l’authentification client.
 - `client/src/admin/` : interface Admin responsive.
 - `client/src/components/` : site public, Lens, panier, checkout et Assistant.
@@ -64,7 +64,7 @@ La description complète des fichiers, rôles, données et routes se trouve dans
 
 Le projet inclut un Blueprint `render.yaml` prêt pour Render avec Node.js, healthcheck, plan Starter et disque persistant partagé par SQLite et les médias Admin. Consultez [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md) pour la procédure complète.
 
-Variables de base obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DATABASE_PATH`, `CUSTOMER_AUTH_SECRET` et `PUBLIC_BASE_URL`. Google nécessite `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL`; l’OTP SMS utilise Twilio Verify avec `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` et `TWILIO_VERIFY_SERVICE_SID`, comme décrit dans [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md). Aucun secret ne doit être exposé au frontend.
+Variables de base obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DATABASE_PATH`, `CUSTOMER_AUTH_SECRET` et `PUBLIC_BASE_URL`. Google utilise `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL`; Facebook utilise `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` et `FACEBOOK_CALLBACK_URL`. Pour la Tunisie, l’OTP SMS doit passer par un fournisseur local via `CUSTOMER_OTP_PROVIDER=webhook`; l’adaptateur Twilio reste uniquement optionnel. Les sauvegardes peuvent être envoyées vers S3/R2/B2 avec les variables `BACKUP_S3_*`. Aucun secret ne doit être exposé au frontend.
 
 Pour un autre hébergeur Node.js :
 

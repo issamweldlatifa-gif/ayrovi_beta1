@@ -213,6 +213,119 @@ describe('AYROVI platform', () => {
     }
   });
 
+  test('Facebook OAuth state is provider-bound and tied to the initiating browser', async () => {
+    const previous = {
+      appId: process.env.FACEBOOK_APP_ID,
+      appSecret: process.env.FACEBOOK_APP_SECRET,
+      callback: process.env.FACEBOOK_CALLBACK_URL,
+      version: process.env.FACEBOOK_GRAPH_VERSION,
+    };
+    process.env.FACEBOOK_APP_ID = '123456789012345';
+    process.env.FACEBOOK_APP_SECRET = 'test-facebook-secret';
+    process.env.FACEBOOK_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/facebook/callback';
+    process.env.FACEBOOK_GRAPH_VERSION = 'v26.0';
+    try {
+      const browser = request.agent(app);
+      const started = await browser.get('/api/customer/auth/facebook/start?returnTo=/compte');
+      expect(started.status).toBe(302);
+      const location = new URL(started.headers.location);
+      expect(`${location.origin}${location.pathname}`).toBe('https://www.facebook.com/v26.0/dialog/oauth');
+      expect(location.searchParams.get('scope')).toBe('public_profile,email');
+      expect(location.searchParams.get('redirect_uri')).toBe(process.env.FACEBOOK_CALLBACK_URL);
+      expect(started.headers['set-cookie']?.[0]).toContain('ayrovi_customer_facebook_oauth=');
+      expect(started.headers['set-cookie']?.[0]).toContain('HttpOnly');
+      const state = location.searchParams.get('state');
+      expect(state).toBeTruthy();
+      expect(db.get<any>('SELECT provider FROM customer_oauth_states WHERE id=?', hashToken(state!))?.provider).toBe('FACEBOOK');
+
+      const foreignBrowser = await request(app)
+        .get('/api/customer/auth/facebook/callback')
+        .query({ state, code: 'must-not-be-exchanged' });
+      expect(foreignBrowser.status).toBe(302);
+      expect(foreignBrowser.headers.location).toBe('/?customerAuth=facebook_error');
+      expect(db.get<any>('SELECT id FROM customer_oauth_states WHERE id=?', hashToken(state!))).toBeTruthy();
+    } finally {
+      for (const [key, value] of Object.entries(previous)) {
+        const envKey = key === 'appId' ? 'FACEBOOK_APP_ID' : key === 'appSecret' ? 'FACEBOOK_APP_SECRET' : key === 'callback' ? 'FACEBOOK_CALLBACK_URL' : 'FACEBOOK_GRAPH_VERSION';
+        if (value === undefined) delete process.env[envKey]; else process.env[envKey] = value;
+      }
+    }
+  });
+
+  test('Facebook OAuth verifies the token and never merges accounts by an unverified email', async () => {
+    const previous = {
+      appId: process.env.FACEBOOK_APP_ID,
+      appSecret: process.env.FACEBOOK_APP_SECRET,
+      callback: process.env.FACEBOOK_CALLBACK_URL,
+      version: process.env.FACEBOOK_GRAPH_VERSION,
+    };
+    process.env.FACEBOOK_APP_ID = '123456789012345';
+    process.env.FACEBOOK_APP_SECRET = 'test-facebook-secret';
+    process.env.FACEBOOK_CALLBACK_URL = 'https://ayrovi.example/api/customer/auth/facebook/callback';
+    process.env.FACEBOOK_GRAPH_VERSION = 'v26.0';
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const now = new Date().toISOString();
+    const email = `facebook-collision-${Date.now()}@ayrovi.test`;
+    const existingId = `facebook_email_owner_${Date.now()}`;
+    db.run(`INSERT INTO customer_accounts (id,display_name,email,email_verified_at,status,created_at,updated_at)
+      VALUES (?,'Compte Google existant',?,?,'ACTIVE',?,?)`, existingId, email, now, now, now);
+    try {
+      const browser = request.agent(app);
+      const started = await browser.get('/api/customer/auth/facebook/start?returnTo=/compte');
+      const state = new URL(started.headers.location).searchParams.get('state');
+      fetchMock
+        .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'facebook-user-token', token_type: 'bearer' }), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({ data: { is_valid: true, app_id: process.env.FACEBOOK_APP_ID, user_id: '998877665544' } }), { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify({
+          id: '998877665544', name: 'Client Facebook', email,
+          picture: { data: { is_silhouette: false, url: 'https://platform-lookaside.fbsbx.com/avatar.jpg' } },
+        }), { status: 200 }));
+      const callback = await browser.get('/api/customer/auth/facebook/callback').query({ state, code: 'valid-facebook-code' });
+      expect(callback.status).toBe(302);
+      expect(callback.headers.location).toBe('/compte?customerAuth=facebook_success');
+      const identity = await browser.get('/api/customer/auth/me');
+      expect(identity.status).toBe(200);
+      expect(identity.body.data.account.id).not.toBe(existingId);
+      expect(identity.body.data.account.displayName).toBe('Client Facebook');
+      expect(identity.body.data.account.email).toBeNull();
+      expect(identity.body.data.account.emailVerified).toBe(false);
+      expect(db.get<any>(`SELECT provider_subject FROM customer_auth_identities WHERE account_id=? AND provider='FACEBOOK'`, identity.body.data.account.id)?.provider_subject).toBe('998877665544');
+      expect(db.get<any>('SELECT email FROM customer_accounts WHERE id=?', existingId)?.email).toBe(email);
+      db.run('DELETE FROM customer_accounts WHERE id=?', identity.body.data.account.id);
+    } finally {
+      fetchMock.mockRestore();
+      db.run('DELETE FROM customer_accounts WHERE id=?', existingId);
+      for (const [key, value] of Object.entries(previous)) {
+        const envKey = key === 'appId' ? 'FACEBOOK_APP_ID' : key === 'appSecret' ? 'FACEBOOK_APP_SECRET' : key === 'callback' ? 'FACEBOOK_CALLBACK_URL' : 'FACEBOOK_GRAPH_VERSION';
+        if (value === undefined) delete process.env[envKey]; else process.env[envKey] = value;
+      }
+    }
+  });
+
+  test('customers can permanently delete their profile with CSRF and explicit confirmation', async () => {
+    const accountId = `account_delete_${Date.now()}`;
+    const now = new Date().toISOString();
+    db.run("INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at) VALUES (?,? ,?,'ACTIVE',?,?)",
+      accountId, 'Compte à supprimer', `delete-${Date.now()}@ayrovi.test`, now, now);
+    db.run(`INSERT INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+      VALUES (?,?,'FACEBOOK',?,?)`, `identity_delete_${Date.now()}`, accountId, `facebook-delete-${Date.now()}`, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    const cookie = `ayrovi_customer_session=${encodeURIComponent(session.token)}`;
+    const withoutConfirmation = await request(app).delete('/api/customer/account')
+      .set('Cookie', cookie).set('x-csrf-token', session.csrfToken).send({});
+    expect(withoutConfirmation.status).toBe(400);
+    expect(db.get<any>('SELECT id FROM customer_accounts WHERE id=?', accountId)).toBeTruthy();
+
+    const removed = await request(app).delete('/api/customer/account')
+      .set('Cookie', cookie).set('x-csrf-token', session.csrfToken).send({ confirmation: 'SUPPRIMER' });
+    expect(removed.status).toBe(200);
+    expect(removed.body.data.deleted).toBe(true);
+    expect(([] as string[]).concat(removed.headers['set-cookie'] || []).some((value) => value.includes('Max-Age=0'))).toBe(true);
+    expect(db.get<any>('SELECT id FROM customer_accounts WHERE id=?', accountId)).toBeUndefined();
+    expect(db.get<any>('SELECT id FROM customer_auth_identities WHERE account_id=?', accountId)).toBeUndefined();
+    expect(db.get<any>('SELECT id FROM customer_sessions WHERE account_id=?', accountId)).toBeUndefined();
+  });
+
   test('URL cleaner extracts a valid link from pasted text', () => {
     const value = scraper.cleanPastedUrl(
       'Voir cet article : https://www.shein.com/product-p-382460229.html), merci',

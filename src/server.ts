@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import { randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
+import { spawn } from 'node:child_process';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
@@ -13,8 +14,10 @@ import { createApiRouter } from './api/routes';
 import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
-import { createCustomerRouter } from './customer/routes';
+import { createCustomerRouter, facebookOAuthAvailable, googleOAuthAvailable } from './customer/routes';
 import { phoneOtpAvailable } from './customer/otp';
+import { mailerReady } from './services/mailer';
+import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
 
 const app = express();
@@ -84,6 +87,8 @@ function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: 
 app.use('/api/admin/auth/login', rateLimit('admin-login', 10, 5 * 60_000));
 app.use('/api/customer/auth/otp/request', rateLimit('otp-request', 5, 60_000, (req) => `${req.ip}:${String(req.body?.phone || '').slice(0, 24)}`));
 app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
+app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
+app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
 app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
@@ -168,7 +173,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.1.0',
+    version: '3.2.0',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });
@@ -182,8 +187,10 @@ app.get('/api/ready', (_req, res) => {
         assistant: Boolean(process.env.ANTHROPIC_API_KEY),
         visualSearch: Boolean(process.env.SERPAPI_KEY),
         voice: Boolean(process.env.GROQ_API_KEY),
+        googleLogin: customerAuthReady() && googleOAuthAvailable(),
+        facebookLogin: customerAuthReady() && facebookOAuthAvailable(),
         sms: phoneOtpAvailable(),
-        mail: Boolean(process.env.MAIL_PROVIDER && process.env.MAIL_API_KEY),
+        mail: mailerReady(),
       },
     });
   } catch (error: any) {
@@ -235,6 +242,41 @@ const housekeeping = setInterval(() => {
 }, 3600_000);
 housekeeping.unref?.();
 
+// Sauvegarde SQLite périodique dans le même processus Render afin d'accéder au
+// disque persistant. Le script peut ensuite pousser la copie vers S3/R2/B2.
+const backupIntervalHours = Math.max(0, Math.min(168, Number(process.env.BACKUP_INTERVAL_HOURS || 0)));
+const backupIntervalMs = backupIntervalHours * 60 * 60 * 1000;
+let backupTimer: NodeJS.Timeout | null = null;
+let backupRunning = false;
+function runBackupIfDue() {
+  if (!backupIntervalMs || backupRunning || process.env.NODE_ENV === 'test') return;
+  const backupDir = path.resolve(process.cwd(), process.env.BACKUP_DIR || 'data/backups');
+  const newest = fs.existsSync(backupDir)
+    ? fs.readdirSync(backupDir).filter((name) => /^ayrovi-.*\.sqlite$/.test(name))
+      .map((name) => fs.statSync(path.join(backupDir, name)).mtimeMs).reduce((max, value) => Math.max(max, value), 0)
+    : 0;
+  if (newest && Date.now() - newest < backupIntervalMs) return;
+  backupRunning = true;
+  const child = spawn(process.execPath, [path.resolve(process.cwd(), 'scripts/backup-sqlite.mjs')], {
+    cwd: process.cwd(), env: process.env, stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let output = '';
+  child.stdout.on('data', (chunk) => { output = `${output}${String(chunk)}`.slice(-4000); });
+  child.stderr.on('data', (chunk) => { output = `${output}${String(chunk)}`.slice(-4000); });
+  child.once('error', (error) => { console.error('[backup] تعذر تشغيل النسخ المجدول:', error.message); });
+  child.once('close', (code) => {
+    backupRunning = false;
+    if (code === 0) console.info(`[backup] اكتملت النسخة المجدولة: ${output.trim()}`);
+    else console.error(`[backup] فشلت النسخة المجدولة (exit=${code}): ${output.trim()}`);
+  });
+}
+if (backupIntervalMs && process.env.NODE_ENV !== 'test') {
+  const initial = setTimeout(runBackupIfDue, 60_000);
+  initial.unref?.();
+  backupTimer = setInterval(runBackupIfDue, Math.min(backupIntervalMs, 60 * 60 * 1000));
+  backupTimer.unref?.();
+}
+
 // Start Server
 let httpServer: Server | null = null;
 let shutdownStarted = false;
@@ -245,6 +287,7 @@ function shutdown(exitCode: number, reason: string) {
   console.error(`[shutdown] ${reason} — fermeture propre…`);
   clearInterval(housekeeping);
   clearInterval(rateSweeper);
+  if (backupTimer) clearInterval(backupTimer);
   const finish = () => {
     try { db.close(); } catch { /* already closed */ }
     process.exit(exitCode);
