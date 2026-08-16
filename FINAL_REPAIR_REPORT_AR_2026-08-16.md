@@ -5,7 +5,7 @@
 **نقطة البداية:** `a2a9b023b1b131c475616c6f6db808b3d8ab9c53`  
 **الحالة:** الإصلاحات البرمجية الحرجة وتحديث Social/الهوية/AYROVIX والمساعد ووكيل «مجلتي» داخل Admin مكتملة في النسخة `3.4.0`؛ التحقق المحلي كامل، والتحقق الإنتاجي موثق أدناه.
 
-> **الحالة الإنتاجية المؤكدة في 16 أغسطس 2026:** نُقلت قاعدة الإصلاح من `3.2.1` إلى `3.3.0` مع سجل تنقل داخلي شامل لزر Back وتحديث Social والهوية وAYROVIX والمساعد، ثم بُنيت النسخة `3.4.0` لإضافة وكيل «مجلتي» المحرري داخل Admin فقط. تسجيل Google وAI وVisual Search والصوت جاهزة. أضيف Facebook OAuth كاملًا لكنه يبقى معطّلًا آمنًا إلى أن ينشئ المالك تطبيق Meta ويضبط أسراره. البريد وOTP SMS ما زالا غير مفعّلين. Twilio ليس الخيار التشغيلي لتونس؛ الافتراضي أصبح Webhook لمزود تونسي. خيار CARD يبقى تدفق تحصيل يدوي آمن ثم تأكيد من Admin.
+> **الحالة الإنتاجية المؤكدة في 16 أغسطس 2026:** نُقلت قاعدة الإصلاح من `3.2.1` إلى `3.3.0` مع سجل تنقل داخلي شامل لزر Back وتحديث Social والهوية وAYROVIX والمساعد، ثم نُشرت النسخة `3.4.0` التي تضيف وكيل «مجلتي» المحرري داخل Admin فقط. تسجيل Google وAI وVisual Search والصوت جاهزة. أضيف Facebook OAuth كاملًا لكنه يبقى معطّلًا آمنًا إلى أن ينشئ المالك تطبيق Meta ويضبط أسراره. البريد وOTP SMS ما زالا غير مفعّلين. Twilio ليس الخيار التشغيلي لتونس؛ الافتراضي أصبح Webhook لمزود تونسي. خيار CARD يبقى تدفق تحصيل يدوي آمن ثم تأكيد من Admin.
 
 ---
 
@@ -18,13 +18,13 @@
 | Build إنتاجي | ✅ ناجح |
 | `npm audit` | ✅ 0 ثغرات معروفة |
 | `git diff --check` | ✅ ناجح |
-| Liveness `/api/health` | ✅ HTTP 200 — النسخة 3.3.0 |
+| Liveness `/api/health` | ✅ HTTP 200 — النسخة 3.4.0 |
 | Readiness `/api/ready` | ✅ HTTP 200 وSQLite جاهزة |
 | API غير موجودة | ✅ JSON 404 بدل HTML 200 |
 | ضغط الأصول | ✅ Brotli متحقق حيًا |
 | نسخة SQLite | ✅ أُنشئت وفُحصت بـ`quick_check=ok` |
 
-المعاينة المحلية لا تحتوي أسرار الإنتاج. في Render أصبحت Google وAI وVisual Search والصوت مفعّلة فعليًا. Facebook مدمج لكنه غير مفعّل لغياب تطبيق Meta، ويبقى البريد وOTP SMS غير مفعّلين حتى توثيق نطاق البريد واختيار مزود SMS تونسي.
+المعاينة المحلية لا تحتوي أسرار الإنتاج. في Render أصبحت Google وAI وVisual Search والصوت ووكيل مجلتي/بحث الصور/بحث Stock مفعّلة فعليًا. Facebook مدمج لكنه غير مفعّل لغياب تطبيق Meta، ويبقى البريد وOTP SMS غير مفعّلين حتى توثيق نطاق البريد واختيار مزود SMS تونسي.
 
 ### فحص Render الفعلي — `https://ayrovi-beta1-1.onrender.com/`
 
@@ -40,7 +40,7 @@
 
 الحالة الفعلية للتكاملات في هذه الخدمة:
 
-- `/api/ready`: `assistant=true`, `visualSearch=true`, `voice=true`, `googleLogin=true`, `facebookLogin=false`, `sms=false`, `mail=false`.
+- `/api/ready`: `assistant=true`, `magazineAgent=true`, `magazineImageSearch=true`, `magazineStockVideo=true`, `visualSearch=true`, `voice=true`, `googleLogin=true`, `facebookLogin=false`, `sms=false`, `mail=false`.
 - `/api/customer/auth/config`: `google.enabled=true`, `facebook.enabled=false`, و`phoneOtp.enabled=false`.
 - `/api/customer/auth/google/start`: يعيد 302 إلى `accounts.google.com` مع callback صحيح إلى `https://ayrovi-beta1-1.onrender.com/api/customer/auth/google/callback`، وScopes هي `openid email profile`، مع وجود `state`.
 
@@ -106,6 +106,8 @@
 - أضيفت متغيرات `MAGAZINE_AGENT_MODEL`, `PEXELS_API_KEY`, `PIXABAY_API_KEY` إلى أمثلة التشغيل وRender؛ مفاتيح Stock اختيارية لأن Web Search يعطي fallback فعليًا، بينما API المباشر مطلوب لجلب ملف فيديو جاهز للجدولة.
 
 اختبارات وكيل مجلتي تغطي: الأعداد العربية والحد 10، سياسة المنتج الحقيقي والغموض، الحفظ التلقائي لأربعة أنواع، النقل الآمن إلى CMS، منع نشر الصورة المرجعية، الجدولة المستقبلية، منع Social بلا Media مرخصة، واستدعاء Anthropic Web Search. الإجمالي المحلي أصبح **126/126** في 12 ملفًا، مع TypeScript وBuild ناجحين.
+
+نُشر Commit `8d512ec` على `main` و`agent/hardening-v3.1.0`، وأكد Render الانتقال إلى **3.4.0**. أعاد `/api/ready`: `magazineAgent=true`, `magazineImageSearch=true`, `magazineStockVideo=true` مع بقاء `assistant/visualSearch/voice/googleLogin=true`. أثبت فحص Bundle الإنتاج ظهور «مجلتي» بدل Actualités، وتبويب «وكيل مجلتي»، وواجهة «مسودات الوكيل»، وعقد Drag & Drop. أعاد endpoint حالة الوكيل HTTP 401 بلا جلسة Admin، ما يثبت أنه مسجل ومحمي وغير عام. لم يُنفذ توليد مدفوع داخل حساب Admin الإنتاجي أثناء Smoke غير التخريبي كي لا تُنشأ مسودات حقيقية دون محرر؛ صحة عقد Anthropic والحفظ والنقل مغطاة آليًا بالاختبارات الثمانية.
 
 ---
 
@@ -274,6 +276,7 @@
 - إنشاء تطبيق Meta ثم ضبط `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET`, `FACEBOOK_CALLBACK_URL`.
 - ضبط `MAIL_PROVIDER`, `MAIL_API_KEY`, `MAIL_FROM` بعد شراء نطاق وتوثيقه.
 - ضبط Webhook مزود OTP التونسي بعد اختياره.
+- اختياريًا: ضبط `PEXELS_API_KEY` أو `PIXABAY_API_KEY` لجلب ملف فيديو Stock مباشر جاهز للجدولة؛ من دونهما يبقى البحث الحقيقي داخل المكتبتين عبر Anthropic Web Search ويحتاج المحرر اختيار/رفع المقطع.
 - ضبط `BACKUP_S3_*` وتغيير `BACKUP_REQUIRE_EXTERNAL=true` بعد نجاح أول رفع.
 
 لا تُرسل أي أسرار في المحادثة أو GitHub.
@@ -365,7 +368,7 @@ Twilio غير معتمد تشغيليًا لأن المالك أوضح أنه ل
 - E2E على أجهزة ومتصفحات حقيقية.
 - Monitoring وتنبيهات إنتاجية.
 
-**التقييم الحالي:** النسخة 3.4.0 تجتاز التحقق المحلي الكامل وتنجح في فحوص البنية والأمان، وGoogle وAI وVisual Search والصوت فعالة. Facebook والبريد وSMS أصبحت بنيتها البرمجية جاهزة لكنها تحتاج حسابات/أسرار المزوّدين. الجاهزية التقديرية نحو **8.8/10**؛ المتبقي الحاسم تشغيلي وقانوني: Meta Live، نطاق وبريد، مزود OTP تونسي، Bucket/Restore، CGV وهوية قانونية، ثم Smoke وE2E ومراقبة إنتاجية.
+**التقييم الحالي:** النسخة 3.4.0 تجتاز التحقق المحلي الكامل وتنجح في فحوص البنية والأمان، وGoogle وAI وVisual Search والصوت ووكيل مجلتي/بحث الصور/بحث Stock فعالة في Render. Facebook والبريد وSMS أصبحت بنيتها البرمجية جاهزة لكنها تحتاج حسابات/أسرار المزوّدين. الجاهزية التقديرية نحو **8.8/10**؛ المتبقي الحاسم تشغيلي وقانوني: Meta Live، نطاق وبريد، مزود OTP تونسي، Bucket/Restore، CGV وهوية قانونية، ثم Smoke وE2E ومراقبة إنتاجية.
 
 ---
 
