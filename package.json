@@ -1,6 +1,6 @@
 {
   "name": "ayrovi",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "AYROVI — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
@@ -10,7 +10,8 @@
     "build:server": "node -e 'require(\"esbuild\").buildSync({entryPoints:[\"src/server.ts\"],bundle:true,platform:\"node\",target:\"node20\",outfile:\"dist/server.js\",external:[\"better-sqlite3\",\"jsdom\",\"express\",\"compression\",\"cors\",\"dotenv\",\"tesseract.js\",\"multer\",\"sharp\"]})'",
     "build": "npm run build:client && npm run build:server",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "backup": "node scripts/backup-sqlite.mjs"
   },
   "keywords": [
     "ayrovi",

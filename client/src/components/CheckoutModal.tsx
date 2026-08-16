@@ -357,7 +357,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               {paymentMethods.map((method) => {
                 const value = method.toLowerCase();
                 const META: Record<string, { label: string; hint: string }> = {
-                  CARD: { label: 'Carte bancaire', hint: `−${depositInfo.cardDiscountPercent}% · confirmation immédiate` },
+                  CARD: { label: 'Carte bancaire', hint: `−${depositInfo.cardDiscountPercent}% · après encaissement` },
                   FLOUCI: { label: 'Flouci / D17', hint: 'Puis envoyez la capture' },
                   BANK_TRANSFER: { label: 'Virement', hint: 'Puis envoyez le reçu' },
                   POSTE: { label: 'Mandat poste', hint: 'Puis envoyez le reçu' },
@@ -387,7 +387,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               const discount = method === 'CARD' ? Math.round((base * depositInfo.cardDiscountPercent) / 100 * 1000) / 1000 : 0;
               const deposit = Math.round((base - discount) * 1000) / 1000;
               const instructions: Record<string, string> = {
-                CARD: `Payez ${deposit.toFixed(3)} DT par carte bancaire (remise −${depositInfo.cardDiscountPercent}% : −${discount.toFixed(3)} DT) : votre commande est confirmée immédiatement, avec facture électronique (e-mail + téléchargement) et code de suivi.`,
+                CARD: `Acompte carte : ${deposit.toFixed(3)} DT après remise de −${depositInfo.cardDiscountPercent}% (−${discount.toFixed(3)} DT). Notre équipe vous transmettra les instructions de règlement sécurisé; la commande, la facture et le suivi seront activés après confirmation de l’encaissement. Ne communiquez jamais votre numéro de carte par message.`,
                 FLOUCI: `Envoyez ${deposit.toFixed(3)} DT via Flouci / D17 au ${depositInfo.flouciNumber || 'numéro communiqué par AYROVI'}, puis téléversez la capture d’écran depuis votre espace client.`,
                 BANK_TRANSFER: `Effectuez un virement de ${deposit.toFixed(3)} DT au nom de ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB : ${depositInfo.bankRib}` : ''}, puis téléversez le reçu depuis votre espace client.`,
                 POSTE: `Versez ${deposit.toFixed(3)} DT par mandat postal au nom de ${depositInfo.companyName}${depositInfo.posteAccount ? ` — compte : ${depositInfo.posteAccount}` : ''}, puis téléversez le reçu depuis votre espace client.`,

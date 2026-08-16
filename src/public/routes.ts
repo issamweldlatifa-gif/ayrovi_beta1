@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
-import { customerFromRequest, optionalCustomer, resolveCustomer } from '../customer/auth';
+import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 
 function parseJson(value: string, fallback: any = []) {
@@ -213,41 +213,79 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   });
 
   router.get('/social/publications', (_req, res) => {
-    const rows = db.all<any>(`SELECT * FROM publications WHERE status='publie' ORDER BY publish_at DESC`);
+    const now = new Date().toISOString();
+    // Liste blanche stricte : les notes éditoriales et champs Admin ne quittent jamais l'API publique.
+    const rows = db.all<any>(`SELECT id,title,subtitle,channel_id,image_url,publish_at
+      FROM publications WHERE status='publie' AND publish_at<=? ORDER BY publish_at DESC`, now);
     res.json({ success: true, data: rows });
   });
 
   router.get('/social/reels', (_req, res) => {
-    const rows = db.all<any>(`SELECT * FROM reels WHERE status='publie' ORDER BY publish_at DESC`);
+    const now = new Date().toISOString();
+    const rows = db.all<any>(`SELECT r.id,r.title,r.channel_id,r.description,r.video_url,r.duration_seconds,r.publish_at,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='view') views,
+      (SELECT COUNT(*) FROM story_interactions i WHERE i.target_id=r.id AND i.type='like') likes
+      FROM reels r WHERE r.status='publie' AND r.publish_at<=? ORDER BY r.publish_at DESC`, now);
     res.json({ success: true, data: rows });
   });
 
-  router.post('/social/reels/:id/view', (req, res) => {
-    db.run(`UPDATE reels SET views=views+1 WHERE id=?`, req.params.id);
-    res.json({ success: true });
-  });
-
-  router.post('/social/reels/:id/like', (req, res) => {
-    const row = db.get<any>(`SELECT id,likes FROM reels WHERE id=?`, req.params.id);
-    if (!row) return res.status(404).json({ success: false, error: 'Reel introuvable.' });
-    const delta = req.body?.unlike ? -1 : 1;
-    db.run(`UPDATE reels SET likes=MAX(0, likes+?) WHERE id=?`, delta, req.params.id);
-    res.json({ success: true, data: { likes: Math.max(0, row.likes + delta) } });
-  });
+  // Anciens endpoints non protégés : fermeture explicite. Le client courant utilise /social/interact.
+  router.post('/social/reels/:id/view', (_req, res) => res.status(410).json({ success: false, code: 'ENDPOINT_REPLACED', error: 'Utilisez /api/public/social/interact.' }));
+  router.post('/social/reels/:id/like', (_req, res) => res.status(410).json({ success: false, code: 'ENDPOINT_REPLACED', error: 'Utilisez /api/public/social/interact.' }));
 
   router.get('/story-publishers', (_req, res) => {
-    const rows = db.all<any>(`SELECT slug,name,subtitle,avatar,official FROM story_publishers ORDER BY official DESC, name`);
+    const rows = db.all<any>(`SELECT id,slug,name,subtitle,avatar,official FROM story_publishers ORDER BY official DESC, name`);
     res.json({ success: true, data: rows });
   });
 
-  /* ===== Social Stories — interactions persistantes (cahier des charges §6) ===== */
+  type SocialTarget = { kind: 'story' | 'post'; source: 'story' | 'publication' | 'reel' };
+  const publishedTarget = (targetId: string): SocialTarget | null => {
+    const now = new Date().toISOString();
+    if (db.get(`SELECT 1 FROM stories WHERE id=? AND status='PUBLISHED' AND publish_at<=?
+      AND (expires_at IS NULL OR expires_at>?)`, targetId, now, now)) return { kind: 'story', source: 'story' };
+    if (db.get(`SELECT 1 FROM publications WHERE id=? AND status='publie' AND publish_at<=?`, targetId, now)) {
+      return { kind: 'post', source: 'publication' };
+    }
+    if (db.get(`SELECT 1 FROM reels WHERE id=? AND status='publie' AND publish_at<=?`, targetId, now)) {
+      return { kind: 'post', source: 'reel' };
+    }
+    return null;
+  };
+  const interactionCounts = (targetId: string) => {
+    const result = { likes: 0, comments: 0, views: 0, shares: 0 };
+    const rows = db.all<any>(`SELECT type,COUNT(*) n FROM story_interactions WHERE target_id=? GROUP BY type`, targetId);
+    for (const row of rows) {
+      if (row.type === 'like') result.likes = Number(row.n);
+      if (row.type === 'comment') result.comments = Number(row.n);
+      if (row.type === 'view') result.views = Number(row.n);
+      if (row.type === 'share') result.shares = Number(row.n);
+    }
+    return result;
+  };
+  const syncReelCounters = (targetId: string, target: SocialTarget, now: string) => {
+    if (target.source !== 'reel') return;
+    const counts = interactionCounts(targetId);
+    db.run('UPDATE reels SET views=?,likes=?,updated_at=? WHERE id=?', counts.views, counts.likes, now, targetId);
+  };
+
+  /* ===== Interactions sociales persistantes et dédupliquées ===== */
   router.get('/social/counts', (req, res) => {
-    const ids = String(req.query.ids || '').split(',').map((v) => v.trim()).filter(Boolean).slice(0, 60);
-    const out: Record<string, any> = {};
-    for (const id of ids) {
-      const rows = db.all<any>(`SELECT type, COUNT(*) n FROM story_interactions WHERE target_id=? GROUP BY type`, id);
-      out[id] = { likes: 0, comments: 0, views: 0, shares: 0 };
-      for (const row of rows) out[id][`${row.type}s`] = Number(row.n);
+    const ids = [...new Set(String(req.query.ids || '').split(',')
+      .map((value) => value.trim()).filter((value) => /^[A-Za-z0-9_-]{1,120}$/.test(value)).slice(0, 60))];
+    const out: Record<string, { likes: number; comments: number; views: number; shares: number }> = {};
+    for (const id of ids) out[id] = { likes: 0, comments: 0, views: 0, shares: 0 };
+    if (ids.length) {
+      const placeholders = ids.map(() => '?').join(',');
+      const rows = db.all<any>(`SELECT target_id,type,COUNT(*) n FROM story_interactions
+        WHERE target_id IN (${placeholders}) GROUP BY target_id,type`, ...ids);
+      for (const row of rows) {
+        const counts = out[row.target_id];
+        if (!counts) continue;
+        if (row.type === 'like') counts.likes = Number(row.n);
+        if (row.type === 'comment') counts.comments = Number(row.n);
+        if (row.type === 'view') counts.views = Number(row.n);
+        if (row.type === 'share') counts.shares = Number(row.n);
+      }
     }
     res.json({ success: true, data: out });
   });
@@ -255,9 +293,10 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   router.get('/social/comments', (req, res) => {
     const id = String(req.query.targetId || '').trim();
     if (!/^[A-Za-z0-9_-]{1,120}$/.test(id)) return res.status(400).json({ success: false, error: 'Cible invalide.' });
-    const rows = db.all<any>(`SELECT i.id, i.text, i.created_at, c.display_name author
+    if (!publishedTarget(id)) return res.status(404).json({ success: false, error: 'Contenu introuvable.' });
+    const rows = db.all<any>(`SELECT i.id,i.text,i.created_at,c.display_name author
       FROM story_interactions i LEFT JOIN customer_accounts c ON c.id=i.account_id
-      WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at LIMIT 100`, id);
+      WHERE i.target_id=? AND i.type='comment' ORDER BY i.created_at DESC LIMIT 100`, id).reverse();
     res.json({ success: true, data: rows.map((row) => ({ id: row.id, author: row.author || 'Membre AYROVI', text: row.text, createdAt: row.created_at })) });
   });
 
@@ -265,50 +304,61 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const type = String(req.body?.type || '');
     const targetId = String(req.body?.targetId || '').trim();
     if (!['like', 'comment', 'view', 'share'].includes(type) || !/^[A-Za-z0-9_-]{1,120}$/.test(targetId)) {
-      return res.status(400).json({ success: false, error: 'Interaction invalide.' });
+      return res.status(400).json({ success: false, code: 'INVALID_SOCIAL_INTERACTION', error: 'Interaction invalide.' });
     }
-    const customer = resolveCustomer(db, req);
+    const target = publishedTarget(targetId);
+    if (!target) return res.status(404).json({ success: false, code: 'SOCIAL_TARGET_NOT_FOUND', error: 'Contenu introuvable.' });
+
+    const customer = (req as any).customer || null;
     if ((type === 'like' || type === 'comment') && !customer) {
       return res.status(401).json({ success: false, code: 'AUTH_REQUIRED', error: 'Créez un compte ou connectez-vous pour interagir.' });
     }
-    const owner = customer ? customer.id : `guest:${createHash('sha256').update(String(req.headers['x-session-id'] || 'anon')).digest('hex').slice(0, 16)}`;
+    const guestSession = String(req.headers['x-session-id'] || '').trim();
+    if (!customer && !/^[A-Za-z0-9._:-]{8,160}$/.test(guestSession)) {
+      return res.status(400).json({ success: false, code: 'SOCIAL_SESSION_REQUIRED', error: 'Session visiteur invalide.' });
+    }
+    const owner = customer
+      ? `account:${customer.id}`
+      : `guest:${createHash('sha256').update(guestSession).digest('hex').slice(0, 32)}`;
     const accountId = customer?.id || null;
+    const guestHash = accountId ? null : owner;
     const now = new Date().toISOString();
 
     if (type === 'like') {
-      const existing = accountId
-        ? db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?`, targetId, accountId)
-        : null;
-      if (existing) {
-        db.run(`DELETE FROM story_interactions WHERE id=?`, existing.id);
-      } else {
-        db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
+      const liked = db.transaction(() => {
+        const existing = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type='like' AND account_id=?`, targetId, accountId);
+        if (existing) db.run('DELETE FROM story_interactions WHERE id=?', existing.id);
+        else db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
           VALUES (?,?,?,?,?,NULL,NULL,?)`,
-          `int_${createHash('sha256').update(`${owner}:${targetId}:like`).digest('hex').slice(0, 24)}`, targetId, 'story', 'like', accountId, now);
-      }
-      const likes = Number(db.get<any>(`SELECT COUNT(*) n FROM story_interactions WHERE target_id=? AND type='like'`, targetId)?.n || 0);
-      return res.json({ success: true, data: { liked: !existing, likesCount: likes } });
+        `int_${createHash('sha256').update(`${owner}:${targetId}:like`).digest('hex').slice(0, 32)}`, targetId, target.kind, 'like', accountId, now);
+        syncReelCounters(targetId, target, now);
+        return !existing;
+      });
+      const counts = interactionCounts(targetId);
+      return res.json({ success: true, data: { liked, likesCount: counts.likes, counts } });
     }
+
     if (type === 'comment') {
-      const text = String(req.body?.text || '').trim().slice(0, 500);
+      const text = String(req.body?.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 500);
       if (text.length < 2) return res.status(400).json({ success: false, error: 'Commentaire trop court.' });
       const id = `int_${randomUUID()}`;
-      db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at) VALUES (?,?,?,?,?,NULL,?,?)`,
-        id, targetId, 'story', 'comment', accountId, text, now);
-      return res.status(201).json({ success: true, data: { id, author: customer?.displayName || 'Membre AYROVI', text, createdAt: now } });
+      db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
+        VALUES (?,?,?,?,?,NULL,?,?)`, id, targetId, target.kind, 'comment', accountId, text, now);
+      return res.status(201).json({ success: true, data: { id, author: customer.displayName || 'Membre AYROVI', text, createdAt: now } });
     }
-    // view / share : une vue unique par owner, shares cumulés.
-    if (type === 'view') {
-      const key = accountId ? `account_id=?` : `guest_hash=?`;
-      const val = accountId || owner;
-      const exists = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type='view' AND ${key}`, targetId, val);
-      if (!exists) db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at) VALUES (?,?,?,?,?,?,NULL,?)`,
-        `int_${randomUUID()}`, targetId, 'story', 'view', accountId, accountId ? null : owner, now);
-    } else {
-      db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at) VALUES (?,?,?,?,?,?,NULL,?)`,
-        `int_${randomUUID()}`, targetId, 'story', 'share', accountId, accountId ? null : owner, now);
-    }
-    res.json({ success: true, data: { ok: true } });
+
+    // Les vues et partages sont comptés par propriétaire unique afin d'éviter le gonflement artificiel.
+    const ownerColumn = accountId ? 'account_id' : 'guest_hash';
+    const ownerValue = accountId || guestHash;
+    const inserted = db.transaction(() => {
+      const existing = db.get<any>(`SELECT id FROM story_interactions WHERE target_id=? AND type=? AND ${ownerColumn}=?`, targetId, type, ownerValue);
+      if (existing) return false;
+      db.run(`INSERT INTO story_interactions (id,target_id,target_kind,type,account_id,guest_hash,text,created_at)
+        VALUES (?,?,?,?,?,?,NULL,?)`, `int_${randomUUID()}`, targetId, target.kind, type, accountId, guestHash, now);
+      syncReelCounters(targetId, target, now);
+      return true;
+    });
+    return res.json({ success: true, data: { recorded: inserted, counts: interactionCounts(targetId) } });
   });
 
   router.post('/assistant-feedback', optionalCustomer(db), (req, res) => {

@@ -16,6 +16,12 @@ export interface CheckoutInput {
   paymentMethod: PaymentMethodCode;
 }
 
+function normalizeCustomerPhone(value: unknown): string {
+  return String(value || '').replace(/\D/g, '')
+    .replace(/^00216(?=\d{8}$)/, '')
+    .replace(/^216(?=\d{8}$)/, '');
+}
+
 // مخططات الجداول المشتركة بين الإنشاء الأولي والترقيات (أعدها في مكان واحد فقط)
 const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
@@ -336,6 +342,7 @@ export class QatafoDatabase {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         phone TEXT NOT NULL UNIQUE,
+        normalized_phone TEXT NOT NULL DEFAULT '',
         governorate TEXT NOT NULL DEFAULT '',
         address TEXT NOT NULL DEFAULT '',
         registered_at TEXT NOT NULL,
@@ -684,6 +691,31 @@ export class QatafoDatabase {
     // does not add new ownership columns to cart/order tables.
     this.ensureColumn('cart_items', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE');
     this.ensureColumn('cart_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('customers', 'normalized_phone', "TEXT NOT NULL DEFAULT ''");
+    const customersMissingNormalizedPhone = this.db.prepare(
+      "SELECT id,phone FROM customers WHERE normalized_phone=''",
+    ).all() as Array<{ id: string; phone: string }>;
+    if (customersMissingNormalizedPhone.length) {
+      const updateNormalizedPhone = this.db.prepare('UPDATE customers SET normalized_phone=? WHERE id=?');
+      this.db.transaction(() => {
+        for (const customer of customersMissingNormalizedPhone) {
+          updateNormalizedPhone.run(normalizeCustomerPhone(customer.phone), customer.id);
+        }
+      })();
+    }
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_customers_normalized_phone ON customers(normalized_phone)');
+    // Invariants DB: un même propriétaire ne peut gonfler likes/vues/partages,
+    // même si plusieurs requêtes concurrentes atteignent le serveur.
+    this.db.exec(`
+      DELETE FROM story_interactions WHERE type IN ('like','view','share') AND account_id IS NOT NULL
+        AND rowid NOT IN (SELECT MIN(rowid) FROM story_interactions WHERE type IN ('like','view','share') AND account_id IS NOT NULL GROUP BY target_id,type,account_id);
+      DELETE FROM story_interactions WHERE type IN ('view','share') AND guest_hash IS NOT NULL
+        AND rowid NOT IN (SELECT MIN(rowid) FROM story_interactions WHERE type IN ('view','share') AND guest_hash IS NOT NULL GROUP BY target_id,type,guest_hash);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_social_unique_account
+        ON story_interactions(target_id,type,account_id) WHERE account_id IS NOT NULL AND type IN ('like','view','share');
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_social_unique_guest
+        ON story_interactions(target_id,type,guest_hash) WHERE guest_hash IS NOT NULL AND type IN ('view','share');
+    `);
     this.ensureColumn('cart_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
@@ -699,17 +731,6 @@ export class QatafoDatabase {
       ins.run('pub_style', 'STYLE', 'Style', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_actus', 'INFO', 'Actus', 'Channel', '', 0, nowP, nowP);
       ins.run('pub_promo', 'PROMO', 'Promos', 'Store', '', 0, nowP, nowP);
-    }
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM publications').get() as any).count === 0) {
-      const insP = this.db.prepare(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`);
-      const nowPub = new Date().toISOString();
-      insP.run('pub_post_01', 'Nouvel arrivage #08 disponible', 'La sélection mode & lifestyle de la semaine', 'pub_ayrovi', '/media/hero-femme.jpg', '', nowPub, 'publie', nowPub, nowPub);
-      insP.run('pub_post_02', 'Tendances du moment', 'Les pièces préférées de la communauté', 'pub_style', '/media/hero-enfants.jpg', 'Note interne : mettre à jour chaque vendredi.', nowPub, 'publie', nowPub, nowPub);
-    }
-    if ((this.db.prepare('SELECT COUNT(*) AS count FROM reels').get() as any).count === 0) {
-      const nowR = new Date().toISOString();
-      this.db.prepare(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,0,0,?,?)`)
-        .run('reel_demo_01', 'La sélection AYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
     }
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM publications').get() as any).count === 0) {
       const insP = this.db.prepare(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`);
@@ -1104,19 +1125,21 @@ export class QatafoDatabase {
       }
       // Le téléphone de livraison saisi au checkout fait foi (la vérification SMS est optionnelle).
 
-      const accountPhoneDigits = normalizedPhone.replace(/\D/g, '').replace(/^216(?=\d{8}$)/, '');
-      let customer = this.all<any>('SELECT * FROM customers ORDER BY updated_at DESC').find((candidate) => {
-        const candidateDigits = String(candidate.phone || '').replace(/\D/g, '').replace(/^00216(?=\d{8}$)/, '').replace(/^216(?=\d{8}$)/, '');
-        return candidateDigits === accountPhoneDigits;
-      });
+      const accountPhoneDigits = normalizeCustomerPhone(normalizedPhone);
+      // Le champ indexé couvre les données migrées. Les variantes exactes gardent
+      // la compatibilité avec une intégration qui insérerait encore un contact sans normalized_phone.
+      let customer = this.get<any>(`SELECT * FROM customers
+        WHERE normalized_phone=? OR phone IN (?,?,?,?)
+        ORDER BY CASE WHEN normalized_phone=? THEN 0 ELSE 1 END,updated_at DESC LIMIT 1`,
+      accountPhoneDigits, accountPhoneDigits, `+216${accountPhoneDigits}`, `216${accountPhoneDigits}`, `00216${accountPhoneDigits}`, accountPhoneDigits);
       if (!customer) {
         const customerId = `customer_${randomUUID()}`;
-        this.run(`INSERT INTO customers (id,name,phone,governorate,address,registered_at,status,updated_at)
-          VALUES (?,?,?,?,?,?,'ACTIVE',?)`, customerId, input.name, normalizedPhone, input.governorate, input.address, now, now);
+        this.run(`INSERT INTO customers (id,name,phone,normalized_phone,governorate,address,registered_at,status,updated_at)
+          VALUES (?,?,?,?,?,?,?,'ACTIVE',?)`, customerId, input.name, normalizedPhone, accountPhoneDigits, input.governorate, input.address, now, now);
         customer = this.get<any>('SELECT * FROM customers WHERE id = ?', customerId)!;
       } else {
-        this.run('UPDATE customers SET name=?, governorate=?, address=?, updated_at=? WHERE id=?',
-          input.name, input.governorate, input.address, now, customer.id);
+        this.run('UPDATE customers SET name=?,normalized_phone=?,governorate=?,address=?,updated_at=? WHERE id=?',
+          input.name, accountPhoneDigits, input.governorate, input.address, now, customer.id);
       }
 
       const breakdowns = items.map((item) => {

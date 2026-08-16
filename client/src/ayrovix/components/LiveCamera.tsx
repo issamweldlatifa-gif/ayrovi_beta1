@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { startCodeScan } from '../services/qr';
-import type { CodeScanResult } from '../services/qr';
+import type { CodeScanResult, CodeScanSession } from '../services/qr';
 
 interface LiveCameraProps {
   onPhoto: (file: File) => void;
@@ -61,12 +60,21 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
     if (mode !== 'code') return;
     const video = videoRef.current;
     if (!video) return;
-    const session = startCodeScan(video, (result: CodeScanResult) => {
-      if (result.kind === 'url') onQrUrl(result.value);
-      else if (result.kind === 'barcode') onBarcode(result.value);
-      else onCodeText(result.value);
-    });
-    return () => session.stop();
+    let cancelled = false;
+    let session: CodeScanSession | null = null;
+    // ZXing est chargé uniquement si l'utilisateur ouvre réellement le mode Code.
+    void import('../services/qr').then(({ startCodeScan }) => {
+      if (cancelled) return;
+      session = startCodeScan(video, (result: CodeScanResult) => {
+        if (result.kind === 'url') onQrUrl(result.value);
+        else if (result.kind === 'barcode') onBarcode(result.value);
+        else onCodeText(result.value);
+      });
+    }).catch(() => setNotice('Le lecteur de code n’a pas pu être chargé.'));
+    return () => {
+      cancelled = true;
+      session?.stop();
+    };
   }, [mode, onQrUrl, onBarcode, onCodeText]);
 
   const toggleTorch = async () => {

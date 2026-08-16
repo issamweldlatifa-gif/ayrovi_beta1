@@ -4,6 +4,8 @@ import cors from 'cors';
 import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
+import { randomUUID } from 'node:crypto';
+import type { Server } from 'node:http';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
 import { VisualProductExtractor } from './services/vision';
@@ -19,15 +21,31 @@ const PORT = process.env.PORT || 3000;
 
 app.disable('x-powered-by');
 if (process.env.NODE_ENV === 'production' || process.env.RENDER) app.set('trust proxy', 1);
-app.use((_req, res, next) => {
+app.use((req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
-  // En production : frame-ancestors 'self' (anti-clickjacking). En dev : ouvert pour la prévisualisation sandbox.
+  // Une politique unique, déclarée avant toutes les routes. Les vidéos CMS peuvent
+  // provenir d'un CDN HTTPS; object-src reste interdit et l'iframe est same-origin en production.
   const frameAncestors = isProd ? "frame-ancestors 'self';" : '';
-  res.setHeader('Content-Security-Policy', `default-src 'self'; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; connect-src 'self' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; ${frameAncestors} base-uri 'self'; form-action 'self'`);
+  res.setHeader('Content-Security-Policy', [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https:",
+    "media-src 'self' blob: https:",
+    "connect-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    frameAncestors.replace(/;$/, ''),
+  ].filter(Boolean).join('; ') + ';');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  // Camera and microphone are limited to our own origin for Lens and AYROVI voice.
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
+  const suppliedRequestId = String(req.headers['x-request-id'] || '');
+  const requestId = /^[A-Za-z0-9._:-]{8,100}$/.test(suppliedRequestId) ? suppliedRequestId : randomUUID();
+  res.setHeader('X-Request-ID', requestId);
+  (req as any).requestId = requestId;
   if (isProd) {
     res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
@@ -78,6 +96,23 @@ app.use('/api/ayrovix', (req, res, next) => {
   return ayrovixRateLimit(req, res, next);
 });
 
+// Les lectures sociales restent publiques; toutes les mutations partagent une
+// limite par IP + session navigateur. Ce middleware doit précéder PublicRouter.
+const socialMutationRateLimit = rateLimit(
+  'social-mutation',
+  process.env.NODE_ENV === 'test' ? 12 : 120,
+  10 * 60_000,
+  (req) => {
+    const rawSession = String(req.headers['x-session-id'] || '').trim();
+    const session = /^[A-Za-z0-9._:-]{8,160}$/.test(rawSession) ? rawSession : 'no-session';
+    return `${req.ip || 'unknown'}:${session}`;
+  },
+);
+app.use('/api/public/social', (req, res, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+  return socialMutationRateLimit(req, res, next);
+});
+
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
 app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
@@ -126,16 +161,56 @@ app.use('/api/assistant', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 
-// Healthcheck Route
+// Liveness: le processus HTTP répond. Readiness: SQLite est réellement lisible;
+// les fournisseurs externes restent des capacités optionnelles clairement signalées.
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.0.0',
+    version: '3.1.0',
     framework: 'React 19 + Vite + TypeScript + Express',
-    features: ['Link Scraper', 'Visual Screenshot OCR', 'Dynamic Pricing', 'Unified Cart'],
-    supportedStores: ['SHEIN', 'Amazon', 'TEMU', 'AliExpress']
   });
+});
+app.get('/api/ready', (_req, res) => {
+  try {
+    db.get('SELECT 1 AS ready');
+    res.json({
+      status: 'ready',
+      database: 'ok',
+      capabilities: {
+        assistant: Boolean(process.env.ANTHROPIC_API_KEY),
+        visualSearch: Boolean(process.env.SERPAPI_KEY),
+        voice: Boolean(process.env.GROQ_API_KEY),
+        sms: process.env.CUSTOMER_OTP_PROVIDER === 'console' || Boolean(process.env.CUSTOMER_OTP_WEBHOOK_URL),
+        mail: Boolean(process.env.MAIL_PROVIDER && process.env.MAIL_API_KEY),
+      },
+    });
+  } catch (error: any) {
+    res.status(503).json({ status: 'not_ready', database: 'error', error: String(error?.message || 'Database unavailable') });
+  }
+});
+
+// Les erreurs du parseur JSON arrivent avant les routers et doivent elles aussi
+// respecter le contrat JSON de l'API.
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  if (res.headersSent) return next(error);
+  if (!req.path.startsWith('/api')) return next(error);
+  const tooLarge = error?.type === 'entity.too.large' || error?.status === 413;
+  const invalidJson = error instanceof SyntaxError && Number((error as any)?.status) === 400;
+  const status = tooLarge ? 413 : invalidJson ? 400 : Number(error?.status) || 500;
+  if (status >= 500) {
+    console.error(JSON.stringify({ level: 'error', requestId: (req as any).requestId, method: req.method, path: req.originalUrl, error: String(error?.message || error) }));
+  }
+  res.status(status).json({
+    success: false,
+    code: tooLarge ? 'PAYLOAD_TOO_LARGE' : invalidJson ? 'INVALID_JSON' : 'INTERNAL_ERROR',
+    error: tooLarge ? 'Requête trop volumineuse.' : invalidJson ? 'Corps JSON invalide.' : 'Erreur interne du service.',
+  });
+});
+
+// Une API inconnue doit rester une 404 JSON et ne jamais tomber sur index.html.
+app.use('/api', (req, res) => {
+  res.status(404).json({ success: false, code: 'API_NOT_FOUND', error: `Route API introuvable: ${req.method} ${req.originalUrl}` });
 });
 
 // Single Page Application (SPA) Fallback Route
@@ -149,26 +224,6 @@ app.get('*', (_req, res) => {
   }
 });
 
-// ===== Content-Security-Policy : le client ne parle qu'à notre API =====
-app.use((_req, res, next) => {
-  res.setHeader('Content-Security-Policy',
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; " +
-    "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'");
-  next();
-});
-
-// Débit limité pour les interactions sociales (anti-flood likes/vues).
-app.use('/api/public/social/interact', rateLimit('social-interact', 120, 10 * 60_000));
-
-// ===== Gardes-fous de stabilité : journaliser sans tuer le processus =====
-process.on('unhandledRejection', (reason) => {
-  console.error('[unhandledRejection]', reason instanceof Error ? reason.stack || reason.message : String(reason));
-});
-process.on('uncaughtException', (error) => {
-  console.error('[uncaughtException]', error.stack || error.message);
-});
-
 // Nettoyage périodique : sessions clients expirées + défis OTP consommés/périmés.
 const housekeeping = setInterval(() => {
   try {
@@ -180,20 +235,43 @@ const housekeeping = setInterval(() => {
 housekeeping.unref?.();
 
 // Start Server
+let httpServer: Server | null = null;
+let shutdownStarted = false;
+
+function shutdown(exitCode: number, reason: string) {
+  if (shutdownStarted) return;
+  shutdownStarted = true;
+  console.error(`[shutdown] ${reason} — fermeture propre…`);
+  clearInterval(housekeeping);
+  clearInterval(rateSweeper);
+  const finish = () => {
+    try { db.close(); } catch { /* already closed */ }
+    process.exit(exitCode);
+  };
+  const force = setTimeout(finish, 5_000);
+  force.unref?.();
+  if (httpServer) httpServer.close(() => { clearTimeout(force); finish(); });
+  else finish();
+}
+
 if (process.env.NODE_ENV !== 'test') {
-  const server = app.listen(Number(PORT), '0.0.0.0', () => {
+  httpServer = app.listen(Number(PORT), '0.0.0.0', () => {
     console.log('====================================================');
-    console.log(`🚀 AYROVI React + Vite Platform running`);
+    console.log('🚀 AYROVI React + Vite Platform running');
     console.log(`📍 Web Application: http://0.0.0.0:${PORT}/`);
     console.log('====================================================');
   });
-  for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-    process.on(signal, () => {
-      console.log(`[shutdown] ${signal} reçu — fermeture propre…`);
-      server.close(() => process.exit(0));
-      setTimeout(() => process.exit(0), 4000).unref?.();
-    });
-  }
+  process.once('SIGTERM', () => shutdown(0, 'SIGTERM reçu'));
+  process.once('SIGINT', () => shutdown(0, 'SIGINT reçu'));
+  process.once('unhandledRejection', (reason) => {
+    const detail = reason instanceof Error ? reason.stack || reason.message : String(reason);
+    console.error('[unhandledRejection]', detail);
+    shutdown(1, 'promesse non gérée');
+  });
+  process.once('uncaughtException', (error) => {
+    console.error('[uncaughtException]', error.stack || error.message);
+    shutdown(1, 'exception non gérée');
+  });
 }
 
 export { app, db, scraper, visionExtractor };

@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import multer from 'multer';
 import { SmartLinkScraper } from '../scraper/scraper';
 import { QatafoDatabase as AyroviDatabase } from '../db/database';
+import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
@@ -14,6 +15,8 @@ import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
 const SUPPORTED_STORES = new Set(['amazon', 'shein', 'temu', 'aliexpress', 'generic']);
+const PAYMENT_METHODS = new Set<PaymentMethodCode>(['COD', 'D17', 'FLOUCI', 'CARD', 'BANK_TRANSFER', 'POSTE']);
+const DEFAULT_PAYMENT_METHODS: PaymentMethodCode[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
 
 
 export function createApiRouter(
@@ -363,27 +366,35 @@ export function createApiRouter(
 
     // Le téléphone de livraison vient du formulaire (aucun SMS requis — connexion Google supportée).
     const deliveryPhone = String(phone ?? '').replace(/\s+/g, ' ').trim();
-    if (!deliveryPhone || deliveryPhone.length > 32 || deliveryPhone.replace(/\D/g, '').length < 8) {
+    const deliveryDigits = deliveryPhone.replace(/\D/g, '')
+      .replace(/^00216(?=\d{8}$)/, '')
+      .replace(/^216(?=\d{8}$)/, '');
+    if (!deliveryPhone || deliveryPhone.length > 32 || !/^\d{8}$/.test(deliveryDigits)) {
       return res.status(400).json({
         success: false,
-        error: 'Veuillez renseigner un numéro de téléphone tunisien valide (8 chiffres minimum).'
+        error: 'Veuillez renseigner un numéro de téléphone tunisien valide à 8 chiffres.'
       });
     }
 
     const paymentCode = String(paymentMethod || '').trim().toUpperCase();
     const paymentSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='payment_methods'");
     const governorateSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='governorates'");
-    let configuredPayments: string[] = ['COD', 'D17', 'FLOUCI'];
+    let configuredPayments: PaymentMethodCode[] = DEFAULT_PAYMENT_METHODS;
     let configuredGovernorates: string[] = [];
     try {
       const parsedPayments = JSON.parse(paymentSetting?.setting_value || '[]');
       const parsedGovernorates = JSON.parse(governorateSetting?.setting_value || '[]');
-      if (Array.isArray(parsedPayments) && parsedPayments.length) configuredPayments = parsedPayments.map(String);
+      if (Array.isArray(parsedPayments) && parsedPayments.length) {
+        const validPayments = parsedPayments
+          .map((value) => String(value).trim().toUpperCase())
+          .filter((value): value is PaymentMethodCode => PAYMENT_METHODS.has(value as PaymentMethodCode));
+        if (validPayments.length) configuredPayments = [...new Set(validPayments)];
+      }
       if (Array.isArray(parsedGovernorates)) configuredGovernorates = parsedGovernorates.map(String);
     } catch {
       return res.status(500).json({ success: false, error: 'La configuration commerciale est invalide.' });
     }
-    if (!configuredPayments.includes(paymentCode)) {
+    if (!PAYMENT_METHODS.has(paymentCode as PaymentMethodCode) || !configuredPayments.includes(paymentCode as PaymentMethodCode)) {
       return res.status(400).json({ success: false, error: 'Ce moyen de paiement n’est pas disponible.' });
     }
     if (configuredGovernorates.length && !configuredGovernorates.includes(city.trim())) {
@@ -399,7 +410,7 @@ export function createApiRouter(
       });
     }
 
-    const normalizedPaymentMethod = paymentCode as 'COD' | 'D17' | 'FLOUCI';
+    const normalizedPaymentMethod = paymentCode as PaymentMethodCode;
 
     try {
       recordLearningEvent(db, { type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });

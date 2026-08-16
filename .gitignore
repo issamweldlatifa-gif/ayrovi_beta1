@@ -6,6 +6,7 @@ dist/
 .arena/
 .env
 data/uploads/
+data/backups/
 data/*.sqlite*
 uploads/
 .config/

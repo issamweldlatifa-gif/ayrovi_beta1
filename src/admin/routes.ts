@@ -1215,24 +1215,52 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
   });
 
-  router.post('/uploads', requireAdmin(db, 'content:write'), (req, res) => {
+  router.post('/uploads', requireAdmin(db, 'content:write'), async (req, res) => {
     const dataUrl = String(req.body?.dataUrl || '');
     const img = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
     const vid = /^data:video\/(mp4|webm|ogg|x-m4v|quicktime);base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
     const match = img || vid;
     if (!match) return res.status(400).json({ success: false, error: 'Format non supporté. Images : PNG/JPEG/WEBP/GIF · Vidéos : MP4/WEBM/OGG/M4V.' });
-    const buffer = Buffer.from(match[2], 'base64');
+    const input = Buffer.from(match[2], 'base64');
     const isVideo = Boolean(vid);
-    const maxBytes = isVideo ? 12 * 1024 * 1024 : 4 * 1024 * 1024;
-    if (!buffer.length || buffer.length > maxBytes) return res.status(400).json({ success: false, error: isVideo ? 'La vidéo doit peser moins de 12 Mo.' : 'L’image doit peser moins de 4 Mo.' });
-    const extension = match[1] === 'jpeg' ? 'jpg' : match[1] === 'x-m4v' ? 'm4v' : match[1] === 'quicktime' ? 'mov' : match[1];
-    const directory = path.resolve(process.cwd(), 'data', 'uploads');
-    fs.mkdirSync(directory, { recursive: true });
-    const filename = `${Date.now()}-${randomUUID()}.${extension}`;
-    fs.writeFileSync(path.join(directory, filename), buffer, { flag: 'wx' });
-    const url = `/uploads/${filename}`;
-    audit(db, req, 'UPLOAD', 'MEDIA', filename, null, { url, bytes: buffer.length });
-    res.status(201).json({ success: true, data: { url, filename, size: buffer.length } });
+    const maxBytes = isVideo ? 10 * 1024 * 1024 : 4 * 1024 * 1024;
+    if (!input.length || input.length > maxBytes) return res.status(400).json({ success: false, error: isVideo ? 'La vidéo doit peser moins de 10 Mo.' : 'L’image doit peser moins de 4 Mo.' });
+
+    let output: Buffer<ArrayBufferLike> = input;
+    let extension = match[1] === 'jpeg' ? 'jpg' : match[1] === 'x-m4v' ? 'm4v' : match[1] === 'quicktime' ? 'mov' : match[1];
+    try {
+      if (img && match[1] !== 'gif') {
+        const normalized = await normalizeUploadedImage(input, `image/${match[1]}`);
+        output = normalized.buffer;
+        extension = normalized.mimeType === 'image/jpeg' ? 'jpg' : normalized.mimeType.split('/')[1];
+      } else if (img) {
+        const signature = input.length >= 6 ? input.toString('ascii', 0, 6) : '';
+        if (!['GIF87a', 'GIF89a'].includes(signature)) throw new Error('INVALID_MEDIA_SIGNATURE');
+      } else {
+        const kind = match[1];
+        const valid = kind === 'webm'
+          ? input.length >= 4 && input.readUInt32BE(0) === 0x1a45dfa3
+          : kind === 'ogg'
+            ? input.length >= 4 && input.toString('ascii', 0, 4) === 'OggS'
+            : input.length >= 12 && input.toString('ascii', 4, 8) === 'ftyp';
+        if (!valid) throw new Error('INVALID_MEDIA_SIGNATURE');
+      }
+    } catch {
+      return res.status(415).json({ success: false, code: 'INVALID_MEDIA', error: 'Le contenu du fichier ne correspond pas au format annoncé.' });
+    }
+
+    try {
+      const directory = path.resolve(process.cwd(), 'data', 'uploads');
+      fs.mkdirSync(directory, { recursive: true });
+      const filename = `${Date.now()}-${randomUUID()}.${extension}`;
+      fs.writeFileSync(path.join(directory, filename), output, { flag: 'wx' });
+      const url = `/uploads/${filename}`;
+      audit(db, req, 'UPLOAD', 'MEDIA', filename, null, { url, bytes: output.length });
+      res.status(201).json({ success: true, data: { url, filename, size: output.length } });
+    } catch (error: any) {
+      console.error('[Admin media upload]', error?.message || error);
+      res.status(500).json({ success: false, code: 'MEDIA_WRITE_FAILED', error: 'Le média n’a pas pu être enregistré.' });
+    }
   });
 
   router.get('/reports/orders.csv', requireAdmin(db, 'commerce:read'), (_req, res) => {

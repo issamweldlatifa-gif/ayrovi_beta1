@@ -1,0 +1,20 @@
+{
+  "name": "AYROVI — Shopping international en TND",
+  "short_name": "AYROVI",
+  "description": "Shopping international, recherche visuelle et livraison partout en Tunisie.",
+  "lang": "fr-TN",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#5b21b6",
+  "icons": [
+    {
+      "src": "/media/logo-ayrovi.jpg",
+      "sizes": "any",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

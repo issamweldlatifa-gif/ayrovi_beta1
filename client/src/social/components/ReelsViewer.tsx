@@ -64,15 +64,26 @@ export const ReelsViewer: React.FC<{
 
   const toggleLike = async (post: StoryPost) => {
     if (!isAuthenticated) { onRequireAuth(); return; }
-    const next = !liked[post.id];
-    setLiked((current) => ({ ...current, [post.id]: next }));
-    if ('views' in (post as ReelItem)) {
-      const total = await likeReel(post.id, !next);
-      if (total != null) setCounts((current) => ({ ...current, [post.id]: { likes: total, comments: 0, shares: 0 } }));
-    } else {
-      const result = await likePost(post.id, next);
-      if (result.authRequired) { setLiked((current) => ({ ...current, [post.id]: !next })); onRequireAuth(); }
+    const previous = Boolean(liked[post.id]);
+    const optimistic = !previous;
+    const baseline = counts[post.id]?.likes ?? ('reelLikes' in (post as ReelItem) ? (post as ReelItem).reelLikes : 0);
+    setLiked((current) => ({ ...current, [post.id]: optimistic }));
+    setCounts((current) => ({
+      ...current,
+      [post.id]: { ...(current[post.id] || { comments: 0, shares: 0 }), likes: Math.max(0, baseline + (optimistic ? 1 : -1)) },
+    }));
+
+    const result = 'views' in (post as ReelItem)
+      ? await likeReel(post.id)
+      : await likePost(post.id, optimistic);
+    if (!result || result.authRequired) {
+      setLiked((current) => ({ ...current, [post.id]: previous }));
+      setCounts((current) => ({ ...current, [post.id]: { ...(current[post.id] || { comments: 0, shares: 0 }), likes: baseline } }));
+      if (result?.authRequired) onRequireAuth();
+      return;
     }
+    setLiked((current) => ({ ...current, [post.id]: result.liked }));
+    setCounts((current) => ({ ...current, [post.id]: { ...(current[post.id] || { comments: 0, shares: 0 }), likes: result.likesCount } }));
   };
 
   return (
@@ -105,7 +116,7 @@ export const ReelsViewer: React.FC<{
             <div className="absolute bottom-24 left-2 z-20 flex flex-col items-center gap-5">
               <button type="button" aria-label="J'aime" onClick={() => void toggleLike(post)} className={`flex flex-col items-center gap-1 transition active:scale-90 ${liked[post.id] ? 'heart-pop text-brand' : 'text-white'}`}>
                 {liked[post.id] ? <HeartFilled size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" /> : <Heart size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />}
-                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{('reelLikes' in (post as ReelItem) ? (counts[post.id]?.likes || (post as ReelItem).reelLikes) : (counts[post.id]?.likes || 0)) + (liked[post.id] ? 1 : 0)}</span>
+                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{'reelLikes' in (post as ReelItem) ? (counts[post.id]?.likes ?? (post as ReelItem).reelLikes) : (counts[post.id]?.likes ?? 0)}</span>
               </button>
               <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(post.id) : onRequireAuth())} className="flex flex-col items-center gap-1 text-white transition active:scale-90">
                 <MessageSquare size={28} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />

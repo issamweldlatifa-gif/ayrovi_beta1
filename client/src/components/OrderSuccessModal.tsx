@@ -124,7 +124,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
               Votre commande est enregistrée mais <strong>pas encore confirmée</strong>. Réglez l’acompte par
               {' '}<strong>{result.deposit.method === 'CARD' ? 'carte bancaire' : result.deposit.method === 'FLOUCI' ? 'Flouci' : result.deposit.method === 'BANK_TRANSFER' ? 'virement bancaire' : 'mandat postal'}</strong>
               {result.deposit.method === 'CARD'
-                ? ' : confirmation immédiate, facture électronique par e-mail et code de suivi.'
+                ? ' : notre équipe transmettra les instructions sécurisées; confirmation, facture et suivi après encaissement.'
                 : ' puis envoyez la preuve (capture / reçu) depuis votre espace client pour validation par notre équipe.'}
             </p>
             <p className="text-[11px] text-amber-700">Solde restant à la livraison : <strong>{result.deposit.balanceTnd.toFixed(3)} DT</strong></p>

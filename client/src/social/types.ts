@@ -5,6 +5,7 @@ export interface StoryPublisher {
   verified?: boolean;
   subtitle?: string;
   official?: boolean;
+  slug?: string;
 }
 
 export interface StoryMedia {

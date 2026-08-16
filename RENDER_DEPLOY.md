@@ -43,6 +43,18 @@ Les uploads Admin sont conservés dans le sous-dossier `data/uploads`. Le schém
 
 Ne passez pas au plan Free sans migrer SQLite vers un stockage persistant externe : un redémarrage pourrait alors supprimer les données.
 
+## Sauvegarde SQLite
+
+Le projet fournit une sauvegarde cohérente via l’API native SQLite de `better-sqlite3` :
+
+```bash
+npm run backup
+```
+
+Par défaut, la copie vérifiée par `PRAGMA quick_check` est écrite dans `data/backups` et les copies locales de plus de 14 jours sont supprimées. Variables optionnelles : `BACKUP_DIR` et `BACKUP_RETENTION_DAYS`.
+
+**Important :** une copie sur le même disque Render ne protège pas contre la perte du disque. Planifiez une tâche quotidienne qui exécute ce script puis transfère la copie vers un stockage externe chiffré (S3/R2/B2). Testez une restauration au moins une fois par mois.
+
 ## Connexion client : Google et SMS OTP
 
 Dans Google Cloud, créez un client **Application Web**, ajoutez le domaine AYROVI aux origines autorisées et recopiez `GOOGLE_CALLBACK_URL` comme URI de redirection autorisée, caractère pour caractère.
@@ -60,15 +72,16 @@ L’envoi SMS est volontairement indépendant du fournisseur. AYROVI appelle `CU
 
 L’adaptateur doit répondre avec un statut HTTP `2xx`. Il pourra ensuite traduire cette requête vers Twilio, Vonage ou un fournisseur tunisien sans modifier AYROVI. En développement seulement, l’absence de configuration active le fournisseur `console`; il affiche et renvoie le code de test. Ce mode est désactivé en production.
 
-Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La confirmation de commande exige une session client active, un jeton CSRF valide et un téléphone vérifié.
+Le cookie client `ayrovi_customer_session` est séparé du cookie Admin. La confirmation de commande exige une session client active, un jeton CSRF valide et un numéro tunisien de livraison valide à 8 chiffres. La vérification SMS du téléphone du profil est optionnelle; elle sert à la connexion OTP et au rattachement sécurisé des anciennes commandes.
 
 ## Vérification après déploiement
 
 - Site public : `https://VOTRE-SERVICE.onrender.com/`
 - Admin : `https://VOTRE-SERVICE.onrender.com/admin`
-- Santé : `https://VOTRE-SERVICE.onrender.com/api/health`
+- Liveness : `https://VOTRE-SERVICE.onrender.com/api/health`
+- Readiness (utilisé par Render) : `https://VOTRE-SERVICE.onrender.com/api/ready`
 
-La route de santé doit répondre avec `"status":"ok"`. Connectez-vous ensuite à `/admin` avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
+La route de liveness doit répondre avec `"status":"ok"`; la readiness vérifie en plus que SQLite est lisible et expose uniquement l’état configuré/non configuré des capacités externes. Connectez-vous ensuite à `/admin` avec `ADMIN_EMAIL` et `ADMIN_PASSWORD`.
 
 ## Domaine personnalisé
 

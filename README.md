@@ -9,7 +9,7 @@ AYROVI est une plateforme Express, React et SQLite de shopping international en 
 - Lens pour extraire un prix depuis une image ou un lien, avec prévisualisation tarifaire calculée côté serveur.
 - Connexion client séparée de l’Admin par SMS OTP ou Google, avec activation immédiate après vérification.
 - Espace « Mon compte » complet : profil, adresses, historique détaillé, favoris, panier sauvegardé et notifications.
-- Panier et checkout authentifié pour les 24 gouvernorats tunisiens, avec téléphone vérifié, COD, D17 et Flouci selon la configuration active.
+- Panier et checkout authentifié pour les 24 gouvernorats tunisiens. Le téléphone tunisien de livraison est validé au checkout; la vérification SMS du profil reste optionnelle. Les moyens configurés par défaut sont Carte, Flouci/D17, virement bancaire et mandat postal.
 - Rattachement sécurisé des anciennes commandes après vérification du numéro correspondant.
 - Moteur tarifaire centralisé EUR, USD, GBP, JPY et TND incluant douane, transport, service et supplément Express.
 - Snapshot tarifaire immuable enregistré avec chaque commande.

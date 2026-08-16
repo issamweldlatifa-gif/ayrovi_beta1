@@ -1,4 +1,5 @@
 import type { Story, StoryComment, StoryPost, StoryPublisher } from './types';
+import { getSessionId } from '../utils/session';
 
 /**
  * AYROVI Story Tab — service social backend-ready.
@@ -16,6 +17,7 @@ export function configureSocial(opts: { csrfToken?: string }): void {
 }
 const jsonHeaders = () => ({
   'content-type': 'application/json',
+  'x-session-id': getSessionId(),
   ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
 });
 const SEEN_KEY = 'ayrovi_stories_seen_v1';
@@ -98,7 +100,8 @@ export async function getStoryPublishers(): Promise<StoryPublisher[]> {
     const payload = await res.json();
     if (payload?.success && Array.isArray(payload.data)) {
       return payload.data.map((row: any) => ({
-        id: String(row.slug),
+        id: String(row.id || row.slug),
+        slug: String(row.slug || ''),
         name: String(row.name),
         avatar: String(row.avatar || ''),
         subtitle: String(row.subtitle || ''),
@@ -112,7 +115,7 @@ export async function getStoryPublishers(): Promise<StoryPublisher[]> {
 
 export function mapDbStories(rows: any[], publishers: StoryPublisher[] = []): Story[] {
   const seen = loadSeen();
-  const bySlug = new Map(publishers.map((pub) => [pub.id.toUpperCase(), pub]));
+  const bySlug = new Map(publishers.map((pub) => [String(pub.slug || pub.id).toUpperCase(), pub]));
   return rows
     .filter((row) => row && row.media_url)
     .map((row) => ({
@@ -220,17 +223,15 @@ export async function getReels(): Promise<ReelItem[]> {
 }
 
 export function viewReel(id: string): void {
-  fetch(`/api/public/social/reels/${encodeURIComponent(id)}/view`, { method: 'POST' }).catch(() => undefined);
+  fetch('/api/public/social/interact', {
+    method: 'POST',
+    headers: jsonHeaders(),
+    body: JSON.stringify({ targetId: id, type: 'view' }),
+  }).catch(() => undefined);
 }
 
-export async function likeReel(id: string, unlike: boolean): Promise<number | null> {
-  try {
-    const res = await fetch(`/api/public/social/reels/${encodeURIComponent(id)}/like`, {
-      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ unlike }),
-    });
-    const payload = await res.json();
-    return payload?.success ? Number(payload.data.likes) : null;
-  } catch { return null; }
+export async function likeReel(id: string): Promise<LikeResult | null> {
+  return likePostRemote(id);
 }
 
 export async function getStoryFeed(): Promise<StoryPost[]> {
