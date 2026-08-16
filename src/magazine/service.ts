@@ -340,16 +340,92 @@ function dedupeByUrl<T extends { url: string }>(items: T[]): T[] {
   return items.filter((item) => item.url && !seen.has(item.url) && Boolean(seen.add(item.url)));
 }
 
-function parseAgentText(payload: any): MagazineAgentOutput {
-  const text = (Array.isArray(payload?.content) ? payload.content : [])
+function agentTextBlocks(payload: any): string[] {
+  return (Array.isArray(payload?.content) ? payload.content : [])
     .filter((block: any) => block?.type === 'text')
-    .map((block: any) => String(block.text || '')).join('').trim();
-  if (!text) throw new MagazineAgentProviderError('لم يُرجع محرك التحرير محتوى صالحًا.');
-  try {
-    return JSON.parse(text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')) as MagazineAgentOutput;
-  } catch {
-    throw new MagazineAgentProviderError('تعذر قراءة بنية المحتوى المولّد.');
+    .map((block: any) => String(block.text || '').trim())
+    .filter(Boolean);
+}
+
+function balancedJsonObjects(text: string): string[] {
+  const objects: string[] = [];
+  let start = -1;
+  let depth = 0;
+  let quoted = false;
+  let escaped = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (quoted) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') quoted = false;
+      continue;
+    }
+    if (char === '"') { quoted = true; continue; }
+    if (char === '{') {
+      if (depth === 0) start = index;
+      depth += 1;
+    } else if (char === '}' && depth > 0) {
+      depth -= 1;
+      if (depth === 0 && start >= 0) {
+        objects.push(text.slice(start, index + 1));
+        start = -1;
+      }
+    }
   }
+  return objects;
+}
+
+function parseAgentText(payload: any): MagazineAgentOutput {
+  const blocks = agentTextBlocks(payload);
+  if (!blocks.length) throw new MagazineAgentProviderError('لم يُرجع محرك التحرير محتوى صالحًا.');
+  // Web Search قد ينتج فقرة تمهيدية في text block مستقل قبل كائن JSON.
+  // نجرب آخر block أولًا، ثم النص المجمّع، ثم كل كائن متوازن داخلهما.
+  const combined = blocks.join('\n');
+  const candidates = [
+    ...blocks.slice().reverse(),
+    combined,
+    ...balancedJsonObjects(combined).reverse(),
+  ];
+  for (const candidate of candidates) {
+    const clean = candidate.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+    try {
+      const parsed = JSON.parse(clean);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as MagazineAgentOutput;
+    } catch { /* Try the next complete JSON candidate. */ }
+  }
+  throw new MagazineAgentProviderError('تعذر قراءة بنية المحتوى المولّد.');
+}
+
+async function repairMagazineOutput(
+  key: string,
+  model: string,
+  requestContext: Record<string, any>,
+  malformedPayload: any,
+): Promise<any> {
+  const rawText = agentTextBlocks(malformedPayload).join('\n').slice(0, 24_000);
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    signal: AbortSignal.timeout(58_000),
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({
+      model,
+      max_tokens: 5200,
+      temperature: 0.2,
+      system: `${MAGAZINE_AGENT_SYSTEM_PROMPT}\nهذه جولة إصلاح بنيوي. أعد النتيجة كاملة ككائن JSON مطابق للمخطط فقط، دون مقدمة أو Markdown.`,
+      messages: [{
+        role: 'user',
+        content: `سياق أمر المحرر:\n${JSON.stringify(requestContext)}\n\nالرد غير الصالح المراد إصلاحه:\n${rawText || '(لا يوجد نص مكتمل؛ أعد التوليد من السياق)'}`,
+      }],
+      output_config: { format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    console.warn(`[Magazine Agent] repair HTTP ${response.status} ${detail.slice(0, 180)}`);
+    throw new MagazineAgentProviderError('تعذر إصلاح بنية المحتوى المولّد تلقائيًا.');
+  }
+  return response.json();
 }
 
 function normalizeOutput(raw: MagazineAgentOutput, products: MagazineProductContext['products']): MagazineAgentOutput {
@@ -460,7 +536,17 @@ async function generateWithAnthropic(input: GenerateMagazineInput, products: Mag
     if (error instanceof MagazineAgentUnavailableError || error instanceof MagazineAgentProviderError) throw error;
     throw new MagazineAgentProviderError(error?.name === 'TimeoutError' ? 'انتهت مهلة توليد المحتوى.' : 'تعذر الاتصال بمحرك التحرير.');
   }
-  return { output: normalizeOutput(parseAgentText(payload), products.products), model, webReferences: extractWebReferences(payload) };
+  const webReferences = extractWebReferences(payload);
+  let output: MagazineAgentOutput;
+  try {
+    output = normalizeOutput(parseAgentText(payload), products.products);
+  } catch (error) {
+    if (!(error instanceof MagazineAgentProviderError)) throw error;
+    console.warn(`[Magazine Agent] invalid structured response; stop=${String(payload?.stop_reason || 'unknown')} blocks=${(payload?.content || []).map((block: any) => block?.type).join(',')}`);
+    const repaired = await repairMagazineOutput(key, model, requestContext, payload);
+    output = normalizeOutput(parseAgentText(repaired), products.products);
+  }
+  return { output, model, webReferences };
 }
 
 async function searchReferenceImages(query: string): Promise<ReferenceMedia[]> {

@@ -162,10 +162,13 @@ describe('Magazine Agent persistence and product policy', () => {
     const fetchMock = vi.fn(async (url: string, options: any) => {
       expect(url).toBe('https://api.anthropic.com/v1/messages');
       const body = JSON.parse(String(options.body));
-      if (body.max_tokens === 5200) {
+      if (body.tools?.[0]?.max_uses === 3) {
         expect(body.tools).toEqual([{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }]);
         expect(body.system).toContain('مجلتي');
-        return new Response(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(output) }] }), { status: 200, headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify({ content: [
+          { type: 'text', text: 'تم التحقق من الاتجاه والمصادر.' },
+          { type: 'text', text: `\n\`\`\`json\n${JSON.stringify(output)}\n\`\`\`` },
+        ] }), { status: 200, headers: { 'content-type': 'application/json' } });
       }
       expect(body.tools[0].max_uses).toBe(2);
       return new Response(JSON.stringify({ content: [{ type: 'web_search_tool_result', content: [{ type: 'web_search_result', title: 'Fashion fabric stock video', url: 'https://www.pexels.com/video/fashion-fabric-12345/' }] }] }), { status: 200, headers: { 'content-type': 'application/json' } });
@@ -180,6 +183,43 @@ describe('Magazine Agent persistence and product policy', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
     } finally {
       providerDb.close();
+      vi.unstubAllGlobals();
+      if (oldKey === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = oldKey;
+      if (oldSerp === undefined) delete process.env.SERPAPI_KEY; else process.env.SERPAPI_KEY = oldSerp;
+      if (oldPexels === undefined) delete process.env.PEXELS_API_KEY; else process.env.PEXELS_API_KEY = oldPexels;
+      if (oldPixabay === undefined) delete process.env.PIXABAY_API_KEY; else process.env.PIXABAY_API_KEY = oldPixabay;
+    }
+  });
+
+  test('repairs a malformed successful Claude response before saving any draft', async () => {
+    const repairDb = new QatafoDatabase(':memory:');
+    const oldKey = process.env.ANTHROPIC_API_KEY;
+    const oldSerp = process.env.SERPAPI_KEY;
+    const oldPexels = process.env.PEXELS_API_KEY;
+    const oldPixabay = process.env.PIXABAY_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    delete process.env.SERPAPI_KEY;
+    delete process.env.PEXELS_API_KEY;
+    delete process.env.PIXABAY_API_KEY;
+    const fetchMock = vi.fn(async (_url: string, options: any) => {
+      const body = JSON.parse(String(options.body));
+      if (body.tools?.[0]?.max_uses === 3) {
+        return new Response(JSON.stringify({ stop_reason: 'end_turn', content: [{ type: 'text', text: 'بحثت عن الاتجاه، لكن هذه إجابة غير منظمة.' }] }), { status: 200 });
+      }
+      if (body.output_config && !body.tools) {
+        expect(body.system).toContain('جولة إصلاح بنيوي');
+        return new Response(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(output) }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ content: [] }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const result = await generateMagazineContent(repairDb, { ...input, batchId: 'repair_batch' });
+      expect(result.drafts).toHaveLength(4);
+      expect(listMagazineDrafts(repairDb, { limit: 20 })).toHaveLength(4);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      repairDb.close();
       vi.unstubAllGlobals();
       if (oldKey === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = oldKey;
       if (oldSerp === undefined) delete process.env.SERPAPI_KEY; else process.env.SERPAPI_KEY = oldSerp;
