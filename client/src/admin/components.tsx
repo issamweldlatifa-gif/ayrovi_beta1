@@ -126,7 +126,13 @@ export const Form: React.FC<{ children: React.ReactNode; onSubmit: React.FormEve
 );
 
 export const DatePicker: React.FC<{ value?: string; onChange: (value: string) => void; required?: boolean }> = ({ value, onChange, required }) => {
-  const localValue = useMemo(() => value ? new Date(value).toISOString().slice(0, 16) : '', [value]);
+  const localValue = useMemo(() => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().slice(0, 16);
+  }, [value]);
   return <div className="admin-date-input"><Calendar size={18} /><input type="datetime-local" value={localValue} required={required} onChange={(event) => onChange(event.target.value ? new Date(event.target.value).toISOString() : '')} /></div>;
 };
 

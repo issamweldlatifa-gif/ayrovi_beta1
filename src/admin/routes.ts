@@ -215,6 +215,22 @@ function sanitizePayload(body: any, config: ResourceConfig, partial = false): Re
   return payload;
 }
 
+function normalizePublicationLifecycle(resource: string, payload: Record<string, any>, existing?: Record<string, any>) {
+  if (resource !== 'news') return;
+  const status = String(payload.status ?? existing?.status ?? '');
+  const publication = String(payload.published_at ?? existing?.published_at ?? '');
+  const publicationTime = new Date(publication).getTime();
+  const now = Date.now();
+  if (status === 'SCHEDULED' && (!Number.isFinite(publicationTime) || publicationTime <= now)) {
+    throw new Error('Pour programmer la publication, choisissez une date future. Pour publier immédiatement, utilisez le statut PUBLISHED.');
+  }
+  // PUBLISHED signifie explicitement «publier maintenant». Une date future avec ce statut
+  // produisait auparavant une fausse pastille «Publié» tout en restant invisible au public.
+  if (status === 'PUBLISHED' && Number.isFinite(publicationTime) && publicationTime > now) {
+    payload.published_at = new Date(now).toISOString();
+  }
+}
+
 function validateResourceDates(resource: string, payload: Record<string, any>, existing?: Record<string, any>) {
   const value = (field: string) => payload[field] ?? existing?.[field] ?? null;
   const ensureBefore = (startField: string, endField: string, message: string) => {
@@ -265,6 +281,12 @@ function withRelations(db: QatafoDatabase, resource: string, row: any) {
   if (resource === 'promotions') {
     result.arrival_ids = db.all<any>('SELECT arrival_id FROM promotion_arrivals WHERE promotion_id=?', row.id).map((link) => link.arrival_id);
     result.product_ids = db.all<any>('SELECT product_id FROM promotion_products WHERE promotion_id=?', row.id).map((link) => link.product_id);
+  }
+  if (resource === 'news' && result.published_at) {
+    const future = new Date(result.published_at).getTime() > Date.now();
+    // توافق مع السجلات القديمة التي كانت تستخدم PUBLISHED للجدولة المستقبلية.
+    if (result.status === 'PUBLISHED' && future) result.status = 'SCHEDULED';
+    else if (result.status === 'SCHEDULED' && !future) result.status = 'PUBLISHED';
   }
   return result;
 }
@@ -734,7 +756,8 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   });
 
   router.put('/magazine-drafts/:id/prepare', requireAdmin(db, 'content:write'), (req, res) => {
-    const status = req.body?.status === 'scheduled' ? 'scheduled' as const : 'draft' as const;
+    const status = req.body?.status === 'scheduled' ? 'scheduled' as const
+      : req.body?.status === 'published' ? 'published' as const : 'draft' as const;
     try {
       const draft = prepareMagazineDraft(db, req.params.id, {
         status,
@@ -841,6 +864,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     router.post(`/${resource}`, requireAdmin(db, config.permission), (req, res) => {
       try {
         const payload = sanitizePayload(req.body, config);
+        normalizePublicationLifecycle(resource, payload);
         validateResourceDates(resource, payload);
         if (resource === 'products') recomputeProductPricing(db, payload);
         const id = `${config.prefix}_${randomUUID()}`;
@@ -865,6 +889,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         const existing = db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, req.params.id);
         if (!existing) return res.status(404).json({ success: false, error: 'Élément introuvable.' });
         const payload = sanitizePayload(req.body, config, true);
+        normalizePublicationLifecycle(resource, payload, existing);
         validateResourceDates(resource, payload, existing);
         if (resource === 'products') recomputeProductPricing(db, payload, existing);
         if (Object.keys(payload).length === 0 && !req.body.arrival_ids && !req.body.product_ids) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });

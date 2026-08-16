@@ -1183,6 +1183,52 @@ describe('AYROVI platform', () => {
     expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
   });
 
+  test('manual PUBLISHED status publishes now instead of showing a false published badge', async () => {
+    const before = Date.now();
+    const created = await superAdmin.post('/api/admin/news').set('x-csrf-token', adminCsrf).send({
+      title: `Publication immédiate ${before}`,
+      summary: 'Résumé de publication',
+      content: 'Contenu de publication',
+      image: '',
+      category: 'AYROVI',
+      author: 'Test',
+      published_at: new Date(before + 86_400_000).toISOString(),
+      status: 'PUBLISHED',
+    });
+    expect(created.status).toBe(201);
+    try {
+      expect(created.body.data.status).toBe('PUBLISHED');
+      expect(new Date(created.body.data.published_at).getTime()).toBeGreaterThanOrEqual(before);
+      expect(new Date(created.body.data.published_at).getTime()).toBeLessThanOrEqual(Date.now());
+      const publicResponse = await request(app).get('/api/public/news?limit=50');
+      expect(publicResponse.body.data.map((item: any) => item.id)).toContain(created.body.data.id);
+    } finally {
+      if (created.body.data?.id) db.run('DELETE FROM news_items WHERE id=?', created.body.data.id);
+    }
+  });
+
+  test('public magazine exposes due schedules but never future content', async () => {
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const dueId = `news_due_${suffix}`;
+    const futureId = `news_future_${suffix}`;
+    const now = new Date().toISOString();
+    const due = new Date(Date.now() - 60_000).toISOString();
+    const future = new Date(Date.now() + 86_400_000).toISOString();
+    const insert = (id: string, publishedAt: string) => db.run(`INSERT INTO news_items
+      (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
+      VALUES (?,?,?,'Contenu','', 'AYROVI',NULL,NULL,'Test',?,'SCHEDULED',?,?)`, id, `Magazine ${id}`, 'Résumé', publishedAt, now, now);
+    try {
+      insert(dueId, due);
+      insert(futureId, future);
+      const response = await request(app).get('/api/public/news?limit=50');
+      expect(response.status).toBe(200);
+      expect(response.body.data.map((item: any) => item.id)).toContain(dueId);
+      expect(response.body.data.map((item: any) => item.id)).not.toContain(futureId);
+    } finally {
+      db.run('DELETE FROM news_items WHERE id IN (?,?)', dueId, futureId);
+    }
+  });
+
   test('rate limiting throttles brute-force attempts on sensitive endpoints', async () => {
     // bucket otp-verify : 12 requêtes / 5 min par IP — des tentatives précédentes peuvent déjà compter
     const statuses: number[] = [];

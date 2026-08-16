@@ -817,7 +817,9 @@ function uniqueTargetId(prefix: string): string {
   return `${prefix}_${randomUUID()}`;
 }
 
-function targetForDraft(db: QatafoDatabase, row: any, status: 'draft' | 'scheduled', category: string, scheduledAt: string | null): { resource: string; id: string } {
+type MagazineTransferStatus = 'draft' | 'scheduled' | 'published';
+
+function targetForDraft(db: QatafoDatabase, row: any, status: MagazineTransferStatus, category: string, scheduledAt: string | null): { resource: string; id: string } {
   const now = new Date().toISOString();
   const date = scheduledAt || now;
   const content = (() => { try { return JSON.parse(row.content_json || '{}'); } catch { return {}; } })();
@@ -833,9 +835,10 @@ function targetForDraft(db: QatafoDatabase, row: any, status: 'draft' | 'schedul
     const id = existingId || uniqueTargetId('news_agent');
     const allowed = ['NEW_ARRIVAL','NEW_BRAND','PROMOTION','DELIVERY','AYROVI','INFORMATION','OTHER'];
     const newsCategory = allowed.includes(category) ? category : 'AYROVI';
-    // الجدولة الحقيقية تعتمد حالة PUBLISHED مع تاريخ مستقبلي؛ مسارات public
-    // لا تعرض السجل قبل published_at. أما المسودة فتبقى DRAFT صراحة.
-    const values = [row.title, row.summary, editorialText(content), ownedImage, newsCategory, row.product_id || null, 'وكيل مجلتي', date, status === 'scheduled' ? 'PUBLISHED' : 'DRAFT', now];
+    // نفصل دلاليًا بين المسودة والجدولة والنشر الفوري. تعرض Public API السجل
+    // المجدول فقط عند حلول published_at، أما PUBLISHED فمعناه «منشور الآن».
+    const cmsStatus = status === 'draft' ? 'DRAFT' : status === 'scheduled' ? 'SCHEDULED' : 'PUBLISHED';
+    const values = [row.title, row.summary, editorialText(content), ownedImage, newsCategory, row.product_id || null, 'وكيل مجلتي', date, cmsStatus, now];
     if (existingId) db.run(`UPDATE news_items SET title=?,summary=?,content=?,image=?,category=?,product_id=?,author=?,published_at=?,status=?,updated_at=? WHERE id=?`, ...values, id);
     else db.run(`INSERT INTO news_items (id,title,summary,content,image,category,arrival_id,product_id,author,published_at,status,created_at,updated_at)
       VALUES (?,?,?,?,?,?,NULL,?,?,?,?,?,?)`, id, ...values.slice(0, 9), now, now);
@@ -846,8 +849,8 @@ function targetForDraft(db: QatafoDatabase, row: any, status: 'draft' | 'schedul
     const publication = content?.publication || {};
     const subtitle = cleanMultiline(`${publication.caption || ''}\n${(publication.hashtags || []).join(' ')}`, 4000);
     const remark = 'مسودة من وكيل مجلتي. الصور الموجودة في المراجع للإلهام فقط ولا تُنشر قبل التحقق من الترخيص.';
-    if (status === 'scheduled' && !ownedImage) throw new Error('MAGAZINE_MEDIA_REQUIRED');
-    const publicationStatus = status === 'scheduled' ? 'publie' : 'brouillon';
+    if (status !== 'draft' && !ownedImage) throw new Error('MAGAZINE_MEDIA_REQUIRED');
+    const publicationStatus = status !== 'draft' ? 'publie' : 'brouillon';
     if (existingId) db.run(`UPDATE publications SET title=?,subtitle=?,channel_id='pub_ayrovi',image_url=?,remark=?,publish_at=?,status=?,updated_at=? WHERE id=?`, row.title, subtitle, ownedImage, remark, date, publicationStatus, now, id);
     else db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at)
       VALUES (?,?,?,'pub_ayrovi',?,?,?,?,?,?)`, id, row.title, subtitle, ownedImage, remark, date, publicationStatus, now, now);
@@ -857,8 +860,8 @@ function targetForDraft(db: QatafoDatabase, row: any, status: 'draft' | 'schedul
     const id = existingId || uniqueTargetId('reel_agent');
     const reel = content?.reel || {};
     const description = cleanMultiline([reel.hook, ...(reel.scenes || []).map((scene: any) => `${scene.seconds}: ${scene.text}`), reel.cta].filter(Boolean).join('\n'), 4000);
-    if (status === 'scheduled' && !licensedVideo) throw new Error('MAGAZINE_MEDIA_REQUIRED');
-    const reelStatus = status === 'scheduled' ? 'publie' : 'brouillon';
+    if (status !== 'draft' && !licensedVideo) throw new Error('MAGAZINE_MEDIA_REQUIRED');
+    const reelStatus = status !== 'draft' ? 'publie' : 'brouillon';
     if (existingId) db.run(`UPDATE reels SET title=?,channel_id='pub_ayrovi',description=?,video_url=?,duration_seconds=?,publish_at=?,status=?,updated_at=? WHERE id=?`, row.title, description, licensedVideo, Number(reel.duration_seconds) || 20, date, reelStatus, now, id);
     else db.run(`INSERT INTO reels (id,title,channel_id,description,video_url,duration_seconds,publish_at,status,views,likes,created_at,updated_at)
       VALUES (?,?,'pub_ayrovi',?,?,?,?,?,0,0,?,?)`, id, row.title, description, licensedVideo, Number(reel.duration_seconds) || 20, date, reelStatus, now, now);
@@ -870,8 +873,8 @@ function targetForDraft(db: QatafoDatabase, row: any, status: 'draft' | 'schedul
   const media = licensedVideo || ownedImage;
   const mediaType = licensedVideo ? 'VIDEO' : 'IMAGE';
   const storyCategory = ['ARRIVAGE','NEW','STYLE','INFO','PROMO'].includes(category) ? category : 'STYLE';
-  if (status === 'scheduled' && !media) throw new Error('MAGAZINE_MEDIA_REQUIRED');
-  const storyStatus = status === 'scheduled' ? 'PUBLISHED' : 'DRAFT';
+  if (status !== 'draft' && !media) throw new Error('MAGAZINE_MEDIA_REQUIRED');
+  const storyStatus = status !== 'draft' ? 'PUBLISHED' : 'DRAFT';
   if (existingId) db.run(`UPDATE stories SET category=?,media_type=?,media_url=?,title=?,description=?,cta=?,product_id=?,publish_at=?,status=?,updated_at=? WHERE id=?`, storyCategory, mediaType, media, row.title, description, story.cta || '', row.product_id || null, date, storyStatus, now, id);
   else db.run(`INSERT INTO stories (id,category,media_type,media_url,secondary_images,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
     VALUES (?,?,?,?,'[]',?,?,?,'',?,NULL,NULL,?,NULL,0,?,?,?)`, id, storyCategory, mediaType, media, row.title, description, story.cta || '', row.product_id || null, date, storyStatus, now, now);
@@ -883,11 +886,11 @@ function targetForDraft(db: QatafoDatabase, row: any, status: 'draft' | 'schedul
 export function prepareMagazineDraft(
   db: QatafoDatabase,
   id: string,
-  values: { status: 'draft' | 'scheduled'; category?: string; scheduledAt?: string | null },
+  values: { status: MagazineTransferStatus; category?: string; scheduledAt?: string | null },
 ): any {
   const row = db.get<any>('SELECT * FROM magazine_drafts WHERE id=?', id);
   if (!row) throw new Error('MAGAZINE_DRAFT_NOT_FOUND');
-  const status = values.status === 'scheduled' ? 'scheduled' : 'draft';
+  const status: MagazineTransferStatus = values.status === 'scheduled' ? 'scheduled' : values.status === 'published' ? 'published' : 'draft';
   const category = cleanText(values.category || row.category || 'AYROVI', 80) || 'AYROVI';
   let scheduledAt: string | null = null;
   if (status === 'scheduled') {

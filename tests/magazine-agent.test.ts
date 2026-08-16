@@ -136,8 +136,13 @@ describe('Magazine Agent persistence and product policy', () => {
     const editorial = listMagazineDrafts(db, { type: 'editorial' })[0];
     const scheduled = prepareMagazineDraft(db, editorial.id, { status: 'scheduled', category: 'AYROVI', scheduledAt: future });
     const news = db.get<any>('SELECT status,published_at FROM news_items WHERE id=?', scheduled.target_id);
-    expect(news.status).toBe('PUBLISHED');
+    expect(news.status).toBe('SCHEDULED');
     expect(news.published_at).toBe(future);
+    const published = prepareMagazineDraft(db, editorial.id, { status: 'published', category: 'AYROVI' });
+    const publishedNews = db.get<any>('SELECT status,published_at FROM news_items WHERE id=?', published.target_id);
+    expect(publishedNews.status).toBe('PUBLISHED');
+    expect(new Date(publishedNews.published_at).getTime()).toBeLessThanOrEqual(Date.now());
+    expect(published.status).toBe('published');
     prepareMagazineDraft(db, editorial.id, { status: 'draft', category: 'AYROVI' });
     expect(db.get<any>('SELECT status FROM news_items WHERE id=?', scheduled.target_id)?.status).toBe('DRAFT');
     const publication = listMagazineDrafts(db, { type: 'publication' })[0];

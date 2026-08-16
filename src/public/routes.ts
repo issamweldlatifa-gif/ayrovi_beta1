@@ -162,7 +162,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   router.get('/news', (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
     const now = new Date().toISOString();
-    const rows = db.all<any>(`SELECT * FROM news_items WHERE status='PUBLISHED' AND published_at<=?
+    const rows = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=?
       ORDER BY published_at DESC LIMIT ?`, now, limit);
     res.json({ success: true, data: rows, serverTime: now });
   });
@@ -178,7 +178,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       WHERE p.status='ACTIVE' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 12`).map(mapProduct);
     const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
     const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
-    const news = db.all<any>(`SELECT * FROM news_items WHERE status='PUBLISHED' AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);
+    const news = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);
     res.json({ success: true, data: { hero, brands, arrivals, products, promotions, stories, news }, serverTime: now });
   });
 

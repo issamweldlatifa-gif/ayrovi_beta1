@@ -42,7 +42,7 @@ export const MagazineDraftsPanel: React.FC<MagazineDraftsPanelProps> = ({ canWri
   const [filter, setFilter] = useState('');
   const [type, setType] = useState('');
   const [selected, setSelected] = useState<MagazineDraft | null>(null);
-  const [transfer, setTransfer] = useState<{ status: 'draft' | 'scheduled'; category: string; scheduledAt: string }>({ status: 'draft', category: 'AYROVI', scheduledAt: localScheduleDefault() });
+  const [transfer, setTransfer] = useState<{ status: 'draft' | 'scheduled' | 'published'; category: string; scheduledAt: string }>({ status: 'draft', category: 'AYROVI', scheduledAt: localScheduleDefault() });
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<any>(null);
@@ -66,7 +66,7 @@ export const MagazineDraftsPanel: React.FC<MagazineDraftsPanelProps> = ({ canWri
       setSelected(current);
       const categoryOptions = categoriesFor(current.content_type);
       setTransfer({
-        status: current.status === 'scheduled' ? 'scheduled' : 'draft',
+        status: current.status === 'scheduled' ? 'scheduled' : current.status === 'published' ? 'published' : 'draft',
         category: current.category && categoryOptions.some((option) => option.value === current.category) ? current.category : categoryOptions[0].value,
         scheduledAt: current.scheduled_at ? (() => { const date = new Date(current.scheduled_at); date.setMinutes(date.getMinutes() - date.getTimezoneOffset()); return date.toISOString().slice(0, 16); })() : localScheduleDefault(),
       });
@@ -88,7 +88,7 @@ export const MagazineDraftsPanel: React.FC<MagazineDraftsPanelProps> = ({ canWri
       });
       setRows((current) => current.map((row) => row.id === selected.id ? result.data : row));
       setSelected(null); onCmsChanged();
-      setToast({ message: transfer.status === 'scheduled' ? 'نُقلت البطاقة إلى مجلتي وحُفظ موعدها.' : 'نُقلت البطاقة إلى مجلتي كمسودة للمراجعة.', tone: 'success' });
+      setToast({ message: transfer.status === 'scheduled' ? 'نُقلت البطاقة إلى مجلتي وحُفظ موعدها.' : transfer.status === 'published' ? 'نُشرت البطاقة الآن في مجلتي.' : 'نُقلت البطاقة إلى مجلتي كمسودة للمراجعة.', tone: 'success' });
     } catch (error: any) { setToast({ message: error.message, tone: 'error' }); }
     finally { setBusy(false); }
   };
@@ -129,7 +129,7 @@ export const MagazineDraftsPanel: React.FC<MagazineDraftsPanelProps> = ({ canWri
         {!loading && !rows.length && <div className="mag-library-empty"><FileText /><strong>لا توجد نتائج بهذا الفلتر.</strong></div>}
       </div>
       <Modal open={Boolean(selected)} title="تأكيد النقل إلى مجلتي" onClose={() => !busy && setSelected(null)} footer={<><Button variant="ghost" disabled={busy} onClick={() => setSelected(null)}>إلغاء</Button><Button busy={busy} onClick={() => void submitTransfer()}><ArrowUp />تأكيد الحفظ</Button></>}>
-        {selected && <div className="mag-transfer-form"><div className="mag-transfer-summary">{preview(selected) ? <img src={preview(selected)} alt="" /> : <FileText />}<div><span>{TYPE_LABEL[selected.content_type]}</span><strong>{selected.title}</strong><small>سيبقى الناتج غير منشور حتى تراجعه من التبويب المناسب.</small></div></div><Field label="التصنيف" required><Select value={transfer.category} onChange={(event) => setTransfer({ ...transfer, category: event.target.value })} options={categoriesFor(selected.content_type)} /></Field><Field label="طريقة الحفظ" required><Select value={transfer.status} onChange={(event) => setTransfer({ ...transfer, status: event.target.value as 'draft' | 'scheduled' })} options={[{ value: 'draft', label: 'مسودة للمراجعة' }, { value: 'scheduled', label: 'مجدولة للنشر في الموعد بعد هذا التأكيد' }]} /></Field>{transfer.status === 'scheduled' && <Field label="موعد النشر" required><div className="admin-date-input"><Calendar /><input type="datetime-local" min={localScheduleDefault().slice(0, 10)} value={transfer.scheduledAt} onChange={(event) => setTransfer({ ...transfer, scheduledAt: event.target.value })} /></div></Field>}<p className="mag-transfer-rights"><strong>تنبيه حقوق:</strong> الصور الموسومة «مرجعي فقط» لا تنتقل إلى حقل النشر. لا يُنقل فيديو تلقائيًا إلا إذا أعاده Pexels/Pixabay كملف مرخص.</p></div>}
+        {selected && <div className="mag-transfer-form"><div className="mag-transfer-summary">{preview(selected) ? <img src={preview(selected)} alt="" /> : <FileText />}<div><span>{TYPE_LABEL[selected.content_type]}</span><strong>{selected.title}</strong><small>{transfer.status === 'published' ? 'سيُنشر الآن بعد تأكيدك البشري.' : transfer.status === 'scheduled' ? 'سيظهر للزوار تلقائيًا عند حلول الموعد المحدد.' : 'سيبقى الناتج غير منشور حتى تراجعه من التبويب المناسب.'}</small></div></div><Field label="التصنيف" required><Select value={transfer.category} onChange={(event) => setTransfer({ ...transfer, category: event.target.value })} options={categoriesFor(selected.content_type)} /></Field><Field label="طريقة الحفظ" required><Select value={transfer.status} onChange={(event) => setTransfer({ ...transfer, status: event.target.value as 'draft' | 'scheduled' | 'published' })} options={[{ value: 'draft', label: 'مسودة للمراجعة' }, { value: 'published', label: 'نشر الآن بعد التأكيد' }, { value: 'scheduled', label: 'مجدولة للنشر في الموعد' }]} /></Field>{transfer.status === 'scheduled' && <Field label="موعد النشر" required><div className="admin-date-input"><Calendar /><input type="datetime-local" min={localScheduleDefault().slice(0, 10)} value={transfer.scheduledAt} onChange={(event) => setTransfer({ ...transfer, scheduledAt: event.target.value })} /></div></Field>}<p className="mag-transfer-rights"><strong>تنبيه حقوق:</strong> الصور الموسومة «مرجعي فقط» لا تنتقل إلى حقل النشر. لا يُنقل فيديو تلقائيًا إلا إذا أعاده Pexels/Pixabay كملف مرخص.</p></div>}
       </Modal>
       {toast && <Toast {...toast} />}
     </section>
