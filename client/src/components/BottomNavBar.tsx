@@ -3,6 +3,7 @@ import { X } from './QatafoIcons';
 import { AyroviMotion } from './AyroviMotion';
 import { AyvisiNavIcon, AyrovixNavIcon } from './NavigationBrandIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useNavigationHistory } from '../navigation/NavigationHistory';
 
 interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
@@ -18,8 +19,9 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   onToggleAiDrawer,
   onOpenLens,
 }) => {
+  const navigation = useNavigationHistory();
   const [isVisible, setIsVisible] = useState(true);
-  const [isVisionOpen, setIsVisionOpen] = useState(false);
+  const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
   const lastScrollY = useRef(0);
   useBodyScrollLock(isVisionOpen);
 
@@ -36,7 +38,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   useEffect(() => {
     if (!isVisionOpen) return;
     setIsVisible(true);
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setIsVisionOpen(false); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') navigation.back(); };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [isVisionOpen]);
@@ -55,7 +57,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           <div className="pointer-events-none absolute -right-28 bottom-[8%] h-80 w-80 rounded-full bg-brand-light/20 blur-3xl" />
           <button
             type="button"
-            onClick={() => setIsVisionOpen(false)}
+            onClick={() => navigation.back()}
             className="absolute right-4 top-[max(1rem,env(safe-area-inset-top))] grid h-11 w-11 place-items-center rounded-2xl border border-white/70 bg-white/45 text-ink shadow-lg shadow-brand/10 backdrop-blur-xl transition hover:bg-white/70 active:scale-95"
             aria-label="Fermer Ayvisi"
           >
@@ -110,7 +112,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
           {/* AYVISI appears on the left. */}
           <button
             type="button"
-            onClick={() => setIsVisionOpen(true)}
+            onClick={() => navigation.navigate([{ id: 'app:vision' }])}
             className={`${NAV_ITEM} text-ink hover:bg-white/45 hover:shadow-sm`}
             aria-label="Ouvrir Ayvisi Vision"
           >

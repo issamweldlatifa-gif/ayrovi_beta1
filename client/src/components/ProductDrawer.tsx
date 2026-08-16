@@ -5,6 +5,7 @@ import { AddToCartPayload, AddToCartResult, ScrapedProduct, CustomerInfo, OrderR
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { getSessionId } from '../utils/session';
 import { getCommerceConfig } from '../services/publicApi';
+import { useNavigationHistory } from '../navigation/NavigationHistory';
 
 interface ProductDrawerProps {
   isOpen: boolean;
@@ -50,7 +51,17 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   onOrderComplete,
   onCheckoutRequested,
 }) => {
-  const [step, setStep] = useState<'input' | 'details' | 'checkout' | 'success'>('input');
+  const navigation = useNavigationHistory();
+  const productLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('product:'));
+  const layerStep = productLayer?.id.slice('product:'.length);
+  const step: 'input' | 'details' | 'checkout' | 'success' = ['input', 'details', 'checkout', 'success'].includes(String(layerStep))
+    ? layerStep as 'input' | 'details' | 'checkout' | 'success'
+    : (product ? 'details' : 'input');
+  const goToStep = (next: 'input' | 'details' | 'checkout' | 'success', replace = false) => {
+    const layer = { id: `product:${next}` };
+    if (replace) navigation.replaceTop(layer);
+    else navigation.pushLayer(layer);
+  };
   
   const [isUploading, setIsUploading] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
@@ -81,7 +92,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const isOpenRef = useRef(isOpen);
-  const stepRef = useRef(step);
 
   const [formData, setFormData] = useState<CustomerInfo>({
     name: '',
@@ -100,10 +110,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   }, [isOpen]);
 
   useEffect(() => {
-    stepRef.current = step;
-  }, [step]);
-
-  useEffect(() => {
     setTitle(product?.title || 'Article International');
     setSourcePrice(product?.sourcePrice || 0);
     setCurrency(product?.sourceCurrency || 'EUR');
@@ -112,7 +118,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setErrorMsg(null);
     setOrderResult(null);
     setCheckoutSummary(null);
-    setStep(product ? 'details' : 'input');
   }, [product]);
 
   useEffect(() => {
@@ -127,17 +132,12 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       setOrderResult(null);
       setCheckoutSummary(null);
       setPreview(null);
-      setStep(product ? 'details' : 'input');
       return;
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
-      if (stepRef.current === 'checkout') {
-        setErrorMsg(null);
-        setStep('details');
-        return;
-      }
+      setErrorMsg(null);
       onClose();
     };
 
@@ -251,7 +251,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
       keepPreview = true;
       onExtracted(data.product);
-      setStep('details');
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         console.error('[Upload Error]', err);
@@ -292,7 +291,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       }
 
       onExtracted(data.product);
-      setStep('details');
     } catch (err: any) {
       if (err?.name !== 'AbortError') {
         console.error('[Scrape Error]', err);
@@ -392,7 +390,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       };
 
       setOrderResult(result);
-      setStep('success');
+      // Remplace le formulaire soumis afin que Back ne puisse pas le réactiver.
+      goToStep('success', true);
       onOrderComplete();
 
       try {
@@ -417,7 +416,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   };
 
   const handleResetForNewClient = () => {
-    setStep('input');
+    navigation.navigate([{ id: 'app:product' }, { id: 'product:input' }], { replace: true });
     setUrlInput('');
     setVariantNote('');
     setQuantity(1);
@@ -922,7 +921,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setStep('details')}
+                onClick={() => navigation.back()}
                 className="py-3.5 px-4 rounded-2xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 cursor-pointer"
               >
                 Retour

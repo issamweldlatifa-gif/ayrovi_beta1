@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { HeroSlider } from './components/HeroSlider';
@@ -14,6 +14,7 @@ import { getSessionId } from './utils/session';
 import { configureSocial } from './social/storyService';
 import { customerApi } from './customer/api';
 import { getCommerceConfig } from './services/publicApi';
+import { replaceUrlPreservingNavigation, useNavigationHistory } from './navigation/NavigationHistory';
 
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
@@ -25,27 +26,32 @@ const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').th
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
 export const App: React.FC = () => {
-  const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
+  const navigation = useNavigationHistory();
+  const appView = navigation.stack[0]?.id || 'home';
+  const isProductDrawerOpen = appView === 'app:product';
+  const isLensOpen = appView === 'app:lens';
+  const isAiDrawerOpen = appView === 'app:assistant';
+  const isMenuDrawerOpen = appView === 'app:menu';
+  const isCartOpen = appView === 'app:cart';
+  const isCheckoutOpen = appView === 'app:checkout';
+  const isAccountOpen = appView === 'app:account';
+  const isOrderSuccessOpen = appView === 'app:order-success';
+  const openAppView = (id: string, replace = false) => navigation.navigate([{ id }], { replace });
+  const closeAppView = () => navigation.back();
 
-  // Drawer States (Mutually Exclusive)
-  const [isProductDrawerOpen, setIsProductDrawerOpen] = useState(false);
-  const [isLensOpen, setIsLensOpen] = useState(false);
-  const [isAiDrawerOpen, setIsAiDrawerOpen] = useState(false);
-  const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
+  const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
 
   // Cart & Checkout State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
 
   // Customer authentication is isolated from the Admin session.
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [isCustomerSessionLoading, setIsCustomerSessionLoading] = useState(true);
-  const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders'>('home');
   const [accountMessage, setAccountMessage] = useState('');
   const [resumeCheckoutAfterAuth, setResumeCheckoutAfterAuth] = useState(false);
+  const resumeCheckoutDepthRef = useRef(0);
 
   // Fetch Cart Items
   const fetchCart = async () => {
@@ -97,26 +103,26 @@ export const App: React.FC = () => {
         const restored = result.data as CustomerSession;
         setCustomerSession(restored);
         if (customerAuthResult === 'success' || customerAuthResult === 'facebook_success') {
-          setIsAccountOpen(true);
+          openAppView('app:account', true);
           // La vérification du téléphone est OPTIONNELLE (Profil du compte) — jamais un préalable à la commande.
           setAccountMessage(customerAuthResult === 'facebook_success'
             ? 'Connexion Facebook réussie. Bienvenue sur AYROVI !'
             : 'Connexion Google réussie. Bienvenue sur AYROVI !');
         } else if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
-          setIsAccountOpen(true);
+          openAppView('app:account', true);
           setAccountMessage(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`);
         }
       } catch {
         setCustomerSession(null);
         if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
-          setIsAccountOpen(true);
+          openAppView('app:account', true);
           setAccountMessage(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`);
         }
       } finally {
         if (customerAuthResult) {
           const url = new URL(window.location.href);
           url.searchParams.delete('customerAuth');
-          window.history.replaceState({}, '', `${url.pathname}${url.search}${url.hash}`);
+          replaceUrlPreservingNavigation(`${url.pathname}${url.search}${url.hash}`);
         }
         setIsCustomerSessionLoading(false);
       }
@@ -136,45 +142,30 @@ export const App: React.FC = () => {
 
   const handleExtracted = (product: ScrapedProduct) => {
     setExtractedProduct(product);
-    setIsAiDrawerOpen(false);
-    setIsMenuDrawerOpen(false);
-    setIsProductDrawerOpen(true);
+    if (isProductDrawerOpen) navigation.pushLayer({ id: 'product:details' });
+    else navigation.navigate([{ id: 'app:product' }, { id: 'product:details' }]);
   };
 
   const handleToggleProductDrawer = () => {
-    if (isProductDrawerOpen) {
-      setIsProductDrawerOpen(false);
-    } else {
-      setIsAiDrawerOpen(false);
-      setIsMenuDrawerOpen(false);
-      setIsProductDrawerOpen(true);
-    }
+    if (isProductDrawerOpen) closeAppView();
+    else navigation.navigate([{ id: 'app:product' }, { id: extractedProduct ? 'product:details' : 'product:input' }]);
   };
 
   // AYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
-  const handleOpenLens = () => {
-    setIsProductDrawerOpen(false);
-    setIsAiDrawerOpen(false);
-    setIsMenuDrawerOpen(false);
-    setIsCartOpen(false);
-    setIsLensOpen(true);
-  };
+  const handleOpenLens = () => navigation.navigate([
+    { id: 'app:lens' },
+    { id: typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) ? 'lens:live' : 'lens:home' },
+  ]);
 
   const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
     const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
     if (!summary) throw new Error('AYROVIX_ADD_TO_CART_FAILED');
-    setIsLensOpen(false);
-    setIsCartOpen(true);
+    openAppView('app:cart');
   };
 
   const handleToggleAiDrawer = () => {
-    if (isAiDrawerOpen) {
-      setIsAiDrawerOpen(false);
-    } else {
-      setIsProductDrawerOpen(false);
-      setIsMenuDrawerOpen(false);
-      setIsAiDrawerOpen(true);
-    }
+    if (isAiDrawerOpen) closeAppView();
+    else openAppView('app:assistant');
   };
 
   const handleAddToCart = async (itemData: AddToCartPayload): Promise<AddToCartResult | null> => {
@@ -244,18 +235,17 @@ export const App: React.FC = () => {
   };
 
   const handleProceedToCheckout = () => {
-    setIsCartOpen(false);
-    setIsProductDrawerOpen(false);
     if (!customerSession) {
+      resumeCheckoutDepthRef.current = navigation.entry.depth;
       setResumeCheckoutAfterAuth(true);
       setAccountInitialSection('home');
       setAccountMessage('Connectez-vous pour confirmer votre commande. Votre panier est conservé.');
-      setIsAccountOpen(true);
+      openAppView('app:account');
       return;
     }
     // Aucun préalable de vérification téléphonique : le numéro de livraison est saisi au checkout.
     setResumeCheckoutAfterAuth(false);
-    setIsCheckoutOpen(true);
+    openAppView('app:checkout');
   };
 
   const handleCustomerSession = (nextSession: CustomerSession) => {
@@ -263,16 +253,16 @@ export const App: React.FC = () => {
     void fetchCart();
     if (resumeCheckoutAfterAuth) {
       setResumeCheckoutAfterAuth(false);
-      setIsAccountOpen(false);
-      setIsCheckoutOpen(true);
+      navigation.rewindAndNavigate(resumeCheckoutDepthRef.current, [{ id: 'app:checkout' }]);
       setAccountMessage('');
     }
   };
 
   const handleOrderSuccess = (result: OrderResult) => {
-    setIsCheckoutOpen(false);
     setOrderResult(result);
     setCartItems([]);
+    // Le formulaire soumis ne doit jamais redevenir actif via Back.
+    openAppView('app:order-success', true);
   };
 
   return (
@@ -283,21 +273,12 @@ export const App: React.FC = () => {
 
       {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
       <Navbar
-        onOpenMenuDrawer={() => {
-          setIsProductDrawerOpen(false);
-          setIsAiDrawerOpen(false);
-          setIsCartOpen(false);
-          setIsMenuDrawerOpen(true);
-        }}
+        onOpenMenuDrawer={() => openAppView('app:menu')}
         onOpenAccount={() => {
-          setIsProductDrawerOpen(false);
-          setIsAiDrawerOpen(false);
-          setIsMenuDrawerOpen(false);
-          setIsCartOpen(false);
           setResumeCheckoutAfterAuth(false);
           setAccountInitialSection('home');
           setAccountMessage('');
-          setIsAccountOpen(true);
+          openAppView('app:account');
         }}
         isAuthenticated={Boolean(customerSession)}
       />
@@ -305,7 +286,7 @@ export const App: React.FC = () => {
       {/* Sliding Side Menu Drawer */}
       {isMenuDrawerOpen && (
         <Suspense fallback={null}>
-          <MenuDrawer isOpen onClose={() => setIsMenuDrawerOpen(false)} />
+          <MenuDrawer isOpen onClose={closeAppView} />
         </Suspense>
       )}
 
@@ -313,7 +294,7 @@ export const App: React.FC = () => {
       <HeroSlider />
 
       {/* Backend-managed arrivals, stories, products, promotions and news */}
-      <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); setIsAccountOpen(true); }} />
+      <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />
 
       {/* Partner Brands Marquee Slider Container with generous spacing */}
       <PartnerBrandsSlider />
@@ -322,7 +303,7 @@ export const App: React.FC = () => {
       <AboutSection />
 
       {/* Hostinger-Style Full Footer with Fig Logo, Qui sommes-nous, Payment & Social Icons */}
-      <Footer onOpenAccount={() => { setAccountInitialSection('home'); setIsAccountOpen(true); }} onOpenAssistant={() => setIsAiDrawerOpen(true)} />
+      <Footer onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />
 
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton />
@@ -340,7 +321,7 @@ export const App: React.FC = () => {
           <ProductDrawer
             isOpen
             product={extractedProduct}
-            onClose={() => setIsProductDrawerOpen(false)}
+            onClose={closeAppView}
             onAddToCart={handleAddToCart}
             onExtracted={handleExtracted}
             onNewClientOrder={handleNewClientOrder}
@@ -359,20 +340,18 @@ export const App: React.FC = () => {
             customerCsrfToken={customerSession?.csrfToken || ''}
             isAuthenticated={Boolean(customerSession)}
             customerFirstName={customerSession?.account.displayName?.split(/\s+/)[0] || ''}
-            onClose={() => setIsAiDrawerOpen(false)}
+            onClose={closeAppView}
             onOpenLens={handleOpenLens}
             onOrder={handleAyrovixOrder}
             onOpenOrders={() => {
-              setIsAiDrawerOpen(false);
               setAccountInitialSection('orders');
               setAccountMessage(customerSession ? '' : 'Connectez-vous pour consulter vos commandes.');
-              setIsAccountOpen(true);
+              openAppView('app:account');
             }}
             onOpenAccount={() => {
-              setIsAiDrawerOpen(false);
               setAccountInitialSection('home');
               setAccountMessage('');
-              setIsAccountOpen(true);
+              openAppView('app:account');
             }}
           />
         </Suspense>
@@ -382,7 +361,7 @@ export const App: React.FC = () => {
       {/* AYROVIX Lens — expérience caméra mobile-first (au-dessus du système existant) */}
       {isLensOpen && (
         <Suspense fallback={null}>
-          <LensLauncher isOpen historyScope={customerSession?.account.id || null} onClose={() => setIsLensOpen(false)} onOrder={handleAyrovixOrder} />
+          <LensLauncher isOpen historyScope={customerSession?.account.id || null} onClose={closeAppView} onOrder={handleAyrovixOrder} />
         </Suspense>
       )}
 
@@ -390,7 +369,7 @@ export const App: React.FC = () => {
         <Suspense fallback={null}>
           <CartDrawer
             isOpen
-            onClose={() => setIsCartOpen(false)}
+            onClose={closeAppView}
             items={cartItems}
             totalTND={totalCartTND}
             onUpdateQuantity={handleUpdateQuantity}
@@ -405,16 +384,16 @@ export const App: React.FC = () => {
         <Suspense fallback={null}>
           <CheckoutModal
             isOpen
-            onClose={() => setIsCheckoutOpen(false)}
+            onClose={closeAppView}
             totalTND={totalCartTND}
             itemCount={totalCartCount}
             customerSession={customerSession}
             onRequireAuthentication={() => {
-              setIsCheckoutOpen(false);
+              resumeCheckoutDepthRef.current = Math.max(0, navigation.entry.depth - 1);
               setResumeCheckoutAfterAuth(true);
               setAccountInitialSection('home');
               setAccountMessage('Connectez-vous pour confirmer la commande.');
-              setIsAccountOpen(true);
+              openAppView('app:account', true);
             }}
             onOrderSuccess={handleOrderSuccess}
           />
@@ -429,22 +408,22 @@ export const App: React.FC = () => {
             loadingSession={isCustomerSessionLoading}
             initialSection={accountInitialSection}
             initialMessage={accountMessage}
-            onClose={() => { setIsAccountOpen(false); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
+            onClose={() => { closeAppView(); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
             onSession={handleCustomerSession}
             onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
             onCartChanged={() => { void fetchCart(); }}
-            onOpenCart={() => { setIsAccountOpen(false); setIsCartOpen(true); }}
+            onOpenCart={() => openAppView('app:cart')}
           />
         </Suspense>
       )}
 
       {/* Order Success Confetti Modal */}
-      {orderResult && (
+      {isOrderSuccessOpen && orderResult && (
         <Suspense fallback={null}>
           <OrderSuccessModal
             result={orderResult}
-            onClose={() => setOrderResult(null)}
-            onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('home'); setIsAccountOpen(true); }}
+            onClose={() => { setOrderResult(null); navigation.goHome(); }}
+            onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('home'); openAppView('app:account', true); }}
           />
         </Suspense>
       )}

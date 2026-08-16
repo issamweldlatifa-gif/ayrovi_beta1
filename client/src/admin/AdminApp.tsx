@@ -12,6 +12,7 @@ import {
 import './admin.css';
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
+import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
 
 type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'audit:read' | 'reports:read' | 'reports:write';
 type UserIdentity = { id: string; email: string; name: string; role: string; permissions: Permission[] };
@@ -660,7 +661,7 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout})=>{
   const initialParams=new URLSearchParams(location.search);const initial=initialParams.get('section')||'dashboard';const[section,setSection]=useState(initial);const[requestedReview,setRequestedReview]=useState(initialParams.get('request')||'');const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
-  const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string,request?:string)=>{setSection(id);setRequestedReview(request||'');setMobile(false);const params=new URLSearchParams({section:id});if(request)params.set('request',request);history.pushState({},'',`/admin?${params}`);};
+  const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string,request?:string)=>{setSection(id);setRequestedReview(request||'');setMobile(false);const params=new URLSearchParams({section:id});if(request)params.set('request',request);pushUrlPreservingNavigation(`/admin?${params}`);};
   useEffect(()=>{const pop=()=>{const params=new URLSearchParams(location.search);setSection(params.get('section')||'dashboard');setRequestedReview(params.get('request')||'');};addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
   let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;

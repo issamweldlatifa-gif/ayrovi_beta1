@@ -19,6 +19,7 @@ import {
   saveAssistantConversation,
 } from './conversationHistory';
 import { AssistantAttachment, AssistantMessage, FeedbackValue } from './types';
+import { useNavigationHistory } from '../../navigation/NavigationHistory';
 
 interface AiAssistantDrawerProps {
   isOpen: boolean;
@@ -81,6 +82,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   onOpenAccount,
   onOrder,
 }) => {
+  const navigation = useNavigationHistory();
+  const isMenuOpen = navigation.stack.some((layer) => layer.id === 'assistant:menu');
+  const isAttachmentSheetOpen = navigation.stack.some((layer) => layer.id === 'assistant:attachments');
+  const feedbackLayer = navigation.stack.find((layer) => layer.id === 'assistant:feedback');
+  const productLayer = navigation.stack.find((layer) => layer.id === 'assistant:product');
+  const closeAssistantLayer = () => navigation.back();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<AssistantAttachment[]>([]);
@@ -91,8 +98,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [isTranscribing, setIsTranscribing] = useState(false);
   const [voiceReady, setVoiceReady] = useState<boolean | null>(null);
   const [recordSeconds, setRecordSeconds] = useState(0);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAttachmentSheetOpen, setIsAttachmentSheetOpen] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(true);
   const [toast, setToast] = useState('');
@@ -106,6 +111,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: AyrovixProduct; priceVerified: boolean } | null>(null);
   const [productBusyId, setProductBusyId] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
+  const openAssistantProduct = (next: { messageId: string; product: AyrovixProduct; priceVerified: boolean }) => {
+    if (!isOpenRef.current) return;
+    setSelectedProduct(next);
+    if (!productLayer) navigation.pushLayer({ id: 'assistant:product', payload: { messageId: next.messageId } });
+  };
 
   const generationAbortRef = useRef<AbortController | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -257,7 +269,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           if (event.type === 'tool') { if (event.name === 'lens_search') setLensActive(true);
             if (event.name === 'lens_search' && event.data.product) {
               const product = event.data.product as AyrovixProduct;
-              setSelectedProduct({
+              openAssistantProduct({
                 messageId: responseId,
                 product,
                 priceVerified: product.priceVerificationStatus === 'VERIFIED' || product.priceVerified === true,
@@ -302,15 +314,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     window.requestAnimationFrame(() => pageRef.current?.focus({ preventScroll: true }));
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (feedbackMessage) setFeedbackMessage(null);
-        else if (isAttachmentSheetOpen) setIsAttachmentSheetOpen(false);
-        else if (isMenuOpen) setIsMenuOpen(false);
+        if (feedbackLayer || productLayer || isAttachmentSheetOpen || isMenuOpen) closeAssistantLayer();
         else onClose();
       }
     };
     window.addEventListener('keydown', handleEscape);
     return () => window.removeEventListener('keydown', handleEscape);
-  }, [isOpen, feedbackMessage, isAttachmentSheetOpen, isMenuOpen, onClose]);
+  }, [isOpen, feedbackLayer, productLayer, isAttachmentSheetOpen, isMenuOpen, onClose]);
 
   useEffect(() => {
     if (isRecording) {
@@ -349,12 +359,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setIsTranscribing(false);
     setIsRecording(false);
     setRecordSeconds(0);
-    setIsMenuOpen(false);
-    setIsAttachmentSheetOpen(false);
     setFeedbackMessage(null);
   }, [isOpen]);
 
   useEffect(() => () => {
+    isOpenRef.current = false;
     generationAbortRef.current?.abort();
     transcriptionAbortRef.current?.abort();
     voiceRequestRef.current += 1;
@@ -378,8 +387,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setIsTranscribing(false);
     setIsRecording(false);
     setRecordSeconds(0);
-    setIsMenuOpen(false);
-    setIsAttachmentSheetOpen(false);
     setFeedbackMessage(null);
     onClose();
   };
@@ -536,7 +543,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setFeedback({});
     setFeedbackComments({});
     setSelectedProduct(null);
-    setIsMenuOpen(false);
+    closeAssistantLayer();
     showToast('Nouvelle conversation');
   };
 
@@ -549,7 +556,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setFeedback({});
     setFeedbackComments({});
     setSelectedProduct(conversation.selectedProduct || null);
-    setIsMenuOpen(false);
+    closeAssistantLayer();
   };
 
   const removeConversation = (id: string) => {
@@ -582,7 +589,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         ...current,
         { id: `file_${Date.now()}_${Math.random()}`, name: file.name, type, preview },
       ]);
-      setIsAttachmentSheetOpen(false);
+      if (isAttachmentSheetOpen) closeAssistantLayer();
     };
     void kind;
     // Compression côté client : garantit que l'image atteint toujours le modèle
@@ -676,9 +683,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           sizes: result.product.sizes.length ? result.product.sizes : candidate.sizes,
         };
       }
-      setSelectedProduct({ messageId, product, priceVerified: product.priceVerificationStatus === 'VERIFIED' });
+      openAssistantProduct({ messageId, product, priceVerified: product.priceVerificationStatus === 'VERIFIED' });
     } catch (error: any) {
-      setSelectedProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
+      openAssistantProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
       showToast(error?.message || 'Le lien sera vérifié manuellement par AYROVI.');
     } finally { setProductBusyId(''); }
   };
@@ -758,6 +765,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       setFeedback((current) => ({ ...current, [feedbackMessage.id]: rating }));
       setFeedbackComments((current) => ({ ...current, [feedbackMessage.id]: comment }));
       setFeedbackMessage(null);
+      closeAssistantLayer();
       showToast('Merci pour votre avis');
     } catch {
       showToast('Impossible d’envoyer votre avis');
@@ -780,7 +788,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isDark={isDark}
           motionState={motionState}
           onBack={handleCloseAssistant}
-          onOpenHistory={() => setIsMenuOpen(true)}
+          onOpenHistory={() => navigation.pushLayer({ id: 'assistant:menu' })}
         />
 
         <AssistantMessages
@@ -790,7 +798,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isDark={isDark}
           copiedId={copiedId}
           feedback={feedback}
-          selectedProduct={selectedProduct}
+          selectedProduct={productLayer ? selectedProduct : null}
           productBusyId={productBusyId}
           isOrdering={isOrdering}
           analyzingImage={lensActive}
@@ -798,7 +806,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onCopy={handleCopy}
           onRegenerate={handleRegenerate}
           onFeedback={handleFeedback}
-          onOpenComment={setFeedbackMessage}
+          onOpenComment={(message) => { setFeedbackMessage(message); navigation.pushLayer({ id: 'assistant:feedback', payload: { messageId: message.id } }); }}
           onOpenLens={onOpenLens}
           onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
           onProductOrder={(selection) => void handleProductOrder(selection)}
@@ -814,7 +822,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isTranscribing={isTranscribing}
           recordSeconds={recordSeconds}
           onChange={setInput}
-          onOpenAttachments={() => setIsAttachmentSheetOpen(true)}
+          onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
           onRemoveAttachment={(id) => setAttachments((current) => current.filter((attachment) => attachment.id !== id))}
           onStartRecording={() => void startRecording()}
           onFinishRecording={finishRecording}
@@ -829,14 +837,14 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           conversations={conversations}
           activeConversationId={conversationId}
           isAuthenticated={isAuthenticated}
-          onClose={() => setIsMenuOpen(false)}
+          onClose={closeAssistantLayer}
           onNewConversation={resetConversation}
           onSelectConversation={selectConversation}
           onDeleteConversation={removeConversation}
           onOpenOrders={onOpenOrders}
           onOpenLens={onOpenLens}
           onOpenAccount={onOpenAccount}
-          onHelp={() => { setIsMenuOpen(false); sendMessage('Comment utiliser l’assistant AYROVI et Lens ?'); }}
+          onHelp={() => { closeAssistantLayer(); sendMessage('Comment utiliser l’assistant AYROVI et Lens ?'); }}
           onToggleDark={() => setIsDark((dark) => !dark)}
         />
 
@@ -844,19 +852,19 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isOpen={isAttachmentSheetOpen}
           isDark={isDark}
           webSearchEnabled={webSearchEnabled}
-          onClose={() => setIsAttachmentSheetOpen(false)}
+          onClose={closeAssistantLayer}
           onPickFile={handleFilePicked}
           onToggleWebSearch={() => setWebSearchEnabled((enabled) => !enabled)}
           onConnectors={() => showToast('Les connecteurs seront bientôt disponibles')}
         />
 
         <AssistantFeedbackSheet
-          isOpen={Boolean(feedbackMessage)}
+          isOpen={Boolean(feedbackLayer && feedbackMessage)}
           isDark={isDark}
           initialRating={feedbackMessage ? feedback[feedbackMessage.id] : undefined}
           initialComment={feedbackMessage ? feedbackComments[feedbackMessage.id] : ''}
           isSaving={isFeedbackSaving}
-          onClose={() => setFeedbackMessage(null)}
+          onClose={closeAssistantLayer}
           onSave={saveFeedbackComment}
         />
 

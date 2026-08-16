@@ -8,6 +8,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem, CustomerAccount, CustomerAddress, CustomerSession } from '../types';
 import { customerApi } from '../customer/api';
 import { getSessionId } from '../utils/session';
+import { useNavigationHistory } from '../navigation/NavigationHistory';
 
 interface CustomerAccountPageProps {
   isOpen: boolean;
@@ -88,7 +89,22 @@ const inputClass = 'w-full rounded-none border border-slate-200 bg-white px-3.5 
 export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   isOpen, session, loadingSession, onClose, onSession, onLoggedOut, onOpenCart, onCartChanged, initialMessage, initialSection = 'home',
 }) => {
-  const [section, setSection] = useState<Section>(initialSection);
+  const navigation = useNavigationHistory();
+  const sectionLayer = [...navigation.stack].reverse().find((layer) => layer.id === 'account:section');
+  const sectionValue = sectionLayer?.payload?.section;
+  const section = sectionItems.some((item) => item.id === sectionValue) ? sectionValue as Section : initialSection;
+  const addressLayer = navigation.stack.find((layer) => layer.id === 'account:address');
+  const orderLayer = navigation.stack.find((layer) => layer.id === 'account:order');
+  const phoneLinkOpen = navigation.stack.some((layer) => layer.id === 'account:phone-link');
+  const phoneLoginOpen = navigation.stack.some((layer) => layer.id === 'account:phone-login');
+  const otpOpen = navigation.stack.some((layer) => layer.id === 'account:otp-code');
+  const openSection = (target: Section) => {
+    if (target !== section) navigation.pushLayer({ id: 'account:section', payload: { section: target } });
+    setOrderDetail(null);
+    setAddressDraft(null);
+    setError('');
+  };
+  const closeAccountLayer = () => navigation.back();
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [phone, setPhone] = useState('');
   const [challengeId, setChallengeId] = useState('');
@@ -96,8 +112,6 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [code, setCode] = useState('');
   const [developmentCode, setDevelopmentCode] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
-  const [phoneLinkOpen, setPhoneLinkOpen] = useState(false);
-  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState(initialMessage || '');
   const [overview, setOverview] = useState<any>(null);
@@ -108,12 +122,15 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [orderDetail, setOrderDetail] = useState<any>(null);
   const [busyId, setBusyId] = useState('');
   const sectionRequestRef = useRef(0);
+  const isOpenRef = useRef(isOpen);
+  isOpenRef.current = isOpen;
 
   useBodyScrollLock(isOpen);
 
+  useEffect(() => () => { isOpenRef.current = false; }, []);
+
   useEffect(() => {
     if (!isOpen) return;
-    setSection(initialSection);
     if (initialMessage?.startsWith('Erreur')) {
       setError(initialMessage);
       setNotice('');
@@ -177,9 +194,15 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     if (!isOpen) {
       setOrderDetail(null);
       setAddressDraft(null);
-      setPhoneLinkOpen(false);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!otpOpen) {
+      setChallengeId('');
+      setCode('');
+    }
+  }, [otpOpen]);
 
   const sendCode = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -190,6 +213,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setMaskedPhone(result.data.maskedPhone);
       setDevelopmentCode(result.data.developmentCode || '');
       setCode('');
+      navigation.pushLayer({ id: 'account:otp-code' });
     } catch (reason: any) { setError(reason.message); }
     finally { setAuthBusy(false); }
   };
@@ -202,7 +226,10 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         method: 'POST', body: JSON.stringify({ challengeId, code, cartSessionId: getSessionId() }),
       });
       onSession({ account: result.data.account, csrfToken: result.data.csrfToken });
-      setChallengeId(''); setPhoneLinkOpen(false); setSection('home');
+      setChallengeId('');
+      if (phoneLinkOpen) {
+        navigation.navigate(navigation.stack.filter((layer) => !['account:phone-link', 'account:otp-code'].includes(layer.id)), { replace: true });
+      }
       const linked = Number(result.data.linkedHistoricalOrders || 0);
       setNotice(linked ? `${linked} ancienne${linked > 1 ? 's' : ''} commande${linked > 1 ? 's' : ''} retrouvée${linked > 1 ? 's' : ''} et ajoutée${linked > 1 ? 's' : ''} à votre compte.` : 'Votre compte AYROVI est maintenant actif.');
       onCartChanged();
@@ -213,7 +240,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const logout = async () => {
     try { await customerApi('/api/customer/auth/logout', { method: 'POST' }, session?.csrfToken || ''); } catch {}
     onLoggedOut();
-    setSection('home'); setRows([]); setOverview(null); setPhone(''); setChallengeId(''); setCode(''); setDevelopmentCode('');
+    navigation.navigate([{ id: 'app:account' }], { replace: true }); setRows([]); setOverview(null); setPhone(''); setChallengeId(''); setCode(''); setDevelopmentCode('');
     setNotice('Vous êtes déconnecté.');
   };
 
@@ -225,7 +252,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         method: 'DELETE', body: JSON.stringify({ confirmation: 'SUPPRIMER' }),
       }, session.csrfToken);
       onLoggedOut();
-      setSection('home'); setRows([]); setOverview(null);
+      navigation.navigate([{ id: 'app:account' }], { replace: true }); setRows([]); setOverview(null);
       setNotice('Votre compte et vos données de profil ont été supprimés.');
     } catch (reason: any) { setError(reason.message); }
     finally { setBusyId(''); }
@@ -241,11 +268,15 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     finally { setBusyId(''); }
   };
 
-  const editAddress = (address?: CustomerAddress) => setAddressDraft(address ? {
-    id: address.id, label: address.label, recipientName: address.recipient_name, phone: address.phone,
-    governorate: address.governorate, city: address.city, postalCode: address.postal_code,
-    addressLine: address.address_line, deliveryNotes: address.delivery_notes, isDefault: Boolean(address.is_default),
-  } : { ...emptyAddress, recipientName: session?.account.displayName || '', phone: session?.account.phone || '' });
+  const editAddress = (address?: CustomerAddress) => {
+    const draft = address ? {
+      id: address.id, label: address.label, recipientName: address.recipient_name, phone: address.phone,
+      governorate: address.governorate, city: address.city, postalCode: address.postal_code,
+      addressLine: address.address_line, deliveryNotes: address.delivery_notes, isDefault: Boolean(address.is_default),
+    } : { ...emptyAddress, recipientName: session?.account.displayName || '', phone: session?.account.phone || '' };
+    setAddressDraft(draft);
+    navigation.pushLayer({ id: 'account:address', payload: { addressId: address?.id || 'new' } });
+  };
 
   const saveAddress = async (event: React.FormEvent) => {
     event.preventDefault(); if (!addressDraft) return; setBusyId('address'); setError('');
@@ -253,7 +284,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       await customerApi(`/api/customer/account/addresses${addressDraft.id ? `/${addressDraft.id}` : ''}`, {
         method: addressDraft.id ? 'PUT' : 'POST', body: JSON.stringify(addressDraft),
       }, session!.csrfToken);
-      setAddressDraft(null); setNotice('Adresse enregistrée.'); await loadSection('addresses');
+      setAddressDraft(null); closeAccountLayer(); setNotice('Adresse enregistrée.'); await loadSection('addresses');
     } catch (reason: any) { setError(reason.message); }
     finally { setBusyId(''); }
   };
@@ -266,12 +297,52 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     finally { setBusyId(''); }
   };
 
-  const openOrder = async (id: string) => {
+  const loadOrderDetail = async (id: string) => {
     setBusyId(id); setError('');
-    try { const result = await customerApi<any>(`/api/customer/account/orders/${id}`); setOrderDetail(result.data); }
-    catch (reason: any) { setError(reason.message); }
-    finally { setBusyId(''); }
+    try {
+      const result = await customerApi<any>(`/api/customer/account/orders/${id}`);
+      setOrderDetail(result.data);
+      return result.data;
+    } catch (reason: any) {
+      setError(reason.message);
+      return null;
+    } finally { setBusyId(''); }
   };
+
+  const openOrder = async (id: string) => {
+    const detail = await loadOrderDetail(id);
+    if (detail && isOpenRef.current) navigation.pushLayer({ id: 'account:order', payload: { orderId: id } });
+  };
+
+  useEffect(() => {
+    const orderId = typeof orderLayer?.payload?.orderId === 'string' ? orderLayer.payload.orderId : '';
+    if (!orderId) {
+      setOrderDetail(null);
+      return;
+    }
+    if (String(orderDetail?.id || '') !== orderId) void loadOrderDetail(orderId);
+  }, [isOpen, orderLayer?.payload?.orderId]);
+
+  useEffect(() => {
+    if (!addressLayer) {
+      setAddressDraft(null);
+      return;
+    }
+    if (addressDraft) return;
+    const addressId = typeof addressLayer.payload?.addressId === 'string' ? addressLayer.payload.addressId : '';
+    if (addressId === 'new') {
+      setAddressDraft({ ...emptyAddress, recipientName: session?.account.displayName || '', phone: session?.account.phone || '' });
+      return;
+    }
+    const address = rows.find((item) => item.id === addressId) as CustomerAddress | undefined;
+    if (address) {
+      setAddressDraft({
+        id: address.id, label: address.label, recipientName: address.recipient_name, phone: address.phone,
+        governorate: address.governorate, city: address.city, postalCode: address.postal_code,
+        addressLine: address.address_line, deliveryNotes: address.delivery_notes, isDefault: Boolean(address.is_default),
+      });
+    }
+  }, [isOpen, addressLayer, rows, addressDraft, session?.account.id]);
 
   const removeFavorite = async (id: string) => {
     setBusyId(id);
@@ -307,7 +378,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       form.append('proof', proofFile);
       await customerApi(`/api/customer/account/orders/${orderDetail.id}/deposit-proof`, { method: 'POST', body: form }, session.csrfToken);
       setProofFile(null);
-      await openOrder(orderDetail.id);
+      await loadOrderDetail(orderDetail.id);
       setNotice('Preuve d’acompte envoyée — vérification par notre équipe en cours.');
     } catch (reason: any) { setError(reason.message); }
     finally { setProofBusy(false); }
@@ -329,14 +400,14 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       <div className="mb-8 text-center"><span className="mx-auto grid h-16 w-16 place-items-center bg-brand text-white"><FigLogoIcon className="h-10 w-10" /></span><h1 className="mt-5 text-3xl font-black tracking-[-0.045em] text-ink">{phoneLinkOpen ? 'Vérifier mon téléphone' : 'Bienvenue chez AYROVI'}</h1><p className="mt-2 text-sm leading-6 text-slate-500">{phoneLinkOpen ? 'Facultative — elle lie votre téléphone à votre compte pour retrouver vos commandes.' : 'Votre panier, vos commandes et vos adresses sur tous vos appareils.'}</p></div>
       {error && <div className="mb-4 border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</div>}
       {/* Connexions OAuth principales; Facebook reste masqué tant que Meta n'est pas configuré. */}
-      {!challengeId && !phoneLinkOpen && <>
+      {!otpOpen && !phoneLinkOpen && <>
         <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} className={`flex w-full items-center justify-center gap-3 border px-4 py-3.5 text-sm font-black transition ${googleEnabled ? 'border-ink bg-ink text-white shadow-lg hover:bg-[#2b2340]' : 'pointer-events-none border-slate-300 bg-white text-ink opacity-50'}`}><span className="grid h-6 w-6 place-items-center rounded-full bg-white font-black text-[#4285f4]">G</span>Continuer avec Google</a>
         {facebookEnabled && <a href={facebookStartHref} className="mt-3 flex w-full items-center justify-center gap-3 border border-[#1877f2] bg-[#1877f2] px-4 py-3.5 text-sm font-black text-white shadow-lg transition hover:bg-[#0f69dc]"><span className="grid h-6 w-6 place-items-center rounded-full bg-white text-base font-black text-[#1877f2]">f</span>Continuer avec Facebook</a>}
         {config !== null && !socialLoginEnabled && <p className="mt-2 text-center text-xs text-slate-400">La connexion sociale sera disponible dès que ses identifiants seront ajoutés sur Render.</p>}
         {socialLoginEnabled && !showPhoneLogin && <p className="mt-2 text-center text-xs text-slate-400">Connexion instantanée et sécurisée, sans partager votre mot de passe avec AYROVI.</p>}
       </>}
       {/* Connexion par téléphone : secondaire (optionnelle) */}
-      {!challengeId && showPhoneLogin && <>
+      {!otpOpen && showPhoneLogin && <>
         {!phoneLinkOpen && <div className="my-6 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400"><span className="h-px flex-1 bg-slate-200" />ou<span className="h-px flex-1 bg-slate-200" /></div>}
         <form onSubmit={sendCode} className="space-y-4">
           <Field label="Numéro de téléphone tunisien"><div className="relative"><Phone className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-brand" /><input autoFocus type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} pl-11`} required /></div></Field>
@@ -344,17 +415,17 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
           {config?.phoneOtp.enabled === false && <p className="text-center text-xs font-semibold text-amber-700">L’envoi SMS doit être configuré sur le serveur.</p>}
         </form>
       </>}
-      {!challengeId && !phoneLinkOpen && socialLoginEnabled && !showPhoneLogin && (
-        <button type="button" onClick={() => setPhoneLoginOpen(true)} className="mt-5 w-full py-2 text-xs font-black text-brand">Utiliser mon numéro de téléphone (SMS)</button>
+      {!otpOpen && !phoneLinkOpen && socialLoginEnabled && !showPhoneLogin && (
+        <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-login' })} className="mt-5 w-full py-2 text-xs font-black text-brand">Utiliser mon numéro de téléphone (SMS)</button>
       )}
-      {challengeId && <form onSubmit={verifyCode} className="space-y-4">
+      {otpOpen && challengeId && <form onSubmit={verifyCode} className="space-y-4">
         <div className="border border-brand/20 bg-brand/5 p-4 text-center"><p className="text-xs font-bold text-slate-500">Code envoyé au</p><strong className="mt-1 block text-base text-ink">{maskedPhone}</strong></div>
         <Field label="Code à 6 chiffres"><input autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" className={`${inputClass} text-center font-mono text-2xl tracking-[0.35em]`} required /></Field>
         {developmentCode && <button type="button" onClick={() => setCode(developmentCode)} className="w-full border border-amber-200 bg-amber-50 p-3 text-xs font-bold text-amber-800">Mode développement — utiliser {developmentCode}</button>}
         <button disabled={authBusy || code.length !== 6} className="flex w-full items-center justify-center gap-2 bg-brand px-4 py-3.5 text-sm font-black text-white disabled:opacity-50">{authBusy && <Loader2 className="h-4 w-4 animate-spin" />}Valider et activer mon compte</button>
-        <button type="button" onClick={() => { setChallengeId(''); setCode(''); setError(''); }} className="w-full py-2 text-xs font-black text-brand">Modifier le numéro</button>
+        <button type="button" onClick={() => { closeAccountLayer(); setError(''); }} className="w-full py-2 text-xs font-black text-brand">Modifier le numéro</button>
       </form>}
-      {phoneLinkOpen && <button type="button" onClick={() => { setPhoneLinkOpen(false); setChallengeId(''); setError(''); }} className="mt-6 flex w-full items-center justify-center gap-2 py-2 text-xs font-black text-slate-500"><ArrowLeft className="h-4 w-4" />Retour au compte</button>}
+      {phoneLinkOpen && !otpOpen && <button type="button" onClick={() => { closeAccountLayer(); setError(''); }} className="mt-6 flex w-full items-center justify-center gap-2 py-2 text-xs font-black text-slate-500"><ArrowLeft className="h-4 w-4" />Retour au compte</button>}
       <p className="mt-7 text-center text-[11px] leading-5 text-slate-400">Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone ou message.</p>
     </div>
   );
@@ -369,12 +440,12 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     ];
     return <div className="space-y-6">
       <section className="relative overflow-hidden bg-brand-gradient p-6 text-white sm:p-8"><div className="absolute -right-10 -top-12 h-40 w-40 rounded-full bg-brand/70 blur-2xl" /><p className="relative text-xs font-black uppercase tracking-[0.18em] text-accent">Mon espace AYROVI</p><h2 className="relative mt-2 text-3xl font-black tracking-tight">Bonjour, {session!.account.displayName || 'Client AYROVI'}</h2><p className="relative mt-2 text-sm text-white/65">{money(overview?.totalSpent)} commandés au total</p></section>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{cards.map(({ label, value, icon: Icon, section: target }) => <button key={target} onClick={() => setSection(target)} className="border border-slate-200 bg-white p-4 text-left transition hover:border-brand"><Icon className="h-5 w-5 text-brand" /><strong className="mt-4 block text-2xl font-black text-ink">{value}</strong><span className="text-xs font-bold text-slate-500">{label}</span></button>)}</div>
-      <section><div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-black text-ink">Commandes récentes</h3><button onClick={() => setSection('orders')} className="text-xs font-black text-brand">Tout voir</button></div>{overview?.recentOrders?.length ? <div className="divide-y divide-slate-100 border border-slate-200 bg-white">{overview.recentOrders.map((order: any) => <button key={order.id} onClick={() => openOrder(order.id)} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50"><div className="grid h-12 w-12 shrink-0 place-items-center bg-brand/10 text-brand">{order.image_url ? <img src={order.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-5 w-5" />}</div><div className="min-w-0 flex-1"><strong className="block truncate text-sm text-ink">{order.order_number}</strong><span className="text-xs text-slate-400">{date(order.created_at)} · {order.item_count} article(s)</span></div><div className="text-right"><Status value={order.status} /><strong className="mt-1 block text-sm">{money(order.total_tnd)}</strong></div></button>)}</div> : <Empty icon={Package} title="Aucune commande" text="Vos futures commandes apparaîtront ici." />}</section>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{cards.map(({ label, value, icon: Icon, section: target }) => <button key={target} onClick={() => openSection(target)} className="border border-slate-200 bg-white p-4 text-left transition hover:border-brand"><Icon className="h-5 w-5 text-brand" /><strong className="mt-4 block text-2xl font-black text-ink">{value}</strong><span className="text-xs font-bold text-slate-500">{label}</span></button>)}</div>
+      <section><div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-black text-ink">Commandes récentes</h3><button onClick={() => openSection('orders')} className="text-xs font-black text-brand">Tout voir</button></div>{overview?.recentOrders?.length ? <div className="divide-y divide-slate-100 border border-slate-200 bg-white">{overview.recentOrders.map((order: any) => <button key={order.id} onClick={() => openOrder(order.id)} className="flex w-full items-center gap-3 p-4 text-left hover:bg-slate-50"><div className="grid h-12 w-12 shrink-0 place-items-center bg-brand/10 text-brand">{order.image_url ? <img src={order.image_url} alt="" className="h-full w-full object-cover" /> : <Package className="h-5 w-5" />}</div><div className="min-w-0 flex-1"><strong className="block truncate text-sm text-ink">{order.order_number}</strong><span className="text-xs text-slate-400">{date(order.created_at)} · {order.item_count} article(s)</span></div><div className="text-right"><Status value={order.status} /><strong className="mt-1 block text-sm">{money(order.total_tnd)}</strong></div></button>)}</div> : <Empty icon={Package} title="Aucune commande" text="Vos futures commandes apparaîtront ici." />}</section>
     </div>;
   };
 
-  const renderProfile = () => <form onSubmit={saveProfile} className="max-w-2xl space-y-5 border border-slate-200 bg-white p-5 sm:p-7"><div className="flex items-center gap-4 border-b border-slate-100 pb-5"><div className="grid h-16 w-16 place-items-center overflow-hidden bg-brand text-xl font-black text-white">{session!.account.avatarUrl ? <img src={session!.account.avatarUrl} alt="" className="h-full w-full object-cover" /> : (session!.account.displayName || 'AY').slice(0, 2).toUpperCase()}</div><div><h3 className="font-black text-ink">Identité du compte</h3><p className="text-xs text-slate-500">Votre compte est actif — la vérification du téléphone est facultative.</p></div></div><Field label="Nom et prénom"><input className={inputClass} value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} required /></Field><Field label="Adresse e-mail"><input type="email" className={inputClass} value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} placeholder="vous@exemple.com" /></Field><Field label="Téléphone (vérification facultative)"><div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-bold text-slate-600"><Phone className="h-4 w-4 text-brand" />{session!.account.phone || 'Non renseigné'}{session!.account.phoneVerified && <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-600" />}</div>{!session!.account.phoneVerified && <button type="button" onClick={() => setPhoneLinkOpen(true)} className="mt-2 flex w-full items-center justify-center gap-2 border border-dashed border-brand/50 bg-brand/5 px-4 py-2.5 text-xs font-black text-brand-dark hover:bg-brand/10"><ShieldCheck className="h-4 w-4" />Vérifier mon téléphone (facultatif — retrouvez vos commandes par SMS)</button>}</Field><label className="flex items-start gap-3 border border-slate-200 p-4"><input type="checkbox" checked={profile.marketingOptIn} onChange={(e) => setProfile({ ...profile, marketingOptIn: e.target.checked })} className="mt-0.5 h-4 w-4 accent-brand" /><span><strong className="block text-sm text-ink">Actualités et promotions AYROVI</strong><small className="text-xs leading-5 text-slate-500">Recevoir les offres et nouveaux arrivages.</small></span></label><button disabled={busyId === 'profile'} className="flex items-center gap-2 bg-brand px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busyId === 'profile' && <Loader2 className="h-4 w-4 animate-spin" />}Enregistrer le profil</button><section className="border-t border-red-100 pt-5"><h4 className="text-sm font-black text-red-700">Supprimer mon compte</h4><p className="mt-1 text-xs leading-5 text-slate-500">Supprime le profil, les connexions Google/Facebook, les sessions, adresses et favoris. Les documents de commande déjà créés restent archivés sans accès au compte.</p><button type="button" disabled={busyId === 'delete-account'} onClick={deleteAccount} className="mt-3 flex items-center gap-2 border border-red-300 px-4 py-2.5 text-xs font-black text-red-700 disabled:opacity-50">{busyId === 'delete-account' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Supprimer définitivement le compte</button></section></form>;
+  const renderProfile = () => <form onSubmit={saveProfile} className="max-w-2xl space-y-5 border border-slate-200 bg-white p-5 sm:p-7"><div className="flex items-center gap-4 border-b border-slate-100 pb-5"><div className="grid h-16 w-16 place-items-center overflow-hidden bg-brand text-xl font-black text-white">{session!.account.avatarUrl ? <img src={session!.account.avatarUrl} alt="" className="h-full w-full object-cover" /> : (session!.account.displayName || 'AY').slice(0, 2).toUpperCase()}</div><div><h3 className="font-black text-ink">Identité du compte</h3><p className="text-xs text-slate-500">Votre compte est actif — la vérification du téléphone est facultative.</p></div></div><Field label="Nom et prénom"><input className={inputClass} value={profile.displayName} onChange={(e) => setProfile({ ...profile, displayName: e.target.value })} required /></Field><Field label="Adresse e-mail"><input type="email" className={inputClass} value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} placeholder="vous@exemple.com" /></Field><Field label="Téléphone (vérification facultative)"><div className="flex items-center gap-2 border border-slate-200 bg-slate-50 px-3.5 py-3 text-sm font-bold text-slate-600"><Phone className="h-4 w-4 text-brand" />{session!.account.phone || 'Non renseigné'}{session!.account.phoneVerified && <CheckCircle2 className="ml-auto h-4 w-4 text-emerald-600" />}</div>{!session!.account.phoneVerified && <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-link' })} className="mt-2 flex w-full items-center justify-center gap-2 border border-dashed border-brand/50 bg-brand/5 px-4 py-2.5 text-xs font-black text-brand-dark hover:bg-brand/10"><ShieldCheck className="h-4 w-4" />Vérifier mon téléphone (facultatif — retrouvez vos commandes par SMS)</button>}</Field><label className="flex items-start gap-3 border border-slate-200 p-4"><input type="checkbox" checked={profile.marketingOptIn} onChange={(e) => setProfile({ ...profile, marketingOptIn: e.target.checked })} className="mt-0.5 h-4 w-4 accent-brand" /><span><strong className="block text-sm text-ink">Actualités et promotions AYROVI</strong><small className="text-xs leading-5 text-slate-500">Recevoir les offres et nouveaux arrivages.</small></span></label><button disabled={busyId === 'profile'} className="flex items-center gap-2 bg-brand px-5 py-3 text-sm font-black text-white disabled:opacity-50">{busyId === 'profile' && <Loader2 className="h-4 w-4 animate-spin" />}Enregistrer le profil</button><section className="border-t border-red-100 pt-5"><h4 className="text-sm font-black text-red-700">Supprimer mon compte</h4><p className="mt-1 text-xs leading-5 text-slate-500">Supprime le profil, les connexions Google/Facebook, les sessions, adresses et favoris. Les documents de commande déjà créés restent archivés sans accès au compte.</p><button type="button" disabled={busyId === 'delete-account'} onClick={deleteAccount} className="mt-3 flex items-center gap-2 border border-red-300 px-4 py-2.5 text-xs font-black text-red-700 disabled:opacity-50">{busyId === 'delete-account' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}Supprimer définitivement le compte</button></section></form>;
 
   const renderAddresses = () => <div className="space-y-4"><button onClick={() => editAddress()} className="flex items-center gap-2 bg-brand px-4 py-3 text-sm font-black text-white"><Plus className="h-4 w-4" />Ajouter une adresse</button>{rows.length ? <div className="grid gap-4 lg:grid-cols-2">{rows.map((address: CustomerAddress) => <article key={address.id} className="border border-slate-200 bg-white p-5"><div className="flex items-start justify-between gap-3"><div><div className="flex items-center gap-2"><h3 className="font-black text-ink">{address.label}</h3>{Boolean(address.is_default) && <span className="bg-brand/10 px-2 py-1 text-[9px] font-black uppercase text-brand">Par défaut</span>}</div><p className="mt-3 text-sm font-bold">{address.recipient_name}</p><p className="mt-1 text-sm leading-6 text-slate-500">{address.address_line}<br />{address.city ? `${address.city}, ` : ''}{address.governorate}{address.postal_code ? ` ${address.postal_code}` : ''}<br />{address.phone}</p>{address.delivery_notes && <p className="mt-2 text-xs italic text-slate-400">{address.delivery_notes}</p>}</div><MapPin className="h-5 w-5 shrink-0 text-brand" /></div><div className="mt-5 flex gap-2 border-t border-slate-100 pt-4"><button onClick={() => editAddress(address)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-black text-brand"><Pencil className="h-3.5 w-3.5" />Modifier</button><button disabled={busyId === address.id} onClick={() => deleteAddress(address.id)} className="flex items-center gap-1.5 px-3 py-2 text-xs font-black text-red-600"><Trash2 className="h-3.5 w-3.5" />Supprimer</button></div></article>)}</div> : <Empty icon={MapPin} title="Aucune adresse enregistrée" text="Ajoutez vos adresses de livraison pour accélérer la commande." />}</div>;
 
@@ -399,11 +470,11 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
 
   return <div className="fixed inset-0 z-[95] overflow-hidden bg-surface" role="dialog" aria-modal="true" aria-label={session ? 'Mon compte AYROVI' : 'Connexion client AYROVI'}>
     <header className="relative z-20 border-b border-slate-200 bg-white"><div className="h-1 bg-accent" /><div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-3 sm:h-20 sm:px-6"><div className="flex items-center gap-2.5"><span className="text-brand"><FigLogoIcon className="h-8 w-8" /></span><div><strong className="block text-xl font-black leading-none text-ink">AYROVI</strong><span className="text-[9px] font-black uppercase tracking-[0.16em] text-slate-400">Espace client</span></div></div><button autoFocus onClick={onClose} className="grid h-11 w-11 place-items-center border border-slate-200 bg-white text-ink hover:border-brand" aria-label="Fermer"><X className="h-5 w-5" /></button></div></header>
-    <div className="h-[calc(100dvh-4.25rem)] overflow-y-auto sm:h-[calc(100dvh-5.25rem)]">{loadingSession ? <div className="grid h-full place-items-center"><Loader2 className="h-8 w-8 animate-spin text-brand" /></div> : (!session || phoneLinkOpen) ? authPanel : <div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl grid-cols-[minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)]"><aside className="min-w-0 border-b border-slate-200 bg-white p-3 lg:border-b-0 lg:border-r lg:p-5"><div className="mb-4 hidden items-center gap-3 border-b border-slate-100 pb-5 lg:flex"><div className="grid h-11 w-11 place-items-center overflow-hidden bg-brand text-sm font-black text-white">{session.account.avatarUrl ? <img src={session.account.avatarUrl} className="h-full w-full object-cover" alt="" /> : (session.account.displayName || 'AY').slice(0, 2).toUpperCase()}</div><div className="min-w-0"><strong className="block truncate text-sm text-ink">{session.account.displayName}</strong><span className="block truncate text-[10px] text-slate-400">{session.account.phone || session.account.email}</span></div></div><nav className="flex gap-1 overflow-x-auto lg:block lg:space-y-1">{sectionItems.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => { setSection(id); setOrderDetail(null); setAddressDraft(null); setError(''); }} className={`flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-black transition lg:w-full lg:text-sm ${section === id ? 'bg-brand text-white' : 'text-slate-600 hover:bg-brand/5 hover:text-brand'}`}><Icon className="h-4 w-4" />{label}{id === 'notifications' && overview?.counts?.unreadNotifications > 0 && <span className="ml-auto rounded-full bg-accent px-1.5 text-[9px] text-ink">{overview.counts.unreadNotifications}</span>}</button>)}</nav><button onClick={logout} className="mt-5 hidden w-full items-center gap-2 border-t border-slate-100 px-3 pt-5 text-sm font-black text-red-600 lg:flex"><LogOut className="h-4 w-4" />Se déconnecter</button></aside><main className="min-w-0 px-4 py-6 sm:px-7 sm:py-8 lg:px-10"><div className="mb-6 flex items-center justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand">Mon compte</p><h1 className="mt-1 text-2xl font-black tracking-tight text-ink">{sectionItems.find((item) => item.id === section)?.label}</h1></div><button onClick={logout} className="flex items-center gap-1.5 text-xs font-black text-red-600 lg:hidden"><LogOut className="h-4 w-4" />Sortir</button></div>{notice && <div className="mb-5 flex items-start gap-2 border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /><span>{notice}</span><button onClick={() => setNotice('')} className="ml-auto"><X className="h-4 w-4" /></button></div>}{error && <div className="mb-5 border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}{renderSection()}</main></div>}</div>
+    <div className="h-[calc(100dvh-4.25rem)] overflow-y-auto sm:h-[calc(100dvh-5.25rem)]">{loadingSession ? <div className="grid h-full place-items-center"><Loader2 className="h-8 w-8 animate-spin text-brand" /></div> : (!session || phoneLinkOpen) ? authPanel : <div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl grid-cols-[minmax(0,1fr)] lg:grid-cols-[250px_minmax(0,1fr)]"><aside className="min-w-0 border-b border-slate-200 bg-white p-3 lg:border-b-0 lg:border-r lg:p-5"><div className="mb-4 hidden items-center gap-3 border-b border-slate-100 pb-5 lg:flex"><div className="grid h-11 w-11 place-items-center overflow-hidden bg-brand text-sm font-black text-white">{session.account.avatarUrl ? <img src={session.account.avatarUrl} className="h-full w-full object-cover" alt="" /> : (session.account.displayName || 'AY').slice(0, 2).toUpperCase()}</div><div className="min-w-0"><strong className="block truncate text-sm text-ink">{session.account.displayName}</strong><span className="block truncate text-[10px] text-slate-400">{session.account.phone || session.account.email}</span></div></div><nav className="flex gap-1 overflow-x-auto lg:block lg:space-y-1">{sectionItems.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => openSection(id)} className={`flex shrink-0 items-center gap-2 px-3 py-2.5 text-xs font-black transition lg:w-full lg:text-sm ${section === id ? 'bg-brand text-white' : 'text-slate-600 hover:bg-brand/5 hover:text-brand'}`}><Icon className="h-4 w-4" />{label}{id === 'notifications' && overview?.counts?.unreadNotifications > 0 && <span className="ml-auto rounded-full bg-accent px-1.5 text-[9px] text-ink">{overview.counts.unreadNotifications}</span>}</button>)}</nav><button onClick={logout} className="mt-5 hidden w-full items-center gap-2 border-t border-slate-100 px-3 pt-5 text-sm font-black text-red-600 lg:flex"><LogOut className="h-4 w-4" />Se déconnecter</button></aside><main className="min-w-0 px-4 py-6 sm:px-7 sm:py-8 lg:px-10"><div className="mb-6 flex items-center justify-between gap-4"><div><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand">Mon compte</p><h1 className="mt-1 text-2xl font-black tracking-tight text-ink">{sectionItems.find((item) => item.id === section)?.label}</h1></div><button onClick={logout} className="flex items-center gap-1.5 text-xs font-black text-red-600 lg:hidden"><LogOut className="h-4 w-4" />Sortir</button></div>{notice && <div className="mb-5 flex items-start gap-2 border border-emerald-200 bg-emerald-50 p-3 text-sm font-bold text-emerald-800"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" /><span>{notice}</span><button onClick={() => setNotice('')} className="ml-auto"><X className="h-4 w-4" /></button></div>}{error && <div className="mb-5 border border-red-200 bg-red-50 p-3 text-sm font-bold text-red-700">{error}</div>}{renderSection()}</main></div>}</div>
 
-    {addressDraft && session && <div className="fixed inset-0 z-[110] grid place-items-end bg-black/45 sm:place-items-center" onMouseDown={(e) => { if (e.target === e.currentTarget) setAddressDraft(null); }}><form onSubmit={saveAddress} className="max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:p-7"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black text-ink">{addressDraft.id ? 'Modifier l’adresse' : 'Nouvelle adresse'}</h2><button type="button" onClick={() => setAddressDraft(null)}><X className="h-5 w-5" /></button></div><div className="grid gap-4 sm:grid-cols-2"><Field label="Libellé"><input className={inputClass} value={addressDraft.label} onChange={(e) => setAddressDraft({ ...addressDraft, label: e.target.value })} /></Field><Field label="Destinataire"><input className={inputClass} value={addressDraft.recipientName} onChange={(e) => setAddressDraft({ ...addressDraft, recipientName: e.target.value })} required /></Field><Field label="Téléphone"><input type="tel" className={inputClass} value={addressDraft.phone} onChange={(e) => setAddressDraft({ ...addressDraft, phone: e.target.value })} required /></Field><Field label="Gouvernorat"><input className={inputClass} value={addressDraft.governorate} onChange={(e) => setAddressDraft({ ...addressDraft, governorate: e.target.value })} required /></Field><Field label="Ville / délégation"><input className={inputClass} value={addressDraft.city} onChange={(e) => setAddressDraft({ ...addressDraft, city: e.target.value })} /></Field><Field label="Code postal"><input className={inputClass} value={addressDraft.postalCode} onChange={(e) => setAddressDraft({ ...addressDraft, postalCode: e.target.value })} /></Field><div className="sm:col-span-2"><Field label="Adresse complète"><textarea rows={3} className={inputClass} value={addressDraft.addressLine} onChange={(e) => setAddressDraft({ ...addressDraft, addressLine: e.target.value })} required /></Field></div><div className="sm:col-span-2"><Field label="Instructions de livraison"><textarea rows={2} className={inputClass} value={addressDraft.deliveryNotes} onChange={(e) => setAddressDraft({ ...addressDraft, deliveryNotes: e.target.value })} /></Field></div><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={addressDraft.isDefault} onChange={(e) => setAddressDraft({ ...addressDraft, isDefault: e.target.checked })} className="accent-brand" />Adresse par défaut</label></div><div className="mt-6 flex gap-3"><button disabled={busyId === 'address'} className="flex flex-1 items-center justify-center gap-2 bg-brand px-4 py-3 text-sm font-black text-white">{busyId === 'address' && <Loader2 className="h-4 w-4 animate-spin" />}Enregistrer</button><button type="button" onClick={() => setAddressDraft(null)} className="border border-slate-200 px-4 py-3 text-sm font-black">Annuler</button></div></form></div>}
+    {addressLayer && addressDraft && session && <div className="fixed inset-0 z-[110] grid place-items-end bg-black/45 sm:place-items-center" onMouseDown={(e) => { if (e.target === e.currentTarget) closeAccountLayer(); }}><form onSubmit={saveAddress} className="max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:p-7"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black text-ink">{addressDraft.id ? 'Modifier l’adresse' : 'Nouvelle adresse'}</h2><button type="button" onClick={closeAccountLayer}><X className="h-5 w-5" /></button></div><div className="grid gap-4 sm:grid-cols-2"><Field label="Libellé"><input className={inputClass} value={addressDraft.label} onChange={(e) => setAddressDraft({ ...addressDraft, label: e.target.value })} /></Field><Field label="Destinataire"><input className={inputClass} value={addressDraft.recipientName} onChange={(e) => setAddressDraft({ ...addressDraft, recipientName: e.target.value })} required /></Field><Field label="Téléphone"><input type="tel" className={inputClass} value={addressDraft.phone} onChange={(e) => setAddressDraft({ ...addressDraft, phone: e.target.value })} required /></Field><Field label="Gouvernorat"><input className={inputClass} value={addressDraft.governorate} onChange={(e) => setAddressDraft({ ...addressDraft, governorate: e.target.value })} required /></Field><Field label="Ville / délégation"><input className={inputClass} value={addressDraft.city} onChange={(e) => setAddressDraft({ ...addressDraft, city: e.target.value })} /></Field><Field label="Code postal"><input className={inputClass} value={addressDraft.postalCode} onChange={(e) => setAddressDraft({ ...addressDraft, postalCode: e.target.value })} /></Field><div className="sm:col-span-2"><Field label="Adresse complète"><textarea rows={3} className={inputClass} value={addressDraft.addressLine} onChange={(e) => setAddressDraft({ ...addressDraft, addressLine: e.target.value })} required /></Field></div><div className="sm:col-span-2"><Field label="Instructions de livraison"><textarea rows={2} className={inputClass} value={addressDraft.deliveryNotes} onChange={(e) => setAddressDraft({ ...addressDraft, deliveryNotes: e.target.value })} /></Field></div><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={addressDraft.isDefault} onChange={(e) => setAddressDraft({ ...addressDraft, isDefault: e.target.checked })} className="accent-brand" />Adresse par défaut</label></div><div className="mt-6 flex gap-3"><button disabled={busyId === 'address'} className="flex flex-1 items-center justify-center gap-2 bg-brand px-4 py-3 text-sm font-black text-white">{busyId === 'address' && <Loader2 className="h-4 w-4 animate-spin" />}Enregistrer</button><button type="button" onClick={closeAccountLayer} className="border border-slate-200 px-4 py-3 text-sm font-black">Annuler</button></div></form></div>}
 
-    {orderDetail && <div className="fixed inset-0 z-[110] overflow-y-auto bg-surface"><header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-7"><button onClick={() => setOrderDetail(null)} className="flex items-center gap-2 text-sm font-black"><ArrowLeft className="h-5 w-5" />Retour</button><strong className="font-mono text-sm text-brand">{orderDetail.order_number}</strong></header><main className="mx-auto max-w-4xl space-y-5 px-4 py-6 sm:px-7"><section className="bg-brand-gradient p-6 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold text-white/55">Commande du {date(orderDetail.created_at)}</p><h2 className="mt-2 text-2xl font-black">{orderDetail.order_number}</h2><div className="mt-3"><Status value={orderDetail.status} /></div></div><strong className="text-2xl font-black text-accent">{money(orderDetail.total_tnd)}</strong></div></section>{(() => {
+    {orderLayer && orderDetail && <div className="fixed inset-0 z-[110] overflow-y-auto bg-surface"><header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-7"><button onClick={closeAccountLayer} className="flex items-center gap-2 text-sm font-black"><ArrowLeft className="h-5 w-5" />Retour</button><strong className="font-mono text-sm text-brand">{orderDetail.order_number}</strong></header><main className="mx-auto max-w-4xl space-y-5 px-4 py-6 sm:px-7"><section className="bg-brand-gradient p-6 text-white"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="text-xs font-bold text-white/55">Commande du {date(orderDetail.created_at)}</p><h2 className="mt-2 text-2xl font-black">{orderDetail.order_number}</h2><div className="mt-3"><Status value={orderDetail.status} /></div></div><strong className="text-2xl font-black text-accent">{money(orderDetail.total_tnd)}</strong></div></section>{(() => {
       // خط مراحل الطلب: انتظار الدفع ← مراجعة الوصل ← شراء/تأكيد ← قيد الشحن ← تسليم
       const cancelled = orderDetail.status === 'CANCELLED';
       const stage = cancelled ? 0

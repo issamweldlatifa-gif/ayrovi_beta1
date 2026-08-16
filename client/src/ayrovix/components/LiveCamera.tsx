@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
+import { useNavigationHistory } from '../../navigation/NavigationHistory';
 
 interface LiveCameraProps {
   onPhoto: (file: File) => void;
@@ -19,6 +20,7 @@ type CameraMode = 'search' | 'upload' | 'code';
  * Radical performance: no animations, no particles, simple white corners only.
  */
 export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onHistory, onCameraFailed }) => {
+  const navigation = useNavigationHistory();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -26,7 +28,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torchHint, setTorchHint] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
+  const showInfo = navigation.stack.some((layer) => layer.id === 'lens:camera-info');
   const [notice, setNotice] = useState<string | null>(null);
   const [linkInput, setLinkInput] = useState('');
   const modeRef = useRef<CameraMode>('search');
@@ -153,7 +155,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           </button>
           <button
             type="button"
-            onClick={() => setShowInfo(true)}
+            onClick={() => navigation.pushLayer({ id: 'lens:camera-info' })}
             aria-label="Informations AYROVIX Lens"
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur"
           >
@@ -256,12 +258,12 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
       {showInfo && (
         <div className="fixed inset-0 z-30 flex items-end justify-center" role="dialog" aria-modal="true">
-          <button type="button" onClick={() => setShowInfo(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <button type="button" onClick={() => navigation.back()} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
           <div className="relative max-h-[82vh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-[#17131f] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 text-white">
             <span className="mx-auto mb-4 block h-1 w-11 rounded-full bg-white/25" />
             <div className="mb-4 flex items-center justify-between">
               <p className="text-base font-extrabold">AYROVIX Lens</p>
-              <button type="button" onClick={() => setShowInfo(false)} className="grid h-9 w-9 place-items-center rounded-full bg-white/10">
+              <button type="button" onClick={() => navigation.back()} className="grid h-9 w-9 place-items-center rounded-full bg-white/10">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
               </button>
             </div>
@@ -274,7 +276,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
                 <li><b className="text-white">4 · Prix final</b> en DT puis commande.</li>
               </ol>
             </section>
-            <button type="button" onClick={() => setShowInfo(false)}
+            <button type="button" onClick={() => navigation.back()}
               className="mt-5 min-h-[48px] w-full rounded-2xl bg-white text-sm font-extrabold text-black">
               C'est compris
             </button>

@@ -14,6 +14,7 @@ import { LensCamera } from './LensCamera';
 import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
 import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
+import { useNavigationHistory } from '../../navigation/NavigationHistory';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -66,8 +67,14 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
 const NEW_SCAN_MESSAGE = 'Cadrez le produit dans un bon éclairage, ou collez son lien direct.';
 
 export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, historyScope, onOrder }) => {
+  const navigation = useNavigationHistory();
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
-  const [stage, setStage] = useState<Stage>(cameraCapable ? 'live' : 'home');
+  const stageLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('lens:') && layer.id !== 'lens:history');
+  const stageValue = stageLayer?.id.slice('lens:'.length);
+  const stage: Stage = ['live', 'home', 'preview', 'analyzing', 'candidates', 'product', 'barcode', 'error'].includes(String(stageValue))
+    ? stageValue as Stage
+    : (cameraCapable ? 'live' : 'home');
+  const historyOpen = navigation.stack.some((layer) => layer.id === 'lens:history');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [candidatesView, setCandidatesView] = useState<CandidatesView | null>(null);
@@ -78,13 +85,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   const [ordering, setOrdering] = useState(false);
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const previewRef = useRef<string | null>(null);
   const stageRef = useRef<Stage>(stage);
   stageRef.current = stage;
-  const stageStackRef = useRef<Stage[]>([]);
   const abortRef = useRef(0);
   const requestAbortRef = useRef<AbortController | null>(null);
+  const previousStageRef = useRef<Stage>(stage);
 
   useBodyScrollLock(isOpen);
 
@@ -92,6 +98,15 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
     requestAbortRef.current?.abort();
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
   }, []);
+
+  useEffect(() => {
+    if (previousStageRef.current === 'analyzing' && stage !== 'analyzing') {
+      requestAbortRef.current?.abort();
+      requestAbortRef.current = null;
+      abortRef.current += 1;
+    }
+    previousStageRef.current = stage;
+  }, [stage]);
 
   if (!isOpen) return null;
 
@@ -106,20 +121,19 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   };
   const replaceStage = (next: Stage) => {
     stageRef.current = next;
-    setStage(next);
+    navigation.replaceTop({ id: `lens:${next}` });
   };
   const enterStage = (next: Stage) => {
-    const current = stageRef.current;
-    if (current !== next) stageStackRef.current.push(current);
-    replaceStage(next);
+    if (stageRef.current === next && !historyOpen) return;
+    stageRef.current = next;
+    if (historyOpen) navigation.replaceTop({ id: `lens:${next}` });
+    else navigation.pushLayer({ id: `lens:${next}` });
   };
 
-  const reset = () => {
+  const clearRuntime = () => {
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
     abortRef.current += 1;
-    stageStackRef.current = [];
-    replaceStage(cameraCapable ? 'live' : 'home');
     if (previewRef.current) { URL.revokeObjectURL(previewRef.current); previewRef.current = null; }
     setPreviewUrl(null);
     setImageFile(null);
@@ -131,7 +145,16 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
     setOrdering(false);
     setCopied(false);
     setVerifiedPriceUrl(false);
-    setHistoryOpen(false);
+  };
+
+  const reset = () => {
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+    abortRef.current += 1;
+    setError(null);
+    setOrdering(false);
+    setCopied(false);
+    replaceStage(cameraCapable ? 'live' : 'home');
   };
 
   const goBack = () => {
@@ -140,12 +163,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
     abortRef.current += 1;
     setError(null);
     setOrdering(false);
-    const previous = stageStackRef.current.pop();
-    if (previous) replaceStage(previous);
-    else reset();
+    navigation.back();
   };
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => { clearRuntime(); onClose(); };
 
   const fail = (code: string, message: string) => { setError({ code, message }); replaceStage('error'); };
   const handleImage = async (file: File, autoAnalyze: boolean) => {
@@ -392,7 +413,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
         priceToken,
         quantity,
       });
-      handleClose();
+      // onOrder navigue vers le panier; ne pas exécuter Back ensuite.
+      clearRuntime();
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
       enterStage('error');
@@ -401,13 +423,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   };
 
   const repeatHistoryItem = (item: AyrovixHistoryItem) => {
-    setHistoryOpen(false);
-    if (stageRef.current === 'analyzing') {
-      requestAbortRef.current?.abort();
-      requestAbortRef.current = null;
-      abortRef.current += 1;
-      replaceStage(stageStackRef.current.pop() || (cameraCapable ? 'live' : 'home'));
-    }
     if (item.kind === 'barcode' && item.inputValue) { void runBarcodeAnalysis(item.inputValue); return; }
     if (item.kind === 'code' && item.inputValue) { void runCodeTextAnalysis(item.inputValue); return; }
     const url = item.sourceUrl || item.inputValue;
@@ -431,10 +446,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           onCodeText={(value) => void runCodeTextAnalysis(value)}
           onLink={(url) => void runUrlAnalysis(url, 'url')}
           onClose={handleClose}
-          onHistory={() => setHistoryOpen(true)}
-          onCameraFailed={() => { stageStackRef.current = []; replaceStage('home'); }}
+          onHistory={() => navigation.pushLayer({ id: 'lens:history' })}
+          onCameraFailed={() => replaceStage('home')}
         />}
-        <LensHistory open={historyOpen} scope={historyScope} onClose={() => setHistoryOpen(false)} onRepeat={repeatHistoryItem} onNewScan={() => { setHistoryOpen(false); reset(); }} />
+        <LensHistory open={historyOpen} scope={historyScope} onClose={() => navigation.back()} onRepeat={repeatHistoryItem} onNewScan={reset} />
       </>
     );
   }
@@ -463,7 +478,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
               <AyrovixNavIcon size={26}/>
             </span>
           </div>
-          <button type="button" onClick={() => setHistoryOpen(true)} aria-label="Historique Lens" title="Historique"
+          <button type="button" onClick={() => navigation.pushLayer({ id: 'lens:history' })} aria-label="Historique Lens" title="Historique"
             className="grid h-10 w-10 place-items-center justify-self-end rounded-full text-ink transition active:scale-95">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
           </button>
@@ -688,7 +703,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           )}
         </main>
       </div>
-      <LensHistory open={historyOpen} scope={historyScope} onClose={() => setHistoryOpen(false)} onRepeat={repeatHistoryItem} onNewScan={() => { setHistoryOpen(false); reset(); }} />
+      <LensHistory open={historyOpen} scope={historyScope} onClose={() => navigation.back()} onRepeat={repeatHistoryItem} onNewScan={reset} />
     </div>
   );
 };

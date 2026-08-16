@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
+import { NavigationHistoryProvider } from './navigation/NavigationHistory';
 
 const isAdminPath = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
 const PublicApp = lazy(() => import('./App').then((module) => ({ default: module.App })));
@@ -14,8 +15,10 @@ const loading = (
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Suspense fallback={loading}>
-      {isAdminPath ? <AdminApp /> : <PublicApp />}
-    </Suspense>
+    <NavigationHistoryProvider>
+      <Suspense fallback={loading}>
+        {isAdminPath ? <AdminApp /> : <PublicApp />}
+      </Suspense>
+    </NavigationHistoryProvider>
   </React.StrictMode>
 );

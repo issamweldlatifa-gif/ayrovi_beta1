@@ -7,6 +7,7 @@ import { StoryViewer } from './components/StoryViewer';
 import { StoryPostCard } from './components/StoryFeed';
 import { CommentSheet } from './components/CommentSheet';
 import { ReelsViewer } from './components/ReelsViewer';
+import { useNavigationHistory, type NavigationLayer } from '../navigation/NavigationHistory';
 
 interface SocialProps {
   isAuthenticated: boolean;
@@ -14,13 +15,30 @@ interface SocialProps {
   onCta: (cta: StoryCta) => void;
 }
 
+const layerNumber = (layer: NavigationLayer | undefined, key: string) => {
+  const value = layer?.payload?.[key];
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : null;
+};
+const layerString = (layer: NavigationLayer | undefined, key: string) => {
+  const value = layer?.payload?.[key];
+  return typeof value === 'string' && value ? value : null;
+};
+
 export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth, onCta }) => {
+  const navigation = useNavigationHistory();
+  const storyLayer = navigation.stack.find((layer) => layer.id === 'social:tab-story');
+  const reelsLayer = navigation.stack.find((layer) => layer.id === 'social:tab-reels');
+  const commentLayer = navigation.stack.find((layer) => layer.id === 'social:tab-comments');
+  const viewerIndex = layerNumber(storyLayer, 'index');
+  const reelsIndex = layerNumber(reelsLayer, 'index');
+  const commentId = layerString(commentLayer, 'postId');
+  const openStory = (index: number) => navigation.pushLayer({ id: 'social:tab-story', payload: { index } });
+  const openReels = (index: number) => navigation.pushLayer({ id: 'social:tab-reels', payload: { index } });
+  const openComments = (postId: string) => navigation.pushLayer({ id: 'social:tab-comments', payload: { postId } });
+  const closeOverlay = () => navigation.back();
   const [stories, setStories] = useState<Story[]>([]);
   const [posts, setPosts] = useState<StoryPost[]>([]);
   const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [commentId, setCommentId] = useState<string | null>(null);
-  const [reelsIndex, setReelsIndex] = useState<number | null>(null);
   const [pubs, setPubs] = useState<StoryPost[]>([]);
   const [reels, setReels] = useState<ReelItem[]>([]);
 
@@ -72,7 +90,7 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
           </div>
         )}
         {state === 'ready' && groups.length > 0 && (
-          <StoryCircles groups={groups} onOpen={(index) => setViewerIndex(index)} />
+          <StoryCircles groups={groups} onOpen={openStory} />
         )}
       </div>
 
@@ -82,7 +100,7 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
           <p className="px-4 pb-2 text-xs font-black uppercase tracking-[0.18em] text-brand">Reels</p>
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
             {reels.map((reel, index) => (
-              <button key={reel.id} type="button" onClick={() => setReelsIndex(index)} className="relative w-28 shrink-0 overflow-hidden rounded-xl bg-black" aria-label={reel.caption}>
+              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-28 shrink-0 overflow-hidden rounded-xl bg-black" aria-label={reel.caption}>
                 <video src={reel.media[0].url} muted playsInline preload="metadata" className="aspect-[9/16] w-full object-cover opacity-90" />
                 <span className="absolute left-1.5 top-1.5 rounded-full bg-black/50 px-2 py-0.5 text-[9px] font-black text-white">▶ {reel.views.toLocaleString('fr-FR')}</span>
               </button>
@@ -122,8 +140,8 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
             post={post}
             isAuthenticated={isAuthenticated}
             onRequireAuth={onRequireAuth}
-            onOpenComments={(target) => setCommentId(target.id)}
-            onOpenReels={() => setReelsIndex(0)}
+            onOpenComments={(target) => openComments(target.id)}
+            onOpenReels={() => openReels(0)}
             onCta={onCta}
           />
         ))}
@@ -134,21 +152,21 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
           items={reels}
           startIndex={reelsIndex}
           isAuthenticated={isAuthenticated}
-          onRequireAuth={() => { setReelsIndex(null); onRequireAuth(); }}
-          onOpenComments={(postId) => setCommentId(postId)}
-          onClose={() => setReelsIndex(null)}
+          onRequireAuth={onRequireAuth}
+          onOpenComments={openComments}
+          onClose={closeOverlay}
         />
       )}
 
       <SharedOverlays
         viewerIndex={viewerIndex}
-        setViewerIndex={setViewerIndex}
         groups={groups}
         refreshSeen={refreshSeen}
         commentId={commentId}
-        setCommentId={setCommentId}
+        onOpenComments={openComments}
+        onClose={closeOverlay}
         isAuthenticated={isAuthenticated}
-        onRequireAuth={() => { setViewerIndex(null); setCommentId(null); setReelsIndex(null); onRequireAuth(); }}
+        onRequireAuth={onRequireAuth}
         onCta={onCta}
       />
     </div>
@@ -157,10 +175,16 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
 
 /** Bande de stories compacte pour la page d'accueil (strip au-dessus des cartes). */
 export const HomeStoryStrip: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth, onCta }) => {
+  const navigation = useNavigationHistory();
+  const storyLayer = navigation.stack.find((layer) => layer.id === 'social:home-story');
+  const commentLayer = navigation.stack.find((layer) => layer.id === 'social:home-comments');
+  const viewerIndex = layerNumber(storyLayer, 'index');
+  const commentId = layerString(commentLayer, 'postId');
+  const openStory = (index: number) => navigation.navigate([{ id: 'social:home-story', payload: { index } }]);
+  const openComments = (postId: string) => navigation.pushLayer({ id: 'social:home-comments', payload: { postId } });
+  const closeOverlay = () => navigation.back();
   const [stories, setStories] = useState<Story[]>([]);
   const [ready, setReady] = useState(false);
-  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
-  const [commentId, setCommentId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -173,16 +197,16 @@ export const HomeStoryStrip: React.FC<SocialProps> = ({ isAuthenticated, onRequi
 
   return (
     <div className="border-b border-line bg-white py-3">
-      <StoryCircles groups={groups} onOpen={(index) => setViewerIndex(index)} />
+      <StoryCircles groups={groups} onOpen={openStory} />
       <SharedOverlays
         viewerIndex={viewerIndex}
-        setViewerIndex={setViewerIndex}
         groups={groups}
         refreshSeen={() => setStories((current) => current.map((story) => ({ ...story, seen: true })))}
         commentId={commentId}
-        setCommentId={setCommentId}
+        onOpenComments={openComments}
+        onClose={closeOverlay}
         isAuthenticated={isAuthenticated}
-        onRequireAuth={() => { setViewerIndex(null); setCommentId(null); onRequireAuth(); }}
+        onRequireAuth={onRequireAuth}
         onCta={onCta}
       />
     </div>
@@ -191,15 +215,15 @@ export const HomeStoryStrip: React.FC<SocialProps> = ({ isAuthenticated, onRequi
 
 const SharedOverlays: React.FC<{
   viewerIndex: number | null;
-  setViewerIndex: (index: number | null) => void;
   groups: ReturnType<typeof groupByPublisher>;
   refreshSeen: () => void;
   commentId: string | null;
-  setCommentId: (id: string | null) => void;
+  onOpenComments: (id: string) => void;
+  onClose: () => void;
   isAuthenticated: boolean;
   onRequireAuth: () => void;
   onCta: (cta: StoryCta) => void;
-}> = ({ viewerIndex, setViewerIndex, groups, refreshSeen, commentId, setCommentId, isAuthenticated, onRequireAuth, onCta }) => (
+}> = ({ viewerIndex, groups, refreshSeen, commentId, onOpenComments, onClose, isAuthenticated, onRequireAuth, onCta }) => (
   <>
     {viewerIndex != null && groups[viewerIndex] && (
       <StoryViewer
@@ -207,14 +231,14 @@ const SharedOverlays: React.FC<{
         startIndex={viewerIndex}
         isAuthenticated={isAuthenticated}
         onRequireAuth={onRequireAuth}
-        onOpenComments={(storyId) => setCommentId(storyId)}
-        onClose={() => setViewerIndex(null)}
+        onOpenComments={onOpenComments}
+        onClose={onClose}
         onCta={onCta}
         onSeenChange={refreshSeen}
       />
     )}
     {commentId && (
-      <CommentSheet postId={commentId} isAuthenticated={isAuthenticated} onRequireAuth={onRequireAuth} onClose={() => setCommentId(null)} />
+      <CommentSheet postId={commentId} isAuthenticated={isAuthenticated} onRequireAuth={onRequireAuth} onClose={onClose} />
     )}
   </>
 );

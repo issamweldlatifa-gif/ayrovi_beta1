@@ -7,6 +7,7 @@ import { FigLogoIcon } from './Icons';
 import { getPublicHome } from '../services/publicApi';
 import { StoryTab, HomeStoryStrip } from '../social/StoryTab';
 import type { StoryCta } from '../social/types';
+import { useNavigationHistory } from '../navigation/NavigationHistory';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
 type CmsPage = keyof HomeData;
@@ -71,10 +72,15 @@ function PageIntro({ definition, count }: { definition: (typeof pageDefinitions)
 interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; }
 
 export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount }) => {
+  const navigation = useNavigationHistory();
+  const cmsLayerId = navigation.stack[0]?.id || '';
+  const cmsPageId = cmsLayerId.startsWith('cms:') ? cmsLayerId.slice(4) : '';
+  const activePage = pageDefinitions.some((page) => page.id === cmsPageId) ? cmsPageId as CmsPage : null;
+  const openCmsPage = (page: CmsPage) => navigation.navigate([{ id: `cms:${page}` }]);
+  const closeCmsPage = () => navigation.back();
   const [home, setHome] = useState<HomeData>(emptyHome);
   const [serverOffset, setServerOffset] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [activePage, setActivePage] = useState<CmsPage | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,7 +100,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
     if (!activePage) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') setActivePage(null); };
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') closeCmsPage(); };
     window.addEventListener('keydown', closeOnEscape);
     return () => {
       document.body.style.overflow = previousOverflow;
@@ -110,10 +116,10 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
   const activeDefinition = pageDefinitions.find((page) => page.id === activePage);
 
   const handleStoryCta = (cta: StoryCta) => {
-    if (cta.action === 'promotions') { setActivePage('promotions'); return; }
-    if (cta.action === 'product') { setActivePage('arrivals'); return; }
+    if (cta.action === 'promotions') { openCmsPage('promotions'); return; }
+    if (cta.action === 'product') { openCmsPage('arrivals'); return; }
     if (cta.action === 'url' && /^https?:\/\//i.test(cta.targetId || '')) { window.open(cta.targetId, '_blank', 'noopener'); return; }
-    setActivePage('arrivals');
+    openCmsPage('arrivals');
   };
 
   const renderPageContent = (page: CmsPage) => {
@@ -159,7 +165,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
               <button
                 key={definition.id}
                 type="button"
-                onClick={() => setActivePage(definition.id)}
+                onClick={() => openCmsPage(definition.id)}
                 aria-label={`Ouvrir ${definition.label}`}
                 className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-[clamp(0.62rem,3.55vw,2rem)] font-black tracking-[-0.035em] text-[#050505] [font-weight:950] transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
@@ -175,7 +181,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
           {activePage === 'stories' ? (
             <header className="sticky top-0 z-20 border-b border-white/40 bg-white/55 backdrop-blur-xl">
               <div className="grid h-14 grid-cols-[52px_1fr_52px] items-center px-3">
-                <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label="Retour" className="grid h-10 w-10 place-items-center rounded-full bg-white/60 text-ink transition hover:bg-white active:scale-90"><X className="h-5 w-5" /></button>
+                <button type="button" autoFocus onClick={closeCmsPage} aria-label="Retour" className="grid h-10 w-10 place-items-center rounded-full bg-white/60 text-ink transition hover:bg-white active:scale-90"><X className="h-5 w-5" /></button>
                 <strong className="text-center text-lg font-black tracking-tight text-ink">Social Ayrovi</strong>
                 <span />
               </div>
@@ -184,7 +190,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
           <header className="sticky top-0 z-20 border-b border-black/10 bg-white/95 backdrop-blur-xl">
             <div className="h-1 w-full bg-accent" />
             <div className="mx-auto grid h-16 max-w-7xl grid-cols-[52px_1fr_52px] items-center px-3 sm:h-20 sm:grid-cols-[70px_1fr_70px] sm:px-8">
-              <button type="button" autoFocus onClick={() => setActivePage(null)} aria-label={`Fermer ${activeDefinition.label}`} className="grid h-11 w-11 place-items-center border border-[#ded8eb] bg-white text-ink transition hover:border-brand hover:bg-brand hover:text-white"><X className="h-5 w-5" /></button>
+              <button type="button" autoFocus onClick={closeCmsPage} aria-label={`Fermer ${activeDefinition.label}`} className="grid h-11 w-11 place-items-center border border-[#ded8eb] bg-white text-ink transition hover:border-brand hover:bg-brand hover:text-white"><X className="h-5 w-5" /></button>
               <div className="flex items-center justify-center gap-2.5 text-ink"><span className="text-brand"><FigLogoIcon className="h-8 w-8 sm:h-9 sm:w-9" /></span><strong className="text-2xl font-black tracking-tight sm:text-3xl">AYROVI</strong></div>
               <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:text-[10px]">{String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / {String(pageDefinitions.length).padStart(2, '0')}</span>
             </div>
