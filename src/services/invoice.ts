@@ -66,6 +66,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   const balance = Math.max(0, Math.round((total - deposit) * 1000) / 1000);
   const issuedAt = new Date(order.deposit_paid_at || order.updated_at || order.created_at);
   const methodLabel = METHOD_LABELS[String(order.payment_method || '').toUpperCase()] || order.payment_method;
+  const depositPaid = String(order.deposit_status) === 'PAID';
+  const depositState = depositPaid ? 'encaissé' : String(order.deposit_status) === 'REJECTED' ? 'à régulariser' : 'à régler';
 
   const itemRows = items.map((item: any) => `
     <tr>
@@ -83,18 +85,18 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Segoe UI", Arial, sans-serif; color: #17131f; font-size: 13px; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #673de6; padding-bottom: 20px; }
-  .brand { font-size: 26px; font-weight: 900; color: #673de6; letter-spacing: -0.5px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #088177; padding-bottom: 20px; }
+  .brand { font-size: 26px; font-weight: 900; color: #088177; letter-spacing: -0.5px; }
   .brand small { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
   .doc h1 { font-size: 22px; font-weight: 900; }
-  .doc .num { color: #673de6; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
+  .doc .num { color: #088177; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
   .meta { display: flex; gap: 24px; margin: 24px 0; }
   .card { flex: 1; border: 1px solid #e5e7f0; border-radius: 12px; padding: 14px 16px; }
   .card h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #8b8494; margin-bottom: 8px; }
   .card p { line-height: 1.55; }
   table { width: 100%; border-collapse: collapse; margin: 18px 0; }
-  th { background: #f5f2ff; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #4e28b9; padding: 10px 12px; }
+  th { background: #f0f8f7; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #05685f; padding: 10px 12px; }
   td { padding: 10px 12px; border-bottom: 1px solid #eef0f6; vertical-align: top; }
   td small { display: block; color: #8b8494; margin-top: 3px; font-size: 11px; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -105,8 +107,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   .deposit strong { color: #047857; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: #f5f2ff; border: 1px dashed #673de6; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
-  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #4e28b9; letter-spacing: 1px; }
+  .tracking { background: #f0f8f7; border: 1px dashed #088177; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #05685f; letter-spacing: 1px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7f0; color: #8b8494; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
   <div class="header">
@@ -151,12 +153,12 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   </tbody></table>
 
   <div class="deposit">
-    <strong>✓ Acompte de confirmation encaissé (${Number(order.deposit_percent || 20)}%)</strong>
+    <strong>${depositPaid ? '✓' : '•'} Acompte de confirmation ${depositState} (${Number(order.deposit_percent || 20)}%)</strong>
     <table><tbody>
       ${Number(order.deposit_discount_tnd) ? `<tr><td>Acompte (${Number(order.deposit_percent || 20)}%) avant remise</td><td class="num">${money(Number(deposit) + Number(order.deposit_discount_tnd))}</td></tr>
       <tr><td>Remise paiement par carte</td><td class="num" style="color:#047857;">−${money(order.deposit_discount_tnd)}</td></tr>` : ''}
-      <tr><td>Acompte payé (${escapeHtml(methodLabel)})</td><td class="num"><strong>${money(deposit)}</strong></td></tr>
-      <tr><td>Solde restant à la livraison</td><td class="num">${money(balance)}</td></tr>
+      <tr><td>Acompte ${depositState} (${escapeHtml(methodLabel)})</td><td class="num"><strong>${money(deposit)}</strong></td></tr>
+      <tr><td>${depositPaid ? 'Solde restant à la livraison' : 'Solde après règlement de l’acompte'}</td><td class="num">${money(balance)}</td></tr>
     </tbody></table>
   </div>
 
@@ -164,15 +166,15 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 
   <footer>
     Facture électronique générée automatiquement par ${escapeHtml(company.name)} — ${escapeHtml(company.address)}.<br>
-    Cet acompte confirme votre commande. Le solde est payable à la livraison. Merci de votre confiance.
+    ${depositPaid ? 'Acompte encaissé ; le solde est payable à la livraison.' : 'Commande enregistrée ; sa confirmation reste soumise au règlement de l’acompte.'} Merci de votre confiance.
   </footer>
 </body></html>`;
 }
 
 /** نموذج نصي مسطّح للفاتورة — المصدر الحتمي لمولد PDF المحلي بدون Chromium. */
 export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[] {
-  const PURPLE: [number, number, number] = [0.4, 0.24, 0.9];
-  const GREY: [number, number, number] = [0.42, 0.41, 0.48];
+  const PETROLE: [number, number, number] = [0.03, 0.51, 0.47];
+  const GREY: [number, number, number] = [0.32, 0.38, 0.37];
   const order = db.get<any>('SELECT * FROM orders WHERE id=?', orderId);
   if (!order) throw new Error('ORDER_NOT_FOUND');
   const items = db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', orderId);
@@ -183,14 +185,17 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
   const deposit = Number(order.deposit_amount_tnd || 0);
   const balance = Math.max(0, Math.round((Number(order.total_tnd) - deposit) * 1000) / 1000);
   const methodLabel = METHOD_LABELS[String(order.payment_method || '').toUpperCase()] || order.payment_method;
+  const depositPaid = String(order.deposit_status) === 'PAID';
+  const depositState = depositPaid ? 'encaissé' : String(order.deposit_status) === 'REJECTED' ? 'à régulariser' : 'à régler';
 
   const lines: PdfLine[] = [
-    { text: company, size: 22, bold: true, color: PURPLE },
+    { text: company, size: 22, bold: true, color: PETROLE },
     { text: `${setting('company_address', 'Tunis, Tunisie')} · ${setting('company_email', '')}`.replace(/ · $/, ''), size: 9, color: GREY },
     { text: '', size: 4 },
     { text: 'FACTURE ÉLECTRONIQUE', size: 16, bold: true },
-    { text: String(order.invoice_number), size: 12, bold: true, color: PURPLE },
+    { text: String(order.invoice_number), size: 12, bold: true, color: PETROLE },
     { text: `Commande ${order.order_number} — ${new Date(order.created_at).toLocaleDateString('fr-FR')}`, size: 9, color: GREY },
+    { text: `Statut : ${String(order.status).replaceAll('_', ' ')} · Acompte ${depositState}`, size: 9, color: GREY },
     { text: '', size: 4 },
     { text: `Facturé à : ${customer?.name || 'Client AYROVI'} — ${order.governorate} — ${order.phone}`, size: 10 },
     { text: `Adresse : ${String(order.address).slice(0, 90)}`, size: 9, color: GREY },
@@ -214,15 +219,17 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
   addTotal('TOTAL DE LA COMMANDE', order.total_tnd, true);
   lines.push({ text: '', size: 3 });
   if (Number(order.deposit_discount_tnd)) addTotal('Remise paiement par carte', -Number(order.deposit_discount_tnd), false, [0.02, 0.47, 0.36]);
-  addTotal(`Acompte payé (${Number(order.deposit_percent || 20)}%) — ${methodLabel}`, deposit, true, [0.02, 0.47, 0.36]);
-  addTotal('Solde restant à la livraison', balance, true);
+  addTotal(`Acompte ${depositState} (${Number(order.deposit_percent || 20)}%) — ${methodLabel}`, deposit, true, depositPaid ? [0.02, 0.47, 0.36] : [0.65, 0.47, 0.19]);
+  addTotal(depositPaid ? 'Solde restant à la livraison' : 'Solde après règlement de l’acompte', balance, true);
   if (order.tracking_code) {
-    lines.push({ text: '', size: 4 }, { text: `Code de suivi : ${order.tracking_code}`, size: 12, bold: true, color: PURPLE });
+    lines.push({ text: '', size: 4 }, { text: `Code de suivi : ${order.tracking_code}`, size: 12, bold: true, color: PETROLE });
   }
   lines.push(
     { text: '', size: 8 },
-    { text: `Facture générée automatiquement par ${company}. L'acompte confirme la commande ;`, size: 8, color: GREY, x: 90 },
-    { text: 'le solde est payable à la livraison. Merci de votre confiance.', size: 8, color: GREY, x: 120 },
+    { text: `Facture électronique générée automatiquement par ${company}.`, size: 8, color: GREY, x: 120 },
+    { text: depositPaid
+      ? 'Acompte encaissé ; le solde est payable à la livraison. Merci de votre confiance.'
+      : 'Commande enregistrée ; sa confirmation reste soumise au règlement de l’acompte.', size: 8, color: GREY, x: 90 },
   );
   return lines;
 }
@@ -242,7 +249,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
   const e = escapeHtml;
   return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#17131f;background:#f7f5fb;padding:24px;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e2ee;">
-    <div style="background:#673de6;padding:22px 26px;color:#fff;">
+    <div style="background:#088177;padding:22px 26px;color:#fff;">
       <strong style="font-size:20px;">${e(input.company)}</strong>
       <p style="margin:4px 0 0;font-size:12px;opacity:.85;">Confirmation d'acompte & facture électronique</p>
     </div>
@@ -254,7 +261,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
         <tr><td style="padding:8px 0;color:#6b7280;">Facture</td><td style="text-align:right;font-weight:700;">${e(input.invoiceNumber)}</td></tr>
         <tr><td style="padding:8px 0;color:#6b7280;">Acompte encaissé</td><td style="text-align:right;font-weight:700;color:#047857;">${e(input.depositLabel)}</td></tr>
         <tr><td style="padding:8px 0;color:#6b7280;">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
-        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#4e28b9;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
+        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#05685f;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
       <p style="line-height:1.6;color:#374151;">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
       <p style="margin-top:22px;font-size:12px;color:#8b8494;">Merci de votre confiance — l'équipe ${e(input.company)}</p>

@@ -705,8 +705,22 @@ describe('AYROVI platform', () => {
       .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Rue de la République', paymentMethod: 'bank_transfer' });
     expect(checkout.status).toBe(200);
     const orderId = checkout.body.orderId;
-    // لا فاتورة قبل تأكيد العربون
-    expect((await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`)).status).toBe(404);
+    // الفاتورة الإلكترونية ورقم التتبع متاحان مباشرة بعد إتمام الطلب.
+    expect(checkout.body.invoice.generated).toBe(true);
+    expect(checkout.body.invoice.number).toMatch(/^INV-\d{4}-\d{6}$/);
+    expect(checkout.body.trackingCode).toMatch(/^AYR-TN-\d{8}$/);
+    const initialInvoice = await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`);
+    expect(initialInvoice.status).toBe(200);
+    expect(initialInvoice.headers['content-type']).toContain('application/pdf');
+    const tracking = await customerAgent.get(`/api/customer/account/orders/${orderId}/tracking`);
+    expect(tracking.status).toBe(200);
+    expect(tracking.body.data.trackingCode).toBe(checkout.body.trackingCode);
+    expect(tracking.body.data.destination.governorate).toBe('Tunis');
+    const customerDetail = await customerAgent.get(`/api/customer/account/orders/${orderId}`);
+    expect(customerDetail.status).toBe(200);
+    expect(customerDetail.body.data.invoice_number).toBe(checkout.body.invoice.number);
+    expect(customerDetail.body.data.invoice_path).toBeUndefined();
+    expect((await secondCustomerAgent.get(`/api/customer/account/orders/${orderId}/tracking`)).status).toBe(404);
 
     // 2) العميل يرفع وصل الدفع (تحقق من التوقيع الثنائي للملف)
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00]);
@@ -757,6 +771,12 @@ describe('AYROVI platform', () => {
     expect(invoice.status).toBe(200);
     expect(invoice.headers['content-type']).toContain('application/pdf');
     expect(fs.readFileSync(confirmed.invoice_path).slice(0, 5).toString()).toBe('%PDF-');
+    // إذا حُذف الملف من التخزين المؤقت يُعاد توليده بنفس الرقم عند التنزيل.
+    fs.rmSync(confirmed.invoice_path, { force: true });
+    const repairedInvoice = await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`);
+    expect(repairedInvoice.status).toBe(200);
+    expect(repairedInvoice.headers['content-type']).toContain('application/pdf');
+    expect(fs.existsSync(confirmed.invoice_path)).toBe(true);
     expect((await secondCustomerAgent.get(`/api/customer/account/orders/${orderId}/invoice`)).status).toBe(404);
 
     // 6) الرفض بملاحظة: عربون مرفوض والطلب يبقى بانتظار الدفع
@@ -1144,10 +1164,11 @@ describe('AYROVI platform', () => {
     expect(delivery.status).toBe(200);
 
     const detail = await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
-    expect(detail.body.data.status).toBe('CONFIRMED');
+    expect(detail.body.data.status).toBe('IN_TRANSIT');
     expect(detail.body.data.payment.status).toBe('PAID');
     expect(detail.body.data.delivery.status).toBe('SHIPPED');
     expect(detail.body.data.history.some((entry: any) => entry.to_status === 'CONFIRMED')).toBe(true);
+    expect(detail.body.data.history.some((entry: any) => entry.to_status === 'IN_TRANSIT')).toBe(true);
   });
 
   test('pricing changes are versioned without changing historical order snapshots', async () => {

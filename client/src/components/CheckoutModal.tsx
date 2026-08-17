@@ -277,6 +277,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         itemCount,
         breakdown: data.breakdown,
         deposit: data.deposit,
+        trackingCode: data.trackingCode,
+        invoice: data.invoice,
         message: data.message || tr('Votre commande a été enregistrée avec succès chez AYROVI !', 'تم تسجيل طلبك بنجاح لدى AYROVI!'),
       });
     } catch (err: any) {

@@ -961,7 +961,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     } });
   });
 
-  router.put('/orders/:id/status', requireAdmin(db, 'orders:write'), (req, res) => {
+  router.put('/orders/:id/status', requireAdmin(db, 'orders:write'), async (req, res) => {
     const status = String(req.body?.status || '');
     const note = String(req.body?.note || '').trim().slice(0, 1000);
     if (!orderStatuses.includes(status)) return res.status(400).json({ success: false, error: 'Statut de commande invalide.' });
@@ -983,6 +983,14 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         `La commande ${existing.order_number} est maintenant au statut ${status}.`, `/compte/commandes/${existing.id}`, now);
       }
     });
+    if (status === 'DELIVERED') {
+      try {
+        db.ensureOrderDocuments(existing.id);
+        await generateInvoicePdf(db, existing.id);
+      } catch (error: any) {
+        console.error('[Final Invoice]', error?.message || error);
+      }
+    }
     audit(db, req, 'STATUS_CHANGE', 'ORDERS', existing.id, { status: existing.status }, { status, note });
     res.json({ success: true, data: db.get<any>('SELECT * FROM orders WHERE id=?', existing.id) });
   });
@@ -1090,9 +1098,10 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     }
   });
 
-  router.put('/orders/:id/delivery', requireAdmin(db, 'orders:write'), (req, res) => {
+  router.put('/orders/:id/delivery', requireAdmin(db, 'orders:write'), async (req, res) => {
     const existing = db.get<any>('SELECT * FROM deliveries WHERE order_id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Livraison introuvable.' });
+    const order = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
+    if (!existing || !order) return res.status(404).json({ success: false, error: 'Livraison introuvable.' });
     const allowed = ['governorate','address','phone','status','expected_at','notes','carrier','tracking_number'];
     const payload: Record<string, any> = {};
     for (const field of allowed) if (req.body?.[field] !== undefined) payload[field] = typeof req.body[field] === 'string' ? req.body[field].trim().slice(0, 1000) : req.body[field];
@@ -1101,8 +1110,26 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     if (!Object.keys(payload).length) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
     const now = new Date().toISOString();
     if (payload.status === 'DELIVERED') payload.delivered_at = now;
-    db.run(`UPDATE deliveries SET ${Object.keys(payload).map((key) => `${key}=?`).join(',')},updated_at=? WHERE order_id=?`, ...Object.values(payload), now, req.params.id);
-    audit(db, req, 'UPDATE', 'DELIVERIES', existing.id, existing, payload);
+    const mappedOrderStatus: Record<string, string> = {
+      PREPARING: 'PURCHASED', SHIPPED: 'IN_TRANSIT', OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY', DELIVERED: 'DELIVERED',
+    };
+    const nextOrderStatus = payload.status ? mappedOrderStatus[String(payload.status)] : '';
+    db.transaction(() => {
+      db.run(`UPDATE deliveries SET ${Object.keys(payload).map((key) => `${key}=?`).join(',')},updated_at=? WHERE order_id=?`, ...Object.values(payload), now, req.params.id);
+      if (nextOrderStatus && nextOrderStatus !== order.status) {
+        db.run('UPDATE orders SET status=?,updated_at=? WHERE id=?', nextOrderStatus, now, order.id);
+        db.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
+          VALUES (?,?,?,?,?,?,?)`, `history_${randomUUID()}`, order.id, order.status, nextOrderStatus,
+        String(payload.notes || `Mise à jour de livraison : ${payload.status}`).slice(0, 1000), admin(req).id, now);
+        if (order.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'ORDER','Suivi de livraison',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+        `La commande ${order.order_number} est maintenant au statut ${nextOrderStatus}.`, `/compte/commandes/${order.id}`, now);
+      }
+    });
+    if (nextOrderStatus === 'DELIVERED') {
+      try { await generateInvoicePdf(db, order.id); } catch (error: any) { console.error('[Final Invoice]', error?.message || error); }
+    }
+    audit(db, req, 'UPDATE', 'DELIVERIES', existing.id, existing, { ...payload, order_status: nextOrderStatus || order.status });
     res.json({ success: true, data: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', req.params.id) });
   });
 

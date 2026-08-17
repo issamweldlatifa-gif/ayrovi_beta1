@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { MessageSquare, PackageCheck, Copy, CreditCard, Share2 as Share } from './QatafoIcons';
+import { MessageSquare, PackageCheck, Copy, CreditCard, FileText, Share2 as Share, Truck } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { OrderResult } from '../types';
@@ -99,6 +99,12 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         </div>
         {copyStatus && <p className="text-xs font-semibold text-muted" role="status">{copyStatus}</p>}
 
+        {(result.trackingCode || result.invoice?.number) && <div className="grid gap-2 text-start sm:grid-cols-2">
+          {result.trackingCode && <div className="border border-line bg-surface-base p-3"><span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-brand"><Truck className="h-3.5 w-3.5" />{tr('Suivi activé', 'تم تفعيل التتبع')}</span><strong className="mt-1 block font-mono text-xs text-ink">{result.trackingCode}</strong></div>}
+          {result.invoice?.number && <div className="border border-line bg-surface-base p-3"><span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-brand"><FileText className="h-3.5 w-3.5" />{tr('Facture créée', 'تم إنشاء الفاتورة')}</span><strong className="mt-1 block font-mono text-xs text-ink">{result.invoice.number}</strong></div>}
+        </div>}
+        {result.orderId && result.invoice?.number && <a href={`/api/customer/account/orders/${result.orderId}/invoice`} className="flex min-h-12 w-full items-center justify-center gap-2 bg-ink px-4 text-xs font-black text-surface-base"><FileText className="h-4 w-4" />{tr('Télécharger la facture électronique', 'تنزيل الفاتورة الإلكترونية')}</a>}
+
         {/* Details */}
         <div className="bg-surface border border-line rounded-2xl p-3.5 text-xs text-muted space-y-1.5 text-left">
           <div className="flex justify-between">
@@ -130,8 +136,8 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
             </div>
             <p className="text-[11px] leading-5 text-ink">
               {tr(
-                `Votre commande est enregistrée mais pas encore confirmée. ${result.deposit.method === 'CARD' ? 'Notre équipe vous transmettra les instructions sécurisées; la facture et le suivi seront activés après encaissement.' : 'Réglez l’acompte puis envoyez la preuve depuis votre compte pour validation.'}`,
-                `تم تسجيل طلبك لكنه غير مؤكّد بعد. ${result.deposit.method === 'CARD' ? 'سيرسل لك فريقنا تعليمات التحصيل الآمن، وتُفعّل الفاتورة والتتبع بعد التحصيل.' : 'ادفع العربون ثم أرسل الإثبات من حسابك للتحقق.'}`
+                `Votre commande est enregistrée mais pas encore confirmée. La facture électronique et le suivi sont déjà disponibles. ${result.deposit.method === 'CARD' ? 'Notre équipe vous transmettra les instructions de collecte sécurisée.' : 'Réglez l’acompte puis envoyez la preuve depuis votre compte pour validation.'}`,
+                `تم تسجيل طلبك لكنه غير مؤكّد بعد. الفاتورة الإلكترونية والتتبع متاحان الآن. ${result.deposit.method === 'CARD' ? 'سيرسل لك فريقنا تعليمات التحصيل الآمن.' : 'ادفع العربون ثم أرسل الإثبات من حسابك للتحقق.'}`
               )}
             </p>
             <p className="text-[11px] text-ink">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')} <strong>{result.deposit.balanceTnd.toFixed(3)} {tr('DT', 'د.ت')}</strong></p>

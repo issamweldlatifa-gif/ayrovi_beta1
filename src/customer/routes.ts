@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import multer from 'multer';
 import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
-import { uploadsDir, invoiceAbsolutePath } from '../services/invoice';
+import { generateInvoicePdf, uploadsDir, invoiceAbsolutePath } from '../services/invoice';
 import { sendMail } from '../services/mailer';
 import {
   cleanupCustomerAuth,
@@ -749,22 +749,70 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   router.get('/account/orders', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
     const rows = db.all<any>(`SELECT o.id,o.order_number,o.status,o.payment_status,o.payment_method,o.total_tnd,o.governorate,o.created_at,
+      o.tracking_code,o.invoice_number,d.status delivery_status,d.expected_at,d.carrier,
       COALESCE(SUM(oi.quantity),0) item_count,(SELECT image_url FROM order_items WHERE order_id=o.id ORDER BY created_at LIMIT 1) image_url
-      FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id WHERE o.account_id=? GROUP BY o.id ORDER BY o.created_at DESC`, account.id);
+      FROM orders o LEFT JOIN order_items oi ON oi.order_id=o.id LEFT JOIN deliveries d ON d.order_id=o.id
+      WHERE o.account_id=? GROUP BY o.id ORDER BY o.created_at DESC`, account.id);
     return res.json({ success: true, data: rows });
   });
 
-  router.get('/account/orders/:id', requireCustomer(db), (req, res) => {
+  router.get('/account/orders/:id', requireCustomer(db), async (req, res) => {
     const account = customerFromRequest(req);
-    const order = db.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', req.params.id, account.id);
-    if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    const existing = db.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', req.params.id, account.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    let order = db.ensureOrderDocuments(existing.id);
+    const expectedPath = invoiceAbsolutePath(String(order.invoice_number));
+    if (!order.invoice_path || path.resolve(String(order.invoice_path)) !== path.resolve(expectedPath) || !fs.existsSync(expectedPath)) {
+      try {
+        await generateInvoicePdf(db, order.id);
+        order = db.get<any>('SELECT * FROM orders WHERE id=?', order.id);
+      } catch (error: any) {
+        console.error('[Customer Invoice Repair]', error?.message || error);
+      }
+    }
     return res.json({ success: true, data: {
       ...order,
-      deposit_proof_path: undefined, // لا نكشف المسار الخام — التحميل عبر المسارات الآمنة فقط
+      deposit_proof_path: undefined, // raw storage paths are never exposed
+      invoice_path: undefined,
       items: db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', order.id),
       history: db.all<any>('SELECT * FROM order_status_history WHERE order_id=? ORDER BY created_at', order.id),
       payment: db.get<any>('SELECT * FROM payments WHERE order_id=?', order.id),
       delivery: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id),
+    } });
+  });
+
+  // ===== Dedicated customer tracking payload (ownership protected) =====
+  router.get('/account/orders/:id/tracking', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const existing = db.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', req.params.id, account.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    const order = db.ensureOrderDocuments(existing.id);
+    const delivery = db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id);
+    return res.json({ success: true, data: {
+      id: order.id,
+      orderNumber: order.order_number,
+      trackingCode: order.tracking_code,
+      status: order.status,
+      paymentStatus: order.payment_status,
+      depositStatus: order.deposit_status,
+      createdAt: order.created_at,
+      updatedAt: order.updated_at,
+      destination: {
+        governorate: order.governorate,
+        address: order.address,
+        latitude: delivery?.latitude ?? order.delivery_latitude ?? null,
+        longitude: delivery?.longitude ?? order.delivery_longitude ?? null,
+      },
+      delivery: delivery ? {
+        status: delivery.status,
+        carrier: delivery.carrier,
+        trackingNumber: delivery.tracking_number,
+        expectedAt: delivery.expected_at,
+        deliveredAt: delivery.delivered_at,
+        notes: delivery.notes,
+        updatedAt: delivery.updated_at,
+      } : null,
+      history: db.all<any>('SELECT id,from_status,to_status,note,created_at FROM order_status_history WHERE order_id=? ORDER BY created_at', order.id),
     } });
   });
 
@@ -814,15 +862,22 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   });
 
   // ===== تحميل الفاتورة الإلكترونية (مالك الطلب فقط) =====
-  router.get('/account/orders/:id/invoice', requireCustomer(db), (req: Request, res) => {
+  router.get('/account/orders/:id/invoice', requireCustomer(db), async (req: Request, res) => {
     const account = customerFromRequest(req);
-    const order = db.get<any>('SELECT id,account_id,invoice_number,invoice_path FROM orders WHERE id=?', req.params.id);
-    if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
-    if (!order.invoice_number || !order.invoice_path) return res.status(404).json({ success: false, error: 'Facture pas encore disponible — elle est générée après confirmation de l’acompte.' });
+    const existing = db.get<any>('SELECT id,account_id FROM orders WHERE id=?', req.params.id);
+    if (!existing || existing.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    let order = db.ensureOrderDocuments(existing.id);
     const absolute = invoiceAbsolutePath(String(order.invoice_number));
-    // تحقق مزدوج: المسار المخزّن يجب أن يطابق المسار المُشتق من رقم الفاتورة (حماية من أي تلاعب بالمسار)
-    if (path.resolve(order.invoice_path) !== path.resolve(absolute) || !fs.existsSync(absolute)) {
-      return res.status(404).json({ success: false, error: 'Fichier de facture indisponible.' });
+    // Ephemeral deployments may remove a generated file. Rebuild it deterministically
+    // from the protected order data instead of presenting a broken download.
+    if (!order.invoice_path || path.resolve(String(order.invoice_path)) !== path.resolve(absolute) || !fs.existsSync(absolute)) {
+      try {
+        await generateInvoicePdf(db, order.id);
+        order = db.get<any>('SELECT id,account_id,invoice_number,invoice_path FROM orders WHERE id=?', order.id);
+      } catch (error: any) {
+        console.error('[Invoice Download Repair]', error?.message || error);
+        return res.status(503).json({ success: false, error: 'La facture électronique ne peut pas être générée pour le moment.' });
+      }
     }
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${String(order.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf"`);

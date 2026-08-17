@@ -104,6 +104,8 @@ export interface OrderResult {
   itemCount: number;
   message: string;
   orderId?: string;
+  trackingCode?: string;
+  invoice?: { number: string; generated: boolean };
   breakdown?: {
     subtotalTnd: number;
     customsTnd: number;

@@ -38,6 +38,7 @@ app.use((req, res, next) => {
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
     "connect-src 'self'",
+    "frame-src 'self' https://www.google.com https://maps.google.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -45,7 +46,7 @@ app.use((req, res, next) => {
   ].filter(Boolean).join('; ') + ';');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
+  res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(self), payment=()');
   const suppliedRequestId = String(req.headers['x-request-id'] || '');
   const requestId = /^[A-Za-z0-9._:-]{8,100}$/.test(suppliedRequestId) ? suppliedRequestId : randomUUID();
   res.setHeader('X-Request-ID', requestId);
@@ -174,7 +175,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.5.3',
+    version: '3.5.4',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });

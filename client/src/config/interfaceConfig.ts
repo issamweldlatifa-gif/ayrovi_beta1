@@ -58,7 +58,7 @@ export interface PublicInterfaceConfig {
 }
 
 export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
-  logoUrl: '/media/logo-ayrovi-black.png',
+  logoUrl: '/media/logo-ayrovi-final.png',
   sections: [
     { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '' },
     { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '' },

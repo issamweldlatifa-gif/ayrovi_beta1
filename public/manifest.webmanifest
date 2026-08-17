@@ -11,13 +11,13 @@
   "theme_color": "#088177",
   "icons": [
     {
-      "src": "/media/logo-ayrovi-black-192.png",
+      "src": "/media/logo-ayrovi-final-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/media/logo-ayrovi-black-512.png",
+      "src": "/media/logo-ayrovi-final-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"

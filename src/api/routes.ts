@@ -11,6 +11,7 @@ import { customerFromRequest, requireCustomer, resolveCustomer } from '../custom
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
 import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { generateInvoicePdf } from '../services/invoice';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -356,7 +357,7 @@ export function createApiRouter(
   /**
    * POST /api/checkout
    */
-  router.post('/checkout', requireCustomer(db), (req: Request, res: Response) => {
+  router.post('/checkout', requireCustomer(db), async (req: Request, res: Response) => {
     const sessionId = requireSessionId(req, res);
     if (!sessionId) return;
 
@@ -462,6 +463,14 @@ export function createApiRouter(
         termsAcceptedAt: new Date().toISOString(),
         locale: checkoutLocale,
       }, customer.id);
+      // Electronic invoice is available immediately after checkout. Generation errors
+      // never roll back a valid order: the customer download endpoint self-heals it.
+      try {
+        await generateInvoicePdf(db, result.orderId);
+        result.invoice.generated = true;
+      } catch (invoiceError: any) {
+        console.error('[Checkout Invoice]', invoiceError?.message || invoiceError);
+      }
       try {
         recordLearningEvent(db, { type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
       } catch (learningError) {
