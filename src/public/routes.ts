@@ -56,7 +56,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   const commerceConfig = () => {
     const pricing = db.getPricingRules();
     const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
-      ('delivery_delay','governorates','payment_methods','deposit_percent','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','footer_about')`);
+      ('delivery_delay','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','footer_about')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
     return {
@@ -80,6 +80,8 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         bankRib: String(facts.bank_rib || ''),
         posteAccount: String(facts.poste_account || ''),
         flouciNumber: String(facts.flouci_number || ''),
+        reviewDelay: String(facts.deposit_review_delay || 'Sous 1 jour ouvré après réception du justificatif'),
+        unavailableRefundPolicy: String(facts.unavailable_refund_policy || 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé'),
       },
       // قنوات التواصل الاجتماعي (تُدار من لوحة الأدمن ← Paramètres ← CHANNELS)
       channels: {

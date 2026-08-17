@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowLeft, Bookmark, Heart, HeartFilled, MessageSquare, Share2, Volume2, VolumeX } from '../../components/QatafoIcons';
+import { FullscreenActionRail } from './FullscreenActionRail';
+import { FullscreenMediaHeader } from './FullscreenMediaHeader';
 import { fetchCounts, likePost, likeReel, sharePost, viewReel } from '../storyService';
 import type { ReelItem } from '../storyService';
 import type { StoryPost } from '../types';
+import { useLocale } from '../../i18n/LocaleContext';
 
 /**
  * Mode Reels (façon Instagram) : vidéos plein écran, autoplay au scroll,
@@ -17,12 +19,20 @@ export const ReelsViewer: React.FC<{
   onOpenComments: (postId: string) => void;
   onClose: () => void;
 }> = ({ items, startIndex, isAuthenticated, onRequireAuth, onOpenComments, onClose }) => {
+  const { locale, direction, tr } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const [active, setActive] = useState(startIndex);
   const [muted, setMuted] = useState(false);
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [counts, setCounts] = useState<Record<string, { likes: number; comments: number; shares: number }>>({});
+  const [saved, setSaved] = useState<Record<string, boolean>>(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
+      return Array.isArray(list) ? Object.fromEntries(list.filter((id): id is string => typeof id === 'string').map((id) => [id, true])) : {};
+    } catch { return {}; }
+  });
+  const [videoFailed, setVideoFailed] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -87,17 +97,16 @@ export const ReelsViewer: React.FC<{
     setCounts((current) => ({ ...current, [post.id]: { ...(current[post.id] || { comments: 0, shares: 0 }), likes: result.likesCount } }));
   };
 
+  const toggleSave = (postId: string) => {
+    const next = !saved[postId];
+    const updated = { ...saved, [postId]: next };
+    setSaved(updated);
+    try { localStorage.setItem('ayrovi_saved', JSON.stringify(Object.keys(updated).filter((id) => updated[id]))); } catch { /* storage unavailable */ }
+  };
+
   return (
-    <div className="fixed inset-0 z-[125] bg-black" role="dialog" aria-modal="true" aria-label="Reels">
-      {/* Barre haute : retour + son */}
-      <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/60 to-transparent px-3 pb-8 pt-3">
-        <button type="button" onClick={onClose} aria-label="Retour" className="grid h-11 w-11 place-items-center rounded-full text-white transition active:scale-90">
-          <ArrowLeft size={24} />
-        </button>
-        <button type="button" onClick={toggleMute} aria-label={muted ? 'Activer le son' : 'Couper le son'} className="grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white transition active:scale-90">
-          {muted ? <VolumeX size={18} /> : <Volume2 size={18} />}
-        </button>
-      </div>
+    <div className="fixed inset-0 z-[125] bg-ink" dir={direction} role="dialog" aria-modal="true" aria-label={tr('Reels', 'ريلز')}>
+      <FullscreenMediaHeader muted={muted} onBack={onClose} onToggleMute={toggleMute} />
 
       {/* Flux vertical snap */}
       <div ref={containerRef} onScroll={onScroll} className="no-scrollbar h-full snap-y snap-mandatory overflow-y-auto">
@@ -106,33 +115,31 @@ export const ReelsViewer: React.FC<{
             <video
               ref={(el) => { if (el) videoRefs.current.set(post.id, el); else videoRefs.current.delete(post.id); }}
               src={post.media[0].url}
+              poster="/media/logo-ayrovi.png"
               muted={muted}
               loop
               playsInline
               preload={Math.abs(index - startIndex) <= 1 ? 'auto' : 'metadata'}
-              className="absolute inset-0 h-full w-full object-cover"
+              className={`absolute inset-0 h-full w-full bg-brand-deep object-cover ${videoFailed[post.id] ? 'hidden' : ''}`}
+              onError={() => setVideoFailed((current) => ({ ...current, [post.id]: true }))}
+            />
+            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-brand-gradient"><img src="/media/logo-ayrovi.png" alt="" className="h-24 w-24 rounded-card bg-white object-contain p-3" /></div>}
+
+            <FullscreenActionRail
+              liked={Boolean(liked[post.id])}
+              saved={Boolean(saved[post.id])}
+              likes={'reelLikes' in (post as ReelItem) ? (counts[post.id]?.likes ?? (post as ReelItem).reelLikes) : (counts[post.id]?.likes ?? 0)}
+              comments={counts[post.id]?.comments || 0}
+              shares={counts[post.id]?.shares || 0}
+              onLike={() => void toggleLike(post)}
+              onComment={() => (isAuthenticated ? onOpenComments(post.id) : onRequireAuth())}
+              onShare={() => void sharePost(post)}
+              onSave={() => toggleSave(post.id)}
             />
 
-            {/* Rail Instagram : actions à droite, hors de la zone caption. */}
-            <div className="absolute bottom-24 right-2 z-20 flex flex-col items-center gap-3">
-              <button type="button" aria-label="J'aime" onClick={() => void toggleLike(post)} className={`flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full transition active:scale-90 ${liked[post.id] ? 'heart-pop text-brand-light' : 'text-white'}`}>
-                {liked[post.id] ? <HeartFilled size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" /> : <Heart size={30} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />}
-                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{'reelLikes' in (post as ReelItem) ? (counts[post.id]?.likes ?? (post as ReelItem).reelLikes) : (counts[post.id]?.likes ?? 0)}</span>
-              </button>
-              <button type="button" aria-label="Commenter" onClick={() => (isAuthenticated ? onOpenComments(post.id) : onRequireAuth())} className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full text-white transition active:scale-90">
-                <MessageSquare size={28} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
-                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{counts[post.id]?.comments || 0}</span>
-              </button>
-              <button type="button" aria-label="Partager" onClick={() => void sharePost(post)} className="flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full text-white transition active:scale-90">
-                <Share2 size={28} className="drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]" />
-                <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{counts[post.id]?.shares || 0}</span>
-              </button>
-              <SavedButton postId={post.id} />
-            </div>
-
             {/* Bas : publisher + caption + vues */}
-            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/85 via-black/30 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pr-20 pt-16">
-              {'views' in (post as ReelItem) && <p className="mb-1 text-[11px] font-bold text-white/70">▶ {(post as ReelItem).views.toLocaleString('fr-FR')} vues</p>}
+            <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pe-20 pt-16">
+              {'views' in (post as ReelItem) && <p className="mb-1 text-[11px] font-bold text-white/70">▶ {(post as ReelItem).views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr('vues', 'مشاهدة')}</p>}
               <div className="flex items-center gap-2.5">
                 <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
                   {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
@@ -145,25 +152,5 @@ export const ReelsViewer: React.FC<{
         ))}
       </div>
     </div>
-  );
-};
-
-const SavedButton: React.FC<{ postId: string }> = ({ postId }) => {
-  const [saved, setSaved] = useState(() => {
-    try { const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]'); return Array.isArray(value) && value.includes(postId); } catch { return false; }
-  });
-  const toggle = () => {
-    const next = !saved;
-    setSaved(next);
-    try {
-      const value = JSON.parse(localStorage.getItem('ayrovi_saved') || '[]');
-      const list: string[] = Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string').slice(0, 500) : [];
-      localStorage.setItem('ayrovi_saved', JSON.stringify(next ? [...new Set([...list, postId])] : list.filter((id) => id !== postId)));
-    } catch { /* */ }
-  };
-  return (
-    <button type="button" aria-label="Enregistrer" onClick={toggle} className={`flex min-h-12 min-w-12 flex-col items-center justify-center rounded-full transition active:scale-90 ${saved ? 'text-accent' : 'text-white'}`}>
-      <Bookmark size={28} className={`drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] ${saved ? 'fill-current' : ''}`} />
-    </button>
   );
 };

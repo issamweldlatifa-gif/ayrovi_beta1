@@ -1,7 +1,11 @@
 import React, { useEffect } from 'react';
-import { X, Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package, Hourglass } from './QatafoIcons';
+import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package, Hourglass } from './QatafoIcons';
+import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem } from '../types';
+import { JourneyProgress } from './JourneyProgress';
+import { useLocale } from '../i18n/LocaleContext';
+import { getCommerceConfig } from '../services/publicApi';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -13,6 +17,14 @@ interface CartDrawerProps {
   onProceedToCheckout: () => void;
 }
 
+function merchantLabel(item: CartItem, fallback: string): string {
+  if (item.store && item.store.toLowerCase() !== 'generic') return item.store.toUpperCase();
+  try {
+    const host = new URL(item.sourceUrl).hostname.replace(/^www\./, '');
+    return host || fallback;
+  } catch { return fallback; }
+}
+
 export const CartDrawer: React.FC<CartDrawerProps> = ({
   isOpen,
   onClose,
@@ -22,6 +34,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onRemoveItem,
   onProceedToCheckout,
 }) => {
+  const { tr, direction, formatMoney } = useLocale();
+  const [depositPolicy, setDepositPolicy] = React.useState({ percent: 20, reviewDelay: '', refund: '' });
   useBodyScrollLock(isOpen);
 
   useEffect(() => {
@@ -33,41 +47,44 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    getCommerceConfig().then((payload) => {
+      const deposit = payload.data?.deposit || {};
+      setDepositPolicy({
+        percent: Number(deposit.percent) > 0 ? Number(deposit.percent) : 20,
+        reviewDelay: String(deposit.reviewDelay || ''),
+        refund: String(deposit.unavailableRefundPolicy || ''),
+      });
+    }).catch(() => undefined);
+  }, [isOpen]);
+
+  const pendingManual = items.some((item) => item.priceVerificationStatus === 'PENDING_MANUAL');
+  const estimatedDeposit = Math.round(totalTND * depositPolicy.percent / 100 * 1000) / 1000;
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true" aria-label="Panier AYROVI">
+    <div className="fixed inset-0 z-50 overflow-hidden" dir={direction} role="dialog" aria-modal="true" aria-label={tr('Panier AYROVI', 'سلة AYROVI')}>
       {/* Backdrop */}
       <button
         type="button"
         onClick={onClose}
-        className="absolute inset-0 h-full w-full cursor-default bg-slate-900/40 backdrop-blur-xs transition-opacity"
-        aria-label="Fermer le panier"
+        className="absolute inset-0 h-full w-full cursor-default bg-ink/40 backdrop-blur-xs transition-opacity"
+        aria-label={tr('Fermer le panier', 'إغلاق السلة')}
       />
 
-      <div className="fixed inset-y-0 right-0 max-w-full flex pr-0 sm:pr-10">
-        <div className="w-screen max-w-md bg-white border-l border-line shadow-2xl flex flex-col">
+      <div className={`fixed inset-y-0 max-w-full flex ${direction === 'rtl' ? 'left-0 pl-0 sm:pl-10' : 'right-0 pr-0 sm:pr-10'}`}>
+        <div className={`w-screen max-w-md bg-white shadow-2xl flex flex-col ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`}>
           
-          {/* Header */}
-          <div className="p-4 sm:p-6 border-b border-line flex items-center justify-between bg-surface">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand">
-                <ShoppingBag className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-ink">Mon Panier</h2>
-                <p className="text-xs text-muted font-medium">{items.length} article{items.length > 1 ? 's' : ''} dans le panier</p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-xl text-muted hover:text-ink hover:bg-line transition-colors"
-              aria-label="Fermer le panier"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <AppHeader
+            title={tr('Mon panier', 'سلّتي')}
+            subtitle={tr(`${items.length} article${items.length > 1 ? 's' : ''}`, `${items.length} منتج`)}
+            onClose={onClose}
+            actionLabel={tr('Fermer le panier', 'إغلاق السلة')}
+          />
+
+          <JourneyProgress active={1} />
 
           {/* Cart Items List */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-white">
@@ -76,9 +93,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <div className="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center text-muted">
                   <ShoppingBag className="w-8 h-8 text-brand" />
                 </div>
-                <h3 className="text-base font-bold text-ink">Votre panier est vide</h3>
+                <h3 className="text-base font-bold text-ink">{tr('Votre panier est vide', 'سلّتك فارغة')}</h3>
                 <p className="text-xs text-muted max-w-xs leading-relaxed">
-                  Importez une capture d'écran ou collez un lien pour ajouter des articles.
+                  {tr("Importez une capture d'écran ou collez un lien pour ajouter des articles.", 'ارفع لقطة شاشة أو ألصق رابطًا لإضافة المنتجات.')}
                 </p>
               </div>
             ) : (
@@ -100,14 +117,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand/10 text-brand uppercase">
-                        {item.store}
+                        {merchantLabel(item, tr('Marchand externe', 'متجر خارجي'))}
                       </span>
                       <button
                         type="button"
                         onClick={() => onRemoveItem(item.id)}
-                        className="text-muted hover:text-red-600 transition-colors p-1"
-                        title="Supprimer"
-                        aria-label={`Supprimer ${item.title} du panier`}
+                        className="text-muted hover:text-danger transition-colors p-1"
+                        title={tr('Supprimer', 'حذف')}
+                        aria-label={tr(`Supprimer ${item.title} du panier`, `حذف ${item.title} من السلة`)}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -124,20 +141,20 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     )}
                     {(item.requestedSize || item.requestedColor) && (
                       <p className="mt-0.5 text-[10px] font-semibold text-muted">
-                        {[item.requestedSize && `Taille ${item.requestedSize}`, item.requestedColor && `Couleur ${item.requestedColor}`].filter(Boolean).join(' · ')}
+                        {[item.requestedSize && `${tr('Taille', 'المقاس')} ${item.requestedSize}`, item.requestedColor && `${tr('Couleur', 'اللون')} ${item.requestedColor}`].filter(Boolean).join(' · ')}
                       </p>
                     )}
-                    {item.customerNote && <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted">Note : {item.customerNote}</p>}
+                    {item.customerNote && <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
                     {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && (
-                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">Lien produit fourni</a>
+                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
-                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-amber-700"><Hourglass className="h-3 w-3 shrink-0" />Vérification manuelle après acompte</p>
+                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-warning"><Hourglass className="h-3 w-3 shrink-0" />{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="text-xs font-black text-brand">
-                        {(item.lineTotalTND ?? item.priceTND * item.quantity).toFixed(2)} DT
+                        {formatMoney(item.lineTotalTND ?? item.priceTND * item.quantity)}
                       </div>
 
                       {/* Quantity Controls */}
@@ -147,7 +164,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                           className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-35"
-                          aria-label={`Diminuer la quantité de ${item.title}`}
+                          aria-label={tr(`Diminuer la quantité de ${item.title}`, `تقليل كمية ${item.title}`)}
                         >
                           <Minus className="w-3 h-3" />
                         </button>
@@ -159,7 +176,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= 99}
                           className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-35"
-                          aria-label={`Augmenter la quantité de ${item.title}`}
+                          aria-label={tr(`Augmenter la quantité de ${item.title}`, `زيادة كمية ${item.title}`)}
                         >
                           <Plus className="w-3 h-3" />
                         </button>
@@ -174,18 +191,24 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           {/* Footer & Checkout */}
           {items.length > 0 && (
             <div className="p-4 sm:p-6 border-t border-line bg-surface space-y-3">
+              <div className="rounded-xl border border-accent bg-accent/10 p-3 text-[11px] leading-5 text-ink">
+                <p className="font-black">{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</p>
+                {pendingManual && <p className="font-bold">{tr('Le prix du produit sera vérifié par l’équipe avant l’achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}
+                <p>{tr(depositPolicy.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</p>
+                <p>{tr(depositPolicy.refund || 'Remboursement de l’acompte si le produit ne peut pas être validé ou acheté.', 'يُرجع العربون إذا تعذر التحقق من المنتج أو شراؤه.')}</p>
+              </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted font-semibold">Total général de la commande :</span>
-                <span className="text-xl font-extrabold text-ink">{totalTND.toFixed(2)} DT</span>
+                <span className="text-muted font-semibold">{tr('Total de la commande :', 'إجمالي الطلب:')}</span>
+                <span className="text-xl font-extrabold text-ink">{formatMoney(totalTND)}</span>
               </div>
 
               <button
                 type="button"
                 onClick={onProceedToCheckout}
-                className="w-full hostinger-btn text-white font-bold py-3.5 px-6 rounded-2xl shadow-md flex items-center justify-center gap-2 text-sm transition-all"
+                className="ay-btn-primary w-full text-sm"
               >
-                <span>Passer la commande et livraison</span>
-                <ArrowRight className="w-4 h-4" />
+                <span>{tr('Continuer vers la livraison', 'المتابعة إلى التوصيل')}</span>
+                <ArrowRight className={`w-4 h-4 ${direction === 'rtl' ? 'rotate-180' : ''}`} />
               </button>
             </div>
           )}

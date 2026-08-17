@@ -41,7 +41,7 @@ const VECTORS = [
 export const AyroviMotion: React.FC<AyroviMotionProps> = ({
   state = 'idle',
   size = 28,
-  color = '#0a0a0a',
+  color = 'currentColor',
   className = '',
   label,
 }) => {
@@ -73,6 +73,7 @@ export const AyroviMotion: React.FC<AyroviMotionProps> = ({
       aria-hidden={label ? undefined : true}
       focusable="false"
     >
+      <circle cx="50" cy="50" r="5.5" className="ayrovi-motion__center" />
       {PIECES.map((points, index) => {
         const vector = VECTORS[index];
         const style = {

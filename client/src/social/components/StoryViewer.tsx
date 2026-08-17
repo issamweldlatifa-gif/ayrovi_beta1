@@ -1,9 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { ArrowRight, Bookmark, CheckCircle2, Heart, HeartFilled, Share2, X } from '../../components/QatafoIcons';
+import { ArrowRight } from '../../components/QatafoIcons';
+import { FullscreenActionRail } from './FullscreenActionRail';
+import { FullscreenMediaHeader } from './FullscreenMediaHeader';
 import { fetchCounts, likePost, markStoryAsSeen, sharePost, timeAgo } from '../storyService';
 import type { Story, StoryCta } from '../types';
 import type { StoryGroup } from './StoryCircles';
+import { useLocale } from '../../i18n/LocaleContext';
 
 const IMAGE_DURATION = 5000;
 const SAVED_KEY = 'ayrovi_saved';
@@ -30,6 +33,7 @@ export const StoryViewer: React.FC<{
   onCta: (cta: StoryCta) => void;
   onSeenChange: () => void;
 }> = ({ groups, startIndex, isAuthenticated, onRequireAuth, onOpenComments, onClose, onCta, onSeenChange }) => {
+  const { locale, tr } = useLocale();
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
   const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
   const [counts, setCounts] = useState<Record<string, { likes: number; comments: number; views: number; shares: number }>>({});
@@ -37,6 +41,7 @@ export const StoryViewer: React.FC<{
   const [storyIndex, setStoryIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [videoFailed, setVideoFailed] = useState(false);
+  const [muted, setMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const touchX = useRef<number | null>(null);
   const touchY = useRef<number | null>(null);
@@ -138,7 +143,7 @@ export const StoryViewer: React.FC<{
   });
 
   return (
-    <div className="fixed inset-0 z-[120] bg-black" role="dialog" aria-modal="true" aria-label={`Story de ${group.publisher.name}`}>
+    <div className="fixed inset-0 z-[120] bg-ink" role="dialog" aria-modal="true" aria-label={tr(`Story de ${group.publisher.name}`, `قصة ${group.publisher.name}`)}>
       <div className="absolute inset-x-0 top-0 z-30 flex gap-1 px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         {group.stories.map((item, index) => (
           <div key={item.id} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/30">
@@ -147,16 +152,21 @@ export const StoryViewer: React.FC<{
         ))}
       </div>
 
-      <div className="absolute inset-x-0 top-[max(1.45rem,calc(env(safe-area-inset-top)+1rem))] z-30 flex items-center gap-2.5 px-4">
-        <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-white/40 bg-white/95 shadow-lg">
-          {group.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-full w-full object-contain p-1" /> : group.publisher.avatar ? <img src={group.publisher.avatar} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black text-brand">{group.publisher.name.slice(0, 2).toUpperCase()}</span>}
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-extrabold text-white drop-shadow">{group.publisher.name}{group.publisher.verified && <CheckCircle2 size={14} className="ml-1 inline text-accent" />}</p>
-          <p className="text-[10px] font-semibold text-white/75 drop-shadow">{timeAgo(story.createdAt)}</p>
-        </div>
-        <button type="button" onClick={onClose} aria-label="Fermer" className="ml-auto grid h-12 w-12 place-items-center rounded-full text-white transition hover:bg-white/10 active:scale-90"><X size={24} /></button>
-      </div>
+      <FullscreenMediaHeader
+        title={group.publisher.name}
+        subtitle={timeAgo(story.createdAt, locale)}
+        avatarUrl={group.publisher.avatar}
+        official={group.publisher.official}
+        verified={group.publisher.verified}
+        muted={muted}
+        onBack={onClose}
+        onToggleMute={() => {
+          const next = !muted;
+          setMuted(next);
+          if (videoRef.current) videoRef.current.muted = next;
+        }}
+        offsetForProgress
+      />
 
       <motion.div
         key={story.id}
@@ -181,32 +191,29 @@ export const StoryViewer: React.FC<{
           <img src={story.media.url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
           <img src={story.media.url} alt={story.caption || `Story de ${group.publisher.name}`} className="relative h-full w-full object-contain" draggable={false} />
         </> : videoFailed ? (
-          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-deep via-brand to-brand-light"><p className="px-8 text-center text-sm font-bold text-white/80">Vidéo indisponible sur cet appareil.</p></div>
+          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-deep via-brand to-brand-light"><p className="px-8 text-center text-sm font-bold text-white/80">{tr('Vidéo indisponible sur cet appareil.', 'الفيديو غير متاح على هذا الجهاز.')}</p></div>
         ) : (
-          <video ref={videoRef} src={story.media.url} aria-label={story.caption || `Story vidéo de ${group.publisher.name}`} className="absolute inset-0 h-full w-full object-cover" autoPlay muted playsInline onError={() => setVideoFailed(true)} onEnded={goNext} onTimeUpdate={(event) => { const video = event.currentTarget; if (video.duration) setProgress(video.currentTime / video.duration); }} />
+          <video ref={videoRef} src={story.media.url} aria-label={story.caption || `Story vidéo de ${group.publisher.name}`} className="absolute inset-0 h-full w-full object-cover" autoPlay muted={muted} playsInline onError={() => setVideoFailed(true)} onEnded={goNext} onTimeUpdate={(event) => { const video = event.currentTarget; if (video.duration) setProgress(video.currentTime / video.duration); }} />
         )}
-        <button type="button" aria-label="Story précédente" className="absolute inset-y-0 left-0 w-1/3" onClick={goPrev} />
-        <button type="button" aria-label="Story suivante" className="absolute inset-y-0 right-0 w-2/3" onClick={goNext} />
+        <button type="button" aria-label={tr('Story précédente', 'القصة السابقة')} className="absolute inset-y-0 start-0 w-1/3" onClick={goPrev} />
+        <button type="button" aria-label={tr('Story suivante', 'القصة التالية')} className="absolute inset-y-0 end-0 w-2/3" onClick={goNext} />
       </motion.div>
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-64 bg-gradient-to-t from-black/90 via-black/35 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5">
-        <div className="mb-3 flex items-end gap-3">
-          <div className="min-w-0 flex-1">
-            {story.caption && <p className="line-clamp-3 text-sm font-semibold leading-6 text-white drop-shadow">{story.caption}</p>}
-            {story.cta && <button type="button" onClick={() => onCta(story.cta!)} className="mt-2 inline-flex min-h-11 items-center gap-2 rounded-full bg-white px-4 text-xs font-extrabold text-ink shadow-lg transition active:scale-95">{story.cta.label}<ArrowRight size={16} /></button>}
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <button type="button" onClick={() => (isAuthenticated ? onOpenComments(story.id) : onRequireAuth())} className="min-h-12 min-w-0 flex-1 rounded-full border border-white/70 bg-black/15 px-4 text-left text-sm font-semibold text-white backdrop-blur-md transition hover:bg-white/10" aria-label={`Ajouter un commentaire, ${storyCounts.comments} commentaires`}>
-            Ajouter un commentaire…
-          </button>
-          <button type="button" aria-label={`J’aime, ${storyCounts.likes}`} onClick={() => void toggleLike(story)} className={`grid h-12 w-12 shrink-0 place-items-center rounded-full transition active:scale-90 ${likedIds[story.id] ? 'heart-pop text-brand-light' : 'text-white'}`}>
-            {likedIds[story.id] ? <HeartFilled size={26} /> : <Heart size={26} />}
-          </button>
-          <button type="button" aria-label={`Partager, ${storyCounts.shares} partages`} onClick={() => void share()} className="grid h-12 w-12 shrink-0 place-items-center rounded-full text-white transition active:scale-90"><Share2 size={25} /></button>
-          <button type="button" aria-label={saved ? 'Retirer des éléments enregistrés' : 'Enregistrer'} onClick={() => toggleSave(story)} className={`grid h-12 w-12 shrink-0 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-accent' : 'text-white'}`}><Bookmark size={25} className={saved ? 'fill-current' : ''} /></button>
-        </div>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-64 bg-gradient-to-t from-ink/90 via-ink/35 to-transparent" />
+      <FullscreenActionRail
+        liked={Boolean(likedIds[story.id])}
+        saved={saved}
+        likes={storyCounts.likes}
+        comments={storyCounts.comments}
+        shares={storyCounts.shares}
+        onLike={() => void toggleLike(story)}
+        onComment={() => (isAuthenticated ? onOpenComments(story.id) : onRequireAuth())}
+        onShare={() => void share()}
+        onSave={() => toggleSave(story)}
+      />
+      <div className="absolute inset-x-0 bottom-0 z-30 px-4 pe-20 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-16">
+        {story.caption && <p className="line-clamp-3 text-sm font-semibold leading-6 text-white drop-shadow">{story.caption}</p>}
+        {story.cta && <button type="button" onClick={() => onCta(story.cta!)} className="ay-btn-secondary mt-2 min-h-11 text-xs">{story.cta.label}<ArrowRight size={16} /></button>}
       </div>
     </div>
   );

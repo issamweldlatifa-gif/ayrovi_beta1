@@ -7,6 +7,8 @@ import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
+const checkoutDefaults = { email: 'google.merge@ayrovi.test', termsAccepted: true, locale: 'fr-TN' };
+
 const createCartItem = (title = 'Muchica Matching Set') => ({
   store: 'shein',
   externalId: `SH-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -418,7 +420,8 @@ describe('AYROVI platform', () => {
       db.run("INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at) VALUES (?,?,'ACTIVE',?,?)", accountId, 'Client Lens', now, now);
       expect(db.attachCartToAccount(sessionId, accountId)).toBe(1);
       const order = db.createOrderFromCart(sessionId, {
-        name: 'Client Lens', phone: '+216 98 765 432', governorate: 'Tunis', address: 'Avenue de Tunis', paymentMethod: 'BANK_TRANSFER',
+        name: 'Client Lens', email: 'lens@example.com', phone: '+216 98 765 432', governorate: 'Tunis', address: 'Avenue de Tunis', paymentMethod: 'BANK_TRANSFER',
+        latitude: null, longitude: null, termsAcceptedAt: now, locale: 'fr-TN',
       }, accountId);
       expect(order.deposit.percent).toBe(20);
       const snapshot = db.get<any>('SELECT * FROM order_items WHERE order_id=?', order.orderId);
@@ -472,7 +475,7 @@ describe('AYROVI platform', () => {
     const emptyCheckout = await request(app)
       .post('/api/checkout')
       .set('x-session-id', isolatedSession)
-      .send({
+      .send({ ...checkoutDefaults,
         name: 'Client Test',
         phone: '98123456',
         city: 'Tunis',
@@ -494,7 +497,7 @@ describe('AYROVI platform', () => {
       .post('/api/checkout')
       .set('x-session-id', primarySession)
       .set('x-csrf-token', customerCsrf)
-      .send({
+      .send({ ...checkoutDefaults,
         name: 'Client Test',
         phone: '1234',
         city: 'Tunis',
@@ -503,18 +506,37 @@ describe('AYROVI platform', () => {
       });
     expect(invalidPhoneCheckout.status).toBe(400);
 
-    // Le téléphone de livraison est saisi librement au checkout (format international accepté).
+    const validCheckoutPayload = {
+      ...checkoutDefaults,
+      name: 'Client Test',
+      phone: '+216 98 123 456',
+      city: 'Tunis',
+      address: 'Avenue Habib Bourguiba, Tunis',
+      paymentMethod: 'bank_transfer',
+    };
+
+    const withoutTerms = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, termsAccepted: false });
+    expect(withoutTerms.status).toBe(400);
+    expect(withoutTerms.body.code).toBe('TERMS_REQUIRED');
+
+    const invalidLocale = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, locale: 'en-US' });
+    expect(invalidLocale.status).toBe(400);
+    expect(invalidLocale.body.code).toBe('CHECKOUT_LOCALE_INVALID');
+
+    const incompleteLocation = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, latitude: 36.8065 });
+    expect(incompleteLocation.status).toBe(400);
+    expect(incompleteLocation.body.code).toBe('DELIVERY_LOCATION_INVALID');
+
+    const outOfRangeLocation = await customerAgent.post('/api/checkout').set('x-session-id', primarySession).set('x-csrf-token', customerCsrf).send({ ...validCheckoutPayload, latitude: 91, longitude: 10 });
+    expect(outOfRangeLocation.status).toBe(400);
+    expect(outOfRangeLocation.body.code).toBe('DELIVERY_LOCATION_INVALID');
+
+    // Le téléphone de livraison, les coordonnées et la langue choisie sont conservés avec le consentement.
     const checkoutResponse = await customerAgent
       .post('/api/checkout')
       .set('x-session-id', primarySession)
       .set('x-csrf-token', customerCsrf)
-      .send({
-        name: 'Client Test',
-        phone: '+216 98 123 456',
-        city: 'Tunis',
-        address: 'Avenue Habib Bourguiba, Tunis',
-        paymentMethod: 'bank_transfer',
-      });
+      .send({ ...validCheckoutPayload, latitude: 36.8065, longitude: 10.1815, locale: 'ar-TN' });
 
     expect(checkoutResponse.status).toBe(200);
     expect(checkoutResponse.body.success).toBe(true);
@@ -530,6 +552,11 @@ describe('AYROVI platform', () => {
     expect(order.pricing_snapshot).toContain('"version":1');
     expect(order.account_id).toBe(primaryAccountId);
     expect(order.phone).toBe('+216 98 123 456');
+    expect(order.contact_email).toBe(checkoutDefaults.email);
+    expect(order.delivery_latitude).toBeCloseTo(36.8065, 4);
+    expect(order.delivery_longitude).toBeCloseTo(10.1815, 4);
+    expect(order.terms_accepted_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+    expect(order.locale).toBe('ar-TN');
     expect(order.status).toBe('PAYMENT_PENDING');
     expect(order.deposit_status).toBe('PENDING');
     expect(order.deposit_percent).toBe(20);
@@ -569,7 +596,7 @@ describe('AYROVI platform', () => {
     const unavailablePayment = await request(app)
       .post('/api/checkout')
       .set('x-session-id', quantitySession)
-      .send({ name: 'Client Test', phone: '98123457', city: 'Tunis', address: 'Tunis', paymentMethod: 'paypal' });
+      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123457', city: 'Tunis', address: 'Tunis', paymentMethod: 'paypal' });
     expect(unavailablePayment.status).toBe(401);
     expect(unavailablePayment.body.code).toBe('AUTH_REQUIRED');
 
@@ -585,9 +612,10 @@ describe('AYROVI platform', () => {
     const accountId = `account_google_only_${Date.now()}`;
     const sessionId = uniqueSession('unverified');
     const now = new Date().toISOString();
+    const verifiedEmail = `google-${Date.now()}@example.com`;
     db.run(`INSERT INTO customer_accounts
       (id,display_name,email,email_verified_at,status,created_at,updated_at)
-      VALUES (?,?,?,?,'ACTIVE',?,?)`, accountId, 'Google Client', `google-${Date.now()}@example.com`, now, now, now);
+      VALUES (?,?,?,?,'ACTIVE',?,?)`, accountId, 'Google Client', verifiedEmail, now, now, now);
     const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
     const added = await request(app)
       .post('/api/cart/items')
@@ -600,7 +628,7 @@ describe('AYROVI platform', () => {
       .set('Cookie', `ayrovi_customer_session=${encodeURIComponent(session.token)}`)
       .set('x-session-id', sessionId)
       .set('x-csrf-token', session.csrfToken)
-      .send({ name: 'Google Client', city: 'Tunis', address: 'Tunis', paymentMethod: 'card', ...payload });
+      .send({ ...checkoutDefaults, email: verifiedEmail, name: 'Google Client', city: 'Tunis', address: 'Tunis', paymentMethod: 'card', ...payload });
 
     // Sans téléphone ou avec un numéro invalide, la commande est refusée (400).
     expect((await checkoutWith({})).status).toBe(400);
@@ -618,6 +646,30 @@ describe('AYROVI platform', () => {
     db.clearCart(sessionId);
   });
 
+  test('checkout requires at least one verified contact channel', async () => {
+    const accountId = `account_no_verified_contact_${Date.now()}`;
+    const sessionId = uniqueSession('no-verified-contact');
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO customer_accounts (id,display_name,email,status,created_at,updated_at) VALUES (?,?,?,'ACTIVE',?,?)`, accountId, 'Compte non vérifié', `pending-${Date.now()}@example.com`, now, now);
+    const session = createCustomerSession(db, accountId, { ip: '127.0.0.1', headers: {} } as any);
+    try {
+      expect((await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(createCartItem('Verification required item'))).status).toBe(201);
+      const checkout = await request(app)
+        .post('/api/checkout')
+        .set('Cookie', `ayrovi_customer_session=${encodeURIComponent(session.token)}`)
+        .set('x-session-id', sessionId)
+        .set('x-csrf-token', session.csrfToken)
+        .send({ ...checkoutDefaults, email: `pending-${Date.now()}@example.com`, name: 'Compte non vérifié', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
+      expect(checkout.status).toBe(403);
+      expect(checkout.body.code).toBe('CONTACT_VERIFICATION_REQUIRED');
+      expect(db.get<any>('SELECT COUNT(*) count FROM orders WHERE account_id=?', accountId).count).toBe(0);
+    } finally {
+      db.clearCart(sessionId);
+      db.run('DELETE FROM customer_sessions WHERE account_id=?', accountId);
+      db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
+    }
+  });
+
   test('checkout reuses customers while preserving separate orders', async () => {
     const added = await request(app)
       .post('/api/cart/items')
@@ -629,7 +681,7 @@ describe('AYROVI platform', () => {
       .post('/api/checkout')
       .set('x-session-id', repeatSession)
       .set('x-csrf-token', customerCsrf)
-      .send({
+      .send({ ...checkoutDefaults,
         name: 'Client Test Updated',
         phone: '98123456',
         city: 'Ariana',
@@ -650,7 +702,7 @@ describe('AYROVI platform', () => {
       .post('/api/checkout')
       .set('x-session-id', depositSession)
       .set('x-csrf-token', customerCsrf)
-      .send({ name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Rue de la République', paymentMethod: 'bank_transfer' });
+      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Rue de la République', paymentMethod: 'bank_transfer' });
     expect(checkout.status).toBe(200);
     const orderId = checkout.body.orderId;
     // لا فاتورة قبل تأكيد العربون
@@ -714,7 +766,7 @@ describe('AYROVI platform', () => {
       .post('/api/checkout')
       .set('x-session-id', rejectSession)
       .set('x-csrf-token', customerCsrf)
-      .send({ name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'poste' });
+      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'poste' });
     expect(rejectCheckout.status).toBe(200);
     const rejectedOrderId = rejectCheckout.body.orderId;
     // طريقة يدوية بدون وصل: لا يمكن قبولها
@@ -745,7 +797,7 @@ describe('AYROVI platform', () => {
       .post('/api/checkout')
       .set('x-session-id', cardSession)
       .set('x-csrf-token', customerCsrf)
-      .send({ name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
+      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
     expect(checkout.status).toBe(200);
     const { deposit } = checkout.body;
     // خصم 5% على العربون للدفع بالبطاقة

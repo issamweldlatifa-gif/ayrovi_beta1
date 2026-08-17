@@ -1,0 +1,73 @@
+/* AYROVI design tokens — the only source of brand, semantic, spacing and shape values. */
+@theme inline {
+  --color-brand: var(--ayrovi-primary);
+  --color-brand-dark: var(--ayrovi-primary-dark);
+  --color-brand-light: var(--ayrovi-primary-light);
+  --color-brand-deep: var(--ayrovi-neutral-950);
+  --color-accent: var(--ayrovi-accent);
+  --color-accent-deep: var(--ayrovi-accent-dark);
+  --color-success: var(--ayrovi-success);
+  --color-danger: var(--ayrovi-danger);
+  --color-warning: var(--ayrovi-warning);
+  --color-whatsapp: var(--ayrovi-whatsapp);
+  --color-whatsapp-hover: var(--ayrovi-whatsapp-hover);
+  --color-ink: var(--ayrovi-neutral-900);
+  --color-muted: var(--ayrovi-neutral-500);
+  --color-surface: var(--ayrovi-neutral-50);
+  --color-line: var(--ayrovi-neutral-200);
+  --font-display: var(--ayrovi-font-display);
+  --font-body: var(--ayrovi-font-body);
+  --radius-control: var(--ayrovi-radius-control);
+  --radius-card: var(--ayrovi-radius-card);
+  --shadow-card: var(--ayrovi-shadow-card);
+  --shadow-overlay: var(--ayrovi-shadow-overlay);
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+    --ayrovi-primary: #673de6;
+    --ayrovi-primary-dark: #5025d1;
+    --ayrovi-primary-light: #7e57ff;
+    --ayrovi-accent: #fbbf24;
+    --ayrovi-accent-dark: #9a6700;
+    --ayrovi-success: #15803d;
+    --ayrovi-danger: #dc2626;
+    --ayrovi-warning: #b77900;
+    --ayrovi-neutral-50: #f8f9fe;
+    --ayrovi-neutral-200: #e2e8f0;
+    --ayrovi-neutral-500: #6b7280;
+    --ayrovi-neutral-900: #1d2130;
+    --ayrovi-neutral-950: #24104f;
+    --ayrovi-white: #ffffff;
+    --ayrovi-black: #050505;
+    --ayrovi-whatsapp: #25d366;
+    --ayrovi-whatsapp-hover: #1fae53;
+    --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-neutral-950) 0%, var(--ayrovi-primary) 100%);
+    --ayrovi-font-display: 'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
+    --ayrovi-font-body: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
+    --ayrovi-radius-control: 0.75rem;
+    --ayrovi-radius-card: 1rem;
+    --ayrovi-shadow-card: 0 12px 30px -22px rgb(36 16 79 / 35%);
+    --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(36 16 79 / 45%);
+    --ayrovi-page-gap-mobile: 2rem;
+    --ayrovi-page-gap-desktop: 3rem;
+
+    /* Backward-compatible aliases for runtime Admin theme configuration. */
+    --ayrovi-purple: var(--ayrovi-primary);
+    --ayrovi-purple-dark: var(--ayrovi-primary-dark);
+    --ayrovi-purple-light: var(--ayrovi-primary-light);
+    --ayrovi-yellow: var(--ayrovi-accent);
+    --ayrovi-accent-deep: var(--ayrovi-accent-dark);
+    --ayrovi-deep: var(--ayrovi-neutral-950);
+    --ayrovi-ink: var(--ayrovi-neutral-900);
+    --ayrovi-muted: var(--ayrovi-neutral-500);
+    --ayrovi-surface: var(--ayrovi-neutral-50);
+    --ayrovi-border: var(--ayrovi-neutral-200);
+    --ayrovi-shadow: var(--ayrovi-shadow-card);
+    --ayrovi-font: var(--ayrovi-font-body);
+    --hostinger-purple: var(--ayrovi-primary);
+    --hostinger-purple-dark: var(--ayrovi-primary-dark);
+    --hostinger-purple-light: var(--ayrovi-primary-light);
+  }
+}

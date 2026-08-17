@@ -2,8 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import heroHomme from '../assets/hero-homme.jpg';
 import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';
-import { X } from './QatafoIcons';
-import { FigLogoIcon } from './Icons';
+import { ContentCard } from '../discovery/ContentCard';
+import { TabHeader } from '../discovery/TabHeader';
+import { useLocale } from '../i18n/LocaleContext';
 import { getPublicHome } from '../services/publicApi';
 import { StoryTab, HomeStoryStrip } from '../social/StoryTab';
 import type { StoryCta } from '../social/types';
@@ -19,52 +20,61 @@ const localMedia: Record<string, string> = {
   '/media/hero-enfants.jpg': heroEnfants,
 };
 const mediaSource = (value: unknown, fallback: string) => localMedia[String(value || '')] || String(value || fallback);
-const formatPrice = (value: unknown) => `${Number(value || 0).toLocaleString('fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} TND`;
 const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
 
 const pageDefinitions: Array<{
   id: CmsPage;
   label: string;
+  labelAr: string;
   eyebrow: string;
+  eyebrowAr: string;
   description: string;
+  descriptionAr: string;
 }> = [
-  { id: 'arrivals', label: 'Arrivages', eyebrow: 'Sélections à venir', description: 'Les dates officielles et les comptes à rebours AYROVI.' },
-  { id: 'promotions', label: 'Promotions', eyebrow: 'Offres en cours', description: 'Les avantages et codes publiés par l’équipe AYROVI.' },
-  { id: 'stories', label: 'Social', eyebrow: 'Social Ayrovi', description: 'Stories et publications de la communauté AYROVI.' },
-  { id: 'news', label: 'مجلتي', eyebrow: 'مجلة AYROVI', description: 'موضة، اتجاهات واختيارات تحريرية تربط الإلهام بمنتجات AYROVI.' },
+  { id: 'arrivals', label: 'Arrivages', labelAr: 'القادم', eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
+  { id: 'promotions', label: 'Promotions', labelAr: 'العروض', eyebrow: 'Offres en cours', eyebrowAr: 'عروض متاحة', description: 'Les avantages et codes publiés par l’équipe AYROVI.', descriptionAr: 'العروض والرموز التي ينشرها فريق AYROVI.' },
+  { id: 'stories', label: 'Social', labelAr: 'التواصل', eyebrow: 'Social AYROVI', eyebrowAr: 'تواصل AYROVI', description: 'Stories et publications de la communauté AYROVI.', descriptionAr: 'قصص ومنشورات مجتمع AYROVI.' },
+  { id: 'news', label: 'مجلتي', labelAr: 'مجلتي', eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
 ];
 
 function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
+  const { tr } = useLocale();
   const [now, setNow] = useState(() => Date.now() + serverOffset);
+  const [ready, setReady] = useState(false);
   useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setReady(true));
     const timer = window.setInterval(() => setNow(Date.now() + serverOffset), 1000);
-    return () => window.clearInterval(timer);
+    return () => { window.cancelAnimationFrame(frame); window.clearInterval(timer); };
   }, [serverOffset]);
   const targetTime = new Date(target).getTime();
   if (!target || !Number.isFinite(targetTime)) return null;
   const totalSeconds = Math.max(0, Math.floor((targetTime - now) / 1000));
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const values = [Math.floor(totalSeconds / 86400), Math.floor((totalSeconds % 86400) / 3600), Math.floor((totalSeconds % 3600) / 60), totalSeconds % 60];
+  const labels = [tr('J', 'يوم'), tr('H', 'س'), tr('MIN', 'د'), tr('SEC', 'ث')];
   return (
-    <div className="mt-5 flex gap-2" aria-label={`Compte à rebours : ${days} jours, ${hours} heures, ${minutes} minutes`}>
-      {[[days, 'J'], [hours, 'H'], [minutes, 'MIN'], [seconds, 'SEC']].map(([value, label]) => (
-        <div key={String(label)} className="min-w-12 bg-white/10 px-2 py-2 text-center backdrop-blur-sm"><strong className="block text-lg font-black tabular-nums">{pad(Number(value))}</strong><span className="text-[8px] font-black uppercase tracking-[0.16em] text-white/55">{label}</span></div>
+    <div className="flex gap-2" aria-label={tr('Compte à rebours avant l’arrivage', 'العد التنازلي لوصول المنتجات')} aria-busy={!ready}>
+      {labels.map((label, index) => (
+        <div key={label} className="min-w-12 rounded-control bg-white/10 px-2 py-2 text-center backdrop-blur-sm">
+          {ready ? <strong className="block text-lg font-black tabular-nums">{pad(values[index])}</strong> : <span className="mx-auto mb-1 block h-5 w-8 animate-pulse rounded bg-white/20" />}
+          <span className="text-[8px] font-black uppercase tracking-[0.12em] text-white/60">{label}</span>
+        </div>
       ))}
     </div>
   );
 }
 
 function EmptyContent({ label }: { label: string }) {
-  return <div className="border border-black/10 bg-white px-6 py-20 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">Aucun contenu {label.toLowerCase()} pour le moment.</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-slate-500">Cette page se remplira automatiquement dès qu’un contenu sera publié depuis l’espace Admin.</p></div>;
+  const { tr } = useLocale();
+  return <div className="rounded-card border border-line bg-white px-6 py-16 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">{tr(`Aucun contenu ${label.toLowerCase()} pour le moment.`, `لا يوجد محتوى ${label} حاليًا.`)}</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{tr('Cette page se remplira dès qu’un contenu sera publié depuis l’espace Admin.', 'ستظهر المواد هنا فور نشرها من فضاء الإدارة.')}</p></div>;
 }
 
 function PageIntro({ definition, count }: { definition: (typeof pageDefinitions)[number]; count: number }) {
+  const { tr, isArabic } = useLocale();
+  const localDirection = definition.id === 'news' ? 'rtl' : (isArabic ? 'rtl' : 'ltr');
   return (
-    <div className="grid gap-8 border-b border-black/10 pb-10 sm:grid-cols-[1fr_auto] sm:items-end sm:pb-14">
-      <div><p className="text-xs font-black uppercase tracking-[0.22em] text-brand">{definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 text-5xl font-black leading-[0.9] tracking-[-0.055em] text-ink sm:text-7xl">{definition.label}</h1><p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">{definition.description}</p></div>
-      <div className="flex items-end gap-3"><strong className="text-5xl font-black tabular-nums text-brand">{String(count).padStart(2, '0')}</strong><span className="pb-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">contenus<br />publiés</span></div>
+    <div className="grid gap-8 border-b border-line pb-8 sm:grid-cols-[1fr_auto] sm:items-end" dir={localDirection}>
+      <div><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">{isArabic ? definition.eyebrowAr : definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 font-display text-4xl font-black leading-none tracking-tight text-ink sm:text-6xl">{isArabic ? definition.labelAr : definition.label}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted">{isArabic ? definition.descriptionAr : definition.description}</p></div>
+      <div className="flex items-end gap-3"><strong className="text-4xl font-black tabular-nums text-brand">{String(count).padStart(2, '0')}</strong><span className="pb-1 text-[10px] font-black uppercase tracking-[0.14em] text-muted">{tr('contenus publiés', 'محتوى منشور')}</span></div>
     </div>
   );
 }
@@ -73,6 +83,7 @@ interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: ()
 
 export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount }) => {
   const navigation = useNavigationHistory();
+  const { tr, isArabic, direction, formatMoney } = useLocale();
   const cmsLayerId = navigation.stack[0]?.id || '';
   const cmsPageId = cmsLayerId.startsWith('cms:') ? cmsLayerId.slice(4) : '';
   const activePage = pageDefinitions.some((page) => page.id === cmsPageId) ? cmsPageId as CmsPage : null;
@@ -128,28 +139,44 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
     if (page === 'arrivals') return activeArrivals.length ? (
       <div className="grid gap-5 lg:grid-cols-2">
         {activeArrivals.map((arrival, index) => (
-          <article key={arrival.id} className="relative min-h-[420px] overflow-hidden bg-brand-deep text-white shadow-[0_24px_60px_-32px_rgba(36,16,79,0.85)]">
-            <img src={mediaSource(arrival.mainImage, index % 2 ? heroFemme : heroHomme)} alt="" className="absolute inset-0 h-full w-full object-cover opacity-65" /><div className="absolute inset-0 bg-gradient-to-t from-[#160b30] via-brand-deep/30 to-black/10" />
-            <div className="relative flex min-h-[420px] flex-col justify-end p-7 sm:p-9"><div className="mb-auto flex items-center justify-between gap-3"><span className="bg-accent px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-ink">{arrival.type === 'EXPRESS' ? 'Express' : 'Standard'}</span>{arrival.badge && <span className="text-xs font-bold text-white/75">{arrival.badge}</span>}</div><h2 className="text-3xl font-black tracking-[-0.04em]">{arrival.name}</h2><p className="mt-2 max-w-lg text-sm leading-6 text-white/75">{arrival.description}</p><Countdown target={arrival.expectedArrivalAt} serverOffset={serverOffset} /></div>
-          </article>
+          <ContentCard
+            key={arrival.id}
+            variant="arrival"
+            image={mediaSource(arrival.mainImage, index % 2 ? heroFemme : heroHomme)}
+            title={arrival.name}
+            description={arrival.description}
+            eyebrow={tr('Prochain arrivage', 'الوصول القادم')}
+            badge={arrival.badge || (arrival.type === 'EXPRESS' ? 'Express' : 'Standard')}
+            dir={direction}
+          >
+            <Countdown target={arrival.expectedArrivalAt} serverOffset={serverOffset} />
+          </ContentCard>
         ))}
       </div>
-    ) : <EmptyContent label="Arrivages" />;
+    ) : <EmptyContent label={tr('Arrivages', 'القادم')} />;
 
     if (page === 'products') return home.products.length ? (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {home.products.map((product) => <article key={product.id} className="overflow-hidden border border-black/7 bg-white shadow-[0_18px_50px_-38px_rgba(24,19,31,0.55)]"><div className="aspect-[4/5] overflow-hidden bg-[#eeeaf4]"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-500">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-brand-deep">{formatPrice(product.finalPrice)}</strong><span className={`text-[9px] font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-red-600' : 'text-emerald-700'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? 'Indisponible' : 'Disponible'}</span></div></div></article>)}
+        {home.products.map((product) => <article key={product.id} className="overflow-hidden rounded-card border border-line bg-white shadow-card"><div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-brand-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-[9px] font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-danger' : 'text-success'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div></div></article>)}
       </div>
     ) : <EmptyContent label="Produits" />;
 
     if (page === 'promotions') return home.promotions.length ? (
-      <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => <article key={promotion.id} className="grid min-h-[420px] overflow-hidden bg-brand text-white shadow-[0_24px_70px_-36px_rgba(103,61,230,0.9)] sm:grid-cols-[1fr_42%]"><div className="flex flex-col justify-between p-7 sm:p-9"><div><p className="text-xs font-black uppercase tracking-[0.2em] text-accent">Promotion en cours</p><h2 className="mt-3 text-3xl font-black tracking-[-0.04em]">{promotion.name}</h2><p className="mt-3 text-sm leading-6 text-white/75">{promotion.description}</p></div><div>{promotion.promo_code && <span className="inline-block border border-white/25 bg-white/10 px-4 py-2 font-mono text-sm font-bold">Code : {promotion.promo_code}</span>}</div></div><img src={mediaSource(promotion.image, index % 2 ? heroFemme : heroEnfants)} alt="" className="h-60 w-full object-cover sm:h-full" /></article>)}</div>
-    ) : <EmptyContent label="Promotions" />;
+      <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => (
+        <ContentCard key={promotion.id} variant="promo" image={mediaSource(promotion.image, index % 2 ? heroFemme : heroEnfants)} title={promotion.name} description={promotion.description} eyebrow={tr('Promotion en cours', 'عرض متاح')} dir={direction}>
+          {promotion.promo_code && <span className="inline-block rounded-control border border-white/25 bg-white/10 px-4 py-2 font-mono text-sm font-bold">{tr('Code', 'الرمز')} : {promotion.promo_code}</span>}
+        </ContentCard>
+      ))}</div>
+    ) : <EmptyContent label={tr('Promotions', 'العروض')} />;
 
     if (page === 'stories') return <StoryTab isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />;
 
     return home.news.length ? (
-      <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => <article key={item.id} className="border-t border-black/15 pt-5"><img src={mediaSource(item.image, heroHomme)} alt="" className="aspect-[16/10] w-full object-cover" /><p className="mt-5 text-[10px] font-black uppercase tracking-[0.16em] text-brand">{String(item.category || 'AYROVI').replaceAll('_', ' ')}</p><h2 className="mt-2 text-2xl font-black tracking-tight text-ink">{item.title}</h2><p className="mt-3 text-sm leading-6 text-slate-600">{item.summary}</p><p className="mt-4 text-xs font-bold text-slate-400">{item.author}</p></article>)}</div>
+      <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => (
+        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={String(item.category || 'AYROVI').replaceAll('_', ' ')} dir="rtl">
+          <p className="text-xs font-bold text-muted">{item.author}</p>
+        </ContentCard>
+      ))}</div>
     ) : <EmptyContent label="مجلتي" />;
   };
 
@@ -158,7 +185,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       {/* Strip stories au-dessus des cartes (cahier des charges §7) */}
       <HomeStoryStrip isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />
 
-      <section id="arrivages" className="w-full border-y border-black/10 bg-white" aria-label="Catégories AYROVI">
+      <section id="arrivages" className="w-full border-y border-line bg-white" aria-label={tr('Contenus AYROVI', 'محتوى AYROVI')}>
         <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
           <div className="grid w-full grid-cols-4 items-center">
             {pageDefinitions.map((definition) => (
@@ -166,10 +193,10 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
                 key={definition.id}
                 type="button"
                 onClick={() => openCmsPage(definition.id)}
-                aria-label={`Ouvrir ${definition.label}`}
-                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-[clamp(0.62rem,3.55vw,2rem)] font-black tracking-[-0.035em] text-[#050505] [font-weight:950] transition-colors hover:text-brand focus-visible:text-brand focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                aria-label={tr(`Ouvrir ${definition.label}`, `فتح ${definition.labelAr}`)}
+                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-brand focus-visible:text-brand sm:text-lg"
               >
-                {definition.label}
+                {isArabic ? definition.labelAr : definition.label}
               </button>
             ))}
           </div>
@@ -177,25 +204,13 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       </section>
 
       {activePage && activeDefinition && (
-        <div className={`no-scrollbar fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} role="dialog" aria-modal="true" aria-labelledby={`cms-page-${activePage}`}>
-          {activePage === 'stories' ? (
-            <header className="sticky top-0 z-20 border-b border-white/40 bg-white/55 backdrop-blur-xl">
-              <div className="grid h-14 grid-cols-[52px_1fr_52px] items-center px-3">
-                <button type="button" autoFocus onClick={closeCmsPage} aria-label="Retour" className="grid h-10 w-10 place-items-center rounded-full bg-white/60 text-ink transition hover:bg-white active:scale-90"><X className="h-5 w-5" /></button>
-                <strong className="text-center text-lg font-black tracking-tight text-ink">Social Ayrovi</strong>
-                <span />
-              </div>
-            </header>
-          ) : (
-          <header className="sticky top-0 z-20 border-b border-black/10 bg-white/95 backdrop-blur-xl">
-            <div className="h-1 w-full bg-accent" />
-            <div className="mx-auto grid h-16 max-w-7xl grid-cols-[52px_1fr_52px] items-center px-3 sm:h-20 sm:grid-cols-[70px_1fr_70px] sm:px-8">
-              <button type="button" autoFocus onClick={closeCmsPage} aria-label={`Fermer ${activeDefinition.label}`} className="grid h-11 w-11 place-items-center border border-[#ded8eb] bg-white text-ink transition hover:border-brand hover:bg-brand hover:text-white"><X className="h-5 w-5" /></button>
-              <div className="flex items-center justify-center gap-2.5 text-ink"><span className="text-brand"><FigLogoIcon className="h-8 w-8 sm:h-9 sm:w-9" /></span><strong className="text-2xl font-black tracking-tight sm:text-3xl">AYROVI</strong></div>
-              <span className="justify-self-end text-[9px] font-black uppercase tracking-[0.16em] text-slate-400 sm:text-[10px]">{String(pageDefinitions.findIndex((page) => page.id === activePage) + 1).padStart(2, '0')} / {String(pageDefinitions.length).padStart(2, '0')}</span>
-            </div>
-          </header>
-          )}
+        <div className={`no-scrollbar fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} dir={activePage === 'news' ? 'rtl' : direction} role="dialog" aria-modal="true" aria-label={isArabic ? activeDefinition.labelAr : activeDefinition.label}>
+          <TabHeader
+            current={pageDefinitions.findIndex((page) => page.id === activePage) + 1}
+            total={pageDefinitions.length}
+            title={isArabic ? activeDefinition.labelAr : activeDefinition.label}
+            onClose={closeCmsPage}
+          />
           <main className={activePage === 'stories' ? 'min-h-[calc(100dvh-3.5rem)] w-full' : 'mx-auto min-h-[calc(100dvh-5rem)] max-w-7xl px-5 py-10 sm:px-8 sm:py-16'}>
             {activePage !== 'stories' && <PageIntro definition={activeDefinition} count={pageData[activePage].length} />}
             <div className={activePage === 'stories' ? '' : 'pt-8 sm:pt-12'}>{renderPageContent(activePage)}</div>

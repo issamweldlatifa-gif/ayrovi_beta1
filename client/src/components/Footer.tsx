@@ -115,7 +115,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
 
         {/* Transparent text is placed directly over the supplied rectangular image. */}
         <section
-          className="relative mb-10 min-h-[410px] overflow-hidden rounded-[28px] border border-[#d8e8ef] shadow-[0_24px_70px_-30px_rgba(20,82,112,0.45)] sm:min-h-[360px] sm:rounded-[34px]"
+          className="relative mb-10 min-h-[410px] overflow-hidden rounded-card border border-line shadow-overlay sm:min-h-[360px]"
           aria-labelledby="rates-title"
         >
           <img
@@ -123,11 +123,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
             alt="Symboles du dollar, de l’euro et du yen illustrant les taux de change AYROVI"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#071525]/82 via-[#071525]/38 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/40 to-transparent" />
 
           <div className="relative z-10 flex min-h-[410px] items-center px-6 py-8 text-white sm:min-h-[360px] sm:px-10 lg:px-14">
             <div className="w-full bg-transparent sm:max-w-[470px]">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-[#c9f0ff] drop-shadow-md sm:text-xs">
+              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/80 drop-shadow-md sm:text-xs">
                 AYROVI · Tunisie
               </p>
               <h4 id="rates-title" className="mt-2 text-2xl font-extrabold tracking-tight drop-shadow-lg sm:text-3xl">
@@ -197,11 +197,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
         {/* وسائل الدفع + الحقوق */}
         <div className="flex flex-col items-center gap-4 rounded-2xl bg-ink px-4 py-6 text-center sm:px-8">
           <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <PayBadge label="VISA" className="bg-white text-[#1a1f71]" />
-            <PayBadge label="Mastercard" className="bg-white not-italic text-[#eb001b]" />
-            <PayBadge label="Flouci" className="bg-[#5b2be0] not-italic text-white" />
-            <PayBadge label="D17" className="bg-[#e30613] not-italic text-white" />
-            <PayBadge label="Mandat postal" className="bg-[#f5c518] not-italic text-[#3d3d3d]" />
+            <PayBadge label="VISA" className="bg-white text-brand-deep" />
+            <PayBadge label="Mastercard" className="bg-white not-italic text-danger" />
+            <PayBadge label="Flouci" className="bg-brand not-italic text-white" />
+            <PayBadge label="D17" className="bg-danger not-italic text-white" />
+            <PayBadge label="Mandat postal" className="bg-accent not-italic text-ink" />
           </div>
           <p className="text-[11px] font-semibold text-white/70">
             <a href="/privacy.html" className="hover:text-white">Politique de confidentialité</a>

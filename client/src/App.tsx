@@ -15,6 +15,7 @@ import { configureSocial } from './social/storyService';
 import { customerApi } from './customer/api';
 import { getCommerceConfig } from './services/publicApi';
 import { replaceUrlPreservingNavigation, useNavigationHistory } from './navigation/NavigationHistory';
+import { useLocale } from './i18n/LocaleContext';
 
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
@@ -27,6 +28,7 @@ const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage'
 
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
+  const { tr } = useLocale();
   const appView = navigation.stack[0]?.id || 'home';
   const isProductDrawerOpen = appView === 'app:product';
   const isLensOpen = appView === 'app:lens';
@@ -48,7 +50,7 @@ export const App: React.FC = () => {
   // Customer authentication is isolated from the Admin session.
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [isCustomerSessionLoading, setIsCustomerSessionLoading] = useState(true);
-  const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders'>('home');
+  const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders' | 'favorites' | 'cart' | 'addresses'>('home');
   const [accountMessage, setAccountMessage] = useState('');
   const [resumeCheckoutAfterAuth, setResumeCheckoutAfterAuth] = useState(false);
   const resumeCheckoutDepthRef = useRef(0);
@@ -100,19 +102,19 @@ export const App: React.FC = () => {
         setCustomerSession(restored);
         if (customerAuthResult === 'success' || customerAuthResult === 'facebook_success') {
           openAppView('app:account', true);
-          // La vérification du téléphone est OPTIONNELLE (Profil du compte) — jamais un préalable à la commande.
+          // Le téléphone est une seconde option de vérification; un e-mail vérifié suffit également.
           setAccountMessage(customerAuthResult === 'facebook_success'
-            ? 'Connexion Facebook réussie. Bienvenue sur AYROVI !'
-            : 'Connexion Google réussie. Bienvenue sur AYROVI !');
+            ? tr('Connexion Facebook réussie. Bienvenue sur AYROVI !', 'تم تسجيل الدخول عبر Facebook. مرحبًا بك في AYROVI!')
+            : tr('Connexion Google réussie. Bienvenue sur AYROVI !', 'تم تسجيل الدخول عبر Google. مرحبًا بك في AYROVI!'));
         } else if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
           openAppView('app:account', true);
-          setAccountMessage(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`);
+          setAccountMessage(tr(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`, `تعذر تسجيل الدخول عبر ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'}. أعد المحاولة أو استخدم رمز SMS.`));
         }
       } catch {
         setCustomerSession(null);
         if (customerAuthResult === 'error' || customerAuthResult === 'facebook_error') {
           openAppView('app:account', true);
-          setAccountMessage(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`);
+          setAccountMessage(tr(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`, `تعذر تسجيل الدخول عبر ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'}. أعد المحاولة أو استخدم رمز SMS.`));
         }
       } finally {
         if (customerAuthResult) {
@@ -135,6 +137,14 @@ export const App: React.FC = () => {
 
   const totalCartTND = cartItems.reduce((sum, item) => sum + (item.lineTotalTND ?? item.priceTND * item.quantity), 0);
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  const cartBreakdown = cartItems.reduce((totals, item) => ({
+    subtotal: totals.subtotal + Number(item.convertedPriceTND || 0),
+    customs: totals.customs + Number(item.customsFeeTND || 0),
+    shipping: totals.shipping + Number(item.shippingFeeTND || 0),
+    service: totals.service + Number(item.serviceFeeTND || 0),
+    express: totals.express + Number(item.expressFeeTND || 0),
+    discount: totals.discount + Number(item.discountTND || 0),
+  }), { subtotal: 0, customs: 0, shipping: 0, service: 0, express: 0, discount: 0 });
 
   const handleExtracted = (product: ScrapedProduct) => {
     setExtractedProduct(product);
@@ -235,7 +245,7 @@ export const App: React.FC = () => {
       resumeCheckoutDepthRef.current = navigation.entry.depth;
       setResumeCheckoutAfterAuth(true);
       setAccountInitialSection('home');
-      setAccountMessage('Connectez-vous pour confirmer votre commande. Votre panier est conservé.');
+      setAccountMessage(tr('Connectez-vous pour confirmer votre commande. Votre panier est conservé.', 'سجّل الدخول لتأكيد طلبك. ستبقى سلّتك محفوظة.'));
       openAppView('app:account');
       return;
     }
@@ -282,7 +292,18 @@ export const App: React.FC = () => {
       {/* Sliding Side Menu Drawer */}
       {isMenuDrawerOpen && (
         <Suspense fallback={null}>
-          <MenuDrawer isOpen onClose={closeAppView} />
+          <MenuDrawer
+            isOpen
+            onClose={closeAppView}
+            session={customerSession}
+            onOpenAccount={(section = 'home') => {
+              setAccountInitialSection(section);
+              setAccountMessage('');
+              openAppView('app:account');
+            }}
+            onOpenAssistant={() => openAppView('app:assistant')}
+            onOpenLens={handleOpenLens}
+          />
         </Suspense>
       )}
 
@@ -321,7 +342,6 @@ export const App: React.FC = () => {
             onAddToCart={handleAddToCart}
             onExtracted={handleExtracted}
             onNewClientOrder={handleNewClientOrder}
-            onOrderComplete={() => setCartItems([])}
             onCheckoutRequested={handleProceedToCheckout}
           />
         </Suspense>
@@ -341,7 +361,7 @@ export const App: React.FC = () => {
             onOrder={handleAyrovixOrder}
             onOpenOrders={() => {
               setAccountInitialSection('orders');
-              setAccountMessage(customerSession ? '' : 'Connectez-vous pour consulter vos commandes.');
+              setAccountMessage(customerSession ? '' : tr('Connectez-vous pour consulter vos commandes.', 'سجّل الدخول للاطلاع على طلباتك.'));
               openAppView('app:account');
             }}
             onOpenAccount={() => {
@@ -353,8 +373,7 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Slide-in Cart Drawer */}
-      {/* AYROVIX Lens — expérience caméra mobile-first (au-dessus du système existant) */}
+      {/* AYROVIX Lens — expérience caméra mobile-first. */}
       {isLensOpen && (
         <Suspense fallback={null}>
           <LensLauncher isOpen historyScope={customerSession?.account.id || null} onClose={closeAppView} onOrder={handleAyrovixOrder} />
@@ -383,12 +402,13 @@ export const App: React.FC = () => {
             onClose={closeAppView}
             totalTND={totalCartTND}
             itemCount={totalCartCount}
+            breakdown={cartBreakdown}
             customerSession={customerSession}
             onRequireAuthentication={() => {
               resumeCheckoutDepthRef.current = Math.max(0, navigation.entry.depth - 1);
               setResumeCheckoutAfterAuth(true);
               setAccountInitialSection('home');
-              setAccountMessage('Connectez-vous pour confirmer la commande.');
+              setAccountMessage(tr('Connectez-vous pour confirmer la commande.', 'سجّل الدخول لتأكيد الطلب.'));
               openAppView('app:account', true);
             }}
             onOrderSuccess={handleOrderSuccess}
@@ -419,7 +439,7 @@ export const App: React.FC = () => {
           <OrderSuccessModal
             result={orderResult}
             onClose={() => { setOrderResult(null); navigation.goHome(); }}
-            onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('home'); openAppView('app:account', true); }}
+            onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('orders'); openAppView('app:account', true); }}
           />
         </Suspense>
       )}

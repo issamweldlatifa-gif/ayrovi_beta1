@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { Barcode, Camera, History, Image as ImageIcon, MoreVertical, X, Zap } from '../../components/QatafoIcons';
+import { useLocale } from '../../i18n/LocaleContext';
 
 interface LiveCameraProps {
   onPhoto: (file: File) => void;
@@ -22,6 +23,7 @@ type CameraMode = 'search' | 'upload' | 'code';
  */
 export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onHistory, onCameraFailed }) => {
   const navigation = useNavigationHistory();
+  const { direction, isArabic, tr } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -73,7 +75,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         else if (result.kind === 'barcode') onBarcode(result.value);
         else onCodeText(result.value);
       });
-    }).catch(() => setNotice('Le lecteur de code n’a pas pu être chargé.'));
+    }).catch(() => setNotice(tr('Le lecteur de code n’a pas pu être chargé.', 'تعذّر تحميل قارئ الرموز.')));
     return () => {
       cancelled = true;
       session?.stop();
@@ -114,50 +116,50 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
   const MODES: Array<{ id: CameraMode; label: string; icon: React.ReactNode; action?: () => void }> = [
     {
-      id: 'search', label: 'Recherche',
+      id: 'search', label: tr('Recherche', 'بحث'),
       icon: <Camera size={19} strokeWidth={1.8} />,
     },
     {
-      id: 'upload', label: 'Importer',
+      id: 'upload', label: tr('Importer', 'رفع'),
       icon: <ImageIcon size={19} strokeWidth={1.8} />,
       action: pickFromGallery,
     },
     {
-      id: 'code', label: 'Code',
+      id: 'code', label: tr('Code', 'رمز'),
       icon: <Barcode size={19} strokeWidth={1.8} />,
     },
   ];
 
   return (
-    <div className="fixed inset-0 z-[76] flex flex-col bg-black text-white" role="dialog" aria-modal="true" aria-label="AYROVIX Lens — caméra">
+    <div className="fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')}>
       <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
       <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 pt-4">
         <div className="flex items-center gap-1.5 justify-self-start">
-          <button type="button" onClick={onClose} aria-label="Fermer AYROVIX"
+          <button type="button" onClick={onClose} aria-label={tr('Fermer AYROVIX', 'إغلاق AYROVIX')}
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
             <X size={16} strokeWidth={2.2} />
           </button>
           <button
             type="button"
             onClick={toggleTorch}
-            aria-label={torchOn ? 'Éteindre le flash' : 'Allumer le flash'}
-            className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-amber-300 text-black' : 'bg-white/15'}`}
+            aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
+            className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-accent text-ink' : 'bg-white/15'}`}
           >
             <Zap size={16} strokeWidth={1.9} fill={torchOn ? 'currentColor' : 'none'} />
           </button>
         </div>
         <p className="whitespace-nowrap text-xs font-extrabold tracking-wide">AYROVIX Lens</p>
         <div className="flex items-center gap-1.5 justify-self-end">
-          <button type="button" onClick={onHistory} aria-label="Historique Lens" title="Historique"
+          <button type="button" onClick={onHistory} aria-label={tr('Historique Lens', 'سجل Lens')} title={tr('Historique', 'السجل')}
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
             <History size={17} strokeWidth={1.9} />
           </button>
           <button
             type="button"
             onClick={() => navigation.pushLayer({ id: 'lens:camera-info' })}
-            aria-label="Informations AYROVIX Lens"
+            aria-label={tr('Informations AYROVIX Lens', 'معلومات عدسة AYROVIX')}
             className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur"
           >
             <MoreVertical size={17} fill="currentColor" />
@@ -166,7 +168,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       </header>
       {torchHint && (
         <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[11px] font-semibold text-white/90">
-          Flash non disponible — utilisez un bon éclairage.
+          {tr('Flash non disponible — utilisez un bon éclairage.', 'الفلاش غير متاح — استخدم إضاءة جيدة.')}
         </p>
       )}
 
@@ -182,12 +184,12 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
       <div className="relative z-10 px-6 pb-2 text-center">
         {mode === 'search' && (
-          <p className="text-xs font-semibold text-white/80">Cadrez le produit, puis touchez l'obturateur.</p>
+          <p className="text-xs font-semibold text-white/80">{tr("Cadrez le produit, puis touchez l'obturateur.", 'ضع المنتج داخل الإطار ثم اضغط زر التصوير.')}</p>
         )}
         {mode === 'code' && (
           notice
-            ? <p className="mx-auto max-w-xs rounded-2xl bg-red-500/25 px-4 py-2.5 text-xs font-semibold text-red-100">{notice}</p>
-            : <p className="text-xs font-semibold text-white/80">Visez un QR code ou un code-barres.</p>
+            ? <p className="mx-auto max-w-xs rounded-2xl bg-danger/25 px-4 py-2.5 text-xs font-semibold text-white">{notice}</p>
+            : <p className="text-xs font-semibold text-white/80">{tr('Visez un QR code ou un code-barres.', 'وجّه الكاميرا إلى رمز QR أو رمز شريطي.')}</p>
         )}
       </div>
 
@@ -196,7 +198,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           <button
             type="button"
             onClick={capturePhoto}
-            aria-label="Photographier"
+            aria-label={tr('Photographier', 'التقاط صورة')}
             className="grid h-[74px] w-[74px] place-items-center rounded-full border-[4px] border-white/90 bg-white/10 backdrop-blur"
           >
             <span className="h-12 w-12 rounded-full bg-white" />
@@ -214,17 +216,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             onChange={(e) => setLinkInput(e.target.value)}
             type="url"
             inputMode="url"
-            placeholder="…ou collez le lien"
+            placeholder={tr('…ou collez le lien', '…أو ألصق الرابط')}
             className="min-h-[46px] min-w-0 flex-1 rounded-full border border-white/25 bg-white/15 px-4 text-sm text-white placeholder:text-white/60 backdrop-blur focus:outline-none"
           />
           <button type="submit" disabled={!linkInput.trim()}
-            className="min-h-[46px] flex-none rounded-full bg-white px-4 text-xs font-extrabold text-black disabled:opacity-40">
-            Analyser
+            className="ay-btn-primary flex-none rounded-full text-xs">
+            {tr('Analyser', 'تحليل')}
           </button>
         </form>
       )}
 
-      <nav className="relative z-10 grid grid-cols-3 border-t border-white/10 bg-black/35 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur" aria-label="Modes">
+      <nav className="relative z-10 grid grid-cols-3 border-t border-white/10 bg-black/35 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur" aria-label={tr('Modes', 'الأوضاع')}>
         {MODES.map((item) => (
           <button
             key={item.id}
@@ -260,7 +262,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {showInfo && (
         <div className="fixed inset-0 z-30 flex items-end justify-center" role="dialog" aria-modal="true">
           <button type="button" onClick={() => navigation.back()} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative max-h-[82vh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-[#17131f] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 text-white">
+          <div className="relative max-h-[82vh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-ink px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 text-white">
             <span className="mx-auto mb-4 block h-1 w-11 rounded-full bg-white/25" />
             <div className="mb-4 flex items-center justify-between">
               <p className="text-base font-extrabold">AYROVIX Lens</p>
@@ -269,17 +271,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
               </button>
             </div>
             <section className="mb-5">
-              <p className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-violet-300">Comment l'utiliser</p>
+              <p className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-brand-light">{tr("Comment l'utiliser", 'كيفية الاستخدام')}</p>
               <ol className="space-y-2.5 text-[13px] leading-relaxed text-white/85">
-                <li><b className="text-white">1 · Cadrez</b> le produit dans un bon éclairage.</li>
-                <li><b className="text-white">2 · AYROVIX</b> identifie et cherche les correspondances.</li>
-                <li><b className="text-white">3 · Confirmez</b> le bon produit.</li>
-                <li><b className="text-white">4 · Prix final</b> en DT puis commande.</li>
+                <li>{tr('1 · Cadrez le produit dans un bon éclairage.', '1 · ضع المنتج داخل الإطار في إضاءة جيدة.')}</li>
+                <li>{tr('2 · AYROVIX identifie et cherche les correspondances.', '2 · تتعرّف AYROVIX على المنتج وتبحث عن المطابقات.')}</li>
+                <li>{tr('3 · Confirmez le bon produit.', '3 · أكّد المنتج الصحيح.')}</li>
+                <li>{tr('4 · Prix final en DT puis commande.', '4 · اطّلع على السعر النهائي بالدينار ثم اطلب.')}</li>
               </ol>
             </section>
             <button type="button" onClick={() => navigation.back()}
               className="mt-5 min-h-[48px] w-full rounded-2xl bg-white text-sm font-extrabold text-black">
-              C'est compris
+              {tr("C'est compris", 'فهمت')}
             </button>
           </div>
         </div>

@@ -1,10 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Calculator, Camera, Link2, ArrowUpRight, ArrowRight, Image as ImageIcon, Loader2, Clipboard, CheckCircle2, User, Phone, MapPin, CreditCard, MessageSquare, Copy, PackageCheck } from './QatafoIcons';
-import confetti from 'canvas-confetti';
-import { AddToCartPayload, AddToCartResult, ScrapedProduct, CustomerInfo, OrderResult } from '../types';
+import { X, Calculator, Camera, Link2, ArrowUpRight, ArrowRight, Image as ImageIcon, Loader2, Clipboard, PackageCheck } from './QatafoIcons';
+import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { getSessionId } from '../utils/session';
-import { getCommerceConfig } from '../services/publicApi';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 
 interface ProductDrawerProps {
@@ -14,7 +11,6 @@ interface ProductDrawerProps {
   onAddToCart: (item: AddToCartPayload) => Promise<AddToCartResult | null>;
   onExtracted: (product: ScrapedProduct) => void;
   onNewClientOrder: () => void;
-  onOrderComplete: () => void;
   onCheckoutRequested: () => void;
 }
 
@@ -29,18 +25,6 @@ interface PricingPreview {
   pricingVersion: number;
 }
 
-interface CommerceConfig {
-  governorates: string[];
-  paymentMethods: string[];
-}
-
-const TUNISIAN_GOVERNORATES_FR = [
-  'Tunis', 'Ariana', 'Ben Arous', 'La Manouba', 'Nabeul', 'Zaghouan',
-  'Bizerte', 'Béja', 'Jendouba', 'Le Kef', 'Siliana', 'Sousse',
-  'Monastir', 'Mahdia', 'Sfax', 'Kairouan', 'Kasserine', 'Sidi Bouzid',
-  'Gabès', 'Médenine', 'Tataouine', 'Gafsa', 'Tozeur', 'Kébili'
-];
-
 export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   isOpen,
   product,
@@ -48,20 +32,14 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   onAddToCart,
   onExtracted,
   onNewClientOrder,
-  onOrderComplete,
   onCheckoutRequested,
 }) => {
   const navigation = useNavigationHistory();
   const productLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('product:'));
   const layerStep = productLayer?.id.slice('product:'.length);
-  const step: 'input' | 'details' | 'checkout' | 'success' = ['input', 'details', 'checkout', 'success'].includes(String(layerStep))
-    ? layerStep as 'input' | 'details' | 'checkout' | 'success'
+  const step: 'input' | 'details' = layerStep === 'input' || layerStep === 'details'
+    ? layerStep
     : (product ? 'details' : 'input');
-  const goToStep = (next: 'input' | 'details' | 'checkout' | 'success', replace = false) => {
-    const layer = { id: `product:${next}` };
-    if (replace) navigation.replaceTop(layer);
-    else navigation.pushLayer(layer);
-  };
   
   const [isUploading, setIsUploading] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
@@ -85,23 +63,9 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const [checkoutSummary, setCheckoutSummary] = useState<AddToCartResult | null>(null);
   const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
   const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
-  const [commerceConfig, setCommerceConfig] = useState<CommerceConfig>({
-    governorates: TUNISIAN_GOVERNORATES_FR,
-    paymentMethods: ['COD', 'D17', 'FLOUCI'],
-  });
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const isOpenRef = useRef(isOpen);
-
-  const [formData, setFormData] = useState<CustomerInfo>({
-    name: '',
-    phone: '',
-    city: TUNISIAN_GOVERNORATES_FR[0],
-    address: '',
-    paymentMethod: 'cod',
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
 
   useBodyScrollLock(isOpen);
 
@@ -116,7 +80,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setVariantNote('');
     setQuantity(1);
     setErrorMsg(null);
-    setOrderResult(null);
     setCheckoutSummary(null);
   }, [product]);
 
@@ -127,10 +90,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       setIsUploading(false);
       setIsScraping(false);
       setIsAddingToCart(false);
-      setIsSubmitting(false);
       setErrorMsg(null);
-      setOrderResult(null);
-      setCheckoutSummary(null);
+        setCheckoutSummary(null);
       setPreview(null);
       return;
     }
@@ -149,32 +110,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       activeRequestRef.current?.abort();
     };
   }, [isOpen, onClose, product]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let active = true;
-    getCommerceConfig()
-      .then((payload) => {
-        if (!active) return;
-        const governorates = Array.isArray(payload.data?.governorates) && payload.data.governorates.length
-          ? payload.data.governorates.map(String)
-          : TUNISIAN_GOVERNORATES_FR;
-        const configuredMethods = Array.isArray(payload.data?.paymentMethods)
-          ? payload.data.paymentMethods.map((method: unknown) => String(method).toUpperCase()).filter((method: string) => ['COD', 'D17', 'FLOUCI'].includes(method))
-          : [];
-        const paymentMethods = configuredMethods.length ? configuredMethods : ['COD', 'D17', 'FLOUCI'];
-        setCommerceConfig({ governorates, paymentMethods });
-        setFormData((current) => ({
-          ...current,
-          city: governorates.includes(current.city) ? current.city : governorates[0],
-          paymentMethod: paymentMethods.includes(current.paymentMethod.toUpperCase()) ? current.paymentMethod : paymentMethods[0].toLowerCase(),
-        }));
-      })
-      .catch((error) => {
-        if (error?.name !== 'AbortError') console.warn('[Commerce Config Error]', error);
-      });
-    return () => { active = false; };
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || sourcePrice <= 0 || quantity < 1) {
@@ -219,7 +154,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const serviceFeeTND = pricingPreview?.serviceFeeTND ?? 0;
   const shippingTND = pricingPreview?.shippingFeeTND ?? 0;
   const orderTotalTND = pricingPreview?.totalTND ?? 0;
-  const checkoutTotalTND = checkoutSummary?.totalTND ?? orderTotalTND;
 
   const handleFileUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -347,88 +281,12 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     }
   };
 
-  const handleFinalOrderSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.phone.trim() || !formData.address.trim()) {
-      setErrorMsg('Veuillez remplir tous les champs obligatoires.');
-      return;
-    }
-
-    if (formData.phone.replace(/\D/g, '').length < 8) {
-      setErrorMsg('Veuillez renseigner un numéro de téléphone tunisien valide (8 chiffres).');
-      return;
-    }
-
-    activeRequestRef.current?.abort();
-    const controller = new AbortController();
-    activeRequestRef.current = controller;
-    setIsSubmitting(true);
-    setErrorMsg(null);
-
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-id': getSessionId(),
-        },
-        body: JSON.stringify(formData),
-        signal: controller.signal,
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        throw new Error(data.error || 'Erreur lors de la confirmation.');
-      }
-
-      const result: OrderResult = {
-        orderNumber: data.orderNumber,
-        customer: formData,
-        totalTND: data.totalTND || checkoutTotalTND,
-        itemCount: checkoutSummary?.itemCount ?? quantity,
-        message: 'Commande enregistrée avec succès !',
-      };
-
-      setOrderResult(result);
-      // Remplace le formulaire soumis afin que Back ne puisse pas le réactiver.
-      goToStep('success', true);
-      onOrderComplete();
-
-      try {
-        confetti({
-          particleCount: 90,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#673de6', '#5025d1', '#7e57ff', '#ffc24b', '#10b981'],
-        });
-      } catch {}
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') {
-        console.error('[Order Error]', err);
-        setErrorMsg(err.message || 'Erreur lors de la commande.');
-      }
-    } finally {
-      if (activeRequestRef.current === controller) {
-        activeRequestRef.current = null;
-        setIsSubmitting(false);
-      }
-    }
-  };
-
   const handleResetForNewClient = () => {
     navigation.navigate([{ id: 'app:product' }, { id: 'product:input' }], { replace: true });
     setUrlInput('');
     setVariantNote('');
     setQuantity(1);
-    setFormData({
-      name: '',
-      phone: '',
-      city: commerceConfig.governorates[0] || TUNISIAN_GOVERNORATES_FR[0],
-      address: '',
-      paymentMethod: (commerceConfig.paymentMethods[0] || 'COD').toLowerCase(),
-    });
     setErrorMsg(null);
-    setOrderResult(null);
     setCheckoutSummary(null);
     onNewClientOrder();
   };
@@ -459,17 +317,14 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       />
 
       <section className="relative flex h-screen h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-white">
-        <div className="flex items-center justify-between border-b border-slate-100 bg-surface px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+        <div className="flex items-center justify-between border-b border-line bg-surface px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center font-black text-xs">
               +
             </div>
             <div>
               <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
-                {step === 'input' && "Nouvelle Commande (Lens)"}
-                {step === 'details' && "Fiche de Calcul & Prix (DT)"}
-                {step === 'checkout' && "Livraison & Coordonnées"}
-                {step === 'success' && "Commande Confirmée"}
+                {step === 'input' ? "AYROVIX Lens — Nouvelle commande" : "AYROVIX Lens — Prix en dinars"}
               </h3>
               <p className="text-[11px] text-muted font-medium">Conversion transparente et garantie</p>
             </div>
@@ -479,7 +334,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             ref={closeButtonRef}
             type="button"
             onClick={handleCloseDrawer}
-            className="w-9 h-9 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            className="w-9 h-9 rounded-full bg-white border border-line text-muted hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
             aria-label="Fermer Lens"
           >
             <X className="w-5 h-5" />
@@ -487,7 +342,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
         </div>
 
         {errorMsg && (
-          <div className="mx-5 mt-3 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-semibold">
+          <div className="mx-5 mt-3 p-3 rounded-xl bg-danger/5 border border-danger/20 text-danger text-xs font-semibold">
             {errorMsg}
           </div>
         )}
@@ -622,8 +477,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
           {step === 'details' && (
             <div className="space-y-5">
-              <div className="bg-surface border border-slate-200 rounded-2xl p-4 flex gap-4 items-center">
-                <div className="w-20 h-20 rounded-xl bg-white border border-slate-200 flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
+              <div className="bg-surface border border-line rounded-2xl p-4 flex gap-4 items-center">
+                <div className="w-20 h-20 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
                   {(uploadPreview || product?.mainImage) ? (
                     <img src={uploadPreview || product?.mainImage || ''} alt={title} className="w-full h-full object-contain" />
                   ) : (
@@ -631,14 +486,14 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   )}
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <label className="block text-[10px] font-bold text-muted uppercase tracking-wider">
                     Titre de l'article :
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-white border border-slate-200 focus:border-brand rounded-xl px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none"
+                    className="w-full bg-white border border-line focus:border-brand rounded-xl px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none"
                   />
                 </div>
               </div>
@@ -666,7 +521,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       value={sourcePrice || ''}
                       onChange={(e) => setSourcePrice(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-slate-200 focus:border-brand rounded-xl px-3 py-2 text-sm font-black text-ink focus:outline-none shadow-xs"
+                      className="w-full bg-white border border-line focus:border-brand rounded-xl px-3 py-2 text-sm font-black text-ink focus:outline-none shadow-xs"
                     />
                   </div>
 
@@ -677,7 +532,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-white border border-slate-200 focus:border-brand rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none shadow-xs"
+                      className="w-full bg-white border border-line focus:border-brand rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none shadow-xs"
                     >
                       <option value="EUR">Euro (€ EUR)</option>
                       <option value="USD">Dollar ($ USD)</option>
@@ -687,7 +542,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   </div>
                 </div>
 
-                <div className="pt-3 border-t border-slate-200 space-y-1.5 text-xs">
+                <div className="pt-3 border-t border-line space-y-1.5 text-xs">
                   <div className="flex justify-between text-muted">
                     <span>Prix converti :</span>
                     <span className="font-semibold text-ink">{convertedTND.toFixed(2)} DT</span>
@@ -704,7 +559,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <span>Frais de service & garantie :</span>
                     <span className="font-semibold text-ink">+{serviceFeeTND.toFixed(2)} DT</span>
                   </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-slate-200 font-extrabold text-sm sm:text-base">
+                  <div className="flex justify-between items-center pt-2 border-t border-line font-extrabold text-sm sm:text-base">
                     <span className="text-ink">Total à régler :</span>
                     <span className="text-brand text-lg font-black">
                       {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
@@ -724,7 +579,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     value={variantNote}
                     onChange={(e) => setVariantNote(e.target.value)}
                     placeholder="Ex : M, Noir..."
-                    className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3 py-2 text-xs text-ink focus:outline-none"
+                    className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3 py-2 text-xs text-ink focus:outline-none"
                   />
                 </div>
 
@@ -736,7 +591,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-ink font-black flex items-center justify-center cursor-pointer"
+                      className="w-9 h-9 rounded-xl bg-surface hover:bg-line text-ink font-black flex items-center justify-center cursor-pointer"
                     >
                       -
                     </button>
@@ -746,7 +601,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <button
                       type="button"
                       onClick={() => setQuantity(quantity + 1)}
-                      className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-ink font-black flex items-center justify-center cursor-pointer"
+                      className="w-9 h-9 rounded-xl bg-surface hover:bg-line text-ink font-black flex items-center justify-center cursor-pointer"
                     >
                       +
                     </button>
@@ -756,146 +611,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             </div>
           )}
 
-          {step === 'checkout' && (
-            <form id="lens-checkout-form" onSubmit={handleFinalOrderSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-brand" />
-                  <span>Nom et Prénom :</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Ex : Anis Ben Ammar"
-                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5 text-brand" />
-                  <span>Téléphone :</span>
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+216 98 123 456"
-                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-mono font-semibold"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-brand" />
-                  <span>Gouvernorat :</span>
-                </label>
-                <select
-                  value={formData.city}
-                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
-                >
-                  {commerceConfig.governorates.map((gov) => (
-                    <option key={gov} value={gov}>{gov}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1">
-                  Adresse complète :
-                </label>
-                <textarea
-                  required
-                  rows={2}
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  placeholder="Ex : Rue Hédi Nouira, Ennasr 2, Apt 4"
-                  className="w-full bg-surface border border-slate-200 focus:border-brand rounded-xl px-3.5 py-2 text-xs text-ink focus:outline-none font-semibold resize-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-muted mb-1 flex items-center gap-1.5">
-                  <CreditCard className="w-3.5 h-3.5 text-brand" />
-                  <span>Paiement :</span>
-                </label>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                  {commerceConfig.paymentMethods.map((method) => {
-                    const value = method.toLowerCase();
-                    const label = method === 'COD' ? 'À la livraison' : method === 'D17' ? 'D17' : 'Flouci';
-                    return (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, paymentMethod: value })}
-                        className={`py-2.5 px-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                          formData.paymentMethod === value
-                            ? 'border-brand bg-brand/10 text-brand'
-                            : 'border-slate-200 bg-surface text-slate-500'
-                        }`}
-                      >
-                        <span>{label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </form>
-          )}
-
-          {step === 'success' && orderResult && (
-            <div className="text-center space-y-5 py-4">
-              <div className="w-16 h-16 rounded-3xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 mx-auto shadow-xs">
-                <PackageCheck className="w-8 h-8" />
-              </div>
-
-              <div>
-                <h4 className="text-xl font-bold text-ink">
-                  Félicitations ! Commande validée
-                </h4>
-                <p className="text-xs text-muted mt-1">
-                  Votre code de suivi est généré et actif chez AYROVI.
-                </p>
-              </div>
-
-              <div className="bg-surface border border-brand/30 rounded-2xl p-4 flex items-center justify-between">
-                <div className="text-left">
-                  <span className="text-[10px] text-muted uppercase font-bold block">Code de suivi :</span>
-                  <span className="text-lg font-mono font-black text-brand">{orderResult.orderNumber}</span>
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(orderResult.orderNumber);
-                    alert("Code copié : " + orderResult.orderNumber);
-                  }}
-                  className="p-2 rounded-xl bg-white border border-slate-200 text-slate-600 hover:text-ink shadow-2xs cursor-pointer"
-                  title="Copier"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-
-              <a
-                href={`https://wa.me/?text=${encodeURIComponent(
-                  `Bonjour AYROVI,\nJe confirme ma commande :\nRéférence : ${orderResult.orderNumber}\nNom : ${orderResult.customer.name}\nVille : ${orderResult.customer.city}\nTotal : ${orderResult.totalTND.toFixed(2)} DT`
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-bold py-3.5 px-6 rounded-2xl shadow-md flex items-center justify-center gap-2 text-xs sm:text-sm transition-all"
-              >
-                <MessageSquare className="w-4 h-4" />
-                <span>Suivre ma commande sur WhatsApp</span>
-              </a>
-            </div>
-          )}
         </div>
 
         {/* Full-page footer actions */}
-        <div className="space-y-2.5 border-t border-slate-200 bg-white px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-5">
+        <div className="space-y-2.5 border-t border-line bg-white px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-5">
           {step === 'details' && (
             <button
               type="button"
@@ -917,40 +636,11 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             </button>
           )}
 
-          {step === 'checkout' && (
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => navigation.back()}
-                className="py-3.5 px-4 rounded-2xl border border-slate-200 bg-slate-50 font-bold text-xs text-slate-700 cursor-pointer"
-              >
-                Retour
-              </button>
-              <button
-                type="submit"
-                form="lens-checkout-form"
-                disabled={isSubmitting}
-                className="flex-1 py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-brand hover:bg-brand-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Confirmation en cours...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>Confirmer la commande ({checkoutTotalTND.toFixed(2)} DT)</span>
-                  </>
-                )}
-              </button>
-            </div>
-          )}
 
           <button
             type="button"
             onClick={handleResetForNewClient}
-            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-brand/40 bg-brand/5 hover:bg-[#e8defc] text-brand font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
+            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-brand/40 bg-brand/5 hover:bg-brand/10 text-brand font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
           >
             <span>Nouvelle commande pour un autre client</span>
           </button>

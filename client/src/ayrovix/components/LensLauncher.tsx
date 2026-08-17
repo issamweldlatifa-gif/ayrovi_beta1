@@ -1,13 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
-import { AyrovixNavIcon } from '../../components/NavigationBrandIcons';
 import type {
   AyrovixCandidate, AyrovixDetectedPrice, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { rememberAyrovixHistory } from '../services/history';
-import { AlertCircle, ArrowLeft, Barcode, Check, History, Image as ImageIcon, Link2, ShoppingBag, Sparkles, X } from '../../components/QatafoIcons';
+import { AlertCircle, Barcode, Check, History, Image as ImageIcon, Link2, ShoppingBag, Sparkles } from '../../components/QatafoIcons';
+import { AppHeader } from '../../design/AppHeader';
+import { Button } from '../../design/Button';
+import { useLocale } from '../../i18n/LocaleContext';
 import { LiveCamera } from './LiveCamera';
 import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
@@ -72,6 +74,7 @@ const NEW_SCAN_MESSAGE = 'Cadrez le produit dans un bon éclairage, ou collez so
 
 export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, historyScope, onOrder }) => {
   const navigation = useNavigationHistory();
+  const { tr, direction } = useLocale();
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
   const stageLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('lens:') && layer.id !== 'lens:history');
   const stageValue = stageLayer?.id.slice('lens:'.length);
@@ -468,34 +471,14 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   }
 
   return (
-    <div className="fixed inset-0 z-[75] flex flex-col bg-white" role="dialog" aria-modal="true" aria-label="AYROVIX Lens">
+    <div className="fixed inset-0 z-[75] flex flex-col bg-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col">
-        <header className="grid min-h-[60px] grid-cols-[1fr_auto_1fr] items-center border-b border-line bg-white px-3 pt-[env(safe-area-inset-top)]">
-          <div className="justify-self-start">
-            {stage === 'home' ? (
-              <button type="button" onClick={handleClose} aria-label="Fermer AYROVIX"
-                className="grid h-10 w-10 place-items-center rounded-full text-ink transition active:scale-95">
-                <X size={17} strokeWidth={2.1} />
-              </button>
-            ) : (
-              <button type="button" onClick={goBack} aria-label="Retour"
-                className="inline-flex min-h-[42px] items-center gap-1 rounded-xl px-1.5 text-xs font-extrabold text-ink transition active:scale-95">
-                <ArrowLeft size={18} strokeWidth={2.1} />
-                Retour
-              </button>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 whitespace-nowrap text-sm font-extrabold text-ink">
-            <span>AYROVIX</span>
-            <span className="grid h-7 w-7 place-items-center text-ink">
-              <AyrovixNavIcon size={26}/>
-            </span>
-          </div>
-          <button type="button" onClick={() => navigation.pushLayer({ id: 'lens:history' })} aria-label="Historique Lens" title="Historique"
-            className="grid h-10 w-10 place-items-center justify-self-end rounded-full text-ink transition active:scale-95">
-            <History size={18} strokeWidth={1.9} />
-          </button>
-        </header>
+        <AppHeader
+          title="AYROVIX Lens"
+          subtitle={tr('Recherche visuelle AYROVI', 'البحث البصري من AYROVI')}
+          {...(stage === 'home' ? { onClose: handleClose } : { onBack: goBack })}
+          actions={<Button variant="ghost" size="icon" onClick={() => navigation.pushLayer({ id: 'lens:history' })} aria-label={tr('Historique Lens', 'سجل Lens')} title={tr('Historique', 'السجل')}><History className="h-5 w-5" /></Button>}
+        />
 
         <main className="flex-1 overflow-y-auto px-4 py-4 pb-8">
           {stage === 'home' && (
@@ -510,23 +493,23 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                   if (typeof value === 'string' && value.trim()) void runUrlAnalysis(value.trim(), 'url');
                 }}
               >
-                <label htmlFor="ayrovix-url-input" className="flex items-center gap-3 text-left">
+                <label htmlFor="ayrovix-url-input" className="flex items-center gap-3 text-start">
                   <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-brand-light text-brand">
                     <Link2 size={20} strokeWidth={1.8} />
                   </span>
                   <span>
-                    <span className="block text-sm font-extrabold text-ink">Lien du produit</span>
+                    <span className="block text-sm font-extrabold text-ink">{tr('Lien du produit', 'رابط المنتج')}</span>
                     <span className="mt-0.5 block text-[11px] font-medium text-muted">SHEIN, Zara, Amazon, AliExpress…</span>
                   </span>
                 </label>
                 <div className="flex gap-2">
                   <input id="ayrovix-url-input" name="ayrovix-url" type="url" inputMode="url" placeholder="https://…"
                     className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none" />
-                  <button type="submit" className="min-h-[46px] flex-none rounded-xl bg-ink px-4 text-xs font-extrabold text-white transition active:scale-95">Analyser</button>
+                  <button type="submit" className="ay-btn-primary flex-none text-xs">{tr('Analyser', 'تحليل')}</button>
                 </div>
               </form>
               <p className="px-2 pt-1 text-center text-[11px] leading-relaxed text-muted">
-                Caméra inaccessible ? Importez une photo ou collez un lien — AYROVIX identifie le produit et calcule son prix final en dinars.
+                {tr('Caméra inaccessible ? Importez une photo ou collez un lien — AYROVIX identifie le produit et calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو ألصق رابطًا — ستتعرّف AYROVIX على المنتج وتحسب سعره النهائي بالدينار.')}
               </p>
             </div>
           )}
@@ -534,11 +517,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           {stage === 'preview' && previewUrl && (
             <div className="mx-auto max-w-md space-y-4">
               <div className="relative overflow-hidden rounded-[22px] border border-line">
-                <img src={previewUrl} alt="Aperçu du produit à analyser" className="max-h-[46vh] w-full bg-surface object-contain" />
+                <img src={previewUrl} alt={tr('Aperçu du produit à analyser', 'معاينة المنتج المراد تحليله')} className="max-h-[46vh] w-full bg-surface object-contain" />
               </div>
               <div className="flex gap-2.5">
-                <button type="button" onClick={reset} className="min-h-[52px] rounded-2xl border border-line px-5 text-sm font-bold text-ink transition hover:border-ink">Reprendre</button>
-                <button type="button" onClick={() => void runImageAnalysis()} className="bg-brand-gradient min-h-[52px] flex-1 rounded-2xl px-5 text-sm font-extrabold text-white shadow-lg transition active:scale-[0.98]">Analyser ce produit</button>
+                <button type="button" onClick={reset} className="ay-btn-secondary text-sm">{tr('Reprendre', 'إعادة الالتقاط')}</button>
+                <button type="button" onClick={() => void runImageAnalysis()} className="ay-btn-primary flex-1 text-sm">{tr('Analyser ce produit', 'تحليل هذا المنتج')}</button>
               </div>
             </div>
           )}
@@ -553,9 +536,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
               </div>
               <div className="flex items-center justify-center gap-2.5 text-sm font-bold text-ink">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-r-transparent" />
-                AYROVIX analyse…
+                {tr('AYROVIX analyse…', 'AYROVIX تحلّل…')}
               </div>
-              <p className="text-center text-[11px] text-muted">Analyse instantanée AYROVIX — prix et correspondances en cours.</p>
+              <p className="text-center text-[11px] text-muted">{tr('Analyse instantanée AYROVIX — prix et correspondances en cours.', 'تحليل AYROVIX فوري — جارٍ حساب الأسعار والمطابقات.')}</p>
             </div>
           )}
 
@@ -577,27 +560,27 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                           <ImageIcon size={40} strokeWidth={1.4} />
                         </div>
                       )}
-                      <span className="absolute left-3 top-3 rounded-full bg-amber-400 px-2.5 py-1 text-[10px] font-extrabold text-ink">Prix repéré</span>
-                      <span className="absolute right-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.detectedPrice.sourceCurrency}</span>
+                      <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold text-ink">{tr('Prix repéré', 'سعر مكتشف')}</span>
+                      <span className="absolute end-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.detectedPrice.sourceCurrency}</span>
                     </div>
                     <div className="space-y-3 p-4">
                       <div>
                         <h3 className="text-[15px] font-extrabold leading-snug text-ink line-clamp-2">
-                          {candidatesView.detectedPrice.title || candidatesView.queryLabel || 'Produit détecté par Claude'}
+                          {candidatesView.detectedPrice.title || candidatesView.queryLabel || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX')}
                         </h3>
                         <p className="mt-1 text-[11px] text-muted">
-                          {candidatesView.detectedPrice.isCartScreenshot ? <span className="inline-flex items-center gap-1"><ShoppingBag className="h-3.5 w-3.5" />Panier repéré — total calculé</span> : <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" />Produit repéré sur l’image</span>} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
+                          {candidatesView.detectedPrice.isCartScreenshot ? <span className="inline-flex items-center gap-1"><ShoppingBag className="h-3.5 w-3.5" />{tr('Panier repéré — total calculé', 'تم اكتشاف سلة — حُسب الإجمالي')}</span> : <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" />{tr('Produit repéré sur l’image', 'تم اكتشاف المنتج في الصورة')}</span>} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
                         </p>
                       </div>
-                      <div className="flex items-end justify-between rounded-2xl bg-amber-50 p-3.5 border border-amber-200">
+                      <div className="flex items-end justify-between rounded-2xl bg-accent/10 p-3.5 border border-accent/30">
                         <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted">Prix visible (Claude)</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{tr('Prix visible', 'السعر الظاهر')}</p>
                           <p className="text-sm font-bold text-ink">{candidatesView.detectedPrice.sourcePrice.toFixed(2)} {candidatesView.detectedPrice.sourceCurrency}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-amber-700">Prix final estimé</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-warning">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
                           <p className="text-lg font-extrabold text-ink">≈ {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || '—'} DT</p>
-                          <p className="text-[9px] text-emerald-600 font-semibold">Tout inclus</p>
+                          <p className="text-[9px] text-success font-semibold">{tr('Tout inclus', 'شامل كل شيء')}</p>
                         </div>
                       </div>
                       <button
@@ -627,35 +610,35 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                           setVerifiedPriceUrl(false);
                           enterStage('product');
                         }}
-                        className="bg-brand-gradient flex min-h-[48px] w-full items-center justify-center rounded-2xl px-5 text-sm font-extrabold text-white shadow"
+                        className="ay-btn-primary w-full text-sm"
                       >
-                        Commander avec ce prix • {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || candidatesView.detectedPrice.sourcePrice.toFixed(2)} DT
+                        {tr('Commander avec ce prix', 'الطلب بهذا السعر')} • {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || candidatesView.detectedPrice.sourcePrice.toFixed(2)} DT
                       </button>
-                      <p className="text-center text-[10px] font-semibold text-amber-800">Le lien exact sera demandé à l'étape suivante pour l'achat manuel.</p>
+                      <p className="text-center text-[10px] font-semibold text-warning">{tr("Le lien exact sera demandé à l'étape suivante pour l'achat manuel.", 'سيُطلب الرابط الدقيق في الخطوة التالية للشراء اليدوي.')}</p>
                     </div>
                   </div>
 
                   <div className="rounded-[16px] bg-surface px-3 py-2 text-center">
-                    <p className="text-[11px] font-bold text-muted">Ou choisissez une correspondance externe ci-dessous</p>
+                    <p className="text-[11px] font-bold text-muted">{tr('Ou choisissez une correspondance externe ci-dessous', 'أو اختر تطابقًا خارجيًا أدناه')}</p>
                   </div>
                 </>
               )}
               {candidatesView.queryLabel && (
                 <p className="rounded-2xl bg-surface px-4 py-3 text-center text-[11px] font-semibold text-muted">
-                  Recherche : <span className="font-extrabold text-ink">{candidatesView.queryLabel}</span>
+                  {tr('Recherche', 'البحث')} : <span className="font-extrabold text-ink">{candidatesView.queryLabel}</span>
                 </p>
               )}
               {candidatesView.list.length > 0 ? (
                 <ProductCandidates candidates={candidatesView.list} onChoose={handleChooseCandidate} />
               ) : (
                 <div className="space-y-4 rounded-[22px] border border-dashed border-line p-6 text-center">
-                  <p className="text-sm font-extrabold text-ink">Aucune correspondance externe</p>
+                  <p className="text-sm font-extrabold text-ink">{tr('Aucune correspondance externe', 'لا توجد مطابقة خارجية')}</p>
                   {candidatesView.detectedPrice && candidatesView.detectedPrice.sourcePrice > 0 ? (
-                    <p className="text-xs text-muted">Utilisez le prix visible ci-dessus ; notre équipe le vérifiera manuellement après l'acompte.</p>
+                    <p className="text-xs text-muted">{tr("Utilisez le prix visible ci-dessus ; notre équipe le vérifiera manuellement après l'acompte.", 'استخدم السعر الظاهر أعلاه؛ سيتحقق منه فريقنا يدويًا بعد العربون.')}</p>
                   ) : (
-                    <p className="text-xs leading-relaxed text-muted">Essayez le lien direct de la page boutique pour un calcul exact.</p>
+                    <p className="text-xs leading-relaxed text-muted">{tr('Essayez le lien direct de la page boutique pour un calcul exact.', 'جرّب الرابط المباشر لصفحة المتجر للحصول على حساب دقيق.')}</p>
                   )}
-                  <button type="button" onClick={reset} className="min-h-[46px] rounded-xl bg-ink px-5 text-xs font-extrabold text-white">Nouvelle recherche</button>
+                  <button type="button" onClick={reset} className="ay-btn-primary text-xs">{tr('Nouvelle recherche', 'بحث جديد')}</button>
                 </div>
               )}
             </div>
@@ -666,14 +649,14 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
               <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
               {!verifiedPriceUrl && candidatesView?.list.length ? (
-                <button type="button" onClick={goBack} className="min-h-[42px] w-full rounded-xl border border-line bg-white px-4 text-xs font-bold text-ink">
-                  Retour aux autres résultats
+                <button type="button" onClick={goBack} className="ay-btn-secondary min-h-11 w-full text-xs">
+                  {tr('Retour aux autres résultats', 'العودة إلى النتائج الأخرى')}
                 </button>
               ) : null}
 
               {urlResult && urlResult.alternates.length > 0 && (
                 <section>
-                  <h3 className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted">Autres correspondances</h3>
+                  <h3 className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
                   <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
                 </section>
               )}
@@ -685,32 +668,32 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-light text-brand">
                 <Barcode size={28} strokeWidth={1.8} />
               </div>
-              <p className="text-sm font-extrabold text-ink">Code-barres détecté</p>
+              <p className="text-sm font-extrabold text-ink">{tr('Code-barres détecté', 'تم اكتشاف الرمز الشريطي')}</p>
               <p className="mx-auto w-fit rounded-xl bg-surface px-5 py-3 font-mono text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">
-                Aucune offre en ligne ne correspond à ce code pour le moment. Photographiez le produit : AYROVIX l'identifiera par l'image.
+                {tr("Aucune offre en ligne ne correspond à ce code pour le moment. Photographiez le produit : AYROVIX l'identifiera par l'image.", 'لا يطابق هذا الرمز أي عرض عبر الإنترنت حاليًا. صوّر المنتج وستتعرّف عليه AYROVIX من الصورة.')}
               </p>
               <div className="flex justify-center gap-2.5">
-                <button type="button" onClick={copyBarcode} className="min-h-[46px] rounded-xl border border-line px-5 text-xs font-bold text-ink">
-                  {copied ? <span className="inline-flex items-center gap-1.5">Copié<Check className="h-3.5 w-3.5" /></span> : 'Copier le code'}
+                <button type="button" onClick={copyBarcode} className="ay-btn-secondary text-xs">
+                  {copied ? <span className="inline-flex items-center gap-1.5">{tr('Copié', 'تم النسخ')}<Check className="h-3.5 w-3.5" /></span> : tr('Copier le code', 'نسخ الرمز')}
                 </button>
-                <button type="button" onClick={reset} className="bg-brand-gradient min-h-[46px] rounded-xl px-5 text-xs font-extrabold text-white">Photographier le produit</button>
+                <button type="button" onClick={reset} className="ay-btn-primary text-xs">{tr('Photographier le produit', 'تصوير المنتج')}</button>
               </div>
             </div>
           )}
 
           {stage === 'error' && error && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-red-50 text-red-500">
+              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-danger/5 text-danger">
                 <AlertCircle size={28} strokeWidth={1.8} />
               </div>
-              <p className="text-sm font-extrabold text-ink">{error.code === 'AYROVIX_UNAVAILABLE' ? 'AYROVIX arrive très bientôt' : 'Petit obstacle'}</p>
+              <p className="text-sm font-extrabold text-ink">{error.code === 'AYROVIX_UNAVAILABLE' ? tr('AYROVIX arrive très bientôt', 'AYROVIX متاحة قريبًا') : tr('Petit obstacle', 'عائق بسيط')}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>
               <div className="flex justify-center gap-2.5">
                 {imageFile && error.code !== 'AYROVIX_UNAVAILABLE' && (
-                  <button type="button" onClick={() => replaceStage('preview')} className="min-h-[46px] rounded-xl border border-line px-5 text-xs font-bold text-ink">Revoir l'image</button>
+                  <button type="button" onClick={() => replaceStage('preview')} className="ay-btn-secondary text-xs">{tr("Revoir l'image", 'مراجعة الصورة')}</button>
                 )}
-                <button type="button" onClick={reset} className="bg-brand-gradient min-h-[46px] rounded-xl px-5 text-xs font-extrabold text-white">Nouvelle recherche</button>
+                <button type="button" onClick={reset} className="ay-btn-primary text-xs">{tr('Nouvelle recherche', 'بحث جديد')}</button>
               </div>
             </div>
           )}

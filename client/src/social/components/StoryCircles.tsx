@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Story, StoryPublisher } from '../types';
+import { useLocale } from '../../i18n/LocaleContext';
 
 export interface StoryGroup {
   publisher: StoryPublisher;
@@ -32,23 +33,25 @@ const Avatar: React.FC<{ publisher: StoryPublisher; size: number }> = ({ publish
       : <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-light to-accent text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>
 );
 
-export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = ({ group, onOpen }) => (
-  <button type="button" onClick={onOpen} className="flex w-16 shrink-0 flex-col items-center gap-1.5" aria-label={`Stories de ${group.publisher.name}`}>
+export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = ({ group, onOpen }) => {
+  const { tr } = useLocale();
+  return <button type="button" onClick={onOpen} className="flex w-16 shrink-0 flex-col items-center gap-1.5" aria-label={tr(`Stories de ${group.publisher.name}`, `قصص ${group.publisher.name}`)}>
     <span className={`rounded-full p-[2.5px] ${group.hasUnseen ? 'bg-gradient-to-tr from-brand via-brand-light to-accent' : 'bg-line'}`}>
       <span className="block rounded-full bg-white p-[2px]">
         <Avatar publisher={group.publisher} size={54} />
       </span>
     </span>
     <span className="w-full truncate text-center text-[10px] font-bold text-ink">{group.publisher.name}</span>
-  </button>
-);
+  </button>;
+};
 
-export const StoryCircles: React.FC<{ groups: StoryGroup[]; onOpen: (index: number) => void }> = ({ groups, onOpen }) => (
-  <div className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-4 pb-1 sm:px-6" role="list" aria-label="Stories">
+export const StoryCircles: React.FC<{ groups: StoryGroup[]; onOpen: (index: number) => void }> = ({ groups, onOpen }) => {
+  const { tr } = useLocale();
+  return <div className="no-scrollbar -mx-1 flex gap-1 overflow-x-auto px-4 pb-1 sm:px-6" role="list" aria-label={tr('Stories', 'القصص')}>
     {groups.map((group, index) => (
       <div role="listitem" key={group.publisher.id} className="shrink-0">
         <StoryCircle group={group} onOpen={() => onOpen(index)} />
       </div>
     ))}
-  </div>
-);
+  </div>;
+};

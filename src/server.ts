@@ -90,7 +90,7 @@ app.use('/api/customer/auth/otp/request', rateLimit('otp-request', 5, 60_000, (r
 app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
 app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
-app.use('/api/checkout', rateLimit('checkout', 15, 5 * 60_000));
+app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
@@ -174,7 +174,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.4.2',
+    version: '3.5.0',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });

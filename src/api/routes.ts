@@ -32,7 +32,17 @@ export function createApiRouter(
       const pricedItems = items.map((item) => {
         const breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, { quantity: item.quantity });
         if (!breakdown) throw new Error('CART_PRICING_FAILED');
-        return { ...item, lineTotalTND: breakdown.totalTND, pricingVersion: breakdown.pricingVersion };
+        return {
+          ...item,
+          lineTotalTND: breakdown.totalTND,
+          pricingVersion: breakdown.pricingVersion,
+          convertedPriceTND: breakdown.convertedPriceTND,
+          customsFeeTND: breakdown.customsFeeTND,
+          shippingFeeTND: breakdown.shippingFeeTND,
+          serviceFeeTND: breakdown.serviceFeeTND,
+          expressFeeTND: breakdown.expressFeeTND,
+          discountTND: breakdown.discountTND,
+        };
       });
       const totalTND = Math.round(pricedItems.reduce((sum, item) => sum + item.lineTotalTND, 0) * 100) / 100;
       return { items: pricedItems, totalTND };
@@ -351,7 +361,7 @@ export function createApiRouter(
     if (!sessionId) return;
 
     const customer = customerFromRequest(req);
-    const { name, phone, city, address, paymentMethod } = req.body ?? {};
+    const { name, email, phone, city, address, paymentMethod, latitude, longitude, termsAccepted, locale } = req.body ?? {};
 
     if (
       typeof name !== 'string' || !name.trim() || name.length > 160 ||
@@ -364,15 +374,42 @@ export function createApiRouter(
       });
     }
 
-    // Le téléphone de livraison vient du formulaire (aucun SMS requis — connexion Google supportée).
+    const contactEmail = String(email ?? '').trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail) || contactEmail.length > 254) {
+      return res.status(400).json({ success: false, code: 'CHECKOUT_EMAIL_INVALID', error: 'Veuillez confirmer une adresse e-mail valide pour la facture.' });
+    }
+    if (termsAccepted !== true) {
+      return res.status(400).json({ success: false, code: 'TERMS_REQUIRED', error: 'Vous devez accepter les conditions de vente et la politique de retour.' });
+    }
+    const account = db.get<any>('SELECT email,email_verified_at,phone_verified_at,status FROM customer_accounts WHERE id=?', customer.id);
+    if (!account?.email_verified_at && !account?.phone_verified_at) {
+      return res.status(403).json({ success: false, code: 'CONTACT_VERIFICATION_REQUIRED', error: 'Vérifiez votre e-mail ou votre téléphone avant de confirmer la commande.' });
+    }
+    if (account.email_verified_at && !account.phone_verified_at && contactEmail !== String(account.email || '').toLowerCase()) {
+      return res.status(403).json({ success: false, code: 'VERIFIED_EMAIL_REQUIRED', error: 'Utilisez votre adresse e-mail vérifiée, ou vérifiez votre téléphone avant de changer l’adresse de facturation.' });
+    }
+    const parsedLatitude = latitude === null || latitude === undefined || latitude === '' ? null : Number(latitude);
+    const parsedLongitude = longitude === null || longitude === undefined || longitude === '' ? null : Number(longitude);
+    if ((parsedLatitude !== null && (!Number.isFinite(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90))
+      || (parsedLongitude !== null && (!Number.isFinite(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180))
+      || (parsedLatitude === null) !== (parsedLongitude === null)) {
+      return res.status(400).json({ success: false, code: 'DELIVERY_LOCATION_INVALID', error: 'La position de livraison est invalide.' });
+    }
+    if (locale !== 'fr-TN' && locale !== 'ar-TN') {
+      return res.status(400).json({ success: false, code: 'CHECKOUT_LOCALE_INVALID', error: 'La langue de la commande est invalide.' });
+    }
+    const checkoutLocale: 'fr-TN' | 'ar-TN' = locale;
+
+    // Le téléphone de livraison peut différer du téléphone vérifié; le compte doit toutefois
+    // posséder au moins un canal vérifié (e-mail OAuth ou téléphone OTP).
     const deliveryPhone = String(phone ?? '').replace(/\s+/g, ' ').trim();
     const deliveryDigits = deliveryPhone.replace(/\D/g, '')
       .replace(/^00216(?=\d{8}$)/, '')
       .replace(/^216(?=\d{8}$)/, '');
-    if (!deliveryPhone || deliveryPhone.length > 32 || !/^\d{8}$/.test(deliveryDigits)) {
+    if (!deliveryPhone || deliveryPhone.length > 32 || !/^[24579]\d{7}$/.test(deliveryDigits)) {
       return res.status(400).json({
         success: false,
-        error: 'Veuillez renseigner un numéro de téléphone tunisien valide à 8 chiffres.'
+        error: 'Veuillez renseigner un numéro tunisien valide à 8 chiffres commençant par 2, 4, 5, 7 ou 9.'
       });
     }
 
@@ -413,14 +450,23 @@ export function createApiRouter(
     const normalizedPaymentMethod = paymentCode as PaymentMethodCode;
 
     try {
-      recordLearningEvent(db, { type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
       const result = db.createOrderFromCart(sessionId, {
         name: name.trim(),
+        email: contactEmail,
         phone: deliveryPhone,
         governorate: city.trim(),
         address: address.trim(),
         paymentMethod: normalizedPaymentMethod,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
+        termsAcceptedAt: new Date().toISOString(),
+        locale: checkoutLocale,
       }, customer.id);
+      try {
+        recordLearningEvent(db, { type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
+      } catch (learningError) {
+        console.warn('[Checkout Learning Event]', learningError);
+      }
       return res.json({
         success: true,
         ...result,

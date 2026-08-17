@@ -1050,12 +1050,13 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       let mail: { delivered: boolean; provider: string } = { delivered: false, provider: 'disabled' };
       const emailEnabled = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='invoice_email_enabled'")?.setting_value !== 'false';
       const account = order.account_id ? db.get<any>('SELECT email,display_name FROM customer_accounts WHERE id=?', order.account_id) : null;
-      if (emailEnabled && account?.email && invoice.generated) {
+      const deliveryEmail = String(order.contact_email || account?.email || '');
+      if (emailEnabled && deliveryEmail && invoice.generated) {
         const total = Number(order.total_tnd), dep = Number(order.deposit_amount_tnd);
         const balance = Math.max(0, Math.round((total - dep) * 1000) / 1000);
         const pdfPath = String(db.get<any>('SELECT invoice_path FROM orders WHERE id=?', order.id)?.invoice_path || '');
         mail = await sendMail({
-          to: String(account.email),
+          to: deliveryEmail,
           subject: `Facture ${order.invoice_number} — commande ${order.order_number} confirmée`,
           html: invoiceEmailHtml({
             customerName: String(account.display_name || 'Client AYROVI'),
@@ -1168,13 +1169,14 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       return res.status(500).json({ success: false, error: 'La facture n’a pas pu être régénérée.' });
     }
     const account = order.account_id ? db.get<any>('SELECT email,display_name FROM customer_accounts WHERE id=?', order.account_id) : null;
+    const deliveryEmail = String(order.contact_email || account?.email || '');
     let mail: { delivered: boolean; provider: string } = { delivered: false, provider: 'no-email' };
-    if (account?.email) {
+    if (deliveryEmail) {
       const updated = db.get<any>('SELECT * FROM orders WHERE id=?', order.id);
       const total = Number(order.total_tnd), dep = Number(order.deposit_amount_tnd);
       const balance = Math.max(0, Math.round((total - dep) * 1000) / 1000);
       const result = await sendMail({
-        to: String(account.email),
+        to: deliveryEmail,
         subject: `Facture ${order.invoice_number} — commande ${order.order_number}`,
         html: invoiceEmailHtml({
           customerName: String(account.display_name || 'Client AYROVI'),

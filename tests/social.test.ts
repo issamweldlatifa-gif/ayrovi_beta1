@@ -26,10 +26,13 @@ describe('Story Tab service', () => {
     expect(baseCount('post_1', 7)).toBeGreaterThanOrEqual(24);
   });
 
-  test('timeAgo : minutes / heures / jours', () => {
+  test('timeAgo : minutes / heures / jours en français et arabe', () => {
     const now = Date.now();
-    expect(timeAgo(new Date(now - 5 * 60000).toISOString())).toBe('5 min');
-    expect(timeAgo(new Date(now - 3 * 3600000).toISOString())).toBe('3 h');
-    expect(timeAgo(new Date(now - 2 * 86400000).toISOString())).toBe('2 j');
+    expect(timeAgo(new Date(now - 5 * 60000).toISOString())).toBe('il y a 5 min');
+    expect(timeAgo(new Date(now - 3 * 3600000).toISOString())).toBe('il y a 3 h');
+    expect(timeAgo(new Date(now - 2 * 86400000).toISOString())).toBe('il y a 2 j');
+    expect(timeAgo(new Date(now - 5 * 60000).toISOString(), 'ar')).toBe('منذ 5 د');
+    expect(timeAgo(new Date(now - 3 * 3600000).toISOString(), 'ar')).toBe('منذ 3 س');
+    expect(timeAgo(new Date(now - 2 * 86400000).toISOString(), 'ar')).toBe('منذ 2 ي');
   });
 });

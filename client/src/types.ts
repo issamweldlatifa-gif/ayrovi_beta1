@@ -67,6 +67,12 @@ export interface CartItem {
   priceTND: number;
   lineTotalTND?: number;
   pricingVersion?: number;
+  convertedPriceTND?: number;
+  customsFeeTND?: number;
+  shippingFeeTND?: number;
+  serviceFeeTND?: number;
+  expressFeeTND?: number;
+  discountTND?: number;
   variant: string | null;
   requestedSize: string;
   requestedColor: string;
@@ -80,10 +86,15 @@ export interface CartItem {
 
 export interface CustomerInfo {
   name: string;
+  email: string;
   phone: string;
   city: string;
   address: string;
   paymentMethod: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  termsAccepted: boolean;
+  locale: 'fr-TN' | 'ar-TN';
 }
 
 export interface OrderResult {
@@ -93,6 +104,15 @@ export interface OrderResult {
   itemCount: number;
   message: string;
   orderId?: string;
+  breakdown?: {
+    subtotalTnd: number;
+    customsTnd: number;
+    shippingTnd: number;
+    serviceTnd: number;
+    expressTnd: number;
+    discountTnd: number;
+    totalTnd: number;
+  };
   deposit?: {
     percent: number;
     amountTnd: number;

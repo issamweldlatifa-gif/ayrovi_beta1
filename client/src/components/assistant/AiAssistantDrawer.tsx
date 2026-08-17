@@ -20,6 +20,7 @@ import {
 } from './conversationHistory';
 import { AssistantAttachment, AssistantMessage, FeedbackValue } from './types';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
+import { useLocale } from '../../i18n/LocaleContext';
 
 interface AiAssistantDrawerProps {
   isOpen: boolean;
@@ -85,6 +86,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   onOpenAccount,
   onOrder,
 }) => {
+  const { direction, tr } = useLocale();
   const navigation = useNavigationHistory();
   const isMenuOpen = navigation.stack.some((layer) => layer.id === 'assistant:menu');
   const isAttachmentSheetOpen = navigation.stack.some((layer) => layer.id === 'assistant:attachments');
@@ -92,6 +94,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const productLayer = navigation.stack.find((layer) => layer.id === 'assistant:product');
   const closeAssistantLayer = () => navigation.back();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
+  const [isBooting, setIsBooting] = useState(true);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<AssistantAttachment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -187,6 +190,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    setIsBooting(true);
     historyReadyRef.current = false;
     const stored = listAssistantConversations(historyScope);
     setConversations(stored);
@@ -201,7 +205,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     }
     setFeedback({});
     setFeedbackComments({});
-    const readyTimer = window.setTimeout(() => { historyReadyRef.current = true; }, 0);
+    const readyTimer = window.setTimeout(() => {
+      historyReadyRef.current = true;
+      setIsBooting(false);
+    }, 0);
     return () => window.clearTimeout(readyTimer);
   }, [isOpen, historyScope]);
 
@@ -759,7 +766,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setFeedback((current) => ({ ...current, [message.id]: value }));
     void persistFeedback(message, value, feedbackComments[message.id] || '').catch(() => {
       setFeedback((current) => ({ ...current, [message.id]: previous }));
-      showToast('Impossible d’envoyer votre avis');
+      showToast(tr('Impossible d’envoyer votre avis', 'تعذّر إرسال رأيك'));
     });
   };
 
@@ -772,9 +779,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       setFeedbackComments((current) => ({ ...current, [feedbackMessage.id]: comment }));
       setFeedbackMessage(null);
       closeAssistantLayer();
-      showToast('Merci pour votre avis');
+      showToast(tr('Merci pour votre avis', 'شكرًا على رأيك'));
     } catch {
-      showToast('Impossible d’envoyer votre avis');
+      showToast(tr('Impossible d’envoyer votre avis', 'تعذّر إرسال رأيك'));
     } finally {
       setIsFeedbackSaving(false);
     }
@@ -784,20 +791,27 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     <div
       ref={viewportFrameRef}
       className={`fixed z-[80] overflow-hidden overscroll-none [height:var(--assistant-viewport-height,100dvh)] [left:var(--assistant-viewport-left,0px)] [top:var(--assistant-viewport-top,0px)] [width:var(--assistant-viewport-width,100vw)] ${isDark ? 'bg-ink' : 'bg-surface'}`}
-      dir="ltr"
+      dir={direction}
       role="dialog"
       aria-modal="true"
-      aria-label="Assistant AYROVI"
+      aria-label={tr('Assistant AYROVI', 'مساعد AYROVI')}
     >
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
         <AssistantHeader
           isDark={isDark}
-          motionState={motionState}
           onBack={handleCloseAssistant}
           onOpenHistory={() => navigation.pushLayer({ id: 'assistant:menu' })}
         />
 
-        <AssistantMessages
+        {isBooting ? (
+          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-8" aria-busy="true" aria-label={tr('Chargement d’AYROVI AI', 'جارٍ تحميل AYROVI AI')}>
+            <div className="mx-auto h-20 w-20 animate-pulse rounded-full bg-brand/10" />
+            <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
+            <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
+              {[0, 1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-card bg-line" />)}
+            </div>
+          </main>
+        ) : <AssistantMessages
           messages={messages}
           isGenerating={isGenerating}
           motionState={motionState}
@@ -817,9 +831,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
           onProductOrder={(selection) => void handleProductOrder(selection)}
           customerFirstName={customerFirstName}
-        />
+        />}
 
-        <AssistantComposer
+        {!isBooting && <AssistantComposer
           value={input}
           attachments={attachments}
           isDark={isDark}
@@ -835,7 +849,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onCancelRecording={cancelRecording}
           onSend={() => sendMessage()}
           onStop={stopGeneration}
-        />
+        />}
 
         <AssistantSideMenu
           isOpen={isMenuOpen}
@@ -874,7 +888,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onSave={saveFeedbackComment}
         />
 
-        <div className={`pointer-events-none absolute bottom-24 left-1/2 z-[70] -translate-x-1/2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs shadow-lg transition ${toast ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'} ${isDark ? 'bg-zinc-100 text-zinc-900' : 'bg-zinc-900 text-white'}`} role="status">
+        <div className={`pointer-events-none absolute bottom-24 left-1/2 z-[70] -translate-x-1/2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs shadow-lg transition ${toast ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'} ${isDark ? 'bg-surface text-ink' : 'bg-ink text-white'}`} role="status">
           {toast}
         </div>
       </section>

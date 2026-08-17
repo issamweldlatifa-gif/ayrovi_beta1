@@ -77,13 +77,14 @@ export function baseCount(id: string, salt: number): number {
   return 24 + (hash % 180);
 }
 
-export function timeAgo(iso: string): string {
+export function timeAgo(iso: string, locale: 'fr' | 'ar' = 'fr'): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.max(1, Math.floor(diff / 60000));
-  if (minutes < 60) return `${minutes} min`;
+  if (minutes < 60) return locale === 'ar' ? `منذ ${minutes} د` : `il y a ${minutes} min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} h`;
-  return `${Math.floor(hours / 24)} j`;
+  if (hours < 24) return locale === 'ar' ? `منذ ${hours} س` : `il y a ${hours} h`;
+  const days = Math.floor(hours / 24);
+  return locale === 'ar' ? `منذ ${days} ي` : `il y a ${days} j`;
 }
 
 function loadSeen(): Record<string, boolean> {

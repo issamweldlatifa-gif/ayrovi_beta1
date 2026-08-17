@@ -34,7 +34,7 @@ const BENEFITS = [
 
 export const AboutSection: React.FC = () => {
   return (
-    <section className="relative bg-white" aria-labelledby="why-ayrovi-title">
+    <section id="about-ayrovi" className="relative scroll-mt-20 bg-white" aria-labelledby="why-ayrovi-title">
       <header className="px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/10 px-3.5 py-1 text-[11px] font-bold text-brand shadow-sm sm:text-xs">
@@ -62,7 +62,7 @@ export const AboutSection: React.FC = () => {
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-[38%_center] sm:object-center lg:object-[34%_center]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-[#081426]/40 sm:bg-gradient-to-r sm:from-transparent sm:via-white/10 sm:to-[#f8fcff]/90" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-ink/40 sm:bg-gradient-to-r sm:from-transparent sm:via-white/10 sm:to-surface/90" />
           <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/65 to-transparent" />
         </div>
 
@@ -70,7 +70,7 @@ export const AboutSection: React.FC = () => {
           {BENEFITS.map(
             ({ step, title, description, icon: Icon, iconClassName, accentClassName }) => (
               <article key={title} className="flex min-h-[100svh] w-full items-center py-16 sm:py-20">
-                <div className="relative w-full overflow-hidden border-y border-white/85 bg-white/85 p-7 shadow-[0_30px_80px_-28px_rgba(12,65,94,0.45)] backdrop-blur-xl transition-[box-shadow,background-color] duration-500 ease-out hover:bg-white/90 hover:shadow-[0_38px_90px_-30px_rgba(12,65,94,0.55)] sm:p-10 lg:p-14">
+                <div className="relative w-full overflow-hidden border-y border-white/85 bg-white/85 p-7 shadow-overlay backdrop-blur-xl transition-[box-shadow,background-color] duration-500 ease-out hover:bg-white/90 hover:shadow-overlay sm:p-10 lg:p-14">
                   <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentClassName}`} />
 
                   <div className="flex items-start justify-between gap-5">
@@ -82,7 +82,7 @@ export const AboutSection: React.FC = () => {
                     </span>
                   </div>
 
-                  <div className="my-7 h-px w-full bg-gradient-to-r from-brand/55 via-[#dfeaf0] to-transparent" />
+                  <div className="my-7 h-px w-full bg-gradient-to-r from-brand/55 via-line to-transparent" />
 
                   <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-brand">
                     Avantage AYROVI

@@ -125,7 +125,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
       <h3>Facturé à</h3>
       <p><strong>${escapeHtml(customer?.name || account?.display_name || 'Client AYROVI')}</strong><br>
       ${escapeHtml(order.address)}<br>${escapeHtml(order.governorate)}<br>
-      ${escapeHtml(order.phone)}${account?.email ? `<br>${escapeHtml(account.email)}` : ''}</p>
+      ${escapeHtml(order.phone)}${order.contact_email || account?.email ? `<br>${escapeHtml(order.contact_email || account.email)}` : ''}</p>
     </div>
     <div class="card">
       <h3>Commande</h3>

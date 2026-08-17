@@ -8,6 +8,7 @@ import { StoryPostCard } from './components/StoryFeed';
 import { CommentSheet } from './components/CommentSheet';
 import { ReelsViewer } from './components/ReelsViewer';
 import { useNavigationHistory, type NavigationLayer } from '../navigation/NavigationHistory';
+import { useLocale } from '../i18n/LocaleContext';
 
 interface SocialProps {
   isAuthenticated: boolean;
@@ -26,6 +27,7 @@ const layerString = (layer: NavigationLayer | undefined, key: string) => {
 
 export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth, onCta }) => {
   const navigation = useNavigationHistory();
+  const { locale, tr } = useLocale();
   const storyLayer = navigation.stack.find((layer) => layer.id === 'social:tab-story');
   const reelsLayer = navigation.stack.find((layer) => layer.id === 'social:tab-reels');
   const commentLayer = navigation.stack.find((layer) => layer.id === 'social:tab-comments');
@@ -78,15 +80,15 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
         )}
         {state === 'error' && (
           <div className="px-4 py-6 text-center">
-            <p className="text-sm font-bold text-red-600">Les stories n'ont pas pu être chargées.</p>
-            <button type="button" onClick={load} className="mt-3 min-h-10 rounded-full bg-ink px-5 text-xs font-black uppercase tracking-widest text-white">Réessayer</button>
+            <p className="text-sm font-bold text-danger">{tr("Les stories n'ont pas pu être chargées.", 'تعذّر تحميل القصص.')}</p>
+            <button type="button" onClick={load} className="ay-btn-primary mt-3 min-h-10 text-xs uppercase tracking-widest">{tr('Réessayer', 'إعادة المحاولة')}</button>
           </div>
         )}
         {state === 'ready' && groups.length === 0 && (
           <div className="flex flex-col items-center px-4 py-8 text-center">
             <span className="grid h-14 w-14 place-items-center rounded-full bg-brand/10 text-brand"><ImageIcon size={24} /></span>
-            <p className="mt-3 text-sm font-extrabold text-ink">Aucune story pour le moment</p>
-            <p className="mt-1 max-w-60 text-xs leading-5 text-muted">Les stories publiées depuis l'espace Admin apparaîtront ici.</p>
+            <p className="mt-3 text-sm font-extrabold text-ink">{tr('Aucune story pour le moment', 'لا توجد قصص حاليًا')}</p>
+            <p className="mt-1 max-w-60 text-xs leading-5 text-muted">{tr("Les stories publiées depuis l'espace Admin apparaîtront ici.", 'ستظهر هنا القصص المنشورة من لوحة الإدارة.')}</p>
           </div>
         )}
         {state === 'ready' && groups.length > 0 && (
@@ -97,12 +99,12 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
       {/* ===== Reels : bande horizontale ===== */}
       {state === 'ready' && reels.length > 0 && (
         <div className="border-b border-line bg-white py-3">
-          <p className="px-4 pb-2 text-xs font-black uppercase tracking-[0.18em] text-brand">Reels</p>
+          <p className="px-4 pb-2 text-xs font-black uppercase tracking-[0.18em] text-brand">{tr('Reels', 'ريلز')}</p>
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
             {reels.map((reel, index) => (
-              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-36 shrink-0 overflow-hidden rounded-2xl bg-black shadow-md transition active:scale-[0.98] sm:w-40" aria-label={reel.caption || `Reel ${index + 1}`}>
-                <video src={reel.media[0].url} muted playsInline preload="metadata" className="aspect-[9/16] w-full object-cover opacity-90" />
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-black text-white backdrop-blur"><Eye size={12} />{reel.views.toLocaleString('fr-FR')}</span>
+              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-36 shrink-0 overflow-hidden rounded-card bg-brand-gradient shadow-card transition active:scale-[0.98] sm:w-40" aria-label={reel.caption || tr(`Reel ${index + 1}`, `ريل ${index + 1}`)}>
+                <video src={reel.media[0].url} poster="/media/logo-ayrovi.png" muted playsInline preload="metadata" className="aspect-[9/16] w-full bg-white object-cover opacity-90" />
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-black text-white backdrop-blur"><Eye size={12} />{reel.views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</span>
                 {reel.caption && <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-10 text-left text-[11px] font-bold leading-4 text-white">{reel.caption}</span>}
               </button>
             ))}
@@ -128,12 +130,12 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
         )}
         {state === 'error' && (
           <div className="px-4 py-10 text-center">
-            <p className="text-sm font-bold text-red-600">Le fil n'a pas pu être chargé.</p>
-            <button type="button" onClick={load} className="mt-3 min-h-10 rounded-full bg-ink px-5 text-xs font-black uppercase tracking-widest text-white">Réessayer</button>
+            <p className="text-sm font-bold text-danger">{tr("Le fil n'a pas pu être chargé.", 'تعذّر تحميل المنشورات.')}</p>
+            <button type="button" onClick={load} className="ay-btn-primary mt-3 min-h-10 text-xs uppercase tracking-widest">{tr('Réessayer', 'إعادة المحاولة')}</button>
           </div>
         )}
         {state === 'ready' && posts.length === 0 && (
-          <p className="px-4 py-10 text-center text-sm font-semibold text-muted">Le fil est vide pour le moment.</p>
+          <p className="px-4 py-10 text-center text-sm font-semibold text-muted">{tr('Le fil est vide pour le moment.', 'لا توجد منشورات حاليًا.')}</p>
         )}
         {state === 'ready' && (pubs.length ? pubs : posts).map((post) => (
           <StoryPostCard

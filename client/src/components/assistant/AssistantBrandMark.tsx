@@ -23,6 +23,6 @@ export const AssistantBrandMark: React.FC<AssistantBrandMarkProps> = ({
     aria-label={label}
     aria-hidden={label ? undefined : true}
   >
-    <AyroviMotion state={state} size={Math.round(size * 0.58)} color="#ffffff" />
+    <AyroviMotion state={state} size={Math.round(size * 0.58)} />
   </span>
 );

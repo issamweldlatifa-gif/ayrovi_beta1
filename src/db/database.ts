@@ -10,10 +10,15 @@ export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTE
 
 export interface CheckoutInput {
   name: string;
+  email: string;
   phone: string;
   governorate: string;
   address: string;
   paymentMethod: PaymentMethodCode;
+  latitude: number | null;
+  longitude: number | null;
+  termsAcceptedAt: string;
+  locale: 'fr-TN' | 'ar-TN';
 }
 
 function normalizeCustomerPhone(value: unknown): string {
@@ -56,6 +61,11 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   governorate TEXT NOT NULL,
   address TEXT NOT NULL,
   phone TEXT NOT NULL,
+  contact_email TEXT NOT NULL DEFAULT '',
+  delivery_latitude REAL,
+  delivery_longitude REAL,
+  terms_accepted_at TEXT,
+  locale TEXT NOT NULL DEFAULT 'fr-TN',
   notes TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
@@ -412,6 +422,8 @@ export class QatafoDatabase {
         governorate TEXT NOT NULL,
         address TEXT NOT NULL,
         phone TEXT NOT NULL,
+        latitude REAL,
+        longitude REAL,
         status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','PREPARING','SHIPPED','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED')),
         expected_at TEXT,
         delivered_at TEXT,
@@ -785,6 +797,13 @@ export class QatafoDatabase {
     this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.rebuildTableIfLegacy('orders', 'deposit_discount_tnd', ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
+    this.ensureColumn('orders', 'contact_email', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('orders', 'delivery_latitude', 'REAL');
+    this.ensureColumn('orders', 'delivery_longitude', 'REAL');
+    this.ensureColumn('orders', 'terms_accepted_at', 'TEXT');
+    this.ensureColumn('orders', 'locale', "TEXT NOT NULL DEFAULT 'fr-TN'");
+    this.ensureColumn('deliveries', 'latitude', 'REAL');
+    this.ensureColumn('deliveries', 'longitude', 'REAL');
     this.rebuildTableIfLegacy('payments', "'POSTE'", PAYMENTS_TABLE_SQL, []);
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
@@ -860,6 +879,8 @@ export class QatafoDatabase {
       ['setting_delivery_delay', 'DELIVERY', 'delivery_delay', '5 à 8 jours ouvrés', 'STRING', 'Délai indicatif'],
       ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(['CARD','FLOUCI','BANK_TRANSFER','POSTE']), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
+      ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
+      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
       ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
       ['setting_bank_rib', 'PAYMENT', 'bank_rib', '', 'STRING', 'RIB pour le virement bancaire'],
       ['setting_poste_account', 'PAYMENT', 'poste_account', '', 'STRING', 'Compte courant postal (mandat poste)'],
@@ -1207,12 +1228,13 @@ export class QatafoDatabase {
         id,order_number,customer_id,account_id,source,arrival_id,status,payment_status,payment_method,
         deposit_percent,deposit_amount_tnd,deposit_discount_tnd,deposit_status,
         subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,
-        pricing_snapshot,governorate,address,phone,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?,'PAYMENT_PENDING','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        pricing_snapshot,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,terms_accepted_at,locale,notes,created_at,updated_at
+      ) VALUES (?,?,?,?,?,?,'PAYMENT_PENDING','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
         depositPercent, depositAmount, depositDiscount,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
-      snapshot, input.governorate, input.address, normalizedPhone, '', now, now);
+      snapshot, input.governorate, input.address, normalizedPhone, input.email, input.latitude, input.longitude,
+      input.termsAcceptedAt, input.locale, '', now, now);
 
       for (const { item, price } of breakdowns) {
         this.run(`INSERT INTO order_items (
@@ -1233,8 +1255,8 @@ export class QatafoDatabase {
         `Commande créée — en attente du paiement de l'acompte (${depositPercent}%).`, now);
       this.run(`INSERT INTO payments (id,order_id,method,status,amount_tnd,reference,created_at,updated_at)
         VALUES (?,?,?,'PENDING',?,NULL,?,?)`, `payment_${randomUUID()}`, orderId, input.paymentMethod, depositAmount, now, now);
-      this.run(`INSERT INTO deliveries (id,order_id,governorate,address,phone,status,created_at,updated_at)
-        VALUES (?,?,?,?,?,'PENDING',?,?)`, `delivery_${randomUUID()}`, orderId, input.governorate, input.address, normalizedPhone, now, now);
+      this.run(`INSERT INTO deliveries (id,order_id,governorate,address,phone,latitude,longitude,status,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,'PENDING',?,?)`, `delivery_${randomUUID()}`, orderId, input.governorate, input.address, normalizedPhone, input.latitude, input.longitude, now, now);
       this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'ORDER','Acompte à régler',?, ?, ?)`, `notification_${randomUUID()}`, accountId,
         `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${String(input.paymentMethod)}) pour la confirmer.${depositDiscount > 0 ? ` Remise carte −${depositDiscount.toFixed(3)} DT appliquée.` : ''}`, `/compte/commandes/${orderId}`, now);
@@ -1249,7 +1271,20 @@ export class QatafoDatabase {
         orderNumber,
         totalTND: Math.round(totals.total * 100) / 100,
         itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
-        customer: { name: input.name, phone: normalizedPhone, city: input.governorate, address: input.address, paymentMethod: input.paymentMethod.toLowerCase() },
+        customer: {
+          name: input.name, email: input.email, phone: normalizedPhone, city: input.governorate, address: input.address,
+          paymentMethod: input.paymentMethod.toLowerCase(), latitude: input.latitude, longitude: input.longitude,
+          termsAccepted: true, locale: input.locale,
+        },
+        breakdown: {
+          subtotalTnd: Math.round(totals.subtotal * 1000) / 1000,
+          customsTnd: Math.round(totals.customs * 1000) / 1000,
+          shippingTnd: Math.round(totals.shipping * 1000) / 1000,
+          serviceTnd: Math.round(totals.service * 1000) / 1000,
+          expressTnd: Math.round(totals.express * 1000) / 1000,
+          discountTnd: Math.round(totals.discount * 1000) / 1000,
+          totalTnd: Math.round(totals.total * 1000) / 1000,
+        },
         deposit: {
           percent: depositPercent,
           amountTnd: depositAmount,
