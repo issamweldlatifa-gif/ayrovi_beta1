@@ -15,7 +15,7 @@ const PALETTE = {
   info: '#4A6B8A',
   warning: '#8C5A1A',
   danger: '#A63B32',
-  accentGold: '#9C7A4A',
+  accentGold: '#D2D2D7',
 };
 
 function luminance(hex: string) {

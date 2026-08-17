@@ -153,7 +153,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <div className="mb-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {trustBadges.map(({ Icon, title, text }) => (
             <div key={title} className="flex flex-col items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-4 py-5 text-center backdrop-blur-sm">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-accent-gold/15 text-accent-gold"><Icon className="h-5 w-5" /></span>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-white/10 text-white"><Icon className="h-5 w-5" /></span>
               <strong className="text-[13px] font-black leading-tight text-white">{title}</strong>
               <span className="text-[11px] leading-4 text-white/65">{text}</span>
             </div>
@@ -167,7 +167,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
             <div className="flex items-center gap-3">
               {socials.map(({ id, url, label, Glyph }) => (
                 <a key={id} href={url} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
-                  className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-accent-gold hover:bg-accent-gold/15 hover:text-accent-gold">
+                  className="grid h-11 w-11 place-items-center rounded-full border border-white/15 bg-white/10 text-white transition hover:border-white/40 hover:bg-white/20 hover:text-white">
                   <Glyph className="h-5 w-5" />
                 </a>
               ))}
@@ -187,9 +187,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
                 {group.links.map((link) => (
                   <li key={link.label}>
                     {link.href ? (
-                      <a href={link.href} className="text-[13px] font-medium text-white/65 transition hover:text-accent-gold">{link.label}</a>
+                      <a href={link.href} className="text-[13px] font-medium text-white/65 transition hover:text-white">{link.label}</a>
                     ) : (
-                      <button type="button" onClick={link.onClick} className="text-[13px] font-medium text-white/65 transition hover:text-accent-gold">{link.label}</button>
+                      <button type="button" onClick={link.onClick} className="text-[13px] font-medium text-white/65 transition hover:text-white">{link.label}</button>
                     )}
                   </li>
                 ))}
@@ -220,7 +220,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <div className="mt-6 flex flex-col items-center justify-between gap-3 text-center text-[11px] text-white/55 sm:flex-row sm:text-left">
           <p>Commandes confirmées par acompte de 20 % — facture électronique et suivi inclus.</p>
           <p className="flex items-center gap-1">
-            Conçu avec <Heart className="h-3 w-3 fill-accent-gold text-accent-gold" /> pour faciliter vos achats en Tunisie.
+            Conçu avec <Heart className="h-3 w-3 fill-white text-white" /> pour faciliter vos achats en Tunisie.
           </p>
         </div>
       </div>

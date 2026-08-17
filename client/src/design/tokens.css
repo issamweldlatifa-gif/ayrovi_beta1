@@ -1,7 +1,8 @@
-/* AYROVI v3 — palette « Blanc Apple » (identité officielle, minimalisme Apple).
-   Le bordeaux démonstratif est retiré ; le noir Apple porte toutes les actions
-   (CTA, liens, état actif). L'or antique n'est utilisé que pour les détails de
-   prestige (≤ 2 %). Règle : ~96 % blanc/blanc cassé, 2 % noir, 2 % or. */
+/* AYROVI v3 — palette monochrome officielle (Blanc Apple) + rôles sémantiques.
+   Règle unique : 96 % noir/blanc/gris pour la structure, 4 % pour les statuts
+   fonctionnels (succès/info/avertissement/danger). Aucune couleur décorative
+   (bordeaux, or, beige) n'est autorisée dans l'interface.
+   Toute couleur de l'UI DOIT passer par ces variables — jamais de hex en dur. */
 @theme inline {
   /* Rôles canoniques — toute couleur de l'UI passe par ici. */
   --color-interactive-primary: #1d1d1f; /* Apple black — CTA, liens, état actif */
@@ -10,31 +11,32 @@
   --color-surface-base: #fbfbfd;        /* Apple white — fond général de la page */
   --color-text-primary: #1d1d1f;        /* Apple label — texte principal */
   --color-chart-accent: #1d1d1f;        /* Apple black — données / graphiques */
-  --color-success: #2f6b4f;             /* vert sémantique — succès, paiement confirmé */
-  --color-info: #4a6b8a;                /* bleu sourd — livraison, info neutre */
-  --color-warning: #8c5a1a;             /* ambre sémantique — avertissements */
-  --color-danger: #a63b32;              /* rouge sémantique réservé aux alertes */
-  --color-accent-gold: #9c7a4a;         /* or antique — détails de prestige exclusivement */
 
-  /* Alias sémantiques exposés à l'API de composants Tailwind existante. */
+  /* Rôles sémantiques — réservés exclusivement aux statuts fonctionnels. */
+  --color-success: #2f6b4f;             /* vert — succès, paiement confirmé */
+  --color-info: #4a6b8a;                /* bleu sourd — livraison, information */
+  --color-warning: #8c5a1a;             /* ambre — avertissement, action requise */
+  --color-danger: #a63b32;              /* rouge — erreurs, action destructive */
+  --color-whatsapp: #25d366;            /* vert de marque WhatsApp — bouton WhatsApp */
+  --color-whatsapp-hover: #1fae53;
+
+  /* Alias sémantiques exposés à l'API de composants Tailwind. */
   --color-brand: var(--color-interactive-primary);
   --color-brand-dark: var(--color-text-primary);
   --color-brand-light: color-mix(in srgb, var(--color-interactive-primary) 10%, var(--color-surface-base));
   --color-brand-deep: var(--color-hero-bg);
   --color-hero: var(--color-hero-bg);
   --color-chart: var(--color-chart-accent);
-  --color-accent: #d2d2d7;        /* Apple system gray 5 — chips/neutral highlights */
+  --color-accent: #d2d2d7;             /* Apple gray 5 — fonds neutres de chips */
   --color-accent-deep: var(--color-hero-bg);
-  /* success/info/warning sont définis dans le bloc @theme ci-dessus */
-  --color-whatsapp: var(--ayrovi-whatsapp);
-  --color-whatsapp-hover: var(--ayrovi-whatsapp-hover);
+  /* success/info/warning/danger/whatsapp sont définis dans le bloc @theme ci-dessus */
   --color-ink: var(--color-text-primary);
   --color-muted: var(--ayrovi-neutral-500);
   --color-surface: var(--color-surface-base);
   --color-surface-raised: var(--ayrovi-surface-raised);
   --color-accent-warning: var(--color-danger);
   --color-accent-highlight: var(--color-interactive-primary);
-  --color-gold: var(--color-accent-gold);
+  --color-accent-gold: #d2d2d7;         /* conservé pour rétro-compat → gris neutre */
   --color-line: var(--ayrovi-neutral-200);
   --font-display: var(--ayrovi-font-display);
   --font-body: var(--ayrovi-font-body);
@@ -48,7 +50,7 @@
   :root {
     color-scheme: light;
 
-    /* Variables d'appui pour la config Admin à l'exécution et les composants hérités. */
+    /* Variables d'appui pour la config Admin et les composants hérités. */
     --ayrovi-primary: var(--color-interactive-primary);
     --ayrovi-primary-dark: var(--color-text-primary);
     --ayrovi-primary-light: color-mix(in srgb, var(--color-interactive-primary) 10%, var(--color-surface-base));
@@ -56,7 +58,7 @@
     --ayrovi-surface-alt: var(--color-surface-alt);
     --ayrovi-chart-accent: var(--color-chart-accent);
     --ayrovi-rhubarb: var(--color-danger);
-    --ayrovi-gold: var(--color-accent-gold);
+    --ayrovi-gold: var(--color-text-primary); /* héritage : ancien « or » → noir */
     --ayrovi-slate: var(--color-chart-accent);
     --ayrovi-accent: var(--color-interactive-primary);
     --ayrovi-accent-dark: var(--color-text-primary);
@@ -65,8 +67,8 @@
     --ayrovi-danger: var(--color-danger);
     --ayrovi-warning: var(--color-warning);
     --ayrovi-neutral-50: var(--color-surface-base);
-    --ayrovi-neutral-200: #d2d2d7; /* Apple system gray — séparateurs et bordures */
-    --ayrovi-neutral-500: #6e6e73; /* Apple secondary label */
+    --ayrovi-neutral-200: #d2d2d7;
+    --ayrovi-neutral-500: #6e6e73;
     --ayrovi-neutral-900: var(--color-text-primary);
     --ayrovi-neutral-950: var(--color-hero-bg);
     --ayrovi-white: #ffffff;
@@ -80,8 +82,8 @@
     --ayrovi-text-secondary: var(--ayrovi-neutral-500);
     --ayrovi-accent-warning: var(--color-danger);
     --ayrovi-accent-highlight: var(--color-interactive-primary);
-    --ayrovi-whatsapp: #25d366;
-    --ayrovi-whatsapp-hover: #1fae53;
+    --ayrovi-whatsapp: var(--color-whatsapp);
+    --ayrovi-whatsapp-hover: var(--color-whatsapp-hover);
     --ayrovi-gradient: linear-gradient(135deg, var(--color-hero-bg) 0%, #2a2525 55%, var(--color-hero-bg) 140%);
     --ayrovi-font-display: 'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
     --ayrovi-font-body: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
@@ -92,11 +94,11 @@
     --ayrovi-page-gap-mobile: 2rem;
     --ayrovi-page-gap-desktop: 3rem;
 
-    /* Noms rétro-compatibles — tous pointent vers les rôles sémantiques ci-dessus. */
+    /* Noms rétro-compatibles — tous pointent vers les rôles sémantiques. */
     --ayrovi-purple: var(--ayrovi-primary);
     --ayrovi-purple-dark: var(--ayrovi-primary-dark);
     --ayrovi-purple-light: var(--ayrovi-primary-light);
-    --ayrovi-yellow: var(--ayrovi-gold);
+    --ayrovi-yellow: var(--ayrovi-warning);
     --ayrovi-accent-deep: var(--ayrovi-accent-dark);
     --ayrovi-deep: var(--ayrovi-neutral-950);
     --ayrovi-ink: var(--ayrovi-neutral-900);

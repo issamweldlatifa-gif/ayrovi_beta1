@@ -9,12 +9,12 @@ export type PaymentMethodCode = 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSF
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
 
 // AYROVI v3 — palette « Blanc Apple » (identité officielle, minimalisme Apple).
-// ~96 % blanc/blanc cassé (#FBFBFD / #F5F5F7), 2 % noir (#1D1D1F), 2 % or antique (#9C7A4A).
+// ~96 % blanc/gris (#FBFBFD / #F5F5F7 / #D2D2D7), 4 % noir Apple (#1D1D1F) et statuts sémantiques.
 const CORRECTED_PALETTE = {
   interactivePrimary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F5F5F7', surfaceBase: '#FBFBFD',
   textPrimary: '#1D1D1F', textSecondary: '#6E6E73', chart: '#1D1D1F',
   success: '#2F6B4F', info: '#4A6B8A', warning: '#8C5A1A', danger: '#A63B32',
-  accentGold: '#9C7A4A', white: '#FFFFFF',
+  accentGold: '#D2D2D7', white: '#FFFFFF',
 } as const;
 
 const CORRECTED_THEME = {
