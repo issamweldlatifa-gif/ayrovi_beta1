@@ -84,31 +84,31 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 <html lang="fr"><head><meta charset="utf-8"><title>Facture ${escapeHtml(order.invoice_number)}</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "Segoe UI", Arial, sans-serif; color: #1A1A1A; font-size: 13px; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #003B39; padding-bottom: 20px; }
-  .brand { font-size: 26px; font-weight: 900; color: #003B39; letter-spacing: -0.5px; }
+  body { font-family: "Segoe UI", Arial, sans-serif; color: #1D1D1F; font-size: 13px; padding: 40px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #1D1D1F; padding-bottom: 20px; }
+  .brand { font-size: 26px; font-weight: 900; color: #1D1D1F; letter-spacing: -0.5px; }
   .brand small { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
   .doc h1 { font-size: 22px; font-weight: 900; }
-  .doc .num { color: #003B39; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
+  .doc .num { color: #1D1D1F; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
   .meta { display: flex; gap: 24px; margin: 24px 0; }
   .card { flex: 1; border: 1px solid #e5e7f0; border-radius: 12px; padding: 14px 16px; }
   .card h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #8b8494; margin-bottom: 8px; }
   .card p { line-height: 1.55; }
   table { width: 100%; border-collapse: collapse; margin: 18px 0; }
-  th { background: #EDE6DE; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #003B39; padding: 10px 12px; }
+  th { background: #F5F5F7; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #1D1D1F; padding: 10px 12px; }
   td { padding: 10px 12px; border-bottom: 1px solid #eef0f6; vertical-align: top; }
   td small { display: block; color: #8b8494; margin-top: 3px; font-size: 11px; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .totals { width: 320px; margin-left: auto; }
   .totals td { padding: 7px 12px; }
-  .totals .grand td { font-size: 15px; font-weight: 900; border-top: 2px solid #1A1A1A; }
-  .deposit { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
-  .deposit strong { color: #047857; }
+  .totals .grand td { font-size: 15px; font-weight: 900; border-top: 2px solid #1D1D1F; }
+  .deposit { background: #FBFBFD; border: 1px solid #F5F5F7; border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
+  .deposit strong { color: #1D1D1F; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: #EDE6DE; border: 1px dashed #003B39; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
-  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #003B39; letter-spacing: 1px; }
+  .tracking { background: #F5F5F7; border: 1px dashed #1D1D1F; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #1D1D1F; letter-spacing: 1px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7f0; color: #8b8494; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
   <div class="header">
@@ -156,7 +156,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
     <strong>${depositPaid ? '✓' : '•'} Acompte de confirmation ${depositState} (${Number(order.deposit_percent || 20)}%)</strong>
     <table><tbody>
       ${Number(order.deposit_discount_tnd) ? `<tr><td>Acompte (${Number(order.deposit_percent || 20)}%) avant remise</td><td class="num">${money(Number(deposit) + Number(order.deposit_discount_tnd))}</td></tr>
-      <tr><td>Remise paiement par carte</td><td class="num" style="color:#047857;">−${money(order.deposit_discount_tnd)}</td></tr>` : ''}
+      <tr><td>Remise paiement par carte</td><td class="num" style="color:#1D1D1F;">−${money(order.deposit_discount_tnd)}</td></tr>` : ''}
       <tr><td>Acompte ${depositState} (${escapeHtml(methodLabel)})</td><td class="num"><strong>${money(deposit)}</strong></td></tr>
       <tr><td>${depositPaid ? 'Solde restant à la livraison' : 'Solde après règlement de l’acompte'}</td><td class="num">${money(balance)}</td></tr>
     </tbody></table>
@@ -247,9 +247,9 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
 
 export function invoiceEmailHtml(input: { customerName: string; orderNumber: string; invoiceNumber: string; trackingCode: string; totalLabel: string; depositLabel: string; balanceLabel: string; company: string }): string {
   const e = escapeHtml;
-  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#1A1A1A;background:#F9F8F4;padding:24px;">
+  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#1D1D1F;background:#FBFBFD;padding:24px;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e2ee;">
-    <div style="background:#003B39;padding:22px 26px;color:#fff;">
+    <div style="background:#1D1D1F;padding:22px 26px;color:#fff;">
       <strong style="font-size:20px;">${e(input.company)}</strong>
       <p style="margin:4px 0 0;font-size:12px;opacity:.85;">Confirmation d'acompte & facture électronique</p>
     </div>
@@ -259,9 +259,9 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
       <strong>${e(input.orderNumber)}</strong> (total ${e(input.totalLabel)}). Votre commande est <strong>confirmée</strong> et passe en préparation.</p>
       <table style="width:100%;margin:18px 0;border-collapse:collapse;font-size:14px;">
         <tr><td style="padding:8px 0;color:#6b7280;">Facture</td><td style="text-align:right;font-weight:700;">${e(input.invoiceNumber)}</td></tr>
-        <tr><td style="padding:8px 0;color:#6b7280;">Acompte encaissé</td><td style="text-align:right;font-weight:700;color:#047857;">${e(input.depositLabel)}</td></tr>
+        <tr><td style="padding:8px 0;color:#6b7280;">Acompte encaissé</td><td style="text-align:right;font-weight:700;color:#1D1D1F;">${e(input.depositLabel)}</td></tr>
         <tr><td style="padding:8px 0;color:#6b7280;">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
-        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#003B39;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
+        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#1D1D1F;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
       <p style="line-height:1.6;color:#374151;">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
       <p style="margin-top:22px;font-size:12px;color:#8b8494;">Merci de votre confiance — l'équipe ${e(input.company)}</p>

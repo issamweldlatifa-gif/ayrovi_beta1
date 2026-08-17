@@ -3,14 +3,19 @@ import path from 'node:path';
 import { describe, expect, test } from 'vitest';
 
 const ROOT = process.cwd();
+// AYROVI v2 — palette « Noir & Bordeaux » (luxe mode), corrigée avec success/info/warning.
 const PALETTE = {
-  interactivePrimary: '#003B39',
-  hero: '#13251F',
-  surfaceAlt: '#EDE6DE',
-  surfaceBase: '#F9F8F4',
-  text: '#1A1A1A',
-  chart: '#2E667D',
+  interactivePrimary: '#1D1D1F',
+  hero: '#1D1D1F',
+  surfaceAlt: '#F5F5F7',
+  surfaceBase: '#FBFBFD',
+  text: '#1D1D1F',
+  chart: '#1D1D1F',
+  success: '#2F6B4F',
+  info: '#4A6B8A',
+  warning: '#8C5A1A',
   danger: '#A63B32',
+  accentGold: '#9C7A4A',
 };
 
 function luminance(hex: string) {
@@ -32,8 +37,8 @@ function sourceFiles(directory: string): string[] {
   });
 }
 
-describe('corrected AYROVI semantic palette', () => {
-  test('publishes the seven canonical measured roles as CSS theme variables', () => {
+describe('AYROVI v2 semantic palette (Noir & Bordeaux)', () => {
+  test('publishes the canonical roles as CSS theme variables', () => {
     const css = fs.readFileSync(path.join(ROOT, 'client/src/design/tokens.css'), 'utf8').toUpperCase();
     const expected = [
       ['--COLOR-INTERACTIVE-PRIMARY', PALETTE.interactivePrimary],
@@ -42,7 +47,11 @@ describe('corrected AYROVI semantic palette', () => {
       ['--COLOR-SURFACE-BASE', PALETTE.surfaceBase],
       ['--COLOR-TEXT-PRIMARY', PALETTE.text],
       ['--COLOR-CHART-ACCENT', PALETTE.chart],
+      ['--COLOR-SUCCESS', PALETTE.success],
+      ['--COLOR-INFO', PALETTE.info],
+      ['--COLOR-WARNING', PALETTE.warning],
       ['--COLOR-DANGER', PALETTE.danger],
+      ['--COLOR-ACCENT-GOLD', PALETTE.accentGold],
     ];
     for (const [role, value] of expected) expect(css).toContain(`${role}: ${value}`);
   });
@@ -64,11 +73,14 @@ describe('corrected AYROVI semantic palette', () => {
     expect(offenders).toEqual([]);
   });
 
-  test('meets WCAG AA contrast for text, CTA, chart and danger roles', () => {
+  test('meets WCAG AA contrast for text, CTA, chart and semantic roles', () => {
     expect(contrast(PALETTE.interactivePrimary, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(PALETTE.hero, '#FFFFFF')).toBeGreaterThanOrEqual(4.5);
     expect(contrast(PALETTE.text, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(PALETTE.chart, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(PALETTE.success, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(PALETTE.info, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(PALETTE.warning, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(PALETTE.danger, PALETTE.surfaceBase)).toBeGreaterThanOrEqual(4.5);
   });
 

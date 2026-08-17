@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AYROVI — اتجاهات الألوان A / B / C</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --ink: #1c1414;
+    --muted: #6b6560;
+    --line: rgba(28,20,20,.12);
+    --font: 'Plus Jakarta Sans','Inter','Segoe UI',Tahoma,sans-serif;
+  }
+  body {
+    font-family: var(--font);
+    background: #efeae4;
+    color: var(--ink);
+    padding: 32px 16px 64px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page-head { max-width: 1280px; margin: 0 auto 28px; }
+  .page-head h1 { font-size: 28px; font-weight: 900; letter-spacing: -.03em; }
+  .page-head p { color: var(--muted); margin-top: 6px; font-size: 14px; }
+  .grid {
+    max-width: 1280px; margin: 0 auto;
+    display: grid; gap: 24px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 1100px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+  .card {
+    background: #fff;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 60px -30px rgba(28,20,20,.35);
+    display: flex; flex-direction: column;
+  }
+  .card-head {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .card-head .tag {
+    display: inline-block; font-size: 10px; font-weight: 900; letter-spacing: .18em;
+    text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
+    background: rgba(28,20,20,.07); color: var(--ink);
+  }
+  .card-head h2 { font-size: 18px; font-weight: 900; margin-top: 10px; letter-spacing: -.02em; }
+  .card-head p { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .swatches { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+  .sw { display:flex; align-items:center; gap:6px; font-size:10px; font-weight:800; }
+  .sw i { width:16px; height:16px; border-radius:4px; border:1px solid rgba(0,0,0,.1); display:inline-block; }
+
+  .stage { background: #f5f1ec; }
+
+  /* ---------- Header (mobile-like) ---------- */
+  .hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; gap: 10px;
+  }
+  .hdr .brand { display:flex; align-items:center; gap:9px; font-weight:900; letter-spacing:-.02em; font-size:16px; }
+  .hdr .logo { width:34px; height:34px; border-radius:9px; display:grid; place-items:center; color:#fff; font-weight:900; font-size:13px; }
+  .hdr .acts { display:flex; gap:6px; }
+  .hdr .icon { width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:14px; }
+  .hdr.dark { color: #fff; }
+  .hdr.dark .icon { background: rgba(255,255,255,.08); color:#fff; }
+  .hdr.light .icon { background: rgba(28,20,20,.06); color: var(--ink); }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative;
+    padding: 36px 20px 30px;
+    color: #fff;
+    overflow: hidden;
+    min-height: 168px;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .hero::before {
+    content:""; position:absolute; inset:0;
+    background: radial-gradient(120% 90% at 80% 10%, rgba(255,255,255,.10), transparent 60%);
+  }
+  .hero .eyebrow { font-size:10px; font-weight:900; letter-spacing:.22em; text-transform:uppercase; opacity:.85; position:relative; }
+  .hero h3 { font-size:24px; font-weight:900; line-height:1.05; letter-spacing:-.04em; margin-top:8px; max-width: 280px; position:relative; }
+  .hero .cta { margin-top:14px; display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border-radius:11px; font-size:12px; font-weight:900; color:#fff; position:relative; width:fit-content; }
+
+  /* ---------- Section ---------- */
+  .section { padding: 16px; }
+  .eyebrow-line { display:flex; align-items:center; gap:8px; font-size:10px; font-weight:900; letter-spacing:.2em; text-transform:uppercase; color: var(--muted); }
+  .eyebrow-line::before, .eyebrow-line::after { content:""; height:2px; width:22px; background: currentColor; opacity:.5; }
+  .section h4 { font-size:15px; font-weight:900; margin-top:8px; letter-spacing:-.02em; }
+  .section .sub { font-size:11px; color: var(--muted); margin-top:3px; }
+
+  /* product card */
+  .products { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; }
+  .pcard { border:1px solid var(--line); border-radius:13px; overflow:hidden; background:#fff; }
+  .pcard .img { height:96px; position:relative; }
+  .pcard .badge { position:absolute; top:7px; right:7px; font-size:8px; font-weight:900; padding:3px 7px; border-radius:999px; color:#fff; letter-spacing:.08em; }
+  .pcard .body { padding:9px 10px 11px; }
+  .pcard .store { font-size:9px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; opacity:.7; }
+  .pcard .name { font-size:11.5px; font-weight:800; margin-top:3px; line-height:1.3; min-height:28px; }
+  .pcard .price { font-size:13px; font-weight:900; margin-top:5px; }
+  .pcard .old { font-size:10px; text-decoration:line-through; opacity:.5; margin-inline-start:5px; font-weight:700; }
+  .pcard button { width:100%; margin-top:8px; border:0; border-radius:9px; padding:8px; font-size:10px; font-weight:900; color:#fff; cursor:pointer; }
+
+  /* status row */
+  .statuses { margin-top:14px; display:flex; flex-direction:column; gap:7px; }
+  .status { display:flex; align-items:center; gap:9px; padding:9px 11px; border-radius:10px; font-size:11px; font-weight:800; border:1px solid var(--line); background:#fff; }
+  .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .status .lbl { margin-inline-end:auto; }
+  .status .val { font-size:10px; font-weight:900; padding:2px 8px; border-radius:999px; }
+
+  /* trust */
+  .trust { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px; }
+  .trust .t { border:1px solid var(--line); border-radius:12px; padding:11px; text-align:center; background:#fff; }
+  .trust .ic { width:34px; height:34px; border-radius:50%; margin:0 auto 6px; display:grid; place-items:center; font-size:15px; }
+  .trust b { display:block; font-size:10.5px; font-weight:900; }
+  .trust span { display:block; font-size:9px; color:var(--muted); margin-top:2px; line-height:1.35; }
+
+  /* footer */
+  .ftr { padding:16px; color:rgba(255,255,255,.82); font-size:10.5px; }
+  .ftr .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .pay { display:inline-block; padding:4px 9px; border-radius:6px; font-size:9px; font-weight:900; font-style:italic; }
+  .fcols { display:grid; grid-template-columns:1fr 1fr; gap:10px 16px; margin-top:12px; }
+  .fcols b { color:#fff; font-size:10px; letter-spacing:.1em; text-transform:uppercase; }
+  .fcols a { display:block; color:rgba(255,255,255,.6); font-size:10px; margin-top:5px; text-decoration:none; }
+  .copy { margin-top:12px; padding-top:10px; border-top:1px solid rgba(255,255,255,.1); font-size:9px; color:rgba(255,255,255,.5); text-align:center; }
+
+  .note { padding: 12px 18px; font-size: 11px; color: var(--muted); border-top:1px solid var(--line); background:#faf8f4; }
+  .note b { color: var(--ink); }
+
+  /* ============================================================
+     DIRECTION A — Noir & Bordeaux (corrigé)
+     ============================================================ */
+  .dirA {
+    --c-primary: #1c1414;
+    --c-accent: #7b1e3a;
+    --c-surface: #f5f1ec;
+    --c-surface-alt: #ebe4db;
+    --c-gold: #d4a574;
+    --c-success: #2f6b4f;
+    --c-info: #4a6b8a;
+    --c-danger: #a63b32;
+  }
+  .dirA .logo { background: var(--c-primary); }
+  .dirA .hdr.light .brand { color: var(--c-primary); }
+  .dirA .hero { background: linear-gradient(135deg, var(--c-primary) 0%, #2a1a1f 55%, var(--c-accent) 140%); }
+  .dirA .hero .cta { background: var(--c-accent); }
+  .dirA .eyebrow-line { color: var(--c-accent); }
+  .dirA .pcard .badge { background: var(--c-accent); }
+  .dirA .pcard button { background: var(--c-accent); }
+  .dirA .pcard .price { color: var(--c-accent); }
+  .dirA .s-paid { background: color-mix(in srgb, var(--c-success) 9%, #fff); border-color: color-mix(in srgb, var(--c-success) 28%, var(--line)); }
+  .dirA .s-paid .dot { background: var(--c-success); } .dirA .s-paid .val { background: var(--c-success); color:#fff; }
+  .dirA .s-transit { background: color-mix(in srgb, var(--c-info) 9%, #fff); border-color: color-mix(in srgb, var(--c-info) 28%, var(--line)); }
+  .dirA .s-transit .dot { background: var(--c-info); } .dirA .s-transit .val { background: var(--c-info); color:#fff; }
+  .dirA .s-pending { background: color-mix(in srgb, var(--c-gold) 14%, #fff); border-color: color-mix(in srgb, var(--c-gold) 32%, var(--line)); }
+  .dirA .s-pending .dot { background: var(--c-gold); } .dirA .s-pending .val { background: var(--c-primary); color:#fff; }
+  .dirA .trust .ic { background: color-mix(in srgb, var(--c-gold) 18%, #fff); color: var(--c-primary); }
+  .dirA .ftr { background: var(--c-primary); }
+  .dirA .pay { background: rgba(255,255,255,.1); color:#fff; }
+  .dirA .pay.dark { background: var(--c-surface-alt); color: var(--c-primary); }
+
+  /* ============================================================
+     DIRECTION B — Navy + Terracotta
+     ============================================================ */
+  .dirB {
+    --c-primary: #0f2a43;
+    --c-accent: #e85d04;
+    --c-surface: #fafaf7;
+    --c-surface-alt: #f0ebe3;
+    --c-gold: #c9a961;
+    --c-success: #1b7a4e;
+    --c-info: #2f6f9f;
+    --c-danger: #c0392b;
+  }
+  .dirB .logo { background: var(--c-primary); }
+  .dirB .hdr.light .brand { color: var(--c-primary); }
+  .dirB .hero { background: linear-gradient(135deg, var(--c-primary) 0%, #163a5c 55%, #1f4e7a 100%); }
+  .dirB .hero .cta { background: var(--c-accent); }
+  .dirB .eyebrow-line { color: var(--c-accent); }
+  .dirB .pcard .badge { background: var(--c-accent); }
+  .dirB .pcard button { background: var(--c-accent); }
+  .dirB .pcard .price { color: var(--c-accent); }
+  .dirB .s-paid { background: color-mix(in srgb, var(--c-success) 9%, #fff); border-color: color-mix(in srgb, var(--c-success) 28%, var(--line)); }
+  .dirB .s-paid .dot { background: var(--c-success); } .dirB .s-paid .val { background: var(--c-success); color:#fff; }
+  .dirB .s-transit { background: color-mix(in srgb, var(--c-info) 9%, #fff); border-color: color-mix(in srgb, var(--c-info) 28%, var(--line)); }
+  .dirB .s-transit .dot { background: var(--c-info); } .dirB .s-transit .val { background: var(--c-info); color:#fff; }
+  .dirB .s-pending { background: color-mix(in srgb, var(--c-gold) 14%, #fff); border-color: color-mix(in srgb, var(--c-gold) 32%, var(--line)); }
+  .dirB .s-pending .dot { background: var(--c-gold); } .dirB .s-pending .val { background: var(--c-primary); color:#fff; }
+  .dirB .trust .ic { background: color-mix(in srgb, var(--c-accent) 14%, #fff); color: var(--c-accent); }
+  .dirB .ftr { background: var(--c-primary); }
+  .dirB .pay { background: rgba(255,255,255,.1); color:#fff; }
+  .dirB .pay.dark { background: var(--c-surface-alt); color: var(--c-primary); }
+
+  /* ============================================================
+     DIRECTION C — Black + Terracotta
+     ============================================================ */
+  .dirC {
+    --c-primary: #1a1a1a;
+    --c-accent: #c44536;
+    --c-surface: #faf7f2;
+    --c-surface-alt: #efe9e1;
+    --c-gold: #d4a574;
+    --c-success: #2e6b4f;
+    --c-info: #3d6180;
+    --c-danger: #a83232;
+  }
+  .dirC .logo { background: var(--c-primary); }
+  .dirC .hdr.light .brand { color: var(--c-primary); }
+  .dirC .hero { background: linear-gradient(135deg, var(--c-primary) 0%, #2a2525 55%, #3a2a28 100%); }
+  .dirC .hero .cta { background: var(--c-accent); }
+  .dirC .eyebrow-line { color: var(--c-accent); }
+  .dirC .pcard .badge { background: var(--c-accent); }
+  .dirC .pcard button { background: var(--c-accent); }
+  .dirC .pcard .price { color: var(--c-accent); }
+  .dirC .s-paid { background: color-mix(in srgb, var(--c-success) 9%, #fff); border-color: color-mix(in srgb, var(--c-success) 28%, var(--line)); }
+  .dirC .s-paid .dot { background: var(--c-success); } .dirC .s-paid .val { background: var(--c-success); color:#fff; }
+  .dirC .s-transit { background: color-mix(in srgb, var(--c-info) 9%, #fff); border-color: color-mix(in srgb, var(--c-info) 28%, var(--line)); }
+  .dirC .s-transit .dot { background: var(--c-info); } .dirC .s-transit .val { background: var(--c-info); color:#fff; }
+  .dirC .s-pending { background: color-mix(in srgb, var(--c-gold) 14%, #fff); border-color: color-mix(in srgb, var(--c-gold) 32%, var(--line)); }
+  .dirC .s-pending .dot { background: var(--c-gold); } .dirC .s-pending .val { background: var(--c-primary); color:#fff; }
+  .dirC .trust .ic { background: color-mix(in srgb, var(--c-accent) 12%, #fff); color: var(--c-accent); }
+  .dirC .ftr { background: var(--c-primary); }
+  .dirC .pay { background: rgba(255,255,255,.1); color:#fff; }
+  .dirC .pay.dark { background: var(--c-surface-alt); color: var(--c-primary); }
+
+  .icon-img {
+    width: 100%; height: 100%;
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.25), rgba(0,0,0,.15)),
+      repeating-linear-gradient(45deg, rgba(255,255,255,.08) 0 6px, rgba(0,0,0,.05) 6px 12px);
+  }
+  .stage { background: var(--c-surface); }
+</style>
+</head>
+<body>
+
+<div class="page-head">
+  <h1>AYROVI — ثلاثة اتجاهات لونية مقارَنة</h1>
+  <p>نفس مكونات التطبيق (هيدر، Hero، بطاقات منتج، حالات طلب، شارات ثقة، فوتر) مع كل اتجاه. اختر الأنسب للهوية.</p>
+</div>
+
+<div class="grid">
+
+  <!-- ===================== DIRECTION A ===================== -->
+  <article class="card dirA" id="dir-a">
+    <div class="card-head">
+      <span class="tag">A · موصى به</span>
+      <h2>Noir &amp; Bordeaux — مع إصلاحات</h2>
+      <p>الإبقاء على العنابي المميز + إضافة أخضر نجاح وكحلي معلومات + هيدر عاجي.</p>
+      <div class="swatches">
+        <span class="sw"><i style="background:#1c1414"></i>أسود</span>
+        <span class="sw"><i style="background:#7b1e3a"></i>عنابي</span>
+        <span class="sw"><i style="background:#f5f1ec;border-color:rgba(0,0,0,.2)"></i>عاجي</span>
+        <span class="sw"><i style="background:#d4a574"></i>ذهبي</span>
+        <span class="sw"><i style="background:#2f6b4f"></i>نجاح</span>
+        <span class="sw"><i style="background:#4a6b8a"></i>معلومات</span>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="hdr light">
+        <div class="brand"><span class="logo">A</span>AYROVI</div>
+        <div class="acts">
+          <span class="icon">☰</span><span class="icon">ع</span><span class="icon">👤</span>
+        </div>
+      </div>
+      <div class="hero">
+        <span class="eyebrow">Arrivage #08 · Express</span>
+        <h3>Toute la mode du monde, livrée chez vous.</h3>
+        <a class="cta">Découvrir →</a>
+      </div>
+      <div class="section">
+        <div class="eyebrow-line">Marques partenaires</div>
+        <h4>Vos marques préférées, réunies.</h4>
+        <div class="products">
+          <div class="pcard">
+            <div class="img icon-img" style="background:linear-gradient(135deg,#2a1a1f,#7b1e3a)"><span class="badge">SHEIN</span></div>
+            <div class="body"><div class="store">SHEIN</div><div class="name">Ensemble tendance — édition AYROVI</div><div class="price">89 DT<span class="old">112 DT</span></div><button>Ajouter au panier</button></div>
+          </div>
+          <div class="pcard">
+            <div class="img icon-img" style="background:linear-gradient(135deg,#1c1414,#3a2a2f)"><span class="badge">-20%</span></div>
+            <div class="body"><div class="store">ZARA</div><div class="name">Veste oversize coupe droite</div><div class="price">214 DT</div><button>Ajouter au panier</button></div>
+          </div>
+        </div>
+
+        <div class="statuses">
+          <div class="status s-paid"><span class="dot"></span><span class="lbl">Commande AYR-482019 — payée</span><span class="val">Confirmée</span></div>
+          <div class="status s-transit"><span class="dot"></span><span class="lbl">AYR-481902 — en transit</span><span class="val">Suivi</span></div>
+          <div class="status s-pending"><span class="dot"></span><span class="lbl">AYR-481845 — acompte à vérifier</span><span class="val">20 %</span></div>
+        </div>
+
+        <div class="trust">
+          <div class="t"><div class="ic">🛡️</div><b>Acompte 20 %</b><span>Commande confirmée après vérification</span></div>
+          <div class="t"><div class="ic">🚚</div><b>Suivi temps réel</b><span>Code AYR-TN dès confirmation</span></div>
+        </div>
+      </div>
+      <div class="ftr">
+        <strong style="color:#fff;font-size:13px;">AYROVI</strong>
+        <div class="row">
+          <span class="pay">VISA</span><span class="pay">Mastercard</span>
+          <span class="pay dark">Flouci</span><span class="pay dark">D17</span><span class="pay dark">Poste</span>
+        </div>
+        <div class="fcols">
+          <div><b>Découvrir</b><a>Accueil</a><a>Taux &amp; transparence</a><a>Assistant</a></div>
+          <div><b>Aide</b><a>WhatsApp</a><a>contact@ayrovi.tn</a><a>Suivi colis</a></div>
+        </div>
+        <div class="copy">© AYROVI — Tous droits réservés 2026</div>
+      </div>
+    </div>
+    <div class="note"><b>الأفضل لـ:</b> هوية راقية مميّزة في السوق التونسي، مع إصلاح قابلية الاستخدام (أخضر/كحلي حقيقيين). <b>المخاطرة:</b> يجب أن يرقى محتوى SHEIN/Temu لمستوى الفخامة المتوقعة.</div>
+  </article>
+
+  <!-- ===================== DIRECTION B ===================== -->
+  <article class="card dirB" id="dir-b">
+    <div class="card-head">
+      <span class="tag">B · سوق يومي</span>
+      <h2>Navy + Terracotta</h2>
+      <p>كحلي عميق للثقة + برتقالي تراكوتا للطاقة والعروض — مقاربة Jumia/Noon برقيّ.</p>
+      <div class="swatches">
+        <span class="sw"><i style="background:#0f2a43"></i>كحلي</span>
+        <span class="sw"><i style="background:#e85d04"></i>تراكوتا</span>
+        <span class="sw"><i style="background:#fafaf7;border-color:rgba(0,0,0,.2)"></i>أبيض دافئ</span>
+        <span class="sw"><i style="background:#c9a961"></i>ذهبي</span>
+        <span class="sw"><i style="background:#1b7a4e"></i>نجاح</span>
+        <span class="sw"><i style="background:#2f6f9f"></i>معلومات</span>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="hdr light">
+        <div class="brand"><span class="logo">A</span>AYROVI</div>
+        <div class="acts">
+          <span class="icon">☰</span><span class="icon">ع</span><span class="icon">👤</span>
+        </div>
+      </div>
+      <div class="hero">
+        <span class="eyebrow">Arrivage #08 · Express</span>
+        <h3>Toute la mode du monde, livrée chez vous.</h3>
+        <a class="cta">Découvrir →</a>
+      </div>
+      <div class="section">
+        <div class="eyebrow-line">Marques partenaires</div>
+        <h4>Vos marques préférées, réunies.</h4>
+        <div class="products">
+          <div class="pcard">
+            <div class="img icon-img" style="background:linear-gradient(135deg,#0f2a43,#2f6f9f)"><span class="badge">SHEIN</span></div>
+            <div class="body"><div class="store">SHEIN</div><div class="name">Ensemble tendance — édition AYROVI</div><div class="price">89 DT<span class="old">112 DT</span></div><button>Ajouter au panier</button></div>
+          </div>
+          <div class="pcard">
+            <div class="img icon-img" style="background:linear-gradient(135deg,#163a5c,#1f4e7a)"><span class="badge">-20%</span></div>
+            <div class="body"><div class="store">ZARA</div><div class="name">Veste oversize coupe droite</div><div class="price">214 DT</div><button>Ajouter au panier</button></div>
+          </div>
+        </div>
+
+        <div class="statuses">
+          <div class="status s-paid"><span class="dot"></span><span class="lbl">Commande AYR-482019 — payée</span><span class="val">Confirmée</span></div>
+          <div class="status s-transit"><span class="dot"></span><span class="lbl">AYR-481902 — en transit</span><span class="val">Suivi</span></div>
+          <div class="status s-pending"><span class="dot"></span><span class="lbl">AYR-481845 — acompte à vérifier</span><span class="val">20 %</span></div>
+        </div>
+
+        <div class="trust">
+          <div class="t"><div class="ic">🛡️</div><b>Acompte 20 %</b><span>Commande confirmée après vérification</span></div>
+          <div class="t"><div class="ic">🚚</div><b>Suivi temps réel</b><span>Code AYR-TN dès confirmation</span></div>
+        </div>
+      </div>
+      <div class="ftr">
+        <strong style="color:#fff;font-size:13px;">AYROVI</strong>
+        <div class="row">
+          <span class="pay">VISA</span><span class="pay">Mastercard</span>
+          <span class="pay dark">Flouci</span><span class="pay dark">D17</span><span class="pay dark">Poste</span>
+        </div>
+        <div class="fcols">
+          <div><b>Découvrir</b><a>Accueil</a><a>Taux &amp; transparence</a><a>Assistant</a></div>
+          <div><b>Aide</b><a>WhatsApp</a><a>contact@ayrovi.tn</a><a>Suivi colis</a></div>
+        </div>
+        <div class="copy">© AYROVI — Tous droits réservés 2026</div>
+      </div>
+    </div>
+    <div class="note"><b>الأفضل لـ:</b> منصة تسوّق جماعي يومية (Shein/Temu) تستهدف الجمهور العريض. البرتقالي يولّد إحساس "عروض". <b>المخاطرة:</b> أقل تميّزاً — الكحلي/البرتقالي مستخدم بكثرة في السوق.</div>
+  </article>
+
+  <!-- ===================== DIRECTION C ===================== -->
+  <article class="card dirC" id="dir-c">
+    <div class="card-head">
+      <span class="tag">C · أزياء تحريرية</span>
+      <h2>Black + Terracotta</h2>
+      <p>أسود محايد + أحمر تراكوتا — إحساس Zara/Mango أنشط وأقل "فخامة قديمة" من العنابي.</p>
+      <div class="swatches">
+        <span class="sw"><i style="background:#1a1a1a"></i>أسود</span>
+        <span class="sw"><i style="background:#c44536"></i>تراكوتا</span>
+        <span class="sw"><i style="background:#faf7f2;border-color:rgba(0,0,0,.2)"></i>عاجي فاتح</span>
+        <span class="sw"><i style="background:#d4a574"></i>ذهبي</span>
+        <span class="sw"><i style="background:#2e6b4f"></i>نجاح</span>
+        <span class="sw"><i style="background:#3d6180"></i>معلومات</span>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="hdr light">
+        <div class="brand"><span class="logo">A</span>AYROVI</div>
+        <div class="acts">
+          <span class="icon">☰</span><span class="icon">ع</span><span class="icon">👤</span>
+        </div>
+      </div>
+      <div class="hero">
+        <span class="eyebrow">Arrivage #08 · Express</span>
+        <h3>Toute la mode du monde, livrée chez vous.</h3>
+        <a class="cta">Découvrir →</a>
+      </div>
+      <div class="section">
+        <div class="eyebrow-line">Marques partenaires</div>
+        <h4>Vos marques préférées, réunies.</h4>
+        <div class="products">
+          <div class="pcard">
+            <div class="img icon-img" style="background:linear-gradient(135deg,#1a1a1a,#3a2a28)"><span class="badge">SHEIN</span></div>
+            <div class="body"><div class="store">SHEIN</div><div class="name">Ensemble tendance — édition AYROVI</div><div class="price">89 DT<span class="old">112 DT</span></div><button>Ajouter au panier</button></div>
+          </div>
+          <div class="pcard">
+            <div class="img icon-img" style="background:linear-gradient(135deg,#2a2525,#4a3532)"><span class="badge">-20%</span></div>
+            <div class="body"><div class="store">ZARA</div><div class="name">Veste oversize coupe droite</div><div class="price">214 DT</div><button>Ajouter au panier</button></div>
+          </div>
+        </div>
+
+        <div class="statuses">
+          <div class="status s-paid"><span class="dot"></span><span class="lbl">Commande AYR-482019 — payée</span><span class="val">Confirmée</span></div>
+          <div class="status s-transit"><span class="dot"></span><span class="lbl">AYR-481902 — en transit</span><span class="val">Suivi</span></div>
+          <div class="status s-pending"><span class="dot"></span><span class="lbl">AYR-481845 — acompte à vérifier</span><span class="val">20 %</span></div>
+        </div>
+
+        <div class="trust">
+          <div class="t"><div class="ic">🛡️</div><b>Acompte 20 %</b><span>Commande confirmée après vérification</span></div>
+          <div class="t"><div class="ic">🚚</div><b>Suivi temps réel</b><span>Code AYR-TN dès confirmation</span></div>
+        </div>
+      </div>
+      <div class="ftr">
+        <strong style="color:#fff;font-size:13px;">AYROVI</strong>
+        <div class="row">
+          <span class="pay">VISA</span><span class="pay">Mastercard</span>
+          <span class="pay dark">Flouci</span><span class="pay dark">D17</span><span class="pay dark">Poste</span>
+        </div>
+        <div class="fcols">
+          <div><b>Découvrir</b><a>Accueil</a><a>Taux &amp; transparence</a><a>Assistant</a></div>
+          <div><b>Aide</b><a>WhatsApp</a><a>contact@ayrovi.tn</a><a>Suivi colis</a></div>
+        </div>
+        <div class="copy">© AYROVI — Tous droits réservés 2026</div>
+      </div>
+    </div>
+    <div class="note"><b>الأفضل لـ:</b> هوية أزياء تحريرية أنيقة لكن بشبابية وطاقة أكبر من العنابي. توازن بين Zara وMango. <b>المخاطرة:</b> التراكوتا أقل فخامة صريحة من العنابي.</div>
+  </article>
+
+</div>
+
+</body>
+</html>

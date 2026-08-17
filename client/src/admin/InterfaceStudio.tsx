@@ -77,17 +77,19 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       {canWrite && <Button busy={busy} onClick={save}><Save size={17} />Publier واجهتي</Button>}
     </div>
 
-    <section className="interface-palette-banner" aria-label="Palette sémantique AYROVI corrigée">
-      <div><span className="admin-eyebrow">PALETTE MESURÉE · 60 / 30 / 10</span><h2>Dark Teal corrigé AYROVI</h2><p>60% surfaces crème, 30% interactions Dark Teal, 10% Hero Deep Green. Le bleu reste réservé aux données et le rouge aux alertes.</p></div>
+    <section className="interface-palette-banner" aria-label="Palette sémantique AYROVI v3 — Blanc Apple">
+      <div><span className="admin-eyebrow">PALETTE V3 · BLANC APPLE</span><h2>Blanc Apple — identité officielle</h2><p>Fond blanc Apple, surfaces élevées en gris clair, noir Apple pour la structure, le Hero, le pied de page et toutes les actions. Le bordeaux démonstratif a été retiré pour une identité plus sobre et officielle.</p></div>
       <div className="interface-palette-swatches">{[
-        [AYROVI_SEMANTIC_PALETTE.interactivePrimary, 'Interaction'],
-        [AYROVI_SEMANTIC_PALETTE.heroBackground, 'Hero unique'],
-        [AYROVI_SEMANTIC_PALETTE.surfaceAlt, 'Beige'],
-        [AYROVI_SEMANTIC_PALETTE.surfaceBase, 'Canvas'],
-        [AYROVI_SEMANTIC_PALETTE.chartAccent, 'Données'],
+        [AYROVI_SEMANTIC_PALETTE.heroBackground, 'Noir · structure & action'],
+        [AYROVI_SEMANTIC_PALETTE.surfaceBase, 'Ivoire · fond'],
+        [AYROVI_SEMANTIC_PALETTE.surfaceAlt, 'Crème · surface'],
+        [AYROVI_SEMANTIC_PALETTE.success, 'Succès'],
+        [AYROVI_SEMANTIC_PALETTE.info, 'Info'],
+        [AYROVI_SEMANTIC_PALETTE.warning, 'Avertissement'],
         [AYROVI_SEMANTIC_PALETTE.danger, 'Alerte'],
-      ].map(([color, label]) => <span key={color} style={{ background: color, color: [AYROVI_SEMANTIC_PALETTE.surfaceAlt, AYROVI_SEMANTIC_PALETTE.surfaceBase].includes(color as any) ? 'var(--color-text-primary)' : 'var(--ayrovi-white)' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
-      {canWrite && <Button variant="secondary" onClick={applyCorrectedPalette}><Palette size={16} />Appliquer la palette corrigée</Button>}
+        [AYROVI_SEMANTIC_PALETTE.accentGold, 'Or · détail'],
+      ].map(([color, label]) => <span key={color} style={{ background: color, color: [AYROVI_SEMANTIC_PALETTE.surfaceAlt, AYROVI_SEMANTIC_PALETTE.surfaceBase, AYROVI_SEMANTIC_PALETTE.accentGold].includes(color as any) ? 'var(--color-text-primary)' : 'var(--ayrovi-white)' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
+      {canWrite && <Button variant="secondary" onClick={applyCorrectedPalette}><Palette size={16} />Appliquer la palette Blanc Apple</Button>}
     </section>
 
     <div className="interface-studio-layout">

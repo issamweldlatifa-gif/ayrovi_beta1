@@ -1004,8 +1004,8 @@ describe('AYROVI platform', () => {
     expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
     expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
     expect(commerce.body.data.theme).toMatchObject({
-      primary: '#003B39', hero: '#13251F', surfaceAlt: '#EDE6DE', surface: '#F9F8F4',
-      ink: '#1A1A1A', chart: '#2E667D', danger: '#A63B32',
+      primary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F5F5F7', surface: '#FBFBFD',
+      ink: '#1D1D1F', chart: '#1D1D1F', danger: '#A63B32',
     });
     expect(commerce.body.data.pricing.version).toBe(1);
 
@@ -1052,7 +1052,7 @@ describe('AYROVI platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.navigation).toMatchObject({
-      background: '#F9F8F4', color: '#1A1A1A', activeBackground: '#EDE6DE',
+      background: '#FBFBFD', color: '#1D1D1F', activeBackground: '#F5F5F7',
     });
 
     const malformed = await superAdmin.put('/api/admin/interface-config').set('x-csrf-token', adminCsrf).send({
@@ -1065,13 +1065,13 @@ describe('AYROVI platform', () => {
     const publicConfig = await request(app).get('/api/public/commerce-config');
     expect(publicConfig.status).toBe(200);
     expect(publicConfig.body.data.theme).toMatchObject({
-      primary: '#003B39', hero: '#13251F', surfaceAlt: '#EDE6DE', surface: '#F9F8F4',
-      ink: '#1A1A1A', chart: '#2E667D', danger: '#A63B32',
+      primary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F5F5F7', surface: '#FBFBFD',
+      ink: '#1D1D1F', chart: '#1D1D1F', danger: '#A63B32',
     });
     expect(publicConfig.body.data.interfaceConfig).toMatchObject({
-      buttons: { background: '#003B39', color: '#FFFFFF' },
-      icons: { color: '#1A1A1A' },
-      navigation: { background: '#F9F8F4', color: '#1A1A1A', activeBackground: '#EDE6DE' },
+      buttons: { background: '#1D1D1F', color: '#FFFFFF' },
+      icons: { color: '#1D1D1F' },
+      navigation: { background: '#FBFBFD', color: '#1D1D1F', activeBackground: '#F5F5F7' },
     });
   });
 

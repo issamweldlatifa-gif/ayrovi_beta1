@@ -7,8 +7,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#F9F8F4",
-  "theme_color": "#003B39",
+  "background_color": "#FBFBFD",
+  "theme_color": "#1D1D1F",
   "icons": [
     {
       "src": "/media/logo-ayrovi-final-192.png",

@@ -1,12 +1,19 @@
+// AYROVI v3 — palette « Blanc Apple » (identité officielle, minimalisme Apple).
+// Le bordeaux démonstratif est retiré : le noir Apple porte toutes les actions.
+// Règle : ~96 % blanc/blanc cassé, 2 % noir, 2 % or antique.
 export const AYROVI_SEMANTIC_PALETTE = {
-  interactivePrimary: '#003b39',
-  heroBackground: '#13251f',
-  surfaceAlt: '#ede6de',
-  surfaceBase: '#f9f8f4',
-  textPrimary: '#1a1a1a',
-  textSecondary: '#5f5f5b',
-  chartAccent: '#2e667d',
-  danger: '#a63b32',
+  interactivePrimary: '#1d1d1f', // Apple black — CTA, liens, état actif, contours
+  heroBackground: '#1d1d1f',     // Apple black — Hero, header, footer, structure
+  surfaceAlt: '#f5f5f7',         // Apple gray 6 — surfaces surélevées / états actifs
+  surfaceBase: '#fbfbfd',        // Apple white — fond général du site
+  textPrimary: '#1d1d1f',        // Apple label — texte principal
+  textSecondary: '#6e6e73',      // Apple secondary label — texte secondaire
+  chartAccent: '#1d1d1f',        // Apple black — données / graphiques (sobre)
+  success: '#2f6b4f',            // vert — succès, paiement confirmé
+  info: '#4a6b8a',               // bleu sourd — livraison, info neutre
+  warning: '#8c5a1a',            // ambre — avertissements
+  danger: '#a63b32',             // rouge sémantique réservé aux alertes
+  accentGold: '#9c7a4a',         // or antique — détails de prestige uniquement
   white: '#ffffff',
 } as const;
 

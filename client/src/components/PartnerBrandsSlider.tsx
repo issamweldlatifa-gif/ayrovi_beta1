@@ -56,7 +56,7 @@ export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; 
         <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">{subtitle || 'Découvrez les enseignes disponibles avec AYROVI. Chaque carte présente le logo correspondant à la marque affichée.'}</p>
       </div>
       <div className="relative w-full overflow-hidden bg-surface-alt py-10 shadow-card sm:py-14">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[70%] -translate-x-1/2 rounded-full bg-brand/20 blur-[100px]" /><div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-surface-alt to-transparent sm:w-28" /><div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-surface-alt to-transparent sm:w-28" />
+        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[70%] -translate-x-1/2 rounded-full bg-ink/8 blur-[100px]" /><div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-surface-alt to-transparent sm:w-28" /><div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-surface-alt to-transparent sm:w-28" />
         <div className="relative mb-8 flex items-center justify-between gap-4 px-6 sm:px-12"><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-muted">Explorez les marques</p><span className="rounded-full border border-line px-3 py-1.5 text-[10px] font-bold text-muted">Défilement automatique</span></div>
         <div className="relative w-full overflow-hidden"><div className="brands-marquee-track px-5 sm:px-8">{allBrands.map((brand, index) => {
           const isDark = brand.surface === 'dark';

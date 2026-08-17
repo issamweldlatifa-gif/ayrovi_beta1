@@ -646,13 +646,14 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
   {
-    id:'measured-dark-teal', label:'Dark Teal mesuré AYROVI',
+    id:'blanc-apple', label:'Blanc Apple — identité officielle AYROVI v3',
     primary:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
-    primaryDark:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
+    primaryDark:AYROVI_SEMANTIC_PALETTE.heroBackground,
     primaryLight:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
     hero:AYROVI_SEMANTIC_PALETTE.heroBackground,
     surfaceAlt:AYROVI_SEMANTIC_PALETTE.surfaceAlt,
-    accent:AYROVI_SEMANTIC_PALETTE.surfaceAlt,
+    accent:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
+    accentGold:AYROVI_SEMANTIC_PALETTE.accentGold,
     chart:AYROVI_SEMANTIC_PALETTE.chartAccent,
     danger:AYROVI_SEMANTIC_PALETTE.danger,
     rhubarb:AYROVI_SEMANTIC_PALETTE.danger,

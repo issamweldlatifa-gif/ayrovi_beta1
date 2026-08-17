@@ -8,21 +8,29 @@ import { calculatePrice, PricingRules } from '../services/pricing';
 export type PaymentMethodCode = 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
 
+// AYROVI v3 — palette « Blanc Apple » (identité officielle, minimalisme Apple).
+// ~96 % blanc/blanc cassé (#FBFBFD / #F5F5F7), 2 % noir (#1D1D1F), 2 % or antique (#9C7A4A).
 const CORRECTED_PALETTE = {
-  interactivePrimary: '#003B39', hero: '#13251F', surfaceAlt: '#EDE6DE', surfaceBase: '#F9F8F4',
-  textPrimary: '#1A1A1A', textSecondary: '#5F5F5B', chart: '#2E667D', danger: '#A63B32', white: '#FFFFFF',
+  interactivePrimary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F5F5F7', surfaceBase: '#FBFBFD',
+  textPrimary: '#1D1D1F', textSecondary: '#6E6E73', chart: '#1D1D1F',
+  success: '#2F6B4F', info: '#4A6B8A', warning: '#8C5A1A', danger: '#A63B32',
+  accentGold: '#9C7A4A', white: '#FFFFFF',
 } as const;
 
 const CORRECTED_THEME = {
-  preset: 'measured-dark-teal',
+  preset: 'blanc-apple',
   primary: CORRECTED_PALETTE.interactivePrimary,
-  primaryDark: CORRECTED_PALETTE.interactivePrimary,
+  primaryDark: CORRECTED_PALETTE.hero,
   primaryLight: CORRECTED_PALETTE.interactivePrimary,
   hero: CORRECTED_PALETTE.hero,
   surfaceAlt: CORRECTED_PALETTE.surfaceAlt,
-  accent: CORRECTED_PALETTE.surfaceAlt,
+  accent: CORRECTED_PALETTE.interactivePrimary,
+  accentGold: CORRECTED_PALETTE.accentGold,
   chart: CORRECTED_PALETTE.chart,
   slate: CORRECTED_PALETTE.chart,
+  success: CORRECTED_PALETTE.success,
+  info: CORRECTED_PALETTE.info,
+  warning: CORRECTED_PALETTE.warning,
   danger: CORRECTED_PALETTE.danger,
   rhubarb: CORRECTED_PALETTE.danger,
   ink: CORRECTED_PALETTE.textPrimary,
@@ -938,11 +946,12 @@ export class QatafoDatabase {
     ];
     for (const row of settings) insertSetting.run(...row, now);
 
-    // Version 2 applies the corrected measured palette while preserving every Admin
-    // section, label, media and layout choice. Only semantic colour roles are replaced.
+    // Version 5 retire le bordeaux démonstratif et bascule sur le noir formel
+    // (CTA, liens, état actif). Les sections, libellés, médias et choix Admin
+    // sont préservés ; seuls les rôles sémantiques de couleur changent.
     const paletteVersionRow = this.db.prepare("SELECT setting_value FROM settings WHERE setting_key='palette_version'").get() as { setting_value?: string } | undefined;
     const paletteVersion = Number(paletteVersionRow?.setting_value || 0);
-    if (paletteVersion < 2) {
+    if (paletteVersion < 6) {
       const interfaceRow = this.db.prepare("SELECT setting_value FROM settings WHERE setting_key='interface_config'").get() as { setting_value?: string } | undefined;
       let interfaceConfig: any = {};
       try { interfaceConfig = JSON.parse(interfaceRow?.setting_value || '{}'); } catch { interfaceConfig = {}; }
@@ -966,9 +975,9 @@ export class QatafoDatabase {
       this.db.transaction(() => {
         this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='site_theme'").run(JSON.stringify(CORRECTED_THEME), now);
         this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='interface_config'").run(JSON.stringify(interfaceConfig), now);
-        this.db.prepare("UPDATE settings SET setting_value='2',updated_at=? WHERE setting_key='palette_version'").run(now);
+        this.db.prepare("UPDATE settings SET setting_value='6',updated_at=? WHERE setting_key='palette_version'").run(now);
       })();
-      console.info('[DB] Palette AYROVI mesurée Dark Teal appliquée.');
+      console.info('[DB] Palette AYROVI v3 Blanc Apple appliquée (fond blanc, noir officiel).');
     }
 
     // Preserve all Admin interface settings while upgrading every former official
