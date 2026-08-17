@@ -92,6 +92,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   const [ordering, setOrdering] = useState(false);
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const previewRef = useRef<string | null>(null);
   const stageRef = useRef<Stage>(stage);
   stageRef.current = stage;
@@ -113,6 +114,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
       abortRef.current += 1;
     }
     previousStageRef.current = stage;
+  }, [stage]);
+
+  useEffect(() => {
+    if (stage !== 'analyzing') { setAnalysisProgress(0); return undefined; }
+    setAnalysisProgress(0);
+    const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 2)), 1400);
+    return () => window.clearInterval(timer);
   }, [stage]);
 
   if (!isOpen) return null;
@@ -480,7 +488,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           actions={<Button variant="ghost" size="icon" onClick={() => navigation.pushLayer({ id: 'lens:history' })} aria-label={tr('Historique Lens', 'سجل Lens')} title={tr('Historique', 'السجل')}><History className="h-5 w-5" /></Button>}
         />
 
-        <main className="flex-1 overflow-y-auto px-4 py-4 pb-8">
+        <main className="ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8">
           {stage === 'home' && (
             <div className="mx-auto max-w-md space-y-3 pt-2">
               <LensCamera onImage={(file) => void handleImage(file, false)} />
@@ -534,11 +542,14 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                   : <div className="grid h-52 w-full place-items-center bg-surface"><span className="h-8 w-8 animate-spin rounded-full border-[3px] border-brand border-r-transparent" /></div>}
                 <div className="lens-scan absolute inset-0" />
               </div>
-              <div className="flex items-center justify-center gap-2.5 text-sm font-bold text-ink">
+              <div className="flex items-center justify-center gap-2.5 text-sm font-bold text-ink" role="status" aria-live="polite">
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-r-transparent" />
-                {tr('AYROVIX analyse…', 'AYROVIX تحلّل…')}
+                {[tr('Recherche en cours…', 'جارٍ البحث…'), tr('Vérification du produit…', 'جارٍ التحقق من المنتج…'), tr('Récupération du prix…', 'جارٍ جلب السعر…')][analysisProgress]}
               </div>
-              <p className="text-center text-[11px] text-muted">{tr('Analyse instantanée AYROVIX — prix et correspondances en cours.', 'تحليل AYROVIX فوري — جارٍ حساب الأسعار والمطابقات.')}</p>
+              <ol className="grid grid-cols-3 gap-2" aria-label={tr("Étapes de l'analyse", 'مراحل التحليل')}>
+                {[tr('Recherche', 'البحث'), tr('Vérification', 'التحقق'), tr('Prix', 'السعر')].map((label, index) => <li key={label} className={`rounded-full px-2 py-1.5 text-center text-[9px] font-extrabold ${index <= analysisProgress ? 'bg-brand text-white' : 'bg-surface text-muted'}`}>{label}</li>)}
+              </ol>
+              <p className="text-center text-[11px] text-muted">{tr('AYROVIX compare les correspondances et récupère un prix traçable.', 'تقارن AYROVIX النتائج وتجلب سعرًا قابلًا للتتبع.')}</p>
             </div>
           )}
 

@@ -190,7 +190,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Footer & Checkout */}
           {items.length > 0 && (
-            <div className="p-4 sm:p-6 border-t border-line bg-surface space-y-3">
+            <div className="ay-safe-bottom p-4 sm:p-6 border-t border-line bg-surface space-y-3">
               <div className="rounded-xl border border-accent bg-accent/10 p-3 text-[11px] leading-5 text-ink">
                 <p className="font-black">{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</p>
                 {pendingManual && <p className="font-bold">{tr('Le prix du produit sera vérifié par l’équipe avant l’achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}

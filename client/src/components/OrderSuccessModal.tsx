@@ -65,7 +65,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
       <div className="relative w-full max-w-md overflow-hidden bg-white border border-line rounded-3xl text-center shadow-2xl">
         <AppHeader title={tr('Commande enregistrée', 'تم تسجيل الطلب')} subtitle={tr('Confirmation AYROVI', 'تأكيد AYROVI')} onClose={onClose} actionLabel={tr('Retour à l’accueil', 'العودة إلى الصفحة الرئيسية')} />
         <JourneyProgress active={4} />
-        <div className="space-y-5 p-6 sm:p-8">
+        <div className="ay-safe-bottom space-y-5 p-6 sm:p-8">
         {/* Celebration Icon */}
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand mx-auto shadow-xs">
           <PackageCheck className="w-8 h-8 sm:w-10 sm:h-10" />

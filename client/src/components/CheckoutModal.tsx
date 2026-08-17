@@ -301,7 +301,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <JourneyProgress active={isPaymentStage ? 3 : 2} />
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="ay-safe-bottom p-5 sm:p-6 space-y-4">
           {error && (
             <div className="bg-danger/5 border border-danger/20 rounded-xl p-3 text-xs text-danger font-semibold flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />

@@ -8,13 +8,17 @@ import { getCommerceConfig } from '../services/publicApi';
 interface FooterProps {
   onOpenAccount?: () => void;
   onOpenAssistant?: () => void;
+  logoUrl?: string;
+  coverImage?: string;
+  introTitle?: string;
+  introText?: string;
 }
 
 const PayBadge: React.FC<{ label: string; className?: string }> = ({ label, className = '' }) => (
   <span className={`inline-flex h-8 min-w-[62px] items-center justify-center rounded-md px-2.5 text-[11px] font-black italic tracking-wide shadow-sm ${className}`}>{label}</span>
 );
 
-export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, logoUrl = '/media/logo-ayrovi.png', coverImage, introTitle, introText }) => {
   const [exchangeRates, setExchangeRates] = useState<string[]>(['Tarifs AYROVI en cours de synchronisation…']);
   const [channels, setChannels] = useState({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
   const [footerAbout, setFooterAbout] = useState('La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence et sans carte bancaire internationale.');
@@ -107,10 +111,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-9 space-y-3 text-xs">
           <div className="flex items-center gap-2.5">
-            <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain" />
-            <span className="text-lg font-extrabold tracking-[-0.04em] text-ink">AYROVI</span>
+            <img src={logoUrl} alt="" className="h-10 w-10 object-contain" />
+            <span className="text-lg font-extrabold tracking-[-0.04em] text-ink">{introTitle || 'AYROVI'}</span>
           </div>
-          <p className="max-w-xl leading-relaxed text-muted">{footerAbout}</p>
+          <p className="max-w-xl leading-relaxed text-muted">{introText || footerAbout}</p>
         </div>
 
         {/* Transparent text is placed directly over the supplied rectangular image. */}
@@ -119,7 +123,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant }
           aria-labelledby="rates-title"
         >
           <img
-            src={ratesTransparencyImage}
+            src={coverImage || ratesTransparencyImage}
             alt="Symboles du dollar, de l’euro et du yen illustrant les taux de change AYROVI"
             className="absolute inset-0 h-full w-full object-cover object-center"
           />

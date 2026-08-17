@@ -26,7 +26,7 @@ export const ScrollToTopButton: React.FC = () => {
       title="Retourner en haut"
       aria-label="Retourner en haut"
     >
-      <ArrowUp className="w-5 h-5" />
+      <ArrowUp className="interface-runtime-icon" />
     </button>
   );
 };

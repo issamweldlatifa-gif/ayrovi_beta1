@@ -10,9 +10,8 @@ interface TabHeaderProps {
 }
 
 /** Shared header for Arrivals, Promotions, Social and Magazine. */
-export const TabHeader: React.FC<TabHeaderProps> = ({ current, total, title, onClose }) => {
+export const TabHeader: React.FC<TabHeaderProps> = ({ title, onClose }) => {
   const { tr } = useLocale();
-  const counter = `${String(current).padStart(2, '0')} / ${String(total).padStart(2, '0')}`;
   return (
     <AppHeader
       sticky
@@ -20,7 +19,6 @@ export const TabHeader: React.FC<TabHeaderProps> = ({ current, total, title, onC
       subtitle="AYROVI"
       onClose={onClose}
       actionLabel={tr(`Fermer ${title}`, `إغلاق ${title}`)}
-      actions={<span className="rounded-control bg-brand/10 px-2.5 py-1 text-[10px] font-black tracking-[0.12em] text-brand-dark" aria-label={tr(`Onglet ${current} sur ${total}`, `التبويب ${current} من ${total}`)}>{counter}</span>}
     />
   );
 };

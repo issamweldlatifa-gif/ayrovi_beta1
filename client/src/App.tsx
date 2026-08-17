@@ -16,6 +16,7 @@ import { customerApi } from './customer/api';
 import { getCommerceConfig } from './services/publicApi';
 import { replaceUrlPreservingNavigation, useNavigationHistory } from './navigation/NavigationHistory';
 import { useLocale } from './i18n/LocaleContext';
+import { DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSectionConfig, type PublicInterfaceConfig } from './config/interfaceConfig';
 
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
@@ -25,6 +26,19 @@ const CartDrawer = lazy(() => import('./components/CartDrawer').then((module) =>
 const CheckoutModal = lazy(() => import('./components/CheckoutModal').then((module) => ({ default: module.CheckoutModal })));
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
+
+const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => (
+  <div className="managed-public-section" data-public-section={section.id}>
+    {section.id === 'cms' && (section.image || section.title || section.subtitle) && (
+      <header className="relative isolate overflow-hidden border-y border-line bg-surface px-5 py-12 text-center sm:py-16">
+        {section.image && <><img src={section.image} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/85" /></>}
+        {section.title && <h2 className="font-display text-3xl font-black text-ink sm:text-5xl">{section.title}</h2>}
+        {section.subtitle && <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted sm:text-base">{section.subtitle}</p>}
+      </header>
+    )}
+    {children}
+  </div>
+);
 
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
@@ -42,6 +56,7 @@ export const App: React.FC = () => {
   const closeAppView = () => navigation.back();
 
   const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
+  const [interfaceConfig, setInterfaceConfig] = useState<PublicInterfaceConfig>(() => structuredClone(DEFAULT_INTERFACE_CONFIG));
 
   // Cart & Checkout State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -78,16 +93,35 @@ export const App: React.FC = () => {
     getCommerceConfig()
       .then((payload) => {
         if (!active) return;
-        const theme = payload?.data?.theme;
-        if (!theme || typeof theme !== 'object' || !theme.primary) return;
         const root = document.documentElement;
-        root.style.setProperty('--ayrovi-purple', String(theme.primary));
-        root.style.setProperty('--ayrovi-purple-dark', String(theme.primaryDark || theme.primary));
-        root.style.setProperty('--ayrovi-purple-light', String(theme.primaryLight || theme.primary));
-        if (theme.accent) root.style.setProperty('--ayrovi-yellow', String(theme.accent));
-        if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
-        // AYROVI and AYROVIX intentionally share one typography system.
-        root.style.setProperty('--ayrovi-font', "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif");
+        const theme = payload?.data?.theme;
+        if (theme && typeof theme === 'object' && theme.primary) {
+          root.style.setProperty('--ayrovi-primary', String(theme.primary));
+          root.style.setProperty('--ayrovi-primary-dark', String(theme.primaryDark || theme.primary));
+          root.style.setProperty('--ayrovi-primary-light', String(theme.primaryLight || theme.primary));
+          if (theme.accent) root.style.setProperty('--ayrovi-accent', String(theme.accent));
+          if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
+        }
+        const visual = normalizeInterfaceConfig(payload?.data?.interfaceConfig);
+        setInterfaceConfig(visual);
+        root.style.setProperty('--ayrovi-font-body', visual.typography.body);
+        root.style.setProperty('--ayrovi-font-display', visual.typography.display);
+        root.style.setProperty('--ayrovi-base-font-size', `${visual.typography.baseSize}px`);
+        root.style.setProperty('--ayrovi-heading-color', visual.typography.headingColor);
+        root.style.setProperty('--ayrovi-text-color', visual.typography.textColor);
+        root.style.setProperty('--ayrovi-neutral-900', visual.typography.headingColor);
+        root.style.setProperty('--ayrovi-neutral-500', visual.typography.textColor);
+        root.style.setProperty('--ayrovi-button-bg', visual.buttons.background);
+        root.style.setProperty('--ayrovi-button-color', visual.buttons.color);
+        root.style.setProperty('--ayrovi-button-height', `${visual.buttons.height}px`);
+        root.style.setProperty('--ayrovi-radius-control', `${visual.buttons.shape === 'pill' ? 999 : visual.buttons.shape === 'square' ? 0 : visual.buttons.radius}px`);
+        root.style.setProperty('--ayrovi-icon-color', visual.icons.color);
+        root.style.setProperty('--ayrovi-icon-size', `${visual.icons.size}px`);
+        root.dataset.ayroviIconStyle = visual.icons.style;
+        root.style.setProperty('--ayrovi-bottom-nav-height', `${visual.navigation.height}px`);
+        root.style.setProperty('--ayrovi-section-gap', `${visual.layout.sectionGap}px`);
+        root.style.setProperty('--ayrovi-content-max', `${visual.layout.maxWidth}px`);
+        root.style.setProperty('--ayrovi-text-align', visual.typography.align);
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -271,8 +305,21 @@ export const App: React.FC = () => {
     openAppView('app:order-success', true);
   };
 
+  const publicSections = [...interfaceConfig.sections]
+    .filter((section) => section.visible)
+    .sort((a, b) => a.order - b.order)
+    .map((section) => {
+      let content: React.ReactNode;
+      if (section.id === 'hero') content = <HeroSlider settings={interfaceConfig.slider} title={section.title} subtitle={section.subtitle} image={section.image} />;
+      else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />;
+      else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
+      else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;
+      else content = <Footer logoUrl={interfaceConfig.logoUrl} coverImage={section.image} introTitle={section.title} introText={section.subtitle} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />;
+      return <ManagedSectionFrame key={section.id} section={section}>{content}</ManagedSectionFrame>;
+    });
+
   return (
-    <div className="min-h-screen flex flex-col justify-between text-ink bg-white relative pb-20 sm:pb-24">
+    <div className="ayrovi-app-shell min-h-screen flex flex-col text-ink bg-white relative">
       
       {/* Top Yellow Notice Bar */}
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />
@@ -287,6 +334,7 @@ export const App: React.FC = () => {
           openAppView('app:account');
         }}
         isAuthenticated={Boolean(customerSession)}
+        logoUrl={interfaceConfig.logoUrl}
       />
 
       {/* Sliding Side Menu Drawer */}
@@ -307,20 +355,8 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Full-image fashion hero */}
-      <HeroSlider />
-
-      {/* Backend-managed arrivals, stories, products, promotions and news */}
-      <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />
-
-      {/* Partner Brands Marquee Slider Container with generous spacing */}
-      <PartnerBrandsSlider />
-
-      {/* About & Trust Section (3 Value Pillars) */}
-      <AboutSection />
-
-      {/* Hostinger-Style Full Footer with Fig Logo, Qui sommes-nous, Payment & Social Icons */}
-      <Footer onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />
+      {/* Sections publiques — visibilité, ordre, médias et contenu pilotés depuis Admin → واجهتي. */}
+      <div className="managed-public-sections">{publicSections}</div>
 
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton />
@@ -330,6 +366,8 @@ export const App: React.FC = () => {
         isAiDrawerOpen={isAiDrawerOpen}
         onToggleAiDrawer={handleToggleAiDrawer}
         onOpenLens={handleOpenLens}
+        config={interfaceConfig.navigation}
+        iconConfig={interfaceConfig.icons}
       />
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}

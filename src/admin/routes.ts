@@ -1313,6 +1313,17 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         return res.status(400).json({ success: false, error: 'La liste des gouvernorats est invalide.' });
       }
     }
+    if (current.setting_key === 'interface_config') {
+      const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
+      const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
+      const encoded = JSON.stringify(received);
+      if (!Array.isArray(sections) || sections.length !== sectionIds.size
+        || new Set(sections.map((section: any) => section?.id)).size !== sectionIds.size
+        || sections.some((section: any) => !sectionIds.has(String(section?.id)))
+        || encoded.length > 50_000) {
+        return res.status(400).json({ success: false, error: 'La configuration واجهتي est invalide ou trop volumineuse.' });
+      }
+    }
     const value = current.value_type === 'JSON' ? JSON.stringify(received) : String(received ?? '').trim().slice(0, 10000);
     db.run('UPDATE settings SET setting_value=?,updated_at=?,updated_by=? WHERE id=?', value, new Date().toISOString(), admin(req).id, current.id);
     audit(db, req, 'UPDATE', 'SETTINGS', current.id, current.setting_value, value);

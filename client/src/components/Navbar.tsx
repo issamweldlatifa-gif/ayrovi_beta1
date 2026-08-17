@@ -8,9 +8,10 @@ interface NavbarProps {
   onOpenMenuDrawer: () => void;
   onOpenAccount: () => void;
   isAuthenticated?: boolean;
+  logoUrl?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount, isAuthenticated = false }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount, isAuthenticated = false, logoUrl }) => {
   const { isArabic, toggleLocale, tr } = useLocale();
 
   return (
@@ -18,6 +19,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
       sticky
       title="AYROVI"
       subtitle={tr('Shopping international, simplement', 'تسوّق عالمي بكل سهولة')}
+      logoUrl={logoUrl}
       actions={<>
         <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
           <Menu className="h-5 w-5" />

@@ -32,7 +32,7 @@ const BENEFITS = [
   },
 ];
 
-export const AboutSection: React.FC = () => {
+export const AboutSection: React.FC<{ coverImage?: string; title?: string; subtitle?: string }> = ({ coverImage, title, subtitle }) => {
   return (
     <section id="about-ayrovi" className="relative scroll-mt-20 bg-white" aria-labelledby="why-ayrovi-title">
       <header className="px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
@@ -45,11 +45,10 @@ export const AboutSection: React.FC = () => {
             id="why-ayrovi-title"
             className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl"
           >
-            La simplicité d’un achat local pour vos marques mondiales
+            {title || 'La simplicité d’un achat local pour vos marques mondiales'}
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">
-            Plus besoin de carte bancaire internationale ni de formalités douanières complexes.
-            AYROVI s’occupe de l’importation de A à Z.
+            {subtitle || 'Plus besoin de carte bancaire internationale ni de formalités douanières complexes. AYROVI s’occupe de l’importation de A à Z.'}
           </p>
         </div>
       </header>
@@ -58,7 +57,7 @@ export const AboutSection: React.FC = () => {
       <div className="relative isolate min-h-[300svh] overflow-clip bg-surface">
         <div className="sticky top-0 h-[100svh] overflow-hidden" aria-hidden="true">
           <img
-            src={aboutParallaxImage}
+            src={coverImage || aboutParallaxImage}
             alt=""
             className="absolute inset-0 h-full w-full object-cover object-[38%_center] sm:object-center lg:object-[34%_center]"
           />

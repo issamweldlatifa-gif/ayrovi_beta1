@@ -43,6 +43,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   
   const [isUploading, setIsUploading] = useState(false);
   const [isScraping, setIsScraping] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [uploadPreview, setUploadPreview] = useState<string | null>(null);
   const [urlInput, setUrlInput] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -72,6 +73,13 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   useEffect(() => {
     isOpenRef.current = isOpen;
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isUploading && !isScraping) { setAnalysisProgress(0); return undefined; }
+    setAnalysisProgress(0);
+    const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 2)), 1400);
+    return () => window.clearInterval(timer);
+  }, [isUploading, isScraping]);
 
   useEffect(() => {
     setTitle(product?.title || 'Article International');
@@ -149,6 +157,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
   if (!isOpen) return null;
 
+  const progressMessage = ['Recherche en cours…', 'Vérification du produit…', 'Récupération du prix…'][analysisProgress];
   const convertedTND = pricingPreview?.convertedPriceTND ?? 0;
   const customsTND = pricingPreview?.customsFeeTND ?? 0;
   const serviceFeeTND = pricingPreview?.serviceFeeTND ?? 0;
@@ -347,7 +356,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+        <div className="ay-safe-bottom flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
           {step === 'input' && (
             <div className="space-y-5">
               <div className="text-center space-y-1">
@@ -390,7 +399,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <p className="relative z-10 my-2 text-xs text-purple-100/90">
-                  {isUploading ? 'AYROVI Lens lit votre capture : produit, prix et devise…' : 'Prenez une photo de votre article sur SHEIN, Amazon ou TEMU.'}
+                  {isUploading ? progressMessage : 'Prenez une photo de votre article sur SHEIN, Amazon ou TEMU.'}
                 </p>
 
                 <div className="relative z-10 pt-2">
@@ -398,7 +407,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     {isUploading ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
-                        <span>Analyse Lens en cours...</span>
+                        <span role="status" aria-live="polite">{progressMessage}</span>
                       </>
                     ) : (
                       <>
@@ -428,7 +437,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <p className="text-xs text-purple-100/90 my-2">
-                  {isScraping ? 'Lecture du lien : ouverture de la page, extraction du prix et conversion…' : "Copiez l'URL de votre article depuis SHEIN, AliExpress ou Amazon."}
+                  {isScraping ? progressMessage : "Copiez l'URL de votre article depuis SHEIN, AliExpress ou Amazon."}
                 </p>
 
                 <form onSubmit={handleScrapeUrl} className="pt-2 space-y-2 relative z-10">
@@ -461,7 +470,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     {isScraping ? (
                       <>
                         <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
-                        <span>Calcul en cours...</span>
+                        <span role="status" aria-live="polite">{progressMessage}</span>
                       </>
                     ) : (
                       <>

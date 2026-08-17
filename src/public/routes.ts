@@ -56,7 +56,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   const commerceConfig = () => {
     const pricing = db.getPricingRules();
     const settings = db.all<any>(`SELECT setting_key,setting_value,value_type FROM settings WHERE setting_key IN
-      ('delivery_delay','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','footer_about')`);
+      ('delivery_delay','governorates','payment_methods','deposit_percent','deposit_review_delay','unavailable_refund_policy','company_legal_name','company_name','bank_rib','poste_account','flouci_number','card_discount_percent','facebook_url','instagram_url','tiktok_url','whatsapp_url','site_theme','interface_config','footer_about')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
     return {
@@ -90,8 +90,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         tiktok: String(facts.tiktok_url || ''),
         whatsapp: String(facts.whatsapp_url || ''),
       },
-      // الثيم البصري (لوحة التطوير في الإدارة)
+      // الثيم البصري العام + استوديو «واجهتي».
       theme: facts.site_theme && typeof facts.site_theme === 'object' ? facts.site_theme : null,
+      interfaceConfig: facts.interface_config && typeof facts.interface_config === 'object' ? facts.interface_config : null,
       footerAbout: String(facts.footer_about || ''),
     };
   };

@@ -79,7 +79,7 @@ const ORDERS_INDEXES_SQL = [
 
 const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
   id TEXT PRIMARY KEY,
-  category TEXT NOT NULL CHECK(category IN ('GENERAL','COMMERCE','DELIVERY','PAYMENT','CHANNELS','DESIGN')),
+  category TEXT NOT NULL CHECK(category IN ('GENERAL','COMMERCE','DELIVERY','PAYMENT','CHANNELS','DESIGN','INTERFACE')),
   setting_key TEXT NOT NULL UNIQUE,
   setting_value TEXT NOT NULL,
   value_type TEXT NOT NULL DEFAULT 'STRING' CHECK(value_type IN ('STRING','NUMBER','BOOLEAN','JSON')),
@@ -805,9 +805,9 @@ export class QatafoDatabase {
     this.ensureColumn('deliveries', 'latitude', 'REAL');
     this.ensureColumn('deliveries', 'longitude', 'REAL');
     this.rebuildTableIfLegacy('payments', "'POSTE'", PAYMENTS_TABLE_SQL, []);
-    // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN (القواعد القديمة كانت ترفضها بصمت)
+    // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN/INTERFACE (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
-    this.rebuildTableIfLegacy('settings', "'CHANNELS'", SETTINGS_TABLE_SQL, []);
+    this.rebuildTableIfLegacy('settings', "'INTERFACE'", SETTINGS_TABLE_SQL, []);
     // فهرس عمود العربون — بعد الترقية (القواعد القديمة تحصل عليه داخل إعادة البناء)
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC)');
     this.db.exec(`UPDATE settings SET setting_value='["CARD","FLOUCI","BANK_TRANSFER","POSTE"]',updated_at=datetime('now')
@@ -897,6 +897,22 @@ export class QatafoDatabase {
         accent: '#fbbf24', ink: '#1d2130', gradient: 'linear-gradient(135deg,#24104f 0%,#673de6 100%)',
         font: 'jakarta', radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
+      ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
+        logoUrl: '/media/logo-ayrovi.png',
+        sections: [
+          { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '' },
+          { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '' },
+          { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '' },
+          { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '' },
+          { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '' },
+        ],
+        typography: { body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280' },
+        buttons: { background: '#24104f', color: '#ffffff', radius: 12, height: 44, shape: 'soft' },
+        icons: { library: 'ayrovi', color: '#673de6', size: 20, style: 'outline' },
+        navigation: { background: '#17151f', color: '#ffffff', activeBackground: '#673de6', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision' },
+        slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
+        layout: { sectionGap: 0, maxWidth: 1280 },
+      }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],
       ['setting_footer_about', 'DESIGN', 'footer_about', 'La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence.', 'STRING', 'Texte de présentation du pied de page'],
     ];
     for (const row of settings) insertSetting.run(...row, now);

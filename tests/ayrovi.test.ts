@@ -1022,6 +1022,26 @@ describe('AYROVI platform', () => {
     adminCsrf = identity.body.data.csrfToken;
   });
 
+  test('واجهتي is seeded, publicly readable and rejects malformed section schemas', async () => {
+    const settings = await superAdmin.get('/api/admin/settings?category=INTERFACE');
+    expect(settings.status).toBe(200);
+    const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
+    expect(row).toBeTruthy();
+    expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
+    expect(row.setting_value.navigation.color).toBe('#ffffff');
+
+    const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
+      value: { ...row.setting_value, sections: row.setting_value.sections.slice(0, 4) },
+    });
+    expect(malformed.status).toBe(400);
+
+    const saved = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: row.setting_value });
+    expect(saved.status).toBe(200);
+    const publicConfig = await request(app).get('/api/public/commerce-config');
+    expect(publicConfig.status).toBe(200);
+    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#17151f');
+  });
+
   test('admin mutations require a valid CSRF token', async () => {
     const response = await superAdmin.post('/api/admin/brands').send({
       name: 'Blocked Brand', category: 'FASHION', logo: '/blocked.jpg', active: true,

@@ -68,13 +68,12 @@ function EmptyContent({ label }: { label: string }) {
   return <div className="rounded-card border border-line bg-white px-6 py-16 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">{tr(`Aucun contenu ${label.toLowerCase()} pour le moment.`, `لا يوجد محتوى ${label} حاليًا.`)}</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{tr('Cette page se remplira dès qu’un contenu sera publié depuis l’espace Admin.', 'ستظهر المواد هنا فور نشرها من فضاء الإدارة.')}</p></div>;
 }
 
-function PageIntro({ definition, count }: { definition: (typeof pageDefinitions)[number]; count: number }) {
-  const { tr, isArabic } = useLocale();
+function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number] }) {
+  const { isArabic } = useLocale();
   const localDirection = definition.id === 'news' ? 'rtl' : (isArabic ? 'rtl' : 'ltr');
   return (
-    <div className="grid gap-8 border-b border-line pb-8 sm:grid-cols-[1fr_auto] sm:items-end" dir={localDirection}>
+    <div className="border-b border-line pb-8" dir={localDirection}>
       <div><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">{isArabic ? definition.eyebrowAr : definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 font-display text-4xl font-black leading-none tracking-tight text-ink sm:text-6xl">{isArabic ? definition.labelAr : definition.label}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted">{isArabic ? definition.descriptionAr : definition.description}</p></div>
-      <div className="flex items-end gap-3"><strong className="text-4xl font-black tabular-nums text-brand">{String(count).padStart(2, '0')}</strong><span className="pb-1 text-[10px] font-black uppercase tracking-[0.14em] text-muted">{tr('contenus publiés', 'محتوى منشور')}</span></div>
     </div>
   );
 }
@@ -123,7 +122,6 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
     () => home.arrivals.filter((arrival) => new Date(arrival.expectedArrivalAt).getTime() > Date.now() + serverOffset),
     [home.arrivals, serverOffset],
   );
-  const pageData: HomeData = { ...home, arrivals: activeArrivals };
   const activeDefinition = pageDefinitions.find((page) => page.id === activePage);
 
   const handleStoryCta = (cta: StoryCta) => {
@@ -212,7 +210,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
             onClose={closeCmsPage}
           />
           <main className={activePage === 'stories' ? 'min-h-[calc(100dvh-3.5rem)] w-full' : 'mx-auto min-h-[calc(100dvh-5rem)] max-w-7xl px-5 py-10 sm:px-8 sm:py-16'}>
-            {activePage !== 'stories' && <PageIntro definition={activeDefinition} count={pageData[activePage].length} />}
+            {activePage !== 'stories' && <PageIntro definition={activeDefinition} />}
             <div className={activePage === 'stories' ? '' : 'pt-8 sm:pt-12'}>{renderPageContent(activePage)}</div>
           </main>
         </div>

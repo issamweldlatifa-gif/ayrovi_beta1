@@ -1,0 +1,40 @@
+/* واجهتي — public-interface visual studio */
+.interface-studio-layout{display:grid;grid-template-columns:190px minmax(0,1fr) 230px;gap:16px;align-items:start}
+.interface-studio-tabs,.interface-studio-preview{position:sticky;top:86px;border:1px solid var(--admin-line);background:#fff}
+.interface-studio-tabs{padding:8px}
+.interface-studio-tabs button{width:100%;min-height:44px;display:flex;align-items:center;gap:9px;border:0;padding:0 11px;color:var(--admin-muted);background:transparent;font:inherit;font-size:10px;font-weight:750;text-align:left;cursor:pointer}
+.interface-studio-tabs button:hover{background:#f7f5fb;color:var(--admin-ink)}
+.interface-studio-tabs button.is-active{color:var(--admin-purple);background:#f0ebff}
+.interface-studio-content{min-width:0;display:flex;flex-direction:column;gap:16px}
+.interface-card{padding:20px}
+.interface-card>header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin:-4px 0 20px;padding-bottom:15px;border-bottom:1px solid var(--admin-line)}
+.interface-card>header>div{display:flex;align-items:flex-start;gap:10px}
+.interface-card>header svg{flex:0 0 auto;margin-top:2px;color:var(--admin-purple)}
+.interface-card h2{margin:0;color:var(--admin-ink);font-size:15px;letter-spacing:-.025em}
+.interface-card header p{margin:4px 0 0;color:var(--admin-muted);font-size:9px;line-height:1.55}
+.interface-section-list{display:flex;flex-direction:column;gap:12px}
+.interface-section-list>article{overflow:hidden;border:1px solid var(--admin-line);background:#fff;transition:.2s}
+.interface-section-list>article.is-hidden{opacity:.58;background:#f5f4f7}
+.interface-section-toolbar{min-height:52px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-bottom:1px solid var(--admin-line);background:#faf9fc}
+.interface-section-toolbar>div{display:flex;align-items:center;gap:7px}
+.interface-section-toolbar>div:first-child span{min-width:25px;color:var(--admin-purple);font-size:9px;font-weight:900}
+.interface-section-toolbar strong{font-size:11px}
+.interface-section-toolbar button{min-height:31px;display:inline-flex;align-items:center;justify-content:center;gap:5px;border:1px solid var(--admin-line);padding:0 8px;color:var(--admin-muted);background:#fff;font-size:8px;font-weight:800;cursor:pointer}
+.interface-section-toolbar button.is-visible{color:#0f7147;border-color:#b8dfcd;background:#f1fbf6}
+.interface-section-toolbar button:disabled{opacity:.35;cursor:not-allowed}
+.interface-section-form{padding:14px}
+.interface-live-button{width:100%;margin-top:18px;border:0;padding:0 18px;font-size:11px;font-weight:850;cursor:default}
+.interface-icon-preview{min-height:86px;display:flex;align-items:center;justify-content:center;gap:24px;margin-top:18px;border:1px dashed var(--admin-line);background:#faf9fc}
+.interface-nav-preview{display:grid;grid-template-columns:repeat(3,1fr);align-items:center;margin-top:18px;padding:7px;color:#fff}
+.interface-nav-preview span{min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:10px}
+.interface-nav-preview small{font-size:8px;font-weight:800}
+.interface-studio-preview{overflow:hidden}
+.interface-studio-preview>span{display:block;padding:11px 13px;border-bottom:1px solid var(--admin-line);color:var(--admin-muted);font-size:8px;font-weight:900;letter-spacing:.12em}
+.interface-studio-preview>div{display:flex;flex-direction:column;align-items:flex-start;padding:20px;background:#f8f9fe}
+.interface-studio-preview img{width:38px;height:38px;object-fit:contain}
+.interface-studio-preview strong{margin-top:12px;font-size:21px}
+.interface-studio-preview p{font-size:10px;line-height:1.6}
+.interface-studio-preview button{width:100%;border:0;margin-top:9px;padding:0 12px;font-size:10px;font-weight:850}
+.interface-studio-preview>small{display:block;padding:13px;color:var(--admin-muted);font-size:8px;line-height:1.6}
+@media(max-width:1180px){.interface-studio-layout{grid-template-columns:170px minmax(0,1fr)}.interface-studio-preview{display:none}}
+@media(max-width:760px){.interface-studio-layout{grid-template-columns:1fr}.interface-studio-tabs{position:static;display:grid;grid-template-columns:repeat(2,1fr)}.interface-studio-tabs button:last-child{grid-column:1/-1}.interface-card{padding:15px}.interface-section-toolbar{align-items:flex-start;flex-direction:column}.interface-section-toolbar>div:last-child{width:100%;justify-content:flex-end}.interface-section-form{grid-template-columns:1fr}}

@@ -97,7 +97,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   messages, isGenerating, motionState, isDark, copiedId, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
-  customerFirstName, analyzingImage,
+  customerFirstName,
 }) => {
   const { locale, direction, isArabic, tr } = useLocale();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -136,11 +136,11 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                     key={item.title[0]}
                     type="button"
                     onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                    className={`assistant-quick-card min-h-[104px] rounded-2xl p-3.5 text-start transition active:scale-[0.98] ${isDark ? 'assistant-quick-card--dark text-white' : 'text-ink'}`}
+                    className="assistant-quick-card min-h-[104px] rounded-2xl p-3.5 text-start text-ink transition active:scale-[0.98]"
                   >
                     <span className="assistant-quick-card__icon mb-2.5"><Icon size={18}/></span>
                     <span className="relative z-[1] block text-xs font-extrabold leading-5">{item.title[isArabic ? 1 : 0]}</span>
-                    <span className={`relative z-[1] mt-0.5 block text-[10px] font-semibold leading-4 ${isDark ? 'text-muted' : 'text-muted'}`}>{item.subtitle[isArabic ? 1 : 0]}</span>
+                    <span className="relative z-[1] mt-0.5 block text-[10px] font-semibold leading-4 text-muted">{item.subtitle[isArabic ? 1 : 0]}</span>
                   </button>
                 );
               })}
@@ -194,7 +194,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                 </div>
               </div>;
             })}
-            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={40} label={tr('AYROVI prépare la réponse', 'AYROVI تحضّر الرد')}/><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('AYROVI réfléchit…', 'AYROVI تفكر…') : motionState === 'analyzing' ? (analyzingImage ? tr('Analyse de votre image…', 'جارٍ تحليل صورتك…') : tr('Analyse des informations…', 'جارٍ تحليل المعلومات…')) : motionState === 'reasoning' ? (analyzingImage ? tr('Lecture des prix et vérification…', 'جارٍ قراءة الأسعار والتحقق…') : tr('Vérification des données…', 'جارٍ التحقق من البيانات…')) : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-[10px] ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
+            {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={40} label={tr('AYROVI prépare la réponse', 'AYROVI تحضّر الرد')}/><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('Recherche en cours…', 'جارٍ البحث…') : motionState === 'analyzing' ? tr('Vérification du produit…', 'جارٍ التحقق من المنتج…') : motionState === 'reasoning' ? tr('Récupération du prix…', 'جارٍ جلب السعر…') : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-[10px] ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
           </div>
         )}
         <div ref={bottomRef}/>
