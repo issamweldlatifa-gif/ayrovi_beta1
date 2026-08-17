@@ -1028,6 +1028,9 @@ describe('AYROVI platform', () => {
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
+    expect(row.setting_value.typography.preset).toBe('ayrovi-modern');
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#673de6', heroBackground: '#24104f' });
+    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#fbbf24' });
     expect(row.setting_value.navigation.color).toBe('#ffffff');
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({

@@ -7,7 +7,7 @@ interface TopAnnouncementBarProps {
 
 export const TopAnnouncementBar: React.FC<TopAnnouncementBarProps> = ({ onLearnMore }) => {
   return (
-    <div className="bg-accent text-ink py-2 px-4 text-center text-xs sm:text-sm font-bold tracking-tight z-50 relative flex items-center justify-center gap-2">
+    <div className="interface-announcement bg-accent text-ink py-2 px-4 text-center text-xs sm:text-sm font-bold tracking-tight z-50 relative flex items-center justify-center gap-2">
       <span><strong>Taux fixe garanti</strong> — Dédouanement inclus & livraison dans les 24 gouvernorats</span>
       {onLearnMore && (
         <button

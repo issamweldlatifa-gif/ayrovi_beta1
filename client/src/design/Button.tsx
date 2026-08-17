@@ -6,9 +6,9 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 export type ButtonSize = 'sm' | 'md' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'border border-brand bg-brand text-white shadow-card hover:border-brand-dark hover:bg-brand-dark',
-  secondary: 'border border-brand bg-white text-brand-dark hover:bg-brand/5',
-  ghost: 'border border-transparent bg-transparent text-brand-dark hover:bg-brand/5',
+  primary: 'ay-runtime-button--primary border border-brand bg-brand text-white shadow-card hover:border-brand-dark hover:bg-brand-dark',
+  secondary: 'ay-runtime-button--secondary border border-brand bg-white text-brand-dark hover:bg-brand/5',
+  ghost: 'ay-runtime-button--ghost border border-transparent bg-transparent text-brand-dark hover:bg-brand/5',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

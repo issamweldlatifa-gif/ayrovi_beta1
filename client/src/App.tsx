@@ -27,18 +27,27 @@ const CheckoutModal = lazy(() => import('./components/CheckoutModal').then((modu
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
-const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => (
-  <div className="managed-public-section" data-public-section={section.id}>
-    {section.id === 'cms' && (section.image || section.title || section.subtitle) && (
-      <header className="relative isolate overflow-hidden border-y border-line bg-surface px-5 py-12 text-center sm:py-16">
-        {section.image && <><img src={section.image} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/85" /></>}
-        {section.title && <h2 className="font-display text-3xl font-black text-ink sm:text-5xl">{section.title}</h2>}
-        {section.subtitle && <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted sm:text-base">{section.subtitle}</p>}
-      </header>
-    )}
-    {children}
-  </div>
-);
+const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => {
+  const style = {
+    '--ayrovi-section-background': section.backgroundColor,
+    '--ayrovi-section-text': section.textColor,
+    backgroundColor: section.backgroundColor,
+    color: section.textColor,
+    paddingBlock: `${section.paddingY}px`,
+  } as React.CSSProperties;
+  return <div className="managed-public-section" data-public-section={section.id} style={style}>
+    <div className={`managed-public-section-inner ${section.contained ? 'is-contained' : ''}`}>
+      {section.id === 'cms' && (section.image || section.title || section.subtitle) && (
+        <header className="relative isolate overflow-hidden border-y border-line bg-surface px-5 py-12 text-center sm:py-16">
+          {section.image && <><img src={section.image} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/85" /></>}
+          {section.title && <h2 className="font-display text-3xl font-black text-ink sm:text-5xl">{section.title}</h2>}
+          {section.subtitle && <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-muted sm:text-base">{section.subtitle}</p>}
+        </header>
+      )}
+      {children}
+    </div>
+  </div>;
+};
 
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
@@ -104,24 +113,61 @@ export const App: React.FC = () => {
         }
         const visual = normalizeInterfaceConfig(payload?.data?.interfaceConfig);
         setInterfaceConfig(visual);
-        root.style.setProperty('--ayrovi-font-body', visual.typography.body);
-        root.style.setProperty('--ayrovi-font-display', visual.typography.display);
-        root.style.setProperty('--ayrovi-base-font-size', `${visual.typography.baseSize}px`);
-        root.style.setProperty('--ayrovi-heading-color', visual.typography.headingColor);
-        root.style.setProperty('--ayrovi-text-color', visual.typography.textColor);
-        root.style.setProperty('--ayrovi-neutral-900', visual.typography.headingColor);
-        root.style.setProperty('--ayrovi-neutral-500', visual.typography.textColor);
-        root.style.setProperty('--ayrovi-button-bg', visual.buttons.background);
-        root.style.setProperty('--ayrovi-button-color', visual.buttons.color);
-        root.style.setProperty('--ayrovi-button-height', `${visual.buttons.height}px`);
-        root.style.setProperty('--ayrovi-radius-control', `${visual.buttons.shape === 'pill' ? 999 : visual.buttons.shape === 'square' ? 0 : visual.buttons.radius}px`);
-        root.style.setProperty('--ayrovi-icon-color', visual.icons.color);
-        root.style.setProperty('--ayrovi-icon-size', `${visual.icons.size}px`);
-        root.dataset.ayroviIconStyle = visual.icons.style;
-        root.style.setProperty('--ayrovi-bottom-nav-height', `${visual.navigation.height}px`);
-        root.style.setProperty('--ayrovi-section-gap', `${visual.layout.sectionGap}px`);
-        root.style.setProperty('--ayrovi-content-max', `${visual.layout.maxWidth}px`);
-        root.style.setProperty('--ayrovi-text-align', visual.typography.align);
+        const { colors, typography, buttons, icons, navigation, layout } = visual;
+        root.style.setProperty('--ayrovi-font-body', typography.body);
+        root.style.setProperty('--ayrovi-font-display', typography.display);
+        root.style.setProperty('--ayrovi-base-font-size', `${typography.baseSize}px`);
+        root.style.setProperty('--ayrovi-body-line-height', String(typography.lineHeight));
+        root.style.setProperty('--ayrovi-letter-spacing', `${typography.letterSpacing}em`);
+        root.style.setProperty('--ayrovi-heading-scale', String(typography.headingScale));
+        ([['--text-xl', 1.25], ['--text-2xl', 1.5], ['--text-3xl', 1.875], ['--text-4xl', 2.25], ['--text-5xl', 3], ['--text-6xl', 3.75], ['--text-7xl', 4.5]] as const)
+          .forEach(([token, rem]) => root.style.setProperty(token, `${rem * typography.headingScale}rem`));
+        root.style.setProperty('--ayrovi-heading-color', typography.headingColor);
+        root.style.setProperty('--ayrovi-text-color', typography.textColor);
+        root.style.setProperty('--ayrovi-neutral-900', typography.headingColor);
+        root.style.setProperty('--ayrovi-neutral-500', typography.textColor);
+        root.style.setProperty('--ayrovi-page-bg', colors.pageBackground);
+        root.style.setProperty('--ayrovi-surface-raised', colors.surfaceBackground);
+        root.style.setProperty('--ayrovi-neutral-50', colors.surfaceAlt);
+        root.style.setProperty('--ayrovi-neutral-200', colors.borderColor);
+        root.style.setProperty('--ayrovi-primary', colors.primary);
+        root.style.setProperty('--ayrovi-primary-dark', colors.primaryDark);
+        root.style.setProperty('--ayrovi-primary-light', colors.primaryLight);
+        root.style.setProperty('--ayrovi-accent', colors.accent);
+        root.style.setProperty('--ayrovi-neutral-950', colors.heroBackground);
+        root.style.setProperty('--ayrovi-success', colors.success);
+        root.style.setProperty('--ayrovi-warning', colors.warning);
+        root.style.setProperty('--ayrovi-danger', colors.danger);
+        root.style.setProperty('--ayrovi-header-bg', colors.headerBackground);
+        root.style.setProperty('--ayrovi-header-text', colors.headerText);
+        root.style.setProperty('--ayrovi-announcement-bg', colors.announcementBackground);
+        root.style.setProperty('--ayrovi-announcement-text', colors.announcementText);
+        root.style.setProperty('--ayrovi-hero-bg', colors.heroBackground);
+        root.style.setProperty('--ayrovi-hero-text', colors.heroText);
+        root.style.setProperty('--ayrovi-footer-bg', colors.footerBackground);
+        root.style.setProperty('--ayrovi-footer-text', colors.footerText);
+        root.style.setProperty('--ayrovi-gradient', `linear-gradient(135deg, ${colors.heroBackground} 0%, ${colors.primary} 100%)`);
+        root.style.setProperty('--ayrovi-button-bg', buttons.background);
+        root.style.setProperty('--ayrovi-button-color', buttons.color);
+        root.style.setProperty('--ayrovi-button-secondary-bg', buttons.secondaryBackground);
+        root.style.setProperty('--ayrovi-button-secondary-color', buttons.secondaryColor);
+        root.style.setProperty('--ayrovi-button-border', buttons.borderColor);
+        root.style.setProperty('--ayrovi-button-border-width', `${buttons.borderWidth}px`);
+        root.style.setProperty('--ayrovi-button-height', `${buttons.height}px`);
+        root.style.setProperty('--ayrovi-radius-control', `${buttons.shape === 'pill' ? 999 : buttons.shape === 'square' ? 0 : buttons.radius}px`);
+        root.style.setProperty('--ayrovi-icon-color', icons.color);
+        root.style.setProperty('--ayrovi-icon-active-color', icons.activeColor);
+        root.style.setProperty('--ayrovi-icon-size', `${icons.size}px`);
+        root.dataset.ayroviIconStyle = icons.style;
+        root.dataset.ayroviIconLibrary = icons.library;
+        root.style.setProperty('--ayrovi-bottom-nav-height', `${navigation.height}px`);
+        root.style.setProperty('--ayrovi-section-gap', `${layout.sectionGap}px`);
+        root.style.setProperty('--ayrovi-content-max', `${layout.maxWidth}px`);
+        root.style.setProperty('--ayrovi-page-padding', `${layout.pagePadding}px`);
+        root.style.setProperty('--ayrovi-radius-card', `${layout.cardRadius}px`);
+        root.style.setProperty('--ayrovi-card-border-width', `${layout.cardBorderWidth}px`);
+        root.style.setProperty('--ayrovi-text-align', typography.align);
+        root.dataset.ayroviShadow = layout.shadow;
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -319,7 +365,7 @@ export const App: React.FC = () => {
     });
 
   return (
-    <div className="ayrovi-app-shell min-h-screen flex flex-col text-ink bg-white relative">
+    <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative">
       
       {/* Top Yellow Notice Bar */}
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />

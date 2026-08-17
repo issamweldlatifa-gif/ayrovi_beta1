@@ -4,8 +4,11 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
 import { AppHeader } from '../design/AppHeader';
-import type { PublicInterfaceConfig } from '../config/interfaceConfig';
+import type { InterfaceIconLibrary, PublicInterfaceConfig } from '../config/interfaceConfig';
 import { Bot as LucideBot, Eye as LucideEye, ScanSearch as LucideScanSearch } from 'lucide-react';
+import { FaCamera, FaEye, FaRobot } from 'react-icons/fa6';
+import { BsCamera, BsChatDots, BsEye } from 'react-icons/bs';
+import { MdCenterFocusStrong, MdSmartToy, MdVisibility } from 'react-icons/md';
 
 interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
@@ -15,16 +18,26 @@ interface BottomNavBarProps {
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
-const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-control text-[10px] font-extrabold text-white transition hover:bg-white/10 active:scale-[0.97]';
+const ICON_SETS: Record<InterfaceIconLibrary, [React.ElementType, React.ElementType, React.ElementType]> = {
+  ayrovi: [LensBox, MessageCircle, Eye],
+  lucide: [LucideScanSearch, LucideBot, LucideEye],
+  fontawesome: [FaCamera, FaRobot, FaEye],
+  bootstrap: [BsCamera, BsChatDots, BsEye],
+  material: [MdCenterFocusStrong, MdSmartToy, MdVisibility],
+};
+const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-control text-[10px] font-extrabold transition hover:bg-white/10 active:scale-[0.97]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
-  const LensIcon = iconConfig.library === 'lucide' ? LucideScanSearch : LensBox;
-  const AiIcon = iconConfig.library === 'lucide' ? LucideBot : MessageCircle;
-  const VisionIcon = iconConfig.library === 'lucide' ? LucideEye : Eye;
-  const iconStyle = { width: iconConfig.size, height: iconConfig.size, fill: iconConfig.style === 'solid' ? 'currentColor' : 'none' };
+  const [LensIcon, AiIcon, VisionIcon] = ICON_SETS[iconConfig.library];
+  const iconStyle = (active = false): React.CSSProperties => ({
+    width: iconConfig.size,
+    height: iconConfig.size,
+    color: active ? iconConfig.activeColor : iconConfig.color,
+    fill: iconConfig.style === 'solid' && ['ayrovi', 'lucide'].includes(iconConfig.library) ? 'currentColor' : undefined,
+  });
   useBodyScrollLock(isVisionOpen);
 
   useEffect(() => {
@@ -51,20 +64,20 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       )}
 
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-12px_35px_-24px_rgba(0,0,0,.8)]"
-        style={{ backgroundColor: config.background }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-12px_35px_-24px_rgba(0,0,0,.8)]"
+        style={{ backgroundColor: config.background, color: config.color, borderColor: 'color-mix(in srgb, currentColor 14%, transparent)' }}
       >
         <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
-            <LensIcon className="text-white" style={iconStyle} />
+            <LensIcon className="interface-runtime-icon" style={iconStyle()} />
             {config.showLabels && <span>{config.lensLabel}</span>}
           </button>
           <button type="button" onClick={onToggleAiDrawer} style={isAiDrawerOpen ? { backgroundColor: config.activeBackground } : undefined} className={NAV_ITEM} aria-label={tr('AI — assistant conversationnel', 'AI — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
-            <AiIcon className="text-white" style={iconStyle} />
+            <AiIcon className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
             {config.showLabels && <span>{config.aiLabel}</span>}
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')}>
-            <VisionIcon className="text-white" style={iconStyle} />
+            <VisionIcon className="interface-runtime-icon" style={iconStyle()} />
             {config.showLabels && <span>{config.visionLabel}</span>}
             <span className="absolute end-1 top-1 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-black text-ink">{tr('Bientôt', 'قريبًا')}</span>
           </button>
