@@ -96,7 +96,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Image" required>
             <div className="admin-actions" style={{ marginTop: 0 }}>
               <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })} placeholder="URL ou upload" style={{ flex: 1 }} />
-              <label style={{ cursor: 'pointer', border: '1px solid #d5d2e4', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
+              <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
                 <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setForm({ ...form, image_url: await uploadFile(f) }); }} />
               </label>
@@ -172,7 +172,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
           <Field label="Vidéo (mp4, mov, webm…)" required full>
             <div className="admin-actions" style={{ marginTop: 0 }}>
               <input value={form.video_url} onChange={(e) => setForm({ ...form, video_url: e.target.value })} placeholder="URL ou upload" style={{ flex: 1 }} />
-              <label style={{ cursor: 'pointer', border: '1px solid #d5d2e4', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
+              <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700 }}>
                 <ArrowUp size={14} />Uploader
                 <input type="file" accept="video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={async (e) => {
                   const f = e.target.files?.[0];
@@ -183,7 +183,7 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
                 }} />
               </label>
             </div>
-            {form.video_url && <video src={form.video_url} controls muted style={{ width: '100%', maxHeight: 240, borderRadius: 12, marginTop: 8, background: '#000' }} />}
+            {form.video_url && <video src={form.video_url} controls muted style={{ width: '100%', maxHeight: 240, borderRadius: 12, marginTop: 8, background: 'var(--color-text-primary)' }} />}
             {form.duration_seconds > 0 && <p className="admin-block-small">Durée détectée automatiquement : {fmt(form.duration_seconds)}</p>}
           </Field>
           <Field label="Description" full><textarea rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>

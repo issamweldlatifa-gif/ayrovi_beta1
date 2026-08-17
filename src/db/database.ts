@@ -8,6 +8,30 @@ import { calculatePrice, PricingRules } from '../services/pricing';
 export type PaymentMethodCode = 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
 
+const CORRECTED_PALETTE = {
+  interactivePrimary: '#003B39', hero: '#13251F', surfaceAlt: '#EDE6DE', surfaceBase: '#F9F8F4',
+  textPrimary: '#1A1A1A', textSecondary: '#5F5F5B', chart: '#2E667D', danger: '#A63B32', white: '#FFFFFF',
+} as const;
+
+const CORRECTED_THEME = {
+  preset: 'measured-dark-teal',
+  primary: CORRECTED_PALETTE.interactivePrimary,
+  primaryDark: CORRECTED_PALETTE.interactivePrimary,
+  primaryLight: CORRECTED_PALETTE.interactivePrimary,
+  hero: CORRECTED_PALETTE.hero,
+  surfaceAlt: CORRECTED_PALETTE.surfaceAlt,
+  accent: CORRECTED_PALETTE.surfaceAlt,
+  chart: CORRECTED_PALETTE.chart,
+  slate: CORRECTED_PALETTE.chart,
+  danger: CORRECTED_PALETTE.danger,
+  rhubarb: CORRECTED_PALETTE.danger,
+  ink: CORRECTED_PALETTE.textPrimary,
+  surface: CORRECTED_PALETTE.surfaceBase,
+  gradient: CORRECTED_PALETTE.hero,
+  font: 'jakarta',
+  radius: 'soft',
+} as const;
+
 export interface CheckoutInput {
   name: string;
   email: string;
@@ -892,11 +916,7 @@ export class QatafoDatabase {
       ['setting_instagram_url', 'CHANNELS', 'instagram_url', '', 'STRING', 'Lien profil Instagram'],
       ['setting_tiktok_url', 'CHANNELS', 'tiktok_url', '', 'STRING', 'Lien profil TikTok'],
       ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
-      ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
-        preset: 'petrole', primary: '#088177', primaryDark: '#05685f', primaryLight: '#2ea399',
-        accent: '#a67931', rhubarb: '#b55b64', slate: '#205b6b', ink: '#1a1a1a', surface: '#ffffff',
-        gradient: '#088177', font: 'jakarta', radius: 'soft',
-      }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
+      ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify(CORRECTED_THEME), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_palette_version', 'DESIGN', 'palette_version', '0', 'NUMBER', 'Version interne des tokens sémantiques'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
         logoUrl: '/media/logo-ayrovi-final.png',
@@ -907,10 +927,10 @@ export class QatafoDatabase {
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '' },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '' },
         ],
-        typography: { body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1a1a1a', textColor: '#52615f' },
-        buttons: { background: '#088177', color: '#ffffff', radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#205b6b', size: 20, style: 'outline' },
-        navigation: { background: '#088177', color: '#ffffff', activeBackground: '#205b6b', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision' },
+        typography: { body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: CORRECTED_PALETTE.textPrimary, textColor: CORRECTED_PALETTE.textSecondary },
+        buttons: { background: CORRECTED_PALETTE.interactivePrimary, color: CORRECTED_PALETTE.white, radius: 12, height: 44, shape: 'soft' },
+        icons: { library: 'ayrovi', color: CORRECTED_PALETTE.textPrimary, size: 20, style: 'outline' },
+        navigation: { background: CORRECTED_PALETTE.surfaceBase, color: CORRECTED_PALETTE.textPrimary, activeBackground: CORRECTED_PALETTE.surfaceAlt, showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280 },
       }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],
@@ -918,29 +938,37 @@ export class QatafoDatabase {
     ];
     for (const row of settings) insertSetting.run(...row, now);
 
-    // One-time migration to the semantic urban palette requested for AYROVI. Existing
-    // section order/content is preserved; only color-role defaults are upgraded.
+    // Version 2 applies the corrected measured palette while preserving every Admin
+    // section, label, media and layout choice. Only semantic colour roles are replaced.
     const paletteVersionRow = this.db.prepare("SELECT setting_value FROM settings WHERE setting_key='palette_version'").get() as { setting_value?: string } | undefined;
     const paletteVersion = Number(paletteVersionRow?.setting_value || 0);
-    if (paletteVersion < 1) {
-      const theme = {
-        preset: 'petrole', primary: '#088177', primaryDark: '#05685f', primaryLight: '#2ea399',
-        accent: '#a67931', rhubarb: '#b55b64', slate: '#205b6b', ink: '#1a1a1a', surface: '#ffffff',
-        gradient: '#088177', font: 'jakarta', radius: 'soft',
-      };
+    if (paletteVersion < 2) {
       const interfaceRow = this.db.prepare("SELECT setting_value FROM settings WHERE setting_key='interface_config'").get() as { setting_value?: string } | undefined;
       let interfaceConfig: any = {};
       try { interfaceConfig = JSON.parse(interfaceRow?.setting_value || '{}'); } catch { interfaceConfig = {}; }
-      interfaceConfig.typography = { ...(interfaceConfig.typography || {}), headingColor: '#1a1a1a', textColor: '#52615f' };
-      interfaceConfig.buttons = { ...(interfaceConfig.buttons || {}), background: '#088177', color: '#ffffff' };
-      interfaceConfig.icons = { ...(interfaceConfig.icons || {}), color: '#205b6b' };
-      interfaceConfig.navigation = { ...(interfaceConfig.navigation || {}), background: '#088177', color: '#ffffff', activeBackground: '#205b6b' };
+      interfaceConfig.typography = {
+        ...(interfaceConfig.typography || {}),
+        headingColor: CORRECTED_PALETTE.textPrimary,
+        textColor: CORRECTED_PALETTE.textSecondary,
+      };
+      interfaceConfig.buttons = {
+        ...(interfaceConfig.buttons || {}),
+        background: CORRECTED_PALETTE.interactivePrimary,
+        color: CORRECTED_PALETTE.white,
+      };
+      interfaceConfig.icons = { ...(interfaceConfig.icons || {}), color: CORRECTED_PALETTE.textPrimary };
+      interfaceConfig.navigation = {
+        ...(interfaceConfig.navigation || {}),
+        background: CORRECTED_PALETTE.surfaceBase,
+        color: CORRECTED_PALETTE.textPrimary,
+        activeBackground: CORRECTED_PALETTE.surfaceAlt,
+      };
       this.db.transaction(() => {
-        this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='site_theme'").run(JSON.stringify(theme), now);
+        this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='site_theme'").run(JSON.stringify(CORRECTED_THEME), now);
         this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='interface_config'").run(JSON.stringify(interfaceConfig), now);
-        this.db.prepare("UPDATE settings SET setting_value='1',updated_at=? WHERE setting_key='palette_version'").run(now);
+        this.db.prepare("UPDATE settings SET setting_value='2',updated_at=? WHERE setting_key='palette_version'").run(now);
       })();
-      console.info('[DB] Palette sémantique AYROVI pétrole appliquée.');
+      console.info('[DB] Palette AYROVI mesurée Dark Teal appliquée.');
     }
 
     // Preserve all Admin interface settings while upgrading every former official
@@ -951,7 +979,7 @@ export class QatafoDatabase {
         '/media/logo-ayrovi.png','/media/logo-ayrovi-final.png'),updated_at=?
       WHERE setting_key='interface_config'
         AND (setting_value LIKE '%/media/logo-ayrovi-black.png%' OR setting_value LIKE '%/media/logo-ayrovi.png%')`).run(now);
-    if (finalLogoUpgrade.changes > 0) console.info('[DB] Logo AYROVI final pétrole appliqué.');
+    if (finalLogoUpgrade.changes > 0) console.info('[DB] Logo AYROVI final appliqué.');
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides').get() as any).count === 0) {
       const insert = this.db.prepare(`INSERT INTO hero_slides

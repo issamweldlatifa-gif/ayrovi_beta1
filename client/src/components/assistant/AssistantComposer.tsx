@@ -71,14 +71,14 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
 
         {isRecording ? (
           <div className="mb-3 flex items-center gap-2.5">
-            <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-danger" />
+            <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-interactive-primary" />
             <div className="flex h-5 flex-1 items-center gap-[3px]">
               {[40, 80, 55, 100, 65, 85, 45].map((height, index) => (
                 <span key={index} className="w-[3px] animate-pulse rounded-full bg-muted" style={{ height: `${height}%`, animationDelay: `${index * 90}ms` }} />
               ))}
             </div>
             <span className="text-xs font-medium tabular-nums text-muted">{formatTime(recordSeconds)}</span>
-            <button type="button" onClick={onCancelRecording} className="flex h-7 w-7 items-center justify-center rounded-full text-muted hover:text-danger" aria-label={tr('Annuler l’enregistrement', 'إلغاء التسجيل')}><X className="h-4 w-4" /></button>
+            <button type="button" onClick={onCancelRecording} className="flex h-7 w-7 items-center justify-center rounded-full text-muted hover:text-ink" aria-label={tr('Annuler l’enregistrement', 'إلغاء التسجيل')}><X className="h-4 w-4" /></button>
           </div>
         ) : isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
@@ -107,7 +107,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               type="button"
               onClick={isRecording ? onFinishRecording : onStartRecording}
               disabled={isGenerating || isTranscribing}
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${isRecording ? 'animate-pulse bg-danger text-white' : surfaceButton}`}
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${isRecording ? 'animate-pulse bg-interactive-primary text-white' : surfaceButton}`}
               aria-label={isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل رسالة صوتية')}
             >
               {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-[18px] w-[18px]" />}

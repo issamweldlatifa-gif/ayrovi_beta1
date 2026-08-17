@@ -103,7 +103,7 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <span className="text-[11px] font-extrabold text-ink">{item.price != null && item.currency ? `${item.price.toFixed(2)} ${item.currency}` : tr('Prix à confirmer', 'السعر يحتاج إلى تأكيد')}</span>
                         {canRepeat(item) ? (
-                          <button type="button" onClick={() => onRepeat(item)} className="ay-btn-primary min-h-8 px-3 py-1.5 text-[10px]">{tr('Relancer', 'إعادة')}</button>
+                          <button type="button" onClick={() => onRepeat(item)} className="ay-btn-secondary min-h-8 px-3 py-1.5 text-[10px]">{tr('Relancer', 'إعادة')}</button>
                         ) : (
                           <button type="button" onClick={onNewScan} className="ay-btn-secondary min-h-8 px-3 py-1.5 text-[10px]">{tr('Nouvelle photo', 'صورة جديدة')}</button>
                         )}

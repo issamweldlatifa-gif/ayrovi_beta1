@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, Eye, EyeOff, Image as ImageIcon, LayoutGrid, MousePointer2, Navigation, Palette, Save, SlidersHorizontal, Type } from 'lucide-react';
-import { DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSectionConfig, type PublicInterfaceConfig } from '../config/interfaceConfig';
+import { AYROVI_SEMANTIC_PALETTE, DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSectionConfig, type PublicInterfaceConfig } from '../config/interfaceConfig';
 import { adminApi } from './api';
 import { Button, Field, ImageUploader, Select, Toast } from './components';
 
@@ -45,12 +45,17 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
     [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
     update('sections', ordered.map((section, order) => ({ ...section, order: (order + 1) * 10 })));
   };
-  const applyUrbanPalette = () => setConfig((current) => ({
+  const applyCorrectedPalette = () => setConfig((current) => ({
     ...current,
-    typography: { ...current.typography, headingColor: '#1a1a1a', textColor: '#52615f' },
-    buttons: { ...current.buttons, background: '#088177', color: '#ffffff' },
-    icons: { ...current.icons, color: '#205b6b' },
-    navigation: { ...current.navigation, background: '#088177', color: '#ffffff', activeBackground: '#205b6b' },
+    typography: { ...current.typography, headingColor: AYROVI_SEMANTIC_PALETTE.textPrimary, textColor: AYROVI_SEMANTIC_PALETTE.textSecondary },
+    buttons: { ...current.buttons, background: AYROVI_SEMANTIC_PALETTE.interactivePrimary, color: AYROVI_SEMANTIC_PALETTE.white },
+    icons: { ...current.icons, color: AYROVI_SEMANTIC_PALETTE.textPrimary },
+    navigation: {
+      ...current.navigation,
+      background: AYROVI_SEMANTIC_PALETTE.surfaceBase,
+      color: AYROVI_SEMANTIC_PALETTE.textPrimary,
+      activeBackground: AYROVI_SEMANTIC_PALETTE.surfaceAlt,
+    },
   }));
 
   const save = async () => {
@@ -72,12 +77,17 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       {canWrite && <Button busy={busy} onClick={save}><Save size={17} />Publier واجهتي</Button>}
     </div>
 
-    <section className="interface-palette-banner" aria-label="Palette sémantique AYROVI">
-      <div><span className="admin-eyebrow">PALETTE SÉMANTIQUE</span><h2>Pétrole urbain AYROVI</h2><p>Le pétrole unifie le canvas de marque et les CTA. Rhubarbe, or et ardoise restent des accents à faible densité.</p></div>
+    <section className="interface-palette-banner" aria-label="Palette sémantique AYROVI corrigée">
+      <div><span className="admin-eyebrow">PALETTE MESURÉE · 60 / 30 / 10</span><h2>Dark Teal corrigé AYROVI</h2><p>60% surfaces crème, 30% interactions Dark Teal, 10% Hero Deep Green. Le bleu reste réservé aux données et le rouge aux alertes.</p></div>
       <div className="interface-palette-swatches">{[
-        ['#088177', 'Pétrole · action'], ['#b55b64', 'Rhubarbe · alerte'], ['#a67931', 'Or · highlight'], ['#205b6b', 'Ardoise · secondaire'], ['#1a1a1a', 'Texte'], ['#ffffff', 'Surface'],
-      ].map(([color, label]) => <span key={color} style={{ background: color, color: color === '#ffffff' ? '#1a1a1a' : '#ffffff' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
-      {canWrite && <Button variant="secondary" onClick={applyUrbanPalette}><Palette size={16} />Appliquer aux contrôles</Button>}
+        [AYROVI_SEMANTIC_PALETTE.interactivePrimary, 'Interaction'],
+        [AYROVI_SEMANTIC_PALETTE.heroBackground, 'Hero unique'],
+        [AYROVI_SEMANTIC_PALETTE.surfaceAlt, 'Beige'],
+        [AYROVI_SEMANTIC_PALETTE.surfaceBase, 'Canvas'],
+        [AYROVI_SEMANTIC_PALETTE.chartAccent, 'Données'],
+        [AYROVI_SEMANTIC_PALETTE.danger, 'Alerte'],
+      ].map(([color, label]) => <span key={color} style={{ background: color, color: [AYROVI_SEMANTIC_PALETTE.surfaceAlt, AYROVI_SEMANTIC_PALETTE.surfaceBase].includes(color as any) ? 'var(--color-text-primary)' : 'var(--ayrovi-white)' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
+      {canWrite && <Button variant="secondary" onClick={applyCorrectedPalette}><Palette size={16} />Appliquer la palette corrigée</Button>}
     </section>
 
     <div className="interface-studio-layout">
@@ -110,7 +120,7 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           <section className="admin-card interface-card"><header><div><Palette size={19} /><div><h2>Icônes</h2><p>Bibliothèque Lucide AYROVI, style, couleur et taille.</p></div></div></header><div className="admin-form"><Field label="Bibliothèque"><Select disabled={!canWrite} value={config.icons.library} onChange={(event) => patch('icons', { library: event.target.value as any })} options={selectOptions([['ayrovi', 'AYROVI — pictogrammes maison'], ['lucide', 'Lucide — interface universelle']])} /></Field><Field label="Couleur"><input disabled={!canWrite} type="color" value={config.icons.color} onChange={(event) => patch('icons', { color: event.target.value })} /></Field><Field label="Style"><Select disabled={!canWrite} value={config.icons.style} onChange={(event) => patch('icons', { style: event.target.value as any })} options={selectOptions([['outline', 'Contour'], ['solid', 'Plein']])} /></Field><Field label={`Taille · ${config.icons.size}px`} full><input disabled={!canWrite} type="range" min="14" max="36" value={config.icons.size} onChange={(event) => patch('icons', { size: Number(event.target.value) })} /></Field></div><div className="interface-icon-preview" style={{ color: config.icons.color }}><Navigation size={config.icons.size} fill={config.icons.style === 'solid' ? 'currentColor' : 'none'} /><Eye size={config.icons.size} fill={config.icons.style === 'solid' ? 'currentColor' : 'none'} /><ImageIcon size={config.icons.size} fill={config.icons.style === 'solid' ? 'currentColor' : 'none'} /></div></section>
         </div>}
 
-        {panel === 'navigation' && <section className="admin-card interface-card"><header><div><Navigation size={19} /><div><h2>Bottom navigation</h2><p>Les icônes restent blanches pour la lisibilité. Vous contrôlez le fond neutre, l’état actif, les labels et la hauteur.</p></div></div></header><div className="admin-form"><Field label="Fond"><input disabled={!canWrite} type="color" value={config.navigation.background} onChange={(event) => patch('navigation', { background: event.target.value })} /></Field><Field label="Fond actif"><input disabled={!canWrite} type="color" value={config.navigation.activeBackground} onChange={(event) => patch('navigation', { activeBackground: event.target.value })} /></Field><Field label="Label Lens"><input disabled={!canWrite} value={config.navigation.lensLabel} onChange={(event) => patch('navigation', { lensLabel: event.target.value })} /></Field><Field label="Label AI"><input disabled={!canWrite} value={config.navigation.aiLabel} onChange={(event) => patch('navigation', { aiLabel: event.target.value })} /></Field><Field label="Label Vision"><input disabled={!canWrite} value={config.navigation.visionLabel} onChange={(event) => patch('navigation', { visionLabel: event.target.value })} /></Field><Field label={`Hauteur · ${config.navigation.height}px`}><input disabled={!canWrite} type="range" min="60" max="88" value={config.navigation.height} onChange={(event) => patch('navigation', { height: Number(event.target.value) })} /></Field><Field label="Afficher les labels" full><button type="button" disabled={!canWrite} className={`admin-switch ${config.navigation.showLabels ? 'is-on' : ''}`} onClick={() => patch('navigation', { showLabels: !config.navigation.showLabels })}><i /><span>{config.navigation.showLabels ? 'Labels visibles' : 'Icônes uniquement'}</span></button></Field></div><div className="interface-nav-preview" style={{ background: config.navigation.background, minHeight: config.navigation.height }}>{['lensLabel', 'aiLabel', 'visionLabel'].map((key, index) => <span key={key} style={index === 1 ? { background: config.navigation.activeBackground } : undefined}><Eye size={20} />{config.navigation.showLabels && <small>{String(config.navigation[key as keyof typeof config.navigation])}</small>}</span>)}</div></section>}
+        {panel === 'navigation' && <section className="admin-card interface-card"><header><div><Navigation size={19} /><div><h2>Bottom navigation</h2><p>La navigation reste neutre : canvas crème, texte sombre et état actif discret. Vous contrôlez les labels et la hauteur.</p></div></div></header><div className="admin-form"><Field label="Fond"><input disabled={!canWrite} type="color" value={config.navigation.background} onChange={(event) => patch('navigation', { background: event.target.value })} /></Field><Field label="Fond actif"><input disabled={!canWrite} type="color" value={config.navigation.activeBackground} onChange={(event) => patch('navigation', { activeBackground: event.target.value })} /></Field><Field label="Label Lens"><input disabled={!canWrite} value={config.navigation.lensLabel} onChange={(event) => patch('navigation', { lensLabel: event.target.value })} /></Field><Field label="Label AI"><input disabled={!canWrite} value={config.navigation.aiLabel} onChange={(event) => patch('navigation', { aiLabel: event.target.value })} /></Field><Field label="Label Vision"><input disabled={!canWrite} value={config.navigation.visionLabel} onChange={(event) => patch('navigation', { visionLabel: event.target.value })} /></Field><Field label={`Hauteur · ${config.navigation.height}px`}><input disabled={!canWrite} type="range" min="60" max="88" value={config.navigation.height} onChange={(event) => patch('navigation', { height: Number(event.target.value) })} /></Field><Field label="Afficher les labels" full><button type="button" disabled={!canWrite} className={`admin-switch ${config.navigation.showLabels ? 'is-on' : ''}`} onClick={() => patch('navigation', { showLabels: !config.navigation.showLabels })}><i /><span>{config.navigation.showLabels ? 'Labels visibles' : 'Icônes uniquement'}</span></button></Field></div><div className="interface-nav-preview" style={{ background: config.navigation.background, color: config.navigation.color, minHeight: config.navigation.height }}>{['lensLabel', 'aiLabel', 'visionLabel'].map((key, index) => <span key={key} style={index === 1 ? { background: config.navigation.activeBackground } : undefined}><Eye size={20} />{config.navigation.showLabels && <small>{String(config.navigation[key as keyof typeof config.navigation])}</small>}</span>)}</div></section>}
 
         {panel === 'slider' && <section className="admin-card interface-card"><header><div><SlidersHorizontal size={19} /><div><h2>Slider & mouvement</h2><p>Contrôlez le rythme du Hero sans empêcher la navigation manuelle.</p></div></div></header><div className="admin-form"><Field label={`Temps par slide · ${(config.slider.duration / 1000).toFixed(1)} s`}><input disabled={!canWrite} type="range" min="2000" max="20000" step="500" value={config.slider.duration} onChange={(event) => patch('slider', { duration: Number(event.target.value) })} /></Field><Field label={`Transition · ${(config.slider.transition / 1000).toFixed(2)} s`}><input disabled={!canWrite} type="range" min="150" max="2500" step="50" value={config.slider.transition} onChange={(event) => patch('slider', { transition: Number(event.target.value) })} /></Field>{([['autoplay', 'Lecture automatique'], ['showArrows', 'Flèches précédent/suivant'], ['showDots', 'Points de navigation']] as const).map(([key, label]) => <Field key={key} label={label}><button type="button" disabled={!canWrite} className={`admin-switch ${config.slider[key] ? 'is-on' : ''}`} onClick={() => patch('slider', { [key]: !config.slider[key] })}><i /><span>{config.slider[key] ? 'Activé' : 'Désactivé'}</span></button></Field>)}</div></section>}
       </div>

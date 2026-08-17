@@ -183,7 +183,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       {/* Strip stories au-dessus des cartes (cahier des charges §7) */}
       <HomeStoryStrip isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />
 
-      <section id="arrivages" className="w-full border-y border-line bg-white" aria-label={tr('Contenus AYROVI', 'محتوى AYROVI')}>
+      <section id="arrivages" className="w-full border-y border-line bg-surface-base" aria-label={tr('Contenus AYROVI', 'محتوى AYROVI')}>
         <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
           <div className="grid w-full grid-cols-4 items-center">
             {pageDefinitions.map((definition) => (
@@ -202,7 +202,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       </section>
 
       {activePage && activeDefinition && (
-        <div className={`no-scrollbar fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} dir={activePage === 'news' ? 'rtl' : direction} role="dialog" aria-modal="true" aria-label={isArabic ? activeDefinition.labelAr : activeDefinition.label}>
+        <div className={`no-scrollbar fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-surface-base' : 'bg-surface'}`} dir={activePage === 'news' ? 'rtl' : direction} role="dialog" aria-modal="true" aria-label={isArabic ? activeDefinition.labelAr : activeDefinition.label}>
           <TabHeader
             current={pageDefinitions.findIndex((page) => page.id === activePage) + 1}
             total={pageDefinitions.length}

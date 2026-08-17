@@ -1,26 +1,33 @@
-/* AYROVI design tokens — the only source of brand, semantic, spacing and shape values. */
+/* AYROVI semantic design tokens — corrected from measured production-page usage. */
 @theme inline {
-  --color-brand: var(--ayrovi-primary);
-  --color-brand-dark: var(--ayrovi-primary-dark);
-  --color-brand-light: var(--ayrovi-primary-light);
-  --color-brand-deep: var(--ayrovi-neutral-950);
-  --color-accent: var(--ayrovi-accent);
-  --color-accent-deep: var(--ayrovi-accent-dark);
-  --color-success: var(--ayrovi-success);
-  --color-danger: var(--ayrovi-danger);
-  --color-warning: var(--ayrovi-warning);
+  /* Canonical palette: components consume these roles, never raw colour values. */
+  --color-interactive-primary: #003b39;
+  --color-hero-bg: #13251f;
+  --color-surface-alt: #ede6de;
+  --color-surface-base: #f9f8f4;
+  --color-text-primary: #1a1a1a;
+  --color-chart-accent: #2e667d;
+  --color-danger: #a63b32;
+
+  /* Tailwind-facing semantic aliases retained across the existing component API. */
+  --color-brand: var(--color-interactive-primary);
+  --color-brand-dark: var(--color-interactive-primary);
+  --color-brand-light: color-mix(in srgb, var(--color-interactive-primary) 12%, var(--color-surface-base));
+  --color-brand-deep: var(--color-hero-bg);
+  --color-hero: var(--color-hero-bg);
+  --color-chart: var(--color-chart-accent);
+  --color-accent: var(--color-surface-alt);
+  --color-accent-deep: var(--color-interactive-primary);
+  --color-success: var(--color-interactive-primary);
+  --color-warning: var(--color-danger);
   --color-whatsapp: var(--ayrovi-whatsapp);
   --color-whatsapp-hover: var(--ayrovi-whatsapp-hover);
-  --color-ink: var(--ayrovi-neutral-900);
+  --color-ink: var(--color-text-primary);
   --color-muted: var(--ayrovi-neutral-500);
-  --color-surface: var(--ayrovi-neutral-50);
-  --color-surface-base: var(--ayrovi-surface-base);
+  --color-surface: var(--color-surface-alt);
   --color-surface-raised: var(--ayrovi-surface-raised);
-  --color-interactive-primary: var(--ayrovi-interactive-primary);
-  --color-text-primary: var(--ayrovi-text-primary);
-  --color-text-secondary: var(--ayrovi-text-secondary);
-  --color-accent-warning: var(--ayrovi-accent-warning);
-  --color-accent-highlight: var(--ayrovi-accent-highlight);
+  --color-accent-warning: var(--color-danger);
+  --color-accent-highlight: var(--color-interactive-primary);
   --color-line: var(--ayrovi-neutral-200);
   --font-display: var(--ayrovi-font-display);
   --font-body: var(--ayrovi-font-body);
@@ -33,47 +40,51 @@
 @layer base {
   :root {
     color-scheme: light;
-    /* AYROVI urban palette — semantic roles inspired by the supplied methodology. */
-    --ayrovi-primary: #088177;
-    --ayrovi-primary-dark: #05685f;
-    --ayrovi-primary-light: #2ea399;
-    --ayrovi-rhubarb: #b55b64;
-    --ayrovi-gold: #a67931;
-    --ayrovi-slate: #205b6b;
-    --ayrovi-accent: var(--ayrovi-gold);
-    --ayrovi-accent-dark: #6c4a12;
-    --ayrovi-success: #08786f;
-    --ayrovi-danger: #98444e;
-    --ayrovi-warning: #795515;
-    --ayrovi-neutral-50: #f6f9f8;
-    --ayrovi-neutral-200: #dbe6e4;
-    --ayrovi-neutral-500: #52615f;
-    --ayrovi-neutral-900: #1a1a1a;
-    --ayrovi-neutral-950: #123f49;
-    --ayrovi-white: #ffffff;
-    --ayrovi-black: #050505;
 
-    /* Semantic contracts: component names do not change when the palette evolves. */
-    --ayrovi-surface-base: var(--ayrovi-white);
-    --ayrovi-surface-raised: var(--ayrovi-neutral-50);
-    --ayrovi-interactive-primary: var(--ayrovi-primary);
-    --ayrovi-text-primary: var(--ayrovi-neutral-900);
+    /* Backing variables for runtime Admin configuration and legacy components. */
+    --ayrovi-primary: var(--color-interactive-primary);
+    --ayrovi-primary-dark: var(--color-interactive-primary);
+    --ayrovi-primary-light: color-mix(in srgb, var(--color-interactive-primary) 12%, var(--color-surface-base));
+    --ayrovi-hero-bg: var(--color-hero-bg);
+    --ayrovi-surface-alt: var(--color-surface-alt);
+    --ayrovi-chart-accent: var(--color-chart-accent);
+    --ayrovi-rhubarb: var(--color-danger);
+    --ayrovi-gold: var(--color-surface-alt);
+    --ayrovi-slate: var(--color-chart-accent);
+    --ayrovi-accent: var(--color-surface-alt);
+    --ayrovi-accent-dark: var(--color-interactive-primary);
+    --ayrovi-success: var(--color-interactive-primary);
+    --ayrovi-danger: var(--color-danger);
+    --ayrovi-warning: var(--color-danger);
+    --ayrovi-neutral-50: var(--color-surface-alt);
+    --ayrovi-neutral-200: color-mix(in srgb, var(--color-text-primary) 14%, var(--color-surface-base));
+    --ayrovi-neutral-500: color-mix(in srgb, var(--color-text-primary) 68%, var(--color-surface-base));
+    --ayrovi-neutral-900: var(--color-text-primary);
+    --ayrovi-neutral-950: var(--color-hero-bg);
+    --ayrovi-white: #ffffff;
+    --ayrovi-black: var(--color-text-primary);
+
+    /* Surface, interaction and data contracts. */
+    --ayrovi-surface-base: var(--color-surface-base);
+    --ayrovi-surface-raised: var(--ayrovi-white);
+    --ayrovi-interactive-primary: var(--color-interactive-primary);
+    --ayrovi-text-primary: var(--color-text-primary);
     --ayrovi-text-secondary: var(--ayrovi-neutral-500);
-    --ayrovi-accent-warning: var(--ayrovi-rhubarb);
-    --ayrovi-accent-highlight: var(--ayrovi-gold);
+    --ayrovi-accent-warning: var(--color-danger);
+    --ayrovi-accent-highlight: var(--color-interactive-primary);
     --ayrovi-whatsapp: #25d366;
     --ayrovi-whatsapp-hover: #1fae53;
-    --ayrovi-gradient: var(--ayrovi-primary);
+    --ayrovi-gradient: var(--color-hero-bg);
     --ayrovi-font-display: 'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
     --ayrovi-font-body: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
     --ayrovi-radius-control: 0.75rem;
     --ayrovi-radius-card: 1rem;
-    --ayrovi-shadow-card: 0 12px 30px -22px rgb(36 16 79 / 35%);
-    --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(36 16 79 / 45%);
+    --ayrovi-shadow-card: 0 12px 30px -22px color-mix(in srgb, var(--color-hero-bg) 32%, transparent);
+    --ayrovi-shadow-overlay: 0 24px 70px -32px color-mix(in srgb, var(--color-hero-bg) 42%, transparent);
     --ayrovi-page-gap-mobile: 2rem;
     --ayrovi-page-gap-desktop: 3rem;
 
-    /* Backward-compatible aliases for runtime Admin theme configuration. */
+    /* Backward-compatible names; all resolve to semantic roles above. */
     --ayrovi-purple: var(--ayrovi-primary);
     --ayrovi-purple-dark: var(--ayrovi-primary-dark);
     --ayrovi-purple-light: var(--ayrovi-primary-light);

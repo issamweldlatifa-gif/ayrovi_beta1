@@ -16,7 +16,7 @@ import { customerApi } from './customer/api';
 import { getCommerceConfig } from './services/publicApi';
 import { replaceUrlPreservingNavigation, useNavigationHistory } from './navigation/NavigationHistory';
 import { useLocale } from './i18n/LocaleContext';
-import { DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSectionConfig, type PublicInterfaceConfig } from './config/interfaceConfig';
+import { AYROVI_SEMANTIC_PALETTE, DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSectionConfig, type PublicInterfaceConfig } from './config/interfaceConfig';
 
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
@@ -96,21 +96,36 @@ export const App: React.FC = () => {
         const root = document.documentElement;
         const theme = payload?.data?.theme;
         if (theme && typeof theme === 'object' && theme.primary) {
-          root.style.setProperty('--ayrovi-primary', String(theme.primary));
-          root.style.setProperty('--ayrovi-primary-dark', String(theme.primaryDark || theme.primary));
-          root.style.setProperty('--ayrovi-primary-light', String(theme.primaryLight || theme.primary));
-          if (theme.accent) {
-            root.style.setProperty('--ayrovi-accent', String(theme.accent));
-            root.style.setProperty('--ayrovi-gold', String(theme.accent));
-          }
-          if (theme.rhubarb) root.style.setProperty('--ayrovi-rhubarb', String(theme.rhubarb));
-          if (theme.slate) {
-            root.style.setProperty('--ayrovi-slate', String(theme.slate));
-            root.style.setProperty('--ayrovi-neutral-950', String(theme.slate));
-          }
-          if (theme.ink) root.style.setProperty('--ayrovi-neutral-900', String(theme.ink));
-          if (theme.surface) root.style.setProperty('--ayrovi-surface-base', String(theme.surface));
-          if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
+          const primary = String(theme.primary);
+          const hero = String(theme.hero || AYROVI_SEMANTIC_PALETTE.heroBackground);
+          const surfaceAlt = String(theme.surfaceAlt || theme.accent || AYROVI_SEMANTIC_PALETTE.surfaceAlt);
+          const surfaceBase = String(theme.surface || AYROVI_SEMANTIC_PALETTE.surfaceBase);
+          const textPrimary = String(theme.ink || AYROVI_SEMANTIC_PALETTE.textPrimary);
+          const chartAccent = String(theme.chart || theme.slate || AYROVI_SEMANTIC_PALETTE.chartAccent);
+          const danger = String(theme.danger || theme.rhubarb || AYROVI_SEMANTIC_PALETTE.danger);
+          root.style.setProperty('--color-interactive-primary', primary);
+          root.style.setProperty('--color-hero-bg', hero);
+          root.style.setProperty('--color-surface-alt', surfaceAlt);
+          root.style.setProperty('--color-surface-base', surfaceBase);
+          root.style.setProperty('--color-text-primary', textPrimary);
+          root.style.setProperty('--color-chart-accent', chartAccent);
+          root.style.setProperty('--color-danger', danger);
+          root.style.setProperty('--ayrovi-primary', primary);
+          root.style.setProperty('--ayrovi-primary-dark', String(theme.primaryDark || primary));
+          root.style.setProperty('--ayrovi-primary-light', 'color-mix(in srgb, var(--color-interactive-primary) 12%, var(--color-surface-base))');
+          root.style.setProperty('--ayrovi-hero-bg', hero);
+          root.style.setProperty('--ayrovi-neutral-950', hero);
+          root.style.setProperty('--ayrovi-accent', surfaceAlt);
+          root.style.setProperty('--ayrovi-gold', surfaceAlt);
+          root.style.setProperty('--ayrovi-neutral-50', surfaceAlt);
+          root.style.setProperty('--ayrovi-slate', chartAccent);
+          root.style.setProperty('--ayrovi-chart-accent', chartAccent);
+          root.style.setProperty('--ayrovi-rhubarb', danger);
+          root.style.setProperty('--ayrovi-danger', danger);
+          root.style.setProperty('--ayrovi-warning', danger);
+          root.style.setProperty('--ayrovi-neutral-900', textPrimary);
+          root.style.setProperty('--ayrovi-surface-base', surfaceBase);
+          root.style.setProperty('--ayrovi-gradient', String(theme.gradient || hero));
         }
         const visual = normalizeInterfaceConfig(payload?.data?.interfaceConfig);
         setInterfaceConfig(visual);
@@ -334,7 +349,7 @@ export const App: React.FC = () => {
   return (
     <div className="ayrovi-app-shell min-h-screen flex flex-col bg-surface-base text-text-primary relative">
       
-      {/* Top Yellow Notice Bar */}
+      {/* Neutral cream notice bar; colour is reserved for interaction states. */}
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />
 
       {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}

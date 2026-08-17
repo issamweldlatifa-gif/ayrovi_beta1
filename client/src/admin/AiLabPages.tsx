@@ -153,7 +153,7 @@ const SuggestionRow: React.FC<{ question: string; count: number }> = ({ question
   };
   if (state === 'done') return <p className="admin-block-small" style={{ margin: '8px 0' }}>✓ Ajouté à la base de connaissance : {question}</p>;
   return (
-    <div style={{ borderTop: '1px solid #ececf4', marginTop: 10, paddingTop: 10 }}>
+    <div style={{ borderTop: '1px solid var(--admin-line)', marginTop: 10, paddingTop: 10 }}>
       <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>« {question} » <span className="admin-block-small">— posée {count}× sans réponse vérifiée</span></p>
       <div className="admin-grid-2" style={{ marginTop: 8 }}>
         <input value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="Réponse vérifiée à enseigner à l'Assistant…" />

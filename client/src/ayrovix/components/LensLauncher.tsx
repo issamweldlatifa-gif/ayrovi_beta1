@@ -589,7 +589,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                           <p className="text-sm font-bold text-ink">{candidatesView.detectedPrice.sourcePrice.toFixed(2)} {candidatesView.detectedPrice.sourceCurrency}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-warning">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
                           <p className="text-lg font-extrabold text-ink">≈ {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || '—'} DT</p>
                           <p className="text-[9px] text-success font-semibold">{tr('Tout inclus', 'شامل كل شيء')}</p>
                         </div>

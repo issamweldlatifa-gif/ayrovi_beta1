@@ -1,3 +1,15 @@
+export const AYROVI_SEMANTIC_PALETTE = {
+  interactivePrimary: '#003b39',
+  heroBackground: '#13251f',
+  surfaceAlt: '#ede6de',
+  surfaceBase: '#f9f8f4',
+  textPrimary: '#1a1a1a',
+  textSecondary: '#5f5f5b',
+  chartAccent: '#2e667d',
+  danger: '#a63b32',
+  white: '#ffffff',
+} as const;
+
 export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer'] as const;
 export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 
@@ -71,13 +83,13 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif",
     baseSize: 16,
     align: 'start',
-    headingColor: '#1a1a1a',
-    textColor: '#52615f',
+    headingColor: AYROVI_SEMANTIC_PALETTE.textPrimary,
+    textColor: AYROVI_SEMANTIC_PALETTE.textSecondary,
   },
-  buttons: { background: '#088177', color: '#ffffff', radius: 12, height: 44, shape: 'soft' },
-  icons: { library: 'ayrovi', color: '#205b6b', size: 20, style: 'outline' },
+  buttons: { background: AYROVI_SEMANTIC_PALETTE.interactivePrimary, color: AYROVI_SEMANTIC_PALETTE.white, radius: 12, height: 44, shape: 'soft' },
+  icons: { library: 'ayrovi', color: AYROVI_SEMANTIC_PALETTE.textPrimary, size: 20, style: 'outline' },
   navigation: {
-    background: '#088177', color: '#ffffff', activeBackground: '#205b6b', showLabels: true, height: 72,
+    background: AYROVI_SEMANTIC_PALETTE.surfaceBase, color: AYROVI_SEMANTIC_PALETTE.textPrimary, activeBackground: AYROVI_SEMANTIC_PALETTE.surfaceAlt, showLabels: true, height: 72,
     lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
@@ -143,7 +155,7 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
     },
     navigation: {
       background: safeColor(navigation.background, DEFAULT_INTERFACE_CONFIG.navigation.background),
-      color: '#ffffff',
+      color: safeColor(navigation.color, DEFAULT_INTERFACE_CONFIG.navigation.color),
       activeBackground: safeColor(navigation.activeBackground, DEFAULT_INTERFACE_CONFIG.navigation.activeBackground),
       showLabels: navigation.showLabels !== false,
       height: safeNumber(navigation.height, 72, 60, 88),

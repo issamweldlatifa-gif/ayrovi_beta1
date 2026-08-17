@@ -16,6 +16,7 @@ import { MagazineAgentPage } from './MagazineAgentPage';
 import { MagazineDraftsPanel } from './MagazineDraftsPanel';
 import { InterfaceStudio } from './InterfaceStudio';
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
+import { AYROVI_SEMANTIC_PALETTE } from '../config/interfaceConfig';
 import './interface-studio.css';
 
 type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'audit:read' | 'reports:read' | 'reports:write';
@@ -440,7 +441,7 @@ const LensRequestsPage: React.FC<{ canWrite: boolean; requestedId?: string }> = 
         </div>
         <section className="admin-card" style={{ marginBottom: 16 }}>
           <div style={{ display: 'grid', gridTemplateColumns: selected.image_url ? '96px minmax(0,1fr)' : '1fr', gap: 16, alignItems: 'center' }}>
-            {selected.image_url && <img src={selected.image_url} alt="" referrerPolicy="no-referrer" style={{ width: 96, height: 96, objectFit: 'contain', borderRadius: 12, background: '#f6f6f8' }} />}
+            {selected.image_url && <img src={selected.image_url} alt="" referrerPolicy="no-referrer" style={{ width: 96, height: 96, objectFit: 'contain', borderRadius: 12, background: 'var(--color-surface-alt)' }} />}
             <div><strong>{selected.title}</strong><p className="admin-block-small">{selected.source || 'Source Lens'}</p><a href={selected.source_url} target="_blank" rel="noreferrer" className="admin-button admin-button--secondary" style={{ marginTop: 8 }}>Ouvrir la fiche marchand</a><code className="admin-block-small" style={{ marginTop: 8, overflowWrap: 'anywhere' }}>{selected.id}</code></div>
           </div>
         </section>
@@ -512,7 +513,7 @@ const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }
     <Modal open={Boolean(selected)} title="Ticket support IA" onClose={()=>setSelected(null)} wide footer={selected&&canWrite?<><Button variant="secondary" onClick={()=>setSelected(null)}>Fermer</Button><Button busy={busy} onClick={save}>Enregistrer</Button></>:undefined}>
       {selected&&<div className="admin-order-detail">
         <div className="admin-order-summary"><article><span>Client</span><strong>{selected.account_name||selected.contact}</strong><small>{selected.account_name?selected.contact:'Visiteur'}</small></article><article><span>Priorité</span><strong>{selected.priority}</strong><small>{formatDate(selected.created_at,true)}</small></article><article><span>Assigné à</span><strong>{selected.assigned_name||'Non assigné'}</strong><small>{selected.id}</small></article></div>
-        <section className="admin-card" style={{marginBottom:16}}><h3>Motif</h3><p className="admin-block-small">{selected.reason}</p><h3 style={{marginTop:16}}>Contexte transmis</h3><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:13,lineHeight:1.6,background:'#f7f7fa',padding:14,borderRadius:12}}>{selected.context_excerpt||'Aucun contexte enregistré.'}</pre></section>
+        <section className="admin-card" style={{marginBottom:16}}><h3>Motif</h3><p className="admin-block-small">{selected.reason}</p><h3 style={{marginTop:16}}>Contexte transmis</h3><pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:13,lineHeight:1.6,background:'var(--color-surface-base)',padding:14,borderRadius:12}}>{selected.context_excerpt||'Aucun contexte enregistré.'}</pre></section>
         <div className="admin-form-row"><Field label="Statut"><Select disabled={!canWrite||busy} value={selected.status} onChange={event=>setSelected({...selected,status:event.target.value})} options={options(['PENDING','IN_PROGRESS','RESOLVED','CLOSED'])}/></Field><Field label="Priorité"><Select disabled={!canWrite||busy} value={selected.priority} onChange={event=>setSelected({...selected,priority:event.target.value})} options={options(['NORMAL','HIGH'])}/></Field><Field label="Note interne" full><textarea rows={4} disabled={!canWrite||busy} value={selected.admin_note||''} onChange={event=>setSelected({...selected,admin_note:event.target.value})}/></Field></div>
       </div>}
     </Modal>{toast&&<Toast message={toast.message} tone={toast.tone}/>}
@@ -644,13 +645,23 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
-  {id:'petrole',label:'Pétrole urbain AYROVI',primary:'#088177',primaryDark:'#05685f',primaryLight:'#2ea399',accent:'#a67931',rhubarb:'#b55b64',slate:'#205b6b',ink:'#1a1a1a',surface:'#ffffff',gradient:'#088177',font:'jakarta'},
-  {id:'violet',label:'Violet AYROVI',primary:'#673de6',primaryDark:'#5025d1',primaryLight:'#7e57ff',accent:'#fbbf24',gradient:'linear-gradient(135deg,#24104f 0%,#673de6 100%)',font:'jakarta'},
-  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#f59e0b',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:'jakarta'},
-  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#fbbf24',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:'jakarta'},
-  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#fde047',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:'jakarta'},
-  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#673de6',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:'jakarta'},
-  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#fbbf24',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:'jakarta'},
+  {
+    id:'measured-dark-teal', label:'Dark Teal mesuré AYROVI',
+    primary:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
+    primaryDark:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
+    primaryLight:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
+    hero:AYROVI_SEMANTIC_PALETTE.heroBackground,
+    surfaceAlt:AYROVI_SEMANTIC_PALETTE.surfaceAlt,
+    accent:AYROVI_SEMANTIC_PALETTE.surfaceAlt,
+    chart:AYROVI_SEMANTIC_PALETTE.chartAccent,
+    danger:AYROVI_SEMANTIC_PALETTE.danger,
+    rhubarb:AYROVI_SEMANTIC_PALETTE.danger,
+    slate:AYROVI_SEMANTIC_PALETTE.chartAccent,
+    ink:AYROVI_SEMANTIC_PALETTE.textPrimary,
+    surface:AYROVI_SEMANTIC_PALETTE.surfaceBase,
+    gradient:AYROVI_SEMANTIC_PALETTE.heroBackground,
+    font:'jakarta',
+  },
 ];
 const FONT_OPTIONS=[{value:'jakarta',label:'Plus Jakarta Sans — identité AYROVI'}];
 const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
@@ -660,7 +671,7 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const parseJson=(v:any)=>{try{return typeof v==='string'?JSON.parse(v):v;}catch{return null;}};
   const load=()=>adminApi<any>('/settings').then(r=>{setRows(r.data);
     const find=(key:string)=>r.data.find((row:any)=>row.setting_key===key);
-    const t=parseJson(find('site_theme')?.setting_value);if(t&&t.primary)setTheme({preset:'custom',ink:'#1d2130',...t});
+    const t=parseJson(find('site_theme')?.setting_value);if(t&&t.primary)setTheme({preset:'custom',ink:AYROVI_SEMANTIC_PALETTE.textPrimary,...t});
     setFooterAbout(String(find('footer_about')?.setting_value??''));
     setChannels({facebook:String(find('facebook_url')?.setting_value??''),instagram:String(find('instagram_url')?.setting_value??''),tiktok:String(find('tiktok_url')?.setting_value??''),whatsapp:String(find('whatsapp_url')?.setting_value??'')});
   });
@@ -668,11 +679,11 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const saveRow=(key:string,value:any)=>{const row=rows.find((r:any)=>r.setting_key===key);if(!row)return Promise.resolve();return adminApi(`/settings/${row.id}`,{method:'PUT',body:JSON.stringify({value})});};
   const save=async()=>{setBusy(true);try{await Promise.all([saveRow('site_theme',theme),saveRow('footer_about',footerAbout),saveRow('facebook_url',channels.facebook),saveRow('instagram_url',channels.instagram),saveRow('tiktok_url',channels.tiktok),saveRow('whatsapp_url',channels.whatsapp)]);await load();setToast({message:'Design publié — la boutique adopte le nouveau thème (rechargement des pages).',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const applyPreset=(preset:any)=>setTheme({...theme,...preset,preset:preset.id});
-  return <><PageHeader title="Développement & design" description="Tokens AYROVI : pétrole, rhubarbe, or, bleu ardoise et surfaces sémantiques. Les canaux sociaux et le pied de page restent administrables." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
+  return <><PageHeader title="Développement & design" description="Palette mesurée AYROVI : canvas crème, Dark Teal interactif, Hero Deep Green, données bleu-teal et alertes rouges. Les canaux sociaux et le pied de page restent administrables." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
-    <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select value={theme.font||'jakarta'} onChange={e=>setTheme({...theme,preset:'custom',font:e.target.value})} options={FONT_OPTIONS}/></Field></div>
-    <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique AYROVI</strong><span>Aperçu du dégradé principal</span><button style={{background:theme.accent,color:'#17131f'}} type="button">Bouton accent</button></div></section>
+    <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Surface secondaire (beige)" full><input type="color" value={theme.surfaceAlt||theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',surfaceAlt:e.target.value,accent:e.target.value})}/></Field><Field label="Police" full><Select value={theme.font||'jakarta'} onChange={e=>setTheme({...theme,preset:'custom',font:e.target.value})} options={FONT_OPTIONS}/></Field></div>
+    <div className="admin-theme-preview" style={{background:theme.hero||theme.gradient}}><strong>Boutique AYROVI</strong><span>Aperçu du Hero unique</span><button style={{background:theme.primary,color:'var(--ayrovi-white)'}} type="button">CTA principal</button></div></section>
     <section className="admin-card"><CardTitle title="Canaux & pied de page" subtitle="Liens affichés dans la section « Nos canaux » du site"/><div className="admin-settings-list">
       <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/ayrovi"/></Field>
       <Field label="Instagram" full><input disabled={!canWrite} value={channels.instagram} onChange={e=>setChannels({...channels,instagram:e.target.value})} placeholder="https://instagram.com/ayrovi"/></Field>
@@ -691,7 +702,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
   useEffect(()=>{const pop=()=>{const params=new URLSearchParams(location.search);setSection(params.get('section')||'dashboard');setRequestedReview(params.get('request')||'');};addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
   useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
   let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('content:write')||has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;
-  return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><img src="/media/logo-ayrovi-final.png" alt="AYROVI" style={{width:30,height:30,objectFit:"contain"}} /><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={`${section===id?'is-active':''} ${id==='news'?'is-magazine-drop-target':''}`.trim()} onClick={()=>navigate(id)} onDragOver={id==='news'?(event)=>{event.preventDefault();event.dataTransfer.dropEffect='copy';}:undefined} onDrop={id==='news'?(event)=>{event.preventDefault();const draftId=event.dataTransfer.getData('application/x-ayrovi-magazine-draft')||event.dataTransfer.getData('text/plain');if(draftId.startsWith('mag_draft_'))openMagazineDraft(draftId);}:undefined}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank" rel="noopener noreferrer"><Globe2/>Voir le site public</a><span>AYROVI v3.5.4 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
+  return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><img src="/media/logo-ayrovi-final.png" alt="AYROVI" style={{width:30,height:30,objectFit:"contain"}} /><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label,icon:Icon})=><button key={id} className={`${section===id?'is-active':''} ${id==='news'?'is-magazine-drop-target':''}`.trim()} onClick={()=>navigate(id)} onDragOver={id==='news'?(event)=>{event.preventDefault();event.dataTransfer.dropEffect='copy';}:undefined} onDrop={id==='news'?(event)=>{event.preventDefault();const draftId=event.dataTransfer.getData('application/x-ayrovi-magazine-draft')||event.dataTransfer.getData('text/plain');if(draftId.startsWith('mag_draft_'))openMagazineDraft(draftId);}:undefined}><Icon/><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank" rel="noopener noreferrer"><Globe2/>Voir le site public</a><span>AYROVI v3.5.5 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
   <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><NotificationsBell onNavigate={navigate}/><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
 };
 

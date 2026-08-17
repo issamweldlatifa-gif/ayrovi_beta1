@@ -9,8 +9,8 @@ const BENEFITS = [
     description:
       'Un taux clair et garanti vous permet de connaître le montant exact en Dinars dès la validation de votre panier.',
     icon: ArrowRightLeft,
-    iconClassName: 'bg-accent text-ink',
-    accentClassName: 'from-accent to-accent-deep',
+    iconClassName: 'border border-line bg-surface-alt text-ink',
+    accentClassName: 'bg-interactive-primary',
   },
   {
     step: '02',
@@ -18,8 +18,8 @@ const BENEFITS = [
     description:
       "Toutes les démarches administratives, taxes d’importation et dédouanement sont entièrement prises en charge.",
     icon: ShieldCheck,
-    iconClassName: 'bg-brand text-white',
-    accentClassName: 'from-brand to-brand-light',
+    iconClassName: 'border border-brand bg-transparent text-brand',
+    accentClassName: 'bg-interactive-primary',
   },
   {
     step: '03',
@@ -27,14 +27,14 @@ const BENEFITS = [
     description:
       "Expédition sécurisée jusqu’à votre domicile partout en Tunisie avec option de paiement en espèces à la livraison.",
     icon: Truck,
-    iconClassName: 'bg-ink text-white',
-    accentClassName: 'from-ink to-brand',
+    iconClassName: 'border border-line bg-surface-base text-ink',
+    accentClassName: 'bg-interactive-primary',
   },
 ];
 
 export const AboutSection: React.FC<{ coverImage?: string; title?: string; subtitle?: string }> = ({ coverImage, title, subtitle }) => {
   return (
-    <section id="about-ayrovi" className="relative scroll-mt-20 bg-white" aria-labelledby="why-ayrovi-title">
+    <section id="about-ayrovi" className="relative scroll-mt-20 bg-surface-base" aria-labelledby="why-ayrovi-title">
       <header className="px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-3xl">
           <div className="inline-flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/10 px-3.5 py-1 text-[11px] font-bold text-brand shadow-sm sm:text-xs">
@@ -70,7 +70,7 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
             ({ step, title, description, icon: Icon, iconClassName, accentClassName }) => (
               <article key={title} className="flex min-h-[100svh] w-full items-center py-16 sm:py-20">
                 <div className="relative w-full overflow-hidden border-y border-white/85 bg-white/85 p-7 shadow-overlay backdrop-blur-xl transition-[box-shadow,background-color] duration-500 ease-out hover:bg-white/90 hover:shadow-overlay sm:p-10 lg:p-14">
-                  <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentClassName}`} />
+                  <div className={`absolute inset-x-0 top-0 h-1.5 ${accentClassName}`} />
 
                   <div className="flex items-start justify-between gap-5">
                     <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md sm:h-14 sm:w-14 ${iconClassName}`}>
@@ -99,7 +99,7 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand sm:text-xs">
+      <div className="flex items-center justify-center gap-3 bg-surface-base px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand sm:text-xs">
         <span className="h-px w-10 bg-accent" />
         Simple · Transparent · Local
         <span className="h-px w-10 bg-accent" />

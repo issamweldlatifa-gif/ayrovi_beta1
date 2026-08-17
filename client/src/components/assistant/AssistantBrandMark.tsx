@@ -8,7 +8,7 @@ interface AssistantBrandMarkProps {
   label?: string;
 }
 
-/** AYROVI's purple assistant badge with the real eight-piece motion mark. */
+/** AYROVI assistant badge using the semantic Dark Teal motion identity. */
 export const AssistantBrandMark: React.FC<AssistantBrandMarkProps> = ({
   state = 'idle',
   size = 36,

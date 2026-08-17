@@ -462,12 +462,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     onClick={() => setFormData({ ...formData, paymentMethod: value })}
                     className={`flex min-h-[76px] w-full items-center gap-4 border p-4 text-start transition ${selected ? 'border-ink bg-surface-raised text-ink ring-1 ring-ink' : 'border-line bg-surface text-ink hover:border-ink'}`}
                   >
-                    <span className={`grid h-11 w-11 shrink-0 place-items-center ${selected ? 'bg-ink text-surface' : 'bg-surface-raised text-ink'}`}><CreditCard className="h-5 w-5" /></span>
+                    <span className={`grid h-11 w-11 shrink-0 place-items-center ${selected ? 'bg-interactive-primary text-white' : 'bg-surface-raised text-ink'}`}><CreditCard className="h-5 w-5" /></span>
                     <span className="min-w-0 flex-1">
                       <strong className="block text-sm font-black sm:text-base">{meta.label}</strong>
                       <span className="mt-1 block text-xs font-semibold leading-5 text-muted">{meta.hint}</span>
                     </span>
-                    <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-ink' : 'border-muted'}`} aria-hidden="true">{selected && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
+                    <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-interactive-primary' : 'border-muted'}`} aria-hidden="true">{selected && <span className="h-2.5 w-2.5 rounded-full bg-interactive-primary" />}</span>
                   </button>
                 );
               })}
@@ -557,7 +557,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <button
               type="submit"
               disabled={isLoading || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}
-              className="order-1 flex min-h-14 items-center justify-center gap-2 bg-ink px-6 text-sm font-black text-surface transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 sm:order-2 sm:text-base"
+              className="order-1 flex min-h-14 items-center justify-center gap-2 bg-interactive-primary px-6 text-sm font-black text-white shadow-card transition hover:brightness-90 disabled:cursor-not-allowed disabled:opacity-45 sm:order-2 sm:text-base"
             >
               {isLoading ? (
                 <>

@@ -30,7 +30,7 @@ const Avatar: React.FC<{ publisher: StoryPublisher; size: number }> = ({ publish
     ? <img src="/media/logo-ayrovi-final.png" alt="" loading="lazy" className="h-full w-full bg-white p-1 object-contain" style={{ borderRadius: '50%' }} />
     : publisher.avatar
       ? <img src={publisher.avatar} alt="" loading="lazy" className="h-full w-full object-cover" style={{ borderRadius: '50%' }} />
-      : <span className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-light to-accent text-sm font-black text-white" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>
+      : <span className="grid h-full w-full place-items-center bg-surface-alt text-sm font-black text-ink" style={{ width: size, height: size, borderRadius: '50%' }}>{publisher.name.slice(0, 2).toUpperCase()}</span>
 );
 
 export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = ({ group, onOpen }) => {

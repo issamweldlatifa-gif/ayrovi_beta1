@@ -9,7 +9,7 @@
     max-width: 100%;
     overflow-x: clip;
     scroll-behavior: smooth;
-    background: var(--ayrovi-white);
+    background: var(--color-surface-base);
   }
 
   body,
@@ -23,8 +23,8 @@
   body {
     margin: 0;
     padding: 0;
-    background-color: var(--ayrovi-white);
-    color: var(--ayrovi-ink);
+    background-color: var(--color-surface-base);
+    color: var(--color-text-primary);
     font-family: var(--ayrovi-font);
     letter-spacing: -0.02em;
     text-rendering: optimizeLegibility;
@@ -101,20 +101,6 @@
   body::-webkit-scrollbar {
     display: none;
   }
-}
-
-/* Neutral Lens surfaces keep violet as a precise brand accent instead of a full-page wash. */
-.hostinger-purple-card {
-  border: 1px solid color-mix(in srgb, var(--ayrovi-primary) 32%, #17151f);
-  background: #17151f;
-  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 42%);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.hostinger-purple-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--ayrovi-primary) 58%, #17151f);
-  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 55%);
 }
 
 /* Marquee Infinite Animation */
@@ -223,7 +209,7 @@
   100% { transform: translate(0, 0) scale(1); opacity: 1; }
 }
 
-/* Purple assistant identity used in the navbar, replies and active generation state. */
+/* Dark Teal assistant identity used in the navbar, replies and generation state. */
 .assistant-motion-badge {
   position: relative;
   display: inline-grid;
@@ -256,7 +242,7 @@
   animation: assistantMotionBadgeGlow 1.55s ease-in-out infinite;
 }
 
-/* Branded task cards: no emoji, just AYROVI vector icons and the purple light effect. */
+/* Branded task cards use restrained semantic interaction accents. */
 .assistant-quick-card {
   position: relative;
   isolation: isolate;
@@ -428,7 +414,7 @@
   100% { transform: translateY(-40px); }
 }
 
-/* Google Lens style stars - remplacent Xray violet */
+/* Google Lens-style stars use the semantic highlight role. */
 .lens-stars {
   pointer-events: none;
 }

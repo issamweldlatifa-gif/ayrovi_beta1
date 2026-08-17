@@ -191,7 +191,7 @@ export const StoryViewer: React.FC<{
           <img src={story.media.url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
           <img src={story.media.url} alt={story.caption || `Story de ${group.publisher.name}`} className="relative h-full w-full object-contain" draggable={false} />
         </> : videoFailed ? (
-          <div className="grid h-full w-full place-items-center bg-gradient-to-br from-brand-deep via-brand to-brand-light"><p className="px-8 text-center text-sm font-bold text-white/80">{tr('Vidéo indisponible sur cet appareil.', 'الفيديو غير متاح على هذا الجهاز.')}</p></div>
+          <div className="grid h-full w-full place-items-center bg-ink"><p className="px-8 text-center text-sm font-bold text-white/80">{tr('Vidéo indisponible sur cet appareil.', 'الفيديو غير متاح على هذا الجهاز.')}</p></div>
         ) : (
           <video ref={videoRef} src={story.media.url} aria-label={story.caption || `Story vidéo de ${group.publisher.name}`} className="absolute inset-0 h-full w-full object-cover" autoPlay muted={muted} playsInline onError={() => setVideoFailed(true)} onEnded={goNext} onTimeUpdate={(event) => { const video = event.currentTarget; if (video.duration) setProgress(video.currentTime / video.duration); }} />
         )}

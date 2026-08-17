@@ -15,7 +15,7 @@ interface BottomNavBarProps {
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
-const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-control text-[10px] font-extrabold text-white transition hover:bg-white/10 active:scale-[0.97]';
+const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-control text-[10px] font-extrabold transition hover:bg-ink/5 active:scale-[0.97]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();
@@ -24,7 +24,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const LensIcon = iconConfig.library === 'lucide' ? LucideScanSearch : LensBox;
   const AiIcon = iconConfig.library === 'lucide' ? LucideBot : MessageCircle;
   const VisionIcon = iconConfig.library === 'lucide' ? LucideEye : Eye;
-  const iconStyle = { width: iconConfig.size, height: iconConfig.size, fill: iconConfig.style === 'solid' ? 'currentColor' : 'none' };
+  const iconStyle = { width: iconConfig.size, height: iconConfig.size, color: iconConfig.color, fill: iconConfig.style === 'solid' ? 'currentColor' : 'none' };
   useBodyScrollLock(isVisionOpen);
 
   useEffect(() => {
@@ -51,20 +51,20 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       )}
 
       <div
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-white/10 px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-12px_35px_-24px_rgba(0,0,0,.8)]"
-        style={{ backgroundColor: config.background }}
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-line px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-12px_35px_-24px_rgba(0,0,0,.22)]"
+        style={{ backgroundColor: config.background, color: config.color }}
       >
         <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
-            <LensIcon className="text-white" style={iconStyle} />
+            <LensIcon style={iconStyle} />
             {config.showLabels && <span>{config.lensLabel}</span>}
           </button>
-          <button type="button" onClick={onToggleAiDrawer} style={isAiDrawerOpen ? { backgroundColor: config.activeBackground } : undefined} className={NAV_ITEM} aria-label={tr('AI — assistant conversationnel', 'AI — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
-            <AiIcon className="text-white" style={iconStyle} />
+          <button type="button" onClick={onToggleAiDrawer} style={isAiDrawerOpen ? { backgroundColor: config.activeBackground, color: 'var(--color-interactive-primary)' } : undefined} className={NAV_ITEM} aria-label={tr('AI — assistant conversationnel', 'AI — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
+            <AiIcon style={{ ...iconStyle, color: isAiDrawerOpen ? 'var(--color-interactive-primary)' : iconConfig.color }} />
             {config.showLabels && <span>{config.aiLabel}</span>}
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')}>
-            <VisionIcon className="text-white" style={iconStyle} />
+            <VisionIcon style={iconStyle} />
             {config.showLabels && <span>{config.visionLabel}</span>}
             <span className="absolute end-1 top-1 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-black text-ink">{tr('Bientôt', 'قريبًا')}</span>
           </button>

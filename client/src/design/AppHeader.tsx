@@ -36,7 +36,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   const label = actionLabel || (onBack ? tr('Retour', 'رجوع') : tr('Fermer', 'إغلاق'));
 
   return (
-    <header className={`${sticky ? 'sticky top-0' : ''} z-40 border-b ${tone === 'dark' ? 'border-white/10 bg-ink' : 'border-line bg-white'} ${className}`}>
+    <header className={`${sticky ? 'sticky top-0' : ''} z-40 border-b ${tone === 'dark' ? 'border-white/10 bg-ink' : 'border-line bg-surface-base'} ${className}`}>
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
         <div className="flex min-w-0 items-center gap-3" dir="ltr">
           <img src={logoUrl} alt="AYROVI" className="ayrovi-logo h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11" />

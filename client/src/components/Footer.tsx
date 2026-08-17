@@ -107,7 +107,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
   ];
 
   return (
-    <footer className="mt-16 border-t border-line bg-white pb-8 pt-12 text-muted">
+    <footer className="mt-16 border-t border-line bg-surface-base pb-8 pt-12 text-muted">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-9 space-y-3 text-xs">
           <div className="flex items-center gap-2.5">
@@ -201,11 +201,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         {/* وسائل الدفع + الحقوق */}
         <div className="flex flex-col items-center gap-4 rounded-2xl bg-ink px-4 py-6 text-center sm:px-8">
           <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <PayBadge label="VISA" className="bg-white text-brand-deep" />
-            <PayBadge label="Mastercard" className="bg-white not-italic text-danger" />
-            <PayBadge label="Flouci" className="bg-brand not-italic text-white" />
-            <PayBadge label="D17" className="bg-danger not-italic text-white" />
-            <PayBadge label="Mandat postal" className="bg-accent not-italic text-ink" />
+            <PayBadge label="VISA" className="bg-white text-ink" />
+            <PayBadge label="Mastercard" className="bg-white not-italic text-ink" />
+            <PayBadge label="Flouci" className="bg-surface-alt not-italic text-ink" />
+            <PayBadge label="D17" className="bg-surface-alt not-italic text-ink" />
+            <PayBadge label="Mandat postal" className="bg-surface-alt not-italic text-ink" />
           </div>
           <p className="text-[11px] font-semibold text-white/70">
             <a href="/privacy.html" className="hover:text-white">Politique de confidentialité</a>

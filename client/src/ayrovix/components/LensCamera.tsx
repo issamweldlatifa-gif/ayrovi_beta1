@@ -33,7 +33,7 @@ export const LensCamera: React.FC<LensCameraProps> = ({ onImage }) => {
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="ay-btn-primary h-auto w-full justify-start gap-4 rounded-card p-4 text-start shadow-card"
+        className="ay-btn-secondary h-auto w-full justify-start gap-4 rounded-card p-4 text-start"
       >
         <span className="grid h-12 w-12 flex-none place-items-center rounded-2xl bg-white/15">
           <Camera size={24} strokeWidth={1.8} />

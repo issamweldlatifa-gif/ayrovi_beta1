@@ -113,7 +113,7 @@ export const OrderTrackingView: React.FC<OrderTrackingViewProps> = ({ orderId, o
         <main className="mx-auto max-w-xl px-5 py-16 text-center"><Package className="mx-auto h-10 w-10 text-muted" /><h1 className="mt-4 text-xl font-black text-ink">{tr('Suivi indisponible', 'التتبع غير متاح')}</h1><p className="mt-2 text-sm text-muted">{error}</p><button type="button" onClick={() => void load()} className="ay-btn-primary mt-6">{tr('Réessayer', 'إعادة المحاولة')}</button></main>
       ) : (
         <main className="ay-safe-bottom mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-7 sm:py-8">
-          <section className="overflow-hidden bg-ink text-surface-base shadow-card">
+          <section className="overflow-hidden bg-hero-bg text-white shadow-card">
             <div className="grid gap-6 p-6 sm:p-8 lg:grid-cols-[1fr_auto] lg:items-end">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -156,7 +156,7 @@ export const OrderTrackingView: React.FC<OrderTrackingViewProps> = ({ orderId, o
                 {mapEmbedUrl && <iframe title={tr('Carte de destination', 'خريطة وجهة التوصيل')} src={mapEmbedUrl} className="absolute inset-0 h-full w-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />}
                 <div className="pointer-events-none absolute inset-x-3 bottom-3 bg-surface-base/95 p-4 shadow-overlay backdrop-blur-sm sm:inset-x-5 sm:bottom-5"><strong className="block text-sm text-ink">{tracking.destination.governorate}</strong><span className="mt-1 block text-xs leading-5 text-muted">{tracking.destination.address}</span></div>
               </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 p-5 sm:px-6"><p className="max-w-md text-[11px] font-semibold leading-5 text-muted">{tr('La carte indique la destination enregistrée, pas la position en temps réel du livreur.', 'توضح الخريطة وجهة التسليم المسجلة وليست موقع الموزع لحظيًا.')}</p><a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-2 bg-ink px-4 text-xs font-black text-surface-base">{tr('Ouvrir dans Maps', 'فتح في Maps')}<ArrowUpRight className="h-4 w-4" /></a></div>
+              <div className="flex flex-wrap items-center justify-between gap-3 p-5 sm:px-6"><p className="max-w-md text-[11px] font-semibold leading-5 text-muted">{tr('La carte indique la destination enregistrée, pas la position en temps réel du livreur.', 'توضح الخريطة وجهة التسليم المسجلة وليست موقع الموزع لحظيًا.')}</p><a href={directionsUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-2 bg-interactive-primary px-4 text-xs font-black text-white shadow-card transition hover:brightness-90">{tr('Ouvrir dans Maps', 'فتح في Maps')}<ArrowUpRight className="h-4 w-4" /></a></div>
             </section>
 
             <div className="space-y-5">

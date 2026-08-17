@@ -373,7 +373,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading || isScraping}
-                className="hostinger-purple-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl p-6 text-left text-white disabled:cursor-wait disabled:opacity-90"
+                className={`group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl border border-interactive-primary bg-surface-base p-6 text-left shadow-card transition hover:bg-interactive-primary/5 disabled:cursor-wait disabled:opacity-90 ${isUploading ? 'text-white' : 'text-ink'}`}
               >
                 {/* تجربة AYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
                 {isUploading && uploadPreview && (
@@ -385,33 +385,33 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 )}
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
-                      <Camera className="w-3.5 h-3.5 text-yellow-300" />
+                    <span className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${isUploading ? 'text-white/75' : 'text-brand'}`}>
+                      <Camera className="w-3.5 h-3.5" />
                       <span>Méthode Recommandée</span>
                     </span>
                     <h5 className="text-xl font-extrabold tracking-tight mt-1">
                       Capture d'écran (Screenshot)
                     </h5>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-brand transition-all">
+                  <div className={`w-10 h-10 rounded-2xl border flex items-center justify-center transition-all ${isUploading ? 'border-white/20 bg-white/15' : 'border-line bg-surface-alt text-ink group-hover:border-brand group-hover:text-brand'}`}>
                     <ArrowUpRight className="w-5 h-5" />
                   </div>
                 </div>
 
-                <p className="relative z-10 my-2 text-xs text-purple-100/90">
+                <p className={`relative z-10 my-2 text-xs ${isUploading ? 'text-white/80' : 'text-muted'}`}>
                   {isUploading ? progressMessage : 'Prenez une photo de votre article sur SHEIN, Amazon ou TEMU.'}
                 </p>
 
                 <div className="relative z-10 pt-2">
-                  <div className="inline-flex items-center gap-2 bg-white text-ink px-4 py-2 rounded-xl text-xs font-bold shadow-xs">
+                  <div className="inline-flex items-center gap-2 rounded-xl bg-interactive-primary px-4 py-2 text-xs font-bold text-white shadow-card">
                     {isUploading ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         <span role="status" aria-live="polite">{progressMessage}</span>
                       </>
                     ) : (
                       <>
-                        <ImageIcon className="w-3.5 h-3.5 text-brand" />
+                        <ImageIcon className="h-3.5 w-3.5" />
                         <span>Sélectionner une photo</span>
                       </>
                     )}
@@ -420,23 +420,23 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </button>
 
               {/* Card 2: Link Direct */}
-              <div className={`hostinger-purple-card rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[190px] ${isScraping ? 'link-analyze' : ''}`}>
+              <div className={`relative flex min-h-[190px] flex-col justify-between overflow-hidden rounded-3xl border border-line bg-surface-alt p-6 text-ink ${isScraping ? 'link-analyze' : ''}`}>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
-                      <Link2 className="w-3.5 h-3.5 text-yellow-300" />
+                    <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand">
+                      <Link2 className="w-3.5 h-3.5" />
                       <span>Lien URL Direct</span>
                     </span>
                     <h5 className="text-xl font-extrabold tracking-tight mt-1">
                       Coller un Lien Direct
                     </h5>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-line bg-surface-base text-ink">
                     <ArrowRight className="w-5 h-5" />
                   </div>
                 </div>
 
-                <p className="text-xs text-purple-100/90 my-2">
+                <p className="my-2 text-xs text-muted">
                   {isScraping ? progressMessage : "Copiez l'URL de votre article depuis SHEIN, AliExpress ou Amazon."}
                 </p>
 
@@ -449,13 +449,13 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       placeholder="https://www.shein.com/..."
                       dir="ltr"
                       disabled={isUploading || isScraping}
-                      className="w-full bg-white/15 border border-white/25 focus:border-white rounded-xl px-3 py-2 text-xs text-white placeholder:text-purple-200/70 focus:outline-none font-mono"
+                      className="w-full rounded-xl border border-line bg-surface-base px-3 py-2 font-mono text-xs text-ink outline-none placeholder:text-muted focus:border-brand"
                     />
                     <button
                       type="button"
                       onClick={handlePasteClipboard}
                       disabled={isUploading || isScraping}
-                      className="bg-white/20 hover:bg-white/30 disabled:cursor-not-allowed disabled:opacity-50 text-white text-xs font-bold px-2.5 py-1.5 rounded-xl transition-colors cursor-pointer"
+                      className="cursor-pointer rounded-xl border border-line bg-transparent px-2.5 py-1.5 text-xs font-bold text-ink transition-colors hover:border-brand hover:text-brand disabled:cursor-not-allowed disabled:opacity-50"
                       aria-label="Coller le lien depuis le presse-papiers"
                     >
                       <Clipboard className="w-3.5 h-3.5" />
@@ -465,7 +465,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   <button
                     type="submit"
                     disabled={isUploading || isScraping || !urlInput.trim()}
-                    className="w-full bg-white text-ink hover:bg-yellow-300 disabled:opacity-50 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    className="flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-interactive-primary bg-transparent px-3 py-2.5 text-xs font-bold text-interactive-primary transition-all hover:bg-interactive-primary/5 disabled:opacity-50"
                   >
                     {isScraping ? (
                       <>

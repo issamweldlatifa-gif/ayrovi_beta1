@@ -15,8 +15,8 @@ interface ContentCardProps {
 }
 
 const variantClasses: Record<ContentCardVariant, { body: string; eyebrow: string; description: string }> = {
-  arrival: { body: 'bg-brand-gradient text-white', eyebrow: 'text-accent', description: 'text-white/75' },
-  promo: { body: 'bg-brand text-white', eyebrow: 'text-accent', description: 'text-white/75' },
+  arrival: { body: 'bg-surface-alt text-ink', eyebrow: 'text-brand', description: 'text-muted' },
+  promo: { body: 'bg-surface-base text-ink', eyebrow: 'text-brand', description: 'text-muted' },
   magazine: { body: 'bg-white text-ink', eyebrow: 'text-brand', description: 'text-muted' },
 };
 

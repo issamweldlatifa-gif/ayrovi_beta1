@@ -43,15 +43,15 @@ const PublisherRow: React.FC<{ pub: any; onChanged: () => void }> = ({ pub, onCh
     if (result.data?.url) await saveRow(result.data.url);
   };
   return (
-    <div style={{ border: '1px solid #e2e0ee', borderRadius: 14, padding: 12, display: 'flex', gap: 12, alignItems: 'center', background: '#fff' }}>
-      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-gradient-to-tr from-brand to-brand-light text-white">
+    <div style={{ border: '1px solid var(--admin-line)', borderRadius: 14, padding: 12, display: 'flex', gap: 12, alignItems: 'center', background: 'var(--admin-card)' }}>
+      <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-interactive-primary text-white">
         {pub.avatar ? <img src={pub.avatar} alt="" className="h-14 w-14 rounded-full object-cover" /> : <span className="text-sm font-black">{pub.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div style={{ flex: 1 }}>
         <input value={name} onChange={(e) => setName(e.target.value)} disabled={Boolean(pub.official)} style={{ width: '100%', fontWeight: 700 }} />
         <div className="admin-block-small">{pub.slug}{pub.official ? ' · officiel' : ''}</div>
       </div>
-      <label style={{ cursor: 'pointer', border: '1px solid #d5d2e4', borderRadius: 10, padding: '7px 10px', fontSize: 11, fontWeight: 700 }}>
+      <label style={{ cursor: 'pointer', border: '1px solid var(--admin-line)', borderRadius: 10, padding: '7px 10px', fontSize: 11, fontWeight: 700 }}>
         {busy ? '…' : 'Couverture'}
         <input type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadAvatar(f); }} />
       </label>
@@ -271,7 +271,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
             <Field label="Média (upload ou URL)">
               <div className="admin-actions" style={{ marginTop: 0 }}>
                 <input value={form.media_url} onChange={(e) => setForm({ ...form, media_url: e.target.value })} placeholder="/media/… ou https://…" style={{ flex: 1 }} />
-                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d5d2e4', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: '#fff' }}>
+                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: 'var(--admin-card)' }}>
                   <ArrowUp size={14} />{uploading ? '…' : 'Uploader'}
                   <input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/ogg,video/quicktime" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void uploadMedia(f); }} />
                 </label>
@@ -279,7 +279,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
             </Field>
             <Field label="Images supplémentaires (carousel, comme Instagram)" full>
               <div className="admin-actions" style={{ marginTop: 0 }}>
-                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid #d5d2e4', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: '#fff' }}>
+                <label style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, border: '1px solid var(--admin-line)', borderRadius: 10, padding: '8px 12px', fontSize: 12, fontWeight: 700, background: 'var(--admin-card)' }}>
                   <ArrowUp size={14} />{uploading ? '…' : 'Ajouter des images'}
                   <input type="file" multiple accept="image/jpeg,image/png,image/webp" hidden onChange={(e) => { if (e.target.files?.length) void uploadMany(e.target.files); e.target.value = ''; }} />
                 </label>
@@ -289,7 +289,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                   {form.secondary_images.map((url: string, i: number) => (
                     <span key={i} style={{ position: 'relative' }}>
                       <img src={url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover' }} />
-                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, right: -6, background: '#b91c1c', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800 }}>✕</button>
+                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, right: -6, background: 'var(--color-danger)', color: 'var(--ayrovi-white)', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800 }}>✕</button>
                     </span>
                   ))}
                 </div>

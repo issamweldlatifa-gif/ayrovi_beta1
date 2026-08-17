@@ -1003,7 +1003,10 @@ describe('AYROVI platform', () => {
     expect(commerce.body.data.deposit).toHaveProperty('flouciNumber');
     expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
     expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
-    expect(commerce.body.data.theme.primary).toBe('#088177');
+    expect(commerce.body.data.theme).toMatchObject({
+      primary: '#003B39', hero: '#13251F', surfaceAlt: '#EDE6DE', surface: '#F9F8F4',
+      ink: '#1A1A1A', chart: '#2E667D', danger: '#A63B32',
+    });
     expect(commerce.body.data.pricing.version).toBe(1);
 
     const preview = await request(app).post('/api/public/pricing/preview').send({ originalPrice: 21.99, currency: 'EUR', quantity: 2 });
@@ -1048,7 +1051,9 @@ describe('AYROVI platform', () => {
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
-    expect(row.setting_value.navigation.color).toBe('#ffffff');
+    expect(row.setting_value.navigation).toMatchObject({
+      background: '#F9F8F4', color: '#1A1A1A', activeBackground: '#EDE6DE',
+    });
 
     const malformed = await superAdmin.put('/api/admin/interface-config').set('x-csrf-token', adminCsrf).send({
       value: { ...row.setting_value, sections: row.setting_value.sections.slice(0, 4) },
@@ -1059,8 +1064,15 @@ describe('AYROVI platform', () => {
     expect(saved.status).toBe(200);
     const publicConfig = await request(app).get('/api/public/commerce-config');
     expect(publicConfig.status).toBe(200);
-    expect(publicConfig.body.data.theme).toMatchObject({ primary: '#088177', rhubarb: '#b55b64', accent: '#a67931', slate: '#205b6b' });
-    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#088177');
+    expect(publicConfig.body.data.theme).toMatchObject({
+      primary: '#003B39', hero: '#13251F', surfaceAlt: '#EDE6DE', surface: '#F9F8F4',
+      ink: '#1A1A1A', chart: '#2E667D', danger: '#A63B32',
+    });
+    expect(publicConfig.body.data.interfaceConfig).toMatchObject({
+      buttons: { background: '#003B39', color: '#FFFFFF' },
+      icons: { color: '#1A1A1A' },
+      navigation: { background: '#F9F8F4', color: '#1A1A1A', activeBackground: '#EDE6DE' },
+    });
   });
 
   test('admin mutations require a valid CSRF token', async () => {

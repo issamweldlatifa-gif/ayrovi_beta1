@@ -24,7 +24,7 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors,
   );
   const chip = (active: boolean, enabled = true) =>
     `min-h-[44px] rounded-full border px-4 text-xs font-bold transition ${enabled ? 'active:scale-95' : 'cursor-not-allowed opacity-35'} ${
-      active ? 'border-ink bg-ink text-white' : 'border-line bg-white text-ink hover:border-ink'
+      active ? 'border-interactive-primary bg-interactive-primary text-white' : 'border-line bg-white text-ink hover:border-ink'
     }`;
   return (
     <div className="space-y-3">

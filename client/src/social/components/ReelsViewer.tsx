@@ -120,10 +120,10 @@ export const ReelsViewer: React.FC<{
               loop
               playsInline
               preload={Math.abs(index - startIndex) <= 1 ? 'auto' : 'metadata'}
-              className={`absolute inset-0 h-full w-full bg-brand-deep object-cover ${videoFailed[post.id] ? 'hidden' : ''}`}
+              className={`absolute inset-0 h-full w-full bg-ink object-cover ${videoFailed[post.id] ? 'hidden' : ''}`}
               onError={() => setVideoFailed((current) => ({ ...current, [post.id]: true }))}
             />
-            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-brand-gradient"><img src="/media/logo-ayrovi-final.png" alt="" className="h-24 w-24 rounded-card bg-white object-contain p-3" /></div>}
+            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-ink"><img src="/media/logo-ayrovi-final.png" alt="" className="h-24 w-24 rounded-card bg-white object-contain p-3" /></div>}
 
             <FullscreenActionRail
               liked={Boolean(liked[post.id])}

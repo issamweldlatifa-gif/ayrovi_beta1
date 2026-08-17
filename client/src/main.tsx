@@ -10,7 +10,7 @@ const PublicApp = lazy(() => import('./App').then((module) => ({ default: module
 const AdminApp = lazy(() => import('./admin/AdminApp').then((module) => ({ default: module.AdminApp })));
 
 const loading = (
-  <div className="grid min-h-screen place-items-center bg-white text-sm font-bold text-ink" role="status" aria-live="polite">
+  <div className="grid min-h-screen place-items-center bg-surface-base text-sm font-bold text-ink" role="status" aria-live="polite">
     Chargement d’AYROVI…
   </div>
 );

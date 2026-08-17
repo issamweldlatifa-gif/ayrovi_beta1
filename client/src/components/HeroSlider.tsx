@@ -88,7 +88,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ settings, title, subtitl
         <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col items-center px-16 pb-8 text-center sm:px-20 sm:pb-11">
           <h1 className="max-w-4xl text-4xl font-black leading-[0.98] tracking-[-0.055em] text-white drop-shadow-lg sm:text-6xl lg:text-7xl">{title || slides[activeIndex]?.title || 'Toute la mode du monde, livrée chez vous.'}</h1>
           {(subtitle || slides[activeIndex]?.subtitle) && <p className="mt-4 max-w-2xl text-sm font-semibold text-white/85 sm:text-base">{subtitle || slides[activeIndex]?.subtitle}</p>}
-          {slides[activeIndex]?.cta && slides[activeIndex]?.targetUrl && <a href={slides[activeIndex].targetUrl} className="mt-5 bg-accent px-5 py-3 text-xs font-black text-ink">{slides[activeIndex].cta}</a>}
+          {slides[activeIndex]?.cta && slides[activeIndex]?.targetUrl && <a href={slides[activeIndex].targetUrl} className="mt-5 bg-interactive-primary px-5 py-3 text-xs font-black text-white shadow-card transition hover:brightness-90">{slides[activeIndex].cta}</a>}
           {settings?.showDots !== false && <div className="mt-6 flex items-center gap-2" aria-label="Choisir une image">
             {slides.map((slide, index) => <button key={slide.id} type="button" onClick={() => setActiveIndex(index)} className={`h-1.5 rounded-full shadow-sm transition-all duration-500 ${index === activeIndex ? 'w-9 bg-accent' : 'w-4 bg-white/55 hover:bg-white/85'}`} aria-label={`Afficher ${slide.alt}`} aria-current={index === activeIndex ? 'true' : undefined} />)}
           </div>}

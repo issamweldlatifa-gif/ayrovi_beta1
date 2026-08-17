@@ -48,16 +48,16 @@ export const PartnerBrandsSlider: React.FC<{ title?: string; subtitle?: string; 
   }) : fallbackBrands, [managed]);
   const allBrands = [...brands, ...brands];
   return (
-    <section className="w-full bg-white py-16 sm:py-24">
+    <section className="w-full bg-surface-base py-16 sm:py-24">
       <div className="relative isolate mx-auto mb-10 w-full max-w-4xl overflow-hidden px-5 py-8 text-center sm:mb-14 sm:px-8 sm:py-12">
         {coverImage && <><img src={coverImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /><span className="absolute inset-0 -z-10 bg-white/88" /></>}
         <div className="mb-4 inline-flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.2em] text-brand sm:text-sm"><span className="h-[2px] w-7 bg-accent" />Marques partenaires<span className="h-[2px] w-7 bg-accent" /></div>
         <h2 className="text-3xl font-black leading-tight tracking-[-0.045em] text-ink sm:text-5xl">{title || 'Vos marques préférées, réunies au même endroit.'}</h2>
         <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">{subtitle || 'Découvrez les enseignes disponibles avec AYROVI. Chaque carte présente le logo correspondant à la marque affichée.'}</p>
       </div>
-      <div className="relative w-full overflow-hidden bg-ink py-10 shadow-overlay sm:py-14">
-        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[70%] -translate-x-1/2 rounded-full bg-brand/20 blur-[100px]" /><div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-black to-transparent sm:w-28" /><div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-black to-transparent sm:w-28" />
-        <div className="relative mb-8 flex items-center justify-between gap-4 px-6 sm:px-12"><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-white/55">Explorez les marques</p><span className="rounded-full border border-white/15 px-3 py-1.5 text-[10px] font-bold text-white/65">Défilement automatique</span></div>
+      <div className="relative w-full overflow-hidden bg-surface-alt py-10 shadow-card sm:py-14">
+        <div className="pointer-events-none absolute left-1/2 top-0 h-72 w-[70%] -translate-x-1/2 rounded-full bg-brand/20 blur-[100px]" /><div className="pointer-events-none absolute inset-y-0 left-0 z-20 w-12 bg-gradient-to-r from-surface-alt to-transparent sm:w-28" /><div className="pointer-events-none absolute inset-y-0 right-0 z-20 w-12 bg-gradient-to-l from-surface-alt to-transparent sm:w-28" />
+        <div className="relative mb-8 flex items-center justify-between gap-4 px-6 sm:px-12"><p className="text-xs font-extrabold uppercase tracking-[0.2em] text-muted">Explorez les marques</p><span className="rounded-full border border-line px-3 py-1.5 text-[10px] font-bold text-muted">Défilement automatique</span></div>
         <div className="relative w-full overflow-hidden"><div className="brands-marquee-track px-5 sm:px-8">{allBrands.map((brand, index) => {
           const isDark = brand.surface === 'dark';
           return <motion.article key={`${brand.id}-${index}`} aria-hidden={index >= brands.length} whileHover={{ y: -6, scale: 1.015 }} transition={{ type: 'spring', stiffness: 330, damping: 24 }} className={`group relative h-[250px] w-[200px] flex-shrink-0 overflow-hidden rounded-[24px] border shadow-xl sm:h-[290px] sm:w-[240px] sm:rounded-[28px] ${isDark ? 'border-white/15 bg-ink hover:border-white/35' : 'border-black/10 bg-surface hover:border-brand/40'}`}>

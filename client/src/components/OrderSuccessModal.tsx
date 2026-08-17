@@ -103,7 +103,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           {result.trackingCode && <div className="border border-line bg-surface-base p-3"><span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-brand"><Truck className="h-3.5 w-3.5" />{tr('Suivi activé', 'تم تفعيل التتبع')}</span><strong className="mt-1 block font-mono text-xs text-ink">{result.trackingCode}</strong></div>}
           {result.invoice?.number && <div className="border border-line bg-surface-base p-3"><span className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-[0.14em] text-brand"><FileText className="h-3.5 w-3.5" />{tr('Facture créée', 'تم إنشاء الفاتورة')}</span><strong className="mt-1 block font-mono text-xs text-ink">{result.invoice.number}</strong></div>}
         </div>}
-        {result.orderId && result.invoice?.number && <a href={`/api/customer/account/orders/${result.orderId}/invoice`} className="flex min-h-12 w-full items-center justify-center gap-2 bg-ink px-4 text-xs font-black text-surface-base"><FileText className="h-4 w-4" />{tr('Télécharger la facture électronique', 'تنزيل الفاتورة الإلكترونية')}</a>}
+        {result.orderId && result.invoice?.number && <a href={`/api/customer/account/orders/${result.orderId}/invoice`} className="flex min-h-12 w-full items-center justify-center gap-2 border border-interactive-primary bg-transparent px-4 text-xs font-black text-interactive-primary transition hover:bg-interactive-primary/5"><FileText className="h-4 w-4" />{tr('Télécharger la facture électronique', 'تنزيل الفاتورة الإلكترونية')}</a>}
 
         {/* Details */}
         <div className="bg-surface border border-line rounded-2xl p-3.5 text-xs text-muted space-y-1.5 text-left">
@@ -158,7 +158,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           href={whatsappUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex w-full items-center justify-center gap-2 rounded-control bg-whatsapp px-6 py-3.5 text-xs font-bold text-white shadow-card transition hover:bg-whatsapp-hover active:scale-95 sm:text-sm"
+          className="flex w-full items-center justify-center gap-2 rounded-control border border-whatsapp bg-transparent px-6 py-3.5 text-xs font-bold text-whatsapp transition hover:bg-whatsapp/5 active:scale-95 sm:text-sm"
         >
           <MessageSquare className="w-4 h-4" />
           <span>{tr('Contacter AYROVI sur WhatsApp', 'التواصل مع AYROVI عبر واتساب')}</span>
