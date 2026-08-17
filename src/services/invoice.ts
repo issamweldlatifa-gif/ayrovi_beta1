@@ -96,18 +96,18 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   .card h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #6E6E73; margin-bottom: 8px; }
   .card p { line-height: 1.55; }
   table { width: 100%; border-collapse: collapse; margin: 18px 0; }
-  th { background: #F5F5F7; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #1D1D1F; padding: 10px 12px; }
-  td { padding: 10px 12px; border-bottom: 1px solid #F5F5F7; vertical-align: top; }
+  th { background: #F7F7F8; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #1D1D1F; padding: 10px 12px; }
+  td { padding: 10px 12px; border-bottom: 1px solid #F7F7F8; vertical-align: top; }
   td small { display: block; color: #6E6E73; margin-top: 3px; font-size: 11px; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .totals { width: 320px; margin-left: auto; }
   .totals td { padding: 7px 12px; }
   .totals .grand td { font-size: 15px; font-weight: 900; border-top: 2px solid #1D1D1F; }
-  .deposit { background: #FBFBFD; border: 1px solid #F5F5F7; border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
+  .deposit { background: #ffffff; border: 1px solid #F7F7F8; border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
   .deposit strong { color: #1D1D1F; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: #F5F5F7; border: 1px dashed #1D1D1F; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking { background: #F7F7F8; border: 1px dashed #1D1D1F; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
   .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #1D1D1F; letter-spacing: 1px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #D2D2D7; color: #6E6E73; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
@@ -247,7 +247,7 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
 
 export function invoiceEmailHtml(input: { customerName: string; orderNumber: string; invoiceNumber: string; trackingCode: string; totalLabel: string; depositLabel: string; balanceLabel: string; company: string }): string {
   const e = escapeHtml;
-  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#1D1D1F;background:#FBFBFD;padding:24px;">
+  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#1D1D1F;background:#ffffff;padding:24px;">
   <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #D2D2D7;">
     <div style="background:#1D1D1F;padding:22px 26px;color:#fff;">
       <strong style="font-size:20px;">${e(input.company)}</strong>

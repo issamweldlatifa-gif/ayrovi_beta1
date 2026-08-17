@@ -653,7 +653,6 @@ const THEME_PRESETS=[
     hero:AYROVI_SEMANTIC_PALETTE.heroBackground,
     surfaceAlt:AYROVI_SEMANTIC_PALETTE.surfaceAlt,
     accent:AYROVI_SEMANTIC_PALETTE.interactivePrimary,
-    accentGold:AYROVI_SEMANTIC_PALETTE.accentGold,
     chart:AYROVI_SEMANTIC_PALETTE.chartAccent,
     danger:AYROVI_SEMANTIC_PALETTE.danger,
     rhubarb:AYROVI_SEMANTIC_PALETTE.danger,

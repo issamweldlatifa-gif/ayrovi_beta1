@@ -1004,7 +1004,7 @@ describe('AYROVI platform', () => {
     expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
     expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
     expect(commerce.body.data.theme).toMatchObject({
-      primary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F5F5F7', surface: '#FBFBFD',
+      primary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F7F7F8', surface: '#ffffff',
       ink: '#1D1D1F', chart: '#1D1D1F', danger: '#A63B32',
     });
     expect(commerce.body.data.pricing.version).toBe(1);
@@ -1052,7 +1052,7 @@ describe('AYROVI platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.navigation).toMatchObject({
-      background: '#FBFBFD', color: '#1D1D1F', activeBackground: '#F5F5F7',
+      background: '#ffffff', color: '#1D1D1F', activeBackground: '#F7F7F8',
     });
 
     const malformed = await superAdmin.put('/api/admin/interface-config').set('x-csrf-token', adminCsrf).send({
@@ -1065,13 +1065,13 @@ describe('AYROVI platform', () => {
     const publicConfig = await request(app).get('/api/public/commerce-config');
     expect(publicConfig.status).toBe(200);
     expect(publicConfig.body.data.theme).toMatchObject({
-      primary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F5F5F7', surface: '#FBFBFD',
+      primary: '#1D1D1F', hero: '#1D1D1F', surfaceAlt: '#F7F7F8', surface: '#ffffff',
       ink: '#1D1D1F', chart: '#1D1D1F', danger: '#A63B32',
     });
     expect(publicConfig.body.data.interfaceConfig).toMatchObject({
       buttons: { background: '#1D1D1F', color: '#FFFFFF' },
       icons: { color: '#1D1D1F' },
-      navigation: { background: '#FBFBFD', color: '#1D1D1F', activeBackground: '#F5F5F7' },
+      navigation: { background: '#ffffff', color: '#1D1D1F', activeBackground: '#F7F7F8' },
     });
   });
 

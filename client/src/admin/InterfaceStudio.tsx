@@ -81,15 +81,14 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       <div><span className="admin-eyebrow">PALETTE V3 · BLANC APPLE</span><h2>Blanc Apple — identité officielle</h2><p>Fond blanc Apple, surfaces en gris clair et noir Apple pour la structure, le Hero, le pied de page et toutes les actions. Les statifs fonctionnels utilisent exclusivement vert succès, bleu info, ambre avertissement et rouge danger.</p></div>
       <div className="interface-palette-swatches">{[
         [AYROVI_SEMANTIC_PALETTE.heroBackground, 'Noir · structure & action'],
-        [AYROVI_SEMANTIC_PALETTE.surfaceBase, 'Blanc Apple · fond'],
+        [AYROVI_SEMANTIC_PALETTE.surfaceBase, 'Blanc · fond'],
         [AYROVI_SEMANTIC_PALETTE.surfaceAlt, 'Gris clair · surface'],
         [AYROVI_SEMANTIC_PALETTE.success, 'Succès'],
         [AYROVI_SEMANTIC_PALETTE.info, 'Info'],
         [AYROVI_SEMANTIC_PALETTE.warning, 'Avertissement'],
         [AYROVI_SEMANTIC_PALETTE.danger, 'Alerte'],
-        [AYROVI_SEMANTIC_PALETTE.accentGold, 'Or · détail'],
-      ].map(([color, label]) => <span key={color} style={{ background: color, color: [AYROVI_SEMANTIC_PALETTE.surfaceAlt, AYROVI_SEMANTIC_PALETTE.surfaceBase, AYROVI_SEMANTIC_PALETTE.accentGold].includes(color as any) ? 'var(--color-text-primary)' : 'var(--ayrovi-white)' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
-      {canWrite && <Button variant="secondary" onClick={applyCorrectedPalette}><Palette size={16} />Appliquer la palette Blanc Apple</Button>}
+      ].map(([color, label]) => <span key={color} style={{ background: color, color: [AYROVI_SEMANTIC_PALETTE.surfaceAlt, AYROVI_SEMANTIC_PALETTE.surfaceBase].includes(color as any) ? 'var(--color-text-primary)' : 'var(--ayrovi-white)' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
+      {canWrite && <Button variant="secondary" onClick={applyCorrectedPalette}><Palette size={16} />Appliquer la palette monochrome</Button>}
     </section>
 
     <div className="interface-studio-layout">
