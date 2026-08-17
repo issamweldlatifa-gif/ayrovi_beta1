@@ -29,7 +29,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   sticky = false,
   tone = 'light',
   className = '',
-  logoUrl = '/media/logo-ayrovi.png',
+  logoUrl = '/media/logo-ayrovi-black.png',
 }) => {
   const { tr, direction } = useLocale();
   const action = onBack || onClose;
@@ -39,7 +39,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     <header className={`${sticky ? 'sticky top-0' : ''} z-40 border-b ${tone === 'dark' ? 'border-white/10 bg-ink' : 'border-line bg-white'} ${className}`}>
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
         <div className="flex min-w-0 items-center gap-3" dir="ltr">
-          <img src={logoUrl} alt="AYROVI" className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11" />
+          <img src={logoUrl} alt="AYROVI" className="ayrovi-logo-black h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11" />
           <div className="min-w-0" dir={direction}>
             <strong className={`block truncate font-display text-base font-black sm:text-lg ${tone === 'dark' ? 'text-white' : 'text-ink'}`}>{title}</strong>
             {subtitle && <span className={`block truncate text-[10px] font-bold sm:text-xs ${tone === 'dark' ? 'text-white/60' : 'text-muted'}`}>{subtitle}</span>}

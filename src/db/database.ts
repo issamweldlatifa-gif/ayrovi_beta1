@@ -899,7 +899,7 @@ export class QatafoDatabase {
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_palette_version', 'DESIGN', 'palette_version', '0', 'NUMBER', 'Version interne des tokens sémantiques'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
-        logoUrl: '/media/logo-ayrovi.png',
+        logoUrl: '/media/logo-ayrovi-black.png',
         sections: [
           { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '' },
           { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '' },
@@ -942,6 +942,13 @@ export class QatafoDatabase {
       })();
       console.info('[DB] Palette sémantique AYROVI pétrole appliquée.');
     }
+
+    // Keep existing Admin-published interface settings while upgrading the official
+    // mark itself. REPLACE is idempotent and also covers databases created before 3.5.3.
+    const blackLogoUpgrade = this.db.prepare(`UPDATE settings
+      SET setting_value=REPLACE(setting_value,'/media/logo-ayrovi.png','/media/logo-ayrovi-black.png'),updated_at=?
+      WHERE setting_key='interface_config' AND setting_value LIKE '%/media/logo-ayrovi.png%'`).run(now);
+    if (blackLogoUpgrade.changes > 0) console.info('[DB] Logo AYROVI monochrome noir appliqué.');
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides').get() as any).count === 0) {
       const insert = this.db.prepare(`INSERT INTO hero_slides

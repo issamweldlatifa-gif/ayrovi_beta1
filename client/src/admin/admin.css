@@ -47,6 +47,7 @@
 .admin-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 45; width: 260px; display: flex; flex-direction: column; color: #fff; background: var(--admin-sidebar); }
 .admin-sidebar-logo { height: 80px; flex: 0 0 auto; display: flex; align-items: center; gap: 12px; padding: 0 22px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .admin-sidebar-logo > svg { width: 31px; height: 31px; color: var(--admin-yellow); }
+.admin-sidebar-logo > img { background: var(--ayrovi-surface-base); padding: 3px; }
 .admin-sidebar-logo div { display: flex; flex-direction: column; }
 .admin-sidebar-logo strong { font-size: 21px; line-height: 1; letter-spacing: -.04em; }
 .admin-sidebar-logo span { margin-top: 4px; color: #918c9d; font-size: 8px; letter-spacing: .2em; }

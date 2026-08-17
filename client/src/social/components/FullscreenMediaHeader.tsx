@@ -21,7 +21,7 @@ export const FullscreenMediaHeader: React.FC<FullscreenMediaHeaderProps> = ({ ti
       <button type="button" onClick={onBack} aria-label={tr('Retour', 'رجوع')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white transition hover:bg-white/10 active:scale-90"><ArrowLeft className={`h-6 w-6 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></button>
       {title && <>
         <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-white/40 bg-white">
-          {official ? <img src="/media/logo-ayrovi.png" alt="" className="h-full w-full object-contain p-1" /> : avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black text-brand">{title.slice(0, 2).toUpperCase()}</span>}
+          {official ? <img src="/media/logo-ayrovi-black.png" alt="" className="h-full w-full object-contain p-1" /> : avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black text-brand">{title.slice(0, 2).toUpperCase()}</span>}
         </span>
         <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold text-white">{title}{verified && <CheckCircle2 className="ms-1 inline h-3.5 w-3.5 text-accent" />}</p>{subtitle && <p className="truncate text-[10px] font-semibold text-white/75">{subtitle}</p>}</div>
       </>}

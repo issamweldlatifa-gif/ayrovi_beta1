@@ -289,11 +289,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-4 backdrop-blur-xs sm:p-6" dir={direction} role="dialog" aria-modal="true" aria-label={isPaymentStage ? tr('Paiement et confirmation', 'الدفع والتأكيد') : tr('Coordonnées de livraison', 'بيانات التوصيل')}>
-      <div className="relative w-full max-w-lg overflow-hidden rounded-card border border-line bg-white shadow-overlay">
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-none border border-line bg-white shadow-overlay sm:rounded-card">
         <AppHeader
           title={isPaymentStage ? tr('Paiement et confirmation', 'الدفع والتأكيد') : tr('Coordonnées de livraison', 'بيانات التوصيل')}
           subtitle={tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
-          onBack={onClose}
+          onBack={isPaymentStage ? () => navigation.back() : onClose}
           actionDisabled={isLoading}
           actionLabel={isPaymentStage ? tr('Revenir à la livraison', 'العودة إلى بيانات التوصيل') : tr('Revenir au panier', 'العودة إلى السلة')}
         />
@@ -301,7 +301,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <JourneyProgress active={isPaymentStage ? 3 : 2} />
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="ay-safe-bottom p-5 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="ay-safe-bottom space-y-5 p-5 sm:p-7">
           {error && (
             <div className="bg-danger/5 border border-danger/20 rounded-xl p-3 text-xs text-danger font-semibold flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -436,34 +436,36 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           {isPaymentStage && <>
           {/* Payment Method */}
-          <div>
-            <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-brand" />
-              <span>{tr('Mode de paiement de l’acompte :', 'طريقة دفع العربون:')}</span>
-            </label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <section aria-labelledby="payment-method-title">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand">{tr('Étape 3 sur 3', 'الخطوة 3 من 3')}</p>
+            <h2 id="payment-method-title" className="mt-1 text-2xl font-black tracking-tight text-ink">{tr('Comment souhaitez-vous régler l’acompte ?', 'كيف تريد دفع العربون؟')}</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-muted">{tr('Sélectionnez une méthode. Les instructions exactes apparaissent immédiatement.', 'اختر طريقة الدفع، وستظهر التعليمات الدقيقة مباشرة.')}</p>
+            <div className="mt-5 space-y-2" role="radiogroup" aria-label={tr('Mode de paiement de l’acompte', 'طريقة دفع العربون')}>
               {paymentMethods.map((method) => {
                 const value = method.toLowerCase();
                 const META: Record<string, { label: string; hint: string }> = {
-                  CARD: { label: tr('Carte bancaire', 'بطاقة بنكية'), hint: tr(`−${depositInfo.cardDiscountPercent}% · après encaissement`, `خصم ${depositInfo.cardDiscountPercent}% · بعد التحصيل`) },
-                  FLOUCI: { label: 'Flouci / D17', hint: tr('Puis envoyez la capture', 'ثم أرسل لقطة الدفع') },
-                  BANK_TRANSFER: { label: tr('Virement', 'تحويل بنكي'), hint: tr('Puis envoyez le reçu', 'ثم أرسل الوصل') },
-                  POSTE: { label: tr('Mandat poste', 'حوالة بريدية'), hint: tr('Puis envoyez le reçu', 'ثم أرسل الوصل') },
+                  CARD: { label: tr('Carte bancaire', 'بطاقة بنكية'), hint: tr(`Collecte manuelle sécurisée · remise de ${depositInfo.cardDiscountPercent}%`, `تحصيل يدوي آمن · خصم ${depositInfo.cardDiscountPercent}%`) },
+                  FLOUCI: { label: 'Flouci / D17', hint: tr('Paiement mobile puis envoi de la capture', 'دفع عبر الهاتف ثم إرسال لقطة الدفع') },
+                  BANK_TRANSFER: { label: tr('Virement bancaire', 'تحويل بنكي'), hint: tr('Virement puis envoi du reçu', 'تحويل ثم إرسال الوصل') },
+                  POSTE: { label: tr('Mandat postal', 'حوالة بريدية'), hint: tr('Versement puis envoi du reçu', 'إيداع ثم إرسال الوصل') },
                 };
                 const meta = META[method] || { label: method, hint: '' };
+                const selected = formData.paymentMethod === value;
                 return (
                   <button
                     key={method}
                     type="button"
+                    role="radio"
+                    aria-checked={selected}
                     onClick={() => setFormData({ ...formData, paymentMethod: value })}
-                    className={`py-2.5 px-2 rounded-xl border text-center transition-all ${
-                      formData.paymentMethod === value
-                        ? 'border-brand bg-brand/10 text-brand'
-                        : 'border-line bg-surface text-muted'
-                    }`}
+                    className={`flex min-h-[76px] w-full items-center gap-4 border p-4 text-start transition ${selected ? 'border-ink bg-surface-raised text-ink ring-1 ring-ink' : 'border-line bg-surface text-ink hover:border-ink'}`}
                   >
-                    <span className="block text-xs font-bold">{meta.label}</span>
-                    <span className="mt-0.5 block text-[9px] font-semibold opacity-75">{meta.hint}</span>
+                    <span className={`grid h-11 w-11 shrink-0 place-items-center ${selected ? 'bg-ink text-surface' : 'bg-surface-raised text-ink'}`}><CreditCard className="h-5 w-5" /></span>
+                    <span className="min-w-0 flex-1">
+                      <strong className="block text-sm font-black sm:text-base">{meta.label}</strong>
+                      <span className="mt-1 block text-xs font-semibold leading-5 text-muted">{meta.hint}</span>
+                    </span>
+                    <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${selected ? 'border-ink' : 'border-muted'}`} aria-hidden="true">{selected && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}</span>
                   </button>
                 );
               })}
@@ -493,26 +495,31 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 ),
               };
               return (
-                <p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark">
-                  {instructions[method] || ''} <strong>{tr('Votre commande n’est confirmée qu’après réception de l’acompte.', 'لا يتأكد الطلب إلا بعد استلام العربون.')}</strong>
-                  <span className="mt-1 block">{tr(depositInfo.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</span>
-                  <span className="block">{tr(depositInfo.unavailableRefundPolicy || 'L’équipe vous contacte si l’article ne peut pas être validé.', 'سيتم إرجاع العربون إذا تعذر على AYROVI التحقق من المنتج أو شراؤه.')}</span>
-                </p>
+                <div className="mt-4 border-s-4 border-brand bg-brand/5 p-4 text-xs font-semibold leading-6 text-ink sm:text-sm">
+                  <strong className="mb-1 block text-brand">{tr('Instructions pour cette méthode', 'تعليمات هذه الطريقة')}</strong>
+                  <p>{instructions[method] || ''} <strong>{tr('Votre commande n’est confirmée qu’après réception de l’acompte.', 'لا يتأكد الطلب إلا بعد استلام العربون.')}</strong></p>
+                  <span className="mt-2 block text-xs text-muted">{tr(depositInfo.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</span>
+                  <span className="block text-xs text-muted">{tr(depositInfo.unavailableRefundPolicy || 'L’équipe vous contacte si l’article ne peut pas être validé.', 'سيتم إرجاع العربون إذا تعذر على AYROVI التحقق من المنتج أو شراؤه.')}</span>
+                </div>
               );
             })()}
-          </div>
+          </section>
 
           {/* Summary Box */}
-          <div className="bg-surface border border-line rounded-xl p-3.5 text-xs space-y-1.5">
-            <div className="flex justify-between"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>
+          <section className="space-y-3 border border-line bg-surface-raised p-5 text-sm sm:p-6" aria-labelledby="checkout-summary-title">
+            <div className="mb-4 flex items-end justify-between gap-4 border-b border-line pb-4">
+              <div><p className="text-[10px] font-black uppercase tracking-[0.16em] text-muted">{tr('Votre commande', 'طلبك')}</p><h3 id="checkout-summary-title" className="mt-1 text-xl font-black text-ink">{tr('Récapitulatif', 'ملخص الطلب')}</h3></div>
+              <span className="text-xs font-bold text-muted">{itemCount} {tr(itemCount > 1 ? 'articles' : 'article', itemCount > 1 ? 'منتجات' : 'منتج')}</span>
+            </div>
+            <div className="flex justify-between gap-4"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>
             {breakdown.customs > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Douane', 'المعاليم الديوانية')}</span><strong>{formatMoney(breakdown.customs)}</strong></div>}
             <div className="flex justify-between"><span className="text-muted">{tr('Livraison', 'التوصيل')}</span><strong>{formatMoney(breakdown.shipping)}</strong></div>
             <div className="flex justify-between"><span className="text-muted">{tr('Service AYROVI', 'خدمة AYROVI')}</span><strong>{formatMoney(breakdown.service)}</strong></div>
             {breakdown.express > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Livraison express', 'التوصيل السريع')}</span><strong>{formatMoney(breakdown.express)}</strong></div>}
             {breakdown.discount > 0 && <div className="flex justify-between text-brand"><span>{tr('Réduction', 'التخفيض')}</span><strong>−{formatMoney(breakdown.discount)}</strong></div>}
-            <div className="flex justify-between items-center border-t border-line pt-1.5">
-              <span className="text-muted font-semibold">{tr('Montant total de la commande :', 'إجمالي الطلب:')}</span>
-              <span className="text-base font-extrabold text-brand">{formatMoney(totalTND)}</span>
+            <div className="flex items-center justify-between gap-4 border-t border-line pt-4">
+              <span className="font-black text-ink">{tr('Total de la commande', 'إجمالي الطلب')}</span>
+              <span className="text-xl font-black text-ink">{formatMoney(totalTND)}</span>
             </div>
             {(() => {
               const isCard = formData.paymentMethod.toUpperCase() === 'CARD';
@@ -521,9 +528,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               const deposit = Math.round((base - discount) * 1000) / 1000;
               const balance = Math.round((totalTND - deposit) * 1000) / 1000;
               return (<>
-                <div className="flex justify-between items-center border-t border-line pt-1.5">
-                  <span className="text-accent-deep font-bold">{tr(`Acompte à régler maintenant (${depositInfo.percent}%) :`, `العربون المطلوب الآن (${depositInfo.percent}%):`)}</span>
-                  <span className="text-base font-extrabold text-accent-deep">{deposit.toFixed(3)} {tr('DT', 'د.ت')}</span>
+                <div className="mt-4 flex items-center justify-between gap-4 bg-ink p-4 text-surface">
+                  <span className="font-black">{tr(`À régler maintenant · acompte ${depositInfo.percent}%`, `المطلوب الآن · عربون ${depositInfo.percent}%`)}</span>
+                  <span className="shrink-0 text-lg font-black">{deposit.toFixed(3)} {tr('DT', 'د.ت')}</span>
                 </div>
                 {discount > 0 && <div className="flex justify-between items-center">
                   <span className="font-bold text-brand">{tr(`Remise carte bancaire (−${depositInfo.cardDiscountPercent}%) :`, `خصم البطاقة البنكية (−${depositInfo.cardDiscountPercent}%):`)}</span>
@@ -535,20 +542,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               </>);
             })()}
-          </div>
+          </section>
 
-          <label className="flex items-start gap-3 rounded-xl border border-line bg-white p-3 text-xs leading-5 text-ink">
+          <label className="flex min-h-16 items-start gap-3 border border-line bg-surface p-4 text-sm leading-6 text-ink">
             <input type="checkbox" required checked={formData.termsAccepted} onChange={(event) => setFormData({ ...formData, termsAccepted: event.target.checked })} className="mt-0.5 h-5 w-5 shrink-0 accent-brand" />
             <span>{tr("J’accepte les ", 'أوافق على ')}<a href="/terms.html" target="_blank" rel="noopener noreferrer" className="font-black text-brand underline">{tr('conditions générales de vente et la politique de retour', 'شروط البيع وسياسة الإرجاع')}</a>.</span>
           </label>
 
           {/* Submit CTA */}
-          <div className="grid grid-cols-[auto_1fr] gap-2">
-            <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary text-xs">{tr('Retour à la livraison', 'العودة إلى التوصيل')}</button>
+          <div className="grid gap-2 sm:grid-cols-[auto_1fr]">
+            <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="order-2 min-h-12 border border-ink bg-surface px-5 text-sm font-black text-ink transition hover:bg-surface-raised disabled:opacity-50 sm:order-1">{tr('Retour à la livraison', 'العودة إلى التوصيل')}</button>
             <button
               type="submit"
               disabled={isLoading || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}
-              className="ay-btn-primary text-xs sm:text-sm"
+              className="order-1 flex min-h-14 items-center justify-center gap-2 bg-ink px-6 text-sm font-black text-surface transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-45 sm:order-2 sm:text-base"
             >
               {isLoading ? (
                 <>

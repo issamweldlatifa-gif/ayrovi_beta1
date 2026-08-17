@@ -1,5 +1,8 @@
 /* Runtime tokens published from Admin → واجهتي. */
 html{font-size:var(--ayrovi-base-font-size,16px)}
+/* The official AYROVI mark is rendered as a true monochrome black asset everywhere. */
+.ayrovi-logo-black,
+img[src*="logo-ayrovi"]{filter:grayscale(1) brightness(0)!important}
 .ayrovi-app-shell{padding-bottom:calc(var(--ayrovi-bottom-nav-height,72px) + max(.75rem,env(safe-area-inset-bottom)) + 1rem)}
 .managed-public-sections{display:flex;min-width:0;flex:1;flex-direction:column;gap:var(--ayrovi-section-gap,0);text-align:var(--ayrovi-text-align,start)}
 .managed-public-section{min-width:0}

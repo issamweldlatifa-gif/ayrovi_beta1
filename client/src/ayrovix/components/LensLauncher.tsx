@@ -656,7 +656,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           )}
 
           {stage === 'product' && product && (
-            <div className="mx-auto max-w-md space-y-5">
+            <div className="mx-auto max-w-4xl space-y-6">
               <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
               {!verifiedPriceUrl && candidatesView?.list.length ? (
