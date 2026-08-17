@@ -99,7 +99,17 @@ export const App: React.FC = () => {
           root.style.setProperty('--ayrovi-primary', String(theme.primary));
           root.style.setProperty('--ayrovi-primary-dark', String(theme.primaryDark || theme.primary));
           root.style.setProperty('--ayrovi-primary-light', String(theme.primaryLight || theme.primary));
-          if (theme.accent) root.style.setProperty('--ayrovi-accent', String(theme.accent));
+          if (theme.accent) {
+            root.style.setProperty('--ayrovi-accent', String(theme.accent));
+            root.style.setProperty('--ayrovi-gold', String(theme.accent));
+          }
+          if (theme.rhubarb) root.style.setProperty('--ayrovi-rhubarb', String(theme.rhubarb));
+          if (theme.slate) {
+            root.style.setProperty('--ayrovi-slate', String(theme.slate));
+            root.style.setProperty('--ayrovi-neutral-950', String(theme.slate));
+          }
+          if (theme.ink) root.style.setProperty('--ayrovi-neutral-900', String(theme.ink));
+          if (theme.surface) root.style.setProperty('--ayrovi-surface-base', String(theme.surface));
           if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
         }
         const visual = normalizeInterfaceConfig(payload?.data?.interfaceConfig);
@@ -122,6 +132,9 @@ export const App: React.FC = () => {
         root.style.setProperty('--ayrovi-section-gap', `${visual.layout.sectionGap}px`);
         root.style.setProperty('--ayrovi-content-max', `${visual.layout.maxWidth}px`);
         root.style.setProperty('--ayrovi-text-align', visual.typography.align);
+        root.style.setProperty('--ayrovi-interactive-primary', visual.buttons.background);
+        root.style.setProperty('--ayrovi-text-primary', visual.typography.headingColor);
+        root.style.setProperty('--ayrovi-text-secondary', visual.typography.textColor);
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -319,7 +332,7 @@ export const App: React.FC = () => {
     });
 
   return (
-    <div className="ayrovi-app-shell min-h-screen flex flex-col text-ink bg-white relative">
+    <div className="ayrovi-app-shell min-h-screen flex flex-col bg-surface-base text-text-primary relative">
       
       {/* Top Yellow Notice Bar */}
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />

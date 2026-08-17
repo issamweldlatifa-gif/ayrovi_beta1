@@ -893,10 +893,11 @@ export class QatafoDatabase {
       ['setting_tiktok_url', 'CHANNELS', 'tiktok_url', '', 'STRING', 'Lien profil TikTok'],
       ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
-        preset: 'violet', primary: '#673de6', primaryDark: '#5025d1', primaryLight: '#7e57ff',
-        accent: '#fbbf24', ink: '#1d2130', gradient: 'linear-gradient(135deg,#24104f 0%,#673de6 100%)',
-        font: 'jakarta', radius: 'soft',
+        preset: 'petrole', primary: '#088177', primaryDark: '#05685f', primaryLight: '#2ea399',
+        accent: '#a67931', rhubarb: '#b55b64', slate: '#205b6b', ink: '#1a1a1a', surface: '#ffffff',
+        gradient: '#088177', font: 'jakarta', radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
+      ['setting_palette_version', 'DESIGN', 'palette_version', '0', 'NUMBER', 'Version interne des tokens sémantiques'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
         logoUrl: '/media/logo-ayrovi.png',
         sections: [
@@ -906,16 +907,41 @@ export class QatafoDatabase {
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '' },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '' },
         ],
-        typography: { body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280' },
-        buttons: { background: '#24104f', color: '#ffffff', radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#673de6', size: 20, style: 'outline' },
-        navigation: { background: '#17151f', color: '#ffffff', activeBackground: '#673de6', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision' },
+        typography: { body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1a1a1a', textColor: '#52615f' },
+        buttons: { background: '#088177', color: '#ffffff', radius: 12, height: 44, shape: 'soft' },
+        icons: { library: 'ayrovi', color: '#205b6b', size: 20, style: 'outline' },
+        navigation: { background: '#088177', color: '#ffffff', activeBackground: '#205b6b', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280 },
       }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],
       ['setting_footer_about', 'DESIGN', 'footer_about', 'La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence.', 'STRING', 'Texte de présentation du pied de page'],
     ];
     for (const row of settings) insertSetting.run(...row, now);
+
+    // One-time migration to the semantic urban palette requested for AYROVI. Existing
+    // section order/content is preserved; only color-role defaults are upgraded.
+    const paletteVersionRow = this.db.prepare("SELECT setting_value FROM settings WHERE setting_key='palette_version'").get() as { setting_value?: string } | undefined;
+    const paletteVersion = Number(paletteVersionRow?.setting_value || 0);
+    if (paletteVersion < 1) {
+      const theme = {
+        preset: 'petrole', primary: '#088177', primaryDark: '#05685f', primaryLight: '#2ea399',
+        accent: '#a67931', rhubarb: '#b55b64', slate: '#205b6b', ink: '#1a1a1a', surface: '#ffffff',
+        gradient: '#088177', font: 'jakarta', radius: 'soft',
+      };
+      const interfaceRow = this.db.prepare("SELECT setting_value FROM settings WHERE setting_key='interface_config'").get() as { setting_value?: string } | undefined;
+      let interfaceConfig: any = {};
+      try { interfaceConfig = JSON.parse(interfaceRow?.setting_value || '{}'); } catch { interfaceConfig = {}; }
+      interfaceConfig.typography = { ...(interfaceConfig.typography || {}), headingColor: '#1a1a1a', textColor: '#52615f' };
+      interfaceConfig.buttons = { ...(interfaceConfig.buttons || {}), background: '#088177', color: '#ffffff' };
+      interfaceConfig.icons = { ...(interfaceConfig.icons || {}), color: '#205b6b' };
+      interfaceConfig.navigation = { ...(interfaceConfig.navigation || {}), background: '#088177', color: '#ffffff', activeBackground: '#205b6b' };
+      this.db.transaction(() => {
+        this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='site_theme'").run(JSON.stringify(theme), now);
+        this.db.prepare("UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='interface_config'").run(JSON.stringify(interfaceConfig), now);
+        this.db.prepare("UPDATE settings SET setting_value='1',updated_at=? WHERE setting_key='palette_version'").run(now);
+      })();
+      console.info('[DB] Palette sémantique AYROVI pétrole appliquée.');
+    }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM hero_slides').get() as any).count === 0) {
       const insert = this.db.prepare(`INSERT INTO hero_slides

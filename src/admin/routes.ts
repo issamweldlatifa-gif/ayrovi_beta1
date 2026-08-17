@@ -250,6 +250,18 @@ function admin(req: Request) {
   return (req as any).admin as { id: string; name: string; role: AdminRole };
 }
 
+function validInterfaceConfig(received: any): boolean {
+  const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
+  const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
+  let encoded = '';
+  try { encoded = JSON.stringify(received); } catch { return false; }
+  return Array.isArray(sections)
+    && sections.length === sectionIds.size
+    && new Set(sections.map((section: any) => section?.id)).size === sectionIds.size
+    && !sections.some((section: any) => !sectionIds.has(String(section?.id)))
+    && encoded.length <= 50_000;
+}
+
 function audit(db: QatafoDatabase, req: Request, action: string, module: string, entityId: string | null, oldValue: any, newValue: any) {
   const actor = admin(req);
   db.run(`INSERT INTO audit_logs (id,user_id,user_name,action,module,entity_id,old_value,new_value,ip_address,created_at)
@@ -1293,6 +1305,28 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: result });
   });
 
+  // « واجهتي » reste visible et éditable pour les responsables de contenu sans leur
+  // donner accès aux paramètres financiers ou de sécurité du système.
+  router.get('/interface-config', requireAdmin(db, 'content:read'), (_req, res) => {
+    const row = db.get<any>("SELECT * FROM settings WHERE setting_key='interface_config'");
+    if (!row) return res.status(404).json({ success: false, error: 'Configuration واجهتي introuvable.' });
+    let value: any = null;
+    try { value = JSON.parse(row.setting_value); } catch { /* invalid persisted JSON */ }
+    if (!validInterfaceConfig(value)) return res.status(500).json({ success: false, error: 'Configuration واجهتي corrompue.' });
+    res.json({ success: true, data: { id: row.id, value, updatedAt: row.updated_at } });
+  });
+
+  router.put('/interface-config', requireAdmin(db, 'content:write'), (req, res) => {
+    const current = db.get<any>("SELECT * FROM settings WHERE setting_key='interface_config'");
+    if (!current) return res.status(404).json({ success: false, error: 'Configuration واجهتي introuvable.' });
+    const received = req.body?.value;
+    if (!validInterfaceConfig(received)) return res.status(400).json({ success: false, error: 'La configuration واجهتي est invalide ou trop volumineuse.' });
+    const value = JSON.stringify(received);
+    db.run('UPDATE settings SET setting_value=?,updated_at=?,updated_by=? WHERE id=?', value, new Date().toISOString(), admin(req).id, current.id);
+    audit(db, req, 'UPDATE', 'INTERFACE', current.id, current.setting_value, value);
+    res.json({ success: true });
+  });
+
   router.get('/settings', requireAdmin(db, 'content:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
@@ -1313,16 +1347,8 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         return res.status(400).json({ success: false, error: 'La liste des gouvernorats est invalide.' });
       }
     }
-    if (current.setting_key === 'interface_config') {
-      const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
-      const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
-      const encoded = JSON.stringify(received);
-      if (!Array.isArray(sections) || sections.length !== sectionIds.size
-        || new Set(sections.map((section: any) => section?.id)).size !== sectionIds.size
-        || sections.some((section: any) => !sectionIds.has(String(section?.id)))
-        || encoded.length > 50_000) {
-        return res.status(400).json({ success: false, error: 'La configuration واجهتي est invalide ou trop volumineuse.' });
-      }
+    if (current.setting_key === 'interface_config' && !validInterfaceConfig(received)) {
+      return res.status(400).json({ success: false, error: 'La configuration واجهتي est invalide ou trop volumineuse.' });
     }
     const value = current.value_type === 'JSON' ? JSON.stringify(received) : String(received ?? '').trim().slice(0, 10000);
     db.run('UPDATE settings SET setting_value=?,updated_at=?,updated_by=? WHERE id=?', value, new Date().toISOString(), admin(req).id, current.id);

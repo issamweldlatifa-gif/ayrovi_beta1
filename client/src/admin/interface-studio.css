@@ -1,4 +1,11 @@
 /* واجهتي — public-interface visual studio */
+.interface-palette-banner{display:grid;grid-template-columns:minmax(220px,.9fr) minmax(360px,1.6fr) auto;gap:18px;align-items:center;margin-bottom:16px;padding:18px;border:1px solid #cbdedb;background:#f3f8f7}
+.interface-palette-banner h2{margin:5px 0 4px;font-size:18px;letter-spacing:-.035em;color:#1a1a1a}
+.interface-palette-banner p{margin:0;max-width:510px;color:#52615f;font-size:9px;line-height:1.6}
+.interface-palette-swatches{display:grid;grid-template-columns:repeat(6,minmax(58px,1fr));overflow:hidden;border:1px solid rgba(0,0,0,.08)}
+.interface-palette-swatches>span{min-height:68px;display:flex;flex-direction:column;justify-content:flex-end;padding:7px}
+.interface-palette-swatches i{font-style:normal;font-size:8px;font-weight:900;text-transform:uppercase}
+.interface-palette-swatches small{margin-top:2px;font-size:7px;line-height:1.25;opacity:.82}
 .interface-studio-layout{display:grid;grid-template-columns:190px minmax(0,1fr) 230px;gap:16px;align-items:start}
 .interface-studio-tabs,.interface-studio-preview{position:sticky;top:86px;border:1px solid var(--admin-line);background:#fff}
 .interface-studio-tabs{padding:8px}
@@ -36,5 +43,5 @@
 .interface-studio-preview p{font-size:10px;line-height:1.6}
 .interface-studio-preview button{width:100%;border:0;margin-top:9px;padding:0 12px;font-size:10px;font-weight:850}
 .interface-studio-preview>small{display:block;padding:13px;color:var(--admin-muted);font-size:8px;line-height:1.6}
-@media(max-width:1180px){.interface-studio-layout{grid-template-columns:170px minmax(0,1fr)}.interface-studio-preview{display:none}}
-@media(max-width:760px){.interface-studio-layout{grid-template-columns:1fr}.interface-studio-tabs{position:static;display:grid;grid-template-columns:repeat(2,1fr)}.interface-studio-tabs button:last-child{grid-column:1/-1}.interface-card{padding:15px}.interface-section-toolbar{align-items:flex-start;flex-direction:column}.interface-section-toolbar>div:last-child{width:100%;justify-content:flex-end}.interface-section-form{grid-template-columns:1fr}}
+@media(max-width:1180px){.interface-palette-banner{grid-template-columns:1fr}.interface-palette-banner .admin-button{width:max-content}.interface-studio-layout{grid-template-columns:170px minmax(0,1fr)}.interface-studio-preview{display:none}}
+@media(max-width:760px){.interface-palette-swatches{grid-template-columns:repeat(3,1fr)}.interface-palette-banner .admin-button{width:100%}.interface-studio-layout{grid-template-columns:1fr}.interface-studio-tabs{position:static;display:grid;grid-template-columns:repeat(2,1fr)}.interface-studio-tabs button:last-child{grid-column:1/-1}.interface-card{padding:15px}.interface-section-toolbar{align-items:flex-start;flex-direction:column}.interface-section-toolbar>div:last-child{width:100%;justify-content:flex-end}.interface-section-form{grid-template-columns:1fr}}

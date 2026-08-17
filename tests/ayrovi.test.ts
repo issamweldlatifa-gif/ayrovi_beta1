@@ -983,7 +983,7 @@ describe('AYROVI platform', () => {
     expect(commerce.body.data.deposit).toHaveProperty('flouciNumber');
     expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
     expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
-    expect(commerce.body.data.theme.primary).toBe('#673de6');
+    expect(commerce.body.data.theme.primary).toBe('#088177');
     expect(commerce.body.data.pricing.version).toBe(1);
 
     const preview = await request(app).post('/api/public/pricing/preview').send({ originalPrice: 21.99, currency: 'EUR', quantity: 2 });
@@ -1030,16 +1030,17 @@ describe('AYROVI platform', () => {
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.navigation.color).toBe('#ffffff');
 
-    const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
+    const malformed = await superAdmin.put('/api/admin/interface-config').set('x-csrf-token', adminCsrf).send({
       value: { ...row.setting_value, sections: row.setting_value.sections.slice(0, 4) },
     });
     expect(malformed.status).toBe(400);
 
-    const saved = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: row.setting_value });
+    const saved = await superAdmin.put('/api/admin/interface-config').set('x-csrf-token', adminCsrf).send({ value: row.setting_value });
     expect(saved.status).toBe(200);
     const publicConfig = await request(app).get('/api/public/commerce-config');
     expect(publicConfig.status).toBe(200);
-    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#17151f');
+    expect(publicConfig.body.data.theme).toMatchObject({ primary: '#088177', rhubarb: '#b55b64', accent: '#a67931', slate: '#205b6b' });
+    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#088177');
   });
 
   test('admin mutations require a valid CSRF token', async () => {
@@ -1232,6 +1233,9 @@ describe('AYROVI platform', () => {
     const contentLogin = await contentAgent.post('/api/admin/auth/login').send({ email: users[0].email, password: users[0].password });
     expect((await contentAgent.get('/api/admin/products')).status).toBe(200);
     expect((await contentAgent.get('/api/admin/orders')).status).toBe(403);
+    const contentInterface = await contentAgent.get('/api/admin/interface-config');
+    expect(contentInterface.status).toBe(200);
+    expect((await contentAgent.put('/api/admin/interface-config').set('x-csrf-token', contentLogin.body.data.csrfToken).send({ value: contentInterface.body.data.value })).status).toBe(200);
     expect((await contentAgent.put('/api/admin/pricing').set('x-csrf-token', contentLogin.body.data.csrfToken).send({ rateEUR: 4 })).status).toBe(403);
 
     const orderAgent = request.agent(app);

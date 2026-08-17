@@ -14,6 +14,13 @@
   --color-ink: var(--ayrovi-neutral-900);
   --color-muted: var(--ayrovi-neutral-500);
   --color-surface: var(--ayrovi-neutral-50);
+  --color-surface-base: var(--ayrovi-surface-base);
+  --color-surface-raised: var(--ayrovi-surface-raised);
+  --color-interactive-primary: var(--ayrovi-interactive-primary);
+  --color-text-primary: var(--ayrovi-text-primary);
+  --color-text-secondary: var(--ayrovi-text-secondary);
+  --color-accent-warning: var(--ayrovi-accent-warning);
+  --color-accent-highlight: var(--ayrovi-accent-highlight);
   --color-line: var(--ayrovi-neutral-200);
   --font-display: var(--ayrovi-font-display);
   --font-body: var(--ayrovi-font-body);
@@ -26,24 +33,37 @@
 @layer base {
   :root {
     color-scheme: light;
-    --ayrovi-primary: #673de6;
-    --ayrovi-primary-dark: #5025d1;
-    --ayrovi-primary-light: #7e57ff;
-    --ayrovi-accent: #fbbf24;
-    --ayrovi-accent-dark: #9a6700;
-    --ayrovi-success: #15803d;
-    --ayrovi-danger: #dc2626;
-    --ayrovi-warning: #b77900;
-    --ayrovi-neutral-50: #f8f9fe;
-    --ayrovi-neutral-200: #e2e8f0;
-    --ayrovi-neutral-500: #6b7280;
-    --ayrovi-neutral-900: #1d2130;
-    --ayrovi-neutral-950: #24104f;
+    /* AYROVI urban palette — semantic roles inspired by the supplied methodology. */
+    --ayrovi-primary: #088177;
+    --ayrovi-primary-dark: #05685f;
+    --ayrovi-primary-light: #2ea399;
+    --ayrovi-rhubarb: #b55b64;
+    --ayrovi-gold: #a67931;
+    --ayrovi-slate: #205b6b;
+    --ayrovi-accent: var(--ayrovi-gold);
+    --ayrovi-accent-dark: #6c4a12;
+    --ayrovi-success: #08786f;
+    --ayrovi-danger: #98444e;
+    --ayrovi-warning: #795515;
+    --ayrovi-neutral-50: #f6f9f8;
+    --ayrovi-neutral-200: #dbe6e4;
+    --ayrovi-neutral-500: #52615f;
+    --ayrovi-neutral-900: #1a1a1a;
+    --ayrovi-neutral-950: #123f49;
     --ayrovi-white: #ffffff;
     --ayrovi-black: #050505;
+
+    /* Semantic contracts: component names do not change when the palette evolves. */
+    --ayrovi-surface-base: var(--ayrovi-white);
+    --ayrovi-surface-raised: var(--ayrovi-neutral-50);
+    --ayrovi-interactive-primary: var(--ayrovi-primary);
+    --ayrovi-text-primary: var(--ayrovi-neutral-900);
+    --ayrovi-text-secondary: var(--ayrovi-neutral-500);
+    --ayrovi-accent-warning: var(--ayrovi-rhubarb);
+    --ayrovi-accent-highlight: var(--ayrovi-gold);
     --ayrovi-whatsapp: #25d366;
     --ayrovi-whatsapp-hover: #1fae53;
-    --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-neutral-950) 0%, var(--ayrovi-primary) 100%);
+    --ayrovi-gradient: var(--ayrovi-primary);
     --ayrovi-font-display: 'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
     --ayrovi-font-body: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
     --ayrovi-radius-control: 0.75rem;

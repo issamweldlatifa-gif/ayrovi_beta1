@@ -16,7 +16,6 @@ type Panel = keyof typeof PANEL_ICONS;
 const selectOptions = (items: Array<[string, string]>) => items.map(([value, label]) => ({ value, label }));
 
 export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
-  const [settingId, setSettingId] = useState('');
   const [config, setConfig] = useState<PublicInterfaceConfig>(() => structuredClone(DEFAULT_INTERFACE_CONFIG));
   const [panel, setPanel] = useState<Panel>('sections');
   const [loading, setLoading] = useState(true);
@@ -26,11 +25,8 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   const load = async () => {
     setLoading(true);
     try {
-      const response = await adminApi<any>('/settings?category=INTERFACE');
-      const row = response.data?.find((item: any) => item.setting_key === 'interface_config');
-      if (!row) throw new Error('Configuration « واجهتي » introuvable. Redémarrez le service pour appliquer la migration.');
-      setSettingId(String(row.id));
-      setConfig(normalizeInterfaceConfig(row.setting_value));
+      const response = await adminApi<any>('/interface-config');
+      setConfig(normalizeInterfaceConfig(response.data?.value));
     } catch (error: any) {
       setToast({ message: error.message || 'Impossible de charger la configuration.', tone: 'error' });
     } finally { setLoading(false); }
@@ -49,12 +45,19 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
     [ordered[index], ordered[target]] = [ordered[target], ordered[index]];
     update('sections', ordered.map((section, order) => ({ ...section, order: (order + 1) * 10 })));
   };
+  const applyUrbanPalette = () => setConfig((current) => ({
+    ...current,
+    typography: { ...current.typography, headingColor: '#1a1a1a', textColor: '#52615f' },
+    buttons: { ...current.buttons, background: '#088177', color: '#ffffff' },
+    icons: { ...current.icons, color: '#205b6b' },
+    navigation: { ...current.navigation, background: '#088177', color: '#ffffff', activeBackground: '#205b6b' },
+  }));
+
   const save = async () => {
-    if (!settingId) return;
     setBusy(true);
     try {
       const normalized = normalizeInterfaceConfig(config);
-      await adminApi(`/settings/${settingId}`, { method: 'PUT', body: JSON.stringify({ value: normalized }) });
+      await adminApi('/interface-config', { method: 'PUT', body: JSON.stringify({ value: normalized }) });
       setConfig(normalized);
       setToast({ message: 'واجهتي publiée. Les choix seront appliqués à la prochaine ouverture ou actualisation du site.', tone: 'success' });
     } catch (error: any) { setToast({ message: error.message || 'Publication impossible.', tone: 'error' }); }
@@ -68,6 +71,14 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       <div><span className="admin-eyebrow">AYROVI ADMIN · VISUAL CONTROL</span><h1>واجهتي</h1><p>Contrôlez les sections publiques, leurs images et contenus, la typographie, les boutons, les icônes, la navigation et le rythme des sliders depuis un seul studio.</p></div>
       {canWrite && <Button busy={busy} onClick={save}><Save size={17} />Publier واجهتي</Button>}
     </div>
+
+    <section className="interface-palette-banner" aria-label="Palette sémantique AYROVI">
+      <div><span className="admin-eyebrow">PALETTE SÉMANTIQUE</span><h2>Pétrole urbain AYROVI</h2><p>Le pétrole unifie le canvas de marque et les CTA. Rhubarbe, or et ardoise restent des accents à faible densité.</p></div>
+      <div className="interface-palette-swatches">{[
+        ['#088177', 'Pétrole · action'], ['#b55b64', 'Rhubarbe · alerte'], ['#a67931', 'Or · highlight'], ['#205b6b', 'Ardoise · secondaire'], ['#1a1a1a', 'Texte'], ['#ffffff', 'Surface'],
+      ].map(([color, label]) => <span key={color} style={{ background: color, color: color === '#ffffff' ? '#1a1a1a' : '#ffffff' }} title={label}><i>{color}</i><small>{label}</small></span>)}</div>
+      {canWrite && <Button variant="secondary" onClick={applyUrbanPalette}><Palette size={16} />Appliquer aux contrôles</Button>}
+    </section>
 
     <div className="interface-studio-layout">
       <aside className="interface-studio-tabs" aria-label="Outils واجهتي">
