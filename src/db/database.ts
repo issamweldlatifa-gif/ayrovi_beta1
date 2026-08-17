@@ -927,7 +927,7 @@ export class QatafoDatabase {
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify(CORRECTED_THEME), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_palette_version', 'DESIGN', 'palette_version', '0', 'NUMBER', 'Version interne des tokens sémantiques'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
-        logoUrl: '/media/logo-ayrovi-final.png',
+        logoUrl: '/media/logo-ayrovi-final.png?v=fig3',
         sections: [
           { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '' },
           { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '' },
@@ -984,8 +984,8 @@ export class QatafoDatabase {
     // asset path to the final teal artwork supplied by AYROVI.
     const finalLogoUpgrade = this.db.prepare(`UPDATE settings
       SET setting_value=REPLACE(REPLACE(setting_value,
-        '/media/logo-ayrovi-black.png','/media/logo-ayrovi-final.png'),
-        '/media/logo-ayrovi.png','/media/logo-ayrovi-final.png'),updated_at=?
+        '/media/logo-ayrovi-black.png','/media/logo-ayrovi-final.png?v=fig3'),
+        '/media/logo-ayrovi.png','/media/logo-ayrovi-final.png?v=fig3'),updated_at=?
       WHERE setting_key='interface_config'
         AND (setting_value LIKE '%/media/logo-ayrovi-black.png%' OR setting_value LIKE '%/media/logo-ayrovi.png%')`).run(now);
     if (finalLogoUpgrade.changes > 0) console.info('[DB] Logo AYROVI final appliqué.');

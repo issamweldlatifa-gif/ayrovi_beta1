@@ -12,7 +12,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
       <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-        {post.publisher.official ? <img src="/media/logo-ayrovi-final.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+        {post.publisher.official ? <img src="/media/logo-ayrovi-final.png?v=fig3" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>

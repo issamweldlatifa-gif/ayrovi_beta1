@@ -29,7 +29,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   sticky = false,
   tone = 'light',
   className = '',
-  logoUrl = '/media/logo-ayrovi-final.png',
+  logoUrl = '/media/logo-ayrovi-final.png?v=fig3',
 }) => {
   const { tr, direction } = useLocale();
   const action = onBack || onClose;

@@ -18,7 +18,7 @@ const PayBadge: React.FC<{ label: string; className?: string }> = ({ label, clas
   <span className={`inline-flex h-8 min-w-[62px] items-center justify-center rounded-md px-2.5 text-[11px] font-black italic tracking-wide shadow-sm ${className}`}>{label}</span>
 );
 
-export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, logoUrl = '/media/logo-ayrovi-final.png', coverImage, introTitle, introText }) => {
+export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, logoUrl = '/media/logo-ayrovi-final.png?v=fig3', coverImage, introTitle, introText }) => {
   const [exchangeRates, setExchangeRates] = useState<string[]>(['Tarifs AYROVI en cours de synchronisation…']);
   const [channels, setChannels] = useState({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
   const [footerAbout, setFooterAbout] = useState('La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence et sans carte bancaire internationale.');
