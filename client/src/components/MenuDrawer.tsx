@@ -30,7 +30,7 @@ const MenuItem: React.FC<MenuItemProps> = ({ icon: Icon, label, onClick, badge }
   <button type="button" onClick={onClick} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-brand/5 hover:text-brand-dark">
     <Icon className="h-4 w-4 shrink-0 text-brand" />
     <span className="min-w-0 flex-1">{label}</span>
-    {badge && <span className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-black text-ink">{badge}</span>}
+    {badge && <span className="rounded-full bg-brand px-2 py-0.5 text-[9px] font-black text-white">{badge}</span>}
   </button>
 );
 

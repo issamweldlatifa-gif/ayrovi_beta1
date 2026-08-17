@@ -90,7 +90,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ settings, title, subtitl
           {(subtitle || slides[activeIndex]?.subtitle) && <p className="mt-4 max-w-2xl text-sm font-semibold text-white/85 sm:text-base">{subtitle || slides[activeIndex]?.subtitle}</p>}
           {slides[activeIndex]?.cta && slides[activeIndex]?.targetUrl && <a href={slides[activeIndex].targetUrl} className="mt-5 bg-interactive-primary px-5 py-3 text-xs font-black text-white shadow-card transition hover:brightness-90">{slides[activeIndex].cta}</a>}
           {settings?.showDots !== false && <div className="mt-6 flex items-center gap-2" aria-label="Choisir une image">
-            {slides.map((slide, index) => <button key={slide.id} type="button" onClick={() => setActiveIndex(index)} className={`h-1.5 rounded-full shadow-sm transition-all duration-500 ${index === activeIndex ? 'w-9 bg-accent' : 'w-4 bg-white/55 hover:bg-white/85'}`} aria-label={`Afficher ${slide.alt}`} aria-current={index === activeIndex ? 'true' : undefined} />)}
+            {slides.map((slide, index) => <button key={slide.id} type="button" onClick={() => setActiveIndex(index)} className={`h-1.5 rounded-full shadow-sm transition-all duration-500 ${index === activeIndex ? 'w-9 bg-white' : 'w-4 bg-white/55 hover:bg-white/85'}`} aria-label={`Afficher ${slide.alt}`} aria-current={index === activeIndex ? 'true' : undefined} />)}
           </div>}
         </div>
       </div>

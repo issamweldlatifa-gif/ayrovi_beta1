@@ -145,7 +145,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             type="button"
             onClick={toggleTorch}
             aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
-            className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-accent text-ink' : 'bg-white/15'}`}
+            className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-brand text-white' : 'bg-white/15'}`}
           >
             <Zap size={16} strokeWidth={1.9} fill={torchOn ? 'currentColor' : 'none'} />
           </button>

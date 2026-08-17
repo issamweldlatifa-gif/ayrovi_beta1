@@ -23,7 +23,7 @@
   --color-brand-deep: var(--color-hero-bg);
   --color-hero: var(--color-hero-bg);
   --color-chart: var(--color-chart-accent);
-  --color-accent: var(--color-interactive-primary);
+  --color-accent: #d2d2d7;        /* Apple system gray 5 — chips/neutral highlights */
   --color-accent-deep: var(--color-hero-bg);
   /* success/info/warning sont définis dans le bloc @theme ci-dessus */
   --color-whatsapp: var(--ayrovi-whatsapp);

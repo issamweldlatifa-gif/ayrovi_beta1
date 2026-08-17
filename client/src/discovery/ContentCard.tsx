@@ -27,7 +27,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({ variant, image, imageA
     <article className="overflow-hidden rounded-card border border-line bg-white shadow-card" dir={dir}>
       <div className="relative aspect-[16/10] overflow-hidden bg-surface">
         <img src={image} alt={imageAlt} className="h-full w-full object-cover" loading="lazy" />
-        {badge && <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-black text-ink">{badge}</span>}
+        {badge && <span className="absolute start-3 top-3 rounded-full bg-brand px-2.5 py-1 text-[10px] font-black text-white">{badge}</span>}
       </div>
       <div className={`flex min-h-52 flex-col p-6 ${styles.body}`}>
         {eyebrow && <p className={`text-xs font-black uppercase tracking-[0.16em] ${styles.eyebrow}`}>{eyebrow}</p>}

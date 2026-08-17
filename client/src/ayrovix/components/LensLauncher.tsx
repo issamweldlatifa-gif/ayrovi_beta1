@@ -571,7 +571,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                           <ImageIcon size={40} strokeWidth={1.4} />
                         </div>
                       )}
-                      <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold text-ink">{tr('Prix repéré', 'سعر مكتشف')}</span>
+                      <span className="absolute start-3 top-3 rounded-full bg-brand px-2.5 py-1 text-[10px] font-extrabold text-white">{tr('Prix repéré', 'سعر مكتشف')}</span>
                       <span className="absolute end-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.detectedPrice.sourceCurrency}</span>
                     </div>
                     <div className="space-y-3 p-4">

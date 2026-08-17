@@ -100,9 +100,9 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
       </div>
 
       <div className="flex items-center justify-center gap-3 bg-surface-base px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand sm:text-xs">
-        <span className="h-px w-10 bg-accent" />
+        <span className="h-px w-10 bg-brand" />
         Simple · Transparent · Local
-        <span className="h-px w-10 bg-accent" />
+        <span className="h-px w-10 bg-brand" />
       </div>
     </section>
   );

@@ -15,7 +15,7 @@ interface FullscreenActionRailProps {
 }
 
 const Action: React.FC<{ label: string; count?: number; active?: boolean; children: React.ReactNode; onClick: () => void }> = ({ label, count, active, children, onClick }) => (
-  <button type="button" onClick={onClick} aria-label={label} className={`flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full transition active:scale-90 ${active ? 'text-accent' : 'text-white'}`}>
+  <button type="button" onClick={onClick} aria-label={label} className={`flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full transition active:scale-90 ${active ? "text-white" : "text-white/85"}`}>
     {children}
     {count != null && <span className="text-[11px] font-extrabold tabular-nums drop-shadow">{count}</span>}
   </button>

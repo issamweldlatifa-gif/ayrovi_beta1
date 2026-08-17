@@ -17,7 +17,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
           {post.publisher.name}
-          {post.publisher.verified && <CheckCircle2 size={14} className={`shrink-0 ${light ? 'text-accent' : 'text-brand'}`} />}
+          {post.publisher.verified && <CheckCircle2 size={14} className={`shrink-0 ${light ? 'text-white' : 'text-brand'}`} />}
         </p>
         <p className={`text-[11px] font-semibold ${light ? 'text-white/70' : 'text-muted'}`}>{post.publisher.subtitle || tr('Éditeur', 'الناشر')} · {timeAgo(post.createdAt, locale)}</p>
       </div>

@@ -66,7 +66,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')}>
             <VisionIcon style={iconStyle} />
             {config.showLabels && <span>{config.visionLabel}</span>}
-            <span className="absolute end-1 top-1 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-black text-ink">{tr('Bientôt', 'قريبًا')}</span>
+            <span className="absolute end-1 top-1 rounded-full bg-brand px-1.5 py-0.5 text-[8px] font-black text-white">{tr('Bientôt', 'قريبًا')}</span>
           </button>
         </nav>
       </div>
