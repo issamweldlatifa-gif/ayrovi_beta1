@@ -559,12 +559,14 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
                 <>
                   {/* Prix visible lu par Claude dans la même analyse d’image. */}
                   <div className="overflow-hidden rounded-[22px] border-2 border-brand bg-white shadow-lg">
-                    <div className="relative aspect-[4/3] bg-surface">
+                    <div className="ayrovix-product-gallery-stage bg-surface">
                       {(candidatesView.detectedPrice.imageUrl || previewUrl) ? (
                         <img
                           src={candidatesView.detectedPrice.imageUrl || previewUrl || ''}
                           alt={candidatesView.detectedPrice.title}
-                          className="h-full w-full object-contain"
+                          decoding="async"
+                          draggable={false}
+                          className="ayrovix-product-gallery-image"
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-muted">

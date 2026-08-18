@@ -30,7 +30,7 @@ const HistoryThumbnail: React.FC<{ item: AyrovixHistoryItem }> = ({ item }) => {
   const [failed, setFailed] = useState(false);
   useEffect(() => setFailed(false), [item.imageUrl]);
   if (item.imageUrl && !failed) {
-    return <img src={item.imageUrl} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setFailed(true)} className="h-full w-full object-cover" />;
+    return <img src={item.imageUrl} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="ayrovix-product-media-contain" />;
   }
   return <LensBox size={25} strokeWidth={1.6} />;
 };
@@ -90,7 +90,7 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
               {items.map((item) => (
                 <article key={item.id} className="rounded-[20px] border border-line bg-white p-3">
                   <div className="flex gap-3">
-                    <div className="grid h-[72px] w-[62px] flex-none place-items-center overflow-hidden rounded-xl bg-surface text-muted">
+                    <div className="grid h-[72px] w-[62px] flex-none place-items-center overflow-hidden rounded-xl bg-surface p-1 text-muted">
                       <HistoryThumbnail item={item} />
                     </div>
                     <div className="min-w-0 flex-1">

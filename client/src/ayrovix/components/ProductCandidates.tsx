@@ -18,7 +18,7 @@ const CandidateImage: React.FC<{ candidate: AyrovixCandidate }> = ({ candidate }
   const urls = [...new Set([...(candidate.images || []), candidate.image].filter(Boolean))];
   const [index, setIndex] = React.useState(0);
   if (!urls[index]) return <Placeholder />;
-  return <img src={urls[index]} alt={candidate.title} loading="lazy" referrerPolicy="no-referrer" onError={() => setIndex((current) => current + 1)} className="h-full w-full object-cover" />;
+  return <img src={urls[index]} alt={candidate.title} loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setIndex((current) => current + 1)} className="ayrovix-product-media-contain" />;
 };
 
 /** Only actionable, priced merchant listings are rendered. */
@@ -41,7 +41,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
           >
             {index === 0 && <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-brand">{tr('Meilleure correspondance', 'أفضل تطابق')}</p>}
             <div className="flex gap-3">
-              <div className="relative h-[92px] w-[74px] flex-none overflow-hidden rounded-xl border border-line">
+              <div className="relative grid h-[92px] w-[74px] flex-none place-items-center overflow-hidden rounded-xl border border-line bg-surface p-1.5">
                 <CandidateImage candidate={candidate} />
                 <span className={`absolute left-1 top-1 rounded-full px-1.5 py-0.5 text-[10px] font-extrabold ${candidate.match >= 80 ? 'bg-ink text-white' : 'border border-line bg-white/90 text-ink'}`}>{candidate.match}%</span>
               </div>

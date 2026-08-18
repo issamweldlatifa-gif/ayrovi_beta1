@@ -502,6 +502,89 @@
   box-shadow: 0 8px 32px color-mix(in srgb, var(--ayrovi-neutral-950) 12%, transparent);
 }
 
+/* AYROVIX product media — preserve every original image without cropping. */
+.ayrovix-product-gallery {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ayrovix-product-gallery-stage {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+  place-items: center;
+  overflow: hidden;
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+  contain: layout paint;
+}
+
+.ayrovix-product-gallery-image,
+.ayrovix-thumbnail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+}
+
+.ayrovix-product-media-contain {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  transform: none;
+}
+
+.ayrovix-thumbnail-strip {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+}
+
+.ayrovix-thumbnail-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.ayrovix-thumbnail {
+  display: grid;
+  flex: 0 0 auto;
+  width: 3.75rem;
+  height: 3.75rem;
+  box-sizing: border-box;
+  place-items: center;
+  overflow: hidden;
+  padding: 0.25rem;
+  scroll-snap-align: start;
+  touch-action: manipulation;
+}
+
+.ayrovix-thumbnail:focus-visible {
+  outline: 2px solid var(--ayrovi-primary);
+  outline-offset: 2px;
+}
+
+@media (min-width: 640px) {
+  .ayrovix-product-gallery-stage {
+    aspect-ratio: 4 / 3;
+    padding: clamp(1rem, 3vw, 2rem);
+  }
+}
+
 /* Shutter animation */
 @keyframes shutter-close {
   0% { clip-path: inset(0 0 0 0); }

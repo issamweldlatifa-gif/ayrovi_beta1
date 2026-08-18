@@ -52,7 +52,7 @@ const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   const images = [...new Set([product.image, ...(product.images || [])].filter(Boolean))] as string[];
   const [index, setIndex] = React.useState(0);
   if (!images[index]) return <div className="grid h-full place-items-center text-white/80"><ShoppingBag size={32}/></div>;
-  return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="h-full w-full object-contain" loading="lazy"/>;
+  return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="ayrovix-product-media-contain" loading="lazy" decoding="async" draggable={false}/>;
 };
 
 const ShareAction = ({ message, isDark }: { message: AssistantMessage; isDark: boolean }) => {
@@ -81,7 +81,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
     </article>}
     {message.products?.some(isDisplayableCandidate) ? <div className="grid gap-3 sm:grid-cols-2">
       {message.products.filter(isDisplayableCandidate).map((product) => <article key={product.id} className={`overflow-hidden rounded-2xl border ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-white'}`}>
-        <div className={`relative aspect-[4/3] ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/><span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-1 text-[9px] font-bold text-white">{product.source}</span></div>
+        <div className={`relative aspect-[4/3] p-2 ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/><span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-1 text-[9px] font-bold text-white">{product.source}</span></div>
         <div className="p-3">
           <h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className="text-sm font-black text-brand">{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p>{product.priceTnd != null && <p className={`text-[10px] ${isDark ? 'text-muted' : 'text-muted'}`}>≈ {product.priceTnd.toFixed(2)} TND</p>}<p className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-warning"><Star size={12} fill="currentColor" />{displayRating(product).toFixed(1)}/5 <span className={isDark ? 'text-muted' : 'text-muted'}>{product.ratingKind === 'merchant' ? tr('marchand', 'المتجر') : tr('pertinence', 'التطابق')}</span></p></div></div>

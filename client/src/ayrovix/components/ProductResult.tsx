@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 import { ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star } from '../../components/QatafoIcons';
 import { validProductUrl } from '../services/resultPolicy';
@@ -66,7 +66,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const rawRating = Number(product.rating);
   const displayRating = Number.isFinite(rawRating) && rawRating > 0 && rawRating <= 5 ? Math.round(rawRating * 10) / 10 : (priceVerified ? 5 : 4.5);
   const merchantRating = product.ratingKind === 'merchant';
-  const imageUrls = [...new Set([...(product.images || []), product.image].filter(Boolean))];
+  const imageUrls = useMemo(
+    () => [...new Set([...(product.images || []), product.image].filter(Boolean))],
+    [product.image, product.images],
+  );
+  const activeImage = imageUrls[imageIndex] || '';
   const sizeOptions = [...new Set(product.sizes)];
 
   useEffect(() => {
@@ -92,27 +96,56 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
     setSubmitted(false);
   }, [product.sourceUrl, product.image]);
 
+  // Preload the same original gallery sources used by the thumbnails. Switching
+  // images then remains stable without introducing a cropped preview derivative.
+  useEffect(() => {
+    imageUrls.forEach((src) => {
+      const image = new window.Image();
+      image.decoding = 'async';
+      image.src = src;
+    });
+  }, [imageUrls]);
+
   return (
     <div className="space-y-4" dir={direction}>
-      <div className="overflow-hidden rounded-[22px] border border-line bg-white">
-        <div className="relative aspect-[4/3] bg-surface">
-          {imageUrls[imageIndex]
-            ? <img src={imageUrls[imageIndex]} alt={product.title} referrerPolicy="no-referrer" onError={() => setImageIndex((current) => current + 1)} className="h-full w-full object-contain" />
-            : <div className="flex h-full items-center justify-center text-muted"><ImageIcon size={40} strokeWidth={1.4} /></div>}
+      <div className="ayrovix-product-gallery overflow-hidden rounded-[22px] border border-line bg-white">
+        <div className="ayrovix-product-gallery-stage bg-surface">
+          {activeImage
+            ? <img
+                src={activeImage}
+                alt={product.title}
+                referrerPolicy="no-referrer"
+                decoding="async"
+                fetchPriority="high"
+                draggable={false}
+                onError={() => setImageIndex((current) => Math.min(current + 1, imageUrls.length))}
+                className="ayrovix-product-gallery-image"
+              />
+            : <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={40} strokeWidth={1.4} /></div>}
           <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${availability.cls}`}>
             {availability[isArabic ? 'ar' : 'fr']}
           </span>
-          <span className="absolute right-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+          <span className="absolute right-3 top-3 max-w-[45%] truncate rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
             {product.source}
           </span>
         </div>
         {imageUrls.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto border-t border-line bg-white px-4 py-3" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
-            {imageUrls.map((url, index) => (
-              <button key={`${url}-${index}`} type="button" onClick={() => setImageIndex(index)} className={`h-14 w-14 shrink-0 overflow-hidden rounded-xl border-2 bg-surface ${imageIndex === index ? 'border-brand' : 'border-line'}`} aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}>
-                <img src={url} alt="" loading="lazy" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
-              </button>
-            ))}
+          <div className="ayrovix-thumbnail-strip flex gap-2 overflow-x-auto border-t border-line bg-white px-4 py-3" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
+            {imageUrls.map((url, index) => {
+              const selected = imageIndex === index;
+              return (
+                <button
+                  key={`${url}-${index}`}
+                  type="button"
+                  onClick={() => setImageIndex(index)}
+                  className={`ayrovix-thumbnail shrink-0 rounded-xl border-2 bg-surface ${selected ? 'border-brand ring-2 ring-brand/15' : 'border-line'}`}
+                  aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}
+                  aria-current={selected ? 'true' : undefined}
+                >
+                  <img src={url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" className="ayrovix-thumbnail-image" />
+                </button>
+              );
+            })}
           </div>
         )}
         <div className="space-y-3 p-4">
