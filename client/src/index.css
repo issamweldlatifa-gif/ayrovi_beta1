@@ -58,6 +58,7 @@
 }
 
 /* AYROVI icon system: reference-derived monoline geometry across public + Admin. */
+.ayrovi-icon,
 .qatafo-icon,
 .lucide {
   display: block;
@@ -66,10 +67,11 @@
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: var(--ayrovi-icon-stroke, 1.75);
+  stroke-width: var(--ayrovi-icon-stroke, 1.5);
   shape-rendering: geometricPrecision;
 }
 
+.ayrovi-icon > *,
 .qatafo-icon > *,
 .lucide > * {
   vector-effect: non-scaling-stroke;

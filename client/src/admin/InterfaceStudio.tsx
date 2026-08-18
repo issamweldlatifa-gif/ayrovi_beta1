@@ -105,7 +105,7 @@ const IconLibraryPreview: React.FC<{ config: PublicInterfaceConfig['icons']; com
 
 const AyroviCorePreview: React.FC<{ config: PublicInterfaceConfig['icons'] }> = ({ config }) => (
   <div className="interface-ayrovi-core" style={{ color: config.color }}>
-    <div><strong>Géométrie AYROVI · هندسة AYROVI</strong><small>24 × 24 · monoline 1.75 · round · currentColor</small></div>
+    <div><strong>Géométrie AYROVI · هندسة AYROVI</strong><small>24 × 24 · monoline 1.5 · round · currentColor</small></div>
     <ul>{AYROVI_CORE_ICONS.map(({ label, icon: Icon }) => <li key={label}><Icon size={Math.max(20, config.size)} /><span>{label}</span></li>)}</ul>
   </div>
 );
