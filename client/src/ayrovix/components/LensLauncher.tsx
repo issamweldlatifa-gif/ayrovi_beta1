@@ -6,9 +6,7 @@ import type {
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { rememberAyrovixHistory } from '../services/history';
-import { AlertCircle, Barcode, Check, History, Image as ImageIcon, Link2, ShoppingBag, Sparkles } from '../../components/QatafoIcons';
-import { AppHeader } from '../../design/AppHeader';
-import { Button } from '../../design/Button';
+import { AlertCircle, Barcode, Check, Image as ImageIcon, Link2, Plus, ShoppingBag, Sparkles } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import { LiveCamera } from './LiveCamera';
 import { LensHistory } from './LensHistory';
@@ -18,12 +16,17 @@ import { ProductCandidates } from './ProductCandidates';
 import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
+import { LensContextHeader, LensMoreMenu } from './LensNavigation';
 
 interface LensLauncherProps {
   isOpen: boolean;
   onClose: () => void;
   historyScope?: string | null;
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
+  cartCount: number;
+  onOpenCart: () => void;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
 type Stage = 'live' | 'home' | 'preview' | 'analyzing' | 'candidates' | 'product' | 'barcode' | 'error';
@@ -72,7 +75,16 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
 
 const NEW_SCAN_MESSAGE = 'Cadrez le produit dans un bon éclairage, ou collez son lien direct.';
 
-export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, historyScope, onOrder }) => {
+export const LensLauncher: React.FC<LensLauncherProps> = ({
+  isOpen,
+  onClose,
+  historyScope,
+  onOrder,
+  cartCount,
+  onOpenCart,
+  darkMode,
+  onToggleDarkMode,
+}) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
@@ -93,6 +105,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const previewRef = useRef<string | null>(null);
   const stageRef = useRef<Stage>(stage);
   stageRef.current = stage;
@@ -101,6 +114,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
   const previousStageRef = useRef<Stage>(stage);
 
   useBodyScrollLock(isOpen);
+
+  useEffect(() => {
+    if (!isOpen) setMenuOpen(false);
+  }, [isOpen]);
 
   useEffect(() => () => {
     requestAbortRef.current?.abort();
@@ -437,8 +454,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
         priceToken,
         quantity,
       });
-      // onOrder navigue vers le panier; ne pas exécuter Back ensuite.
-      clearRuntime();
+      // Le panier s'ouvre, mais le résultat Lens reste monté pour un retour sans perte d'état.
+      setOrdering(false);
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
       enterStage('error');
@@ -460,6 +477,20 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
     catch { setCopied(false); }
   };
 
+  const openHistory = () => {
+    setMenuOpen(false);
+    if (!historyOpen) navigation.pushLayer({ id: 'lens:history' });
+  };
+  const menu = (
+    <LensMoreMenu
+      open={menuOpen}
+      dark={darkMode}
+      onToggleDark={onToggleDarkMode}
+      onHistory={openHistory}
+      onClose={() => setMenuOpen(false)}
+    />
+  );
+
   if (stage === 'live') {
     return (
       <>
@@ -470,22 +501,26 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
           onCodeText={(value) => void runCodeTextAnalysis(value)}
           onLink={(url) => void runUrlAnalysis(url, 'url')}
           onClose={handleClose}
-          onHistory={() => navigation.pushLayer({ id: 'lens:history' })}
+          onMenu={() => setMenuOpen(true)}
           onCameraFailed={() => replaceStage('home')}
         />}
         <LensHistory open={historyOpen} scope={historyScope} onClose={() => navigation.back()} onRepeat={repeatHistoryItem} onNewScan={reset} />
+        {menu}
       </>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[75] flex flex-col bg-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
+    <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-ink text-white' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col">
-        <AppHeader
-          title="AYROVIX Lens"
-          subtitle={tr('Recherche visuelle AYROVI', 'البحث البصري من AYROVI')}
-          {...(stage === 'home' ? { onClose: handleClose } : { onBack: goBack })}
-          actions={<Button variant="ghost" size="icon" onClick={() => navigation.pushLayer({ id: 'lens:history' })} aria-label={tr('Historique Lens', 'سجل Lens')} title={tr('Historique', 'السجل')}><History className="h-5 w-5" /></Button>}
+        <LensContextHeader
+          mode={stage === 'home' ? 'camera' : stage === 'product' ? 'product' : 'result'}
+          onExit={handleClose}
+          onBack={stage === 'product' ? goBack : reset}
+          onCart={onOpenCart}
+          cartCount={cartCount}
+          onMenu={() => setMenuOpen(true)}
+          dark={darkMode}
         />
 
         <main className="ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8">
@@ -661,6 +696,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
             <div className="mx-auto max-w-md space-y-5">
               <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
+              <button type="button" onClick={reset} className="ay-btn-secondary min-h-12 w-full text-sm">
+                <Plus className="h-4 w-4" />
+                {tr('Calculer un autre produit', 'حساب منتج آخر')}
+              </button>
+
               {!verifiedPriceUrl && candidatesView?.list.length ? (
                 <button type="button" onClick={goBack} className="ay-btn-secondary min-h-11 w-full text-xs">
                   {tr('Retour aux autres résultats', 'العودة إلى النتائج الأخرى')}
@@ -713,6 +753,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({ isOpen, onClose, his
         </main>
       </div>
       <LensHistory open={historyOpen} scope={historyScope} onClose={() => navigation.back()} onRepeat={repeatHistoryItem} onNewScan={reset} />
+      {menu}
     </div>
   );
 };

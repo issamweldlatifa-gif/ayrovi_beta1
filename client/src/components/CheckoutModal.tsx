@@ -288,10 +288,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-4 backdrop-blur-xs sm:p-6" dir={direction} role="dialog" aria-modal="true" aria-label={isPaymentStage ? tr('Paiement et confirmation', 'الدفع والتأكيد') : tr('Coordonnées de livraison', 'بيانات التوصيل')}>
-      <div className="relative w-full max-w-lg overflow-hidden rounded-card border border-line bg-white shadow-overlay">
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-3 backdrop-blur-xs sm:p-6" dir={direction} role="dialog" aria-modal="true" aria-label={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}>
+      <div className="ayrovix-theme-scope relative w-full max-w-lg overflow-hidden rounded-card border border-line bg-white shadow-overlay">
         <AppHeader
-          title={isPaymentStage ? tr('Paiement et confirmation', 'الدفع والتأكيد') : tr('Coordonnées de livraison', 'بيانات التوصيل')}
+          title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
           subtitle={tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
           onBack={onClose}
           actionDisabled={isLoading}

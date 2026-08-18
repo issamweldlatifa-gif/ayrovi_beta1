@@ -15,6 +15,7 @@ interface CartDrawerProps {
   onUpdateQuantity: (id: string, newQty: number) => void;
   onRemoveItem: (id: string) => void;
   onProceedToCheckout: () => void;
+  onCalculateAnotherProduct: () => void;
 }
 
 function merchantLabel(item: CartItem, fallback: string): string {
@@ -33,6 +34,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onUpdateQuantity,
   onRemoveItem,
   onProceedToCheckout,
+  onCalculateAnotherProduct,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
   const [depositPolicy, setDepositPolicy] = React.useState({ percent: 20, reviewDelay: '', refund: '' });
@@ -75,13 +77,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       />
 
       <div className={`fixed inset-y-0 max-w-full flex ${direction === 'rtl' ? 'left-0 pl-0 sm:pl-10' : 'right-0 pr-0 sm:pr-10'}`}>
-        <div className={`w-screen max-w-md bg-white shadow-2xl flex flex-col ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`}>
+        <div className={`ayrovix-theme-scope w-screen max-w-md bg-white shadow-2xl flex flex-col ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`}>
           
           <AppHeader
             title={tr('Mon panier', 'سلّتي')}
             subtitle={tr(`${items.length} article${items.length > 1 ? 's' : ''}`, `${items.length} منتج`)}
-            onClose={onClose}
-            actionLabel={tr('Fermer le panier', 'إغلاق السلة')}
+            onBack={onClose}
+            actionLabel={tr('Retour à la page précédente', 'العودة إلى الصفحة السابقة')}
           />
 
           <JourneyProgress active={1} />
@@ -97,6 +99,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <p className="text-xs text-muted max-w-xs leading-relaxed">
                   {tr("Importez une capture d'écran ou collez un lien pour ajouter des articles.", 'ارفع لقطة شاشة أو ألصق رابطًا لإضافة المنتجات.')}
                 </p>
+                <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-primary mt-2 min-h-12 text-sm">
+                  <Plus className="h-4 w-4" />
+                  {tr('Calculer un produit avec Lens', 'حساب منتج باستخدام Lens')}
+                </button>
               </div>
             ) : (
               items.map((item) => (
@@ -122,7 +128,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => onRemoveItem(item.id)}
-                        className="text-muted hover:text-danger transition-colors p-1"
+                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-danger/5 hover:text-danger"
                         title={tr('Supprimer', 'حذف')}
                         aria-label={tr(`Supprimer ${item.title} du panier`, `حذف ${item.title} من السلة`)}
                       >
@@ -158,12 +164,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </div>
 
                       {/* Quantity Controls */}
-                      <div className="flex items-center gap-1.5 bg-white border border-line rounded-lg p-0.5 shadow-xs">
+                      <div className="flex items-center gap-1 bg-white border border-line rounded-xl p-0.5 shadow-xs">
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
-                          className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-35"
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={tr(`Diminuer la quantité de ${item.title}`, `تقليل كمية ${item.title}`)}
                         >
                           <Minus className="w-3 h-3" />
@@ -175,7 +181,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= 99}
-                          className="w-6 h-6 rounded flex items-center justify-center text-muted hover:text-ink hover:bg-surface disabled:cursor-not-allowed disabled:opacity-35"
+                          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={tr(`Augmenter la quantité de ${item.title}`, `زيادة كمية ${item.title}`)}
                         >
                           <Plus className="w-3 h-3" />
@@ -201,6 +207,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <span className="text-muted font-semibold">{tr('Total de la commande :', 'إجمالي الطلب:')}</span>
                 <span className="text-xl font-extrabold text-ink">{formatMoney(totalTND)}</span>
               </div>
+
+              <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-secondary min-h-12 w-full text-sm">
+                <Plus className="h-4 w-4" />
+                {tr('Calculer un autre produit', 'حساب منتج آخر')}
+              </button>
 
               <button
                 type="button"

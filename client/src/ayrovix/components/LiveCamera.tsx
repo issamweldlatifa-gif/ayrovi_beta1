@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { useNavigationHistory } from '../../navigation/NavigationHistory';
-import { Barcode, Camera, History, Image as ImageIcon, MoreVertical, X, Zap } from '../../components/QatafoIcons';
+import { Barcode, Camera, Image as ImageIcon, Zap } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
+import { LensContextHeader } from './LensNavigation';
 
 interface LiveCameraProps {
   onPhoto: (file: File) => void;
@@ -11,7 +11,7 @@ interface LiveCameraProps {
   onCodeText: (value: string) => void;
   onLink: (url: string) => void;
   onClose: () => void;
-  onHistory: () => void;
+  onMenu: () => void;
   onCameraFailed: () => void;
 }
 
@@ -21,9 +21,8 @@ type CameraMode = 'search' | 'upload' | 'code';
  * AYROVIX Lens — caméra sans effets (user request: remove stars/Xray, keep clean & fast)
  * Radical performance: no animations, no particles, simple white corners only.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onHistory, onCameraFailed }) => {
-  const navigation = useNavigationHistory();
-  const { direction, isArabic, tr } = useLocale();
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed }) => {
+  const { direction, tr } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -31,7 +30,6 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torchHint, setTorchHint] = useState(false);
-  const showInfo = navigation.stack.some((layer) => layer.id === 'lens:camera-info');
   const [notice, setNotice] = useState<string | null>(null);
   const [linkInput, setLinkInput] = useState('');
   const modeRef = useRef<CameraMode>('search');
@@ -135,37 +133,22 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-      <header className="relative z-10 grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 pt-4">
-        <div className="flex items-center gap-1.5 justify-self-start">
-          <button type="button" onClick={onClose} aria-label={tr('Fermer AYROVIX', 'إغلاق AYROVIX')}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
-            <X size={16} strokeWidth={2.2} />
-          </button>
+      <LensContextHeader
+        mode="camera"
+        onExit={onClose}
+        onMenu={onMenu}
+        dark
+        flashControl={(
           <button
             type="button"
             onClick={toggleTorch}
             aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
-            className={`grid h-10 w-10 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-accent text-ink' : 'bg-white/15'}`}
+            className={`grid h-11 w-11 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-accent text-ink' : 'bg-white/15'}`}
           >
             <Zap size={16} strokeWidth={1.9} fill={torchOn ? 'currentColor' : 'none'} />
           </button>
-        </div>
-        <p className="whitespace-nowrap text-xs font-extrabold tracking-wide">AYROVIX Lens</p>
-        <div className="flex items-center gap-1.5 justify-self-end">
-          <button type="button" onClick={onHistory} aria-label={tr('Historique Lens', 'سجل Lens')} title={tr('Historique', 'السجل')}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur">
-            <History size={17} strokeWidth={1.9} />
-          </button>
-          <button
-            type="button"
-            onClick={() => navigation.pushLayer({ id: 'lens:camera-info' })}
-            aria-label={tr('Informations AYROVIX Lens', 'معلومات عدسة AYROVIX')}
-            className="grid h-10 w-10 place-items-center rounded-full bg-white/15 backdrop-blur"
-          >
-            <MoreVertical size={17} fill="currentColor" />
-          </button>
-        </div>
-      </header>
+        )}
+      />
       {torchHint && (
         <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[11px] font-semibold text-white/90">
           {tr('Flash non disponible — utilisez un bon éclairage.', 'الفلاش غير متاح — استخدم إضاءة جيدة.')}
@@ -259,33 +242,6 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         }}
       />
 
-      {showInfo && (
-        <div className="fixed inset-0 z-30 flex items-end justify-center" role="dialog" aria-modal="true">
-          <button type="button" onClick={() => navigation.back()} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-          <div className="relative max-h-[82vh] w-full max-w-md overflow-y-auto rounded-t-[26px] bg-ink px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3 text-white">
-            <span className="mx-auto mb-4 block h-1 w-11 rounded-full bg-white/25" />
-            <div className="mb-4 flex items-center justify-between">
-              <p className="text-base font-extrabold">AYROVIX Lens</p>
-              <button type="button" onClick={() => navigation.back()} className="grid h-9 w-9 place-items-center rounded-full bg-white/10">
-                <X size={15} strokeWidth={2} />
-              </button>
-            </div>
-            <section className="mb-5">
-              <p className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.12em] text-brand-light">{tr("Comment l'utiliser", 'كيفية الاستخدام')}</p>
-              <ol className="space-y-2.5 text-[13px] leading-relaxed text-white/85">
-                <li>{tr('1 · Cadrez le produit dans un bon éclairage.', '1 · ضع المنتج داخل الإطار في إضاءة جيدة.')}</li>
-                <li>{tr('2 · AYROVIX identifie et cherche les correspondances.', '2 · تتعرّف AYROVIX على المنتج وتبحث عن المطابقات.')}</li>
-                <li>{tr('3 · Confirmez le bon produit.', '3 · أكّد المنتج الصحيح.')}</li>
-                <li>{tr('4 · Prix final en DT puis commande.', '4 · اطّلع على السعر النهائي بالدينار ثم اطلب.')}</li>
-              </ol>
-            </section>
-            <button type="button" onClick={() => navigation.back()}
-              className="mt-5 min-h-[48px] w-full rounded-2xl bg-white text-sm font-extrabold text-black">
-              {tr("C'est compris", 'فهمت')}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

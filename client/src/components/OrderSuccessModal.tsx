@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { MessageSquare, PackageCheck, Copy, CreditCard, Share2 as Share } from './QatafoIcons';
+import { MessageSquare, PackageCheck, Copy, CreditCard, Plus, Share2 as Share } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { OrderResult } from '../types';
@@ -11,9 +11,10 @@ interface OrderSuccessModalProps {
   result: OrderResult | null;
   onClose: () => void;
   onOpenAccount?: () => void;
+  onCalculateAnotherProduct: () => void;
 }
 
-export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, onClose, onOpenAccount }) => {
+export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, onClose, onOpenAccount, onCalculateAnotherProduct }) => {
   const [copyStatus, setCopyStatus] = useState('');
   const { tr, direction, formatMoney } = useLocale();
   useBodyScrollLock(Boolean(result));
@@ -62,7 +63,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4" dir={direction} role="dialog" aria-modal="true" aria-labelledby="order-success-title">
-      <div className="relative w-full max-w-md overflow-hidden bg-white border border-line rounded-3xl text-center shadow-2xl">
+      <div className="ayrovix-theme-scope relative w-full max-w-md overflow-hidden bg-white border border-line rounded-3xl text-center shadow-2xl">
         <AppHeader title={tr('Commande enregistrée', 'تم تسجيل الطلب')} subtitle={tr('Confirmation AYROVI', 'تأكيد AYROVI')} onClose={onClose} actionLabel={tr('Retour à l’accueil', 'العودة إلى الصفحة الرئيسية')} />
         <JourneyProgress active={4} />
         <div className="ay-safe-bottom space-y-5 p-6 sm:p-8">
@@ -90,7 +91,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           <button
             type="button"
             onClick={() => void handleCopyOrderNumber()}
-            className="p-2 rounded-xl bg-white border border-line text-muted hover:text-ink shadow-xs transition-colors"
+            className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-white text-muted shadow-xs transition-colors hover:text-ink"
             title={tr('Copier le numéro', 'نسخ الرقم')}
             aria-label={tr('Copier le numéro de commande', 'نسخ رقم الطلب')}
           >
@@ -157,6 +158,11 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           <MessageSquare className="w-4 h-4" />
           <span>{tr('Contacter AYROVI sur WhatsApp', 'التواصل مع AYROVI عبر واتساب')}</span>
         </a>
+
+        <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-primary min-h-12 w-full text-xs sm:text-sm">
+          <Plus className="h-4 w-4" />
+          {tr('Calculer un autre produit', 'حساب منتج آخر')}
+        </button>
 
         {/* Close */}
         <button

@@ -70,6 +70,12 @@ export const App: React.FC = () => {
   // Cart & Checkout State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
+  // Keep the Lens component mounted while Panier/Checkout is in front so its current result survives Back.
+  const [lensSessionActive, setLensSessionActive] = useState(false);
+  const [lensDarkMode, setLensDarkMode] = useState(() => {
+    try { return typeof window !== 'undefined' && window.localStorage.getItem('ayrovix-theme') === 'dark'; }
+    catch { return false; }
+  });
 
   // Customer authentication is isolated from the Admin session.
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
@@ -174,6 +180,17 @@ export const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (isLensOpen && !lensSessionActive) setLensSessionActive(true);
+  }, [isLensOpen, lensSessionActive]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.ayrovixTheme = lensDarkMode ? 'dark' : 'light';
+    try { window.localStorage.setItem('ayrovix-theme', lensDarkMode ? 'dark' : 'light'); }
+    catch { /* Storage can be blocked without disabling Lens. */ }
+  }, [lensDarkMode]);
+
+  useEffect(() => {
     const restoreCustomer = async () => {
       const customerAuthResult = new URLSearchParams(window.location.search).get('customerAuth');
       try {
@@ -238,10 +255,18 @@ export const App: React.FC = () => {
   };
 
   // AYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
-  const handleOpenLens = () => navigation.navigate([
-    { id: 'app:lens' },
-    { id: typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) ? 'lens:live' : 'lens:home' },
-  ]);
+  const handleOpenLens = () => {
+    setLensSessionActive(true);
+    navigation.navigate([
+      { id: 'app:lens' },
+      { id: typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia) ? 'lens:live' : 'lens:home' },
+    ]);
+  };
+
+  const handleCloseLens = () => {
+    setLensSessionActive(false);
+    closeAppView();
+  };
 
   const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
     const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
@@ -457,10 +482,19 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* AYROVIX Lens — expérience caméra mobile-first. */}
-      {isLensOpen && (
+      {/* AYROVIX Lens stays mounted behind commerce layers so Result/Product can be restored intact. */}
+      {lensSessionActive && (
         <Suspense fallback={null}>
-          <LensLauncher isOpen historyScope={customerSession?.account.id || null} onClose={closeAppView} onOrder={handleAyrovixOrder} />
+          <LensLauncher
+            isOpen={isLensOpen}
+            historyScope={customerSession?.account.id || null}
+            onClose={handleCloseLens}
+            onOrder={handleAyrovixOrder}
+            cartCount={totalCartCount}
+            onOpenCart={() => openAppView('app:cart')}
+            darkMode={lensDarkMode}
+            onToggleDarkMode={() => setLensDarkMode((current) => !current)}
+          />
         </Suspense>
       )}
 
@@ -474,6 +508,7 @@ export const App: React.FC = () => {
             onUpdateQuantity={handleUpdateQuantity}
             onRemoveItem={handleRemoveItem}
             onProceedToCheckout={handleProceedToCheckout}
+            onCalculateAnotherProduct={handleOpenLens}
           />
         </Suspense>
       )}
@@ -524,6 +559,7 @@ export const App: React.FC = () => {
             result={orderResult}
             onClose={() => { setOrderResult(null); navigation.goHome(); }}
             onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('orders'); openAppView('app:account', true); }}
+            onCalculateAnotherProduct={handleOpenLens}
           />
         </Suspense>
       )}

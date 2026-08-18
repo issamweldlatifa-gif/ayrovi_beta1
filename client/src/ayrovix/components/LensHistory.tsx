@@ -54,7 +54,7 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[95] flex flex-col bg-surface text-ink" role="dialog" aria-modal="true" dir={direction} aria-label={tr('Historique AYROVIX Lens', 'سجل عدسة AYROVIX')}>
+    <div className="ayrovix-theme-scope fixed inset-0 z-[95] flex flex-col bg-surface text-ink" role="dialog" aria-modal="true" dir={direction} aria-label={tr('Historique AYROVIX Lens', 'سجل عدسة AYROVIX')}>
       <header className="grid min-h-[62px] grid-cols-[1fr_auto_1fr] items-center border-b border-line bg-white px-3 pt-[env(safe-area-inset-top)]">
         <button type="button" onClick={onClose} className="inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink" aria-label={tr('Retour à AYROVIX Lens', 'العودة إلى عدسة AYROVIX')}>
           <ArrowLeft size={18} strokeWidth={2.1} className={isArabic ? 'rotate-180' : ''} />
@@ -103,9 +103,9 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
                       <div className="mt-1 flex items-center justify-between gap-2">
                         <span className="text-[11px] font-extrabold text-ink">{item.price != null && item.currency ? `${item.price.toFixed(2)} ${item.currency}` : tr('Prix à confirmer', 'السعر يحتاج إلى تأكيد')}</span>
                         {canRepeat(item) ? (
-                          <button type="button" onClick={() => onRepeat(item)} className="ay-btn-primary min-h-8 px-3 py-1.5 text-[10px]">{tr('Relancer', 'إعادة')}</button>
+                          <button type="button" onClick={() => onRepeat(item)} className="ay-btn-primary min-h-11 px-3 py-1.5 text-[10px]">{tr('Relancer', 'إعادة')}</button>
                         ) : (
-                          <button type="button" onClick={onNewScan} className="ay-btn-secondary min-h-8 px-3 py-1.5 text-[10px]">{tr('Nouvelle photo', 'صورة جديدة')}</button>
+                          <button type="button" onClick={onNewScan} className="ay-btn-secondary min-h-11 px-3 py-1.5 text-[10px]">{tr('Nouvelle photo', 'صورة جديدة')}</button>
                         )}
                       </div>
                     </div>
