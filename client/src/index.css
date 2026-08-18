@@ -3,22 +3,21 @@
 @import "./design/tokens.css";
 @import "./styles/interface-runtime.css";
 @import "./styles/ayrovix-theme.css";
+@import "./styles/checkout-flow.css";
 
 @layer base {
-  html {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: clip;
-    scroll-behavior: smooth;
-    background: var(--ayrovi-white);
-  }
-
+  html,
   body,
   #root {
     width: 100%;
     max-width: 100%;
     min-width: 0;
-    overflow-x: clip;
+    overflow-x: hidden;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    background: var(--ayrovi-white);
   }
 
   body {

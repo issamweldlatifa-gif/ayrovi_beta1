@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { MessageSquare, PackageCheck, Copy, CreditCard, Plus, Share2 as Share } from './QatafoIcons';
+import { MessageSquare, PackageCheck, Copy, Plus, Share2 as Share } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { OrderResult } from '../types';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
+import { CheckoutFlowShell } from './CheckoutFlowShell';
 
 interface OrderSuccessModalProps {
   result: OrderResult | null;
@@ -51,6 +52,11 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
   ));
 
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
+  const paymentMethodLabel = result.deposit?.method === 'BANK_TRANSFER'
+    ? tr('Virement bancaire', 'تحويل بنكي')
+    : result.deposit?.method === 'POSTE'
+      ? tr('Transfert postal', 'تحويل بريدي')
+      : String(result.deposit?.method || '');
 
   const handleCopyOrderNumber = async () => {
     try {
@@ -62,11 +68,10 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-ink/50 backdrop-blur-xs flex items-center justify-center p-4" dir={direction} role="dialog" aria-modal="true" aria-labelledby="order-success-title">
-      <div className="ayrovix-theme-scope relative w-full max-w-md overflow-hidden bg-white border border-line rounded-3xl text-center shadow-2xl">
+    <CheckoutFlowShell direction={direction} size="confirmation" ariaLabelledBy="order-success-title">
         <AppHeader title={tr('Commande enregistrée', 'تم تسجيل الطلب')} subtitle={tr('Confirmation AYROVI', 'تأكيد AYROVI')} onClose={onClose} actionLabel={tr('Retour à l’accueil', 'العودة إلى الصفحة الرئيسية')} />
         <JourneyProgress active={4} />
-        <div className="ay-safe-bottom space-y-5 p-6 sm:p-8">
+        <div className="checkout-flow-content ay-safe-bottom space-y-5 text-center">
         {/* Celebration Icon */}
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand mx-auto shadow-xs">
           <PackageCheck className="w-8 h-8 sm:w-10 sm:h-10" />
@@ -102,21 +107,21 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
 
         {/* Details */}
         <div className="bg-surface border border-line rounded-2xl p-3.5 text-xs text-muted space-y-1.5 text-left">
-          <div className="flex justify-between">
+          <div className="checkout-confirmation-row">
             <span className="text-muted">{tr('Client :', 'الحريف:')}</span>
             <span className="font-bold text-ink">{result.customer.name}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="checkout-confirmation-row">
             <span className="text-muted">{tr('Gouvernorat :', 'الولاية:')}</span>
             <span className="font-bold text-ink">{result.customer.city}</span>
           </div>
-          <div className="flex justify-between"><span>{tr('E-mail :', 'البريد الإلكتروني:')}</span><strong className="max-w-[60%] truncate text-ink">{result.customer.email}</strong></div>
+          <div className="checkout-confirmation-row"><span>{tr('E-mail :', 'البريد الإلكتروني:')}</span><strong className="text-ink">{result.customer.email}</strong></div>
           {result.breakdown && <>
-            <div className="flex justify-between border-t border-line pt-1.5"><span>{tr('Produits :', 'المنتجات:')}</span><strong>{formatMoney(result.breakdown.subtotalTnd)}</strong></div>
-            <div className="flex justify-between"><span>{tr('Livraison :', 'التوصيل:')}</span><strong>{formatMoney(result.breakdown.shippingTnd)}</strong></div>
-            <div className="flex justify-between"><span>{tr('Service :', 'الخدمة:')}</span><strong>{formatMoney(result.breakdown.serviceTnd)}</strong></div>
+            <div className="checkout-confirmation-row border-t border-line pt-1.5"><span>{tr('Produits :', 'المنتجات:')}</span><strong>{formatMoney(result.breakdown.subtotalTnd)}</strong></div>
+            <div className="checkout-confirmation-row"><span>{tr('Livraison :', 'التوصيل:')}</span><strong>{formatMoney(result.breakdown.shippingTnd)}</strong></div>
+            <div className="checkout-confirmation-row"><span>{tr('Service :', 'الخدمة:')}</span><strong>{formatMoney(result.breakdown.serviceTnd)}</strong></div>
           </>}
-          <div className="flex justify-between pt-1.5 border-t border-line font-extrabold">
+          <div className="checkout-confirmation-row pt-1.5 border-t border-line font-extrabold">
             <span className="text-ink">{tr('Total de la commande :', 'إجمالي الطلب:')}</span>
             <span className="text-brand text-sm">{formatMoney(result.totalTND)}</span>
           </div>
@@ -125,22 +130,30 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         {/* قسم العربون 20% */}
         {result.deposit && (
           <div className="rounded-2xl border border-accent bg-accent/10 p-4 text-start space-y-2" role="alert">
-            <div className="flex justify-between items-center gap-3">
+            <div className="checkout-confirmation-row items-center">
               <span className="text-xs font-black text-ink uppercase tracking-wide">{tr(`Acompte de confirmation (${result.deposit.percent}%) :`, `عربون التأكيد (${result.deposit.percent}%):`)}</span>
               <span className="text-lg font-black text-accent-deep">{result.deposit.amountTnd.toFixed(3)} {tr('DT', 'د.ت')}</span>
             </div>
             <p className="text-[11px] leading-5 text-ink">
               {tr(
-                `Votre commande est enregistrée mais pas encore confirmée. ${result.deposit.method === 'CARD' ? 'Notre équipe vous transmettra les instructions sécurisées; la facture et le suivi seront activés après encaissement.' : 'Réglez l’acompte puis envoyez la preuve depuis votre compte pour validation.'}`,
-                `تم تسجيل طلبك لكنه غير مؤكّد بعد. ${result.deposit.method === 'CARD' ? 'سيرسل لك فريقنا تعليمات التحصيل الآمن، وتُفعّل الفاتورة والتتبع بعد التحصيل.' : 'ادفع العربون ثم أرسل الإثبات من حسابك للتحقق.'}`
+                `Mode choisi : ${paymentMethodLabel}. Réglez l’acompte puis envoyez le justificatif depuis votre compte AYROVI. Aucun paiement n’est considéré comme reçu avant vérification par l’équipe.`,
+                `الطريقة المختارة: ${paymentMethodLabel}. ادفع العربون ثم أرسل إثبات الدفع من حساب AYROVI. لا يُعتبر أي دفع مستلمًا قبل تحقق الفريق.`
               )}
             </p>
+            <p className="rounded-full border border-warning/30 bg-warning/10 px-3 py-2 text-center text-[10px] font-black text-warning">
+              {tr('Paiement en attente de vérification', 'الدفع في انتظار التحقق')}
+            </p>
+            <ol className="space-y-1 rounded-xl border border-line bg-surface p-3 text-[10px] font-semibold leading-5 text-muted">
+              <li>1. {tr('Client : téléverser le justificatif.', 'الحريف: رفع إثبات الدفع.')}</li>
+              <li>2. {tr('AYROVI : vérifier le paiement.', 'AYROVI: التحقق من الدفع.')}</li>
+              <li>3. {tr('Paiement et commande confirmés.', 'تأكيد الدفع والطلب.')}</li>
+              <li>4. {tr('Facture et suivi activés.', 'تفعيل الفاتورة والتتبع.')}</li>
+            </ol>
             <p className="text-[11px] text-ink">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')} <strong>{result.deposit.balanceTnd.toFixed(3)} {tr('DT', 'د.ت')}</strong></p>
             {onOpenAccount && (
               <button type="button" onClick={onOpenAccount} className="ay-btn-primary w-full text-xs">
-                {result.deposit.method === 'CARD'
-                  ? <><CreditCard className="h-4 w-4" />{tr('Gérer l’acompte et suivre la commande', 'إدارة العربون ومتابعة الطلب')}</>
-                  : <><Share className="h-4 w-4" />{tr('Envoyer la preuve et suivre la commande', 'إرسال الإثبات ومتابعة الطلب')}</>}
+                <Share className="h-4 w-4" />
+                {tr('Gérer l’acompte et suivre la commande', 'إدارة العربون ومتابعة الطلب')}
               </button>
             )}
           </div>
@@ -174,7 +187,6 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         </button>
 
         </div>
-      </div>
-    </div>
+    </CheckoutFlowShell>
   );
 };

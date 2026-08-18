@@ -9,6 +9,7 @@ import { getCommerceConfig } from '../services/publicApi';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
+import { CheckoutFlowShell } from './CheckoutFlowShell';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -20,6 +21,17 @@ interface CheckoutModalProps {
   onRequireAuthentication: () => void;
   onOrderSuccess: (result: OrderResult) => void;
 }
+
+type CheckoutPaymentMethod = 'CARD' | 'FLOUCI' | 'BANK_TRANSFER' | 'POSTE';
+
+const PAYMENT_METHODS: CheckoutPaymentMethod[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
+const AVAILABLE_PAYMENT_METHODS = new Set<CheckoutPaymentMethod>(['BANK_TRANSFER', 'POSTE']);
+const PAYMENT_METHOD_IMAGES: Record<CheckoutPaymentMethod, string> = {
+  CARD: '/media/payments/card.png',
+  FLOUCI: '/media/payments/flouci.png',
+  BANK_TRANSFER: '/media/payments/bank-transfer.png',
+  POSTE: '/media/payments/poste.png',
+};
 
 const TUNISIAN_GOVERNORATES_FR = [
   'Tunis',
@@ -67,16 +79,16 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     phone: '',
     city: TUNISIAN_GOVERNORATES_FR[0],
     address: '',
-    paymentMethod: 'card',
+    paymentMethod: 'bank_transfer',
     latitude: null,
     longitude: null,
     termsAccepted: false,
     locale: locale === 'ar' ? 'ar-TN' : 'fr-TN',
   });
   const [governorates, setGovernorates] = useState(TUNISIAN_GOVERNORATES_FR);
-  const [paymentMethods, setPaymentMethods] = useState(['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE']);
   const [depositInfo, setDepositInfo] = useState({ percent: 20, cardDiscountPercent: 5, companyName: 'AYROVI', bankRib: '', posteAccount: '', flouciNumber: '', reviewDelay: '', unavailableRefundPolicy: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentAvailabilityNotice, setPaymentAvailabilityNotice] = useState('');
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<CustomerAddress[]>([]);
@@ -97,10 +109,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         const configuredGovernorates = Array.isArray(payload.data?.governorates) && payload.data.governorates.length
           ? payload.data.governorates.map(String)
           : TUNISIAN_GOVERNORATES_FR;
-        const configuredMethods = Array.isArray(payload.data?.paymentMethods)
-          ? payload.data.paymentMethods.map((method: unknown) => String(method).toUpperCase()).filter((method: string) => ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'].includes(method))
-          : [];
-        const methods = configuredMethods.length ? configuredMethods : ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
         if (payload.data?.deposit && typeof payload.data.deposit === 'object') {
           const d = payload.data.deposit;
           setDepositInfo({
@@ -115,11 +123,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           });
         }
         setGovernorates(configuredGovernorates);
-        setPaymentMethods(methods);
         setFormData((current) => ({
           ...current,
           city: configuredGovernorates.includes(current.city) ? current.city : configuredGovernorates[0],
-          paymentMethod: methods.includes(current.paymentMethod.toUpperCase()) ? current.paymentMethod : methods[0].toLowerCase(),
+          paymentMethod: AVAILABLE_PAYMENT_METHODS.has(current.paymentMethod.toUpperCase() as CheckoutPaymentMethod)
+            ? current.paymentMethod
+            : 'bank_transfer',
         }));
       })
       .catch((fetchError) => {
@@ -141,6 +150,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
     let active = true;
     setError(null);
+    setPaymentAvailabilityNotice('');
     setAddresses([]);
     setSelectedAddressId('');
     setFormData((current) => ({
@@ -243,6 +253,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setError(tr('Vous devez accepter les conditions de vente et la politique de retour.', 'يجب قبول شروط البيع وسياسة الإرجاع.'));
       return;
     }
+    const selectedMethod = formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod;
+    if (!AVAILABLE_PAYMENT_METHODS.has(selectedMethod)) {
+      setPaymentAvailabilityNotice(tr(
+        'Ce mode de paiement sera bientôt disponible. Pour le moment, veuillez utiliser le virement bancaire ou le transfert postal.',
+        'ستتوفر طريقة الدفع هذه قريبًا. حاليًا، يرجى استخدام التحويل البنكي أو التحويل البريدي.',
+      ));
+      return;
+    }
 
     setIsLoading(true);
 
@@ -288,8 +306,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink/50 p-3 backdrop-blur-xs sm:p-6" dir={direction} role="dialog" aria-modal="true" aria-label={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}>
-      <div className="ayrovix-theme-scope relative w-full max-w-lg overflow-hidden rounded-card border border-line bg-white shadow-overlay">
+    <CheckoutFlowShell
+      direction={direction}
+      size="form"
+      ariaLabel={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
+    >
         <AppHeader
           title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
           subtitle={tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
@@ -301,7 +322,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         <JourneyProgress active={isPaymentStage ? 3 : 2} />
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="ay-safe-bottom p-5 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="checkout-flow-content ay-safe-bottom space-y-4">
           {error && (
             <div className="bg-danger/5 border border-danger/20 rounded-xl p-3 text-xs text-danger font-semibold flex items-center gap-2">
               <AlertCircle className="h-4 w-4 shrink-0" />
@@ -428,9 +449,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </button>
           {formData.latitude != null && <p className="text-center text-[10px] font-bold text-brand">{formData.latitude.toFixed(5)}, {Number(formData.longitude).toFixed(5)}</p>}
 
-          <div className="grid grid-cols-[auto_1fr] gap-2">
-            <button type="button" onClick={onClose} className="ay-btn-secondary text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
-            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary text-xs">{tr('Continuer vers le paiement', 'المتابعة إلى الدفع')}</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={onClose} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
+            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary min-w-0 px-2 text-xs">{tr('Continuer vers le paiement', 'المتابعة إلى الدفع')}</button>
           </div>
           </>}
 
@@ -441,48 +462,65 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <CreditCard className="w-3.5 h-3.5 text-brand" />
               <span>{tr('Mode de paiement de l’acompte :', 'طريقة دفع العربون:')}</span>
             </label>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {paymentMethods.map((method) => {
+            <div className="checkout-payment-grid">
+              {PAYMENT_METHODS.map((method) => {
                 const value = method.toLowerCase();
-                const META: Record<string, { label: string; hint: string }> = {
-                  CARD: { label: tr('Carte bancaire', 'بطاقة بنكية'), hint: tr(`−${depositInfo.cardDiscountPercent}% · après encaissement`, `خصم ${depositInfo.cardDiscountPercent}% · بعد التحصيل`) },
-                  FLOUCI: { label: 'Flouci / D17', hint: tr('Puis envoyez la capture', 'ثم أرسل لقطة الدفع') },
-                  BANK_TRANSFER: { label: tr('Virement', 'تحويل بنكي'), hint: tr('Puis envoyez le reçu', 'ثم أرسل الوصل') },
-                  POSTE: { label: tr('Mandat poste', 'حوالة بريدية'), hint: tr('Puis envoyez le reçu', 'ثم أرسل الوصل') },
+                const available = AVAILABLE_PAYMENT_METHODS.has(method);
+                const META: Record<CheckoutPaymentMethod, { label: string; hint: string }> = {
+                  CARD: { label: tr('Carte bancaire', 'بطاقة بنكية'), hint: tr('Paiement en ligne non activé', 'الدفع الإلكتروني غير مفعّل') },
+                  FLOUCI: { label: 'Flouci / D17', hint: tr('Paiement en ligne non activé', 'الدفع الإلكتروني غير مفعّل') },
+                  BANK_TRANSFER: { label: tr('Virement bancaire', 'تحويل بنكي'), hint: tr('Disponible · justificatif requis', 'متاح · إثبات الدفع مطلوب') },
+                  POSTE: { label: tr('Transfert postal', 'تحويل بريدي'), hint: tr('Disponible · justificatif requis', 'متاح · إثبات الدفع مطلوب') },
                 };
-                const meta = META[method] || { label: method, hint: '' };
+                const meta = META[method];
+                const selected = formData.paymentMethod === value;
                 return (
                   <button
                     key={method}
                     type="button"
-                    onClick={() => setFormData({ ...formData, paymentMethod: value })}
-                    className={`py-2.5 px-2 rounded-xl border text-center transition-all ${
-                      formData.paymentMethod === value
+                    aria-disabled={!available}
+                    aria-pressed={selected}
+                    onClick={() => {
+                      if (!available) {
+                        setPaymentAvailabilityNotice(tr(
+                          'Ce mode de paiement sera bientôt disponible. Pour le moment, veuillez utiliser le virement bancaire ou le transfert postal.',
+                          'ستتوفر طريقة الدفع هذه قريبًا. حاليًا، يرجى استخدام التحويل البنكي أو التحويل البريدي.',
+                        ));
+                        return;
+                      }
+                      setPaymentAvailabilityNotice('');
+                      setError(null);
+                      setFormData({ ...formData, paymentMethod: value });
+                    }}
+                    className={`checkout-payment-option rounded-xl border transition-all ${
+                      selected
                         ? 'border-brand bg-brand/10 text-brand'
-                        : 'border-line bg-surface text-muted'
+                        : available
+                          ? 'border-line bg-surface text-muted hover:border-brand/50'
+                          : 'border-line bg-surface text-muted'
                     }`}
                   >
-                    <span className="block text-xs font-bold">{meta.label}</span>
-                    <span className="mt-0.5 block text-[9px] font-semibold opacity-75">{meta.hint}</span>
+                    <span className="checkout-payment-logo-frame">
+                      <img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" loading="eager" decoding="async" />
+                    </span>
+                    <span className="block text-xs font-black leading-tight">{meta.label}</span>
+                    {!available && <span className="checkout-payment-badge">{tr('Bientôt disponible', 'متاح قريبًا')}</span>}
+                    <span className="block text-[9px] font-semibold leading-tight opacity-80">{meta.hint}</span>
                   </button>
                 );
               })}
             </div>
-            {/* تعليمات الطريقة المختارة + العربون (خصم البطاقة مُطبَّق) */}
+            {paymentAvailabilityNotice && (
+              <p className="mt-2 flex items-start gap-2 rounded-xl border border-accent bg-accent/10 p-3 text-[11px] font-bold leading-5 text-ink" role="status">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
+                <span>{paymentAvailabilityNotice}</span>
+              </p>
+            )}
+            {/* Instructions de virement ou transfert postal — paiement vérifié manuellement. */}
             {(() => {
-              const base = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
+              const deposit = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
               const method = formData.paymentMethod.toUpperCase();
-              const discount = method === 'CARD' ? Math.round((base * depositInfo.cardDiscountPercent) / 100 * 1000) / 1000 : 0;
-              const deposit = Math.round((base - discount) * 1000) / 1000;
               const instructions: Record<string, string> = {
-                CARD: tr(
-                  `Acompte carte : ${deposit.toFixed(3)} DT après remise de −${depositInfo.cardDiscountPercent}% (−${discount.toFixed(3)} DT). Notre équipe vous transmettra les instructions de règlement sécurisé. La commande, la facture et le suivi seront activés après confirmation de l’encaissement. Ne communiquez jamais votre numéro de carte par message.`,
-                  `عربون البطاقة: ${deposit.toFixed(3)} د.ت بعد خصم ${depositInfo.cardDiscountPercent}% (−${discount.toFixed(3)} د.ت). يرسل لك فريقنا تعليمات التحصيل الآمن، ثم يُفعّل الطلب والفاتورة والتتبع بعد تأكيد التحصيل. لا ترسل رقم بطاقتك في رسالة.`
-                ),
-                FLOUCI: tr(
-                  `Envoyez ${deposit.toFixed(3)} DT via Flouci / D17 au ${depositInfo.flouciNumber || 'numéro communiqué par AYROVI'}, puis téléversez la capture depuis votre espace client.`,
-                  `أرسل ${deposit.toFixed(3)} د.ت عبر Flouci / D17 إلى ${depositInfo.flouciNumber || 'الرقم الذي توفره AYROVI'}، ثم ارفع لقطة الدفع من حسابك.`
-                ),
                 BANK_TRANSFER: tr(
                   `Effectuez un virement de ${deposit.toFixed(3)} DT au nom de ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB : ${depositInfo.bankRib}` : ''}, puis téléversez le reçu depuis votre espace client.`,
                   `حوّل ${deposit.toFixed(3)} د.ت باسم ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB: ${depositInfo.bankRib}` : ''}، ثم ارفع الوصل من حسابك.`
@@ -502,8 +540,23 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             })()}
           </div>
 
+          <section className="checkout-payment-summary rounded-xl border border-line bg-surface p-3.5 text-[11px] leading-5" aria-label={tr('Disponibilité des modes de paiement', 'توفر وسائل الدفع')}>
+            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
+              <div>
+                <strong className="block text-ink">{tr('Modes disponibles', 'الوسائل المتاحة')}</strong>
+                <p className="font-bold text-success">✓ {tr('Virement bancaire', 'تحويل بنكي')}</p>
+                <p className="font-bold text-success">✓ {tr('Transfert postal', 'تحويل بريدي')}</p>
+              </div>
+              <div>
+                <strong className="block text-ink">{tr('Bientôt disponibles', 'متاحة قريبًا')}</strong>
+                <p className="font-semibold text-muted">○ {tr('Carte bancaire', 'بطاقة بنكية')}</p>
+                <p className="font-semibold text-muted">○ Flouci / D17</p>
+              </div>
+            </div>
+          </section>
+
           {/* Summary Box */}
-          <div className="bg-surface border border-line rounded-xl p-3.5 text-xs space-y-1.5">
+          <div className="checkout-payment-summary bg-surface border border-line rounded-xl p-3.5 text-xs space-y-1.5">
             <div className="flex justify-between"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>
             {breakdown.customs > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Douane', 'المعاليم الديوانية')}</span><strong>{formatMoney(breakdown.customs)}</strong></div>}
             <div className="flex justify-between"><span className="text-muted">{tr('Livraison', 'التوصيل')}</span><strong>{formatMoney(breakdown.shipping)}</strong></div>
@@ -515,20 +568,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <span className="text-base font-extrabold text-brand">{formatMoney(totalTND)}</span>
             </div>
             {(() => {
-              const isCard = formData.paymentMethod.toUpperCase() === 'CARD';
-              const base = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
-              const discount = isCard ? Math.round((base * depositInfo.cardDiscountPercent) / 100 * 1000) / 1000 : 0;
-              const deposit = Math.round((base - discount) * 1000) / 1000;
+              const deposit = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
               const balance = Math.round((totalTND - deposit) * 1000) / 1000;
               return (<>
                 <div className="flex justify-between items-center border-t border-line pt-1.5">
                   <span className="text-accent-deep font-bold">{tr(`Acompte à régler maintenant (${depositInfo.percent}%) :`, `العربون المطلوب الآن (${depositInfo.percent}%):`)}</span>
                   <span className="text-base font-extrabold text-accent-deep">{deposit.toFixed(3)} {tr('DT', 'د.ت')}</span>
                 </div>
-                {discount > 0 && <div className="flex justify-between items-center">
-                  <span className="font-bold text-brand">{tr(`Remise carte bancaire (−${depositInfo.cardDiscountPercent}%) :`, `خصم البطاقة البنكية (−${depositInfo.cardDiscountPercent}%):`)}</span>
-                  <span className="font-extrabold text-brand">−{discount.toFixed(3)} {tr('DT', 'د.ت')}</span>
-                </div>}
                 <div className="flex justify-between items-center">
                   <span className="text-muted font-semibold">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')}</span>
                   <span className="font-extrabold text-ink">{balance.toFixed(3)} {tr('DT', 'د.ت')}</span>
@@ -543,12 +589,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </label>
 
           {/* Submit CTA */}
-          <div className="grid grid-cols-[auto_1fr] gap-2">
-            <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary text-xs">{tr('Retour à la livraison', 'العودة إلى التوصيل')}</button>
+          <div className="grid grid-cols-2 gap-2">
+            <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour à la livraison', 'العودة إلى التوصيل')}</button>
             <button
               type="submit"
               disabled={isLoading || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}
-              className="ay-btn-primary text-xs sm:text-sm"
+              className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm"
             >
               {isLoading ? (
                 <>
@@ -565,8 +611,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </div>
           </>}
         </form>
-
-      </div>
-    </div>
+    </CheckoutFlowShell>
   );
 };

@@ -1,0 +1,181 @@
+/* One responsive layout contract for Livraison, Paiement and Commande enregistrée. */
+.checkout-flow-page {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: flex;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  align-items: flex-start;
+  justify-content: center;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--ayrovi-neutral-900) 50%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.checkout-flow-container {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--ayrovi-neutral-200);
+  border-radius: var(--ayrovi-radius-card);
+  background: var(--ayrovi-white);
+  box-shadow: var(--ayrovi-shadow-overlay);
+}
+
+.checkout-flow-content {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  padding-block: 1.25rem;
+  padding-inline: clamp(1rem, 5vw, 1.25rem);
+}
+
+.checkout-flow-content > *,
+.checkout-payment-grid,
+.checkout-payment-option,
+.checkout-payment-summary {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.checkout-payment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.checkout-payment-option {
+  position: relative;
+  display: flex;
+  min-height: 8.75rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  overflow: hidden;
+  padding: 0.6rem 0.5rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.checkout-payment-option[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.checkout-payment-logo-frame {
+  display: grid;
+  width: 100%;
+  height: 3.5rem;
+  place-items: center;
+  overflow: hidden;
+  border-radius: calc(var(--ayrovi-radius-control) * 0.75);
+  background: var(--ayrovi-white);
+}
+
+.checkout-payment-logo {
+  display: block;
+  width: auto;
+  max-width: min(100%, 6.25rem);
+  height: 2.75rem;
+  object-fit: contain;
+  object-position: center;
+}
+
+.checkout-payment-badge {
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.45rem;
+  background: color-mix(in srgb, var(--ayrovi-accent) 24%, transparent);
+  color: var(--ayrovi-accent-dark);
+  font-size: 0.55rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.checkout-confirmation-row {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  align-items: start;
+  gap: 0.75rem;
+}
+
+.checkout-confirmation-row > :last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+.checkout-payment-summary > .flex {
+  min-width: 0;
+  gap: 0.75rem;
+}
+
+.checkout-payment-summary > .flex > * {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.checkout-payment-summary > .flex > :last-child {
+  text-align: end;
+}
+
+@media (max-width: 639px) {
+  .checkout-flow-page {
+    align-items: stretch;
+    padding: 0;
+    background: var(--ayrovi-white);
+    backdrop-filter: none;
+  }
+
+  .checkout-flow-container {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100dvh;
+    margin: 0;
+    border-inline: 0;
+    border-block-start: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .checkout-flow-content {
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (min-width: 640px) {
+  .checkout-flow-page {
+    padding: 1.5rem;
+  }
+
+  .checkout-flow-container--form {
+    max-width: 32rem;
+  }
+
+  .checkout-flow-container--confirmation {
+    max-width: 28rem;
+    margin-block: auto;
+  }
+
+  .checkout-flow-content {
+    padding: 1.5rem;
+  }
+
+  .checkout-flow-container--confirmation .checkout-flow-content {
+    padding: 2rem;
+  }
+
+  .checkout-payment-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
