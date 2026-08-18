@@ -228,13 +228,19 @@ export function buildInvoiceLines(db: QatafoDatabase, orderId: string): PdfLine[
 }
 
 export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): Promise<string> {
-  const order = db.get<any>('SELECT id,invoice_number FROM orders WHERE id=?', orderId);
-  if (!order?.invoice_number) throw new Error('INVOICE_NUMBER_MISSING');
-  const target = invoiceAbsolutePath(String(order.invoice_number));
+  const invoice = db.get<any>("SELECT * FROM invoices WHERE order_id=? AND status='ISSUED'", orderId);
+  if (!invoice?.invoice_number) throw new Error('INVOICE_NUMBER_MISSING');
+  // Keep legacy invoice columns synchronized for the existing PDF template only;
+  // the invoices entity is the authoritative document record.
+  db.run('UPDATE orders SET invoice_number=? WHERE id=?', invoice.invoice_number, orderId);
+  const target = invoiceAbsolutePath(String(invoice.invoice_number));
 
-  // Deterministic local generation: no browser binary, sandbox flags or system libraries.
   writeSimplePdf(buildInvoiceLines(db, orderId), target);
-  db.run('UPDATE orders SET invoice_path=?, updated_at=? WHERE id=?', target, new Date().toISOString(), orderId);
+  const now = new Date().toISOString();
+  db.transaction(() => {
+    db.run('UPDATE invoices SET file_path=?,updated_at=? WHERE id=?', target, now, invoice.id);
+    db.run('UPDATE orders SET invoice_path=?,updated_at=? WHERE id=?', target, now, orderId);
+  });
   return target;
 }
 

@@ -15,7 +15,7 @@ import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
 const SUPPORTED_STORES = new Set(['amazon', 'shein', 'temu', 'aliexpress', 'generic']);
-const PAYMENT_METHODS = new Set<PaymentMethodCode>(['COD', 'D17', 'FLOUCI', 'CARD', 'BANK_TRANSFER', 'POSTE']);
+const PAYMENT_METHODS = new Set<PaymentMethodCode>(['PENDING_SELECTION', 'COD', 'D17', 'FLOUCI', 'CARD', 'BANK_TRANSFER', 'POSTE']);
 const DEFAULT_PAYMENT_METHODS: PaymentMethodCode[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
 
 
@@ -413,7 +413,9 @@ export function createApiRouter(
       });
     }
 
-    const paymentCode = String(paymentMethod || '').trim().toUpperCase();
+    // Checkout creates the order first. Payment method selection belongs to the
+    // persisted order detail, not to order creation.
+    const paymentCode = String(paymentMethod || 'PENDING_SELECTION').trim().toUpperCase();
     const paymentSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='payment_methods'");
     const governorateSetting = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='governorates'");
     let configuredPayments: PaymentMethodCode[] = DEFAULT_PAYMENT_METHODS;
@@ -431,7 +433,8 @@ export function createApiRouter(
     } catch {
       return res.status(500).json({ success: false, error: 'La configuration commerciale est invalide.' });
     }
-    if (!PAYMENT_METHODS.has(paymentCode as PaymentMethodCode) || !configuredPayments.includes(paymentCode as PaymentMethodCode)) {
+    if (!PAYMENT_METHODS.has(paymentCode as PaymentMethodCode)
+      || (paymentCode !== 'PENDING_SELECTION' && !configuredPayments.includes(paymentCode as PaymentMethodCode))) {
       return res.status(400).json({ success: false, error: 'Ce moyen de paiement n’est pas disponible.' });
     }
     if (configuredGovernorates.length && !configuredGovernorates.includes(city.trim())) {

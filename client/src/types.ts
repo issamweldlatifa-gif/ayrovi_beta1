@@ -97,6 +97,33 @@ export interface CustomerInfo {
   locale: 'fr-TN' | 'ar-TN';
 }
 
+export type CustomerOrderStatus =
+  | 'CREATED'
+  | 'AWAITING_DEPOSIT'
+  | 'AWAITING_PAYMENT_VERIFICATION'
+  | 'CONFIRMED'
+  | 'PREPARING'
+  | 'SHIPPED'
+  | 'IN_TRANSIT'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'CANCELLED';
+
+export type CustomerPaymentStatus =
+  | 'PENDING'
+  | 'PENDING_VERIFICATION'
+  | 'PARTIALLY_PAID'
+  | 'PAID'
+  | 'FAILED'
+  | 'REJECTED'
+  | 'REFUNDED';
+
+export type CustomerPaymentMethod = 'PENDING_SELECTION' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
+export type CustomerTransactionStatus = CustomerPaymentStatus;
+export type CustomerProofStatus = 'PENDING_VERIFICATION' | 'APPROVED' | 'REJECTED';
+export type CustomerInvoiceStatus = 'ISSUED' | 'VOID';
+export type CustomerNotificationType = 'GENERAL' | 'ORDER' | 'ACCOUNT' | 'PROMOTION' | 'PAYMENT' | 'PROOF' | 'SHIPPING' | 'INVOICE';
+
 export interface OrderResult {
   orderNumber: string;
   customer: CustomerInfo;
@@ -117,8 +144,8 @@ export interface OrderResult {
     percent: number;
     amountTnd: number;
     balanceTnd: number;
-    method: string;
-    status: string;
+    method: CustomerPaymentMethod | string;
+    status: CustomerPaymentStatus | string;
   } | null;
 }
 
@@ -153,4 +180,198 @@ export interface CustomerAddress {
   is_default: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface CustomerOrderSummary {
+  id: string;
+  order_number: string;
+  status: CustomerOrderStatus;
+  payment_status: CustomerPaymentStatus;
+  payment_method: CustomerPaymentMethod;
+  total_tnd: number;
+  governorate?: string;
+  item_count: number;
+  image_url: string | null;
+  created_at: string;
+}
+
+export interface CustomerAccountOverview {
+  account: CustomerAccount;
+  counts: {
+    orders: number;
+    addresses: number;
+    favorites: number;
+    cartItems: number;
+    unreadNotifications: number;
+  };
+  totalSpent: number;
+  recentOrders: CustomerOrderSummary[];
+}
+
+export interface CustomerPayment {
+  id: string;
+  payment_number: string;
+  order_id: string;
+  order_number: string;
+  method: CustomerPaymentMethod;
+  status: CustomerPaymentStatus;
+  amount_tnd: number;
+  currency: string;
+  reference: string;
+  provider: string;
+  confirmed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CustomerPaymentTransaction {
+  id: string;
+  transaction_number: string;
+  payment_id?: string;
+  order_id?: string;
+  order_number?: string;
+  provider: string;
+  provider_reference: string;
+  amount_tnd: number;
+  currency: string;
+  status: CustomerTransactionStatus;
+  failure_reason: string;
+  confirmed_at: string | null;
+  created_at: string;
+}
+
+export interface CustomerPaymentProof {
+  id: string;
+  original_name: string;
+  mime_type: string;
+  size_bytes: number;
+  transfer_reference: string;
+  status: CustomerProofStatus;
+  submitted_at: string;
+  reviewed_at: string | null;
+  rejection_reason: string;
+}
+
+export interface CustomerInvoice {
+  id: string;
+  invoice_number: string;
+  order_id?: string;
+  order_number?: string;
+  status: CustomerInvoiceStatus;
+  issued_at: string;
+}
+
+export interface CustomerDelivery {
+  id: string;
+  order_id: string;
+  order_number?: string;
+  status: CustomerOrderStatus | string;
+  delivery_status?: string;
+  carrier: string;
+  tracking_number: string;
+  tracking_url: string;
+  shipped_at: string | null;
+  expected_at?: string | null;
+  delivered_at?: string | null;
+}
+
+export interface CustomerOrderItem {
+  id: string;
+  product_name: string;
+  image_url: string;
+  quantity: number;
+  original_price: number;
+  currency: string;
+  total_tnd: number;
+  created_at: string;
+}
+
+export interface CustomerOrderHistoryEntry {
+  id: string;
+  from_status: string | null;
+  to_status: CustomerOrderStatus;
+  note: string;
+  created_at: string;
+}
+
+export interface CustomerOrderDetail extends CustomerOrderSummary {
+  address: string;
+  phone: string;
+  subtotal_tnd: number;
+  customs_tnd: number;
+  shipping_tnd: number;
+  service_tnd: number;
+  express_tnd: number;
+  discount_tnd: number;
+  deposit_percent: number;
+  deposit_amount_tnd: number;
+  paid_amount_tnd: number;
+  remainder_tnd: number;
+  items: CustomerOrderItem[];
+  history: CustomerOrderHistoryEntry[];
+  payment: CustomerPayment | null;
+  transactions: CustomerPaymentTransaction[];
+  proofs: CustomerPaymentProof[];
+  invoice: CustomerInvoice | null;
+  delivery: CustomerDelivery | null;
+  paymentOptions: {
+    choices: Array<'CARD' | 'BANK_TRANSFER'>;
+    cardGatewayAvailable: boolean;
+    transfer: {
+      companyName: string;
+      bankRib: string;
+      posteAccount: string;
+      reviewDelay: string;
+    };
+  };
+}
+
+export interface CustomerPaymentsOverview {
+  payments: CustomerPayment[];
+  transactions: CustomerPaymentTransaction[];
+}
+
+export interface CustomerFavorite {
+  id: string;
+  product_id: string | null;
+  source_url: string;
+  title: string;
+  image_url: string;
+  price_tnd: number | null;
+  created_at: string;
+}
+
+export interface CustomerNotification {
+  id: string;
+  type: CustomerNotificationType;
+  title: string;
+  message: string;
+  action_url: string;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface CustomerSecuritySummary {
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  identities: Array<{ provider: 'PHONE' | 'GOOGLE' | 'FACEBOOK'; created_at: string }>;
+  activeSessions: number;
+  lastLoginAt: string | null;
+}
+
+export interface CustomerPreferences {
+  account_id: string;
+  dark_mode: number;
+  order_updates: number;
+  payment_updates: number;
+  shipping_updates: number;
+  invoice_updates: number;
+  updated_at?: string;
+}
+
+export interface CustomerCardInitiation {
+  payUrl: string;
+  transactionNumber: string;
+  amountTnd: number;
+  status: 'PENDING';
 }

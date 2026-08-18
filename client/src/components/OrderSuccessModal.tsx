@@ -52,12 +52,6 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
   ));
 
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
-  const paymentMethodLabel = result.deposit?.method === 'BANK_TRANSFER'
-    ? tr('Virement bancaire', 'تحويل بنكي')
-    : result.deposit?.method === 'POSTE'
-      ? tr('Transfert postal', 'تحويل بريدي')
-      : String(result.deposit?.method || '');
-
   const handleCopyOrderNumber = async () => {
     try {
       await navigator.clipboard.writeText(result.orderNumber);
@@ -136,18 +130,18 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
             </div>
             <p className="text-[11px] leading-5 text-ink">
               {tr(
-                `Mode choisi : ${paymentMethodLabel}. Réglez l’acompte puis envoyez le justificatif depuis votre compte AYROVI. Aucun paiement n’est considéré comme reçu avant vérification par l’équipe.`,
-                `الطريقة المختارة: ${paymentMethodLabel}. ادفع العربون ثم أرسل إثبات الدفع من حساب AYROVI. لا يُعتبر أي دفع مستلمًا قبل تحقق الفريق.`
+                'La commande existe maintenant dans Mon compte → Mes commandes. Choisissez-y carte bancaire (confirmation par la passerelle) ou virement bancaire/postal (justificatif vérifié par AYROVI).',
+                'الطلب موجود الآن في حسابي ← طلباتي. اختر هناك البطاقة البنكية (تأكيد عبر البوابة) أو التحويل البنكي/البريدي (إثبات تتحقق منه AYROVI).'
               )}
             </p>
             <p className="rounded-full border border-warning/30 bg-warning/10 px-3 py-2 text-center text-[10px] font-black text-warning">
-              {tr('Paiement en attente de vérification', 'الدفع في انتظار التحقق')}
+              {tr('Commande en attente d’acompte', 'الطلب في انتظار العربون')}
             </p>
             <ol className="space-y-1 rounded-xl border border-line bg-surface p-3 text-[10px] font-semibold leading-5 text-muted">
-              <li>1. {tr('Client : téléverser le justificatif.', 'الحريف: رفع إثبات الدفع.')}</li>
-              <li>2. {tr('AYROVI : vérifier le paiement.', 'AYROVI: التحقق من الدفع.')}</li>
-              <li>3. {tr('Paiement et commande confirmés.', 'تأكيد الدفع والطلب.')}</li>
-              <li>4. {tr('Facture et suivi activés.', 'تفعيل الفاتورة والتتبع.')}</li>
+              <li>1. {tr('Commande visible immédiatement dans Mes commandes.', 'الطلب ظاهر فورًا في طلباتي.')}</li>
+              <li>2. {tr('Choisir carte ou virement bancaire/postal.', 'اختيار البطاقة أو التحويل البنكي/البريدي.')}</li>
+              <li>3. {tr('Paiement vérifié, puis commande confirmée.', 'التحقق من الدفع ثم تأكيد الطلب.')}</li>
+              <li>4. {tr('Suivi visible après expédition; facture visible après émission.', 'يظهر التتبع بعد الشحن والفاتورة بعد إصدارها.')}</li>
             </ol>
             <p className="text-[11px] text-ink">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')} <strong>{result.deposit.balanceTnd.toFixed(3)} {tr('DT', 'د.ت')}</strong></p>
             {onOpenAccount && (

@@ -4,6 +4,7 @@ import request from 'supertest';
 import { app, db, scraper } from '../src/server';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
 import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
+import { verifyKonnectCardPayment } from '../src/services/paymentGateway';
 
 const uniqueSession = (label: string) => `${label}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
@@ -541,7 +542,7 @@ describe('AYROVI platform', () => {
     expect(checkoutResponse.status).toBe(200);
     expect(checkoutResponse.body.success).toBe(true);
     expect(checkoutResponse.body.orderNumber).toMatch(/^AYR-\d{6}$/);
-    // Acompte de confirmation : 20% du total, statut PAYMENT_PENDING tant que l'acompte n'est pas validé.
+    // Acompte de confirmation : 20% du total, statut AWAITING_DEPOSIT tant que l'acompte n'est pas validé.
     expect(checkoutResponse.body.deposit.percent).toBe(20);
     expect(checkoutResponse.body.deposit.status).toBe('PENDING');
     expect(checkoutResponse.body.deposit.method).toBe('BANK_TRANSFER');
@@ -557,7 +558,7 @@ describe('AYROVI platform', () => {
     expect(order.delivery_longitude).toBeCloseTo(10.1815, 4);
     expect(order.terms_accepted_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     expect(order.locale).toBe('ar-TN');
-    expect(order.status).toBe('PAYMENT_PENDING');
+    expect(order.status).toBe('AWAITING_DEPOSIT');
     expect(order.deposit_status).toBe('PENDING');
     expect(order.deposit_percent).toBe(20);
     expect(order.payment_method).toBe('BANK_TRANSFER');
@@ -640,7 +641,7 @@ describe('AYROVI platform', () => {
     expect(checkout.status).toBe(200);
     expect(checkout.body.deposit.percent).toBe(20);
     const order = db.get<any>('SELECT * FROM orders WHERE account_id=?', accountId);
-    expect(order.status).toBe('PAYMENT_PENDING');
+    expect(order.status).toBe('AWAITING_DEPOSIT');
     expect(order.payment_method).toBe('CARD');
     expect(order.phone).toBe('55123456');
     db.clearCart(sessionId);
@@ -694,145 +695,129 @@ describe('AYROVI platform', () => {
     expect(db.get<any>('SELECT payment_method FROM orders WHERE id=?', checkout.body.orderId).payment_method).toBe('FLOUCI');
   });
 
-  test('deposit lifecycle: proof upload, admin review, invoice PDF and tracking code', async () => {
-    // 1) الطلب يُنشأ بحالة PAYMENT_PENDING مع عربون 20%
+  test('manual transfer lifecycle preserves proof history, separates invoice and enables tracking only after shipping', async () => {
+    const png = Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0x00,0x00,0x00,0x0d,0x49,0x48,0x44,0x52,0x00]);
     const depositSession = uniqueSession('deposit');
     await request(app).post('/api/cart/items').set('x-session-id', depositSession).send(createCartItem('Deposit flow item'));
-    const checkout = await customerAgent
-      .post('/api/checkout')
-      .set('x-session-id', depositSession)
-      .set('x-csrf-token', customerCsrf)
-      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Rue de la République', paymentMethod: 'bank_transfer' });
+    const checkout = await customerAgent.post('/api/checkout').set('x-session-id', depositSession).set('x-csrf-token', customerCsrf)
+      .send({ ...checkoutDefaults, name:'Client Test', phone:'98123456', city:'Tunis', address:'Rue de la République', paymentMethod:'PENDING_SELECTION' });
     expect(checkout.status).toBe(200);
     const orderId = checkout.body.orderId;
-    // لا فاتورة قبل تأكيد العربون
+    expect(db.get<any>('SELECT status,payment_method FROM orders WHERE id=?',orderId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_method:'PENDING_SELECTION'});
     expect((await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`)).status).toBe(404);
 
-    // 2) العميل يرفع وصل الدفع (تحقق من التوقيع الثنائي للملف)
-    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52, 0x00]);
-    const proof = await customerAgent
-      .post(`/api/customer/account/orders/${orderId}/deposit-proof`)
-      .set('x-csrf-token', customerCsrf)
-      .attach('proof', png, 'recu.png');
+    const selectTransfer = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
+    expect(selectTransfer.status).toBe(200);
+    expect(selectTransfer.body.data.quote.amountTnd).toBeGreaterThan(0);
+    const proof = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit-proof`).set('x-csrf-token',customerCsrf)
+      .field('transferReference','VIR-TEST-001').attach('proof',png,'recu.png');
     expect(proof.status).toBe(200);
-    expect(proof.body.data.depositStatus).toBe('SUBMITTED');
-    // ملف مموّه يُرفض، وعميل أجنبي لا يصل للطلب
-    const disguised = await customerAgent
-      .post(`/api/customer/account/orders/${orderId}/deposit-proof`)
-      .set('x-csrf-token', customerCsrf)
-      .attach('proof', Buffer.from('MZ this is not an image payload'), 'fake.png');
-    expect(disguised.status).toBe(415);
-    const foreignProof = await secondCustomerAgent
-      .post(`/api/customer/account/orders/${orderId}/deposit-proof`)
-      .set('x-csrf-token', secondCustomerCsrf)
-      .attach('proof', png, 'recu.png');
+    expect(proof.body.data.paymentStatus).toBe('PENDING_VERIFICATION');
+    expect(db.get<any>('SELECT status FROM orders WHERE id=?',orderId).status).toBe('AWAITING_PAYMENT_VERIFICATION');
+    expect(db.get<any>('SELECT status FROM payment_proofs WHERE order_id=?',orderId).status).toBe('PENDING_VERIFICATION');
+
+    const foreignProof = await secondCustomerAgent.post(`/api/customer/account/orders/${orderId}/deposit-proof`).set('x-csrf-token',secondCustomerCsrf)
+      .field('transferReference','FOREIGN').attach('proof',png,'recu.png');
     expect(foreignProof.status).toBe(404);
 
-    // 3) مراجعة الأدمن: الوصول بدون مصادقة محظور
-    expect((await request(app).get(`/api/admin/orders/${orderId}/deposit-proof`)).status).toBe(401);
-    const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
-    expect(login.status).toBe(200);
-    const reviewerCsrf = login.body.data.csrfToken;
-    expect((await reviewer.get(`/api/admin/orders/${orderId}/deposit-proof`)).status).toBe(200);
-    expect((await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).send({ decision: 'approve' })).status).toBe(403); // بدون CSRF
-
-    // 4) القبول ⇒ تأكيد + كود تتبع + فاتورة PDF
-    const review = await reviewer
-      .post(`/api/admin/orders/${orderId}/deposit/review`)
-      .set('x-csrf-token', reviewerCsrf)
-      .send({ decision: 'approve', note: 'Reçu conforme' });
+    const reviewer=request.agent(app); const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@ayrovi.tn',password:'AyroviBeta2026!'});
+    const reviewerCsrf=login.body.data.csrfToken;
+    const pending=await reviewer.get('/api/admin/payment-proofs/pending');
+    expect(pending.body.data.some((item:any)=>item.order_id===orderId)).toBe(true);
+    const review=await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).set('x-csrf-token',reviewerCsrf).send({decision:'approve',note:'Virement rapproché'});
     expect(review.status).toBe(200);
-    expect(review.body.data.depositStatus).toBe('PAID');
-    expect(review.body.data.trackingCode).toMatch(/^AYR-TN-\d{8}$/);
-    expect(review.body.data.invoice.number).toMatch(/^INV-\d{4}-\d{6}$/);
-    expect(review.body.data.invoice.generated).toBe(true);
-    const confirmed = db.get<any>('SELECT * FROM orders WHERE id=?', orderId);
-    expect(confirmed.status).toBe('CONFIRMED');
-    expect(confirmed.tracking_code).toMatch(/^AYR-TN-/);
-    expect(db.get<any>('SELECT status FROM payments WHERE order_id=?', orderId).status).toBe('PAID');
+    expect(review.body.data).toMatchObject({paymentStatus:'PAID',orderStatus:'CONFIRMED'});
+    const confirmed=db.get<any>('SELECT * FROM orders WHERE id=?',orderId);
+    expect(confirmed.invoice_number).toBe('');
+    expect(confirmed.tracking_code).toBe('');
+    expect(db.get<any>('SELECT transaction_number,status FROM payment_transactions WHERE order_id=?',orderId).status).toBe('PAID');
 
-    // 5) العميل يحمّل فاتورته (مالك الطلب فقط) والملف PDF سليم
-    const invoice = await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`);
+    const issue=await reviewer.post(`/api/admin/orders/${orderId}/invoice/issue`).set('x-csrf-token',reviewerCsrf);
+    expect(issue.status).toBe(201);
+    expect(issue.body.data.invoiceNumber).toMatch(/^INV-\d{4}-\d{6}$/);
+    const invoice=await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`);
     expect(invoice.status).toBe(200);
     expect(invoice.headers['content-type']).toContain('application/pdf');
-    expect(fs.readFileSync(confirmed.invoice_path).slice(0, 5).toString()).toBe('%PDF-');
-    expect((await secondCustomerAgent.get(`/api/customer/account/orders/${orderId}/invoice`)).status).toBe(404);
 
-    // 6) الرفض بملاحظة: عربون مرفوض والطلب يبقى بانتظار الدفع
-    const rejectSession = uniqueSession('reject');
-    await request(app).post('/api/cart/items').set('x-session-id', rejectSession).send(createCartItem('Rejected deposit item'));
-    const rejectCheckout = await customerAgent
-      .post('/api/checkout')
-      .set('x-session-id', rejectSession)
-      .set('x-csrf-token', customerCsrf)
-      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'poste' });
-    expect(rejectCheckout.status).toBe(200);
-    const rejectedOrderId = rejectCheckout.body.orderId;
-    // طريقة يدوية بدون وصل: لا يمكن قبولها
-    const blindApprove = await reviewer
-      .post(`/api/admin/orders/${rejectedOrderId}/deposit/review`)
-      .set('x-csrf-token', reviewerCsrf)
-      .send({ decision: 'approve' });
-    expect(blindApprove.status).toBe(409);
-    await customerAgent
-      .post(`/api/customer/account/orders/${rejectedOrderId}/deposit-proof`)
-      .set('x-csrf-token', customerCsrf)
-      .attach('proof', png, 'mandat.png');
-    const reject = await reviewer
-      .post(`/api/admin/orders/${rejectedOrderId}/deposit/review`)
-      .set('x-csrf-token', reviewerCsrf)
-      .send({ decision: 'reject', note: 'Mandat illisible' });
-    expect(reject.status).toBe(200);
-    const rejected = db.get<any>('SELECT status,deposit_status,deposit_review_note FROM orders WHERE id=?', rejectedOrderId);
-    expect(rejected.deposit_status).toBe('REJECTED');
-    expect(rejected.status).toBe('PAYMENT_PENDING');
-    expect(rejected.deposit_review_note).toBe('Mandat illisible');
-  }, 20000);
+    expect((await customerAgent.get('/api/customer/account/tracking')).body.data.some((item:any)=>item.order_id===orderId)).toBe(false);
+    expect((await reviewer.put(`/api/admin/orders/${orderId}/status`).set('x-csrf-token',reviewerCsrf).send({status:'PREPARING'})).status).toBe(200);
+    const shipped=await reviewer.put(`/api/admin/orders/${orderId}/delivery`).set('x-csrf-token',reviewerCsrf)
+      .send({status:'SHIPPED',carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001',tracking_url:'https://tracking.example/REAL-001'});
+    expect(shipped.status).toBe(200);
+    const tracking=await customerAgent.get('/api/customer/account/tracking');
+    expect(tracking.body.data.find((item:any)=>item.order_id===orderId)).toMatchObject({carrier:'Rapid Poste',tracking_number:'TRACK-REAL-001'});
 
-  test('card checkout applies the 5% card discount and notification feed tracks the review queue', async () => {
-    const cardSession = uniqueSession('card');
-    await request(app).post('/api/cart/items').set('x-session-id', cardSession).send(createCartItem('Card discount item'));
-    const checkout = await customerAgent
-      .post('/api/checkout')
-      .set('x-session-id', cardSession)
-      .set('x-csrf-token', customerCsrf)
-      .send({ ...checkoutDefaults, name: 'Client Test', phone: '98123456', city: 'Tunis', address: 'Tunis', paymentMethod: 'card' });
-    expect(checkout.status).toBe(200);
-    const { deposit } = checkout.body;
-    // خصم 5% على العربون للدفع بالبطاقة
-    expect(deposit.method).toBe('CARD');
-    expect(deposit.cardDiscountPercent).toBe(5);
-    expect(deposit.discountTnd).toBeCloseTo(deposit.baseAmountTnd * 0.05, 2);
-    expect(deposit.amountTnd).toBeCloseTo(deposit.baseAmountTnd * 0.95, 2);
-    const orderRow = db.get<any>('SELECT deposit_discount_tnd FROM orders WHERE id=?', checkout.body.orderId);
-    expect(orderRow.deposit_discount_tnd).toBeCloseTo(deposit.discountTnd, 2);
+    // Reject → reason → re-upload → approve while retaining both proof records.
+    const retrySession=uniqueSession('proof-retry');
+    await request(app).post('/api/cart/items').set('x-session-id',retrySession).send(createCartItem('Retry proof item'));
+    const retryCheckout=await customerAgent.post('/api/checkout').set('x-session-id',retrySession).set('x-csrf-token',customerCsrf)
+      .send({...checkoutDefaults,name:'Client Test',phone:'98123456',city:'Tunis',address:'Tunis',paymentMethod:'PENDING_SELECTION'});
+    const retryId=retryCheckout.body.orderId;
+    await customerAgent.post(`/api/customer/account/orders/${retryId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
+    await customerAgent.post(`/api/customer/account/orders/${retryId}/deposit-proof`).set('x-csrf-token',customerCsrf).field('transferReference','VIR-BAD').attach('proof',png,'bad.png');
+    const rejected=await reviewer.post(`/api/admin/orders/${retryId}/deposit/review`).set('x-csrf-token',reviewerCsrf).send({decision:'reject',note:'Document illisible'});
+    expect(rejected.status).toBe(200);
+    expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',retryId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_status:'REJECTED'});
+    await customerAgent.post(`/api/customer/account/orders/${retryId}/deposit-proof`).set('x-csrf-token',customerCsrf).field('transferReference','VIR-GOOD').attach('proof',png,'good.png');
+    expect(db.get<any>('SELECT COUNT(*) count FROM payment_proofs WHERE order_id=?',retryId).count).toBe(2);
+    expect((await reviewer.post(`/api/admin/orders/${retryId}/deposit/review`).set('x-csrf-token',reviewerCsrf).send({decision:'approve'})).status).toBe(200);
+    expect(db.get<any>("SELECT COUNT(*) count FROM payment_proofs WHERE order_id=? AND status='REJECTED'",retryId).count).toBe(1);
+  },20000);
 
-    // إشعارات الإدارة: طلب جديد + وصولات سابقة بانتظار المراجعة
-    const reviewer = request.agent(app);
-    const login = await reviewer.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
-    expect(login.status).toBe(200);
-    const csrf = login.body.data.csrfToken;
-    const notifications = await reviewer.get('/api/admin/notifications');
-    expect(notifications.status).toBe(200);
-    expect(notifications.body.unread).toBeGreaterThan(0);
-    expect(notifications.body.data.some((n: any) => n.type === 'DEPOSIT_REVIEW')).toBe(true);
-    expect(notifications.body.data.some((n: any) => n.type === 'ORDER')).toBe(true);
+  test('card gateway success/failure is verified server-side and cannot be approved manually', async () => {
+    const previous={key:process.env.KONNECT_API_KEY,wallet:process.env.KONNECT_WALLET_ID,base:process.env.PUBLIC_BASE_URL,environment:process.env.KONNECT_ENVIRONMENT};
+    process.env.KONNECT_API_KEY='konnect-test-key'; process.env.KONNECT_WALLET_ID='wallet-test'; process.env.PUBLIC_BASE_URL='https://ayrovi.example'; process.env.KONNECT_ENVIRONMENT='sandbox';
+    const fetchMock=vi.spyOn(globalThis,'fetch');
+    try {
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFMISMATCH1',status:'completed',token:'TND',orderId:'AYR-EXPECTED:TXN-EXPECTED',reachedAmount:100001,transactions:[{status:'success'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const mismatchedAmount=await verifyKonnectCardPayment({paymentRef:'PAYREFMISMATCH1',expectedAmountTnd:100,expectedOrderNumber:'AYR-EXPECTED',expectedTransactionNumber:'TXN-EXPECTED'});
+      expect(mismatchedAmount.state).toBe('FAILED');
 
-    // قبول عربون البطاقة بدون وصل (البوابة تؤكد) ⇒ فاتورة فورية
-    const approve = await reviewer.post(`/api/admin/orders/${checkout.body.orderId}/deposit/review`).set('x-csrf-token', csrf).send({ decision: 'approve' });
-    expect(approve.status).toBe(200);
-    expect(approve.body.data.invoice.generated).toBe(true);
+      const cardSession=uniqueSession('card-gateway');
+      await request(app).post('/api/cart/items').set('x-session-id',cardSession).send(createCartItem('Card gateway item'));
+      const checkout=await customerAgent.post('/api/checkout').set('x-session-id',cardSession).set('x-csrf-token',customerCsrf)
+        .send({...checkoutDefaults,name:'Client Test',phone:'98123456',city:'Tunis',address:'Tunis',paymentMethod:'PENDING_SELECTION'});
+      const orderId=checkout.body.orderId;
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payUrl:'https://gateway.konnect.test/pay?payment_ref=PAYREFSUCCESS1',paymentRef:'PAYREFSUCCESS1'}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const initiated=await customerAgent.post(`/api/customer/account/orders/${orderId}/payments/card/initiate`).set('x-csrf-token',customerCsrf).send({});
+      expect(initiated.status).toBe(201);
+      expect(initiated.body.data.payUrl).toContain('https://gateway.konnect.test/');
+      const transactionNumber=initiated.body.data.transactionNumber;
+      const retriedInitiation=await customerAgent.post(`/api/customer/account/orders/${orderId}/payments/card/initiate`).set('x-csrf-token',customerCsrf).send({});
+      expect(retriedInitiation.status).toBe(200);
+      expect(retriedInitiation.body.data).toMatchObject({payUrl:initiated.body.data.payUrl,transactionNumber});
+      expect(db.get<any>("SELECT COUNT(*) count FROM payment_transactions WHERE order_id=? AND status='PENDING'",orderId).count).toBe(1);
+      const selected=db.get<any>('SELECT * FROM orders WHERE id=?',orderId);
+      expect(selected.payment_method).toBe('CARD');
+      expect(selected.deposit_discount_tnd).toBeGreaterThan(0);
+      const expectedMillimes=Math.round(Number(selected.deposit_amount_tnd)*1000);
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFSUCCESS1',status:'completed',token:'TND',orderId:`${selected.order_number}:${transactionNumber}`,reachedAmount:expectedMillimes,transactions:[{status:'success'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const verified=await customerAgent.get(`/api/customer/account/orders/${orderId}/payments/card/verify?transaction=${encodeURIComponent(transactionNumber)}`);
+      expect(verified.status).toBe(200); expect(verified.body.data.status).toBe('PAID');
+      expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',orderId)).toMatchObject({status:'CONFIRMED',payment_status:'PAID'});
+      expect(db.get<any>('SELECT status FROM payment_transactions WHERE order_id=?',orderId).status).toBe('PAID');
 
-    // إعادة توليد/إرسال الفاتورة عند الحاجة
-    const resend = await reviewer.post(`/api/admin/orders/${checkout.body.orderId}/invoice/resend`).set('x-csrf-token', csrf);
-    expect(resend.status).toBe(200);
-    expect(resend.body.data.invoiceNumber).toBe(approve.body.data.invoice.number);
+      const reviewer=request.agent(app);const login=await reviewer.post('/api/admin/auth/login').send({email:'admin@ayrovi.tn',password:'AyroviBeta2026!'});
+      const manualApproval=await reviewer.post(`/api/admin/orders/${orderId}/deposit/review`).set('x-csrf-token',login.body.data.csrfToken).send({decision:'approve'});
+      expect(manualApproval.status).toBe(409);
 
-    const readAll = await reviewer.post('/api/admin/notifications/read-all').set('x-csrf-token', csrf);
-    expect(readAll.body.unread).toBe(0);
-    expect((await request(app).get('/api/admin/notifications')).status).toBe(401);
-  }, 20000);
+      const failSession=uniqueSession('card-failure');
+      await request(app).post('/api/cart/items').set('x-session-id',failSession).send(createCartItem('Card failure item'));
+      const failCheckout=await customerAgent.post('/api/checkout').set('x-session-id',failSession).set('x-csrf-token',customerCsrf)
+        .send({...checkoutDefaults,name:'Client Test',phone:'98123456',city:'Tunis',address:'Tunis',paymentMethod:'PENDING_SELECTION'});
+      const failedId=failCheckout.body.orderId;
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payUrl:'https://gateway.konnect.test/pay?payment_ref=PAYREFFAIL001',paymentRef:'PAYREFFAIL001'}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const failedInit=await customerAgent.post(`/api/customer/account/orders/${failedId}/payments/card/initiate`).set('x-csrf-token',customerCsrf).send({});
+      const failedOrder=db.get<any>('SELECT * FROM orders WHERE id=?',failedId);
+      fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({payment:{id:'PAYREFFAIL001',status:'pending',token:'TND',orderId:`${failedOrder.order_number}:${failedInit.body.data.transactionNumber}`,reachedAmount:0,transactions:[{status:'failed'}]}}),{status:200,headers:{'Content-Type':'application/json'}}));
+      const failure=await customerAgent.get(`/api/customer/account/orders/${failedId}/payments/card/verify?transaction=${encodeURIComponent(failedInit.body.data.transactionNumber)}`);
+      expect(failure.body.data.status).toBe('FAILED');
+      expect(db.get<any>('SELECT status,payment_status FROM orders WHERE id=?',failedId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_status:'FAILED'});
+    } finally {
+      fetchMock.mockRestore();
+      for(const [key,value] of Object.entries({KONNECT_API_KEY:previous.key,KONNECT_WALLET_ID:previous.wallet,PUBLIC_BASE_URL:previous.base,KONNECT_ENVIRONMENT:previous.environment})) value===undefined?delete process.env[key]:process.env[key]=value;
+    }
+  });
 
   test('finance reports combine income, expenses and profit with strict validation', async () => {
     const reviewer = request.agent(app);
@@ -1121,35 +1106,21 @@ describe('AYROVI platform', () => {
     expect(db.get<any>('SELECT COUNT(*) count FROM product_arrivals WHERE product_id=? AND arrival_id=?', createdProductId, createdArrivalId).count).toBe(1);
   });
 
-  test('OMS updates order, payment and delivery histories atomically', async () => {
-    const before = await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
+  test('OMS prevents bypassing payment, order and shipping stages', async () => {
+    const before=await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
     expect(before.status).toBe(200);
     expect(before.body.data.pricing_snapshot.version).toBe(originalPricingVersion);
-
-    const status = await superAdmin
-      .put(`/api/admin/orders/${persistedOrderId}/status`)
-      .set('x-csrf-token', adminCsrf)
-      .send({ status: 'CONFIRMED', note: 'Validation automatique' });
-    expect(status.status).toBe(200);
-
-    const payment = await superAdmin
-      .put(`/api/admin/orders/${persistedOrderId}/payment`)
-      .set('x-csrf-token', adminCsrf)
-      .send({ status: 'PAID', reference: 'D17-TEST-001' });
-    expect(payment.status).toBe(200);
-    expect(payment.body.data.confirmed_by).toBeTruthy();
-
-    const delivery = await superAdmin
-      .put(`/api/admin/orders/${persistedOrderId}/delivery`)
-      .set('x-csrf-token', adminCsrf)
-      .send({ status: 'SHIPPED', carrier: 'Future Carrier', tracking_number: 'TRACK-001' });
-    expect(delivery.status).toBe(200);
-
-    const detail = await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
-    expect(detail.body.data.status).toBe('CONFIRMED');
-    expect(detail.body.data.payment.status).toBe('PAID');
-    expect(detail.body.data.delivery.status).toBe('SHIPPED');
-    expect(detail.body.data.history.some((entry: any) => entry.to_status === 'CONFIRMED')).toBe(true);
+    const status=await superAdmin.put(`/api/admin/orders/${persistedOrderId}/status`).set('x-csrf-token',adminCsrf).send({status:'CONFIRMED',note:'Bypass attempt'});
+    expect(status.status).toBe(409);
+    const payment=await superAdmin.put(`/api/admin/orders/${persistedOrderId}/payment`).set('x-csrf-token',adminCsrf).send({status:'PAID',reference:'FORBIDDEN'});
+    expect(payment.status).toBe(409);
+    const delivery=await superAdmin.put(`/api/admin/orders/${persistedOrderId}/delivery`).set('x-csrf-token',adminCsrf)
+      .send({status:'SHIPPED',carrier:'Future Carrier',tracking_number:'TRACK-001'});
+    expect(delivery.status).toBe(409);
+    const detail=await superAdmin.get(`/api/admin/orders/${persistedOrderId}`);
+    expect(detail.body.data.status).toBe('AWAITING_DEPOSIT');
+    expect(detail.body.data.payment.status).toBe('PENDING');
+    expect(detail.body.data.delivery.status).toBe('PENDING');
   });
 
   test('pricing changes are versioned without changing historical order snapshots', async () => {

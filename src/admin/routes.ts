@@ -126,9 +126,9 @@ const resources: Record<string, ResourceConfig> = {
   },
 };
 
-const orderStatuses = ['NEW','CONFIRMED','PAYMENT_PENDING','PAID','PURCHASING','PURCHASED','IN_TRANSIT','ARRIVED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'];
-const paymentStatuses = ['PENDING','PAID','FAILED','REFUNDED','CANCELLED'];
-const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED'];
+const orderStatuses = ['CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'];
+const paymentStatuses = ['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED'];
+const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED'];
 const adminRoles: AdminRole[] = ['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'];
 const ayrovixReviewStatuses: AyrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
@@ -945,6 +945,10 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       items: db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', order.id).map((item) => ({ ...item, pricing_snapshot: JSON.parse(item.pricing_snapshot) })),
       history: db.all<any>('SELECT * FROM order_status_history WHERE order_id=? ORDER BY created_at DESC', order.id),
       payment: db.get<any>('SELECT * FROM payments WHERE order_id=?', order.id),
+      transactions: db.all<any>('SELECT * FROM payment_transactions WHERE order_id=? ORDER BY created_at DESC', order.id),
+      proofs: db.all<any>(`SELECT id,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,reviewed_at,reviewed_by,rejection_reason
+        FROM payment_proofs WHERE order_id=? ORDER BY submitted_at DESC`, order.id),
+      invoice: db.get<any>('SELECT * FROM invoices WHERE order_id=?', order.id) || null,
       delivery: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id),
     } });
   });
@@ -955,21 +959,35 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     if (!orderStatuses.includes(status)) return res.status(400).json({ success: false, error: 'Statut de commande invalide.' });
     const existing = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
     if (!existing) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    if (status === existing.status) return res.json({ success: true, data: existing });
+    const transitions: Record<string, string[]> = {
+      CREATED: ['AWAITING_DEPOSIT','CANCELLED'],
+      AWAITING_DEPOSIT: ['CANCELLED'],
+      AWAITING_PAYMENT_VERIFICATION: ['CANCELLED'],
+      CONFIRMED: ['PREPARING','CANCELLED'],
+      PREPARING: ['CANCELLED'], // SHIPPED requires carrier/tracking through /delivery.
+      SHIPPED: ['IN_TRANSIT','CANCELLED'],
+      IN_TRANSIT: ['OUT_FOR_DELIVERY','CANCELLED'],
+      OUT_FOR_DELIVERY: ['DELIVERED','CANCELLED'],
+      DELIVERED: [], CANCELLED: [],
+    };
+    if (!(transitions[String(existing.status)] || []).includes(status)) {
+      return res.status(409).json({ success: false, error: status === 'SHIPPED'
+        ? 'Renseignez le transporteur et le numéro de suivi dans la livraison pour expédier.'
+        : 'Transition refusée : terminez d’abord l’étape précédente.' });
+    }
     const now = new Date().toISOString();
     db.transaction(() => {
       db.run('UPDATE orders SET status=?,updated_at=? WHERE id=?', status, now, existing.id);
       db.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at) VALUES (?,?,?,?,?,?,?)`,
         `history_${randomUUID()}`, existing.id, existing.status, status, note, admin(req).id, now);
+      if (status === 'IN_TRANSIT') db.run("UPDATE deliveries SET status='IN_TRANSIT',updated_at=? WHERE order_id=?", now, existing.id);
+      if (status === 'OUT_FOR_DELIVERY') db.run("UPDATE deliveries SET status='OUT_FOR_DELIVERY',updated_at=? WHERE order_id=?", now, existing.id);
       if (status === 'DELIVERED') db.run("UPDATE deliveries SET status='DELIVERED',delivered_at=?,updated_at=? WHERE order_id=?", now, now, existing.id);
-      if (status === 'CANCELLED') {
-        db.run("UPDATE payments SET status=CASE WHEN status='PAID' THEN 'REFUNDED' ELSE 'CANCELLED' END,updated_at=? WHERE order_id=?", now, existing.id);
-        db.run("UPDATE orders SET payment_status=CASE WHEN payment_status='PAID' THEN 'REFUNDED' ELSE 'CANCELLED' END WHERE id=?", existing.id);
-      }
-      if (existing.account_id && status !== existing.status) {
-        db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-          VALUES (?,?,'ORDER','Mise à jour de commande',?,?,?)`, `notification_${randomUUID()}`, existing.account_id,
-        `La commande ${existing.order_number} est maintenant au statut ${status}.`, `/compte/commandes/${existing.id}`, now);
-      }
+      // Cancellation never fabricates a refund or payment failure: payment state remains independent.
+      if (existing.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'ORDER','Mise à jour de commande',?,?,?)`, `notification_${randomUUID()}`, existing.account_id,
+      `La commande ${existing.order_number} est maintenant au statut ${status}.`, `/compte/commandes/${existing.id}`, now);
     });
     audit(db, req, 'STATUS_CHANGE', 'ORDERS', existing.id, { status: existing.status }, { status, note });
     res.json({ success: true, data: db.get<any>('SELECT * FROM orders WHERE id=?', existing.id) });
@@ -977,119 +995,105 @@ export function createAdminRouter(db: QatafoDatabase): Router {
 
   router.put('/orders/:id/payment', requireAdmin(db, 'payments:write'), (req, res) => {
     const status = String(req.body?.status || '');
-    const reference = String(req.body?.reference || '').trim().slice(0, 200) || null;
     if (!paymentStatuses.includes(status)) return res.status(400).json({ success: false, error: 'Statut de paiement invalide.' });
-    const payment = db.get<any>('SELECT * FROM payments WHERE order_id=?', req.params.id);
+    const payment = db.get<any>('SELECT id FROM payments WHERE order_id=?', req.params.id);
     if (!payment) return res.status(404).json({ success: false, error: 'Paiement introuvable.' });
-    const now = new Date().toISOString();
-    db.transaction(() => {
-      db.run(`UPDATE payments SET status=?,reference=?,confirmed_by=?,confirmed_at=?,updated_at=? WHERE order_id=?`,
-        status, reference, status === 'PAID' ? admin(req).id : null, status === 'PAID' ? now : null, now, req.params.id);
-      db.run('UPDATE orders SET payment_status=?,updated_at=? WHERE id=?', status, now, req.params.id);
-      const order = db.get<any>('SELECT id,order_number,account_id FROM orders WHERE id=?', req.params.id);
-      if (order?.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-        VALUES (?,?,'ORDER','Paiement mis à jour',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-      `Le paiement de la commande ${order.order_number} est maintenant ${status}.`, `/compte/commandes/${order.id}`, now);
-    });
-    audit(db, req, 'PAYMENT_STATUS', 'PAYMENTS', payment.id, payment, { status, reference });
-    res.json({ success: true, data: db.get<any>('SELECT * FROM payments WHERE order_id=?', req.params.id) });
+    return res.status(409).json({ success: false, error: 'Le statut est géré uniquement par la vérification Konnect ou la révision du justificatif; aucun paiement/remboursement manuel n’est enregistré ici.' });
   });
 
-  // ===== عرض وصل دفع العربون (للإدارة فقط) =====
-  router.get('/orders/:id/deposit-proof', requireAdmin(db, 'commerce:read'), (req, res) => {
-    const order = db.get<any>('SELECT id,deposit_proof_path FROM orders WHERE id=?', req.params.id);
-    if (!order?.deposit_proof_path || !fs.existsSync(String(order.deposit_proof_path))) {
-      return res.status(404).json({ success: false, error: 'Aucune preuve téléversée pour cette commande.' });
-    }
-    const absolute = path.resolve(String(order.deposit_proof_path));
+  // ===== Manual-transfer proof files (admin only, path never exposed) =====
+  const sendProofFile = (proof: any, res: any) => {
+    if (!proof?.file_path || !fs.existsSync(String(proof.file_path))) return res.status(404).json({ success: false, error: 'Justificatif indisponible.' });
+    const absolute = path.resolve(String(proof.file_path));
     const safeRoot = path.resolve(uploadsDir('deposits'));
-    if (!absolute.startsWith(safeRoot + path.sep)) return res.status(403).json({ success: false, error: 'Chemin de preuve invalide.' });
-    const ext = path.extname(absolute).toLowerCase();
-    const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : ext === '.pdf' ? 'application/pdf' : 'image/jpeg';
-    res.setHeader('Content-Type', mime);
+    if (!absolute.startsWith(safeRoot + path.sep)) return res.status(403).json({ success: false, error: 'Chemin de justificatif invalide.' });
+    res.setHeader('Content-Type', String(proof.mime_type || 'application/octet-stream'));
     res.setHeader('Cache-Control', 'private, no-store');
-    fs.createReadStream(absolute).pipe(res);
+    return fs.createReadStream(absolute).pipe(res);
+  };
+  router.get('/orders/:id/deposit-proof', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const proof = db.get<any>('SELECT * FROM payment_proofs WHERE order_id=? ORDER BY submitted_at DESC LIMIT 1', req.params.id);
+    return sendProofFile(proof, res);
+  });
+  router.get('/payment-proofs/:id/file', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const proof = db.get<any>('SELECT * FROM payment_proofs WHERE id=?', req.params.id);
+    return sendProofFile(proof, res);
   });
 
-  // ===== مراجعة العربون: قبول (تأكيد الطلب + فاتورة + كود تتبع) أو رفض =====
-  router.post('/orders/:id/deposit/review', requireAdmin(db, 'payments:write'), async (req, res) => {
+  router.get('/payment-proofs/pending', requireAdmin(db, 'commerce:read'), (_req, res) => {
+    const rows = db.all<any>(`SELECT pr.id,pr.order_id,pr.original_name,pr.mime_type,pr.size_bytes,pr.transfer_reference,
+      pr.status,pr.submitted_at,o.order_number,o.deposit_amount_tnd,p.payment_number,p.method,c.name customer_name
+      FROM payment_proofs pr JOIN orders o ON o.id=pr.order_id JOIN payments p ON p.id=pr.payment_id
+      JOIN customers c ON c.id=o.customer_id WHERE pr.status='PENDING_VERIFICATION' ORDER BY pr.submitted_at ASC`);
+    res.json({ success: true, data: rows });
+  });
+
+  // Admin validates/rejects manual transfers only. Card confirmation is gateway-only.
+  router.post('/orders/:id/deposit/review', requireAdmin(db, 'payments:write'), (req, res) => {
     const decision = String(req.body?.decision || '').trim().toLowerCase();
     const note = String(req.body?.note || '').trim().slice(0, 500);
     if (!['approve', 'reject'].includes(decision)) return res.status(400).json({ success: false, error: 'Décision invalide (approve/reject).' });
     const before = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
     if (!before) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
-
-    if (decision === 'reject') {
-      try {
-        const order = db.rejectOrderDeposit(req.params.id, admin(req).id, note);
-        audit(db, req, 'DEPOSIT_REJECTED', 'ORDERS', order.id, { deposit_status: before.deposit_status }, { deposit_status: 'REJECTED', note });
-        return res.json({ success: true, data: { depositStatus: 'REJECTED' } });
-      } catch (error: any) {
-        return res.status(error?.message === 'DEPOSIT_NOT_REVIEWABLE' ? 409 : 500).json({ success: false, error: 'Cet acompte ne peut plus être refusé.' });
-      }
-    }
-
-    // قبول: يتطلب وجود وصل للطرق اليدوية (بنك/بريد/فلوسي) أو تأكيد بوابة للدفع بالبطاقة
-    if (before.payment_method !== 'CARD' && !before.deposit_proof_path) {
-      return res.status(409).json({ success: false, error: 'Aucune preuve téléversée — attendez le reçu du client.' });
-    }
+    if (before.payment_method === 'CARD') return res.status(409).json({ success: false, error: 'Un paiement carte ne peut pas être validé manuellement.' });
     try {
-      const order = db.confirmOrderDeposit(req.params.id, admin(req).id, note);
-      audit(db, req, 'DEPOSIT_APPROVED', 'ORDERS', order.id, { deposit_status: before.deposit_status }, { deposit_status: 'PAID', note });
-
-      // الفاتورة الإلكترونية PDF — يولّدها Chromium (لا تبعيات جديدة)
-      let invoice: { number: string; generated: boolean } = { number: String(order.invoice_number), generated: false };
-      try {
-        await generateInvoicePdf(db, order.id);
-        invoice = { number: String(order.invoice_number), generated: true };
-      } catch (pdfError: any) {
-        console.error('[Invoice] فشل توليد PDF:', pdfError?.message || pdfError);
-      }
-
-      // إرسال الفاتورة بالبريد إن كان العميل لديه بريد والإعداد مفعّل
-      let mail: { delivered: boolean; provider: string } = { delivered: false, provider: 'disabled' };
-      const emailEnabled = db.get<any>("SELECT setting_value FROM settings WHERE setting_key='invoice_email_enabled'")?.setting_value !== 'false';
-      const account = order.account_id ? db.get<any>('SELECT email,display_name FROM customer_accounts WHERE id=?', order.account_id) : null;
-      const deliveryEmail = String(order.contact_email || account?.email || '');
-      if (emailEnabled && deliveryEmail && invoice.generated) {
-        const total = Number(order.total_tnd), dep = Number(order.deposit_amount_tnd);
-        const balance = Math.max(0, Math.round((total - dep) * 1000) / 1000);
-        const pdfPath = String(db.get<any>('SELECT invoice_path FROM orders WHERE id=?', order.id)?.invoice_path || '');
-        mail = await sendMail({
-          to: deliveryEmail,
-          subject: `Facture ${order.invoice_number} — commande ${order.order_number} confirmée`,
-          html: invoiceEmailHtml({
-            customerName: String(account.display_name || 'Client AYROVI'),
-            orderNumber: String(order.order_number),
-            invoiceNumber: String(order.invoice_number),
-            trackingCode: String(order.tracking_code || ''),
-            totalLabel: `${total.toFixed(3)} DT`,
-            depositLabel: `${dep.toFixed(3)} DT`,
-            balanceLabel: `${balance.toFixed(3)} DT`,
-            company: String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='company_legal_name'")?.setting_value || 'AYROVI'),
-          }),
-          attachments: pdfPath && fs.existsSync(pdfPath) ? [{ filename: `${order.invoice_number}.pdf`, path: pdfPath }] : [],
-        });
-      }
-      return res.json({ success: true, data: { depositStatus: 'PAID', status: 'CONFIRMED', trackingCode: order.tracking_code, invoice, mail } });
+      const order = decision === 'approve'
+        ? db.confirmOrderDeposit(req.params.id, admin(req).id, note)
+        : db.rejectOrderDeposit(req.params.id, admin(req).id, note);
+      audit(db, req, decision === 'approve' ? 'DEPOSIT_APPROVED' : 'DEPOSIT_REJECTED', 'PAYMENT_PROOFS', order.id,
+        { payment_status: before.payment_status }, { payment_status: order.payment_status, note });
+      return res.json({ success: true, data: { paymentStatus: order.payment_status, orderStatus: order.status } });
     } catch (error: any) {
-      return res.status(error?.message === 'DEPOSIT_NOT_REVIEWABLE' || error?.message === 'ORDER_NOT_FOUND' ? 409 : 500)
-        .json({ success: false, error: 'Cet acompte ne peut plus être confirmé.' });
+      if (error?.message === 'REJECTION_REASON_REQUIRED') return res.status(400).json({ success: false, error: 'Le motif du refus est obligatoire.' });
+      return res.status(error?.message === 'DEPOSIT_NOT_REVIEWABLE' ? 409 : 500)
+        .json({ success: false, error: 'Ce justificatif ne peut plus être révisé.' });
     }
   });
 
   router.put('/orders/:id/delivery', requireAdmin(db, 'orders:write'), (req, res) => {
     const existing = db.get<any>('SELECT * FROM deliveries WHERE order_id=?', req.params.id);
-    if (!existing) return res.status(404).json({ success: false, error: 'Livraison introuvable.' });
-    const allowed = ['governorate','address','phone','status','expected_at','notes','carrier','tracking_number'];
+    const order = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
+    if (!existing || !order) return res.status(404).json({ success: false, error: 'Livraison introuvable.' });
+    const allowed = ['governorate','address','phone','status','expected_at','notes','carrier','tracking_number','tracking_url'];
     const payload: Record<string, any> = {};
     for (const field of allowed) if (req.body?.[field] !== undefined) payload[field] = typeof req.body[field] === 'string' ? req.body[field].trim().slice(0, 1000) : req.body[field];
     if (payload.status && !deliveryStatuses.includes(payload.status)) return res.status(400).json({ success: false, error: 'Statut de livraison invalide.' });
     if (payload.expected_at && Number.isNaN(new Date(payload.expected_at).getTime())) return res.status(400).json({ success: false, error: 'Date prévue invalide.' });
+    if (payload.tracking_url && !/^https:\/\/[\w.-]+(?:[/:?#][^\s]*)?$/i.test(payload.tracking_url)) return res.status(400).json({ success: false, error: 'URL de suivi HTTPS invalide.' });
     if (!Object.keys(payload).length) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
     const now = new Date().toISOString();
-    if (payload.status === 'DELIVERED') payload.delivered_at = now;
-    db.run(`UPDATE deliveries SET ${Object.keys(payload).map((key) => `${key}=?`).join(',')},updated_at=? WHERE order_id=?`, ...Object.values(payload), now, req.params.id);
+    const nextStatus = String(payload.status || existing.status);
+    const carrier = String(payload.carrier ?? existing.carrier ?? '').trim();
+    const trackingNumber = String(payload.tracking_number ?? existing.tracking_number ?? '').trim();
+    if (nextStatus === 'SHIPPED') {
+      if (order.status !== 'PREPARING') return res.status(409).json({ success: false, error: 'La commande doit être en préparation avant l’expédition.' });
+      if (!carrier || !trackingNumber) return res.status(400).json({ success: false, error: 'Transporteur et numéro de suivi sont obligatoires pour expédier.' });
+      payload.shipped_at = now;
+    }
+    const orderStatusForDelivery: Record<string, string> = {
+      SHIPPED: 'SHIPPED', IN_TRANSIT: 'IN_TRANSIT', OUT_FOR_DELIVERY: 'OUT_FOR_DELIVERY', DELIVERED: 'DELIVERED',
+    };
+    const expectedOrderStatus: Record<string, string[]> = {
+      IN_TRANSIT: ['SHIPPED'], OUT_FOR_DELIVERY: ['IN_TRANSIT'], DELIVERED: ['OUT_FOR_DELIVERY'],
+    };
+    if (expectedOrderStatus[nextStatus] && !expectedOrderStatus[nextStatus].includes(String(order.status))) {
+      return res.status(409).json({ success: false, error: 'Terminez l’étape de livraison précédente.' });
+    }
+    if (nextStatus === 'DELIVERED') payload.delivered_at = now;
+    db.transaction(() => {
+      db.run(`UPDATE deliveries SET ${Object.keys(payload).map((key) => `${key}=?`).join(',')},updated_at=? WHERE order_id=?`, ...Object.values(payload), now, req.params.id);
+      const nextOrderStatus = orderStatusForDelivery[nextStatus];
+      if (nextOrderStatus && nextOrderStatus !== order.status) {
+        db.run('UPDATE orders SET status=?,tracking_code=?,updated_at=? WHERE id=?', nextOrderStatus, trackingNumber, now, order.id);
+        db.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at) VALUES (?,?,?,?,?,?,?)`,
+          `history_${randomUUID()}`, order.id, order.status, nextOrderStatus,
+          nextOrderStatus === 'SHIPPED' ? `Expédiée par ${carrier} — suivi ${trackingNumber}.` : `Livraison : ${nextOrderStatus}.`, admin(req).id, now);
+        if (order.account_id) db.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+          VALUES (?,?,'SHIPPING','Mise à jour de livraison',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+        nextOrderStatus === 'SHIPPED' ? `La commande ${order.order_number} est expédiée par ${carrier}. Suivi : ${trackingNumber}.`
+          : `La livraison de ${order.order_number} est maintenant ${nextOrderStatus}.`, `/compte/suivi`, now);
+      }
+    });
     audit(db, req, 'UPDATE', 'DELIVERIES', existing.id, existing, payload);
     res.json({ success: true, data: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', req.params.id) });
   });
@@ -1158,11 +1162,28 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true });
   });
 
+  // Invoice issuance is an explicit admin event, independent from payment approval.
+  router.post('/orders/:id/invoice/issue', requireAdmin(db, 'payments:write'), async (req, res) => {
+    try {
+      const invoice = db.issueOrderInvoice(req.params.id, admin(req).id);
+      await generateInvoicePdf(db, req.params.id);
+      const issued = db.get<any>('SELECT * FROM invoices WHERE id=?', invoice.id);
+      audit(db, req, 'INVOICE_ISSUED', 'INVOICES', issued.id, null, { invoice_number: issued.invoice_number });
+      return res.status(201).json({ success: true, data: { invoiceNumber: issued.invoice_number, issuedAt: issued.issued_at } });
+    } catch (error: any) {
+      if (error?.message === 'ORDER_NOT_FOUND') return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+      if (error?.message === 'INVOICE_NOT_ISSUABLE') return res.status(409).json({ success: false, error: 'La facture nécessite un acompte payé et une commande confirmée.' });
+      console.error('[Invoice issue]', error);
+      return res.status(500).json({ success: false, error: 'La facture n’a pas pu être émise.' });
+    }
+  });
+
   // ===== إعادة توليد/إرسال الفاتورة يدويًا عند الحاجة =====
   router.post('/orders/:id/invoice/resend', requireAdmin(db, 'payments:write'), async (req, res) => {
     const order = db.get<any>('SELECT * FROM orders WHERE id=?', req.params.id);
     if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
-    if (!order.invoice_number) return res.status(409).json({ success: false, error: 'Aucune facture — confirmez d’abord l’acompte.' });
+    const invoiceEntity = db.get<any>("SELECT * FROM invoices WHERE order_id=? AND status='ISSUED'", order.id);
+    if (!invoiceEntity) return res.status(409).json({ success: false, error: 'Aucune facture émise — utilisez d’abord « Émettre la facture ».' });
     try {
       await generateInvoicePdf(db, order.id);
     } catch (error: any) {

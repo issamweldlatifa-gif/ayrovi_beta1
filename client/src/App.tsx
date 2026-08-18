@@ -81,6 +81,7 @@ export const App: React.FC = () => {
   const [customerSession, setCustomerSession] = useState<CustomerSession | null>(null);
   const [isCustomerSessionLoading, setIsCustomerSessionLoading] = useState(true);
   const [accountInitialSection, setAccountInitialSection] = useState<'home' | 'orders' | 'favorites' | 'cart' | 'addresses'>('home');
+  const [accountInitialOrderId, setAccountInitialOrderId] = useState('');
   const [accountMessage, setAccountMessage] = useState('');
   const [resumeCheckoutAfterAuth, setResumeCheckoutAfterAuth] = useState(false);
   const resumeCheckoutDepthRef = useRef(0);
@@ -192,12 +193,30 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     const restoreCustomer = async () => {
-      const customerAuthResult = new URLSearchParams(window.location.search).get('customerAuth');
+      const returnParams = new URLSearchParams(window.location.search);
+      const customerAuthResult = returnParams.get('customerAuth');
+      const cardPaymentReturn = returnParams.get('cardPayment');
+      const cardOrderId = returnParams.get('orderId') || '';
+      const cardTransaction = returnParams.get('transaction') || '';
       try {
         const result = await customerApi<any>('/api/customer/auth/me');
         const restored = result.data as CustomerSession;
         setCustomerSession(restored);
-        if (customerAuthResult === 'success' || customerAuthResult === 'facebook_success') {
+        if (cardPaymentReturn === 'verify' && cardOrderId && cardTransaction) {
+          setAccountInitialSection('orders');
+          setAccountInitialOrderId(cardOrderId);
+          openAppView('app:account', true);
+          try {
+            const verification = await customerApi<any>(`/api/customer/account/orders/${encodeURIComponent(cardOrderId)}/payments/card/verify?transaction=${encodeURIComponent(cardTransaction)}`);
+            setAccountMessage(verification.data?.status === 'PAID'
+              ? tr('Paiement carte vérifié — votre commande est confirmée.', 'تم التحقق من الدفع بالبطاقة وتأكيد طلبك.')
+              : verification.data?.status === 'FAILED'
+                ? tr('Le paiement carte a échoué. Votre commande reste en attente d’acompte.', 'فشل الدفع بالبطاقة ويبقى طلبك في انتظار العربون.')
+                : tr('Le paiement est encore en attente de confirmation bancaire.', 'لا يزال الدفع في انتظار تأكيد البنك.'));
+          } catch (reason: any) {
+            setAccountMessage(tr(`Erreur : ${reason.message || 'vérification bancaire indisponible'}`, `خطأ: ${reason.message || 'تعذر التحقق البنكي'}`));
+          }
+        } else if (customerAuthResult === 'success' || customerAuthResult === 'facebook_success') {
           openAppView('app:account', true);
           // Le téléphone est une seconde option de vérification; un e-mail vérifié suffit également.
           setAccountMessage(customerAuthResult === 'facebook_success'
@@ -214,9 +233,9 @@ export const App: React.FC = () => {
           setAccountMessage(tr(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`, `تعذر تسجيل الدخول عبر ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'}. أعد المحاولة أو استخدم رمز SMS.`));
         }
       } finally {
-        if (customerAuthResult) {
+        if (customerAuthResult || cardPaymentReturn) {
           const url = new URL(window.location.href);
-          url.searchParams.delete('customerAuth');
+          ['customerAuth','cardPayment','orderId','transaction'].forEach((key) => url.searchParams.delete(key));
           replaceUrlPreservingNavigation(`${url.pathname}${url.search}${url.hash}`);
         }
         setIsCustomerSessionLoading(false);
@@ -542,8 +561,9 @@ export const App: React.FC = () => {
             session={customerSession}
             loadingSession={isCustomerSessionLoading}
             initialSection={accountInitialSection}
+            initialOrderId={accountInitialOrderId}
             initialMessage={accountMessage}
-            onClose={() => { closeAppView(); setResumeCheckoutAfterAuth(false); setAccountMessage(''); }}
+            onClose={() => { closeAppView(); setResumeCheckoutAfterAuth(false); setAccountMessage(''); setAccountInitialOrderId(''); }}
             onSession={handleCustomerSession}
             onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
             onCartChanged={() => { void fetchCart(); }}

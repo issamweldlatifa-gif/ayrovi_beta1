@@ -19,6 +19,7 @@ import { phoneOtpAvailable } from './customer/otp';
 import { mailerReady } from './services/mailer';
 import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
+import { cardGatewayAvailable } from './services/paymentGateway';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -91,6 +92,10 @@ app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000)
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
 app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
 app.use('/api/checkout', rateLimit('checkout', process.env.NODE_ENV === 'test' ? 1_000 : 15, 5 * 60_000));
+app.use('/api/customer/account/orders', (req, res, next) => req.path.includes('/payments/card/')
+  ? rateLimit('card-payment', process.env.NODE_ENV === 'test' ? 1_000 : 20, 5 * 60_000)(req, res, next)
+  : next());
+app.use('/api/customer/payments/konnect/webhook', rateLimit('konnect-webhook', process.env.NODE_ENV === 'test' ? 1_000 : 120, 5 * 60_000));
 app.use('/api/extract-image', rateLimit('vision', 25, 10 * 60_000));
 app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
@@ -174,7 +179,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.6.1',
+    version: '3.7.0',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });
@@ -195,6 +200,7 @@ app.get('/api/ready', (_req, res) => {
         facebookLogin: customerAuthReady() && facebookOAuthAvailable(),
         sms: phoneOtpAvailable(),
         mail: mailerReady(),
+        cardGateway: cardGatewayAvailable(),
       },
     });
   } catch (error: any) {

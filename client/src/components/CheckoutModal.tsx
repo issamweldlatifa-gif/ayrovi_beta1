@@ -79,7 +79,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     phone: '',
     city: TUNISIAN_GOVERNORATES_FR[0],
     address: '',
-    paymentMethod: 'bank_transfer',
+    paymentMethod: 'pending_selection',
     latitude: null,
     longitude: null,
     termsAccepted: false,
@@ -126,9 +126,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         setFormData((current) => ({
           ...current,
           city: configuredGovernorates.includes(current.city) ? current.city : configuredGovernorates[0],
-          paymentMethod: AVAILABLE_PAYMENT_METHODS.has(current.paymentMethod.toUpperCase() as CheckoutPaymentMethod)
-            ? current.paymentMethod
-            : 'bank_transfer',
+          paymentMethod: 'pending_selection',
         }));
       })
       .catch((fetchError) => {
@@ -253,15 +251,6 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setError(tr('Vous devez accepter les conditions de vente et la politique de retour.', 'يجب قبول شروط البيع وسياسة الإرجاع.'));
       return;
     }
-    const selectedMethod = formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod;
-    if (!AVAILABLE_PAYMENT_METHODS.has(selectedMethod)) {
-      setPaymentAvailabilityNotice(tr(
-        'Ce mode de paiement sera bientôt disponible. Pour le moment, veuillez utiliser le virement bancaire ou le transfert postal.',
-        'ستتوفر طريقة الدفع هذه قريبًا. حاليًا، يرجى استخدام التحويل البنكي أو التحويل البريدي.',
-      ));
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -272,7 +261,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           'x-session-id': getSessionId(),
           'x-csrf-token': customerSession.csrfToken,
         },
-        body: JSON.stringify({ ...formData, locale: locale === 'ar' ? 'ar-TN' : 'fr-TN' }),
+        body: JSON.stringify({ ...formData, paymentMethod: 'PENDING_SELECTION', locale: locale === 'ar' ? 'ar-TN' : 'fr-TN' }),
       });
 
       const data = await response.json();
@@ -309,12 +298,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     <CheckoutFlowShell
       direction={direction}
       size="form"
-      ariaLabel={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
+      ariaLabel={isPaymentStage ? tr('Récapitulatif', 'المراجعة') : tr('Livraison', 'التوصيل')}
     >
         <AppHeader
-          title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
-          subtitle={tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
-          onBack={onClose}
+          title={isPaymentStage ? tr('Récapitulatif', 'مراجعة الطلب') : tr('Livraison', 'التوصيل')}
+          subtitle={isPaymentStage ? tr('La commande sera créée avant tout paiement', 'سيتم إنشاء الطلب قبل أي دفع') : tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
+          onBack={isPaymentStage ? () => navigation.back() : onClose}
           actionDisabled={isLoading}
           actionLabel={isPaymentStage ? tr('Revenir à la livraison', 'العودة إلى بيانات التوصيل') : tr('Revenir au panier', 'العودة إلى السلة')}
         />
@@ -451,162 +440,33 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="grid grid-cols-2 gap-2">
             <button type="button" onClick={onClose} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
-            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary min-w-0 px-2 text-xs">{tr('Continuer vers le paiement', 'المتابعة إلى الدفع')}</button>
+            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary min-w-0 px-2 text-xs">{tr('Vérifier la commande', 'مراجعة الطلب')}</button>
           </div>
           </>}
 
           {isPaymentStage && <>
-          {/* Payment Method */}
-          <div>
-            <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
-              <CreditCard className="w-3.5 h-3.5 text-brand" />
-              <span>{tr('Mode de paiement de l’acompte :', 'طريقة دفع العربون:')}</span>
-            </label>
-            <div className="checkout-payment-grid">
-              {PAYMENT_METHODS.map((method) => {
-                const value = method.toLowerCase();
-                const available = AVAILABLE_PAYMENT_METHODS.has(method);
-                const META: Record<CheckoutPaymentMethod, { label: string; hint: string }> = {
-                  CARD: { label: tr('Carte bancaire', 'بطاقة بنكية'), hint: tr('Paiement en ligne non activé', 'الدفع الإلكتروني غير مفعّل') },
-                  FLOUCI: { label: 'Flouci / D17', hint: tr('Paiement en ligne non activé', 'الدفع الإلكتروني غير مفعّل') },
-                  BANK_TRANSFER: { label: tr('Virement bancaire', 'تحويل بنكي'), hint: tr('Disponible · justificatif requis', 'متاح · إثبات الدفع مطلوب') },
-                  POSTE: { label: tr('Transfert postal', 'تحويل بريدي'), hint: tr('Disponible · justificatif requis', 'متاح · إثبات الدفع مطلوب') },
-                };
-                const meta = META[method];
-                const selected = formData.paymentMethod === value;
-                return (
-                  <button
-                    key={method}
-                    type="button"
-                    aria-disabled={!available}
-                    aria-pressed={selected}
-                    onClick={() => {
-                      if (!available) {
-                        setPaymentAvailabilityNotice(tr(
-                          'Ce mode de paiement sera bientôt disponible. Pour le moment, veuillez utiliser le virement bancaire ou le transfert postal.',
-                          'ستتوفر طريقة الدفع هذه قريبًا. حاليًا، يرجى استخدام التحويل البنكي أو التحويل البريدي.',
-                        ));
-                        return;
-                      }
-                      setPaymentAvailabilityNotice('');
-                      setError(null);
-                      setFormData({ ...formData, paymentMethod: value });
-                    }}
-                    className={`checkout-payment-option rounded-xl border transition-all ${
-                      selected
-                        ? 'border-brand bg-brand/10 text-brand'
-                        : available
-                          ? 'border-line bg-surface text-muted hover:border-brand/50'
-                          : 'border-line bg-surface text-muted'
-                    }`}
-                  >
-                    <span className="checkout-payment-logo-frame">
-                      <img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" loading="eager" decoding="async" />
-                    </span>
-                    <span className="block text-xs font-black leading-tight">{meta.label}</span>
-                    {!available && <span className="checkout-payment-badge">{tr('Bientôt disponible', 'متاح قريبًا')}</span>}
-                    <span className="block text-[9px] font-semibold leading-tight opacity-80">{meta.hint}</span>
-                  </button>
-                );
-              })}
-            </div>
-            {paymentAvailabilityNotice && (
-              <p className="mt-2 flex items-start gap-2 rounded-xl border border-accent bg-accent/10 p-3 text-[11px] font-bold leading-5 text-ink" role="status">
-                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
-                <span>{paymentAvailabilityNotice}</span>
-              </p>
-            )}
-            {/* Instructions de virement ou transfert postal — paiement vérifié manuellement. */}
-            {(() => {
-              const deposit = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
-              const method = formData.paymentMethod.toUpperCase();
-              const instructions: Record<string, string> = {
-                BANK_TRANSFER: tr(
-                  `Effectuez un virement de ${deposit.toFixed(3)} DT au nom de ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB : ${depositInfo.bankRib}` : ''}, puis téléversez le reçu depuis votre espace client.`,
-                  `حوّل ${deposit.toFixed(3)} د.ت باسم ${depositInfo.companyName}${depositInfo.bankRib ? ` — RIB: ${depositInfo.bankRib}` : ''}، ثم ارفع الوصل من حسابك.`
-                ),
-                POSTE: tr(
-                  `Versez ${deposit.toFixed(3)} DT par mandat postal au nom de ${depositInfo.companyName}${depositInfo.posteAccount ? ` — compte : ${depositInfo.posteAccount}` : ''}, puis téléversez le reçu depuis votre espace client.`,
-                  `ادفع ${deposit.toFixed(3)} د.ت بحوالة بريدية باسم ${depositInfo.companyName}${depositInfo.posteAccount ? ` — الحساب: ${depositInfo.posteAccount}` : ''}، ثم ارفع الوصل من حسابك.`
-                ),
-              };
-              return (
-                <p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark">
-                  {instructions[method] || ''} <strong>{tr('Votre commande n’est confirmée qu’après réception de l’acompte.', 'لا يتأكد الطلب إلا بعد استلام العربون.')}</strong>
-                  <span className="mt-1 block">{tr(depositInfo.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</span>
-                  <span className="block">{tr(depositInfo.unavailableRefundPolicy || 'L’équipe vous contacte si l’article ne peut pas être validé.', 'سيتم إرجاع العربون إذا تعذر على AYROVI التحقق من المنتج أو شراؤه.')}</span>
-                </p>
-              );
-            })()}
-          </div>
-
-          <section className="checkout-payment-summary rounded-xl border border-line bg-surface p-3.5 text-[11px] leading-5" aria-label={tr('Disponibilité des modes de paiement', 'توفر وسائل الدفع')}>
-            <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2">
-              <div>
-                <strong className="block text-ink">{tr('Modes disponibles', 'الوسائل المتاحة')}</strong>
-                <p className="font-bold text-success">✓ {tr('Virement bancaire', 'تحويل بنكي')}</p>
-                <p className="font-bold text-success">✓ {tr('Transfert postal', 'تحويل بريدي')}</p>
-              </div>
-              <div>
-                <strong className="block text-ink">{tr('Bientôt disponibles', 'متاحة قريبًا')}</strong>
-                <p className="font-semibold text-muted">○ {tr('Carte bancaire', 'بطاقة بنكية')}</p>
-                <p className="font-semibold text-muted">○ Flouci / D17</p>
-              </div>
-            </div>
+          <section className="rounded-2xl border border-brand/20 bg-brand/5 p-4 text-xs leading-6 text-brand-dark">
+            <CheckCircle2 className="mb-2 h-5 w-5 text-brand" />
+            <strong className="block text-sm text-ink">{tr('Commande créée d’abord, paiement ensuite', 'إنشاء الطلب أولًا ثم الدفع')}</strong>
+            <p>{tr('Après confirmation, la commande apparaît immédiatement dans Mon compte → Mes commandes avec son acompte calculé par le serveur. Vous choisirez alors carte bancaire ou virement bancaire/postal.', 'بعد التأكيد يظهر الطلب فورًا في حسابي ← طلباتي مع العربون المحسوب من الخادم. عندها تختار البطاقة البنكية أو التحويل البنكي/البريدي.')}</p>
           </section>
-
-          {/* Summary Box */}
-          <div className="checkout-payment-summary bg-surface border border-line rounded-xl p-3.5 text-xs space-y-1.5">
+          <div className="checkout-payment-summary rounded-xl border border-line bg-surface p-3.5 text-xs space-y-1.5">
             <div className="flex justify-between"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>
             {breakdown.customs > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Douane', 'المعاليم الديوانية')}</span><strong>{formatMoney(breakdown.customs)}</strong></div>}
             <div className="flex justify-between"><span className="text-muted">{tr('Livraison', 'التوصيل')}</span><strong>{formatMoney(breakdown.shipping)}</strong></div>
             <div className="flex justify-between"><span className="text-muted">{tr('Service AYROVI', 'خدمة AYROVI')}</span><strong>{formatMoney(breakdown.service)}</strong></div>
-            {breakdown.express > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Livraison express', 'التوصيل السريع')}</span><strong>{formatMoney(breakdown.express)}</strong></div>}
-            {breakdown.discount > 0 && <div className="flex justify-between text-brand"><span>{tr('Réduction', 'التخفيض')}</span><strong>−{formatMoney(breakdown.discount)}</strong></div>}
-            <div className="flex justify-between items-center border-t border-line pt-1.5">
-              <span className="text-muted font-semibold">{tr('Montant total de la commande :', 'إجمالي الطلب:')}</span>
-              <span className="text-base font-extrabold text-brand">{formatMoney(totalTND)}</span>
-            </div>
-            {(() => {
-              const deposit = Math.round(((totalTND * depositInfo.percent) / 100) * 1000) / 1000;
-              const balance = Math.round((totalTND - deposit) * 1000) / 1000;
-              return (<>
-                <div className="flex justify-between items-center border-t border-line pt-1.5">
-                  <span className="text-accent-deep font-bold">{tr(`Acompte à régler maintenant (${depositInfo.percent}%) :`, `العربون المطلوب الآن (${depositInfo.percent}%):`)}</span>
-                  <span className="text-base font-extrabold text-accent-deep">{deposit.toFixed(3)} {tr('DT', 'د.ت')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted font-semibold">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')}</span>
-                  <span className="font-extrabold text-ink">{balance.toFixed(3)} {tr('DT', 'د.ت')}</span>
-                </div>
-              </>);
-            })()}
+            {breakdown.express > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Express', 'السريع')}</span><strong>{formatMoney(breakdown.express)}</strong></div>}
+            {breakdown.discount > 0 && <div className="flex justify-between text-success"><span>{tr('Réduction', 'التخفيض')}</span><strong>−{formatMoney(breakdown.discount)}</strong></div>}
+            <div className="flex justify-between border-t border-line pt-2 text-sm font-black"><span>{tr('Total de la commande', 'إجمالي الطلب')}</span><strong className="text-brand">{formatMoney(totalTND)}</strong></div>
           </div>
-
           <label className="flex items-start gap-3 rounded-xl border border-line bg-white p-3 text-xs leading-5 text-ink">
             <input type="checkbox" required checked={formData.termsAccepted} onChange={(event) => setFormData({ ...formData, termsAccepted: event.target.checked })} className="mt-0.5 h-5 w-5 shrink-0 accent-brand" />
             <span>{tr("J’accepte les ", 'أوافق على ')}<a href="/terms.html" target="_blank" rel="noopener noreferrer" className="font-black text-brand underline">{tr('conditions générales de vente et la politique de retour', 'شروط البيع وسياسة الإرجاع')}</a>.</span>
           </label>
-
-          {/* Submit CTA */}
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour à la livraison', 'العودة إلى التوصيل')}</button>
-            <button
-              type="submit"
-              disabled={isLoading || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}
-              className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>{tr('Confirmation en cours…', 'جارٍ التأكيد…')}</span>
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{tr(`Confirmer (${totalTND.toFixed(2)} DT)`, `تأكيد (${totalTND.toFixed(2)} د.ت)`)}</span>
-                </>
-              )}
+            <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour', 'رجوع')}</button>
+            <button type="submit" disabled={isLoading || !formData.termsAccepted || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm">
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" />{tr('Création…', 'جارٍ الإنشاء…')}</> : <><CheckCircle2 className="h-4 w-4" />{tr('Créer la commande', 'إنشاء الطلب')}</>}
             </button>
           </div>
           </>}

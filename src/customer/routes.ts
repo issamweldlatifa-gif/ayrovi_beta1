@@ -6,6 +6,7 @@ import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { uploadsDir, invoiceAbsolutePath } from '../services/invoice';
 import { sendMail } from '../services/mailer';
+import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
 import {
   cleanupCustomerAuth,
   clearCustomerCookie,
@@ -276,6 +277,31 @@ function validateAddress(body: any) {
 export function createCustomerRouter(db: QatafoDatabase): Router {
   const router = Router();
   cleanupCustomerAuth(db);
+
+  // Konnect sends only a payment reference. AYROVI always fetches the payment
+  // server-to-server and validates amount, currency and merchant order identity.
+  router.get('/payments/konnect/webhook', async (req, res) => {
+    const paymentRef = String(req.query.payment_ref || '').trim();
+    if (!/^[A-Za-z0-9_-]{8,160}$/.test(paymentRef)) return res.status(400).json({ success: false, error: 'Référence de paiement invalide.' });
+    const transaction = db.get<any>(`SELECT t.*,o.order_number FROM payment_transactions t
+      JOIN orders o ON o.id=t.order_id WHERE t.provider='KONNECT' AND t.provider_reference=?`, paymentRef);
+    if (!transaction) return res.status(404).json({ success: false, error: 'Transaction introuvable.' });
+    if (['PAID','FAILED'].includes(String(transaction.status))) return res.json({ success: true });
+    try {
+      const verification = await verifyKonnectCardPayment({
+        paymentRef,
+        expectedAmountTnd: Number(transaction.amount_tnd),
+        expectedOrderNumber: String(transaction.order_number),
+        expectedTransactionNumber: String(transaction.transaction_number),
+      });
+      if (verification.state === 'PAID') db.confirmCardTransaction(transaction.id, verification.auditPayload);
+      else if (verification.state === 'FAILED') db.markCardTransactionFailed(transaction.id, 'Paiement refusé ou expiré par la passerelle.', verification.auditPayload);
+      return res.json({ success: true });
+    } catch (error) {
+      console.error('[Konnect webhook]', error);
+      return res.status(502).json({ success: false, error: 'Vérification de la passerelle indisponible.' });
+    }
+  });
 
   router.get('/auth/config', (_req, res) => {
     const google = googleConfig();
@@ -758,17 +784,185 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const account = customerFromRequest(req);
     const order = db.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', req.params.id, account.id);
     if (!order) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+    const payment = db.get<any>('SELECT * FROM payments WHERE order_id=?', order.id);
+    const deliveryRow = db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id);
+    const trackingVisible = ['SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'].includes(String(order.status));
+    const delivery = deliveryRow ? {
+      ...deliveryRow,
+      carrier: trackingVisible ? deliveryRow.carrier : '',
+      tracking_number: trackingVisible ? deliveryRow.tracking_number : '',
+      tracking_url: trackingVisible ? deliveryRow.tracking_url : '',
+      shipped_at: trackingVisible ? deliveryRow.shipped_at : null,
+    } : null;
+    const paidAmount = payment?.status === 'PAID' ? Number(payment.amount_tnd) : 0;
+    const setting = (key: string) => String(db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', key)?.setting_value || '');
     return res.json({ success: true, data: {
       ...order,
-      deposit_proof_path: undefined, // لا نكشف المسار الخام — التحميل عبر المسارات الآمنة فقط
+      deposit_proof_path: undefined,
+      paid_amount_tnd: paidAmount,
+      remainder_tnd: Math.max(0, Math.round((Number(order.total_tnd) - paidAmount) * 1000) / 1000),
       items: db.all<any>('SELECT * FROM order_items WHERE order_id=? ORDER BY created_at', order.id),
       history: db.all<any>('SELECT * FROM order_status_history WHERE order_id=? ORDER BY created_at', order.id),
-      payment: db.get<any>('SELECT * FROM payments WHERE order_id=?', order.id),
-      delivery: db.get<any>('SELECT * FROM deliveries WHERE order_id=?', order.id),
+      payment,
+      transactions: db.all<any>(`SELECT id,transaction_number,provider,provider_reference,amount_tnd,currency,status,failure_reason,confirmed_at,created_at
+        FROM payment_transactions WHERE order_id=? AND account_id=? ORDER BY created_at DESC`, order.id, account.id),
+      proofs: db.all<any>(`SELECT id,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,reviewed_at,rejection_reason
+        FROM payment_proofs WHERE order_id=? AND account_id=? ORDER BY submitted_at DESC`, order.id, account.id),
+      invoice: db.get<any>(`SELECT id,invoice_number,status,issued_at FROM invoices WHERE order_id=? AND account_id=?`, order.id, account.id) || null,
+      delivery,
+      paymentOptions: {
+        choices: ['CARD','BANK_TRANSFER'],
+        cardGatewayAvailable: cardGatewayAvailable(),
+        transfer: {
+          companyName: setting('company_legal_name') || setting('company_name') || 'AYROVI',
+          bankRib: setting('bank_rib'),
+          posteAccount: setting('poste_account'),
+          reviewDelay: setting('deposit_review_delay'),
+        },
+      },
     } });
   });
 
-  // ===== وصل دفع العربون (العميل يرفع لقطة شاشة / وصل بنك / وصل بريد) =====
+  router.post('/account/orders/:id/deposit/method', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const requested = String(req.body?.method || '').trim().toUpperCase();
+    if (!['CARD','BANK_TRANSFER'].includes(requested)) return res.status(400).json({ success: false, error: 'Choisissez carte bancaire ou virement bancaire/postal.' });
+    try {
+      const selected = db.selectDepositMethod(req.params.id, requested as 'CARD' | 'BANK_TRANSFER', account.id);
+      return res.json({ success: true, data: {
+        method: requested,
+        paymentStatus: selected.payment.status,
+        quote: selected.quote,
+        cardGatewayAvailable: cardGatewayAvailable(),
+      } });
+    } catch (error: any) {
+      if (error?.message === 'ORDER_NOT_FOUND') return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+      return res.status(409).json({ success: false, error: 'Le mode de paiement ne peut plus être modifié pour cette commande.' });
+    }
+  });
+
+  router.post('/account/orders/:id/payments/card/initiate', requireCustomer(db), async (req, res) => {
+    const account = customerFromRequest(req);
+    if (!cardGatewayAvailable()) return res.status(503).json({ success: false, code: 'CARD_GATEWAY_UNAVAILABLE', error: 'La passerelle carte n’est pas configurée. Aucun débit n’a été tenté.' });
+    let created: any;
+    try {
+      created = db.createCardTransaction(req.params.id, account.id);
+      if (created.reused) return res.json({ success: true, data: {
+        payUrl: created.transaction.checkout_url,
+        transactionNumber: created.transaction.transaction_number,
+        amountTnd: created.transaction.amount_tnd,
+        status: 'PENDING',
+      } });
+      const names = String(account.displayName || 'Client AYROVI').trim().split(/\s+/);
+      const gateway = await initiateKonnectCardPayment({
+        orderId: String(created.order.id),
+        orderNumber: String(created.order.order_number),
+        transactionNumber: String(created.transaction.transaction_number),
+        amountTnd: Number(created.transaction.amount_tnd),
+        firstName: names.shift() || 'Client',
+        lastName: names.join(' ') || 'AYROVI',
+        phone: String(created.order.phone || account.phone || ''),
+        email: String(created.order.contact_email || account.email || ''),
+      });
+      db.bindCardGatewayReference(created.transaction.id, gateway.paymentRef, gateway.payUrl);
+      return res.status(201).json({ success: true, data: {
+        payUrl: gateway.payUrl,
+        transactionNumber: created.transaction.transaction_number,
+        amountTnd: created.transaction.amount_tnd,
+        status: 'PENDING',
+      } });
+    } catch (error: any) {
+      if (created?.transaction?.id && !created?.reused) db.markCardTransactionFailed(created.transaction.id, error?.message || 'Gateway initiation failed');
+      if (error?.message === 'ORDER_NOT_FOUND') return res.status(404).json({ success: false, error: 'Commande introuvable.' });
+      if (error?.message === 'CARD_TRANSACTION_PENDING') return res.status(409).json({ success: false, error: 'Un démarrage de paiement est déjà en cours. Réessayez dans un instant.' });
+      if (error?.message === 'PAYMENT_METHOD_NOT_SELECTABLE') return res.status(409).json({ success: false, error: 'Cette commande ne peut plus être payée.' });
+      console.error('[Card initiation]', error);
+      return res.status(502).json({ success: false, code: 'CARD_GATEWAY_ERROR', error: 'La passerelle carte n’a pas pu démarrer le paiement. Aucun succès n’a été enregistré.' });
+    }
+  });
+
+  router.get('/account/orders/:id/payments/card/verify', requireCustomer(db), async (req, res) => {
+    const account = customerFromRequest(req);
+    const transactionNumber = String(req.query.transaction || '').trim();
+    const transaction = db.get<any>(`SELECT t.*,o.order_number FROM payment_transactions t
+      JOIN orders o ON o.id=t.order_id WHERE t.order_id=? AND t.account_id=? AND t.transaction_number=? AND t.provider='KONNECT'`,
+    req.params.id, account.id, transactionNumber);
+    if (!transaction) return res.status(404).json({ success: false, error: 'Transaction carte introuvable.' });
+    if (transaction.status === 'PAID') return res.json({ success: true, data: { status: 'PAID', transactionNumber } });
+    if (transaction.status === 'FAILED') return res.json({ success: true, data: { status: 'FAILED', transactionNumber } });
+    if (!transaction.provider_reference) return res.status(409).json({ success: false, error: 'La passerelle n’a pas encore fourni de référence.' });
+    try {
+      const verification = await verifyKonnectCardPayment({
+        paymentRef: String(transaction.provider_reference),
+        expectedAmountTnd: Number(transaction.amount_tnd),
+        expectedOrderNumber: String(transaction.order_number),
+        expectedTransactionNumber: String(transaction.transaction_number),
+      });
+      if (verification.state === 'PAID') db.confirmCardTransaction(transaction.id, verification.auditPayload);
+      else if (verification.state === 'FAILED') db.markCardTransactionFailed(transaction.id, 'Paiement carte refusé ou expiré.', verification.auditPayload);
+      return res.json({ success: true, data: { status: verification.state, transactionNumber } });
+    } catch (error) {
+      console.error('[Card verification]', error);
+      return res.status(502).json({ success: false, error: 'La vérification bancaire est temporairement indisponible.' });
+    }
+  });
+
+  router.get('/account/payments', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const payments = db.all<any>(`SELECT p.id,p.payment_number,p.order_id,o.order_number,p.method,p.status,p.amount_tnd,p.currency,p.reference,
+      p.provider,p.confirmed_at,p.created_at,p.updated_at FROM payments p JOIN orders o ON o.id=p.order_id
+      WHERE o.account_id=? ORDER BY p.created_at DESC`, account.id);
+    const transactions = db.all<any>(`SELECT t.id,t.transaction_number,t.payment_id,t.order_id,o.order_number,t.provider,t.provider_reference,
+      t.amount_tnd,t.currency,t.status,t.failure_reason,t.confirmed_at,t.created_at FROM payment_transactions t JOIN orders o ON o.id=t.order_id
+      WHERE t.account_id=? ORDER BY t.created_at DESC`, account.id);
+    return res.json({ success: true, data: { payments, transactions } });
+  });
+
+  router.get('/account/invoices', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    return res.json({ success: true, data: db.all<any>(`SELECT i.id,i.invoice_number,i.order_id,o.order_number,i.status,i.issued_at
+      FROM invoices i JOIN orders o ON o.id=i.order_id WHERE i.account_id=? ORDER BY i.issued_at DESC`, account.id) });
+  });
+
+  router.get('/account/tracking', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    return res.json({ success: true, data: db.all<any>(`SELECT d.id,d.order_id,o.order_number,o.status,d.status delivery_status,d.carrier,
+      d.tracking_number,d.tracking_url,d.shipped_at,d.expected_at,d.delivered_at FROM deliveries d JOIN orders o ON o.id=d.order_id
+      WHERE o.account_id=? AND o.status IN ('SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED')
+        AND d.tracking_number!='' ORDER BY d.shipped_at DESC`, account.id) });
+  });
+
+  router.get('/account/security', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const row = accountRow(db, account.id);
+    return res.json({ success: true, data: {
+      emailVerified: Boolean(row?.email_verified_at), phoneVerified: Boolean(row?.phone_verified_at),
+      identities: db.all<any>('SELECT provider,created_at FROM customer_auth_identities WHERE account_id=? ORDER BY created_at', account.id),
+      activeSessions: Number(db.get<any>('SELECT COUNT(*) count FROM customer_sessions WHERE account_id=? AND expires_at>?', account.id, new Date().toISOString())?.count || 0),
+      lastLoginAt: row?.last_login_at || null,
+    } });
+  });
+
+  router.get('/account/preferences', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const preferences = db.get<any>('SELECT * FROM customer_preferences WHERE account_id=?', account.id);
+    return res.json({ success: true, data: preferences || {
+      account_id: account.id, dark_mode: 0, order_updates: 1, payment_updates: 1, shipping_updates: 1, invoice_updates: 1,
+    } });
+  });
+
+  router.put('/account/preferences', requireCustomer(db), (req, res) => {
+    const account = customerFromRequest(req);
+    const value = (key: string, fallback = true) => req.body?.[key] === undefined ? (fallback ? 1 : 0) : (req.body[key] ? 1 : 0);
+    const now = new Date().toISOString();
+    db.run(`INSERT INTO customer_preferences (account_id,dark_mode,order_updates,payment_updates,shipping_updates,invoice_updates,updated_at)
+      VALUES (?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET dark_mode=excluded.dark_mode,order_updates=excluded.order_updates,
+      payment_updates=excluded.payment_updates,shipping_updates=excluded.shipping_updates,invoice_updates=excluded.invoice_updates,updated_at=excluded.updated_at`,
+    account.id, value('darkMode', false), value('orderUpdates'), value('paymentUpdates'), value('shippingUpdates'), value('invoiceUpdates'), now);
+    return res.json({ success: true, data: db.get<any>('SELECT * FROM customer_preferences WHERE account_id=?', account.id) });
+  });
+
+  // ===== Justificatif du virement bancaire/postal (upload != paiement) =====
   const proofUpload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 10 * 1024 * 1024, files: 1 },
@@ -776,37 +970,46 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   const PROOF_SIGNATURES: Array<{ ext: string; mime: string; test: (b: Buffer) => boolean }> = [
     { ext: 'jpg', mime: 'image/jpeg', test: (b) => b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
     { ext: 'png', mime: 'image/png', test: (b) => b.length > 8 && b.readUInt32BE(0) === 0x89504e47 },
-    { ext: 'webp', mime: 'image/webp', test: (b) => b.length > 12 && b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP' },
     { ext: 'pdf', mime: 'application/pdf', test: (b) => b.length > 5 && b.toString('ascii', 0, 5) === '%PDF-' },
   ];
 
   router.post('/account/orders/:id/deposit-proof', requireCustomer(db), proofUpload.single('proof'), (req: Request, res) => {
     const account = customerFromRequest(req);
-    const order = db.get<any>('SELECT id,account_id,status,deposit_status,order_number FROM orders WHERE id=?', req.params.id);
+    const order = db.get<any>('SELECT id,account_id,status,payment_status,payment_method,deposit_status,order_number FROM orders WHERE id=?', req.params.id);
     if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
-    if (order.status !== 'PAYMENT_PENDING' || !['PENDING', 'SUBMITTED', 'REJECTED'].includes(String(order.deposit_status))) {
-      return res.status(409).json({ success: false, error: 'Cette commande n’attend plus de preuve d’acompte.' });
+    if (order.status !== 'AWAITING_DEPOSIT' || !['BANK_TRANSFER','POSTE'].includes(String(order.payment_method))
+      || !['PENDING','FAILED','REJECTED'].includes(String(order.payment_status))) {
+      return res.status(409).json({ success: false, error: 'Cette commande n’accepte pas de justificatif de virement.' });
     }
+    const transferReference = String(req.body?.transferReference || '').trim().slice(0, 120);
+    if (!transferReference) return res.status(400).json({ success: false, error: 'Indiquez la référence du virement ou du versement postal.' });
     const file = req.file;
-    if (!file || !file.buffer?.length) return res.status(400).json({ success: false, error: 'Fichier de preuve manquant (image ou PDF, 10 Mo max).' });
+    if (!file || !file.buffer?.length) return res.status(400).json({ success: false, error: 'Fichier de preuve manquant (JPG, PNG ou PDF, 10 Mo max).' });
     const signature = PROOF_SIGNATURES.find((candidate) => candidate.test(file.buffer));
-    if (!signature) return res.status(415).json({ success: false, error: 'Format non supporté : JPG, PNG, WEBP ou PDF uniquement.' });
+    if (!signature) return res.status(415).json({ success: false, error: 'Format non supporté : JPG, PNG ou PDF uniquement.' });
 
     const filename = `${order.id}-${Date.now()}-${randomInt(1000, 9999)}.${signature.ext}`;
     const absolute = path.join(uploadsDir('deposits'), filename);
     fs.writeFileSync(absolute, file.buffer);
     try {
-      const updated = db.attachDepositProof(order.id, absolute);
+      const updated = db.attachDepositProof(order.id, {
+        path: absolute,
+        accountId: account.id,
+        originalName: file.originalname || filename,
+        mimeType: signature.mime,
+        sizeBytes: file.size,
+        transferReference,
+      });
       // تنبيه بريدي اختياري للإدارة (وصل جديد بانتظار المراجعة) — لا يُفشل الطلب إن تعذّر
       const alertEmail = String(db.get<any>("SELECT setting_value FROM settings WHERE setting_key='admin_alert_email'")?.setting_value || '').trim();
       if (alertEmail) {
         void sendMail({
           to: alertEmail,
           subject: `🔔 Acompte à vérifier — commande ${order.order_number}`,
-          html: `<p>Une preuve d'acompte vient d'être téléversée pour la commande <strong>${order.order_number}</strong> (${Number(updated.deposit_amount_tnd).toFixed(3)} DT).</p><p>Ouvrez le tableau des commandes pour la vérifier.</p>`,
+          html: `<p>Un justificatif vient d'être téléversé pour la commande <strong>${order.order_number}</strong> (${Number(updated.order.deposit_amount_tnd).toFixed(3)} DT).</p><p>Ouvrez le tableau des commandes pour le vérifier.</p>`,
         }).catch(() => undefined);
       }
-      res.json({ success: true, data: { depositStatus: updated.deposit_status, submittedAt: updated.deposit_submitted_at } });
+      res.json({ success: true, data: { paymentStatus: updated.order.payment_status, proofStatus: updated.proof.status, submittedAt: updated.proof.submitted_at } });
     } catch (error: any) {
       fs.rmSync(absolute, { force: true });
       res.status(error?.message === 'DEPOSIT_NOT_SUBMITTABLE' ? 409 : 500).json({ success: false, error: 'La preuve n’a pas pu être enregistrée.' });
@@ -816,16 +1019,16 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   // ===== تحميل الفاتورة الإلكترونية (مالك الطلب فقط) =====
   router.get('/account/orders/:id/invoice', requireCustomer(db), (req: Request, res) => {
     const account = customerFromRequest(req);
-    const order = db.get<any>('SELECT id,account_id,invoice_number,invoice_path FROM orders WHERE id=?', req.params.id);
+    const order = db.get<any>('SELECT id,account_id FROM orders WHERE id=?', req.params.id);
     if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
-    if (!order.invoice_number || !order.invoice_path) return res.status(404).json({ success: false, error: 'Facture pas encore disponible — elle est générée après confirmation de l’acompte.' });
-    const absolute = invoiceAbsolutePath(String(order.invoice_number));
-    // تحقق مزدوج: المسار المخزّن يجب أن يطابق المسار المُشتق من رقم الفاتورة (حماية من أي تلاعب بالمسار)
-    if (path.resolve(order.invoice_path) !== path.resolve(absolute) || !fs.existsSync(absolute)) {
+    const invoice = db.get<any>("SELECT * FROM invoices WHERE order_id=? AND account_id=? AND status='ISSUED'", order.id, account.id);
+    if (!invoice?.invoice_number || !invoice?.file_path) return res.status(404).json({ success: false, error: 'Facture non émise ou fichier pas encore disponible.' });
+    const absolute = invoiceAbsolutePath(String(invoice.invoice_number));
+    if (path.resolve(invoice.file_path) !== path.resolve(absolute) || !fs.existsSync(absolute)) {
       return res.status(404).json({ success: false, error: 'Fichier de facture indisponible.' });
     }
     res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${String(order.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf"`);
+    res.setHeader('Content-Disposition', `attachment; filename="${String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf"`);
     res.setHeader('Cache-Control', 'private, no-store');
     fs.createReadStream(absolute).pipe(res);
   });

@@ -5,7 +5,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, PricingRules } from '../services/pricing';
 
-export type PaymentMethodCode = 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
+export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
 
 export interface CheckoutInput {
@@ -35,13 +35,13 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
   source TEXT NOT NULL DEFAULT 'OTHER' CHECK(source IN ('SHEIN','AMAZON','TEMU','ALIEXPRESS','OTHER','MIXED')),
   arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
-  status TEXT NOT NULL CHECK(status IN ('NEW','CONFIRMED','PAYMENT_PENDING','PAID','PURCHASING','PURCHASED','IN_TRANSIT','ARRIVED','OUT_FOR_DELIVERY','DELIVERED','CANCELLED')),
-  payment_status TEXT NOT NULL DEFAULT 'PENDING' CHECK(payment_status IN ('PENDING','PAID','FAILED','REFUNDED','CANCELLED')),
-  payment_method TEXT NOT NULL DEFAULT 'CARD' CHECK(payment_method IN ('COD','D17','FLOUCI','CARD','BANK_TRANSFER','POSTE')),
+  status TEXT NOT NULL CHECK(status IN ('CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED')),
+  payment_status TEXT NOT NULL DEFAULT 'PENDING' CHECK(payment_status IN ('PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED')),
+  payment_method TEXT NOT NULL DEFAULT 'PENDING_SELECTION' CHECK(payment_method IN ('PENDING_SELECTION','COD','D17','FLOUCI','CARD','BANK_TRANSFER','POSTE')),
   deposit_percent REAL NOT NULL DEFAULT 20,
   deposit_amount_tnd REAL NOT NULL DEFAULT 0,
   deposit_discount_tnd REAL NOT NULL DEFAULT 0,
-  deposit_status TEXT NOT NULL DEFAULT 'NONE' CHECK(deposit_status IN ('NONE','PENDING','SUBMITTED','PAID','REJECTED')),
+  deposit_status TEXT NOT NULL DEFAULT 'PENDING' CHECK(deposit_status IN ('NONE','PENDING','SUBMITTED','PAID','REJECTED')),
   deposit_proof_path TEXT NOT NULL DEFAULT '',
   deposit_submitted_at TEXT,
   deposit_paid_at TEXT,
@@ -90,15 +90,50 @@ const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
 
 const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
+  payment_number TEXT,
   order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
-  method TEXT NOT NULL CHECK(method IN ('COD','D17','FLOUCI','CARD','BANK_TRANSFER','POSTE')),
-  status TEXT NOT NULL CHECK(status IN ('PENDING','PAID','FAILED','REFUNDED','CANCELLED')),
+  method TEXT NOT NULL DEFAULT 'PENDING_SELECTION' CHECK(method IN ('PENDING_SELECTION','COD','D17','FLOUCI','CARD','BANK_TRANSFER','POSTE')),
+  status TEXT NOT NULL CHECK(status IN ('PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED')),
   amount_tnd REAL NOT NULL,
+  currency TEXT NOT NULL DEFAULT 'TND',
   reference TEXT,
+  provider TEXT NOT NULL DEFAULT '',
+  gateway_payment_ref TEXT,
   confirmed_by TEXT,
   confirmed_at TEXT,
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL
+);`;
+
+const DELIVERIES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS deliveries (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+  governorate TEXT NOT NULL,
+  address TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  latitude REAL,
+  longitude REAL,
+  status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED')),
+  expected_at TEXT,
+  shipped_at TEXT,
+  delivered_at TEXT,
+  notes TEXT NOT NULL DEFAULT '',
+  carrier TEXT NOT NULL DEFAULT '',
+  tracking_number TEXT NOT NULL DEFAULT '',
+  tracking_url TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);`;
+
+const CUSTOMER_NOTIFICATIONS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_notifications (
+  id TEXT PRIMARY KEY,
+  account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+  type TEXT NOT NULL DEFAULT 'GENERAL' CHECK(type IN ('GENERAL','ORDER','ACCOUNT','PROMOTION','PAYMENT','PROOF','SHIPPING','INVOICE')),
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  action_url TEXT NOT NULL DEFAULT '',
+  read_at TEXT,
+  created_at TEXT NOT NULL
 );`;
 
 const CUSTOMER_AUTH_IDENTITIES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_auth_identities (
@@ -416,23 +451,7 @@ export class QatafoDatabase {
       ${PAYMENTS_TABLE_SQL}
       CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status, created_at DESC);
 
-      CREATE TABLE IF NOT EXISTS deliveries (
-        id TEXT PRIMARY KEY,
-        order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
-        governorate TEXT NOT NULL,
-        address TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        latitude REAL,
-        longitude REAL,
-        status TEXT NOT NULL DEFAULT 'PENDING' CHECK(status IN ('PENDING','PREPARING','SHIPPED','OUT_FOR_DELIVERY','DELIVERED','FAILED','RETURNED')),
-        expected_at TEXT,
-        delivered_at TEXT,
-        notes TEXT NOT NULL DEFAULT '',
-        carrier TEXT NOT NULL DEFAULT '',
-        tracking_number TEXT NOT NULL DEFAULT '',
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
+      ${DELIVERIES_TABLE_SQL}
       CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(status, expected_at);
 
       ${CUSTOMER_AUTH_IDENTITIES_TABLE_SQL}
@@ -508,16 +527,7 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_customer_favorites_account ON customer_favorites(account_id, created_at DESC);
 
-      CREATE TABLE IF NOT EXISTS customer_notifications (
-        id TEXT PRIMARY KEY,
-        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
-        type TEXT NOT NULL DEFAULT 'GENERAL' CHECK(type IN ('GENERAL','ORDER','ACCOUNT','PROMOTION')),
-        title TEXT NOT NULL,
-        message TEXT NOT NULL,
-        action_url TEXT NOT NULL DEFAULT '',
-        read_at TEXT,
-        created_at TEXT NOT NULL
-      );
+      ${CUSTOMER_NOTIFICATIONS_TABLE_SQL}
       CREATE INDEX IF NOT EXISTS idx_customer_notifications_account ON customer_notifications(account_id, created_at DESC);
 
       CREATE TABLE IF NOT EXISTS admin_notifications (
@@ -796,7 +806,7 @@ export class QatafoDatabase {
     this.ensureColumn('order_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
     this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
-    this.rebuildTableIfLegacy('orders', 'deposit_discount_tnd', ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
+    this.migrateOrdersToAccountLifecycle();
     this.ensureColumn('orders', 'contact_email', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'delivery_latitude', 'REAL');
     this.ensureColumn('orders', 'delivery_longitude', 'REAL');
@@ -804,7 +814,12 @@ export class QatafoDatabase {
     this.ensureColumn('orders', 'locale', "TEXT NOT NULL DEFAULT 'fr-TN'");
     this.ensureColumn('deliveries', 'latitude', 'REAL');
     this.ensureColumn('deliveries', 'longitude', 'REAL');
-    this.rebuildTableIfLegacy('payments', "'POSTE'", PAYMENTS_TABLE_SQL, []);
+    this.ensureColumn('deliveries', 'shipped_at', 'TEXT');
+    this.ensureColumn('deliveries', 'tracking_url', "TEXT NOT NULL DEFAULT ''");
+    this.rebuildTableIfLegacy('deliveries', "'IN_TRANSIT'", DELIVERIES_TABLE_SQL, []);
+    this.migratePaymentsToAccountLifecycle();
+    this.ensureAccountCommerceSchema();
+    this.rebuildTableIfLegacy('customer_notifications', "'INVOICE'", CUSTOMER_NOTIFICATIONS_TABLE_SQL, []);
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN/INTERFACE (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
     this.rebuildTableIfLegacy('settings', "'INTERFACE'", SETTINGS_TABLE_SQL, []);
@@ -818,9 +833,182 @@ export class QatafoDatabase {
     `);
   }
 
+  /** Upgrade the legacy order vocabulary without losing persisted commerce data. */
+  private migrateOrdersToAccountLifecycle() {
+    const row = this.db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='orders'").get() as { sql?: string } | undefined;
+    if (!row || String(row.sql || '').includes('AWAITING_DEPOSIT')) return;
+    this.db.pragma('foreign_keys = OFF');
+    this.db.pragma('legacy_alter_table = ON');
+    try {
+      this.db.transaction(() => {
+        this.db.exec('DROP TABLE IF EXISTS orders_lifecycle_legacy');
+        this.db.exec('ALTER TABLE orders RENAME TO orders_lifecycle_legacy');
+        this.db.exec(ORDERS_TABLE_SQL);
+        const oldColumns = (this.db.prepare('PRAGMA table_info(orders_lifecycle_legacy)').all() as Array<{ name: string }>).map((item) => item.name);
+        const newColumns = (this.db.prepare('PRAGMA table_info(orders)').all() as Array<{ name: string }>).map((item) => item.name);
+        const shared = newColumns.filter((column) => oldColumns.includes(column));
+        const select = shared.map((column) => {
+          if (column === 'status') return `CASE status
+            WHEN 'NEW' THEN 'CREATED'
+            WHEN 'PAYMENT_PENDING' THEN CASE WHEN deposit_status='SUBMITTED' THEN 'AWAITING_PAYMENT_VERIFICATION' ELSE 'AWAITING_DEPOSIT' END
+            WHEN 'PAID' THEN 'CONFIRMED'
+            WHEN 'PURCHASING' THEN 'PREPARING'
+            WHEN 'PURCHASED' THEN 'PREPARING'
+            WHEN 'ARRIVED' THEN 'IN_TRANSIT'
+            ELSE status END AS status`;
+          if (column === 'payment_status') return `CASE payment_status WHEN 'CANCELLED' THEN 'FAILED' ELSE payment_status END AS payment_status`;
+          return column;
+        });
+        this.db.exec(`INSERT INTO orders (${shared.join(',')}) SELECT ${select.join(',')} FROM orders_lifecycle_legacy`);
+        this.db.exec('DROP TABLE orders_lifecycle_legacy');
+        for (const indexSql of ORDERS_INDEXES_SQL) this.db.exec(indexSql);
+      })();
+    } finally {
+      this.db.pragma('legacy_alter_table = OFF');
+      this.db.pragma('foreign_keys = ON');
+    }
+    console.info('[DB] Order lifecycle upgraded to customer-account statuses.');
+  }
+
+  /** Upgrade payment constraints/statuses while preserving the one payment entity per order. */
+  private migratePaymentsToAccountLifecycle() {
+    const row = this.db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='payments'").get() as { sql?: string } | undefined;
+    if (!row || String(row.sql || '').includes('PENDING_VERIFICATION')) return;
+    this.db.pragma('foreign_keys = OFF');
+    this.db.pragma('legacy_alter_table = ON');
+    try {
+      this.db.transaction(() => {
+        this.db.exec('DROP TABLE IF EXISTS payments_lifecycle_legacy');
+        this.db.exec('ALTER TABLE payments RENAME TO payments_lifecycle_legacy');
+        this.db.exec(PAYMENTS_TABLE_SQL);
+        const oldColumns = (this.db.prepare('PRAGMA table_info(payments_lifecycle_legacy)').all() as Array<{ name: string }>).map((item) => item.name);
+        const newColumns = (this.db.prepare('PRAGMA table_info(payments)').all() as Array<{ name: string }>).map((item) => item.name);
+        const shared = newColumns.filter((column) => oldColumns.includes(column));
+        const select = shared.map((column) => column === 'status'
+          ? `CASE status WHEN 'CANCELLED' THEN 'FAILED' ELSE status END AS status`
+          : column);
+        this.db.exec(`INSERT INTO payments (${shared.join(',')}) SELECT ${select.join(',')} FROM payments_lifecycle_legacy`);
+        this.db.exec('DROP TABLE payments_lifecycle_legacy');
+      })();
+    } finally {
+      this.db.pragma('legacy_alter_table = OFF');
+      this.db.pragma('foreign_keys = ON');
+    }
+    console.info('[DB] Payment lifecycle upgraded to canonical statuses.');
+  }
+
+  /** Separate transactions, transfer proofs and invoices; deliveries already serve as shipments. */
+  private ensureAccountCommerceSchema() {
+    this.ensureColumn('payments', 'payment_number', 'TEXT');
+    this.ensureColumn('payments', 'currency', "TEXT NOT NULL DEFAULT 'TND'");
+    this.ensureColumn('payments', 'provider', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('payments', 'gateway_payment_ref', 'TEXT');
+    this.db.exec(`
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_payments_number ON payments(payment_number) WHERE payment_number IS NOT NULL AND payment_number!='';
+      CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS payment_transactions (
+        id TEXT PRIMARY KEY,
+        transaction_number TEXT NOT NULL UNIQUE,
+        payment_id TEXT NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+        order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+        provider TEXT NOT NULL,
+        provider_reference TEXT,
+        checkout_url TEXT NOT NULL DEFAULT '',
+        amount_tnd REAL NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'TND',
+        status TEXT NOT NULL CHECK(status IN ('PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED')),
+        failure_reason TEXT NOT NULL DEFAULT '',
+        provider_payload TEXT NOT NULL DEFAULT '{}',
+        confirmed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_transactions_account ON payment_transactions(account_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_transactions_payment ON payment_transactions(payment_id, created_at DESC);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_provider_ref ON payment_transactions(provider, provider_reference)
+        WHERE provider_reference IS NOT NULL AND provider_reference!='';
+
+      CREATE TABLE IF NOT EXISTS payment_proofs (
+        id TEXT PRIMARY KEY,
+        payment_id TEXT NOT NULL REFERENCES payments(id) ON DELETE CASCADE,
+        order_id TEXT NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+        file_path TEXT NOT NULL,
+        original_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        transfer_reference TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('PENDING_VERIFICATION','APPROVED','REJECTED')),
+        submitted_at TEXT NOT NULL,
+        reviewed_at TEXT,
+        reviewed_by TEXT,
+        rejection_reason TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_proofs_review_queue ON payment_proofs(status, submitted_at ASC);
+      CREATE INDEX IF NOT EXISTS idx_proofs_order ON payment_proofs(order_id, submitted_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_proofs_account ON payment_proofs(account_id, submitted_at DESC);
+
+      CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        invoice_number TEXT NOT NULL UNIQUE,
+        order_id TEXT NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
+        account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+        status TEXT NOT NULL DEFAULT 'ISSUED' CHECK(status IN ('ISSUED','VOID')),
+        file_path TEXT NOT NULL DEFAULT '',
+        issued_at TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_invoices_account ON invoices(account_id, issued_at DESC);
+
+      CREATE TABLE IF NOT EXISTS customer_preferences (
+        account_id TEXT PRIMARY KEY REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        dark_mode INTEGER NOT NULL DEFAULT 0,
+        order_updates INTEGER NOT NULL DEFAULT 1,
+        payment_updates INTEGER NOT NULL DEFAULT 1,
+        shipping_updates INTEGER NOT NULL DEFAULT 1,
+        invoice_updates INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL
+      );
+    `);
+    this.ensureColumn('payment_transactions', 'checkout_url', "TEXT NOT NULL DEFAULT ''");
+
+    const paymentRows = this.db.prepare("SELECT id,created_at FROM payments WHERE payment_number IS NULL OR payment_number='' ORDER BY created_at").all() as Array<{ id: string; created_at: string }>;
+    const updatePaymentNumber = this.db.prepare('UPDATE payments SET payment_number=? WHERE id=?');
+    this.db.transaction(() => {
+      for (const payment of paymentRows) updatePaymentNumber.run(this.generatePaymentNumber(), payment.id);
+    })();
+
+    const legacyInvoices = this.db.prepare("SELECT id,account_id,invoice_number,invoice_path,updated_at FROM orders WHERE invoice_number!=''").all() as any[];
+    const insertInvoice = this.db.prepare(`INSERT OR IGNORE INTO invoices
+      (id,invoice_number,order_id,account_id,status,file_path,issued_at,created_at,updated_at) VALUES (?,?,?,?, 'ISSUED',?,?,?,?)`);
+    for (const invoice of legacyInvoices) insertInvoice.run(`invoice_${randomUUID()}`, invoice.invoice_number, invoice.id, invoice.account_id,
+      invoice.invoice_path || '', invoice.updated_at, invoice.updated_at, invoice.updated_at);
+
+      const legacyProofs = this.db.prepare("SELECT o.*,p.id payment_id,p.reference payment_reference FROM orders o JOIN payments p ON p.order_id=o.id WHERE o.deposit_proof_path!=''").all() as any[];
+    const insertProof = this.db.prepare(`INSERT INTO payment_proofs
+      (id,payment_id,order_id,account_id,file_path,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,reviewed_at,reviewed_by,rejection_reason,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    for (const proof of legacyProofs) {
+      const exists = this.db.prepare('SELECT id FROM payment_proofs WHERE order_id=? AND file_path=?').get(proof.id, proof.deposit_proof_path);
+      if (exists) continue;
+      const status = proof.deposit_status === 'PAID' ? 'APPROVED' : proof.deposit_status === 'REJECTED' ? 'REJECTED' : 'PENDING_VERIFICATION';
+      const submitted = proof.deposit_submitted_at || proof.updated_at || proof.created_at;
+      let size = 0;
+      try { size = fs.statSync(proof.deposit_proof_path).size; } catch {}
+      insertProof.run(`proof_${randomUUID()}`, proof.payment_id, proof.id, proof.account_id, proof.deposit_proof_path,
+        path.basename(proof.deposit_proof_path), 'application/octet-stream', size, proof.payment_reference || '', status, submitted,
+        status === 'PENDING_VERIFICATION' ? null : proof.updated_at, proof.deposit_reviewed_by || null,
+        status === 'REJECTED' ? proof.deposit_review_note || '' : '', submitted, proof.updated_at || submitted);
+    }
+  }
+
   /**
-   * SQLite لا يمكنها تعديل قيود CHECK بـ ALTER — لذلك عند وجود جدول قديم لا يدعم
-   * طرق دفع العربون الجديدة (CARD/BANK_TRANSFER/POSTE) نعيد بناءه مع نسخ البيانات.
+   * SQLite cannot alter CHECK constraints, so compatible tables are rebuilt in place.
    */
   private rebuildTableIfLegacy(table: string, requiredMarker: string, createSql: string, indexesSql: string[]) {
     const row = this.db.prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name=?`).get(table) as { sql?: string } | undefined;
@@ -1234,7 +1422,9 @@ export class QatafoDatabase {
 
       const depositPercent = this.getDepositPercent();
       const depositBase = Math.round((totals.total * depositPercent) / 100 * 1000) / 1000;
-      // الدفع بالبطاقة: خصم 5% (قابل للضبط) على العربون — الفاتورة تُنشأ مباشرة بعد تأكيد الدفع
+      // The order is created before deposit payment. A card discount is applied only
+      // when CARD was explicitly selected (legacy/API clients); the current checkout
+      // uses PENDING_SELECTION and lets the customer choose from the order detail.
       const isCard = String(input.paymentMethod).toUpperCase() === 'CARD';
       const cardDiscountPercent = isCard ? this.getCardDiscountPercent() : 0;
       const depositDiscount = Math.round(depositBase * cardDiscountPercent / 100 * 1000) / 1000;
@@ -1246,7 +1436,7 @@ export class QatafoDatabase {
         deposit_percent,deposit_amount_tnd,deposit_discount_tnd,deposit_status,
         subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,
         pricing_snapshot,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,terms_accepted_at,locale,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?,'PAYMENT_PENDING','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
         depositPercent, depositAmount, depositDiscount,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
@@ -1268,19 +1458,19 @@ export class QatafoDatabase {
       }
 
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,NULL,'PAYMENT_PENDING',?,NULL,?)`, `history_${randomUUID()}`, orderId,
+        VALUES (?,?,NULL,'AWAITING_DEPOSIT',?,NULL,?)`, `history_${randomUUID()}`, orderId,
         `Commande créée — en attente du paiement de l'acompte (${depositPercent}%).`, now);
-      this.run(`INSERT INTO payments (id,order_id,method,status,amount_tnd,reference,created_at,updated_at)
-        VALUES (?,?,?,'PENDING',?,NULL,?,?)`, `payment_${randomUUID()}`, orderId, input.paymentMethod, depositAmount, now, now);
+      this.run(`INSERT INTO payments (id,payment_number,order_id,method,status,amount_tnd,currency,reference,provider,created_at,updated_at)
+        VALUES (?,?,?,?,'PENDING',?,'TND',NULL,'',?,?)`, `payment_${randomUUID()}`, this.generatePaymentNumber(), orderId, input.paymentMethod, depositAmount, now, now);
       this.run(`INSERT INTO deliveries (id,order_id,governorate,address,phone,latitude,longitude,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,'PENDING',?,?)`, `delivery_${randomUUID()}`, orderId, input.governorate, input.address, normalizedPhone, input.latitude, input.longitude, now, now);
+      const methodNotice = input.paymentMethod === 'PENDING_SELECTION' ? 'choisissez votre mode de paiement' : `mode ${String(input.paymentMethod)}`;
       this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
         VALUES (?,?,'ORDER','Acompte à régler',?, ?, ?)`, `notification_${randomUUID()}`, accountId,
-        `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${String(input.paymentMethod)}) pour la confirmer.${depositDiscount > 0 ? ` Remise carte −${depositDiscount.toFixed(3)} DT appliquée.` : ''}`, `/compte/commandes/${orderId}`, now);
-      // إشعار الإدارة بطلب جديد بانتظار العربون
+        `Commande ${orderNumber} enregistrée : réglez l'acompte de ${depositAmount.toFixed(3)} DT (${methodNotice}) pour la confirmer.${depositDiscount > 0 ? ` Remise carte −${depositDiscount.toFixed(3)} DT appliquée.` : ''}`, `/compte/commandes/${orderId}`, now);
       this.notifyAdmins('ORDER', 'Nouvelle commande',
-        `${orderNumber} — ${totals.total.toFixed(3)} DT, acompte ${depositAmount.toFixed(3)} DT (${String(input.paymentMethod)}).`,
-        `/admin?tab=orders&order=${orderId}`);
+        `${orderNumber} — ${totals.total.toFixed(3)} DT, acompte ${depositAmount.toFixed(3)} DT en attente.`,
+        `/admin?section=orders&order=${orderId}`);
       this.clearCart(sessionId, accountId);
 
       return {
@@ -1378,9 +1568,9 @@ export class QatafoDatabase {
     const incomeRow = this.get<any>(`SELECT COALESCE(SUM(amount_tnd),0) total, COUNT(*) count FROM payments
       WHERE status='PAID' AND confirmed_at IS NOT NULL AND confirmed_at >= ? AND confirmed_at <= ?`, `${from}T00:00:00`, `${to}T23:59:59.999Z`);
     const ordersRow = this.get<any>(`SELECT COUNT(*) count, COALESCE(SUM(total_tnd),0) total FROM orders
-      WHERE status NOT IN ('CANCELLED','PAYMENT_PENDING') AND created_at >= ? AND created_at <= ?`, `${from}T00:00:00`, `${to}T23:59:59.999Z`);
+      WHERE status NOT IN ('CANCELLED','CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION') AND created_at >= ? AND created_at <= ?`, `${from}T00:00:00`, `${to}T23:59:59.999Z`);
     const depositsPending = this.get<any>(`SELECT COUNT(*) count, COALESCE(SUM(deposit_amount_tnd),0) total FROM orders
-      WHERE status='PAYMENT_PENDING' AND deposit_status IN ('PENDING','SUBMITTED')`);
+      WHERE status IN ('AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION') AND payment_status IN ('PENDING','PENDING_VERIFICATION','FAILED','REJECTED')`);
     const expensesRow = this.get<any>(`SELECT COALESCE(SUM(amount_tnd),0) total, COUNT(*) count FROM expenses
       WHERE expense_date >= ? AND expense_date <= ?`, from, to);
     const expensesByCategory = this.all<any>(`SELECT category, COALESCE(SUM(amount_tnd),0) total FROM expenses
@@ -1409,96 +1599,253 @@ export class QatafoDatabase {
     };
   }
 
-  private generateTrackingCode(): string {
-    for (let attempt = 0; attempt < 10; attempt += 1) {
-      const code = `AYR-TN-${randomInt(10_000_000, 100_000_000)}`;
-      const exists = this.get<any>('SELECT id FROM orders WHERE tracking_code=?', code);
-      if (!exists) return code;
+  private generatePaymentNumber(): string {
+    const year = new Date().getFullYear();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const number = `PAY-${year}-${randomInt(100000, 1000000)}`;
+      if (!this.get<any>('SELECT id FROM payments WHERE payment_number=?', number)) return number;
     }
-    return `AYR-TN-${Date.now()}`;
+    return `PAY-${year}-${Date.now()}`;
+  }
+
+  public generateTransactionNumber(): string {
+    const year = new Date().getFullYear();
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const number = `TXN-${year}-${randomInt(100000, 1000000)}`;
+      if (!this.get<any>('SELECT id FROM payment_transactions WHERE transaction_number=?', number)) return number;
+    }
+    return `TXN-${year}-${Date.now()}`;
   }
 
   private generateInvoiceNumber(): string {
     const year = new Date().getFullYear();
-    const count = this.get<any>(`SELECT COUNT(*) AS count FROM orders WHERE invoice_number LIKE 'INV-${year}-%'`)?.count || 0;
-    for (let seq = Number(count) + 1; seq < count + 1000; seq += 1) {
+    const count = this.get<any>(`SELECT COUNT(*) AS count FROM invoices WHERE invoice_number LIKE 'INV-${year}-%'`)?.count || 0;
+    for (let seq = Number(count) + 1; seq < Number(count) + 1000; seq += 1) {
       const number = `INV-${year}-${String(seq).padStart(6, '0')}`;
-      const exists = this.get<any>('SELECT id FROM orders WHERE invoice_number=?', number);
-      if (!exists) return number;
+      if (!this.get<any>('SELECT id FROM invoices WHERE invoice_number=?', number)) return number;
     }
     return `INV-${year}-${Date.now()}`;
   }
 
-  /** العميل يرفع وصل دفع العربون (صورة/PDF) → تصبح بانتظار مراجعة الإدارة */
-  public attachDepositProof(orderId: string, proofPath: string) {
+  /** Select a deposit method after the order exists; amounts remain backend-authoritative. */
+  public selectDepositMethod(orderId: string, method: 'CARD' | 'BANK_TRANSFER' | 'POSTE', accountId?: string) {
     return this.transaction(() => {
-      const order = this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
+      const order = accountId
+        ? this.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', orderId, accountId)
+        : this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
       if (!order) throw new Error('ORDER_NOT_FOUND');
-      if (order.status !== 'PAYMENT_PENDING' || !['PENDING', 'SUBMITTED', 'REJECTED'].includes(String(order.deposit_status))) {
-        throw new Error('DEPOSIT_NOT_SUBMITTABLE');
-      }
+      if (order.status !== 'AWAITING_DEPOSIT' || order.payment_status === 'PAID') throw new Error('PAYMENT_METHOD_NOT_SELECTABLE');
+      const payment = this.get<any>('SELECT * FROM payments WHERE order_id=?', orderId);
+      if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+      const baseAmount = Math.round(Number(order.total_tnd) * Number(order.deposit_percent) / 100 * 1000) / 1000;
+      const discountPercent = method === 'CARD' ? this.getCardDiscountPercent() : 0;
+      const discount = Math.round(baseAmount * discountPercent / 100 * 1000) / 1000;
+      const amount = Math.round((baseAmount - discount) * 1000) / 1000;
       const now = new Date().toISOString();
-      this.run(`UPDATE orders SET deposit_proof_path=?, deposit_status='SUBMITTED', deposit_submitted_at=?, updated_at=? WHERE id=?`,
-        proofPath, now, now, orderId);
-      this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,?,'PAYMENT_PENDING',?,NULL,?)`, `history_${randomUUID()}`, orderId, order.status,
-        'Preuve d’acompte téléversée par le client — en attente de vérification.', now);
-      // إشعار فوري للإدارة: وصل جديد بانتظار المراجعة
-      this.notifyAdmins('DEPOSIT_REVIEW', 'Acompte à vérifier',
-        `La commande ${order.order_number} (${Number(order.deposit_amount_tnd).toFixed(3)} DT) a reçu une preuve de paiement — vérifiez-la.`,
-        `/admin?tab=orders&order=${orderId}`);
-      return this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
+      this.run(`UPDATE orders SET payment_method=?,payment_status='PENDING',deposit_status='PENDING',deposit_amount_tnd=?,
+        deposit_discount_tnd=?,deposit_review_note='',updated_at=? WHERE id=?`, method, amount, discount, now, orderId);
+      this.run(`UPDATE payments SET method=?,status='PENDING',amount_tnd=?,provider=?,reference=NULL,gateway_payment_ref=NULL,
+        confirmed_by=NULL,confirmed_at=NULL,updated_at=? WHERE id=?`, method, amount, method === 'CARD' ? 'KONNECT' : 'MANUAL_TRANSFER', now, payment.id);
+      return {
+        order: this.get<any>('SELECT * FROM orders WHERE id=?', orderId),
+        payment: this.get<any>('SELECT * FROM payments WHERE id=?', payment.id),
+        quote: { percent: Number(order.deposit_percent), baseAmountTnd: baseAmount, discountPercent, discountTnd: discount,
+          amountTnd: amount, balanceTnd: Math.max(0, Math.round((Number(order.total_tnd) - amount) * 1000) / 1000) },
+      };
     });
   }
 
-  /** الإدارة تقبل العربون → تأكيد الطلب + كود تتبع + رقم فاتورة */
+  public createCardTransaction(orderId: string, accountId: string) {
+    return this.transaction(() => {
+      const order = this.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', orderId, accountId);
+      if (!order) throw new Error('ORDER_NOT_FOUND');
+      if (order.status !== 'AWAITING_DEPOSIT' || order.payment_status === 'PAID') throw new Error('PAYMENT_METHOD_NOT_SELECTABLE');
+      const payment = this.get<any>('SELECT * FROM payments WHERE order_id=?', orderId);
+      if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+
+      // Reuse the live checkout instead of creating multiple chargeable links for one deposit.
+      const pending = this.get<any>(`SELECT * FROM payment_transactions
+        WHERE order_id=? AND provider='KONNECT' AND status='PENDING' ORDER BY created_at DESC LIMIT 1`, orderId);
+      if (pending) {
+        const ageMs = Date.now() - new Date(String(pending.created_at)).getTime();
+        if (pending.checkout_url && ageMs < 25 * 60_000) {
+          return { order, payment, transaction: pending, reused: true };
+        }
+        if (!pending.checkout_url && Number.isFinite(ageMs) && ageMs < 2 * 60_000) throw new Error('CARD_TRANSACTION_PENDING');
+        this.run(`UPDATE payment_transactions SET status='FAILED',failure_reason='Lien de paiement expiré ou incomplet.',updated_at=? WHERE id=?`,
+          new Date().toISOString(), pending.id);
+      }
+
+      const selected = this.selectDepositMethod(orderId, 'CARD', accountId);
+      const now = new Date().toISOString();
+      const id = `transaction_${randomUUID()}`;
+      const transactionNumber = this.generateTransactionNumber();
+      this.run(`INSERT INTO payment_transactions
+        (id,transaction_number,payment_id,order_id,account_id,provider,amount_tnd,currency,status,created_at,updated_at)
+        VALUES (?,?,?,?,?,'KONNECT',?,'TND','PENDING',?,?)`, id, transactionNumber, selected.payment.id, orderId, accountId,
+      selected.quote.amountTnd, now, now);
+      return { ...selected, transaction: this.get<any>('SELECT * FROM payment_transactions WHERE id=?', id), reused: false };
+    });
+  }
+
+  public bindCardGatewayReference(transactionId: string, providerReference: string, checkoutUrl: string) {
+    const transaction = this.get<any>("SELECT * FROM payment_transactions WHERE id=? AND provider='KONNECT'", transactionId);
+    if (!transaction) throw new Error('TRANSACTION_NOT_FOUND');
+    if (!/^https:\/\//i.test(checkoutUrl)) throw new Error('CARD_CHECKOUT_URL_INVALID');
+    const now = new Date().toISOString();
+    this.transaction(() => {
+      this.run('UPDATE payment_transactions SET provider_reference=?,checkout_url=?,updated_at=? WHERE id=?', providerReference, checkoutUrl, now, transaction.id);
+      this.run("UPDATE payments SET provider='KONNECT',gateway_payment_ref=?,updated_at=? WHERE id=?", providerReference, now, transaction.payment_id);
+    });
+    return this.get<any>('SELECT * FROM payment_transactions WHERE id=?', transaction.id);
+  }
+
+  public markCardTransactionFailed(transactionId: string, reason: string, providerPayload: unknown = {}) {
+    const transaction = this.get<any>('SELECT * FROM payment_transactions WHERE id=?', transactionId);
+    if (!transaction || transaction.status === 'PAID') return transaction;
+    const now = new Date().toISOString();
+    this.transaction(() => {
+      this.run(`UPDATE payment_transactions SET status='FAILED',failure_reason=?,provider_payload=?,updated_at=? WHERE id=?`,
+        String(reason || 'Gateway payment failed').slice(0, 500), JSON.stringify(providerPayload ?? {}).slice(0, 10_000), now, transaction.id);
+      this.run(`UPDATE payments SET status='FAILED',updated_at=? WHERE id=?`, now, transaction.payment_id);
+      this.run(`UPDATE orders SET payment_status='FAILED',status='AWAITING_DEPOSIT',deposit_status='PENDING',updated_at=? WHERE id=?`, now, transaction.order_id);
+    });
+    return this.get<any>('SELECT * FROM payment_transactions WHERE id=?', transaction.id);
+  }
+
+  /** Card success is written only after a server-to-server provider verification. */
+  public confirmCardTransaction(transactionId: string, providerPayload: unknown) {
+    return this.transaction(() => {
+      const transaction = this.get<any>(`SELECT t.*,p.method payment_method,o.order_number,o.status order_status
+        FROM payment_transactions t JOIN payments p ON p.id=t.payment_id JOIN orders o ON o.id=t.order_id WHERE t.id=?`, transactionId);
+      if (!transaction) throw new Error('TRANSACTION_NOT_FOUND');
+      if (transaction.status === 'PAID') return this.get<any>('SELECT * FROM orders WHERE id=?', transaction.order_id);
+      if (transaction.payment_method !== 'CARD' || !transaction.provider_reference) throw new Error('CARD_TRANSACTION_INVALID');
+      const now = new Date().toISOString();
+      this.run(`UPDATE payment_transactions SET status='PAID',failure_reason='',provider_payload=?,confirmed_at=?,updated_at=? WHERE id=?`,
+        JSON.stringify(providerPayload ?? {}).slice(0, 10_000), now, now, transaction.id);
+      this.run(`UPDATE payments SET status='PAID',reference=?,confirmed_by='KONNECT',confirmed_at=?,updated_at=? WHERE id=?`,
+        transaction.provider_reference, now, now, transaction.payment_id);
+      this.run(`UPDATE orders SET status='CONFIRMED',payment_status='PAID',deposit_status='PAID',deposit_paid_at=?,
+        deposit_reviewed_by='KONNECT',deposit_review_note='',updated_at=? WHERE id=?`, now, now, transaction.order_id);
+      this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
+        VALUES (?,?,?,'CONFIRMED',?,'KONNECT',?)`, `history_${randomUUID()}`, transaction.order_id, transaction.order_status,
+        `Acompte carte ${Number(transaction.amount_tnd).toFixed(3)} DT vérifié par la passerelle. Transaction ${transaction.transaction_number}.`, now);
+      if (transaction.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'PAYMENT','Paiement carte confirmé',?,?,?)`, `notification_${randomUUID()}`, transaction.account_id,
+      `L’acompte de la commande ${transaction.order_number} est payé. Transaction ${transaction.transaction_number}.`, `/compte/commandes/${transaction.order_id}`, now);
+      return this.get<any>('SELECT * FROM orders WHERE id=?', transaction.order_id);
+    });
+  }
+
+  /** Customer uploads a bank/postal proof; upload never means payment confirmation. */
+  public attachDepositProof(orderId: string, proof: {
+    path: string; accountId: string; originalName: string; mimeType: string; sizeBytes: number; transferReference: string;
+  }) {
+    return this.transaction(() => {
+      const order = this.get<any>('SELECT * FROM orders WHERE id=? AND account_id=?', orderId, proof.accountId);
+      if (!order) throw new Error('ORDER_NOT_FOUND');
+      if (order.status !== 'AWAITING_DEPOSIT' || !['BANK_TRANSFER', 'POSTE'].includes(String(order.payment_method))
+        || !['PENDING', 'FAILED', 'REJECTED'].includes(String(order.payment_status))) throw new Error('DEPOSIT_NOT_SUBMITTABLE');
+      const payment = this.get<any>('SELECT * FROM payments WHERE order_id=?', orderId);
+      if (!payment) throw new Error('PAYMENT_NOT_FOUND');
+      const now = new Date().toISOString();
+      const proofId = `proof_${randomUUID()}`;
+      this.run(`INSERT INTO payment_proofs
+        (id,payment_id,order_id,account_id,file_path,original_name,mime_type,size_bytes,transfer_reference,status,submitted_at,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,'PENDING_VERIFICATION',?,?,?)`, proofId, payment.id, orderId, proof.accountId, proof.path,
+      String(proof.originalName).slice(0, 250), proof.mimeType, proof.sizeBytes, String(proof.transferReference).slice(0, 120), now, now, now);
+      this.run(`UPDATE orders SET status='AWAITING_PAYMENT_VERIFICATION',payment_status='PENDING_VERIFICATION',deposit_proof_path=?,
+        deposit_status='SUBMITTED',deposit_submitted_at=?,deposit_review_note='',updated_at=? WHERE id=?`, proof.path, now, now, orderId);
+      this.run(`UPDATE payments SET status='PENDING_VERIFICATION',reference=?,updated_at=? WHERE id=?`, proof.transferReference, now, payment.id);
+      this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
+        VALUES (?,?,?,'AWAITING_PAYMENT_VERIFICATION',?,NULL,?)`, `history_${randomUUID()}`, orderId, order.status,
+        `Justificatif ${proofId} reçu — le paiement reste en attente de vérification.`, now);
+      this.notifyAdmins('DEPOSIT_REVIEW', 'Virement à vérifier',
+        `${order.order_number} — justificatif reçu pour ${Number(order.deposit_amount_tnd).toFixed(3)} DT.`,
+        `/admin?section=orders&order=${orderId}`);
+      return { order: this.get<any>('SELECT * FROM orders WHERE id=?', orderId), proof: this.get<any>('SELECT * FROM payment_proofs WHERE id=?', proofId) };
+    });
+  }
+
+  /** Admin approval applies only to the latest pending manual-transfer proof. */
   public confirmOrderDeposit(orderId: string, adminId: string, note = '') {
     return this.transaction(() => {
       const order = this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
       if (!order) throw new Error('ORDER_NOT_FOUND');
-      if (order.status !== 'PAYMENT_PENDING' || !['PENDING', 'SUBMITTED'].includes(String(order.deposit_status))) {
+      const payment = this.get<any>('SELECT * FROM payments WHERE order_id=?', orderId);
+      const proof = this.get<any>(`SELECT * FROM payment_proofs WHERE order_id=? AND status='PENDING_VERIFICATION' ORDER BY submitted_at DESC LIMIT 1`, orderId);
+      if (!payment || !proof || order.status !== 'AWAITING_PAYMENT_VERIFICATION' || !['BANK_TRANSFER', 'POSTE'].includes(String(payment.method))) {
         throw new Error('DEPOSIT_NOT_REVIEWABLE');
       }
       const now = new Date().toISOString();
-      const trackingCode = this.generateTrackingCode();
-      const invoiceNumber = this.generateInvoiceNumber();
-      this.run(`UPDATE orders SET status='CONFIRMED', deposit_status='PAID', deposit_paid_at=?, deposit_reviewed_by=?,
-        deposit_review_note=?, tracking_code=?, invoice_number=?, updated_at=? WHERE id=?`,
-        now, adminId, note.slice(0, 500), trackingCode, invoiceNumber, now, orderId);
-      this.run(`UPDATE payments SET status='PAID', confirmed_by=?, confirmed_at=?, updated_at=? WHERE order_id=?`, adminId, now, now, orderId);
+      const transactionId = `transaction_${randomUUID()}`;
+      const transactionNumber = this.generateTransactionNumber();
+      this.run(`UPDATE payment_proofs SET status='APPROVED',reviewed_at=?,reviewed_by=?,rejection_reason='',updated_at=? WHERE id=?`, now, adminId, now, proof.id);
+      this.run(`INSERT INTO payment_transactions
+        (id,transaction_number,payment_id,order_id,account_id,provider,provider_reference,amount_tnd,currency,status,provider_payload,confirmed_at,created_at,updated_at)
+        VALUES (?,?,?,?,?,'MANUAL_TRANSFER',?,?,'TND','PAID','{}',?,?,?)`, transactionId, transactionNumber, payment.id, orderId,
+      order.account_id, proof.transfer_reference, Number(payment.amount_tnd), now, now, now);
+      this.run(`UPDATE orders SET status='CONFIRMED',payment_status='PAID',deposit_status='PAID',deposit_paid_at=?,deposit_reviewed_by=?,
+        deposit_review_note=?,updated_at=? WHERE id=?`, now, adminId, note.slice(0, 500), now, orderId);
+      this.run(`UPDATE payments SET status='PAID',reference=?,confirmed_by=?,confirmed_at=?,updated_at=? WHERE id=?`,
+        proof.transfer_reference, adminId, now, now, payment.id);
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,'PAYMENT_PENDING','CONFIRMED',?,?,?)`, `history_${randomUUID()}`, orderId,
-        `Acompte ${Number(order.deposit_amount_tnd).toFixed(3)} DT confirmé.${note ? ` ${note.slice(0, 200)}` : ''}`, adminId, now);
-      if (order.account_id) {
-        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-          VALUES (?,?,'ORDER','Commande confirmée',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-          `Votre acompte est confirmé — la commande ${order.order_number} passe en préparation. Suivi : ${trackingCode}.`, `/compte/commandes/${orderId}`, now);
-      }
+        VALUES (?,?,'AWAITING_PAYMENT_VERIFICATION','CONFIRMED',?,?,?)`, `history_${randomUUID()}`, orderId,
+        `Acompte ${Number(order.deposit_amount_tnd).toFixed(3)} DT confirmé. Transaction ${transactionNumber}.${note ? ` ${note.slice(0, 200)}` : ''}`, adminId, now);
+      if (order.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'PAYMENT','Acompte confirmé',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+      `Le justificatif de ${order.order_number} est validé. Transaction ${transactionNumber}; la commande est confirmée.`, `/compte/commandes/${orderId}`, now);
       return this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
     });
   }
 
-  /** الإدارة ترفض الوصل → العميل يعيد الرفع */
   public rejectOrderDeposit(orderId: string, adminId: string, note: string) {
     return this.transaction(() => {
       const order = this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
       if (!order) throw new Error('ORDER_NOT_FOUND');
-      if (order.status !== 'PAYMENT_PENDING' || !['PENDING', 'SUBMITTED'].includes(String(order.deposit_status))) {
-        throw new Error('DEPOSIT_NOT_REVIEWABLE');
-      }
+      const payment = this.get<any>('SELECT * FROM payments WHERE order_id=?', orderId);
+      const proof = this.get<any>(`SELECT * FROM payment_proofs WHERE order_id=? AND status='PENDING_VERIFICATION' ORDER BY submitted_at DESC LIMIT 1`, orderId);
+      if (!payment || !proof || order.status !== 'AWAITING_PAYMENT_VERIFICATION') throw new Error('DEPOSIT_NOT_REVIEWABLE');
       const now = new Date().toISOString();
-      const safeNote = String(note || 'Preuve illisible ou invalide.').slice(0, 500);
-      this.run(`UPDATE orders SET deposit_status='REJECTED', deposit_reviewed_by=?, deposit_review_note=?, updated_at=? WHERE id=?`,
-        adminId, safeNote, now, orderId);
+      const safeNote = String(note || '').trim().slice(0, 500);
+      if (!safeNote) throw new Error('REJECTION_REASON_REQUIRED');
+      this.run(`UPDATE payment_proofs SET status='REJECTED',reviewed_at=?,reviewed_by=?,rejection_reason=?,updated_at=? WHERE id=?`,
+        now, adminId, safeNote, now, proof.id);
+      this.run(`UPDATE orders SET status='AWAITING_DEPOSIT',payment_status='REJECTED',deposit_status='REJECTED',
+        deposit_reviewed_by=?,deposit_review_note=?,updated_at=? WHERE id=?`, adminId, safeNote, now, orderId);
+      this.run(`UPDATE payments SET status='REJECTED',updated_at=? WHERE id=?`, now, payment.id);
       this.run(`INSERT INTO order_status_history (id,order_id,from_status,to_status,note,changed_by,created_at)
-        VALUES (?,?,?,'PAYMENT_PENDING',?,?,?)`, `history_${randomUUID()}`, orderId, order.status,
-        `Acompte refusé : ${safeNote.slice(0, 200)}`, adminId, now);
-      if (order.account_id) {
-        this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
-          VALUES (?,?,'ORDER','Acompte à revérifier',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
-          `La preuve d'acompte de ${order.order_number} a été refusée : ${safeNote.slice(0, 160)} Merci d'en téléverser une nouvelle.`, `/compte/commandes/${orderId}`, now);
-      }
+        VALUES (? ,?,'AWAITING_PAYMENT_VERIFICATION','AWAITING_DEPOSIT',?,?,?)`, `history_${randomUUID()}`, orderId,
+        `Justificatif refusé : ${safeNote.slice(0, 200)}`, adminId, now);
+      if (order.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'PAYMENT','Justificatif refusé',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+      `Le justificatif de ${order.order_number} a été refusé : ${safeNote.slice(0, 160)} Vous pouvez en envoyer un nouveau.`, `/compte/commandes/${orderId}`, now);
       return this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
+    });
+  }
+
+  /** Invoice issuance is explicit and independent from payment confirmation. */
+  public issueOrderInvoice(orderId: string, adminId: string) {
+    return this.transaction(() => {
+      const order = this.get<any>('SELECT * FROM orders WHERE id=?', orderId);
+      if (!order) throw new Error('ORDER_NOT_FOUND');
+      if (!['CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED'].includes(String(order.status)) || order.payment_status !== 'PAID') {
+        throw new Error('INVOICE_NOT_ISSUABLE');
+      }
+      const existing = this.get<any>('SELECT * FROM invoices WHERE order_id=?', orderId);
+      if (existing) return existing;
+      const now = new Date().toISOString();
+      const number = this.generateInvoiceNumber();
+      const id = `invoice_${randomUUID()}`;
+      this.run(`INSERT INTO invoices (id,invoice_number,order_id,account_id,status,file_path,issued_at,created_at,updated_at)
+        VALUES (?,?,?,?,'ISSUED','',?,?,?)`, id, number, orderId, order.account_id, now, now, now);
+      // Legacy columns remain read-compatible, but invoices are authoritative.
+      this.run('UPDATE orders SET invoice_number=?,invoice_path=\'\',updated_at=? WHERE id=?', number, now, orderId);
+      if (order.account_id) this.run(`INSERT INTO customer_notifications (id,account_id,type,title,message,action_url,created_at)
+        VALUES (?,?,'INVOICE','Facture disponible',?,?,?)`, `notification_${randomUUID()}`, order.account_id,
+      `La facture ${number} de la commande ${order.order_number} a été émise.`, `/compte/factures`, now);
+      return this.get<any>('SELECT * FROM invoices WHERE id=?', id);
     });
   }
 

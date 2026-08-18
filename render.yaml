@@ -26,6 +26,13 @@ services:
         sync: false
       - key: PUBLIC_BASE_URL
         sync: false
+      # Konnect Tunisia card gateway (server-side; never expose these values to Vite).
+      - key: KONNECT_ENVIRONMENT
+        value: production
+      - key: KONNECT_API_KEY
+        sync: false
+      - key: KONNECT_WALLET_ID
+        sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
