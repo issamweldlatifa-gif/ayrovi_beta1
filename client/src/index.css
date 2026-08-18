@@ -57,18 +57,32 @@
   }
 }
 
-/* Unified icon rendering: fixed optical stroke at every responsive size. */
+/* AYROVI icon system: reference-derived monoline geometry across public + Admin. */
 .qatafo-icon,
 .lucide {
   display: block;
   flex: 0 0 auto;
   overflow: visible;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: var(--ayrovi-icon-stroke, 1.75);
   shape-rendering: geometricPrecision;
 }
 
 .qatafo-icon > *,
 .lucide > * {
   vector-effect: non-scaling-stroke;
+}
+
+/* Fill is semantic: only selected/liked/saved states opt into currentColor. */
+.qatafo-icon[fill='currentColor'],
+.lucide[fill='currentColor'],
+.qatafo-icon.fill-current,
+.lucide.fill-current,
+.qatafo-icon.fill-brand,
+.lucide.fill-brand {
+  fill: currentColor;
 }
 
 /* Custom Scrollbar */

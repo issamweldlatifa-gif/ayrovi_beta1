@@ -1,12 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import {
-  ArrowDown, ArrowUp, Bot, Eye as LucideEye, EyeOff, Image as ImageIcon, LayoutGrid, Monitor,
-  MousePointer2, Navigation, Palette, RotateCcw, Save, ScanSearch, SlidersHorizontal, Sparkles, Type,
-} from 'lucide-react';
+import { Bot as LucideBot, Eye as LucideEye, ScanSearch as LucideScanSearch } from 'lucide-react';
 import { FaCamera, FaEye, FaRobot } from 'react-icons/fa6';
 import { BsCamera, BsChatDots, BsEye } from 'react-icons/bs';
 import { MdCenterFocusStrong, MdSmartToy, MdVisibility } from 'react-icons/md';
-import { Eye as AyroviEye, LensBox, MessageCircle } from '../components/QatafoIcons';
+import {
+  ArrowDown, ArrowUp, Eye as AyroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,
+  LensBox, Menu, MessageCircle, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save,
+  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,
+} from '../components/QatafoIcons';
 import {
   DEFAULT_INTERFACE_CONFIG, INTERFACE_FONT_PRESETS, INTERFACE_ICON_LIBRARIES, normalizeInterfaceConfig,
   type InterfaceFontPresetId, type InterfaceIconLibrary, type InterfaceSectionConfig, type PublicInterfaceConfig,
@@ -35,11 +36,18 @@ const selectOptions = (items: Array<[string, string]>) => items.map(([value, lab
 
 const ICON_SETS: Record<InterfaceIconLibrary, React.ElementType[]> = {
   ayrovi: [LensBox, MessageCircle, AyroviEye],
-  lucide: [ScanSearch, Bot, LucideEye],
+  lucide: [LucideScanSearch, LucideBot, LucideEye],
   fontawesome: [FaCamera, FaRobot, FaEye],
   bootstrap: [BsCamera, BsChatDots, BsEye],
   material: [MdCenterFocusStrong, MdSmartToy, MdVisibility],
 };
+const AYROVI_CORE_ICONS = [
+  { label: 'Accueil · الرئيسية', icon: Home },
+  { label: 'Panier · السلة', icon: ShoppingBag },
+  { label: 'Menu · القائمة', icon: Menu },
+  { label: 'Favoris · المفضلة', icon: Heart },
+  { label: 'Compte · الحساب', icon: User },
+];
 
 const COLOR_PRESETS: Array<{
   id: string;
@@ -94,6 +102,13 @@ const IconLibraryPreview: React.FC<{ config: PublicInterfaceConfig['icons']; com
     {icons.map((Icon, index) => <Icon key={index} size={config.size} style={{ color: index === 1 ? config.activeColor : config.color }} fill={config.style === 'solid' && ['ayrovi', 'lucide'].includes(config.library) ? 'currentColor' : undefined} />)}
   </div>;
 };
+
+const AyroviCorePreview: React.FC<{ config: PublicInterfaceConfig['icons'] }> = ({ config }) => (
+  <div className="interface-ayrovi-core" style={{ color: config.color }}>
+    <div><strong>Géométrie AYROVI · هندسة AYROVI</strong><small>24 × 24 · monoline 1.75 · round · currentColor</small></div>
+    <ul>{AYROVI_CORE_ICONS.map(({ label, icon: Icon }) => <li key={label}><Icon size={Math.max(20, config.size)} /><span>{label}</span></li>)}</ul>
+  </div>
+);
 
 export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const [settingId, setSettingId] = useState('');
@@ -222,7 +237,7 @@ export const InterfaceStudio: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
         {panel === 'controls' && <>
           <section className="admin-card interface-card"><header><div><MousePointer2 size={19} /><div><h2>Boutons primaires et secondaires</h2><p>Contrôle indépendant des couleurs, bordure, forme, hauteur et courbure.</p></div></div></header><div className="interface-color-grid"><ColorControl label="Fond primaire" value={config.buttons.background} onChange={(background) => patch('buttons', { background })} disabled={!canWrite} /><ColorControl label="Texte primaire" value={config.buttons.color} onChange={(color) => patch('buttons', { color })} disabled={!canWrite} /><ColorControl label="Fond secondaire" value={config.buttons.secondaryBackground} onChange={(secondaryBackground) => patch('buttons', { secondaryBackground })} disabled={!canWrite} /><ColorControl label="Texte secondaire" value={config.buttons.secondaryColor} onChange={(secondaryColor) => patch('buttons', { secondaryColor })} disabled={!canWrite} /><ColorControl label="Bordure" value={config.buttons.borderColor} onChange={(borderColor) => patch('buttons', { borderColor })} disabled={!canWrite} /></div><div className="admin-form interface-control-ranges"><Field label="Forme"><Select disabled={!canWrite} value={config.buttons.shape} onChange={(event) => patch('buttons', { shape: event.target.value as any })} options={selectOptions([['soft', 'Douce'], ['pill', 'Pilule'], ['square', 'Carrée']])} /></Field><Field label={`Hauteur · ${config.buttons.height}px`}><input disabled={!canWrite} type="range" min="36" max="68" value={config.buttons.height} onChange={(event) => patch('buttons', { height: Number(event.target.value) })} /></Field><Field label={`Courbure · ${config.buttons.radius}px`}><input disabled={!canWrite} type="range" min="0" max="40" value={config.buttons.radius} onChange={(event) => patch('buttons', { radius: Number(event.target.value) })} /></Field><Field label={`Épaisseur bordure · ${config.buttons.borderWidth}px`}><input disabled={!canWrite} type="range" min="0" max="4" value={config.buttons.borderWidth} onChange={(event) => patch('buttons', { borderWidth: Number(event.target.value) })} /></Field></div><div className="interface-button-preview"><button type="button" style={{ background: config.buttons.background, color: config.buttons.color, minHeight: config.buttons.height, borderRadius: config.buttons.shape === 'pill' ? 999 : config.buttons.shape === 'square' ? 0 : config.buttons.radius, border: `${config.buttons.borderWidth}px solid ${config.buttons.borderColor}` }}>Bouton principal</button><button type="button" style={{ background: config.buttons.secondaryBackground, color: config.buttons.secondaryColor, minHeight: config.buttons.height, borderRadius: config.buttons.shape === 'pill' ? 999 : config.buttons.shape === 'square' ? 0 : config.buttons.radius, border: `${config.buttons.borderWidth}px solid ${config.buttons.borderColor}` }}>Bouton secondaire</button></div></section>
-          <section className="admin-card interface-card"><header><div><Palette size={19} /><div><h2>Cinq modèles d’icônes</h2><p>Choisissez une vraie bibliothèque, puis réglez couleur, état actif, style et taille.</p></div></div></header><div className="interface-icon-models">{INTERFACE_ICON_LIBRARIES.map((library) => { const sampleConfig = { ...config.icons, library: library.id }; return <button key={library.id} type="button" disabled={!canWrite} aria-pressed={config.icons.library === library.id} className={config.icons.library === library.id ? 'is-active' : ''} onClick={() => patch('icons', { library: library.id })}><IconLibraryPreview config={sampleConfig} compact /><strong>{library.label}</strong><small>{library.description}</small></button>; })}</div><div className="interface-color-grid"><ColorControl label="Couleur icônes" value={config.icons.color} onChange={(color) => patch('icons', { color })} disabled={!canWrite} /><ColorControl label="Couleur active" value={config.icons.activeColor} onChange={(activeColor) => patch('icons', { activeColor })} disabled={!canWrite} /></div><div className="admin-form interface-control-ranges"><Field label="Style"><Select disabled={!canWrite} value={config.icons.style} onChange={(event) => patch('icons', { style: event.target.value as any })} options={selectOptions([['outline', 'Contour'], ['solid', 'Plein']])} /></Field><Field label={`Taille · ${config.icons.size}px`}><input disabled={!canWrite} type="range" min="14" max="40" value={config.icons.size} onChange={(event) => patch('icons', { size: Number(event.target.value) })} /></Field></div><IconLibraryPreview config={config.icons} /></section>
+          <section className="admin-card interface-card"><header><div><Palette size={19} /><div><h2>Cinq modèles d’icônes</h2><p>Choisissez une vraie bibliothèque, puis réglez couleur, état actif, style et taille.</p></div></div></header><div className="interface-icon-models">{INTERFACE_ICON_LIBRARIES.map((library) => { const sampleConfig = { ...config.icons, library: library.id }; return <button key={library.id} type="button" disabled={!canWrite} aria-pressed={config.icons.library === library.id} className={config.icons.library === library.id ? 'is-active' : ''} onClick={() => patch('icons', { library: library.id })}><IconLibraryPreview config={sampleConfig} compact /><strong>{library.label}</strong><small>{library.description}</small></button>; })}</div><AyroviCorePreview config={config.icons} /><div className="interface-color-grid"><ColorControl label="Couleur icônes" value={config.icons.color} onChange={(color) => patch('icons', { color })} disabled={!canWrite} /><ColorControl label="Couleur active" value={config.icons.activeColor} onChange={(activeColor) => patch('icons', { activeColor })} disabled={!canWrite} /></div><div className="admin-form interface-control-ranges"><Field label="Style"><Select disabled={!canWrite} value={config.icons.style} onChange={(event) => patch('icons', { style: event.target.value as any })} options={selectOptions([['outline', 'Contour'], ['solid', 'Plein']])} /></Field><Field label={`Taille · ${config.icons.size}px`}><input disabled={!canWrite} type="range" min="14" max="40" value={config.icons.size} onChange={(event) => patch('icons', { size: Number(event.target.value) })} /></Field></div><IconLibraryPreview config={config.icons} /></section>
         </>}
 
         {panel === 'navigation' && <>
