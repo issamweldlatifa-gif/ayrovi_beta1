@@ -11,7 +11,7 @@ export const JourneyProgress: React.FC<JourneyProgressProps> = ({ active }) => {
   const steps = [
     tr('Panier', 'السلة'),
     tr('Livraison', 'التوصيل'),
-    tr('Récapitulatif', 'المراجعة'),
+    tr('Paiement', 'الدفع'),
     tr('Confirmé', 'التأكيد'),
   ];
   return (

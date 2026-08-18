@@ -9,17 +9,19 @@
   min-width: 0;
   align-items: flex-start;
   justify-content: center;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
   background: color-mix(in srgb, var(--ayrovi-neutral-900) 50%, transparent);
   backdrop-filter: blur(2px);
 }
 
 .checkout-flow-container {
+  display: flex;
   width: 100%;
   min-width: 0;
   max-width: 100%;
+  max-height: calc(100dvh - 3rem);
   margin: 0;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--ayrovi-neutral-200);
   border-radius: var(--ayrovi-radius-card);
@@ -31,6 +33,13 @@
   width: 100%;
   max-width: none;
   min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-bottom: 5rem;
+  -webkit-overflow-scrolling: touch;
   padding-block: 1.25rem;
   padding-inline: clamp(1rem, 5vw, 1.25rem);
 }
@@ -129,6 +138,18 @@
   text-align: end;
 }
 
+.checkout-flow-actions {
+  position: sticky;
+  z-index: 10;
+  bottom: -1.25rem;
+  margin-inline: -0.25rem;
+  padding: 0.75rem 0.25rem max(1rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ayrovi-neutral-200);
+  background: color-mix(in srgb, var(--ayrovi-white) 96%, transparent);
+  box-shadow: 0 -0.75rem 1.5rem color-mix(in srgb, var(--ayrovi-neutral-900) 7%, transparent);
+  backdrop-filter: blur(8px);
+}
+
 @media (max-width: 639px) {
   .checkout-flow-page {
     align-items: stretch;
@@ -140,7 +161,9 @@
   .checkout-flow-container {
     width: 100%;
     max-width: 100%;
-    min-height: 100dvh;
+    height: 100dvh;
+    min-height: 0;
+    max-height: 100dvh;
     margin: 0;
     border-inline: 0;
     border-block-start: 0;

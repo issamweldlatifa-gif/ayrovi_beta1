@@ -578,7 +578,7 @@ export const App: React.FC = () => {
           <OrderSuccessModal
             result={orderResult}
             onClose={() => { setOrderResult(null); navigation.goHome(); }}
-            onOpenAccount={() => { setOrderResult(null); setAccountInitialSection('orders'); openAppView('app:account', true); }}
+            onOpenAccount={() => { setAccountInitialOrderId(orderResult.orderId || ''); setOrderResult(null); setAccountInitialSection('orders'); openAppView('app:account', true); }}
             onCalculateAnotherProduct={handleOpenLens}
           />
         </Suspense>

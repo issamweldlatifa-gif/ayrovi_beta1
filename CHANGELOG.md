@@ -2,11 +2,21 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.1] - 2026-08-18
+
+### Fixed
+- Restored the dedicated payment step after delivery details with Visa/Mastercard, Flouci/D17, bank-transfer and postal cards.
+- Kept unavailable gateways visible but disabled; only genuinely configured card/manual methods can be selected, with no simulated Flouci/D17 transaction.
+- Kept manual proof upload exclusively in Mon compte → Mes commandes after the order is created.
+- Added an internal touch-scroll area and reachable sticky actions so delivery/payment completion controls remain accessible on short mobile viewports.
+- Blocked manual method selection and proof upload until the corresponding official RIB or postal account is published by Admin.
+- The success action now opens the newly created order directly for manual-proof follow-up.
+
 ## [3.7.0] - 2026-08-18
 
 ### Added
 - Complete database-backed customer account with overview counters, vertical mobile-first navigation, orders, payments and transactions, invoices, shipment tracking, addresses, favorites, cart, notifications, security and preferences.
-- Order-first deposit lifecycle: checkout creates an order in `AWAITING_DEPOSIT`, then the customer selects the deposit method from the persisted order detail.
+- Order-backed deposit lifecycle: checkout creates an order in `AWAITING_DEPOSIT` before any charge, then binds the selected method/transaction to that persisted order; retries remain available from its detail page.
 - Konnect bank-card adapter with server-only credentials, server-side payment-detail verification, transaction audit data, idempotent webhook/return handling, amount/currency/order matching, and explicit gateway readiness.
 - Manual bank/postal transfer proof history with file metadata, transfer references, ownership checks, independent review records, rejection reasons and re-upload support.
 - Independent payment, transaction, proof, invoice and delivery entities and identifiers, plus canonical order/payment lifecycle migrations.
@@ -14,7 +24,6 @@ All notable AYROVI changes are recorded in this file.
 - Customer lifecycle notifications for payment, proof, invoice and shipping events.
 
 ### Changed
-- Successful checkout now opens the created order instead of presenting payment, invoice or tracking data prematurely.
 - Invoice downloads use issued invoice records as the authoritative source; tracking is exposed only after actual shipment.
 - Finance income includes confirmed payments only, excluding orders or proofs still awaiting verification.
 - Customer and Admin status labels and filters now follow the canonical lifecycle.

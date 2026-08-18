@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, Phone, MapPin, User, CreditCard, Mail, LocateFixed } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
-import { CustomerAddress, CustomerInfo, CustomerSession, OrderResult } from '../types';
+import { CustomerAddress, CustomerCardInitiation, CustomerInfo, CustomerSession, OrderResult } from '../types';
 import { getSessionId } from '../utils/session';
 import { customerApi } from '../customer/api';
 import { getCommerceConfig } from '../services/publicApi';
@@ -25,7 +25,6 @@ interface CheckoutModalProps {
 type CheckoutPaymentMethod = 'CARD' | 'FLOUCI' | 'BANK_TRANSFER' | 'POSTE';
 
 const PAYMENT_METHODS: CheckoutPaymentMethod[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
-const AVAILABLE_PAYMENT_METHODS = new Set<CheckoutPaymentMethod>(['BANK_TRANSFER', 'POSTE']);
 const PAYMENT_METHOD_IMAGES: Record<CheckoutPaymentMethod, string> = {
   CARD: '/media/payments/card.png',
   FLOUCI: '/media/payments/flouci.png',
@@ -79,14 +78,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     phone: '',
     city: TUNISIAN_GOVERNORATES_FR[0],
     address: '',
-    paymentMethod: 'pending_selection',
+    paymentMethod: '',
     latitude: null,
     longitude: null,
     termsAccepted: false,
     locale: locale === 'ar' ? 'ar-TN' : 'fr-TN',
   });
   const [governorates, setGovernorates] = useState(TUNISIAN_GOVERNORATES_FR);
-  const [depositInfo, setDepositInfo] = useState({ percent: 20, cardDiscountPercent: 5, companyName: 'AYROVI', bankRib: '', posteAccount: '', flouciNumber: '', reviewDelay: '', unavailableRefundPolicy: '' });
+  const [depositInfo, setDepositInfo] = useState({ percent: 20, cardDiscountPercent: 5, companyName: 'AYROVI', bankRib: '', posteAccount: '', flouciNumber: '', reviewDelay: '', unavailableRefundPolicy: '', cardGatewayAvailable: false });
   const [isLoading, setIsLoading] = useState(false);
   const [paymentAvailabilityNotice, setPaymentAvailabilityNotice] = useState('');
   const [locating, setLocating] = useState(false);
@@ -120,14 +119,24 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             flouciNumber: String(d.flouciNumber || ''),
             reviewDelay: String(d.reviewDelay || ''),
             unavailableRefundPolicy: String(d.unavailableRefundPolicy || ''),
+            cardGatewayAvailable: Boolean(payload.data?.capabilities?.cardGateway),
           });
         }
+        const cardReady = Boolean(payload.data?.capabilities?.cardGateway);
+        const bankReady = Boolean(String(payload.data?.deposit?.bankRib || '').trim());
+        const posteReady = Boolean(String(payload.data?.deposit?.posteAccount || '').trim());
         setGovernorates(configuredGovernorates);
-        setFormData((current) => ({
-          ...current,
-          city: configuredGovernorates.includes(current.city) ? current.city : configuredGovernorates[0],
-          paymentMethod: 'pending_selection',
-        }));
+        setFormData((current) => {
+          const currentMethod = current.paymentMethod.toUpperCase();
+          const currentReady = (currentMethod === 'CARD' && cardReady)
+            || (currentMethod === 'BANK_TRANSFER' && bankReady)
+            || (currentMethod === 'POSTE' && posteReady);
+          return {
+            ...current,
+            city: configuredGovernorates.includes(current.city) ? current.city : configuredGovernorates[0],
+            paymentMethod: currentReady ? current.paymentMethod : cardReady ? 'card' : bankReady ? 'bank_transfer' : posteReady ? 'poste' : '',
+          };
+        });
       })
       .catch((fetchError) => {
         if (fetchError?.name !== 'AbortError') console.warn('[Checkout Config Error]', fetchError);
@@ -212,6 +221,19 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
+  const isPaymentMethodAvailable = (method: CheckoutPaymentMethod) => method === 'CARD'
+    ? depositInfo.cardGatewayAvailable
+    : method === 'BANK_TRANSFER'
+      ? Boolean(depositInfo.bankRib.trim())
+      : method === 'POSTE'
+        ? Boolean(depositInfo.posteAccount.trim())
+        : false; // Flouci/D17 stays visible but cannot be selected without a real gateway.
+  const depositBase = Math.round(totalTND * depositInfo.percent / 100 * 1000) / 1000;
+  const depositDiscount = formData.paymentMethod.toUpperCase() === 'CARD'
+    ? Math.round(depositBase * depositInfo.cardDiscountPercent / 100 * 1000) / 1000
+    : 0;
+  const selectedDepositAmount = Math.max(0, Math.round((depositBase - depositDiscount) * 1000) / 1000);
+
   const validateDelivery = () => {
     setError(null);
     if (!customerSession) {
@@ -251,9 +273,20 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setError(tr('Vous devez accepter les conditions de vente et la politique de retour.', 'يجب قبول شروط البيع وسياسة الإرجاع.'));
       return;
     }
+    const selectedMethod = formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod;
+    if (!PAYMENT_METHODS.includes(selectedMethod) || !isPaymentMethodAvailable(selectedMethod)) {
+      setPaymentAvailabilityNotice(tr(
+        'Choisissez un moyen de paiement réellement disponible. Flouci/D17 reste désactivé tant qu’aucune passerelle réelle n’est configurée.',
+        'اختر وسيلة دفع متاحة فعليًا. تبقى Flouci/D17 معطلة إلى حين ضبط بوابة دفع حقيقية.',
+      ));
+      return;
+    }
     setIsLoading(true);
+    setError(null);
 
     try {
+      // The order remains the payment authority: create it first, then bind the
+      // method/transaction to its backend ID from this payment step.
       const response = await fetch('/api/checkout', {
         method: 'POST',
         headers: {
@@ -276,19 +309,62 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         throw new Error(localizedErrors[String(data.code || '')] || data.error || tr('Une erreur est survenue lors de la validation.', 'حدث خطأ أثناء تأكيد الطلب.'));
       }
 
-      onOrderSuccess({
+      const orderResult: OrderResult = {
         orderId: data.orderId,
         orderNumber: data.orderNumber,
-        customer: { ...formData, locale: locale === 'ar' ? 'ar-TN' : 'fr-TN' },
+        customer: { ...formData, paymentMethod: selectedMethod.toLowerCase(), locale: locale === 'ar' ? 'ar-TN' : 'fr-TN' },
         totalTND: data.totalTND || totalTND,
         itemCount,
         breakdown: data.breakdown,
-        deposit: data.deposit,
+        deposit: data.deposit ? { ...data.deposit, method: selectedMethod } : null,
         message: data.message || tr('Votre commande a été enregistrée avec succès chez AYROVI !', 'تم تسجيل طلبك بنجاح لدى AYROVI!'),
-      });
+      };
+
+      try {
+        if (selectedMethod === 'CARD') {
+          const initiated = await customerApi<{ data: CustomerCardInitiation }>(
+            `/api/customer/account/orders/${encodeURIComponent(data.orderId)}/payments/card/initiate`,
+            { method: 'POST', body: '{}' }, customerSession.csrfToken,
+          );
+          orderResult.deposit = {
+            ...(orderResult.deposit || { percent: depositInfo.percent, status: 'PENDING' }),
+            amountTnd: initiated.data.amountTnd,
+            balanceTnd: Math.max(0, Number(orderResult.totalTND) - initiated.data.amountTnd),
+            method: 'CARD',
+          };
+          onOrderSuccess(orderResult);
+          window.location.assign(initiated.data.payUrl);
+          return;
+        }
+
+        const selected = await customerApi<{ data: { method: CheckoutPaymentMethod; quote: { percent: number; amountTnd: number; balanceTnd: number } } }>(
+          `/api/customer/account/orders/${encodeURIComponent(data.orderId)}/deposit/method`,
+          { method: 'POST', body: JSON.stringify({ method: selectedMethod }) }, customerSession.csrfToken,
+        );
+        orderResult.deposit = {
+          ...(orderResult.deposit || { status: 'PENDING' }),
+          percent: selected.data.quote.percent,
+          amountTnd: selected.data.quote.amountTnd,
+          balanceTnd: selected.data.quote.balanceTnd,
+          method: selectedMethod,
+        };
+        orderResult.message = tr(
+          'Commande créée. Envoyez maintenant le justificatif du paiement manuel depuis Mon compte → Mes commandes.',
+          'تم إنشاء الطلب. أرسل الآن إثبات الدفع اليدوي من حسابي ← طلباتي.',
+        );
+        onOrderSuccess(orderResult);
+      } catch (paymentError: any) {
+        // Checkout is never repeated after the cart was consumed. The persisted
+        // order stays accessible so the customer can safely retry from the profile.
+        orderResult.message = tr(
+          `Commande créée, mais le paiement n’a pas démarré : ${paymentError.message || 'service indisponible'}. Réessayez depuis Mes commandes.`,
+          `تم إنشاء الطلب لكن الدفع لم يبدأ: ${paymentError.message || 'الخدمة غير متاحة'}. أعد المحاولة من طلباتي.`,
+        );
+        onOrderSuccess(orderResult);
+      }
     } catch (err: any) {
       console.error('[Checkout Error]', err);
-      setError(err.message || 'Une erreur est survenue lors de la validation de la commande.');
+      setError(err.message || tr('Une erreur est survenue lors de la création de la commande.', 'حدث خطأ أثناء إنشاء الطلب.'));
     } finally {
       setIsLoading(false);
     }
@@ -298,11 +374,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     <CheckoutFlowShell
       direction={direction}
       size="form"
-      ariaLabel={isPaymentStage ? tr('Récapitulatif', 'المراجعة') : tr('Livraison', 'التوصيل')}
+      ariaLabel={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
     >
         <AppHeader
-          title={isPaymentStage ? tr('Récapitulatif', 'مراجعة الطلب') : tr('Livraison', 'التوصيل')}
-          subtitle={isPaymentStage ? tr('La commande sera créée avant tout paiement', 'سيتم إنشاء الطلب قبل أي دفع') : tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
+          title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
+          subtitle={isPaymentStage ? tr('Choisissez comment régler l’acompte', 'اختر طريقة دفع العربون') : tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
           onBack={isPaymentStage ? () => navigation.back() : onClose}
           actionDisabled={isLoading}
           actionLabel={isPaymentStage ? tr('Revenir à la livraison', 'العودة إلى بيانات التوصيل') : tr('Revenir au panier', 'العودة إلى السلة')}
@@ -438,17 +514,58 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </button>
           {formData.latitude != null && <p className="text-center text-[10px] font-bold text-brand">{formData.latitude.toFixed(5)}, {Number(formData.longitude).toFixed(5)}</p>}
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={onClose} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
-            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary min-w-0 px-2 text-xs">{tr('Vérifier la commande', 'مراجعة الطلب')}</button>
+            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary min-w-0 px-2 text-xs">{tr('Continuer vers le paiement', 'المتابعة إلى الدفع')}</button>
           </div>
           </>}
 
           {isPaymentStage && <>
-          <section className="rounded-2xl border border-brand/20 bg-brand/5 p-4 text-xs leading-6 text-brand-dark">
-            <CheckCircle2 className="mb-2 h-5 w-5 text-brand" />
-            <strong className="block text-sm text-ink">{tr('Commande créée d’abord, paiement ensuite', 'إنشاء الطلب أولًا ثم الدفع')}</strong>
-            <p>{tr('Après confirmation, la commande apparaît immédiatement dans Mon compte → Mes commandes avec son acompte calculé par le serveur. Vous choisirez alors carte bancaire ou virement bancaire/postal.', 'بعد التأكيد يظهر الطلب فورًا في حسابي ← طلباتي مع العربون المحسوب من الخادم. عندها تختار البطاقة البنكية أو التحويل البنكي/البريدي.')}</p>
+          <section>
+            <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted">
+              <CreditCard className="h-4 w-4 text-brand" />
+              <span>{tr('Mode de paiement de l’acompte', 'طريقة دفع العربون')}</span>
+            </label>
+            <div className="checkout-payment-grid">
+              {PAYMENT_METHODS.map((method) => {
+                const available = isPaymentMethodAvailable(method);
+                const selected = formData.paymentMethod.toUpperCase() === method;
+                const meta: Record<CheckoutPaymentMethod, { label: string; hint: string }> = {
+                  CARD: {
+                    label: tr('Visa / Mastercard', 'Visa / Mastercard'),
+                    hint: available ? tr('Paiement immédiat sécurisé', 'دفع فوري وآمن') : tr('Passerelle non configurée', 'بوابة الدفع غير مضبوطة'),
+                  },
+                  FLOUCI: { label: 'Flouci / D17', hint: tr('En attente d’une passerelle réelle', 'في انتظار بوابة دفع حقيقية') },
+                  BANK_TRANSFER: {
+                    label: tr('Virement bancaire', 'تحويل بنكي'),
+                    hint: available ? tr('Justificatif depuis le profil', 'الإثبات من الحساب') : tr('RIB non publié', 'لم يتم نشر RIB'),
+                  },
+                  POSTE: {
+                    label: tr('Transfert postal', 'تحويل بريدي'),
+                    hint: available ? tr('Justificatif depuis le profil', 'الإثبات من الحساب') : tr('Compte postal non publié', 'الحساب البريدي غير منشور'),
+                  },
+                };
+                return <button key={method} type="button" aria-disabled={!available} aria-pressed={selected} onClick={() => {
+                  if (!available) {
+                    setPaymentAvailabilityNotice(method === 'FLOUCI'
+                      ? tr('Flouci / D17 reste visible mais désactivé : aucune transaction ne sera simulée sans passerelle réelle.', 'Flouci / D17 ظاهرة لكنها معطلة: لن يتم إنشاء دفع وهمي دون بوابة حقيقية.')
+                      : tr('Ce moyen sera activé dès que sa configuration officielle sera disponible.', 'ستُفعّل هذه الوسيلة عند توفر إعداداتها الرسمية.'));
+                    return;
+                  }
+                  setPaymentAvailabilityNotice(''); setError(null);
+                  setFormData({ ...formData, paymentMethod: method.toLowerCase() });
+                }} className={`checkout-payment-option rounded-xl border transition-all ${selected ? 'border-brand bg-brand/10 text-brand' : available ? 'border-line bg-surface text-muted hover:border-brand/50' : 'border-line bg-surface text-muted'}`}>
+                  <span className="checkout-payment-logo-frame"><img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" /></span>
+                  <span className="block text-xs font-black leading-tight">{meta[method].label}</span>
+                  {!available&&<span className="checkout-payment-badge">{tr('Indisponible', 'غير متاح')}</span>}
+                  <span className="block text-[9px] font-semibold leading-tight opacity-80">{meta[method].hint}</span>
+                </button>;
+              })}
+            </div>
+            {paymentAvailabilityNotice&&<p className="mt-2 flex items-start gap-2 rounded-xl border border-accent bg-accent/10 p-3 text-[11px] font-bold leading-5 text-ink" role="status"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning"/><span>{paymentAvailabilityNotice}</span></p>}
+            {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
+            {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
+            {formData.paymentMethod.toUpperCase()==='POSTE'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">{tr('Compte postal', 'الحساب البريدي')} : {depositInfo.posteAccount}</span><span className="mt-1 block">{tr('Après le versement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد الإيداع ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
           </section>
           <div className="checkout-payment-summary rounded-xl border border-line bg-surface p-3.5 text-xs space-y-1.5">
             <div className="flex justify-between"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>
@@ -458,15 +575,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {breakdown.express > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Express', 'السريع')}</span><strong>{formatMoney(breakdown.express)}</strong></div>}
             {breakdown.discount > 0 && <div className="flex justify-between text-success"><span>{tr('Réduction', 'التخفيض')}</span><strong>−{formatMoney(breakdown.discount)}</strong></div>}
             <div className="flex justify-between border-t border-line pt-2 text-sm font-black"><span>{tr('Total de la commande', 'إجمالي الطلب')}</span><strong className="text-brand">{formatMoney(totalTND)}</strong></div>
+            <div className="flex justify-between border-t border-line pt-2"><span className="font-bold text-accent-deep">{tr(`Acompte (${depositInfo.percent}%)`, `العربون (${depositInfo.percent}%)`)}</span><strong className="text-accent-deep">{formatMoney(selectedDepositAmount)}</strong></div>
+            {depositDiscount>0&&<div className="flex justify-between text-success"><span>{tr('Remise carte sur l’acompte', 'تخفيض البطاقة على العربون')}</span><strong>−{formatMoney(depositDiscount)}</strong></div>}
+            <div className="flex justify-between"><span className="text-muted">{tr('Solde restant après acompte', 'المتبقي بعد العربون')}</span><strong>{formatMoney(Math.max(0,totalTND-selectedDepositAmount))}</strong></div>
           </div>
           <label className="flex items-start gap-3 rounded-xl border border-line bg-white p-3 text-xs leading-5 text-ink">
             <input type="checkbox" required checked={formData.termsAccepted} onChange={(event) => setFormData({ ...formData, termsAccepted: event.target.checked })} className="mt-0.5 h-5 w-5 shrink-0 accent-brand" />
             <span>{tr("J’accepte les ", 'أوافق على ')}<a href="/terms.html" target="_blank" rel="noopener noreferrer" className="font-black text-brand underline">{tr('conditions générales de vente et la politique de retour', 'شروط البيع وسياسة الإرجاع')}</a>.</span>
           </label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour', 'رجوع')}</button>
-            <button type="submit" disabled={isLoading || !formData.termsAccepted || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm">
-              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" />{tr('Création…', 'جارٍ الإنشاء…')}</> : <><CheckCircle2 className="h-4 w-4" />{tr('Créer la commande', 'إنشاء الطلب')}</>}
+            <button type="submit" disabled={isLoading || !formData.termsAccepted || !isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm">
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" />{tr('Création…', 'جارٍ الإنشاء…')}</> : <><CheckCircle2 className="h-4 w-4" />{formData.paymentMethod.toUpperCase()==='CARD'?tr('Créer et payer','إنشاء ودفع'):tr('Créer puis continuer','إنشاء ثم متابعة')}</>}
             </button>
           </div>
           </>}

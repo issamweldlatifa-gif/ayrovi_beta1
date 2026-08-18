@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
+import { cardGatewayAvailable } from '../services/paymentGateway';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
@@ -72,6 +73,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       governorates: Array.isArray(facts.governorates) ? facts.governorates : [],
       paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
       deliveryDelay: String(facts.delivery_delay || ''),
+      capabilities: { cardGateway: cardGatewayAvailable() },
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
       deposit: {
         percent: Number(facts.deposit_percent) > 0 ? Number(facts.deposit_percent) : 20,

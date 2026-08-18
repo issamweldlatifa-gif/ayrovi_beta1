@@ -67,7 +67,7 @@ describe('AYROVIX contextual navigation', () => {
     const confirmation = readFileSync('client/src/components/OrderSuccessModal.tsx', 'utf8');
     expect(cart).toContain('onBack={onClose}');
     expect(cart).toContain("Calculer un autre produit");
-    expect(checkout).toContain("title={isPaymentStage ? tr('Récapitulatif', 'مراجعة الطلب') : tr('Livraison', 'التوصيل')}");
+    expect(checkout).toContain("title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}");
     expect(checkout).toContain("navigation.pushLayer({ id: 'checkout:payment' })");
     expect(confirmation).toContain('onCalculateAnotherProduct');
     expect(confirmation).toContain("Calculer un autre produit");

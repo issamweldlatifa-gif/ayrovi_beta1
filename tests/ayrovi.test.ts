@@ -706,6 +706,10 @@ describe('AYROVI platform', () => {
     expect(db.get<any>('SELECT status,payment_method FROM orders WHERE id=?',orderId)).toMatchObject({status:'AWAITING_DEPOSIT',payment_method:'PENDING_SELECTION'});
     expect((await customerAgent.get(`/api/customer/account/orders/${orderId}/invoice`)).status).toBe(404);
 
+    db.run("UPDATE settings SET setting_value='' WHERE setting_key='bank_rib'");
+    const unavailableTransfer = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
+    expect(unavailableTransfer.status).toBe(503);
+    db.run("UPDATE settings SET setting_value='TEST-RIB-OWNERSHIP-ONLY' WHERE setting_key='bank_rib'");
     const selectTransfer = await customerAgent.post(`/api/customer/account/orders/${orderId}/deposit/method`).set('x-csrf-token',customerCsrf).send({method:'BANK_TRANSFER'});
     expect(selectTransfer.status).toBe(200);
     expect(selectTransfer.body.data.quote.amountTnd).toBeGreaterThan(0);

@@ -811,7 +811,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       invoice: db.get<any>(`SELECT id,invoice_number,status,issued_at FROM invoices WHERE order_id=? AND account_id=?`, order.id, account.id) || null,
       delivery,
       paymentOptions: {
-        choices: ['CARD','BANK_TRANSFER'],
+        choices: ['CARD','BANK_TRANSFER','POSTE'],
         cardGatewayAvailable: cardGatewayAvailable(),
         transfer: {
           companyName: setting('company_legal_name') || setting('company_name') || 'AYROVI',
@@ -826,9 +826,14 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   router.post('/account/orders/:id/deposit/method', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
     const requested = String(req.body?.method || '').trim().toUpperCase();
-    if (!['CARD','BANK_TRANSFER'].includes(requested)) return res.status(400).json({ success: false, error: 'Choisissez carte bancaire ou virement bancaire/postal.' });
+    if (!['CARD','BANK_TRANSFER','POSTE'].includes(requested)) return res.status(400).json({ success: false, error: 'Choisissez carte bancaire, virement bancaire ou transfert postal.' });
+    if (requested === 'BANK_TRANSFER' || requested === 'POSTE') {
+      const settingKey = requested === 'POSTE' ? 'poste_account' : 'bank_rib';
+      const coordinates = String(db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', settingKey)?.setting_value || '').trim();
+      if (!coordinates) return res.status(503).json({ success: false, code: 'TRANSFER_DETAILS_UNAVAILABLE', error: 'Les coordonnées officielles de ce moyen de paiement ne sont pas encore publiées par AYROVI.' });
+    }
     try {
-      const selected = db.selectDepositMethod(req.params.id, requested as 'CARD' | 'BANK_TRANSFER', account.id);
+      const selected = db.selectDepositMethod(req.params.id, requested as 'CARD' | 'BANK_TRANSFER' | 'POSTE', account.id);
       return res.json({ success: true, data: {
         method: requested,
         paymentStatus: selected.payment.status,
@@ -981,6 +986,9 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       || !['PENDING','FAILED','REJECTED'].includes(String(order.payment_status))) {
       return res.status(409).json({ success: false, error: 'Cette commande n’accepte pas de justificatif de virement.' });
     }
+    const coordinateKey = order.payment_method === 'POSTE' ? 'poste_account' : 'bank_rib';
+    const coordinates = String(db.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', coordinateKey)?.setting_value || '').trim();
+    if (!coordinates) return res.status(503).json({ success: false, code: 'TRANSFER_DETAILS_UNAVAILABLE', error: 'Les coordonnées officielles de ce moyen de paiement ne sont pas publiées.' });
     const transferReference = String(req.body?.transferReference || '').trim().slice(0, 120);
     if (!transferReference) return res.status(400).json({ success: false, error: 'Indiquez la référence du virement ou du versement postal.' });
     const file = req.file;

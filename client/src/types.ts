@@ -315,7 +315,7 @@ export interface CustomerOrderDetail extends CustomerOrderSummary {
   invoice: CustomerInvoice | null;
   delivery: CustomerDelivery | null;
   paymentOptions: {
-    choices: Array<'CARD' | 'BANK_TRANSFER'>;
+    choices: Array<'CARD' | 'BANK_TRANSFER' | 'POSTE'>;
     cardGatewayAvailable: boolean;
     transfer: {
       companyName: string;

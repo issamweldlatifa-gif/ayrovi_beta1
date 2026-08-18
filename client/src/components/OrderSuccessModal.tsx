@@ -52,6 +52,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
   ));
 
   const whatsappUrl = `https://wa.me/?text=${whatsappMessage}`;
+  const manualDeposit = ['BANK_TRANSFER','POSTE'].includes(String(result.deposit?.method || '').toUpperCase());
   const handleCopyOrderNumber = async () => {
     try {
       await navigator.clipboard.writeText(result.orderNumber);
@@ -129,9 +130,12 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
               <span className="text-lg font-black text-accent-deep">{result.deposit.amountTnd.toFixed(3)} {tr('DT', 'د.ت')}</span>
             </div>
             <p className="text-[11px] leading-5 text-ink">
-              {tr(
-                'La commande existe maintenant dans Mon compte → Mes commandes. Choisissez-y carte bancaire (confirmation par la passerelle) ou virement bancaire/postal (justificatif vérifié par AYROVI).',
-                'الطلب موجود الآن في حسابي ← طلباتي. اختر هناك البطاقة البنكية (تأكيد عبر البوابة) أو التحويل البنكي/البريدي (إثبات تتحقق منه AYROVI).'
+              {manualDeposit ? tr(
+                'Le moyen manuel est enregistré. Effectuez le virement/versement avec les coordonnées affichées, puis envoyez uniquement son justificatif depuis Mon compte → Mes commandes.',
+                'تم حفظ وسيلة الدفع اليدوية. أنجز التحويل/الإيداع بالبيانات المعروضة ثم أرسل إثباته فقط من حسابي ← طلباتي.',
+              ) : tr(
+                'La commande existe dans Mon compte → Mes commandes. Le paiement carte doit être confirmé par la passerelle avant la validation de la commande.',
+                'الطلب موجود في حسابي ← طلباتي. يجب أن تؤكد بوابة الدفع عملية البطاقة قبل تأكيد الطلب.',
               )}
             </p>
             <p className="rounded-full border border-warning/30 bg-warning/10 px-3 py-2 text-center text-[10px] font-black text-warning">
@@ -139,7 +143,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
             </p>
             <ol className="space-y-1 rounded-xl border border-line bg-surface p-3 text-[10px] font-semibold leading-5 text-muted">
               <li>1. {tr('Commande visible immédiatement dans Mes commandes.', 'الطلب ظاهر فورًا في طلباتي.')}</li>
-              <li>2. {tr('Choisir carte ou virement bancaire/postal.', 'اختيار البطاقة أو التحويل البنكي/البريدي.')}</li>
+              <li>2. {manualDeposit ? tr('Envoyer le justificatif manuel depuis le profil.', 'إرسال إثبات الدفع اليدوي من الحساب.') : tr('Finaliser la carte sur la page sécurisée.', 'إتمام دفع البطاقة في الصفحة الآمنة.')}</li>
               <li>3. {tr('Paiement vérifié, puis commande confirmée.', 'التحقق من الدفع ثم تأكيد الطلب.')}</li>
               <li>4. {tr('Suivi visible après expédition; facture visible après émission.', 'يظهر التتبع بعد الشحن والفاتورة بعد إصدارها.')}</li>
             </ol>
