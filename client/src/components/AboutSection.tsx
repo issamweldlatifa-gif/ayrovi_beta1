@@ -25,7 +25,7 @@ const BENEFITS = [
     step: '03',
     title: 'Livraison 24 Gouvernorats',
     description:
-      "Expédition sécurisée jusqu’à votre domicile partout en Tunisie avec option de paiement en espèces à la livraison.",
+      "Expédition sécurisée jusqu’à votre domicile partout en Tunisie après validation et préparation de la commande.",
     icon: Truck,
     iconClassName: 'bg-ink text-white',
     accentClassName: 'from-ink to-brand',
@@ -54,8 +54,8 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
       </header>
 
       {/* One fixed portrait remains visible while the three cards scroll over it. */}
-      <div className="relative isolate min-h-[300svh] overflow-clip bg-surface">
-        <div className="sticky top-0 h-[100svh] overflow-hidden" aria-hidden="true">
+      <div className="ayrovi-parallax relative isolate min-h-[300svh] bg-surface">
+        <div className="ayrovi-parallax-media sticky top-0 h-[100svh] overflow-hidden" aria-hidden="true">
           <img
             src={coverImage || aboutParallaxImage}
             alt=""

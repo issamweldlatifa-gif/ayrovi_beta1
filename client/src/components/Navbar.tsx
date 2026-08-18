@@ -17,6 +17,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
   return (
     <AppHeader
       sticky
+      className="public-site-header"
       title="AYROVI"
       subtitle={tr('Shopping international, simplement', 'تسوّق عالمي بكل سهولة')}
       logoUrl={logoUrl}

@@ -404,7 +404,7 @@ export const App: React.FC = () => {
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;
-      else content = <Footer logoUrl={interfaceConfig.logoUrl} coverImage={section.image} introTitle={section.title} introText={section.subtitle} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />;
+      else content = <Footer logoUrl={interfaceConfig.logoUrl} introTitle={section.title} introText={section.subtitle} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />;
       return <ManagedSectionFrame key={section.id} section={section}>{content}</ManagedSectionFrame>;
     });
 
@@ -563,7 +563,7 @@ export const App: React.FC = () => {
             initialSection={accountInitialSection}
             initialOrderId={accountInitialOrderId}
             initialMessage={accountMessage}
-            onClose={() => { closeAppView(); setResumeCheckoutAfterAuth(false); setAccountMessage(''); setAccountInitialOrderId(''); }}
+            onClose={() => { navigation.goHome(); setResumeCheckoutAfterAuth(false); setAccountMessage(''); setAccountInitialOrderId(''); setAccountInitialSection('home'); }}
             onSession={handleCustomerSession}
             onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
             onCartChanged={() => { void fetchCart(); }}

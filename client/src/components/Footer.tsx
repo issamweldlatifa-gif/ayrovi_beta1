@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa6';
 import { Heart, MessageSquare, Package, ShieldCheck, Truck } from './QatafoIcons';
-
-import ratesTransparencyImage from '../assets/rates-transparency.jpg';
 import { getCommerceConfig } from '../services/publicApi';
 
 interface FooterProps {
   onOpenAccount?: () => void;
   onOpenAssistant?: () => void;
   logoUrl?: string;
-  coverImage?: string;
   introTitle?: string;
   introText?: string;
 }
@@ -18,8 +15,7 @@ const PayBadge: React.FC<{ label: string; className?: string }> = ({ label, clas
   <span className={`inline-flex h-8 min-w-[62px] items-center justify-center rounded-md px-2.5 text-[11px] font-black italic tracking-wide shadow-sm ${className}`}>{label}</span>
 );
 
-export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, logoUrl = '/media/logo-ayrovi.png', coverImage, introTitle, introText }) => {
-  const [exchangeRates, setExchangeRates] = useState<string[]>(['Tarifs AYROVI en cours de synchronisation…']);
+export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, logoUrl = '/media/logo-ayrovi.png', introTitle, introText }) => {
   const [channels, setChannels] = useState({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
   const [footerAbout, setFooterAbout] = useState('La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence et sans carte bancaire internationale.');
 
@@ -28,19 +24,11 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
     getCommerceConfig()
       .then((payload) => {
         if (!active) return;
-        const rates = payload.data?.pricing?.rates || {};
-        const lines = ['EUR', 'USD', 'GBP'].flatMap((currency) =>
-          Number.isFinite(Number(rates[currency])) ? [`1 ${currency} = ${Number(rates[currency]).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} DT`] : [],
-        );
-        if (Number.isFinite(Number(rates.JPY))) lines.push(`100 JPY = ${(Number(rates.JPY) * 100).toFixed(4).replace(/0+$/, '').replace(/\.$/, '')} DT`);
-        const governorateCount = Array.isArray(payload.data?.governorates) ? payload.data.governorates.length : 0;
-        if (governorateCount) lines.push(`Livraison dans ${governorateCount} gouvernorats`);
-        setExchangeRates(lines.length ? lines : ['Tarifs momentanément indisponibles']);
         const ch = payload.data?.channels;
         if (ch && typeof ch === 'object') setChannels({ facebook: String(ch.facebook || ''), instagram: String(ch.instagram || ''), tiktok: String(ch.tiktok || ''), whatsapp: String(ch.whatsapp || '') });
         if (payload.data?.footerAbout) setFooterAbout(String(payload.data.footerAbout));
       })
-      .catch(() => { if (active) setExchangeRates(['Tarifs momentanément indisponibles']); });
+      .catch(() => undefined);
     return () => { active = false; };
   }, []);
 
@@ -56,7 +44,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
       title: 'Découvrez AYROVI',
       links: [
         { label: 'Accueil', href: '/' },
-        { label: 'Taux & transparence', href: '#rates-title' },
         { label: 'Assistant AYROVI', onClick: onOpenAssistant },
         { label: 'Nos canaux officiels', href: '#nos-canaux' },
       ],
@@ -103,7 +90,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
     { Icon: ShieldCheck, title: 'Acompte 20 % sécurisé', text: 'Commande confirmée après vérification du reçu' },
     { Icon: Package, title: 'Produits authentiques', text: 'Achetés directement auprès des boutiques officielles' },
     { Icon: MessageSquare, title: 'Service client à l’écoute', text: 'Assistant AYROVI + équipe humaine 7j/7' },
-    { Icon: Truck, title: 'Suivi en temps réel', text: 'Code de suivi AYR-TN dès la confirmation' },
+    { Icon: Truck, title: 'Suivi après expédition', text: 'Visible uniquement après la remise réelle au transporteur' },
   ];
 
   return (
@@ -116,38 +103,6 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
           </div>
           <p className="max-w-xl leading-relaxed text-muted">{introText || footerAbout}</p>
         </div>
-
-        {/* Transparent text is placed directly over the supplied rectangular image. */}
-        <section
-          className="relative mb-10 min-h-[410px] overflow-hidden rounded-card border border-line shadow-overlay sm:min-h-[360px]"
-          aria-labelledby="rates-title"
-        >
-          <img
-            src={coverImage || ratesTransparencyImage}
-            alt="Symboles du dollar, de l’euro et du yen illustrant les taux de change AYROVI"
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-ink/90 via-ink/40 to-transparent" />
-
-          <div className="relative z-10 flex min-h-[410px] items-center px-6 py-8 text-white sm:min-h-[360px] sm:px-10 lg:px-14">
-            <div className="w-full bg-transparent sm:max-w-[470px]">
-              <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-white/80 drop-shadow-md sm:text-xs">
-                AYROVI · Tunisie
-              </p>
-              <h4 id="rates-title" className="mt-2 text-2xl font-extrabold tracking-tight drop-shadow-lg sm:text-3xl">
-                Taux &amp; Transparence
-              </h4>
-
-              <ul className="mt-6 divide-y divide-white/30 border-y border-white/30 drop-shadow-md">
-                {exchangeRates.map((rate) => (
-                  <li key={rate} className="py-3 text-sm font-semibold tracking-wide text-white sm:text-base">
-                    {rate}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </section>
 
         {/* شارات الثقة */}
         <div className="mb-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
@@ -218,7 +173,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         </div>
 
         <div className="mt-6 flex flex-col items-center justify-between gap-3 text-center text-[11px] text-muted sm:flex-row sm:text-left">
-          <p>Commandes confirmées par acompte de 20 % — facture électronique et suivi inclus.</p>
+          <p>Commandes confirmées après vérification de l’acompte — facture après émission et suivi après expédition.</p>
           <p className="flex items-center gap-1">
             Conçu avec <Heart className="h-3 w-3 fill-brand text-brand" /> pour faciliter vos achats en Tunisie.
           </p>

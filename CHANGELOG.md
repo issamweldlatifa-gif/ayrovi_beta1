@@ -2,6 +2,15 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.2] - 2026-08-18
+
+### Fixed
+- Made profile X close directly to the homepage instead of navigating back to an earlier overlay.
+- Restored the sticky white public header and the mobile parallax scene by avoiding horizontal scroll containers that disable `position: sticky`.
+- Reworked the bottom navigation as transparent white glass with black icons; it hides while scrolling down and returns while scrolling up.
+- Removed the exchange-rate image/card, its fetched display state, link and unused source asset entirely.
+- Corrected public copy so tracking is promised only after real shipment and no unsupported cash-on-delivery option is advertised.
+
 ## [3.7.1] - 2026-08-18
 
 ### Fixed
