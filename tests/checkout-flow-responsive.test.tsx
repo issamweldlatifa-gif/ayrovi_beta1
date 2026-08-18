@@ -42,6 +42,14 @@ describe('order-backed mobile checkout and customer account', () => {
     expect(checkoutSource).toContain("formData.paymentMethod.toUpperCase()==='CARD'?tr('Créer et payer'");
   });
 
+  it('persists an unpaid order when no real payment method is configured', () => {
+    expect(checkoutSource).toContain('const hasAvailablePaymentMethod = PAYMENT_METHODS.some');
+    expect(checkoutSource).toContain("const paymentDeferred = !hasAvailablePaymentMethod");
+    expect(checkoutSource).toContain("? 'PENDING_SELECTION'");
+    expect(checkoutSource).toContain("!hasAvailablePaymentMethod?tr('Créer la commande','إنشاء الطلب')");
+    expect(checkoutSource).toContain('le paiement restera en attente dans votre profil');
+  });
+
   it('never simulates unavailable gateways and keeps manual proof upload in the profile', () => {
     expect(checkoutSource).toContain("false; // Flouci/D17 stays visible but cannot be selected without a real gateway.");
     expect(checkoutSource).toContain('aucune transaction ne sera simulée sans passerelle réelle');

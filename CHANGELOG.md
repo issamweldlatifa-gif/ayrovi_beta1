@@ -9,7 +9,7 @@ All notable AYROVI changes are recorded in this file.
 - Kept unavailable gateways visible but disabled; only genuinely configured card/manual methods can be selected, with no simulated Flouci/D17 transaction.
 - Kept manual proof upload exclusively in Mon compte → Mes commandes after the order is created.
 - Added an internal touch-scroll area and reachable sticky actions so delivery/payment completion controls remain accessible on short mobile viewports.
-- Blocked manual method selection and proof upload until the corresponding official RIB or postal account is published by Admin.
+- Blocked manual method selection and proof upload until the corresponding official RIB or postal account is published by Admin; when no real method is configured, checkout can still persist an unpaid order instead of trapping the customer.
 - The success action now opens the newly created order directly for manual-proof follow-up.
 
 ## [3.7.0] - 2026-08-18

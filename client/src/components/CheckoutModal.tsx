@@ -228,8 +228,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       : method === 'POSTE'
         ? Boolean(depositInfo.posteAccount.trim())
         : false; // Flouci/D17 stays visible but cannot be selected without a real gateway.
+  const hasAvailablePaymentMethod = PAYMENT_METHODS.some((method) => isPaymentMethodAvailable(method));
   const depositBase = Math.round(totalTND * depositInfo.percent / 100 * 1000) / 1000;
-  const depositDiscount = formData.paymentMethod.toUpperCase() === 'CARD'
+  const depositDiscount = formData.paymentMethod.toUpperCase() === 'CARD' && isPaymentMethodAvailable('CARD')
     ? Math.round(depositBase * depositInfo.cardDiscountPercent / 100 * 1000) / 1000
     : 0;
   const selectedDepositAmount = Math.max(0, Math.round((depositBase - depositDiscount) * 1000) / 1000);
@@ -273,8 +274,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       setError(tr('Vous devez accepter les conditions de vente et la politique de retour.', 'يجب قبول شروط البيع وسياسة الإرجاع.'));
       return;
     }
-    const selectedMethod = formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod;
-    if (!PAYMENT_METHODS.includes(selectedMethod) || !isPaymentMethodAvailable(selectedMethod)) {
+    const selectedPaymentCode = formData.paymentMethod.toUpperCase();
+    const paymentDeferred = !hasAvailablePaymentMethod;
+    const selectedMethod: CheckoutPaymentMethod | 'PENDING_SELECTION' = paymentDeferred
+      ? 'PENDING_SELECTION'
+      : selectedPaymentCode as CheckoutPaymentMethod;
+    if (!paymentDeferred && (!PAYMENT_METHODS.includes(selectedMethod as CheckoutPaymentMethod) || !isPaymentMethodAvailable(selectedMethod as CheckoutPaymentMethod))) {
       setPaymentAvailabilityNotice(tr(
         'Choisissez un moyen de paiement réellement disponible. Flouci/D17 reste désactivé tant qu’aucune passerelle réelle n’est configurée.',
         'اختر وسيلة دفع متاحة فعليًا. تبقى Flouci/D17 معطلة إلى حين ضبط بوابة دفع حقيقية.',
@@ -319,6 +324,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
         deposit: data.deposit ? { ...data.deposit, method: selectedMethod } : null,
         message: data.message || tr('Votre commande a été enregistrée avec succès chez AYROVI !', 'تم تسجيل طلبك بنجاح لدى AYROVI!'),
       };
+
+      if (selectedMethod === 'PENDING_SELECTION') {
+        orderResult.message = tr(
+          'Commande créée. Aucun moyen réel n’est configuré actuellement; vous pourrez régler l’acompte depuis Mes commandes dès son activation.',
+          'تم إنشاء الطلب. لا توجد وسيلة دفع حقيقية مضبوطة حاليًا؛ يمكنك دفع العربون من طلباتي بعد تفعيلها.',
+        );
+        onOrderSuccess(orderResult);
+        return;
+      }
 
       try {
         if (selectedMethod === 'CARD') {
@@ -562,6 +576,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </button>;
               })}
             </div>
+            {!hasAvailablePaymentMethod&&<p className="mt-2 rounded-xl border border-warning/30 bg-warning/10 p-3 text-[11px] font-bold leading-5 text-warning">{tr('Aucun moyen réel n’est configuré. Vous pouvez quand même créer la commande; le paiement restera en attente dans votre profil.', 'لا توجد وسيلة دفع حقيقية مضبوطة. يمكنك إنشاء الطلب وسيبقى الدفع في الانتظار داخل حسابك.')}</p>}
             {paymentAvailabilityNotice&&<p className="mt-2 flex items-start gap-2 rounded-xl border border-accent bg-accent/10 p-3 text-[11px] font-bold leading-5 text-ink" role="status"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning"/><span>{paymentAvailabilityNotice}</span></p>}
             {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
             {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
@@ -585,8 +600,8 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </label>
           <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour', 'رجوع')}</button>
-            <button type="submit" disabled={isLoading || !formData.termsAccepted || !isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm">
-              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" />{tr('Création…', 'جارٍ الإنشاء…')}</> : <><CheckCircle2 className="h-4 w-4" />{formData.paymentMethod.toUpperCase()==='CARD'?tr('Créer et payer','إنشاء ودفع'):tr('Créer puis continuer','إنشاء ثم متابعة')}</>}
+            <button type="submit" disabled={isLoading || !formData.termsAccepted || (hasAvailablePaymentMethod&&!isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod)) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm">
+              {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" />{tr('Création…', 'جارٍ الإنشاء…')}</> : <><CheckCircle2 className="h-4 w-4" />{!hasAvailablePaymentMethod?tr('Créer la commande','إنشاء الطلب'):formData.paymentMethod.toUpperCase()==='CARD'?tr('Créer et payer','إنشاء ودفع'):tr('Créer puis continuer','إنشاء ثم متابعة')}</>}
             </button>
           </div>
           </>}
