@@ -46,6 +46,8 @@ app.use((req, res, next) => {
   ].filter(Boolean).join('; ') + ';');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-DNS-Prefetch-Control', 'off');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), payment=()');
   const suppliedRequestId = String(req.headers['x-request-id'] || '');
   const requestId = /^[A-Za-z0-9._:-]{8,100}$/.test(suppliedRequestId) ? suppliedRequestId : randomUUID();
@@ -132,7 +134,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-session-id', 'x-requested-with', 'x-csrf-token'],
 }));
-app.use(express.json({ limit: '14mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Database, Scraper & Vision Engine
@@ -179,7 +181,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.7.3',
+    version: '3.7.4',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });

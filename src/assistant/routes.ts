@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
+import sharp from 'sharp';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
@@ -35,7 +36,7 @@ function matchesImageSignature(buffer: Buffer, mediaType: AssistantImageAttachme
   return buffer.length >= 6 && ['GIF87a', 'GIF89a'].includes(buffer.toString('ascii', 0, 6));
 }
 
-function cleanImageAttachments(value: unknown): AssistantImageAttachment[] {
+async function cleanImageAttachments(value: unknown): Promise<AssistantImageAttachment[]> {
   if (!Array.isArray(value)) return [];
   const result: AssistantImageAttachment[] = [];
   for (const item of value.slice(0, 2)) {
@@ -64,6 +65,16 @@ function cleanImageAttachments(value: unknown): AssistantImageAttachment[] {
       console.warn('[Assistant] attachment ignoré : signature image invalide');
       continue;
     }
+    if (mediaType === 'image/gif') {
+      try {
+        const png = await sharp(buffer, { animated: false, failOn: 'warning' }).png().toBuffer();
+        if (!png.length || png.length > MAX_IMAGE_BYTES) continue;
+        result.push({ id, mediaType: 'image/png', data: png.toString('base64') });
+      } catch {
+        console.warn('[Assistant] attachment GIF ignoré : conversion impossible');
+      }
+      continue;
+    }
     result.push({ id, mediaType, data: buffer.toString('base64') });
   }
   return result;
@@ -77,7 +88,7 @@ function cleanClientState(value: unknown): string {
   } catch { return ''; }
 }
 
-function cleanMessages(value: unknown): AssistantConversationLine[] {
+async function cleanMessages(value: unknown): Promise<AssistantConversationLine[]> {
   if (!Array.isArray(value)) return [];
   let total = 0;
   let imageBudget = 2;
@@ -89,7 +100,7 @@ function cleanMessages(value: unknown): AssistantConversationLine[] {
     if (!item || !['user', 'assistant'].includes(item.role)) continue;
     const text = String(item.text || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ').trim().slice(0, 8000);
     const attachments = item.role === 'user' && imageBudget > 0
-      ? cleanImageAttachments(item.attachments).slice(0, imageBudget)
+      ? (await cleanImageAttachments(item.attachments)).slice(0, imageBudget)
       : [];
     if ((!text && !attachments.length) || total + text.length > 50_000) continue;
     imageBudget -= attachments.length;
@@ -148,7 +159,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     }
     const sessionId = validSessionId(req);
     const conversationId = String(req.body?.conversationId || '').trim();
-    const messages = cleanMessages(req.body?.messages);
+    const messages = await cleanMessages(req.body?.messages);
     const clientState = cleanClientState(req.body?.state);
     if (!sessionId || !/^[A-Za-z0-9:_-]{1,120}$/.test(conversationId) || !messages.length || messages.at(-1)?.role !== 'user') {
       return res.status(400).json({ success: false, code: 'INVALID_ASSISTANT_REQUEST', error: 'Conversation ou message invalide.' });

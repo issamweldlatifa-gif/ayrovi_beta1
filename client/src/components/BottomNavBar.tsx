@@ -25,7 +25,7 @@ const ICON_SETS: Record<InterfaceIconLibrary, [React.ElementType, React.ElementT
   bootstrap: [BsCamera, BsChatDots, BsEye],
   material: [MdCenterFocusStrong, MdSmartToy, MdVisibility],
 };
-const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-control text-[10px] font-extrabold text-[#111318] transition hover:bg-black/[0.06] active:scale-[0.97]';
+const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-extrabold text-[#111318] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();

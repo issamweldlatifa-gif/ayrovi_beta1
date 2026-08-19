@@ -50,7 +50,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
     expect(bottomNavSource).toContain('else if (delta > 8) setIsVisible(false)');
     expect(bottomNavSource).toContain('else if (delta < -8) setIsVisible(true)');
-    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*rgba\(255,255,255,\.78\)[^}]*backdrop-filter:blur\(18px\)/);
+    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*rgba\(255,255,255,\.72\)[^}]*backdrop-filter:blur\(22px\)/);
     expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
     expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#111318!important}');
   });

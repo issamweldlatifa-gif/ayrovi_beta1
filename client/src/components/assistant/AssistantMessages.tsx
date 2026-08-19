@@ -28,6 +28,7 @@ interface AssistantMessagesProps {
   onProductOrder: (selection: AyrovixOrderSelection) => void;
   customerFirstName?: string;
   analyzingImage?: boolean;
+  assistantReady?: boolean | null;
 }
 
 const primaryActions = [
@@ -97,7 +98,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   messages, isGenerating, motionState, isDark, copiedId, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
-  customerFirstName,
+  customerFirstName, assistantReady,
 }) => {
   const { locale, direction, isArabic, tr } = useLocale();
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -125,6 +126,11 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
               <p className={`mt-3 max-w-sm text-[13px] leading-6 ${isDark ? 'text-muted' : 'text-muted'}`}>
                 {tr('Je peux analyser vos produits, vérifier les prix, rechercher des articles et vous accompagner dans vos commandes.', 'يمكنني تحليل منتجاتك والتحقق من الأسعار والبحث عن المنتجات ومساعدتك في طلباتك.')}
               </p>
+              {assistantReady === false && (
+                <p className="mt-4 max-w-sm rounded-2xl border border-warning/30 bg-warning/10 px-4 py-3 text-[12px] font-semibold leading-5 text-ink">
+                  {tr('L’assistant n’est pas encore activé sur ce serveur. Vous pouvez toujours utiliser Lens, le panier et le suivi de commande.', 'المساعد غير مفعّل بعد على هذا الخادم. يمكنك استخدام Lens والسلة وتتبع الطلب.')}
+                </p>
+              )}
             </div>
 
             {/* Actions primaires — 2×2, même famille d’icônes */}

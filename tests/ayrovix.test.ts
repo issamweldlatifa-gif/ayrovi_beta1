@@ -375,6 +375,47 @@ describe('AYROVIX Lens', () => {
     }
   });
 
+  test('analyze-image continue avec Google Lens si Claude Vision échoue', async () => {
+    const previousAnthropic = process.env.ANTHROPIC_API_KEY;
+    const previousSerp = process.env.SERPAPI_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-down';
+    process.env.SERPAPI_KEY = 'test-serpapi-key';
+    const fetchMock = vi.fn(async (url: string) => {
+      if (String(url).includes('api.anthropic.com')) {
+        return new Response('internal', { status: 500 });
+      }
+      if (String(url).startsWith('https://serpapi.com/image?')) {
+        return new Response(JSON.stringify({ image_id: 'temporary-image-id' }), { status: 200 });
+      }
+      if (String(url).startsWith('https://serpapi.com/search.json?')) {
+        return new Response(JSON.stringify({
+          visual_matches: [{
+            title: 'Nike Air Max 95 Navy',
+            link: 'https://shop.example.com/nike-air-max-95-navy',
+            source: 'Example Shop',
+            thumbnail: 'https://encrypted-tbn.example.com/nike-navy.jpg',
+            price: { extracted_value: 129.99, currency: '€' },
+          }],
+        }), { status: 200 });
+      }
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const response = await request(app)
+        .post('/api/ayrovix/analyze-image')
+        .attach('image', PNG_1PX, { filename: 'sneakers.png', contentType: 'image/png' });
+      expect(response.status).toBe(200);
+      expect(response.body.data.candidates.length).toBeGreaterThan(0);
+      expect(response.body.data.candidates[0].title).toContain('Nike Air Max 95');
+      expect(response.body.data.candidates[0].price).toBe(129.99);
+      expect(response.body.data.identification.description).toContain('Nike');
+    } finally {
+      restoreEnv('ANTHROPIC_API_KEY', previousAnthropic);
+      restoreEnv('SERPAPI_KEY', previousSerp);
+    }
+  });
+
   test('Claude lit le prix visible dans la même requête structurée que Vision', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-price';

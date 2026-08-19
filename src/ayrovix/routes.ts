@@ -3,9 +3,9 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
-import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady } from './services/ai';
+import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, anthropicExternalSearch, scoreCandidate, searchCandidates } from './services/search';
-import { serpApiVisualSearch } from './services/visualSearch';
+import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import { createAyrovixReviewRequest, getAyrovixReviewForOwner } from './reviews';
@@ -158,16 +158,26 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
-      if (!ayrovixAiReady()) {
+      if (!ayrovixAiReady() && !serpApiVisualReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
-      // Run understanding/price reading and reverse-image discovery in parallel.
-      // If Google Lens is not configured it resolves immediately to an empty list.
-      const [identification, visualCandidates] = await Promise.all([
+      // Vision and reverse-image must not take each other down. A Claude
+      // timeout/schema error used to abort the whole Lens request even when
+      // Google Lens had already found priced matches.
+      const [visionResult, visualResult] = await Promise.allSettled([
         identifyProduct(normalized.buffer, normalized.mimeType),
         serpApiVisualSearch(normalized.buffer, 8),
       ]);
+      const visualCandidates = visualResult.status === 'fulfilled' ? visualResult.value : [];
+      let identification = visionResult.status === 'fulfilled' ? visionResult.value : null;
+      if (!identification) {
+        const visionError = visionResult.status === 'rejected' ? visionResult.reason : null;
+        if (visionError instanceof AyrovixUnavailableError && visualCandidates.length === 0) throw visionError;
+        if (visualCandidates.length === 0) throw visionError || new Error('IDENTIFICATION_FAILED');
+        identification = fallbackIdentification(visualCandidates[0]?.title);
+        console.warn('[AYROVIX analyze-image] vision failed — continuing with visual matches');
+      }
       const visiblePrice = identification.detected_price;
       const usablePrice = visiblePrice.confidence >= 0.65
         && visiblePrice.amount > 0

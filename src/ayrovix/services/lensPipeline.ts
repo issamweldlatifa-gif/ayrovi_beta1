@@ -35,6 +35,7 @@ export interface LensStandardResult {
   warnings: string[];
   cache_hit: boolean;
   identification: AyrovixIdentification | null;
+  visual_matches: AyrovixCandidate[];
   sources: {
     vision: { confidence: number; identified: boolean };
     ocr: { text_chars: number; confidence: number; segments: number };
@@ -140,7 +141,7 @@ export async function runLensPipeline(
   if (cached && Date.now() - new Date(cached.created_at).getTime() < CACHE_TTL_MS) {
     try {
       const parsed = JSON.parse(cached.result_json) as LensStandardResult;
-      return { ...parsed, cache_hit: true };
+      return { ...parsed, visual_matches: parsed.visual_matches || [], cache_hit: true };
     } catch { /* recompute */ }
   }
 
@@ -188,6 +189,7 @@ export async function runLensPipeline(
     warnings: merged.warnings,
     cache_hit: false,
     identification: vision,
+    visual_matches: visualCandidates,
     sources: {
       vision: { confidence: vision?.confidence ?? 0, identified: Boolean(vision && vision.confidence >= 0.35) },
       ocr: { text_chars: wholeText.length, confidence: ocrReport?.confidence ?? 0, segments: segmentTexts.length },
@@ -203,6 +205,5 @@ export async function runLensPipeline(
   } catch (error: any) {
     console.warn('[Lens pipeline cache]', error?.message || 'write failed');
   }
-  void visualCandidates;
   return result;
 }

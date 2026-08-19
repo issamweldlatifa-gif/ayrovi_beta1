@@ -376,10 +376,12 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     ? await runLensPipeline(context.db, Buffer.from(attachment.data, 'base64'), attachment.mediaType).catch(() => null)
     : null;
   const visual = lens
-    ? await serpApiVisualSearch(Buffer.from(attachment.data!, 'base64'), 8).catch(() => [])
-    : attachment?.url
-      ? await serpApiVisualSearchUrl(attachment.url, 8).catch(() => [])
-      : [];
+    ? (lens.visual_matches || [])
+    : attachment?.data
+      ? await serpApiVisualSearch(Buffer.from(attachment.data, 'base64'), 8).catch(() => [])
+      : attachment?.url
+        ? await serpApiVisualSearchUrl(attachment.url, 8).catch(() => [])
+        : [];
   const query = rawQuery;
   const local = query.length >= 2
     ? catalogSearch(context.db, null, query, 5).map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }))

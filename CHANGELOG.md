@@ -2,6 +2,22 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.4] - 2026-08-19
+
+### Fixed
+- Lens no longer dies when Claude Vision times out or rejects Structured Outputs: reverse-image matches stay usable, and Vision retries once as plain JSON.
+- Image analysis can run with Google Lens alone when Anthropic is briefly unavailable, instead of returning a hard 503.
+- Assistant Lens no longer bills SerpApi twice for the same photo; GIF attachments are re-encoded to PNG before Claude Vision.
+- Assistant empty state now explains when the AI provider is not configured.
+
+### Changed
+- Public header and bottom navigation use a lighter glass treatment; the homepage has a soft brand mesh background.
+- Camera viewfinder restores a discreet scan line without the old particle overlay.
+
+### Security
+- JSON body limit reduced from 14 MB to 10 MB.
+- Added `Cross-Origin-Opener-Policy` and `X-DNS-Prefetch-Control` headers.
+
 ## [3.7.3] - 2026-08-19
 
 ### Fixed
