@@ -6,6 +6,9 @@ const navbarSource = readFileSync('client/src/components/Navbar.tsx', 'utf8');
 const bottomNavSource = readFileSync('client/src/components/BottomNavBar.tsx', 'utf8');
 const footerSource = readFileSync('client/src/components/Footer.tsx', 'utf8');
 const aboutSource = readFileSync('client/src/components/AboutSection.tsx', 'utf8');
+const announcementSource = readFileSync('client/src/components/TopAnnouncementBar.tsx', 'utf8');
+const cartSource = readFileSync('client/src/components/CartDrawer.tsx', 'utf8');
+const checkoutCss = readFileSync('client/src/styles/checkout-flow.css', 'utf8');
 const runtimeCss = readFileSync('client/src/styles/interface-runtime.css', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
 
@@ -17,8 +20,29 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
 
   it('keeps the white public header sticky without creating a horizontal scroll container', () => {
     expect(navbarSource).toContain('className="public-site-header"');
-    expect(runtimeCss).toMatch(/\.public-site-header\{[^}]*position:sticky!important;[^}]*top:0!important/);
+    expect(runtimeCss).toMatch(/\.public-site-header\{[^}]*position:sticky!important;[^}]*top:0!important;[^}]*z-index:20!important/);
     expect(indexCss).toMatch(/overflow-x:\s*hidden;\s*overflow-x:\s*clip;/);
+  });
+
+  it('keeps every public chrome layer below cart and checkout overlays', () => {
+    expect(announcementSource).toContain('relative z-10');
+    expect(bottomNavSource).toContain('bottom-0 z-30');
+    expect(cartSource).toContain('fixed inset-0 z-50 overflow-hidden');
+    expect(checkoutCss).toMatch(/\.checkout-flow-page\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*50;/);
+    expect(runtimeCss).toMatch(/\.ayrovi-app-shell\{[^}]*isolation:isolate/);
+  });
+
+  it('keeps all other full-screen experiences in the foreground overlay band', () => {
+    const foregroundMarkers = [
+      ['client/src/components/PublicCmsSections.tsx', 'fixed inset-0 z-[70]'],
+      ['client/src/ayrovix/components/LensLauncher.tsx', 'fixed inset-0 z-[75]'],
+      ['client/src/ayrovix/components/LiveCamera.tsx', 'fixed inset-0 z-[76]'],
+      ['client/src/components/ProductDrawer.tsx', 'fixed inset-0 z-[80]'],
+      ['client/src/components/assistant/AiAssistantDrawer.tsx', 'fixed z-[80]'],
+      ['client/src/components/MenuDrawer.tsx', 'fixed inset-0 z-[85]'],
+      ['client/src/components/CustomerAccountPage.tsx', 'fixed inset-0 z-[95]'],
+    ];
+    foregroundMarkers.forEach(([path, marker]) => expect(readFileSync(path, 'utf8')).toContain(marker));
   });
 
   it('uses a white glass bottom navigation with black icons that hides down and returns up', () => {

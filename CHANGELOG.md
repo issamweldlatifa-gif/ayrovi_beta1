@@ -2,6 +2,13 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.3] - 2026-08-19
+
+### Fixed
+- Audited the complete public and foreground stacking order: announcement `10`, sticky public header `20`, glass navigation `30`, public utility controls up to `40`, and all cart/checkout/full-screen layers from `50` upward.
+- Prevented the sticky homepage header from rendering above Panier, Livraison, Paiement and subsequent foreground screens.
+- Isolated the public application stacking context and added regression coverage for cart/checkout overlay precedence.
+
 ## [3.7.2] - 2026-08-18
 
 ### Fixed
