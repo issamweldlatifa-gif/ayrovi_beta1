@@ -2,6 +2,13 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.8] - 2026-08-19
+
+### Fixed
+- Shopping and greeting turns no longer die after the first local help reply: Claude 400/404/429/5xx now retry without tools and on fallback models.
+- If Anthropic still rejects the turn, the assistant searches locally or asks for a photo/link instead of `ASSISTANT_UNAVAILABLE`.
+- Custom tool schemas dropped `additionalProperties` and `integer` bounds that Claude can refuse.
+
 ## [3.7.7] - 2026-08-19
 
 ### Fixed

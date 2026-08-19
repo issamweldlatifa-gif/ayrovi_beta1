@@ -109,6 +109,48 @@ describe('AYROVI Claude assistant', () => {
     expect(fetchMock).not.toHaveBeenCalled();
     const priceTool = ASSISTANT_TOOLS.find((tool) => tool.name === 'calculate_price');
     expect(JSON.stringify(priceTool)).not.toMatch(/\"(?:minimum|maximum)\"/);
+    expect(JSON.stringify(ASSISTANT_TOOLS)).not.toMatch(/\"additionalProperties\"/);
+  });
+
+  test('chat retries Claude without tools then still answers a greeting', async () => {
+    process.env.ANTHROPIC_API_KEY = 'assistant-retry-test-key';
+    const fetchMock = vi.fn(async (_url: any, init: any) => {
+      const body = JSON.parse(String(init?.body || '{}'));
+      if (body.tools) return new Response('{"type":"invalid_request_error"}', { status: 400, headers: { 'content-type': 'application/json' } });
+      return anthropicSse([
+        { type: 'content_block_start', index: 0, content_block: { type: 'text', text: '' } },
+        { type: 'content_block_delta', index: 0, delta: { type: 'text_delta', text: 'Salut, que puis-je faire pour toi ?' } },
+        { type: 'content_block_stop', index: 0 },
+        { type: 'message_stop' },
+      ]);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', unique('assistant-session'))
+      .send({ conversationId: unique('conversation'), messages: [{ role: 'user', text: 'Bonjour' }] });
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Salut, que puis-je faire pour toi ?');
+    expect(response.text).toContain('"type":"done"');
+    expect(response.text).not.toContain('ASSISTANT_UNAVAILABLE');
+    expect(fetchMock.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  test('shopping chat stays online when Claude rejects every request', async () => {
+    process.env.ANTHROPIC_API_KEY = 'assistant-offline-test-key';
+    const fetchMock = vi.fn(async () => new Response('{"type":"invalid_request_error"}', {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', unique('assistant-session'))
+      .send({ conversationId: unique('conversation'), messages: [{ role: 'user', text: 'Je cherche des baskets Nike Air Force 1' }] });
+    expect(response.status).toBe(200);
+    expect(response.text).not.toContain('ASSISTANT_UNAVAILABLE');
+    expect(response.text).toContain('"type":"done"');
+    expect(response.text).toMatch(/Voici ce que j’ai trouvé|Envoie une photo|search_products/);
   });
 
   test('routes simple requests to Haiku and long complex requests to Sonnet', () => {

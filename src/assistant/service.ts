@@ -80,15 +80,49 @@ export function assistantHelpReply(text: string): string {
   return 'Envoie une photo du produit ou colle son lien : je calcule le prix final en dinars.\nLens sert à photographier ; ce chat sert à poser une question et suivre.\nAprès confirmation, tu verses l’acompte, puis AYROVI achète et livre en Tunisie.';
 }
 
+export function assistantFallbackReply(text: string): string {
+  const arabic = /[\u0600-\u06FF]/.test(text);
+  if (arabic) {
+    return 'أهلا. أرسل صورة المنتج أو ألصق رابطه، أو قولّي شنو تحب تشري — نلقاو السعر بالدينار.';
+  }
+  return 'Salut. Envoie une photo ou un lien produit, ou dis-moi ce que tu cherches — je te donne le prix en dinars.';
+}
+
+function searchQueryFromText(text: string): string {
+  return text
+    .replace(/^(?:je |j['’]|i |please |svp )?(?:cherche|chercher|recherche|trouve|trouver|search|find|look for|ابحث(?: لي)?|أبحث|فتش|دوّر|وين نلقى|نحب نشري)\s+(?:des |de |les |un |une |le |la |du |d['’]|عن |لي عن )?/i, '')
+    .replace(/[?!.]+$/g, '')
+    .trim()
+    .slice(0, 200);
+}
+
+function looksLikeProductQuery(text: string): boolean {
+  return /nike|adidas|zara|shein|temu|amazon|sephora|air force|air max|iphone|samsung|حذاء|فستان|ساعة|عطر|sneaker|basket|chaussure|robe|parfum/i.test(text)
+    || searchQueryFromText(text).length >= 8;
+}
+
 function fallbackModels(preferred: string): string[] {
   const known = [
     preferred,
+    'claude-haiku-4-5-20251001',
     'claude-haiku-4-5',
     'claude-sonnet-4-5-20250929',
     'claude-sonnet-4-5',
-    'claude-haiku-4-5-20251001',
   ];
   return [...new Set(known.map((item) => String(item || '').trim()).filter(Boolean))];
+}
+
+class ClaudeHttpError extends Error {
+  constructor(readonly status: number, readonly detail: string) {
+    super(`Claude HTTP ${status}`);
+  }
+}
+
+function requestSignal(signal: AbortSignal): AbortSignal {
+  try {
+    if (typeof AbortSignal.any === 'function') return AbortSignal.any([signal, AbortSignal.timeout(55_000)]);
+  } catch { /* Older runtimes still get the caller abort. */ }
+  return signal;
 }
 
 function settingValue(db: QatafoDatabase, key: string, fallback: any = ''): any {
@@ -195,41 +229,33 @@ async function readAnthropicEvents(response: Response, onEvent: (event: any) => 
   }
 }
 
-async function streamClaudeRound(
-  apiMessages: any[],
-  system: string,
-  model: string,
-  signal: AbortSignal,
-  emit: (event: AssistantStreamEvent) => void,
-  forcedTool?: AssistantToolName,
-): Promise<StreamedBlock[]> {
+function toolsWithCustomType() {
+  return ASSISTANT_TOOLS.map((tool) => ({ type: 'custom', ...tool }));
+}
+
+async function postClaudeMessages(body: Record<string, any>, signal: AbortSignal): Promise<Response> {
   const key = process.env.ANTHROPIC_API_KEY?.trim();
   if (!key) throw new AssistantUnavailableError('Claude n’est pas configuré.');
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    signal: AbortSignal.any([signal, AbortSignal.timeout(55_000)]),
+    signal: requestSignal(signal),
     headers: {
       'content-type': 'application/json',
       'x-api-key': key,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1100,
-      temperature: 0.2,
-      stream: true,
-      system,
-      messages: apiMessages,
-      tools: ASSISTANT_TOOLS,
-      tool_choice: forcedTool ? { type: 'tool', name: forcedTool } : { type: 'auto' },
-    }),
+    body: JSON.stringify(body),
   });
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    console.warn(`[Assistant Claude] HTTP ${response.status} ${body.slice(0, 240)}`);
-    throw new AssistantUnavailableError('Claude ne répond pas pour le moment.');
-  }
+  if (response.ok) return response;
+  const detail = await response.text().catch(() => '');
+  console.warn(`[Assistant Claude] HTTP ${response.status} ${detail.slice(0, 280)}`);
+  throw new ClaudeHttpError(response.status, detail);
+}
 
+async function consumeClaudeStream(
+  response: Response,
+  emit: (event: AssistantStreamEvent) => void,
+): Promise<StreamedBlock[]> {
   const blocks: StreamedBlock[] = [];
   await readAnthropicEvents(response, (event) => {
     if (event?.type === 'content_block_start') {
@@ -260,6 +286,136 @@ async function streamClaudeRound(
     }
   });
   return blocks.filter(Boolean);
+}
+
+async function callClaudeVariant(
+  apiMessages: any[],
+  system: string,
+  model: string,
+  signal: AbortSignal,
+  emit: (event: AssistantStreamEvent) => void,
+  extra: { tools?: any; tool_choice?: any } = {},
+): Promise<StreamedBlock[]> {
+  const response = await postClaudeMessages({
+    model,
+    max_tokens: 1100,
+    temperature: 0.2,
+    stream: true,
+    system,
+    messages: apiMessages,
+    ...extra,
+  }, signal);
+  return consumeClaudeStream(response, emit);
+}
+
+async function streamClaudeRound(
+  apiMessages: any[],
+  system: string,
+  model: string,
+  signal: AbortSignal,
+  emit: (event: AssistantStreamEvent) => void,
+  forcedTool?: AssistantToolName,
+): Promise<StreamedBlock[]> {
+  const models = fallbackModels(model);
+  let lastError: unknown;
+  let schemaRejected = false;
+
+  for (const candidate of models) {
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    const variants: Array<{ tools?: any; tool_choice?: any }> = schemaRejected
+      ? [{}]
+      : [
+        ...(forcedTool ? [{ tools: ASSISTANT_TOOLS, tool_choice: { type: 'tool', name: forcedTool } }] : []),
+        { tools: ASSISTANT_TOOLS, tool_choice: { type: 'auto' as const } },
+        { tools: toolsWithCustomType(), tool_choice: { type: 'auto' as const } },
+        {},
+      ];
+
+    for (const extra of variants) {
+      try {
+        return await callClaudeVariant(apiMessages, system, candidate, signal, emit, extra);
+      } catch (error) {
+        lastError = error;
+        if (signal.aborted || (error as any)?.name === 'AbortError') throw error;
+        if (error instanceof AssistantUnavailableError) throw error;
+        if (error instanceof ClaudeHttpError) {
+          if (error.status === 401 || error.status === 403) throw new AssistantUnavailableError('Claude n’est pas configuré.');
+          if (error.status === 400) {
+            schemaRejected = true;
+            if (!extra.tools) {
+              throw new AssistantUnavailableError('Claude ne répond pas pour le moment.');
+            }
+            continue;
+          }
+          if (error.status === 404) break;
+          if (error.status === 429 || error.status >= 500) continue;
+        }
+      }
+    }
+  }
+  throw lastError instanceof AssistantUnavailableError
+    ? lastError
+    : new AssistantUnavailableError('Claude ne répond pas pour le moment.');
+}
+
+async function recoverWithoutClaude(
+  emit: (event: AssistantStreamEvent) => void,
+  toolContext: AssistantToolContext,
+  latestText: string,
+  options: {
+    forceLensTool: boolean;
+    explicitProductSearch: boolean;
+    latestHasImage: boolean;
+    latestHasUrl: boolean;
+    latestHasCode: boolean;
+    attachmentId?: string;
+  },
+): Promise<void> {
+  emit({ type: 'state', state: 'creating' });
+  try {
+    if (options.forceLensTool) {
+      const urlMatch = latestText.match(/https?:\/\/[^\s"'<>]+/i)?.[0]?.replace(/[).,;!?]+$/, '');
+      const codeMatch = latestText.match(/\b\d{6,14}\b/)?.[0];
+      const execution = await executeAssistantTool('lens_search', {
+        product_url: options.latestHasUrl ? urlMatch : undefined,
+        code_value: options.latestHasCode ? codeMatch : undefined,
+        image_attachment_id: options.attachmentId,
+        query: searchQueryFromText(latestText) || latestText,
+      }, toolContext);
+      if (execution.presentation) emit({ type: 'tool', name: 'lens_search', data: execution.presentation });
+      const found = Boolean(execution.presentation?.product || execution.presentation?.products?.length);
+      emit({
+        type: 'delta',
+        text: found
+          ? (/[\u0600-\u06FF]/.test(latestText)
+            ? 'لقيت نتيجة من الصورة أو الرابط. ثبّت المنتج ثم نكمّل الطلب.'
+            : 'J’ai une piste à partir de la photo ou du lien. Confirme le produit pour commander.')
+          : assistantFallbackReply(latestText),
+      });
+      emit({ type: 'done', model: 'ayrovi-guide' });
+      return;
+    }
+    if (options.explicitProductSearch || looksLikeProductQuery(latestText)) {
+      const query = searchQueryFromText(latestText) || latestText;
+      const execution = await executeAssistantTool('search_products', { query }, toolContext);
+      if (execution.presentation) emit({ type: 'tool', name: 'search_products', data: execution.presentation });
+      const found = Boolean(execution.presentation?.products?.length);
+      emit({
+        type: 'delta',
+        text: found
+          ? (/[\u0600-\u06FF]/.test(latestText)
+            ? 'هاو اللي لقيت. اختار قطعة أو أرسل رابط أدق.'
+            : 'Voici ce que j’ai trouvé. Choisis un article ou envoie un lien plus précis.')
+          : assistantFallbackReply(latestText),
+      });
+      emit({ type: 'done', model: 'ayrovi-guide' });
+      return;
+    }
+  } catch (error: any) {
+    console.warn('[Assistant fallback]', error?.message || 'local recovery failed');
+  }
+  emit({ type: 'delta', text: isAssistantHelpQuestion(latestText) ? assistantHelpReply(latestText) : assistantFallbackReply(latestText) });
+  emit({ type: 'done', model: 'ayrovi-guide' });
 }
 
 export async function runAssistantChat(
@@ -348,13 +504,16 @@ export async function runAssistantChat(
     try {
       blocks = await streamClaudeRound(apiMessages, system, model, signal, forward, round === 0 ? forcedFirstTool : undefined);
     } catch (error) {
-      if (error instanceof AssistantUnavailableError && isAssistantHelpQuestion(latestUser?.text || '')) {
-        emit({ type: 'state', state: 'creating' });
-        emit({ type: 'delta', text: assistantHelpReply(latestUser?.text || '') });
-        emit({ type: 'done', model: 'ayrovi-guide' });
-        return;
-      }
-      throw error;
+      if (signal.aborted || (error as any)?.name === 'AbortError') throw error;
+      await recoverWithoutClaude(forward, toolContext, latestUser?.text || '', {
+        forceLensTool,
+        explicitProductSearch,
+        latestHasImage,
+        latestHasUrl,
+        latestHasCode,
+        attachmentId: latestUser?.attachments?.[0]?.id,
+      });
+      return;
     }
     const toolUses = blocks.filter((block): block is StreamedToolUse => block.type === 'tool_use');
     if (!toolUses.length) {

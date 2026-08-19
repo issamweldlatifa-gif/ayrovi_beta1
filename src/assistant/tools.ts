@@ -54,7 +54,6 @@ export const ASSISTANT_TOOLS = [
         order_id: { type: 'string', description: 'AYROVI order number or internal order id. May be omitted only for a signed-in customer asking for recent orders.' },
         phone: { type: 'string', description: 'Delivery phone used on the order. Required for guests.' },
       },
-      additionalProperties: false,
     },
   },
   {
@@ -65,11 +64,10 @@ export const ASSISTANT_TOOLS = [
       properties: {
         product_price: { type: 'number', description: 'Unit product price in the source currency.' },
         currency: { type: 'string', enum: ['TND', 'EUR', 'USD', 'GBP', 'JPY'] },
-        quantity: { type: 'integer' },
+        quantity: { type: 'number', description: 'Quantity from 1 to 99. Defaults to 1.' },
         express: { type: 'boolean' },
       },
       required: ['product_price', 'currency'],
-      additionalProperties: false,
     },
   },
   {
@@ -81,7 +79,6 @@ export const ASSISTANT_TOOLS = [
         query: { type: 'string', description: 'Precise product search query, brand, model or product code.' },
       },
       required: ['query'],
-      additionalProperties: false,
     },
   },
   {
@@ -100,7 +97,6 @@ export const ASSISTANT_TOOLS = [
         visible_price: { type: 'number', description: 'Current product price visibly shown in the image. Never use a crossed-out old price.' },
         visible_currency: { type: 'string', enum: ['TND', 'EUR', 'USD', 'GBP', 'JPY'] },
       },
-      additionalProperties: false,
     },
   },
   {
@@ -114,7 +110,6 @@ export const ASSISTANT_TOOLS = [
         priority: { type: 'string', enum: ['NORMAL', 'HIGH'] },
       },
       required: ['reason'],
-      additionalProperties: false,
     },
   },
 ] as const;
