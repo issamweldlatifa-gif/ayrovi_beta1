@@ -6,6 +6,7 @@ import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
 import { BottomNavBar } from './components/BottomNavBar';
+import { StartShoppingGates } from './components/StartShoppingGates';
 import type { AyrovixOrderPayload } from './ayrovix/types';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { Footer } from './components/Footer';
@@ -400,7 +401,14 @@ export const App: React.FC = () => {
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
-      if (section.id === 'hero') content = <HeroSlider settings={interfaceConfig.slider} title={section.title} subtitle={section.subtitle} image={section.image} />;
+      if (section.id === 'hero') content = <>
+        <HeroSlider settings={interfaceConfig.slider} title={section.title} subtitle={section.subtitle || tr('Envoyez une photo ou un lien, on confirme le prix et on livre en Tunisie.', 'أرسل صورة أو رابطًا، نؤكد السعر ونوصل إلى تونس.')} image={section.image} />
+        <StartShoppingGates
+          onOpenLens={handleOpenLens}
+          onOpenLink={handleToggleProductDrawer}
+          onOpenAssistant={() => openAppView('app:assistant')}
+        />
+      </>;
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;
@@ -454,8 +462,20 @@ export const App: React.FC = () => {
       {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
       <BottomNavBar
         isAiDrawerOpen={isAiDrawerOpen}
+        isCartOpen={isCartOpen || isCheckoutOpen}
+        isAccountOpen={isAccountOpen}
+        isLensOpen={isLensOpen}
+        cartCount={totalCartCount}
+        onGoHome={() => navigation.goHome()}
         onToggleAiDrawer={handleToggleAiDrawer}
         onOpenLens={handleOpenLens}
+        onOpenCart={() => openAppView('app:cart')}
+        onOpenAccount={() => {
+          setResumeCheckoutAfterAuth(false);
+          setAccountInitialSection('home');
+          setAccountMessage('');
+          openAppView('app:account');
+        }}
         config={interfaceConfig.navigation}
         iconConfig={interfaceConfig.icons}
       />

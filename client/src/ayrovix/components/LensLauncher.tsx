@@ -620,16 +620,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                           {candidatesView.detectedPrice.isCartScreenshot ? <span className="inline-flex items-center gap-1"><ShoppingBag className="h-3.5 w-3.5" />{tr('Panier repéré — total calculé', 'تم اكتشاف سلة — حُسب الإجمالي')}</span> : <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" />{tr('Produit repéré sur l’image', 'تم اكتشاف المنتج في الصورة')}</span>} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
                         </p>
                       </div>
-                      <div className="flex items-end justify-between rounded-2xl bg-accent/10 p-3.5 border border-accent/30">
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-muted">{tr('Prix visible', 'السعر الظاهر')}</p>
-                          <p className="text-sm font-bold text-ink">{candidatesView.detectedPrice.sourcePrice.toFixed(2)} {candidatesView.detectedPrice.sourceCurrency}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] font-bold uppercase tracking-wide text-warning">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-                          <p className="text-lg font-extrabold text-ink">≈ {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || '—'} DT</p>
-                          <p className="text-[9px] text-success font-semibold">{tr('Tout inclus', 'شامل كل شيء')}</p>
-                        </div>
+                      <div className="rounded-2xl border border-accent/30 bg-accent/10 p-3.5">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-warning">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
+                        <p className="mt-1 text-[26px] font-black leading-none text-ink">{candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || '—'} DT</p>
+                        <p className="mt-1.5 text-[11px] font-semibold text-muted">{tr('Prix visible', 'السعر الظاهر')} {candidatesView.detectedPrice.sourcePrice.toFixed(2)} {candidatesView.detectedPrice.sourceCurrency} · {tr('Tout inclus', 'شامل كل شيء')}</p>
                       </div>
                       <button
                         type="button"

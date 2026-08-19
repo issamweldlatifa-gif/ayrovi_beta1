@@ -45,6 +45,17 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     foregroundMarkers.forEach(([path, marker]) => expect(readFileSync(path, 'utf8')).toContain(marker));
   });
 
+  it('offers three start gates and a five-destination bottom navigation', () => {
+    expect(appSource).toContain('StartShoppingGates');
+    expect(appSource).toContain('onOpenLink={handleToggleProductDrawer}');
+    expect(bottomNavSource).toContain('grid-cols-5');
+    expect(bottomNavSource).toContain('onGoHome');
+    expect(bottomNavSource).toContain('onOpenCart');
+    expect(bottomNavSource).toContain('onOpenAccount');
+    expect(bottomNavSource).not.toContain('app:vision');
+    expect(bottomNavSource).not.toContain('Bientôt disponible');
+  });
+
   it('uses a white glass bottom navigation with black icons that hides down and returns up', () => {
     expect(bottomNavSource).toContain('const [isVisible, setIsVisible] = useState(true)');
     expect(bottomNavSource).toContain("window.addEventListener('scroll', onScroll, { passive: true })");

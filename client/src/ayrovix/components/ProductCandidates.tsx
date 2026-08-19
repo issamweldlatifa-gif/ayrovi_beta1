@@ -49,7 +49,8 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
                 <h4 className="line-clamp-2 break-words text-[13px] font-bold leading-snug text-ink" title={candidate.title}>{candidate.title}</h4>
                 <p className="mt-0.5 truncate text-[11px] font-semibold text-muted">{candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}</p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <p className="text-sm font-extrabold text-ink">{Number(candidate.price).toFixed(Number(candidate.price) % 1 ? 2 : 0)} {candidate.currency}{candidate.priceTnd != null && <span className="ml-1.5 font-bold text-brand">≈ {candidate.priceTnd.toFixed(2)} DT</span>}</p>
+                  <p className="text-base font-black leading-none text-ink">{candidate.priceTnd != null ? `${candidate.priceTnd.toFixed(2)} DT` : '—'}</p>
+                  <p className="text-[11px] font-semibold text-muted">{Number(candidate.price).toFixed(Number(candidate.price) % 1 ? 2 : 0)} {candidate.currency}</p>
                   <p className="inline-flex items-center gap-1 text-[10px] font-bold text-accent-deep" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Score de pertinence converti sur 5', 'درجة التطابق محوّلة إلى 5')}><Star size={13} fill="currentColor" />{rating.toFixed(1)}/5 <span className="text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('pertinence', 'التطابق')}</span>{merchantRating && Number(candidate.ratingCount) > 0 ? <span className="text-muted">({Number(candidate.ratingCount).toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-FR')})</span> : null}</p>
                 </div>
                 <div className="mt-2 flex gap-2">

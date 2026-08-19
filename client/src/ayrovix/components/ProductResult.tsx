@@ -158,20 +158,16 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </div>
           </div>
 
-          <div className="flex items-end justify-between gap-3 rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-muted">{tr('Prix proposé', 'السعر المقترح')}</p>
-              <p className="text-sm font-bold text-ink">
-                {selectedPrice != null && selectedCurrency ? `${selectedPrice.toFixed(2)} ${selectedCurrency}` : '—'}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-brand">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-              <p className="text-xl font-extrabold text-ink price-pulse">
-                {selectedPriceTnd != null ? `≈ ${selectedPriceTnd.toFixed(2)} DT` : '—'}
-              </p>
-              <p className="text-[10px] font-semibold text-brand">{tr('Calcul AYROVI • Tout inclus', 'حساب AYROVI • شامل كل الرسوم')}</p>
-            </div>
+          <div className="rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-brand">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
+            <p className="mt-1 text-[28px] font-black leading-none tracking-tight text-ink price-pulse">
+              {selectedPriceTnd != null ? `${selectedPriceTnd.toFixed(2)} DT` : '—'}
+            </p>
+            <p className="mt-1.5 text-[12px] font-semibold text-muted">
+              {selectedPrice != null && selectedCurrency
+                ? `${tr('Prix boutique', 'سعر المتجر')} ${selectedPrice.toFixed(2)} ${selectedCurrency}`
+                : tr('Prix boutique à confirmer', 'سعر المتجر بانتظار التأكيد')}
+            </p>
           </div>
 
           {priceVerified ? (
@@ -210,63 +206,67 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           {submitted && !isUrlValid && <span className="mt-1 block text-[11px] font-semibold text-danger">{tr('Ajoutez un lien public complet commençant par http:// ou https://.', 'أضف رابطًا عامًا كاملًا يبدأ بـ http:// أو https://.')}</span>}
         </label>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Quantité', 'الكمية')} <span className="text-danger">*</span></span>
-            <div className="flex min-h-[46px] items-center rounded-xl border border-line bg-white">
-              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label={tr('Diminuer la quantité', 'تقليل الكمية')} className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">−</button>
-              <input type="number" min={1} max={99} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} aria-label={tr('Quantité', 'الكمية')} className="h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none" required />
-              <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label={tr('Augmenter la quantité', 'زيادة الكمية')} className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">+</button>
-            </div>
+        <div>
+          <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Quantité', 'الكمية')} <span className="text-danger">*</span></span>
+          <div className="flex min-h-[46px] max-w-[180px] items-center rounded-xl border border-line bg-white">
+            <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label={tr('Diminuer la quantité', 'تقليل الكمية')} className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">−</button>
+            <input type="number" min={1} max={99} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} aria-label={tr('Quantité', 'الكمية')} className="h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none" required />
+            <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label={tr('Augmenter la quantité', 'زيادة الكمية')} className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">+</button>
           </div>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Couleur', 'اللون')} <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span></span>
-            <input list="ayrovix-colors" value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder={tr('Ex. Noir', 'مثال: أسود')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
-            {product.colors.length > 0 && <datalist id="ayrovix-colors">{product.colors.map((item) => <option key={item} value={item} />)}</datalist>}
-          </label>
         </div>
 
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Taille', 'المقاس')} <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span></span>
-          <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand">
-            <option value="">{tr('Sans préférence', 'دون تفضيل')}</option>
-            {sizeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
-            <option value="__other__">{tr('Autre', 'مقاس آخر')}</option>
-          </select>
-        </label>
-        {sizeChoice === '__other__' && (
-          <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
-        )}
-
-        {product.sizes.length > 0 || product.colors.length > 0 ? (
-          <p className="rounded-xl bg-surface px-3 py-2 text-[10px] leading-relaxed text-muted">
-            {tr('Options détectées sur la fiche :', 'المواصفات المكتشفة في الصفحة:')} {[product.sizes.length ? `${tr('tailles', 'المقاسات')} ${product.sizes.join(', ')}` : '', product.colors.length ? `${tr('couleurs', 'الألوان')} ${product.colors.join(', ')}` : ''].filter(Boolean).join(' · ')}. {tr("La disponibilité finale sera confirmée par l’équipe.", 'سيؤكد الفريق التوفر النهائي.')}
-          </p>
-        ) : null}
-
-        <label className="block">
-          <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Commentaire spécial', 'ملاحظة خاصة')} <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span></span>
-          <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder={tr('Ex. emballage cadeau, variante précise…', 'مثال: تغليف هدية أو مواصفة دقيقة…')} className="w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand" />
-        </label>
+        <details className="rounded-xl border border-line bg-surface px-3 py-2">
+          <summary className="cursor-pointer list-none text-xs font-extrabold text-ink">{tr('Taille, couleur et commentaire', 'المقاس واللون والملاحظة')} <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span></summary>
+          <div className="mt-3 space-y-3">
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Couleur', 'اللون')}</span>
+              <input list="ayrovix-colors" value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder={tr('Ex. Noir', 'مثال: أسود')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
+              {product.colors.length > 0 && <datalist id="ayrovix-colors">{product.colors.map((item) => <option key={item} value={item} />)}</datalist>}
+            </label>
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Taille', 'المقاس')}</span>
+              <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand">
+                <option value="">{tr('Sans préférence', 'دون تفضيل')}</option>
+                {sizeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                <option value="__other__">{tr('Autre', 'مقاس آخر')}</option>
+              </select>
+            </label>
+            {sizeChoice === '__other__' && (
+              <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
+            )}
+            {product.sizes.length > 0 || product.colors.length > 0 ? (
+              <p className="rounded-xl bg-white px-3 py-2 text-[10px] leading-relaxed text-muted">
+                {tr('Options détectées sur la fiche :', 'المواصفات المكتشفة في الصفحة:')} {[product.sizes.length ? `${tr('tailles', 'المقاسات')} ${product.sizes.join(', ')}` : '', product.colors.length ? `${tr('couleurs', 'الألوان')} ${product.colors.join(', ')}` : ''].filter(Boolean).join(' · ')}.
+              </p>
+            ) : null}
+            <label className="block">
+              <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Commentaire spécial', 'ملاحظة خاصة')}</span>
+              <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder={tr('Ex. emballage cadeau, variante précise…', 'مثال: تغليف هدية أو مواصفة دقيقة…')} className="w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand" />
+            </label>
+          </div>
+        </details>
       </div>
 
-      <div className="sticky bottom-3 flex gap-2.5">
-        {product.sourceUrl && (
-          <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="ay-btn-secondary min-h-[52px] px-4 text-sm">
-            {tr('Voir chez le marchand', 'عرض صفحة المتجر')}
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={() => {
-            setSubmitted(true);
-            if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
-          }}
-          disabled={ordering || Number(selectedPrice) <= 0 || selectedCurrency == null}
-          className="ay-btn-primary min-h-[52px] flex-1 px-5 text-sm"
-        >
-          {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{tr(`Commander · acompte ${depositPercent}%`, `اطلب الآن · عربون ${depositPercent}%`)}</>}
-        </button>
+      <div className="sticky bottom-3 space-y-2">
+        <div className="flex gap-2.5">
+          {product.sourceUrl && (
+            <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="ay-btn-secondary min-h-[52px] px-4 text-sm">
+              {tr('Voir chez le marchand', 'عرض صفحة المتجر')}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => {
+              setSubmitted(true);
+              if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
+            }}
+            disabled={ordering || Number(selectedPrice) <= 0 || selectedCurrency == null}
+            className="ay-btn-primary min-h-[52px] flex-1 px-5 text-sm"
+          >
+            {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`)}</>}
+          </button>
+        </div>
+        <p className="text-center text-[11px] font-bold text-muted">{tr(`Acompte ${depositPercent}% · Suivi après expédition réelle`, `عربون ${depositPercent}% · التتبع بعد الشحن الفعلي`)}</p>
       </div>
     </div>
   );

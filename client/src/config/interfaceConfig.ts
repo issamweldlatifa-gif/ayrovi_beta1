@@ -122,8 +122,11 @@ export interface PublicInterfaceConfig {
     activeBackground: string;
     showLabels: boolean;
     height: number;
+    homeLabel: string;
     lensLabel: string;
     aiLabel: string;
+    cartLabel: string;
+    accountLabel: string;
     visionLabel: string;
   };
   slider: {
@@ -192,7 +195,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   icons: { library: 'ayrovi', color: '#673de6', activeColor: '#fbbf24', size: 20, style: 'outline' },
   navigation: {
     background: '#17151f', color: '#ffffff', activeBackground: '#673de6', showLabels: true, height: 72,
-    lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision',
+    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'AI', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
   layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
@@ -302,8 +305,11 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
       activeBackground: safeColor(navigation.activeBackground, DEFAULT_INTERFACE_CONFIG.navigation.activeBackground),
       showLabels: navigation.showLabels !== false,
       height: safeNumber(navigation.height, 72, 56, 104),
+      homeLabel: safeText(navigation.homeLabel, 'Accueil', 24),
       lensLabel: safeText(navigation.lensLabel, 'Lens', 24),
       aiLabel: safeText(navigation.aiLabel, 'AI', 24),
+      cartLabel: safeText(navigation.cartLabel, 'Panier', 24),
+      accountLabel: safeText(navigation.accountLabel, 'Compte', 24),
       visionLabel: safeText(navigation.visionLabel, 'Vision', 24),
     },
     slider: {

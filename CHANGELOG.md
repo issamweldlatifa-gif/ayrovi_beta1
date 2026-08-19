@@ -2,6 +2,15 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.5] - 2026-08-19
+
+### Changed
+- Homepage now answers “how do I order?” with three gates under the Hero: photo, link and AI.
+- Public bottom navigation is Accueil, Lens, AI, Panier and Compte. The empty Vision slot is gone.
+- Lens, assistant cards and product results lead with the all-in TND price; the boutique price is secondary.
+- Size, color and notes on the Lens product sheet are collapsed so the next action is the exact link plus Commander.
+- Each order CTA carries the deposit and “tracking after real shipment” promise.
+
 ## [3.7.4] - 2026-08-19
 
 ### Fixed
