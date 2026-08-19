@@ -2,6 +2,19 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.7.7] - 2026-08-19
+
+### Fixed
+- Assistant chat no longer dies on a Claude 400: tool schemas dropped unsupported `minimum`/`maximum`, and the request retries without tools or on a fallback model.
+- “Comment utiliser l’assistant / Lens” is answered locally so the help path stays online even if Anthropic refuses the first turn.
+
+## [3.7.6] - 2026-08-19
+
+### Changed
+- Restored the three-tool bottom bar (Lens, AI, Vision). Accueil, panier and compte stay in the header.
+- The AYROVI logo now returns to the homepage and scrolls to the top.
+- The header cart badge is the only cart entry in the public chrome.
+
 ## [3.7.5] - 2026-08-19
 
 ### Changed

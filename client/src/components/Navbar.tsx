@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, User } from './QatafoIcons';
+import { Menu, ShoppingBag, User } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
 import { AppHeader } from '../design/AppHeader';
 import { Button } from '../design/Button';
@@ -7,12 +7,24 @@ import { Button } from '../design/Button';
 interface NavbarProps {
   onOpenMenuDrawer: () => void;
   onOpenAccount: () => void;
+  onGoHome: () => void;
+  onOpenCart: () => void;
+  cartCount?: number;
   isAuthenticated?: boolean;
   logoUrl?: string;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount, isAuthenticated = false, logoUrl }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onOpenMenuDrawer,
+  onOpenAccount,
+  onGoHome,
+  onOpenCart,
+  cartCount = 0,
+  isAuthenticated = false,
+  logoUrl,
+}) => {
   const { isArabic, toggleLocale, tr } = useLocale();
+  const count = Math.max(0, Math.min(99, Math.trunc(cartCount)));
 
   return (
     <AppHeader
@@ -21,12 +33,24 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenMenuDrawer, onOpenAccount,
       title="AYROVI"
       subtitle={tr('Shopping international, simplement', 'تسوّق عالمي بكل سهولة')}
       logoUrl={logoUrl}
+      onLogoClick={onGoHome}
       actions={<>
         <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
           <Menu className="h-5 w-5" />
         </Button>
         <Button variant="ghost" size="sm" onClick={toggleLocale} aria-label={tr('Afficher le site en arabe', 'عرض الموقع بالفرنسية')} title={isArabic ? 'Français' : 'العربية'} className="min-w-11 px-2">
           {isArabic ? 'FR' : 'AR'}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onOpenCart}
+          className="relative"
+          aria-label={tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)}
+          title={tr('Panier', 'السلة')}
+        >
+          <ShoppingBag className="h-5 w-5" />
+          {count > 0 && <span className="absolute bottom-1.5 end-1.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[8px] font-black leading-none text-white">{count}</span>}
         </Button>
         <Button
           variant="ghost"

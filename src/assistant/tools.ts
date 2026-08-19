@@ -65,7 +65,7 @@ export const ASSISTANT_TOOLS = [
       properties: {
         product_price: { type: 'number', description: 'Unit product price in the source currency.' },
         currency: { type: 'string', enum: ['TND', 'EUR', 'USD', 'GBP', 'JPY'] },
-        quantity: { type: 'integer', minimum: 1, maximum: 99 },
+        quantity: { type: 'integer' },
         express: { type: 'boolean' },
       },
       required: ['product_price', 'currency'],

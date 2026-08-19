@@ -15,6 +15,7 @@ interface AppHeaderProps {
   tone?: 'light' | 'dark';
   className?: string;
   logoUrl?: string;
+  onLogoClick?: () => void;
 }
 
 /** Shared AYROVI header: stable logo/title placement and one accessible action area. */
@@ -30,6 +31,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   tone = 'light',
   className = '',
   logoUrl = '/media/logo-ayrovi.png',
+  onLogoClick,
 }) => {
   const { tr, direction } = useLocale();
   const action = onBack || onClose;

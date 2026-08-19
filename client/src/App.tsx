@@ -425,6 +425,12 @@ export const App: React.FC = () => {
       {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
+        onGoHome={() => {
+          navigation.goHome();
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
+        onOpenCart={() => openAppView('app:cart')}
+        cartCount={totalCartCount}
         onOpenAccount={() => {
           setResumeCheckoutAfterAuth(false);
           setAccountInitialSection('home');
@@ -462,20 +468,8 @@ export const App: React.FC = () => {
       {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
       <BottomNavBar
         isAiDrawerOpen={isAiDrawerOpen}
-        isCartOpen={isCartOpen || isCheckoutOpen}
-        isAccountOpen={isAccountOpen}
-        isLensOpen={isLensOpen}
-        cartCount={totalCartCount}
-        onGoHome={() => navigation.goHome()}
         onToggleAiDrawer={handleToggleAiDrawer}
         onOpenLens={handleOpenLens}
-        onOpenCart={() => openAppView('app:cart')}
-        onOpenAccount={() => {
-          setResumeCheckoutAfterAuth(false);
-          setAccountInitialSection('home');
-          setAccountMessage('');
-          openAppView('app:account');
-        }}
         config={interfaceConfig.navigation}
         iconConfig={interfaceConfig.icons}
       />

@@ -4,8 +4,8 @@ import sharp from 'sharp';
 import { BarcodeFormat, QRCodeWriter } from '@zxing/library';
 import request from 'supertest';
 import { app, db } from '../src/server';
-import { executeAssistantTool, type AssistantToolContext } from '../src/assistant/tools';
-import { selectAssistantModel } from '../src/assistant/service';
+import { ASSISTANT_TOOLS, executeAssistantTool, type AssistantToolContext } from '../src/assistant/tools';
+import { isAssistantHelpQuestion, selectAssistantModel } from '../src/assistant/service';
 import type { CustomerIdentity } from '../src/customer/auth';
 import { SmartLinkScraper } from '../src/scraper/scraper';
 import { scanCodeFromImage } from '../src/ayrovix/services/codeScanner';
@@ -92,6 +92,23 @@ describe('AYROVI Claude assistant', () => {
     else process.env.SERPAPI_KEY = originalSerpApiKey;
     if (originalGroqKey === undefined) delete process.env.GROQ_API_KEY;
     else process.env.GROQ_API_KEY = originalGroqKey;
+  });
+
+  test('help questions are answered locally so chat never dies on Claude outages', async () => {
+    process.env.ANTHROPIC_API_KEY = 'assistant-help-test-key';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    expect(isAssistantHelpQuestion('Comment utiliser l’assistant AYROVI et Lens ?')).toBe(true);
+    const response = await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', unique('assistant-session'))
+      .send({ conversationId: unique('conversation'), messages: [{ role: 'user', text: 'Comment utiliser l’assistant AYROVI et Lens ?' }] });
+    expect(response.status).toBe(200);
+    expect(response.text).toContain('Envoie une photo du produit');
+    expect(response.text).toContain('\"type\":\"done\"');
+    expect(fetchMock).not.toHaveBeenCalled();
+    const priceTool = ASSISTANT_TOOLS.find((tool) => tool.name === 'calculate_price');
+    expect(JSON.stringify(priceTool)).not.toMatch(/\"(?:minimum|maximum)\"/);
   });
 
   test('routes simple requests to Haiku and long complex requests to Sonnet', () => {

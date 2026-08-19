@@ -66,6 +66,31 @@ export function selectAssistantModel(messages: AssistantConversationLine[]): str
   return String(process.env.ASSISTANT_HAIKU_MODEL || process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001').trim();
 }
 
+export function isAssistantHelpQuestion(text: string): boolean {
+  return /comment (utiliser|marche|fonctionne)|how (do i|to) use|aide|help|كيفية|كيفاش|شنوّا نعمل|استعمل|استخدام|شرح.*lens|expliquer/i.test(text)
+    && !/https?:\/\//i.test(text)
+    && !/\b\d{6,14}\b/.test(text);
+}
+
+export function assistantHelpReply(text: string): string {
+  const arabic = /[\u0600-\u06FF]/.test(text);
+  if (arabic) {
+    return 'أرسل صورة المنتج أو ألصق رابطه، وأحسب لك السعر النهائي بالدينار.\nLens للتصوير، وهذا الشات للسؤال والمتابعة.\nبعد التأكيد تدفع عربوناً ثم نشتري ونشحن إلى تونس.';
+  }
+  return 'Envoie une photo du produit ou colle son lien : je calcule le prix final en dinars.\nLens sert à photographier ; ce chat sert à poser une question et suivre.\nAprès confirmation, tu verses l’acompte, puis AYROVI achète et livre en Tunisie.';
+}
+
+function fallbackModels(preferred: string): string[] {
+  const known = [
+    preferred,
+    'claude-haiku-4-5',
+    'claude-sonnet-4-5-20250929',
+    'claude-sonnet-4-5',
+    'claude-haiku-4-5-20251001',
+  ];
+  return [...new Set(known.map((item) => String(item || '').trim()).filter(Boolean))];
+}
+
 function settingValue(db: QatafoDatabase, key: string, fallback: any = ''): any {
   const row = db.get<any>('SELECT setting_value,value_type FROM settings WHERE setting_key=?', key);
   if (!row) return fallback;
@@ -311,9 +336,26 @@ export async function runAssistantChat(
   }
 
   emit({ type: 'state', state: 'thinking' });
+  if (isAssistantHelpQuestion(latestUser?.text || '') && !latestHasImage && !latestHasUrl && !latestHasCode) {
+    emit({ type: 'state', state: 'creating' });
+    emit({ type: 'delta', text: assistantHelpReply(latestUser?.text || '') });
+    emit({ type: 'done', model: 'ayrovi-guide' });
+    return;
+  }
   for (let round = 0; round < 3; round += 1) {
     emit({ type: 'state', state: round === 0 ? 'analyzing' : 'reasoning' });
-    const blocks = await streamClaudeRound(apiMessages, system, model, signal, forward, round === 0 ? forcedFirstTool : undefined);
+    let blocks: StreamedBlock[];
+    try {
+      blocks = await streamClaudeRound(apiMessages, system, model, signal, forward, round === 0 ? forcedFirstTool : undefined);
+    } catch (error) {
+      if (error instanceof AssistantUnavailableError && isAssistantHelpQuestion(latestUser?.text || '')) {
+        emit({ type: 'state', state: 'creating' });
+        emit({ type: 'delta', text: assistantHelpReply(latestUser?.text || '') });
+        emit({ type: 'done', model: 'ayrovi-guide' });
+        return;
+      }
+      throw error;
+    }
     const toolUses = blocks.filter((block): block is StreamedToolUse => block.type === 'tool_use');
     if (!toolUses.length) {
       if (!emittedText) emit({ type: 'delta', text: 'Je n’ai pas pu générer une réponse complète. Merci de reformuler votre demande.' });
