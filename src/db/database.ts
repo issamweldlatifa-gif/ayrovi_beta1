@@ -1327,6 +1327,44 @@ export class QatafoDatabase {
     };
   }
 
+  public updateCustomsCategories(raw: unknown) {
+    if (!Array.isArray(raw) || !raw.length || raw.length > 20) throw new Error('CATEGORIES_INVALID');
+    const existing = this.getCustomsCategories();
+    const allowed = new Set(existing.map((item) => item.id));
+    const now = new Date().toISOString();
+    const update = this.db.prepare(`UPDATE customs_categories
+      SET label=?,keywords=?,customs_rate=?,tva_rate=?,default_weight_kg=?,status=?,updated_at=? WHERE id=?`);
+    for (const item of raw) {
+        const id = String(item?.id || '');
+        if (!allowed.has(id)) throw new Error('CATEGORY_UNKNOWN');
+        const label = String(item?.label || '').trim().slice(0, 80);
+        if (label.length < 2) throw new Error('CATEGORY_LABEL_INVALID');
+        const keywords = Array.isArray(item?.keywords)
+          ? item.keywords.map((word: unknown) => String(word || '').trim().slice(0, 80)).filter((word: string) => word.length >= 2).slice(0, 40)
+          : [];
+        if (!keywords.length) throw new Error('CATEGORY_KEYWORDS_INVALID');
+        let customsRate = Number(item?.customsRate);
+        if (Number.isFinite(customsRate) && customsRate > 1 && customsRate <= 100) customsRate /= 100;
+        let tvaRate = Number(item?.tvaRate);
+        if (Number.isFinite(tvaRate) && tvaRate > 1 && tvaRate <= 100) tvaRate /= 100;
+        const weight = Number(item?.defaultWeightKg);
+        const status = String(item?.status || '');
+        if (!Number.isFinite(customsRate) || customsRate < 0 || customsRate > 1) throw new Error('CATEGORY_DUTY_INVALID');
+        if (!Number.isFinite(tvaRate) || tvaRate < 0 || tvaRate > 1) throw new Error('CATEGORY_TVA_INVALID');
+        if (!Number.isFinite(weight) || weight <= 0 || weight > 80) throw new Error('CATEGORY_WEIGHT_INVALID');
+        if (!['ALLOWED', 'WARNING', 'RESTRICTED'].includes(status)) throw new Error('CATEGORY_STATUS_INVALID');
+        update.run(label, JSON.stringify(keywords), customsRate, tvaRate, weight, status, now, id);
+    }
+    return this.getCustomsCategories();
+  }
+
+  public setDepositPercent(value: number) {
+    const percent = Math.min(100, Math.max(1, Math.round(Number(value))));
+    if (!Number.isFinite(Number(value)) || Number(value) < 1 || Number(value) > 100) throw new Error('DEPOSIT_PERCENT_INVALID');
+    this.run(`UPDATE settings SET setting_value=?,updated_at=? WHERE setting_key='deposit_percent'`, String(percent), new Date().toISOString());
+    return percent;
+  }
+
   private mapRow(row: any): CartItem {
     return {
       id: row.id,

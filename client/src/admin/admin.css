@@ -236,6 +236,10 @@
 .admin-timeline small { color: var(--admin-muted); font-size: 9px; }
 .admin-pricing-layout { display: grid; grid-template-columns: 1.2fr .8fr; gap: 15px; }
 .admin-pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+.admin-category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.admin-category-card { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--admin-line); background: #faf9fc; }
+.admin-category-card > strong { color: var(--admin-purple); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.admin-field select:disabled { color: #77727f; background: #f5f4f7; cursor: not-allowed; }
 .admin-price-preview .admin-form { grid-template-columns: 1fr 1fr; }
 .admin-price-result { margin-top: 20px; border-top: 1px solid var(--admin-line); }
 .admin-price-result > div, .admin-price-result > strong { display: flex; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--admin-line); font-size: 10px; }

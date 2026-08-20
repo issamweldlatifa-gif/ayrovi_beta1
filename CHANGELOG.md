@@ -2,6 +2,19 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.1] - 2026-08-20
+
+### Added
+- Admin pricing desk edits the CIF matrix (duty, TVA, weight, status, keywords), the confirmation deposit % and a millime-accurate simulator with category + deposit.
+- Order detail shows the frozen CIF snapshot (converted, customs, freight, commission, deposit, tracking).
+
+### Changed
+- Admin chrome (login, sidebar, footer) says AYSONIC. Money displays 3 millimes.
+- `GET/PUT /api/admin/pricing` now carries `depositPercent` and existing customs categories. Unknown category ids are refused.
+
+### Security
+- Content managers still cannot write rates. Historical order snapshots stay frozen after a desk save.
+
 ## [3.8.0] - 2026-08-20
 
 ### Added

@@ -1280,9 +1280,12 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { id: account.id, status } });
   });
 
-  router.get('/pricing', requireAdmin(db, 'commerce:read'), (_req, res) => res.json({ success: true, data: db.getPricingRules() }));
+  router.get('/pricing', requireAdmin(db, 'commerce:read'), (_req, res) => {
+    res.json({ success: true, data: { ...db.getPricingRules(), depositPercent: db.getDepositPercent() } });
+  });
   router.put('/pricing', requireAdmin(db, 'pricing:write'), (req, res) => {
     const current = db.getPricingRules();
+    const currentDeposit = db.getDepositPercent();
     const fields: Record<string, string> = {
       rateEUR: 'rate_eur', rateUSD: 'rate_usd', rateGBP: 'rate_gbp', rateJPY: 'rate_jpy',
       exchangeBufferPercent: 'exchange_buffer_percent', freightPerKgTND: 'freight_per_kg_tnd',
@@ -1298,29 +1301,63 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       if (!Number.isFinite(value) || value < 0 || (apiField.startsWith('rate') && value <= 0)) return res.status(400).json({ success: false, error: `Valeur invalide pour ${apiField}.` });
       payload[dbField] = value;
     }
-    if (!Object.keys(payload).length) return res.status(400).json({ success: false, error: 'Aucun tarif reçu.' });
-    let updated = current;
-    db.transaction(() => {
-      db.run(`UPDATE pricing_config SET ${Object.keys(payload).map((field) => `${field}=?`).join(',')},version=version+1,updated_at=?,updated_by=? WHERE id='default'`, ...Object.values(payload), new Date().toISOString(), admin(req).id);
-      updated = db.getPricingRules();
-      const products = db.all<any>('SELECT id,original_price,currency FROM products');
-      for (const product of products) {
-        const price = calculatePrice(updated, Number(product.original_price), String(product.currency), { title: String(product.name || '') });
-        if (!price) throw new Error(`Tarification impossible pour le produit ${product.id}.`);
-        db.run(`UPDATE products SET converted_price=?,customs_fee=?,shipping_fee=?,service_fee=?,final_price=?,updated_at=? WHERE id=?`,
-          price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.totalTND, new Date().toISOString(), product.id);
+    const hasCategories = Array.isArray(req.body?.categories);
+    let nextDeposit: number | undefined;
+    if (req.body?.depositPercent !== undefined) {
+      const value = Number(req.body.depositPercent);
+      if (!Number.isFinite(value) || value < 1 || value > 100) return res.status(400).json({ success: false, error: 'L’acompte doit être entre 1 et 100 %.' });
+      nextDeposit = Math.round(value);
+    }
+    if (!Object.keys(payload).length && !hasCategories && nextDeposit === undefined) {
+      return res.status(400).json({ success: false, error: 'Aucun tarif reçu.' });
+    }
+    try {
+      let updated = current;
+      db.transaction(() => {
+        if (hasCategories) db.updateCustomsCategories(req.body.categories);
+        if (Object.keys(payload).length) {
+          db.run(`UPDATE pricing_config SET ${Object.keys(payload).map((field) => `${field}=?`).join(',')},version=version+1,updated_at=?,updated_by=? WHERE id='default'`,
+            ...Object.values(payload), new Date().toISOString(), admin(req).id);
+        } else if (hasCategories) {
+          db.run(`UPDATE pricing_config SET version=version+1,updated_at=?,updated_by=? WHERE id='default'`, new Date().toISOString(), admin(req).id);
+        }
+        if (nextDeposit !== undefined) db.setDepositPercent(nextDeposit);
+        updated = db.getPricingRules();
+        if (Object.keys(payload).length || hasCategories) {
+          const products = db.all<any>('SELECT id,original_price,currency,name FROM products');
+          for (const product of products) {
+            const price = calculatePrice(updated, Number(product.original_price), String(product.currency), { title: String(product.name || '') });
+            if (!price) throw new Error(`Tarification impossible pour le produit ${product.id}.`);
+            db.run(`UPDATE products SET converted_price=?,customs_fee=?,shipping_fee=?,service_fee=?,final_price=?,updated_at=? WHERE id=?`,
+              price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.totalTND, new Date().toISOString(), product.id);
+          }
+        }
+      });
+      const desk = { ...db.getPricingRules(), depositPercent: db.getDepositPercent() };
+      audit(db, req, 'UPDATE', 'PRICING', 'default', { ...current, depositPercent: currentDeposit }, desk);
+      res.json({ success: true, data: desk });
+    } catch (error: any) {
+      const code = String(error?.message || '');
+      if (code.startsWith('CATEGORY_') || code === 'CATEGORIES_INVALID' || code === 'DEPOSIT_PERCENT_INVALID') {
+        return res.status(400).json({ success: false, error: 'Catégorie ou acompte invalide. Les identifiants inconnus sont refusés.' });
       }
-    });
-    audit(db, req, 'UPDATE', 'PRICING', 'default', current, updated);
-    res.json({ success: true, data: updated });
+      throw error;
+    }
   });
 
   router.post('/pricing/preview', requireAdmin(db, 'commerce:read'), (req, res) => {
     const result = calculatePrice(db.getPricingRules(), Number(req.body?.originalPrice), String(req.body?.currency || ''), {
       quantity: Number(req.body?.quantity || 1), express: Boolean(req.body?.express), discountTND: Number(req.body?.discountTND || 0),
+      title: String(req.body?.title || ''), categoryId: String(req.body?.categoryId || ''),
+      weightKg: req.body?.weightKg == null || req.body?.weightKg === '' ? undefined : Number(req.body.weightKg),
     });
     if (!result) return res.status(400).json({ success: false, error: 'Données de calcul invalides.' });
-    res.json({ success: true, data: result });
+    const depositPercent = db.getDepositPercent();
+    res.json({ success: true, data: {
+      ...result,
+      depositPercent,
+      depositTND: Math.round(result.totalTND * depositPercent * 10) / 1000,
+    } });
   });
 
   router.get('/settings', requireAdmin(db, 'content:read'), (req, res) => {
