@@ -201,8 +201,8 @@ function calculateRealPrice(input: any, context: AssistantToolContext): Assistan
   if (!Number.isFinite(price) || price <= 0 || price > 1_000_000 || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
     return { modelResult: { success: false, code: 'INVALID_PRICE_INPUT', message: 'Prix ou quantité invalide.' } };
   }
-  const breakdown = calculatePrice(context.db.getPricingRules(), price, currency, { quantity, express });
-  if (!breakdown) return { modelResult: { success: false, code: 'UNSUPPORTED_CURRENCY', message: 'Devise non prise en charge.' } };
+  const breakdown = calculatePrice(context.db.getPricingRules(), price, currency, { quantity, express, title: cleanText(input?.query || input?.title, 220) });
+  if (!breakdown || breakdown.restricted) return { modelResult: { success: false, code: breakdown?.restricted ? 'RESTRICTED_ITEM' : 'UNSUPPORTED_CURRENCY', message: breakdown?.restricted ? 'Ce type de produit nécessite une validation AYSONIC.' : 'Devise non prise en charge.' } };
   return { modelResult: { success: true, breakdown }, presentation: { breakdown } };
 }
 

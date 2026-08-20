@@ -1,7 +1,7 @@
 {
   "name": "ayrovi",
-  "version": "3.7.8",
-  "description": "AYROVI — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
+  "version": "3.8.0",
+  "description": "AYSONIC — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",

@@ -2,6 +2,17 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.0] - 2026-08-20
+
+### Added
+- CIF Tunisian pricing engine: category matrix, kg freight, 3% exchange buffer, 19% TVA, 3% RPD (min 10 TND), 10% commission and 8 TND local delivery.
+- Restricted-item gate (drones, weapons, vapes) blocks a payable total until human review.
+
+### Changed
+- `calculatePrice` is the single server source for Lens, chat, catalogue, cart and checkout. Local delivery is added once per order.
+- Visible brand copy and company settings now say AYSONIC. New order numbers use `AYS-`.
+- Admin pricing screen edits buffer, freight/kg, local delivery, commission and RPD.
+
 ## [3.7.8] - 2026-08-19
 
 ### Fixed

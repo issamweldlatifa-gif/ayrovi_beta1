@@ -6,7 +6,7 @@ import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
-import { calculatePrice } from '../services/pricing';
+import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
@@ -30,8 +30,10 @@ export function createApiRouter(
     const rules = db.getPricingRules();
     return (items: ReturnType<AyroviDatabase['getItems']>) => {
       const pricedItems = items.map((item) => {
-        const breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, { quantity: item.quantity });
-        if (!breakdown) throw new Error('CART_PRICING_FAILED');
+        const breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+          quantity: item.quantity, includeLocalDelivery: false, title: item.title,
+        });
+        if (!breakdown || breakdown.restricted) throw new Error('CART_PRICING_FAILED');
         return {
           ...item,
           lineTotalTND: breakdown.totalTND,
@@ -42,9 +44,12 @@ export function createApiRouter(
           serviceFeeTND: breakdown.serviceFeeTND,
           expressFeeTND: breakdown.expressFeeTND,
           discountTND: breakdown.discountTND,
+          freightTND: breakdown.freightTND,
+          categoryId: breakdown.categoryId,
         };
       });
-      const totalTND = Math.round(pricedItems.reduce((sum, item) => sum + item.lineTotalTND, 0) * 100) / 100;
+      const goods = pricedItems.reduce((sum, item) => sum + item.lineTotalTND, 0);
+      const totalTND = Math.round((goods + orderLocalDelivery(rules)) * 1000) / 1000;
       return { items: pricedItems, totalTND };
     };
   }
@@ -194,8 +199,8 @@ export function createApiRouter(
     const quantity = Number(item.quantity ?? 1);
     const sourcePrice = Number(item.sourcePrice);
     const sourceCurrency = typeof item.sourceCurrency === 'string' ? item.sourceCurrency.trim().toUpperCase() : '';
-    const calculatedPrice = calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency);
-    const calculatedPriceTND = calculatedPrice?.totalTND ?? null;
+    const calculatedPrice = calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency, { title: String(item.title || '') });
+    const calculatedPriceTND = calculatedPrice && !calculatedPrice.restricted ? calculatedPrice.totalTND : null;
     const ayrovixItem = typeof item.priceVerificationStatus === 'string' || typeof item.priceToken === 'string';
     const priceVerificationStatus = item.priceVerificationStatus === 'PENDING_MANUAL' ? 'PENDING_MANUAL' : 'VERIFIED';
     const requestedSize = String(item.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
@@ -473,7 +478,7 @@ export function createApiRouter(
       return res.json({
         success: true,
         ...result,
-        message: 'Votre commande a été enregistrée avec succès chez AYROVI !'
+        message: 'Votre commande a été enregistrée avec succès chez AYSONIC !'
       });
     } catch (error: any) {
       if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });

@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
-import { calculatePrice, PricingRules } from '../services/pricing';
+import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, PricingRules } from '../services/pricing';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -240,8 +240,27 @@ export class QatafoDatabase {
         service_fee_percent REAL NOT NULL DEFAULT 8,
         minimum_service_fee_tnd REAL NOT NULL DEFAULT 10,
         express_fee_tnd REAL NOT NULL DEFAULT 15,
+        exchange_buffer_percent REAL NOT NULL DEFAULT 3,
+        freight_per_kg_tnd REAL NOT NULL DEFAULT 13,
+        local_delivery_tnd REAL NOT NULL DEFAULT 8,
+        commission_percent REAL NOT NULL DEFAULT 10,
+        minimum_commission_tnd REAL NOT NULL DEFAULT 0,
+        rpd_percent REAL NOT NULL DEFAULT 3,
+        rpd_minimum_tnd REAL NOT NULL DEFAULT 10,
+        default_tva_rate REAL NOT NULL DEFAULT 0.19,
         updated_at TEXT NOT NULL,
         updated_by TEXT
+      );
+      CREATE TABLE IF NOT EXISTS customs_categories (
+        id TEXT PRIMARY KEY,
+        label TEXT NOT NULL,
+        keywords TEXT NOT NULL DEFAULT '[]',
+        customs_rate REAL NOT NULL DEFAULT 0,
+        tva_rate REAL NOT NULL DEFAULT 0.19,
+        default_weight_kg REAL NOT NULL DEFAULT 0.5,
+        status TEXT NOT NULL DEFAULT 'ALLOWED' CHECK(status IN ('ALLOWED','WARNING','RESTRICTED')),
+        display_order INTEGER NOT NULL DEFAULT 0,
+        updated_at TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS arrivals (
@@ -824,6 +843,7 @@ export class QatafoDatabase {
     this.db.exec(SETTINGS_TABLE_SQL);
     this.rebuildTableIfLegacy('settings', "'INTERFACE'", SETTINGS_TABLE_SQL, []);
     // فهرس عمود العربون — بعد الترقية (القواعد القديمة تحصل عليه داخل إعادة البناء)
+    this.ensurePricingEngine();
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC)');
     this.db.exec(`UPDATE settings SET setting_value='["CARD","FLOUCI","BANK_TRANSFER","POSTE"]',updated_at=datetime('now')
       WHERE setting_key='payment_methods' AND setting_value NOT LIKE '%CARD%'`);
@@ -1042,6 +1062,39 @@ export class QatafoDatabase {
     if (!columns.some((item) => item.name === column)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 
+  private ensurePricingEngine() {
+    this.ensureColumn('pricing_config', 'exchange_buffer_percent', 'REAL NOT NULL DEFAULT 3');
+    this.ensureColumn('pricing_config', 'freight_per_kg_tnd', 'REAL NOT NULL DEFAULT 13');
+    this.ensureColumn('pricing_config', 'local_delivery_tnd', 'REAL NOT NULL DEFAULT 8');
+    this.ensureColumn('pricing_config', 'commission_percent', 'REAL NOT NULL DEFAULT 10');
+    this.ensureColumn('pricing_config', 'minimum_commission_tnd', 'REAL NOT NULL DEFAULT 0');
+    this.ensureColumn('pricing_config', 'rpd_percent', 'REAL NOT NULL DEFAULT 3');
+    this.ensureColumn('pricing_config', 'rpd_minimum_tnd', 'REAL NOT NULL DEFAULT 10');
+    this.ensureColumn('pricing_config', 'default_tva_rate', 'REAL NOT NULL DEFAULT 0.19');
+    this.db.exec(`CREATE TABLE IF NOT EXISTS customs_categories (
+      id TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      keywords TEXT NOT NULL DEFAULT '[]',
+      customs_rate REAL NOT NULL DEFAULT 0,
+      tva_rate REAL NOT NULL DEFAULT 0.19,
+      default_weight_kg REAL NOT NULL DEFAULT 0.5,
+      status TEXT NOT NULL DEFAULT 'ALLOWED' CHECK(status IN ('ALLOWED','WARNING','RESTRICTED')),
+      display_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    )`);
+    const now = new Date().toISOString();
+    const insert = this.db.prepare(`INSERT OR IGNORE INTO customs_categories
+      (id,label,keywords,customs_rate,tva_rate,default_weight_kg,status,display_order,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?)`);
+    DEFAULT_CUSTOMS_CATEGORIES.forEach((category, index) => {
+      insert.run(category.id, category.label, JSON.stringify(category.keywords), category.customsRate,
+        category.tvaRate, category.defaultWeightKg, category.status, index + 1, now);
+    });
+    this.db.exec(`UPDATE settings SET setting_value='AYSONIC',updated_at='${now}'
+      WHERE setting_key IN ('company_name','company_legal_name') AND setting_value='AYROVI'`);
+    this.db.exec(`UPDATE admin_users SET name='AYSONIC Admin',updated_at='${now}' WHERE name='AYROVI Admin'`);
+  }
+
   private seedCoreData() {
     const now = new Date().toISOString();
     this.db.prepare(`
@@ -1056,7 +1109,7 @@ export class QatafoDatabase {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const settings = [
-      ['setting_name', 'GENERAL', 'company_name', 'AYROVI', 'STRING', 'Nom de la plateforme'],
+      ['setting_name', 'GENERAL', 'company_name', 'AYSONIC', 'STRING', 'Nom de la plateforme'],
       ['setting_email', 'GENERAL', 'company_email', 'contact@ayrovi.tn', 'STRING', 'Email'],
       ['setting_phone', 'GENERAL', 'company_phone', '+216 00 000 000', 'STRING', 'Téléphone'],
       ['setting_address', 'GENERAL', 'company_address', 'Tunis, Tunisie', 'STRING', 'Adresse'],
@@ -1068,8 +1121,8 @@ export class QatafoDatabase {
       ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(['CARD','FLOUCI','BANK_TRANSFER','POSTE']), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
       ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
-      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
-      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
+      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYSONIC ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
+      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYSONIC', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
       ['setting_bank_rib', 'PAYMENT', 'bank_rib', '', 'STRING', 'RIB pour le virement bancaire'],
       ['setting_poste_account', 'PAYMENT', 'poste_account', '', 'STRING', 'Compte courant postal (mandat poste)'],
       ['setting_flouci_number', 'PAYMENT', 'flouci_number', '', 'STRING', 'Numéro / identifiant Flouci'],
@@ -1230,6 +1283,22 @@ export class QatafoDatabase {
     this.db.close();
   }
 
+  public getCustomsCategories() {
+    return this.all<any>('SELECT * FROM customs_categories ORDER BY display_order,id').map((row) => {
+      let keywords: string[] = [];
+      try { keywords = JSON.parse(row.keywords); } catch { keywords = []; }
+      return {
+        id: String(row.id),
+        label: String(row.label || row.id),
+        keywords: Array.isArray(keywords) ? keywords.map((item) => String(item)) : [],
+        customsRate: Number(row.customs_rate) || 0,
+        tvaRate: Number(row.tva_rate) || 0.19,
+        defaultWeightKg: Number(row.default_weight_kg) || 0.5,
+        status: row.status === 'RESTRICTED' ? 'RESTRICTED' as const : row.status === 'WARNING' ? 'WARNING' as const : 'ALLOWED' as const,
+      };
+    });
+  }
+
   public getPricingRules(): PricingRules {
     const row = this.get<any>('SELECT * FROM pricing_config WHERE id = ?', 'default');
     if (!row) throw new Error('PRICING_CONFIG_MISSING');
@@ -1240,11 +1309,20 @@ export class QatafoDatabase {
       rateUSD: Number(row.rate_usd),
       rateGBP: Number(row.rate_gbp),
       rateJPY: Number(row.rate_jpy),
+      exchangeBufferPercent: Number(row.exchange_buffer_percent ?? 3),
+      freightPerKgTND: Number(row.freight_per_kg_tnd ?? 13),
+      localDeliveryTND: Number(row.local_delivery_tnd ?? 8),
+      commissionPercent: Number(row.commission_percent ?? 10),
+      minimumCommissionTND: Number(row.minimum_commission_tnd ?? 0),
+      rpdPercent: Number(row.rpd_percent ?? 3),
+      rpdMinimumTND: Number(row.rpd_minimum_tnd ?? 10),
+      defaultTvaRate: Number(row.default_tva_rate ?? 0.19),
+      expressFeeTND: Number(row.express_fee_tnd),
+      categories: this.getCustomsCategories(),
       customsFeePercent: Number(row.customs_fee_percent),
       shippingFeeTND: Number(row.shipping_fee_tnd),
       serviceFeePercent: Number(row.service_fee_percent),
       minimumServiceFeeTND: Number(row.minimum_service_fee_tnd),
-      expressFeeTND: Number(row.express_fee_tnd),
       updatedAt: row.updated_at,
     };
   }
@@ -1374,7 +1452,7 @@ export class QatafoDatabase {
     const rules = this.getPricingRules();
     const now = new Date().toISOString();
     const orderId = `order_${randomUUID()}`;
-    const orderNumber = `AYR-${randomInt(100000, 1000000)}`;
+    const orderNumber = `AYS-${randomInt(100000, 1000000)}`;
     const normalizedPhone = input.phone.replace(/\s+/g, ' ').trim();
 
     return this.transaction(() => {
@@ -1402,19 +1480,24 @@ export class QatafoDatabase {
       }
 
       const breakdowns = items.map((item) => {
-        const price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, { quantity: item.quantity });
-        if (!price) throw new Error('INVALID_CART_PRICE');
+        const price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+          quantity: item.quantity, includeLocalDelivery: false, title: item.title,
+        });
+        if (!price || price.restricted) throw new Error('INVALID_CART_PRICE');
         return { item, price };
       });
+      const localDelivery = orderLocalDelivery(rules);
       const totals = breakdowns.reduce((sum, current) => ({
         subtotal: sum.subtotal + current.price.convertedPriceTND,
         customs: sum.customs + current.price.customsFeeTND,
-        shipping: sum.shipping + current.price.shippingFeeTND,
+        shipping: sum.shipping + current.price.freightTND,
         service: sum.service + current.price.serviceFeeTND,
         express: sum.express + current.price.expressFeeTND,
         discount: sum.discount + current.price.discountTND,
         total: sum.total + current.price.totalTND,
       }), { subtotal: 0, customs: 0, shipping: 0, service: 0, express: 0, discount: 0, total: 0 });
+      totals.shipping = Math.round((totals.shipping + localDelivery) * 1000) / 1000;
+      totals.total = Math.round((totals.total + localDelivery) * 1000) / 1000;
       const stores = [...new Set(items.map((item) => item.store.toUpperCase()))];
       const supportedSources = new Set(['SHEIN','AMAZON','TEMU','ALIEXPRESS']);
       const source = stores.length > 1 ? 'MIXED' : (supportedSources.has(stores[0]) ? stores[0] : 'OTHER');

@@ -295,7 +295,9 @@ function recomputeProductPricing(db: QatafoDatabase, payload: Record<string, any
   const originalPrice = payload.original_price ?? existing?.original_price;
   const currency = payload.currency ?? existing?.currency;
   if (originalPrice === undefined || !currency) return;
-  const breakdown = calculatePrice(db.getPricingRules(), Number(originalPrice), String(currency), { express: false });
+  const breakdown = calculatePrice(db.getPricingRules(), Number(originalPrice), String(currency), {
+    express: false, title: String(payload.name || existing?.name || ''),
+  });
   if (!breakdown) throw new Error('Le calcul de prix est impossible avec ces données.');
   payload.converted_price = breakdown.convertedPriceTND;
   payload.customs_fee = breakdown.customsFeeTND;
@@ -1281,7 +1283,14 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   router.get('/pricing', requireAdmin(db, 'commerce:read'), (_req, res) => res.json({ success: true, data: db.getPricingRules() }));
   router.put('/pricing', requireAdmin(db, 'pricing:write'), (req, res) => {
     const current = db.getPricingRules();
-    const fields: Record<string, string> = { rateEUR: 'rate_eur', rateUSD: 'rate_usd', rateGBP: 'rate_gbp', rateJPY: 'rate_jpy', customsFeePercent: 'customs_fee_percent', shippingFeeTND: 'shipping_fee_tnd', serviceFeePercent: 'service_fee_percent', minimumServiceFeeTND: 'minimum_service_fee_tnd', expressFeeTND: 'express_fee_tnd' };
+    const fields: Record<string, string> = {
+      rateEUR: 'rate_eur', rateUSD: 'rate_usd', rateGBP: 'rate_gbp', rateJPY: 'rate_jpy',
+      exchangeBufferPercent: 'exchange_buffer_percent', freightPerKgTND: 'freight_per_kg_tnd',
+      localDeliveryTND: 'local_delivery_tnd', commissionPercent: 'commission_percent',
+      minimumCommissionTND: 'minimum_commission_tnd', rpdPercent: 'rpd_percent',
+      rpdMinimumTND: 'rpd_minimum_tnd', defaultTvaRate: 'default_tva_rate',
+      expressFeeTND: 'express_fee_tnd',
+    };
     const payload: Record<string, number> = {};
     for (const [apiField, dbField] of Object.entries(fields)) {
       if (req.body?.[apiField] === undefined) continue;
@@ -1296,7 +1305,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       updated = db.getPricingRules();
       const products = db.all<any>('SELECT id,original_price,currency FROM products');
       for (const product of products) {
-        const price = calculatePrice(updated, Number(product.original_price), String(product.currency));
+        const price = calculatePrice(updated, Number(product.original_price), String(product.currency), { title: String(product.name || '') });
         if (!price) throw new Error(`Tarification impossible pour le produit ${product.id}.`);
         db.run(`UPDATE products SET converted_price=?,customs_fee=?,shipping_fee=?,service_fee=?,final_price=?,updated_at=? WHERE id=?`,
           price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.totalTND, new Date().toISOString(), product.id);

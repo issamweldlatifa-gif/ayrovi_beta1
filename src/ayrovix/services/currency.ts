@@ -23,6 +23,7 @@ export function estimateTnd(rules: PricingRules, price: number | null, currency:
   const rate = getExchangeRate(rules, currency);
   if (!rate) return null;
   const priced = calculatePrice(rules, price, currency);
+  if (priced?.restricted) return null;
   if (!priced) return null;
   return {
     priceTnd: priced.totalTND,
