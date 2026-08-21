@@ -4,21 +4,22 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import {
   Bell, Eye, Heart, HeartFilled, Home, Menu, MessageCircle, Package, ShoppingBag,
-  ShoppingBagPlus, ShieldCheck, Truck, User,
+  ShoppingBagPlus, ShieldCheck, Truck, User, X, AYROVI_ICON_SIGNATURE,
 } from '../client/src/components/QatafoIcons';
 
 const core = [Home, ShoppingBag, Menu, Heart, User];
 
 describe('AYROVI icon system', () => {
-  it('renders the five reference silhouettes on the shared 24px monoline contract', () => {
+  it('renders the five reference silhouettes on the shared 24px 2px monoline contract', () => {
     for (const Icon of core) {
       const markup = renderToStaticMarkup(<Icon />);
       expect(markup).toContain('viewBox="0 0 24 24"');
       expect(markup).toContain('fill="none"');
       expect(markup).toContain('stroke="currentColor"');
-      expect(markup).toContain('stroke-width="1.5"');
+      expect(markup).toContain('stroke-width="2"');
       expect(markup).toContain('stroke-linecap="round"');
       expect(markup).toContain('stroke-linejoin="round"');
+      expect(markup).toContain(AYROVI_ICON_SIGNATURE);
     }
   });
 
@@ -28,21 +29,24 @@ describe('AYROVI icon system', () => {
       expect(markup).toContain('class="lucide');
       expect(markup).toContain('ayrovi-icon');
       expect(markup).toContain('data-ayrovi-icon=');
-      expect(markup).toContain('stroke-width="1.5"');
+      expect(markup).toContain('stroke-width="2"');
+      expect(markup).toContain(AYROVI_ICON_SIGNATURE);
     }
   });
 
-  it('keeps fill reserved for explicit selected states', () => {
+  it('keeps fill reserved for explicit selected states and leaves close without a signature', () => {
     expect(renderToStaticMarkup(<Heart />)).toContain('fill="none"');
     expect(renderToStaticMarkup(<HeartFilled />)).toContain('fill="currentColor"');
-    expect(renderToStaticMarkup(<ShoppingBagPlus />)).toContain('stroke-width="1.5"');
+    expect(renderToStaticMarkup(<ShoppingBagPlus />)).toContain('stroke-width="2"');
+    expect(renderToStaticMarkup(<X />)).not.toContain(AYROVI_ICON_SIGNATURE);
   });
 
-  it('publishes the global stroke token and non-scaling rendering rule', () => {
+  it('publishes the global 2px stroke token and signature color', () => {
     const tokens = readFileSync('client/src/design/tokens.css', 'utf8');
     const globalCss = readFileSync('client/src/index.css', 'utf8');
-    expect(tokens).toContain('--ayrovi-icon-stroke: 1.5');
-    expect(globalCss).toContain('stroke-width: var(--ayrovi-icon-stroke, 1.5)');
+    expect(tokens).toContain('--ayrovi-icon-stroke: 2');
+    expect(tokens).toContain('--ayrovi-icon-signature: #FF6A00');
+    expect(globalCss).toContain('stroke-width: var(--ayrovi-icon-stroke, 2)');
     expect(globalCss).toContain('vector-effect: non-scaling-stroke');
   });
 });

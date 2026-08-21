@@ -69,7 +69,7 @@
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: var(--ayrovi-icon-stroke, 1.5);
+  stroke-width: var(--ayrovi-icon-stroke, 2);
   shape-rendering: geometricPrecision;
 }
 
@@ -77,6 +77,12 @@
 .qatafo-icon > *,
 .lucide > * {
   vector-effect: non-scaling-stroke;
+}
+
+.ayrovi-icon [data-ayrovi-signature],
+.lucide [data-ayrovi-signature] {
+  fill: var(--ayrovi-icon-signature, #FF6A00) !important;
+  stroke: none !important;
 }
 
 /* Fill is semantic: only selected/liked/saved states opt into currentColor. */

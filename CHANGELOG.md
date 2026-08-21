@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.9.0] - 2026-08-21
+
+### Changed
+- AYROVI Icon System: 24×24, 2px round stroke, outline only, signature dot `#FF6A00`. Existing icons matched to the reference; UI layout unchanged.
+
 ## [3.8.9] - 2026-08-21
 
 ### Changed
