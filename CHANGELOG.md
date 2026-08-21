@@ -2,6 +2,14 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.10.4] - 2026-08-21
+
+### Added
+- `scripts/ayrovi-image-to-svg.py` traces an icon photo to 24×24 SVG and measures real stroke.
+
+### Changed
+- Profile icon is the traced crop: stroke **1.147** on the 24 grid (was 2, twice too thick).
+
 ## [3.10.3] - 2026-08-21
 
 ### Changed

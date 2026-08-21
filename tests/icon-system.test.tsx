@@ -8,7 +8,7 @@ import {
 } from '../client/src/components/QatafoIcons';
 import { AyroviAI, AyroviBack, AyroviMenu, AyroviProfile, AyroviSearch } from '../client/src/components/icons/ayrovi';
 
-const family = [AyroviMenu, AyroviBack, AyroviSearch, AyroviProfile, AyroviAI, Home, ShoppingBag, Heart, Eye, Package, X, Plus];
+const family = [AyroviMenu, AyroviBack, AyroviSearch, AyroviAI, Home, ShoppingBag, Heart, Eye, Package, X, Plus];
 
 describe('AYROVI icon system', () => {
   it('renders the family as independent 24px 2px SVG, never Lucide', () => {
@@ -28,6 +28,7 @@ describe('AYROVI icon system', () => {
     expect(renderToStaticMarkup(<AyroviBack />)).toContain(AYROVI_ICON_SIGNATURE);
     expect(renderToStaticMarkup(<AyroviSearch />)).toContain(AYROVI_ICON_SIGNATURE);
     expect(renderToStaticMarkup(<AyroviProfile />)).toContain(AYROVI_ICON_SIGNATURE);
+    expect(renderToStaticMarkup(<AyroviProfile />)).toContain('stroke-width="1.147"');
     expect(renderToStaticMarkup(<AyroviAI />)).not.toContain(AYROVI_ICON_SIGNATURE);
     expect(renderToStaticMarkup(<X />)).not.toContain(AYROVI_ICON_SIGNATURE);
     expect(renderToStaticMarkup(<Plus />)).not.toContain(AYROVI_ICON_SIGNATURE);

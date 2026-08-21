@@ -1,0 +1,28 @@
+[
+  {
+    "file": "docs/ayrovi-icon-refs/traced/Screenshot_20260821_060002.svg",
+    "strokeIn24": 1.147,
+    "strokePxSource": {
+      "strokePx": 5.6,
+      "strokePxP25": 5.6,
+      "strokePxP75": 6.0,
+      "samples": 188
+    },
+    "croppedPx": [
+      96,
+      102
+    ],
+    "orange": [
+      {
+        "cx": 19.283,
+        "cy": 19.97,
+        "r": 1.546,
+        "fillRatio": 1.001
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke"
+    ]
+  }
+]
