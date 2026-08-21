@@ -181,7 +181,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYSONIC Universal Shopping & Vision Platform',
-    version: '3.8.2',
+    version: '3.8.3',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });

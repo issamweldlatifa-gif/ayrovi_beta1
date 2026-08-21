@@ -180,7 +180,7 @@ export const FigLeaf = React.forwardRef<SVGSVGElement, QatafoIconProps>(({ class
   >
     <path d="M1.9 21.6h6.05L12.15 2.5H6.55L1.9 21.6Z" />
     <path d="M17.55 2.5H12.2L16.05 21.6h6.05L17.55 2.5Z" />
-    <circle cx="12" cy="15.55" r="2.15" />
+    <circle cx="12" cy="15.55" r="2.15" fill="#FE7003" />
   </svg>
 ));
 FigLeaf.displayName = 'FigLeaf';

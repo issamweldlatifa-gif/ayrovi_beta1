@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.3] - 2026-08-21
+
+### Changed
+- Official mark now uses the black A with the orange dot (transparent PNG, white A on dark admin).
+
 ## [3.8.2] - 2026-08-21
 
 ### Changed
