@@ -246,27 +246,17 @@
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--ayrovi-white) 30%, transparent);
-  border-radius: var(--ayrovi-radius-control);
-  color: var(--ayrovi-white);
-  background: var(--ayrovi-gradient);
-  box-shadow:
-    0 9px 22px -11px color-mix(in srgb, var(--ayrovi-primary-dark) 90%, transparent),
-    inset 0 1px 0 color-mix(in srgb, var(--ayrovi-white) 22%, transparent);
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
   isolation: isolate;
 }
 
 .assistant-motion-badge::before {
-  position: absolute;
-  width: 72%;
-  height: 72%;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ayrovi-primary-light) 56%, transparent);
-  content: '';
-  filter: blur(11px);
-  transform: translate(28%, -30%);
-  z-index: -1;
+  content: none;
 }
 
 .assistant-motion-badge[data-active='true'] {

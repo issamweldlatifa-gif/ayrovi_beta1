@@ -2,6 +2,13 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.6] - 2026-08-21
+
+### Changed
+- Assistant chrome is **SONIM** with subtitle “L'assistant IA d'AYROVI”.
+- Welcome screen no longer shows the large motion mark. Header logo is hidden. Chat avatar is transparent.
+- Home prompt cards are text-only (no icons).
+
 ## [3.8.5] - 2026-08-21
 
 ### Changed

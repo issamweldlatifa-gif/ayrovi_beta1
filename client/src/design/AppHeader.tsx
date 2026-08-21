@@ -16,6 +16,7 @@ interface AppHeaderProps {
   className?: string;
   logoUrl?: string;
   onLogoClick?: () => void;
+  showLogo?: boolean;
 }
 
 /** Shared AYROVI header: stable logo/title placement and one accessible action area. */
@@ -32,6 +33,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   className = '',
   logoUrl = '/media/logo-ayrovi.png',
   onLogoClick,
+  showLogo = true,
 }) => {
   const { tr, direction } = useLocale();
   const action = onBack || onClose;
@@ -41,13 +43,13 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     <header data-tone={tone} className={`interface-app-header ${sticky ? 'sticky top-0' : ''} z-40 border-b ${tone === 'dark' ? 'border-white/10 bg-ink' : 'border-line bg-white'} ${className}`}>
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
         <div className="flex min-w-0 items-center gap-3" dir="ltr">
-          {onLogoClick ? (
-            <button type="button" onClick={onLogoClick} className="shrink-0" aria-label="AYROVI">
-              <img src={logoUrl} alt="" className="h-10 w-10 object-contain sm:h-11 sm:w-11" />
+          {showLogo && (onLogoClick ? (
+            <button type="button" onClick={onLogoClick} className="shrink-0 bg-transparent" aria-label="AYROVI">
+              <img src={logoUrl} alt="" className="h-10 w-10 bg-transparent object-contain sm:h-11 sm:w-11" />
             </button>
           ) : (
-            <img src={logoUrl} alt="AYROVI" className="h-10 w-10 shrink-0 object-contain sm:h-11 sm:w-11" />
-          )}
+            <img src={logoUrl} alt="AYROVI" className="h-10 w-10 shrink-0 bg-transparent object-contain sm:h-11 sm:w-11" />
+          ))}
           <div className="min-w-0" dir={direction}>
             <strong className={`block truncate font-display text-base font-black sm:text-lg ${tone === 'dark' ? 'text-white' : 'text-ink'}`}>{title}</strong>
             {subtitle && <span className={`block truncate text-[10px] font-bold sm:text-xs ${tone === 'dark' ? 'text-white/60' : 'text-muted'}`}>{subtitle}</span>}

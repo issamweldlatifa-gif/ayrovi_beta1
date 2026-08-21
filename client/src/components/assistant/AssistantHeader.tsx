@@ -14,10 +14,11 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onBack
   const { tr } = useLocale();
   return (
     <AppHeader
-      title="SONIM BETA"
-      subtitle={tr('Assistant conversationnel', 'المساعد الذكي')}
+      title="SONIM"
+      subtitle={tr("L'assistant IA d'AYROVI", 'المساعد الذكي لـ AYROVI')}
       onBack={onBack}
-      actionLabel={tr('Fermer SONIM BETA', 'إغلاق SONIM BETA')}
+      actionLabel={tr('Fermer SONIM', 'إغلاق SONIM')}
+      showLogo={false}
       tone={isDark ? 'dark' : 'light'}
       actions={
         <Button variant="ghost" size="icon" onClick={onOpenHistory} className={isDark ? 'text-white hover:bg-white/10' : ''} aria-label={tr('Ouvrir l’historique des conversations', 'فتح سجل المحادثات')} title={tr('Historique', 'السجل')}>

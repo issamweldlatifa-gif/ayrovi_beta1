@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
-import { ArrowUpRight, Calculator, Camera, Check, Copy, Info, MessageCircle, MessageSquare, Package, PackageCheck, RefreshCw, Search, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
-import { AyroviMotion, AyroviMotionState } from '../AyroviMotion';
+import { ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
+import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
 import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
@@ -32,15 +32,15 @@ interface AssistantMessagesProps {
 }
 
 const primaryActions = [
-  { icon: Camera, title: ['Analyser une image', 'تحليل صورة'], subtitle: ['Produit ou capture d’écran', 'منتج أو لقطة شاشة'], prompt: ['Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.', 'اشرح لي عدسة AYROVIX واقترح فتحها.'] },
-  { icon: Calculator, title: ['Calculer un prix', 'حساب سعر'], subtitle: ['Estimez votre prix', 'تقدير السعر'], prompt: ['Je veux calculer le prix final d’un produit.', 'أريد حساب السعر النهائي لمنتج.'] },
-  { icon: Search, title: ['Rechercher un produit', 'البحث عن منتج'], subtitle: ['Trouvez et vérifiez', 'ابحث وتحقّق'], prompt: ['Aide-moi à rechercher un produit à acheter.', 'ساعدني في البحث عن منتج لشرائه.'] },
-  { icon: Package, title: ['Suivre une commande', 'تتبع طلب'], subtitle: ['Voir votre commande', 'عرض طلبك'], prompt: ['Je veux suivre ma commande.', 'أريد تتبع طلبي.'] },
+  { title: ['Analyser une image', 'تحليل صورة'], subtitle: ['Produit ou capture d’écran', 'منتج أو لقطة شاشة'], prompt: ['Explique-moi AYROVIX Lens et propose-moi de l’ouvrir.', 'اشرح لي عدسة AYROVIX واقترح فتحها.'] },
+  { title: ['Calculer un prix', 'حساب سعر'], subtitle: ['Estimez votre prix', 'تقدير السعر'], prompt: ['Je veux calculer le prix final d’un produit.', 'أريد حساب السعر النهائي لمنتج.'] },
+  { title: ['Rechercher un produit', 'البحث عن منتج'], subtitle: ['Trouvez et vérifiez', 'ابحث وتحقّق'], prompt: ['Aide-moi à rechercher un produit à acheter.', 'ساعدني في البحث عن منتج لشرائه.'] },
+  { title: ['Suivre une commande', 'تتبع طلب'], subtitle: ['Voir votre commande', 'عرض طلبك'], prompt: ['Je veux suivre ma commande.', 'أريد تتبع طلبي.'] },
 ] as const;
 
 const secondaryActions = [
-  { icon: Info, text: ['Découvrir AYROVI', 'اكتشف AYROVI'], prompt: ['Présente-moi les services AYROVI.', 'عرّفني بخدمات AYROVI.'] },
-  { icon: MessageCircle, text: ['Contacter le support', 'التواصل مع الدعم'], prompt: ['J’ai besoin d’aide du support AYROVI.', 'أحتاج إلى مساعدة دعم AYROVI.'] },
+  { text: ['Découvrir AYROVI', 'اكتشف AYROVI'], prompt: ['Présente-moi les services AYROVI.', 'عرّفني بخدمات AYROVI.'] },
+  { text: ['Contacter le support', 'التواصل مع الدعم'], prompt: ['J’ai besoin d’aide du support AYROVI.', 'أحتاج إلى مساعدة دعم AYROVI.'] },
 ] as const;
 
 const cleanAssistantText = (text: string) => text
@@ -117,9 +117,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
           <div className="assistant-welcome flex flex-1 flex-col">
             {/* Identité AI + accueil personnalisé */}
             <div className="flex flex-col items-center text-center">
-              <span className="text-brand"><AyroviMotion state="idle" size={92} /></span>
-              <p className={`mt-4 text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-brand-light' : 'text-brand'}`}>SONIM BETA</p>
-              <h2 className={`mt-2 text-[26px] font-black leading-tight tracking-tight sm:text-3xl ${isDark ? 'text-white' : 'text-ink'}`}>
+              <h2 className={`text-[26px] font-black leading-tight tracking-tight sm:text-3xl ${isDark ? 'text-white' : 'text-ink'}`}>
                 {tr('Bonjour', 'مرحبًا')}{customerFirstName ? ` ${customerFirstName}` : ''}
               </h2>
               <p className={`mt-1.5 text-sm font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{tr('Que souhaitez-vous faire aujourd’hui ?', 'ماذا تريد أن تفعل اليوم؟')}</p>
@@ -135,40 +133,33 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
 
             {/* Actions primaires — 2×2, même famille d’icônes */}
             <div className="mt-6 grid w-full grid-cols-2 gap-2.5">
-              {primaryActions.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.title[0]}
-                    type="button"
-                    onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                    className="assistant-quick-card min-h-[104px] rounded-2xl p-3.5 text-start text-ink transition active:scale-[0.98]"
-                  >
-                    <span className="assistant-quick-card__icon mb-2.5"><Icon size={18}/></span>
-                    <span className="relative z-[1] block text-xs font-extrabold leading-5">{item.title[isArabic ? 1 : 0]}</span>
-                    <span className="relative z-[1] mt-0.5 block text-[10px] font-semibold leading-4 text-muted">{item.subtitle[isArabic ? 1 : 0]}</span>
-                  </button>
-                );
-              })}
+              {primaryActions.map((item) => (
+                <button
+                  key={item.title[0]}
+                  type="button"
+                  onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
+                  className="assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-2xl p-4 text-start text-ink transition active:scale-[0.98]"
+                >
+                  <span className="relative z-[1] block text-sm font-extrabold leading-5">{item.title[isArabic ? 1 : 0]}</span>
+                  <span className="relative z-[1] mt-1 block text-[11px] font-semibold leading-4 text-muted">{item.subtitle[isArabic ? 1 : 0]}</span>
+                </button>
+              ))}
             </div>
 
             {/* Actions secondaires — poids visuel léger */}
             <div className="mt-4 flex items-center justify-center gap-1">
-              {secondaryActions.map((item, index) => {
-                const Icon = item.icon;
-                return (
-                  <React.Fragment key={item.text[0]}>
-                    {index > 0 && <span className={`mx-1.5 h-3.5 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`} aria-hidden="true" />}
-                    <button
-                      type="button"
-                      onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                      className={`flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[11px] font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}
-                    >
-                      <Icon size={13} />{item.text[isArabic ? 1 : 0]}
-                    </button>
-                  </React.Fragment>
-                );
-              })}
+              {secondaryActions.map((item, index) => (
+                <React.Fragment key={item.text[0]}>
+                  {index > 0 && <span className={`mx-1.5 h-3.5 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`} aria-hidden="true" />}
+                  <button
+                    type="button"
+                    onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
+                    className={`flex min-h-10 items-center rounded-full px-3 text-[11px] font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}
+                  >
+                    {item.text[isArabic ? 1 : 0]}
+                  </button>
+                </React.Fragment>
+              ))}
             </div>
           </div>
         ) : (
