@@ -1,13 +1,15 @@
 export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer'] as const;
 export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 
+export const AYROVI_FONT_STACK = "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+
 export const INTERFACE_FONT_PRESETS = [
   {
     id: 'ayrovi-modern',
     label: 'AYROVI Modern',
-    description: 'Titres affirmés et contenu très lisible.',
-    display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif",
-    body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif",
+    description: 'Inter + Noto Sans Arabic — identité unique latin/arabe.',
+    display: AYROVI_FONT_STACK,
+    body: AYROVI_FONT_STACK,
   },
   {
     id: 'system-clean',
@@ -163,8 +165,8 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     align: 'start',
     headingColor: '#1d2130',
     textColor: '#6b7280',
-    lineHeight: 1.6,
-    letterSpacing: -0.02,
+    lineHeight: 1.5,
+    letterSpacing: -0.011,
     headingScale: 1,
   },
   colors: {

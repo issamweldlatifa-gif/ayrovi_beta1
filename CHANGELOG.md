@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.9] - 2026-08-21
+
+### Changed
+- Unified typography: Inter + Noto Sans Arabic, weights 400–700, shared display/body/button/nav scale. No layout, color or spacing redesign.
+
 ## [3.8.8] - 2026-08-21
 
 ### Changed

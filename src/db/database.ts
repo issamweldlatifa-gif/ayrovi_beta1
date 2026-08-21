@@ -1107,7 +1107,8 @@ export class QatafoDatabase {
         .replace(/#7e57ff/gi, '#3f3f46')
         .replace(/#24104f/gi, '#111318')
         .replace(/"aiLabel":"AI"/g, '"aiLabel":"SONIM"')
-        .replace(/"preset":"violet"/g, '"preset":"noir"');
+        .replace(/"preset":"violet"/g, '"preset":"noir"')
+        .replace(/Plus Jakarta Sans/g, 'Inter');
       try {
         const parsed = JSON.parse(next);
         if (parsed?.colors) {
@@ -1201,7 +1202,7 @@ export class QatafoDatabase {
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
         ],
-        typography: { preset: 'ayrovi-modern', body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280', lineHeight: 1.6, letterSpacing: -0.02, headingScale: 1 },
+        typography: { preset: 'ayrovi-modern', body: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", display: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#fe7003', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#111318', announcementText: '#ffffff', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
         buttons: { background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#050505', borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
         icons: { library: 'ayrovi', color: '#111318', activeColor: '#fe7003', size: 20, style: 'outline' },

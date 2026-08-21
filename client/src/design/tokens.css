@@ -21,8 +21,37 @@
   --color-muted: var(--ayrovi-neutral-500);
   --color-surface: var(--ayrovi-neutral-50);
   --color-line: var(--ayrovi-neutral-200);
-  --font-display: var(--ayrovi-font-display);
-  --font-body: var(--ayrovi-font-body);
+  --font-sans: var(--font-primary);
+  --font-display: var(--font-primary);
+  --font-body: var(--font-primary);
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 700;
+  --font-weight-black: 700;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1.333;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.429;
+  --text-base: 1rem;
+  --text-base--line-height: 1.5;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.25;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.2;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 1.167;
+  --text-5xl: 2.25rem;
+  --text-5xl--line-height: 1.167;
+  --text-6xl: 2.25rem;
+  --text-6xl--line-height: 1.167;
+  --text-7xl: 2.25rem;
+  --text-7xl--line-height: 1.167;
   --radius-control: var(--ayrovi-radius-control);
   --radius-card: var(--ayrovi-radius-card);
   --shadow-card: var(--ayrovi-shadow-card);
@@ -54,8 +83,35 @@
     --ayrovi-whatsapp: #25d366;
     --ayrovi-whatsapp-hover: #1fae53;
     --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-neutral-950) 0%, var(--ayrovi-primary) 100%);
-    --ayrovi-font-display: 'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif;
-    --ayrovi-font-body: 'Inter', 'Segoe UI', Helvetica, Arial, sans-serif;
+    --font-primary: 'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --text-display: 2.25rem;
+    --text-display--line-height: 2.5rem;
+    --text-h1: 1.875rem;
+    --text-h1--line-height: 2.25rem;
+    --text-h2: 1.5rem;
+    --text-h2--line-height: 1.875rem;
+    --text-h3: 1.25rem;
+    --text-h3--line-height: 1.625rem;
+    --text-body-lg: 1.125rem;
+    --text-body-lg--line-height: 1.6875rem;
+    --text-body: 1rem;
+    --text-body--line-height: 1.5rem;
+    --text-body-md: 0.9375rem;
+    --text-body-md--line-height: 1.375rem;
+    --text-small: 0.875rem;
+    --text-small--line-height: 1.25rem;
+    --text-caption: 0.75rem;
+    --text-caption--line-height: 1rem;
+    --text-button: 0.9375rem;
+    --text-button--line-height: 1.25rem;
+    --text-nav: 0.875rem;
+    --text-nav--line-height: 1.25rem;
+    --ayrovi-font-display: var(--font-primary);
+    --ayrovi-font-body: var(--font-primary);
     --ayrovi-radius-control: 0.75rem;
     --ayrovi-radius-card: 1rem;
     --ayrovi-icon-stroke: 1.5;
@@ -80,5 +136,24 @@
     --hostinger-purple: var(--ayrovi-primary);
     --hostinger-purple-dark: var(--ayrovi-primary-dark);
     --hostinger-purple-light: var(--ayrovi-primary-light);
+  }
+
+  @media (min-width: 768px) {
+    :root {
+      --text-display: 3rem;
+      --text-display--line-height: 3.25rem;
+      --text-h1: 2.25rem;
+      --text-h1--line-height: 2.625rem;
+      --text-h2: 1.75rem;
+      --text-h2--line-height: 2.125rem;
+      --text-h3: 1.375rem;
+      --text-h3--line-height: 1.75rem;
+      --text-5xl: 3rem;
+      --text-5xl--line-height: 1.083;
+      --text-6xl: 3rem;
+      --text-6xl--line-height: 1.083;
+      --text-7xl: 3rem;
+      --text-7xl--line-height: 1.083;
+    }
   }
 }

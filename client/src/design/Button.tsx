@@ -20,7 +20,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', className?: string) {
   return twMerge(clsx(
-    'inline-flex items-center justify-center gap-2 rounded-control font-extrabold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+    'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
     variantClasses[variant],
     sizeClasses[size],
     className,

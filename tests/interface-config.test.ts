@@ -18,6 +18,13 @@ describe('واجهتي full interface configuration', () => {
     expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#111318');
   });
 
+  test('uses a single Inter / Noto Sans Arabic stack on the default preset', () => {
+    expect(DEFAULT_INTERFACE_CONFIG.typography.display).toContain('Inter');
+    expect(DEFAULT_INTERFACE_CONFIG.typography.body).toContain('Noto Sans Arabic');
+    expect(DEFAULT_INTERFACE_CONFIG.typography.display).toBe(DEFAULT_INTERFACE_CONFIG.typography.body);
+    expect(INTERFACE_FONT_PRESETS[0].display).not.toContain('Plus Jakarta');
+  });
+
   test('publishes exactly five font presets and five icon models', () => {
     expect(INTERFACE_FONT_PRESETS).toHaveLength(5);
     expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).size).toBe(5);

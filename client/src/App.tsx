@@ -124,6 +124,7 @@ export const App: React.FC = () => {
         const { colors, typography, buttons, icons, navigation, layout } = visual;
         root.style.setProperty('--ayrovi-font-body', typography.body);
         root.style.setProperty('--ayrovi-font-display', typography.display);
+        root.style.setProperty('--font-primary', typography.body);
         root.style.setProperty('--ayrovi-base-font-size', `${typography.baseSize}px`);
         root.style.setProperty('--ayrovi-body-line-height', String(typography.lineHeight));
         root.style.setProperty('--ayrovi-letter-spacing', `${typography.letterSpacing}em`);

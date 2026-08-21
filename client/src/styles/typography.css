@@ -1,0 +1,86 @@
+/* AYROVI typography system — Inter + Noto Sans Arabic. Weights 400–700 only. */
+html {
+  font-family: var(--font-primary);
+}
+
+body {
+  font-family: var(--font-primary);
+  font-size: var(--text-body);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--text-body--line-height);
+  letter-spacing: -0.011em;
+}
+
+h1, .ay-text-h1 {
+  font-family: var(--font-primary);
+  font-size: var(--text-h1);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--text-h1--line-height);
+  letter-spacing: -0.022em;
+}
+
+h2, .ay-text-h2 {
+  font-family: var(--font-primary);
+  font-size: var(--text-h2);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--text-h2--line-height);
+  letter-spacing: -0.02em;
+}
+
+h3, .ay-text-h3 {
+  font-family: var(--font-primary);
+  font-size: var(--text-h3);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-h3--line-height);
+  letter-spacing: -0.016em;
+}
+
+.ay-text-display {
+  font-family: var(--font-primary);
+  font-size: var(--text-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--text-display--line-height);
+  letter-spacing: -0.025em;
+}
+
+.ay-text-body-lg { font-size: var(--text-body-lg); line-height: var(--text-body-lg--line-height); font-weight: var(--font-weight-regular); }
+.ay-text-body { font-size: var(--text-body); line-height: var(--text-body--line-height); font-weight: var(--font-weight-regular); }
+.ay-text-body-md { font-size: var(--text-body-md); line-height: var(--text-body-md--line-height); font-weight: var(--font-weight-medium); }
+.ay-text-small { font-size: var(--text-small); line-height: var(--text-small--line-height); font-weight: var(--font-weight-regular); }
+.ay-text-caption { font-size: var(--text-caption); line-height: var(--text-caption--line-height); font-weight: var(--font-weight-regular); }
+.ay-text-button { font-size: var(--text-button); line-height: var(--text-button--line-height); font-weight: var(--font-weight-semibold); }
+.ay-text-nav { font-size: var(--text-nav); line-height: var(--text-nav--line-height); font-weight: var(--font-weight-medium); }
+.ay-text-price { font-size: var(--text-body-lg); line-height: var(--text-body--line-height); font-weight: var(--font-weight-semibold); }
+
+.font-black,
+.font-extrabold {
+  font-weight: var(--font-weight-bold);
+}
+
+.ay-btn-primary,
+.ay-btn-secondary,
+.ay-btn-cta,
+.ay-runtime-button--primary,
+.ay-runtime-button--secondary,
+.ay-runtime-button--ghost {
+  font-size: var(--text-button);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--text-button--line-height);
+}
+
+.ayrovi-glass-bottom-nav {
+  font-family: var(--font-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.admin-shell,
+.admin-login,
+.admin-boot {
+  font-family: var(--font-primary);
+}
+
+.admin-page-header h1,
+.admin-login-box h2,
+.admin-login-brand h1 {
+  font-weight: var(--font-weight-bold);
+}

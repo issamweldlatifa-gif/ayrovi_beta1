@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 @import "./design/tokens.css";
+@import "./styles/typography.css";
 @import "./styles/interface-runtime.css";
 @import "./styles/ayrovix-theme.css";
 @import "./styles/checkout-flow.css";
@@ -26,8 +27,8 @@
     padding: 0;
     background-color: var(--ayrovi-white);
     color: var(--ayrovi-ink);
-    font-family: var(--ayrovi-font);
-    letter-spacing: -0.02em;
+    font-family: var(--font-primary);
+    letter-spacing: -0.011em;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
