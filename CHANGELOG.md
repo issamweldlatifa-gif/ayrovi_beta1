@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.10.3] - 2026-08-21
+
+### Changed
+- Profile icon is larger in the 24 grid and uses a scaling 2px stroke so it is no longer small and heavy. Header account control is 24px.
+
 ## [3.10.2] - 2026-08-21
 
 ### Changed

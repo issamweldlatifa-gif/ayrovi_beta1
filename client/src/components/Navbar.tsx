@@ -60,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           aria-label={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
           title={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
         >
-          <User className="h-5 w-5" />
+          <User className="h-6 w-6" />
           {isAuthenticated && <span className="absolute bottom-2 end-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand" />}
         </Button>
       </>}

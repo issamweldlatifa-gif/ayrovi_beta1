@@ -79,6 +79,12 @@
   vector-effect: non-scaling-stroke;
 }
 
+/* Profile: stroke must scale with the 24 grid — non-scaling made it small and heavy. */
+.ayrovi-icon[data-ayrovi-icon='Profile'],
+.ayrovi-icon[data-ayrovi-icon='Profile'] > * {
+  vector-effect: none !important;
+}
+
 html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   fill: none !important;
 }
