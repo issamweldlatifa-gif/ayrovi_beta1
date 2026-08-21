@@ -49,3 +49,15 @@ export function AyroviSignature({ cx, cy }: { cx: number; cy: number }) {
     />
   );
 }
+
+export function createAyroviIcon(name: string, body: React.ReactNode) {
+  const Icon = React.forwardRef<SVGSVGElement, AyroviIconProps>(function AyroviNamed(props, ref) {
+    return (
+      <AyroviSvg ref={ref} data-ayrovi-icon={name} {...props}>
+        {body}
+      </AyroviSvg>
+    );
+  });
+  Icon.displayName = `Ayrovi${name}`;
+  return Icon;
+}

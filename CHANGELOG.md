@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.10.0] - 2026-08-21
+
+### Changed
+- AYROVI Icon System applied: public and Admin icons are independent 24×24 SVG components matching the approved reference sheets. Lucide is no longer the AYROVI geometry source. Orange `#FF6A00` is a signature accent only where the reference draws it (Fermer, Ajouter and AI have none).
+
 ## [3.9.1] - 2026-08-21
 
 ### Changed
