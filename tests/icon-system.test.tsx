@@ -6,19 +6,50 @@ import {
   Bell, Eye, Heart, HeartFilled, Home, Menu, MessageCircle, Package, ShoppingBag,
   ShoppingBagPlus, ShieldCheck, Truck, User, X, AYROVI_ICON_SIGNATURE,
 } from '../client/src/components/QatafoIcons';
+import { AyroviAI, AyroviBack, AyroviMenu, AyroviProfile, AyroviSearch } from '../client/src/components/icons/ayrovi';
 
-const core = [Home, ShoppingBag, Menu, Heart, User];
+const rebuilt: Array<[string, React.ComponentType]> = [
+  ['Menu', AyroviMenu],
+  ['Retour', AyroviBack],
+  ['Search', AyroviSearch],
+  ['Profile', AyroviProfile],
+  ['AI', AyroviAI],
+];
 
 describe('AYROVI icon system', () => {
-  it('renders the five reference silhouettes on the shared 24px 2px monoline contract', () => {
-    for (const Icon of core) {
+  it('rebuilds the first five icons as independent 24px 2px SVG components, not Lucide wrappers', () => {
+    for (const [name, Icon] of rebuilt) {
+      const markup = renderToStaticMarkup(<Icon />);
+      expect(markup, name).toContain('viewBox="0 0 24 24"');
+      expect(markup, name).toContain('fill="none"');
+      expect(markup, name).toContain('stroke="currentColor"');
+      expect(markup, name).toContain('stroke-width="2"');
+      expect(markup, name).toContain('stroke-linecap="round"');
+      expect(markup, name).toContain('stroke-linejoin="round"');
+      expect(markup, name).toContain('ayrovi-icon');
+      expect(markup, name).not.toContain('class="lucide');
+    }
+  });
+
+  it('places the orange signature only where the reference draws it', () => {
+    const menu = renderToStaticMarkup(<AyroviMenu />);
+    expect(menu.match(new RegExp(AYROVI_ICON_SIGNATURE, 'g'))).toHaveLength(3);
+    expect(renderToStaticMarkup(<AyroviBack />)).toContain(AYROVI_ICON_SIGNATURE);
+    expect(renderToStaticMarkup(<AyroviSearch />)).toContain(AYROVI_ICON_SIGNATURE);
+    expect(renderToStaticMarkup(<AyroviProfile />)).toContain(AYROVI_ICON_SIGNATURE);
+    expect(renderToStaticMarkup(<AyroviAI />)).not.toContain(AYROVI_ICON_SIGNATURE);
+  });
+
+  it('wires Menu and Profile aliases to the new AYROVI components', () => {
+    expect(renderToStaticMarkup(<Menu />)).toBe(renderToStaticMarkup(<AyroviMenu />));
+    expect(renderToStaticMarkup(<User />)).toBe(renderToStaticMarkup(<AyroviProfile />));
+  });
+
+  it('keeps remaining public symbols on the shared 24px 2px monoline contract', () => {
+    for (const Icon of [Home, ShoppingBag, Heart]) {
       const markup = renderToStaticMarkup(<Icon />);
       expect(markup).toContain('viewBox="0 0 24 24"');
-      expect(markup).toContain('fill="none"');
-      expect(markup).toContain('stroke="currentColor"');
       expect(markup).toContain('stroke-width="2"');
-      expect(markup).toContain('stroke-linecap="round"');
-      expect(markup).toContain('stroke-linejoin="round"');
       expect(markup).toContain(AYROVI_ICON_SIGNATURE);
     }
   });

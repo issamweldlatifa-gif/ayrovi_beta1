@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eye, LensBox, MessageCircle } from './QatafoIcons';
+import { Eye, LensBox, Sparkles } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
@@ -19,7 +19,7 @@ interface BottomNavBarProps {
 }
 
 const ICON_SETS: Record<InterfaceIconLibrary, [React.ElementType, React.ElementType, React.ElementType]> = {
-  ayrovi: [LensBox, MessageCircle, Eye],
+  ayrovi: [LensBox, Sparkles, Eye],
   lucide: [LucideScanSearch, LucideBot, LucideEye],
   fontawesome: [FaCamera, FaRobot, FaEye],
   bootstrap: [BsCamera, BsChatDots, BsEye],

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   X, User, Package, Percent, MessageSquare, FileText, MessageCircle, LensBox, Eye,
-  Grid, Heart, ShoppingBag, MapPin, Info, Globe2,
+  Grid, Heart, ShoppingBag, MapPin, Info, Globe2, Sparkles,
 } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useLocale } from '../i18n/LocaleContext';
@@ -100,7 +100,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
             </MenuGroup>
 
             <MenuGroup title={tr('Suite IA', 'مجموعة الذكاء الاصطناعي')}>
-              <MenuItem icon={MessageCircle} label="AYROVI AI" onClick={onOpenAssistant} />
+              <MenuItem icon={Sparkles} label="AYROVI AI" onClick={onOpenAssistant} />
               <MenuItem icon={LensBox} label="AYROVIX Lens" onClick={onOpenLens} />
               <MenuItem icon={Eye} label="AYVISI Vision" badge={tr('Bientôt', 'قريبًا')} onClick={() => navigation.navigate([{ id: 'app:vision' }])} />
             </MenuGroup>

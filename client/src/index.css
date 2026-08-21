@@ -85,6 +85,11 @@
   stroke: none !important;
 }
 
+.ayrovi-icon [data-ayrovi-accent] {
+  stroke: var(--ayrovi-icon-signature, #FF6A00) !important;
+  fill: none !important;
+}
+
 /* Fill is semantic: only selected/liked/saved states opt into currentColor. */
 .qatafo-icon[fill='currentColor'],
 .lucide[fill='currentColor'],

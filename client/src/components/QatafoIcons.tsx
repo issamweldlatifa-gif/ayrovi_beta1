@@ -1,12 +1,20 @@
 import * as React from 'react';
 import * as Lucide from 'lucide-react';
+import {
+  AYROVI_ICON_SIGNATURE as AYROVI_SIGNATURE_TOKEN,
+  AyroviAI,
+  AyroviBack,
+  AyroviMenu,
+  AyroviProfile,
+  AyroviSearch,
+} from './icons/ayrovi';
 
 export type QatafoIconProps = React.ComponentPropsWithoutRef<typeof Lucide.Activity>;
 type AyroviIconNode = Parameters<typeof Lucide.createLucideIcon>[1];
 type LucideComponent = typeof Lucide.Activity;
 
 const AYROVI_STROKE = 2;
-export const AYROVI_ICON_SIGNATURE = '#FF6A00';
+export const AYROVI_ICON_SIGNATURE = AYROVI_SIGNATURE_TOKEN;
 const iconClassName = (className?: string) => ['ayrovi-icon', className].filter(Boolean).join(' ');
 
 type SignatureDot = { cx: number; cy: number };
@@ -92,11 +100,7 @@ export const ShoppingBagPlus = createAyroviIcon('ShoppingBagPlus', [
   ['path', { d: 'M12 13.25v4.5M9.75 15.5h4.5', key: 'bag-plus-mark' }],
 ], { cx: 16.6, cy: 16.8 });
 
-export const Menu = createAyroviIcon('Menu', [
-  ['path', { d: 'M4 7h13.2', key: 'menu-top' }],
-  ['path', { d: 'M4 12h13.2', key: 'menu-middle' }],
-  ['path', { d: 'M4 17h13.2', key: 'menu-bottom' }],
-], [{ cx: 19.4, cy: 7 }, { cx: 19.4, cy: 12 }, { cx: 19.4, cy: 17 }]);
+export const Menu = AyroviMenu;
 
 export const Heart = createAyroviIcon('Heart', [
   ['path', {
@@ -105,10 +109,7 @@ export const Heart = createAyroviIcon('Heart', [
   }],
 ], { cx: 16.8, cy: 16.6 });
 
-export const User = createAyroviIcon('User', [
-  ['circle', { cx: '12', cy: '7.5', r: '3.75', key: 'user-head' }],
-  ['path', { d: 'M4.75 20.25c.95-4.18 3.5-6.35 7.25-6.35s6.3 2.17 7.25 6.35', key: 'user-shoulders' }],
-], { cx: 16.6, cy: 18.4 });
+export const User = AyroviProfile;
 
 /** High-visibility public symbols redrawn as an AYROVI family. */
 export const Eye = createAyroviIcon('Eye', [
@@ -147,10 +148,7 @@ export const Truck = createAyroviIcon('Truck', [
   ['circle', { cx: '18', cy: '17.75', r: '1.75', key: 'truck-wheel-right' }],
 ], { cx: 20.2, cy: 9.4 });
 
-export const Sparkles = createAyroviIcon('Sparkles', [
-  ['path', { d: 'M10.5 2.75 11.75 7a5.2 5.2 0 0 0 3.5 3.5l4.25 1.25L15.25 13a5.2 5.2 0 0 0-3.5 3.5l-1.25 4.25-1.25-4.25a5.2 5.2 0 0 0-3.5-3.5L1.5 11.75l4.25-1.25A5.2 5.2 0 0 0 9.25 7l1.25-4.25Z', key: 'spark-main' }],
-  ['path', { d: 'm18.5 2.5.45 1.55L20.5 4.5l-1.55.45L18.5 6.5l-.45-1.55-1.55-.45 1.55-.45.45-1.55Z', key: 'spark-small' }],
-], { cx: 18.6, cy: 4.6 });
+export const Sparkles = AyroviAI;
 
 export const ArrowRightLeft = createAyroviIcon('ArrowRightLeft', [
   ['path', { d: 'M4 8h15M16 5l3 3-3 3M20 16H5M8 13l-3 3 3 3', key: 'swap' }],
@@ -182,10 +180,7 @@ export const Globe2 = createAyroviIcon('Globe2', [
   ['path', { d: 'M2.75 12h18.5M12 2.75c2.45 2.55 3.75 5.65 3.75 9.25S14.45 18.7 12 21.25C9.55 18.7 8.25 15.6 8.25 12S9.55 5.3 12 2.75Z', key: 'globe-grid' }],
 ], { cx: 17.8, cy: 17.6 });
 
-export const Search = createAyroviIcon('Search', [
-  ['circle', { cx: '10.75', cy: '10.75', r: '6.75', key: 'search-lens' }],
-  ['path', { d: 'm15.75 15.75 4.25 4.25', key: 'search-handle' }],
-], { cx: 19.6, cy: 19.6 });
+export const Search = AyroviSearch;
 
 export const X = createAyroviIcon('X', [
   ['path', { d: 'm5 5 14 14M19 5 5 19', key: 'close' }],
@@ -247,7 +242,7 @@ export const Grid = createAyroviIcon('Grid', [
  */
 export const AlertCircle = adaptAyroviIcon('AlertCircle', Lucide.AlertCircle, { cx: 16.8, cy: 17.4 });
 export const ArrowDown = adaptAyroviIcon('ArrowDown', Lucide.ArrowDown, { cx: 16.6, cy: 18.4 });
-export const ArrowLeft = adaptAyroviIcon('ArrowLeft', Lucide.ArrowLeft, { cx: 6.2, cy: 16.6 });
+export const ArrowLeft = AyroviBack;
 export const ArrowRight = adaptAyroviIcon('ArrowRight', Lucide.ArrowRight);
 export const ArrowUp = adaptAyroviIcon('ArrowUp', Lucide.ArrowUp);
 export const ArrowUpDown = adaptAyroviIcon('ArrowUpDown', Lucide.ArrowUpDown);

@@ -2,6 +2,13 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.9.1] - 2026-08-21
+
+### Changed
+- First five AYROVI icons rebuilt as independent SVG components in `client/src/components/icons/ayrovi/`: Menu, Retour, Search, Profile, AI.
+- Geometry, stroke and signature placement follow the attached reference sheets. The orange dot is an accent only — AI has none.
+- Public chrome uses the new Menu, Profile, Retour and AI marks. Remaining icons are unchanged pending review.
+
 ## [3.9.0] - 2026-08-21
 
 ### Changed

@@ -1,0 +1,51 @@
+import * as React from 'react';
+
+/** AYROVI Icon System tokens. Orange is a signature accent, never the icon itself. */
+export const AYROVI_ICON_SIZE = 24;
+export const AYROVI_STROKE = 2;
+export const AYROVI_CORNER = 3;
+export const AYROVI_ICON_SIGNATURE = '#FF6A00';
+export const AYROVI_SIGNATURE_RADIUS = 1.45;
+
+export type AyroviIconProps = React.SVGProps<SVGSVGElement> & {
+  size?: number | string;
+  title?: string;
+};
+
+export const AyroviSvg = React.forwardRef<SVGSVGElement, AyroviIconProps>(
+  ({ size = AYROVI_ICON_SIZE, strokeWidth = AYROVI_STROKE, className, color, title, children, ...props }, ref) => (
+    <svg
+      ref={ref}
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color || 'currentColor'}
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      overflow="visible"
+      className={['ayrovi-icon', className].filter(Boolean).join(' ')}
+      aria-hidden={title ? undefined : true}
+      {...props}
+    >
+      {title ? <title>{title}</title> : null}
+      {children}
+    </svg>
+  ),
+);
+AyroviSvg.displayName = 'AyroviSvg';
+
+export function AyroviSignature({ cx, cy }: { cx: number; cy: number }) {
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={AYROVI_SIGNATURE_RADIUS}
+      fill={AYROVI_ICON_SIGNATURE}
+      stroke="none"
+      data-ayrovi-signature="true"
+    />
+  );
+}
