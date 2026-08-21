@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Calculator, Camera, Link2, ArrowUpRight, ArrowRight, Image as ImageIcon, Loader2, Clipboard, PackageCheck } from './QatafoIcons';
+import { X, Camera, Link2, ArrowUpRight, ArrowRight, Loader2, Clipboard, PackageCheck } from './QatafoIcons';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -411,7 +411,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       </>
                     ) : (
                       <>
-                        <ImageIcon className="w-3.5 h-3.5 text-brand" />
                         <span>Sélectionner une photo</span>
                       </>
                     )}
@@ -510,7 +509,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-ink flex items-center gap-1.5">
-                    <Calculator className="w-4 h-4 text-brand" />
                     <span>Prix original sur le site :</span>
                   </span>
                   <span className="text-xs font-extrabold text-brand">

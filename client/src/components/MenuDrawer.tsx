@@ -1,8 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import {
-  X, User, Package, Percent, MessageSquare, FileText, MessageCircle, LensBox, Eye,
-  Grid, Heart, ShoppingBag, MapPin, Info, Globe2, Sparkles,
-} from './QatafoIcons';
+import { X, User } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useLocale } from '../i18n/LocaleContext';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -20,15 +17,13 @@ interface MenuDrawerProps {
 }
 
 interface MenuItemProps {
-  icon: React.ComponentType<{ className?: string }>;
   label: string;
   onClick: () => void;
   badge?: string;
 }
 
-const MenuItem: React.FC<MenuItemProps> = ({ icon: Icon, label, onClick, badge }) => (
+const MenuItem: React.FC<MenuItemProps> = ({ label, onClick, badge }) => (
   <button type="button" onClick={onClick} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-brand/5 hover:text-brand-dark">
-    <Icon className="h-4 w-4 shrink-0 text-brand" />
     <span className="min-w-0 flex-1">{label}</span>
     {badge && <span className="rounded-full bg-accent px-2 py-0.5 text-[9px] font-black text-ink">{badge}</span>}
   </button>
@@ -93,37 +88,36 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
 
           <div className="flex-1 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
             <MenuGroup title={tr('Découvrir', 'استكشف')}>
-              <MenuItem icon={Package} label={tr('Arrivages', 'المنتجات القادمة')} onClick={() => openCms('arrivals')} />
-              <MenuItem icon={Percent} label={tr('Promotions', 'العروض')} onClick={() => openCms('promotions')} />
-              <MenuItem icon={MessageSquare} label={tr('Social', 'التواصل')} onClick={() => openCms('stories')} />
-              <MenuItem icon={FileText} label="مجلتي" onClick={() => openCms('news')} />
+              <MenuItem label={tr('Arrivages', 'المنتجات القادمة')} onClick={() => openCms('arrivals')} />
+              <MenuItem label={tr('Promotions', 'العروض')} onClick={() => openCms('promotions')} />
+              <MenuItem label={tr('Social', 'التواصل')} onClick={() => openCms('stories')} />
+              <MenuItem label="مجلتي" onClick={() => openCms('news')} />
             </MenuGroup>
 
             <MenuGroup title={tr('Suite IA', 'مجموعة الذكاء الاصطناعي')}>
-              <MenuItem icon={Sparkles} label="AYROVI AI" onClick={onOpenAssistant} />
-              <MenuItem icon={LensBox} label="AYROVIX Lens" onClick={onOpenLens} />
-              <MenuItem icon={Eye} label="AYVISI Vision" badge={tr('Bientôt', 'قريبًا')} onClick={() => navigation.navigate([{ id: 'app:vision' }])} />
+              <MenuItem label="AYROVI AI" onClick={onOpenAssistant} />
+              <MenuItem label="AYROVIX Lens" onClick={onOpenLens} />
+              <MenuItem label="AYVISI Vision" badge={tr('Bientôt', 'قريبًا')} onClick={() => navigation.navigate([{ id: 'app:vision' }])} />
             </MenuGroup>
 
             <MenuGroup title={tr('Catalogue', 'الكتالوج')}>
-              <MenuItem icon={Grid} label={tr('Tous les produits', 'كل المنتجات')} onClick={() => openCms('products')} />
+              <MenuItem label={tr('Tous les produits', 'كل المنتجات')} onClick={() => openCms('products')} />
             </MenuGroup>
 
             <MenuGroup title={tr('Mon compte', 'حسابي')}>
-              <MenuItem icon={Package} label={tr('Mes commandes', 'طلباتي')} onClick={() => onOpenAccount('orders')} />
-              <MenuItem icon={Heart} label={tr('Mes favoris', 'المفضلة')} onClick={() => onOpenAccount('favorites')} />
-              <MenuItem icon={ShoppingBag} label={tr('Mon panier', 'سلّتي')} onClick={() => onOpenAccount('cart')} />
-              <MenuItem icon={MapPin} label={tr('Mes adresses', 'عناويني')} onClick={() => onOpenAccount('addresses')} />
+              <MenuItem label={tr('Mes commandes', 'طلباتي')} onClick={() => onOpenAccount('orders')} />
+              <MenuItem label={tr('Mes favoris', 'المفضلة')} onClick={() => onOpenAccount('favorites')} />
+              <MenuItem label={tr('Mon panier', 'سلّتي')} onClick={() => onOpenAccount('cart')} />
+              <MenuItem label={tr('Mes adresses', 'عناويني')} onClick={() => onOpenAccount('addresses')} />
             </MenuGroup>
 
             <MenuGroup title={tr('Aide et informations', 'المساعدة والمعلومات')}>
               {supportUrl
-                ? <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-brand/5"><MessageCircle className="h-4 w-4 text-brand" />{tr('Contacter le support', 'التواصل مع الدعم')}</a>
-                : <MenuItem icon={MessageCircle} label={tr('Contacter le support via AYROVI AI', 'التواصل مع الدعم عبر AYROVI AI')} onClick={onOpenAssistant} />}
-              <MenuItem icon={Info} label={tr('À propos d’AYROVI', 'حول AYROVI')} onClick={openAbout} />
-              <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-brand/5"><FileText className="h-4 w-4 text-brand" />{tr('Conditions de vente et retours', 'شروط البيع والإرجاع')}</a>
+                ? <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-brand/5">{tr('Contacter le support', 'التواصل مع الدعم')}</a>
+                : <MenuItem label={tr('Contacter le support via AYROVI AI', 'التواصل مع الدعم عبر AYROVI AI')} onClick={onOpenAssistant} />}
+              <MenuItem label={tr('À propos d’AYROVI', 'حول AYROVI')} onClick={openAbout} />
+              <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-brand/5">{tr('Conditions de vente et retours', 'شروط البيع والإرجاع')}</a>
               <div className="mt-2 flex items-center gap-2 rounded-card border border-line p-2">
-                <Globe2 className="ms-1 h-4 w-4 text-brand" />
                 <button type="button" onClick={() => setLocale('fr')} className={buttonClasses(locale === 'fr' ? 'primary' : 'ghost', 'sm', 'flex-1')}>FR</button>
                 <button type="button" onClick={() => setLocale('ar')} className={buttonClasses(locale === 'ar' ? 'primary' : 'ghost', 'sm', 'flex-1')}>AR</button>
               </div>

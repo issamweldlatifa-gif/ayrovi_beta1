@@ -19,7 +19,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
   });
 
   it('keeps the white public header sticky without creating a horizontal scroll container', () => {
-    expect(navbarSource).toContain('className="public-site-header"');
+    expect(navbarSource).toContain('public-site-header');
     expect(runtimeCss).toMatch(/\.public-site-header\{[^}]*position:sticky!important;[^}]*top:0!important;[^}]*z-index:20!important/);
     expect(indexCss).toMatch(/overflow-x:\s*hidden;\s*overflow-x:\s*clip;/);
   });
@@ -48,7 +48,7 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
   it('offers three start gates and keeps the three-tool bottom bar', () => {
     expect(appSource).toContain('StartShoppingGates');
     expect(appSource).toContain('onOpenLink={handleToggleProductDrawer}');
-    expect(navbarSource).toContain('onLogoClick={onGoHome}');
+    expect(navbarSource).toContain('onClick={onGoHome}');
     expect(navbarSource).toContain('onOpenCart');
     expect(bottomNavSource).toContain('grid-cols-3');
     expect(bottomNavSource).toContain('app:vision');

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Camera, Link2, MessageCircle } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
 
 interface StartShoppingGatesProps {
@@ -11,19 +10,16 @@ interface StartShoppingGatesProps {
 const GATES = [
   {
     id: 'photo',
-    icon: Camera,
     title: ['Photo', 'صورة'],
     subtitle: ['Cadrez le produit, on calcule le prix en dinars.', 'صوّر المنتج ونحسب سعره بالدينار.'],
   },
   {
     id: 'link',
-    icon: Link2,
     title: ['Lien', 'رابط'],
     subtitle: ['Collez la page boutique. SHEIN, Zara, Amazon…', 'ألصق صفحة المتجر. SHEIN، Zara، Amazon…'],
   },
   {
     id: 'ai',
-    icon: MessageCircle,
     title: ['AI', 'AI'],
     subtitle: ['Décrivez ce que vous cherchez, en tunisien ou en français.', 'صف ما تبحث عنه بالدارجة أو بالفرنسية.'],
   },
@@ -42,7 +38,6 @@ export const StartShoppingGates: React.FC<StartShoppingGatesProps> = ({ onOpenLe
         </h2>
         <div className="mt-5 grid gap-2.5 sm:grid-cols-3">
           {GATES.map((gate) => {
-            const Icon = gate.icon;
             return (
               <button
                 key={gate.id}
@@ -51,7 +46,6 @@ export const StartShoppingGates: React.FC<StartShoppingGatesProps> = ({ onOpenLe
                 className="group flex min-h-[112px] flex-col items-start rounded-[22px] border border-line bg-surface px-4 py-4 text-start transition hover:-translate-y-0.5 hover:border-brand/40 hover:bg-white hover:shadow-card active:scale-[0.99]"
               >
                 <span className="grid h-11 w-11 place-items-center rounded-2xl bg-brand text-white shadow-card">
-                  <Icon className="h-5 w-5" />
                 </span>
                 <strong className="mt-3 text-sm font-black text-ink">{gate.title[isArabic ? 1 : 0]}</strong>
                 <span className="mt-1 text-[12px] font-semibold leading-5 text-muted">{gate.subtitle[isArabic ? 1 : 0]}</span>

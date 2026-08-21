@@ -1,6 +1,6 @@
 # نظام أيقونات AYROVI — النسخة المعتمدة (2026-08-21)
 
-> **Style Zalando : monoline fine 1.5 sur grille 24, coins arrondis, currentColor, point signature #FF6A00.**
+> **Style Zalando : monoline fine 1.5 sur grille 24, coins arrondis, currentColor, monochrome strict — aucun point, aucun accent.**
 
 ## 1. مواصفة التنفيذ
 
@@ -11,8 +11,7 @@
 | Line cap / join | `round / round` |
 | Default fill | `none` (التعبئة لحالات selected/liked فقط) |
 | Colour | `currentColor` — لا لون مثبت داخل SVG |
-| Point signature | دائرة ممتلئة `#FF6A00` (r 1.5) في موضع اللوحة — `data-ayrovi-signature` |
-| Accent | عناصر محددة بلون signature (مقبض البحث، سهم الخروج، شريطا الحذف، السطر العلوي للرسالة، سطر التقدير) — `data-ayrovi-accent` |
+| Monochrome | `currentColor` فقط — لا نقاط ولا ألوان داخل الأيقونات (قرار العميل 2026-08-21) |
 | أحجام الاستخدام | 16 / 20 / 24 / 28–32 |
 
 ## 2. بنية التنفيذ
@@ -36,12 +35,11 @@
 
 - علامات Google/Facebook/Instagram/TikTok/WhatsApp تبقى من `react-icons` (هويات تجارية).
 - `HeartFilled` معبّأ مقصودا (حالة وظيفية).
-- عناصر الـ accent البرتقالية موثقة في الكتالوج (5 عناصر).
 
 ## 5. قواعد الإضافة
 
 1. أضف الرمز إلى `catalog.tsx` أولًا، ثم اسمه في `QatafoIcons.tsx`.
 2. شبكة 24، خط 1.5، قلل المسارات، جرّب عند 16/20/24 px.
-3. نقطة signature فقط إن كانت في المرجع؛ لا زخرفة إضافية.
-4. لا لون داخل SVG عدا استثناءات accent الموثقة.
+3. لا زخرفة إضافية ولا نقاط ولا ألوان داخل الأيقونات.
+4. لا لون داخل SVG إطلاقًا (hويات تجارية فقط).
 5. شغّل `npm run typecheck` + `npm test` بعد كل تعديل.

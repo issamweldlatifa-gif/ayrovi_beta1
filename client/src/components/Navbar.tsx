@@ -1,7 +1,6 @@
 import React from 'react';
-import { Menu, ShoppingBag, User } from './QatafoIcons';
+import { Menu, User } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
-import { AppHeader } from '../design/AppHeader';
 import { Button } from '../design/Button';
 
 interface NavbarProps {
@@ -14,56 +13,46 @@ interface NavbarProps {
   logoUrl?: string;
 }
 
+/**
+ * En-tête minimaliste (ordre du client) :
+ * [Menu] — [Logo + nom au centre] — [Profil]
+ * Panier et bascule de langue : dans le tiroir de menu.
+ */
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenMenuDrawer,
   onOpenAccount,
   onGoHome,
-  onOpenCart,
-  cartCount = 0,
   isAuthenticated = false,
   logoUrl,
 }) => {
-  const { isArabic, toggleLocale, tr } = useLocale();
-  const count = Math.max(0, Math.min(99, Math.trunc(cartCount)));
+  const { tr } = useLocale();
 
   return (
-    <AppHeader
-      sticky
-      className="public-site-header"
-      title="AYROVI"
-      subtitle={tr('Shopping international, simplement', 'تسوّق عالمي بكل سهولة')}
-      logoUrl={logoUrl}
-      onLogoClick={onGoHome}
-      actions={<>
-        <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
-          <Menu className="h-5 w-5" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={toggleLocale} aria-label={tr('Afficher le site en arabe', 'عرض الموقع بالفرنسية')} title={isArabic ? 'Français' : 'العربية'} className="min-w-11 px-2">
-          {isArabic ? 'FR' : 'AR'}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onOpenCart}
-          className="relative"
-          aria-label={tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)}
-          title={tr('Panier', 'السلة')}
-        >
-          <ShoppingBag className="h-5 w-5" />
-          {count > 0 && <span className="absolute bottom-1.5 end-1.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[8px] font-black leading-none text-white">{count}</span>}
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onOpenAccount}
-          className="relative"
-          aria-label={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
-          title={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
-        >
-          <User className="h-6 w-6" />
-          {isAuthenticated && <span className="absolute bottom-2 end-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand" />}
-        </Button>
-      </>}
-    />
+    <header className="public-site-header sticky top-0 z-40 border-b border-line bg-white">
+      <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-3 sm:h-20 sm:px-6">
+        <div className="flex justify-start">
+          <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+        <button type="button" onClick={onGoHome} className="flex items-center gap-2.5 bg-transparent" aria-label="AYROVI">
+          <img src={logoUrl ?? '/media/logo-ayrovi.png'} alt="" className="h-10 w-10 bg-transparent object-contain sm:h-11 sm:w-11" />
+          <strong className="font-display text-lg font-black tracking-tight text-ink sm:text-xl">AYROVI</strong>
+        </button>
+        <div className="flex justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onOpenAccount}
+            className="relative"
+            aria-label={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
+            title={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
+          >
+            <User className="h-6 w-6" />
+            {isAuthenticated && <span className="absolute bottom-2 end-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand" />}
+          </Button>
+        </div>
+      </div>
+    </header>
   );
 };

@@ -77,16 +77,6 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   fill: none !important;
 }
 
-.ayrovi-icon [data-ayrovi-signature] {
-  fill: var(--ayrovi-icon-signature, #FF6A00) !important;
-  stroke: none !important;
-}
-
-.ayrovi-icon [data-ayrovi-accent] {
-  stroke: var(--ayrovi-icon-signature, #FF6A00) !important;
-  fill: none !important;
-}
-
 /* Fill sémantique : seuls les états sélectionnés/aimés optent pour currentColor. */
 .ayrovi-icon[fill='currentColor'],
 .ayrovi-icon.fill-current,

@@ -74,9 +74,8 @@ interface LensMoreMenuProps {
   onClose: () => void;
 }
 
-const MenuButton: React.FC<{ icon: React.ReactNode; label: string; onClick: () => void; trailing?: React.ReactNode }> = ({ icon, label, onClick, trailing }) => (
+const MenuButton: React.FC<{ label: string; onClick: () => void; trailing?: React.ReactNode }> = ({ label, onClick, trailing }) => (
   <button type="button" onClick={onClick} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-start text-sm font-extrabold transition hover:bg-brand/10">
-    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand/10 text-brand">{icon}</span>
     <span className="min-w-0 flex-1">{label}</span>
     {trailing}
   </button>
@@ -111,17 +110,16 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
 
         <div className="p-4 sm:p-5">
           {section === 'menu' && <div className="space-y-1">
-            <MenuButton icon={<History className="h-5 w-5" />} label={tr('Historique', 'السجل')} onClick={onHistory} />
+            <MenuButton label={tr('Historique', 'السجل')} onClick={onHistory} />
             <MenuButton
-              icon={<Moon className="h-5 w-5" />}
               label={tr('Mode sombre', 'الوضع الداكن')}
               onClick={onToggleDark}
               trailing={<span role="switch" aria-checked={dark} className={`relative h-7 w-12 rounded-full border transition ${dark ? 'border-brand bg-brand' : 'border-line bg-surface'}`}><i className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${dark ? 'start-[1.45rem]' : 'start-0.5'}`} /></span>}
             />
-            <MenuButton icon={<Info className="h-5 w-5" />} label={tr('Comment utiliser Lens', 'كيفية استخدام Lens')} onClick={() => setSection('help')} />
-            <MenuButton icon={<FileText className="h-5 w-5" />} label={tr("Conditions d’utilisation de Lens", 'شروط استخدام Lens')} onClick={() => setSection('terms')} />
-            <MenuButton icon={<Info className="h-5 w-5" />} label={tr('Service AYROVIX', 'خدمة AYROVIX')} onClick={() => setSection('service')} />
-            <MenuButton icon={<FileText className="h-5 w-5" />} label={tr('Informations légales', 'المعلومات القانونية')} onClick={() => setSection('legal')} />
+            <MenuButton label={tr('Comment utiliser Lens', 'كيفية استخدام Lens')} onClick={() => setSection('help')} />
+            <MenuButton label={tr("Conditions d’utilisation de Lens", 'شروط استخدام Lens')} onClick={() => setSection('terms')} />
+            <MenuButton label={tr('Service AYROVIX', 'خدمة AYROVIX')} onClick={() => setSection('service')} />
+            <MenuButton label={tr('Informations légales', 'المعلومات القانونية')} onClick={() => setSection('legal')} />
           </div>}
 
           {section === 'help' && <ol className="space-y-3 text-sm leading-6 text-muted">

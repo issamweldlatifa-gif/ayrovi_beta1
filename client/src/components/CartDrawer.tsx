@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Trash2, ShoppingBag, ArrowRight, Plus, Minus, Package, Hourglass } from './QatafoIcons';
+import { Trash2, ArrowRight, Plus, Minus } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem } from '../types';
@@ -92,10 +92,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-white">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                <div className="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center text-muted">
-                  <ShoppingBag className="w-8 h-8 text-brand" />
-                </div>
-                <h3 className="text-base font-bold text-ink">{tr('Votre panier est vide', 'سلّتك فارغة')}</h3>
+                                <h3 className="text-base font-bold text-ink">{tr('Votre panier est vide', 'سلّتك فارغة')}</h3>
                 <p className="text-xs text-muted max-w-xs leading-relaxed">
                   {tr("Importez une capture d'écran ou collez un lien pour ajouter des articles.", 'ارفع لقطة شاشة أو ألصق رابطًا لإضافة المنتجات.')}
                 </p>
@@ -114,9 +111,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   <div className="w-16 h-16 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-                    ) : (
-                      <Package className="w-6 h-6 text-muted" />
-                    )}
+                    ) : null}
                   </div>
 
                   {/* Info */}
@@ -155,7 +150,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
-                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-warning"><Hourglass className="h-3 w-3 shrink-0" />{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
+                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-warning">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">

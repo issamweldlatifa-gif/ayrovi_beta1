@@ -7,7 +7,6 @@ import type { AyroviIconProps } from './icons/ayrovi';
 import * as I from './icons/ayrovi/catalog';
 
 export type QatafoIconProps = AyroviIconProps;
-export { AYROVI_ICON_SIGNATURE } from './icons/ayrovi';
 
 /* Navigation */
 export const Menu = I.AyroviMenu;
@@ -79,7 +78,6 @@ export const Zap = I.AyroviZap;
 export const MessageCircle = I.AyroviChat;
 export const MessageSquare = I.AyroviMessage;
 export const Phone = I.AyroviPhone;
-export const Mail = I.AyroviMail;
 export const Bell = I.AyroviBell;
 export const Info = I.AyroviInfo;
 export const CheckCircle2 = I.AyroviSuccess;

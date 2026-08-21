@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, Loader2, Phone, MapPin, User, CreditCard, Mail, LocateFixed } from './QatafoIcons';
+import { AlertCircle, CheckCircle2, Loader2, LocateFixed } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CustomerAddress, CustomerCardInitiation, CustomerInfo, CustomerSession, OrderResult } from '../types';
@@ -434,7 +434,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Name */}
           <div>
             <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-brand" />
+              
               <span>{tr('Nom et prénom :', 'الاسم واللقب:')}</span>
             </label>
             <input
@@ -450,7 +450,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Invoice e-mail */}
           <div>
             <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-muted">
-              <Mail className="h-3.5 w-3.5 text-brand" />
+              
               <span>{tr('E-mail de facturation :', 'البريد الإلكتروني للفاتورة:')}</span>
             </label>
             <input
@@ -470,7 +470,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Phone */}
           <div>
             <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
-              <Phone className="w-3.5 h-3.5 text-brand" />
+              
               <span>{tr('Téléphone de livraison :', 'هاتف التوصيل:')}</span>
             </label>
             <input
@@ -491,7 +491,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {/* Governorate */}
           <div>
             <label className="block text-xs font-bold text-muted mb-1.5 flex items-center gap-1.5">
-              <MapPin className="w-3.5 h-3.5 text-brand" />
+              
               <span>{tr('Gouvernorat :', 'الولاية:')}</span>
             </label>
             <select
@@ -537,7 +537,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           {isPaymentStage && <>
           <section>
             <label className="mb-2 flex items-center gap-1.5 text-xs font-bold text-muted">
-              <CreditCard className="h-4 w-4 text-brand" />
+              
               <span>{tr('Mode de paiement de l’acompte', 'طريقة دفع العربون')}</span>
             </label>
             <div className="checkout-payment-grid">

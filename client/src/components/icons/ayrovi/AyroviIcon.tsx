@@ -4,14 +4,11 @@ import * as React from 'react';
  * AYROVI Icon System — base.
  * Style: monoline fine (Zalando-like) on a 24 grid.
  * Stroke 1.5 via --ayrovi-icon-stroke (proportional at every display size).
- * The orange dot is the only brand accent (data-ayrovi-signature).
+ * Monochrome strict (Zalando-like) : currentColor uniquement, aucun accent.
  */
 export const AYROVI_ICON_SIZE = 24;
 export const AYROVI_STROKE = 1.5;
 export const AYROVI_CORNER = 3;
-export const AYROVI_ICON_SIGNATURE = '#FF6A00';
-export const AYROVI_SIGNATURE_RADIUS = 1.5;
-
 export type AyroviIconProps = React.SVGProps<SVGSVGElement> & {
   size?: number | string;
   title?: string;
@@ -41,19 +38,6 @@ export const AyroviSvg = React.forwardRef<SVGSVGElement, AyroviIconProps>(
   ),
 );
 AyroviSvg.displayName = 'AyroviSvg';
-
-export function AyroviSignature({ cx, cy }: { cx: number; cy: number }) {
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={AYROVI_SIGNATURE_RADIUS}
-      fill={AYROVI_ICON_SIGNATURE}
-      stroke="none"
-      data-ayrovi-signature="true"
-    />
-  );
-}
 
 export function createAyroviIcon(name: string, body: React.ReactNode) {
   const Icon = React.forwardRef<SVGSVGElement, AyroviIconProps>(function AyroviNamed(props, ref) {

@@ -6,7 +6,7 @@ import type {
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { rememberAyrovixHistory } from '../services/history';
-import { AlertCircle, Barcode, Check, Image as ImageIcon, Link2, Plus, ShoppingBag, Sparkles } from '../../components/QatafoIcons';
+
 import { useLocale } from '../../i18n/LocaleContext';
 import { LiveCamera } from './LiveCamera';
 import { LensHistory } from './LensHistory';
@@ -537,9 +537,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 }}
               >
                 <label htmlFor="ayrovix-url-input" className="flex items-center gap-3 text-start">
-                  <span className="grid h-10 w-10 flex-none place-items-center rounded-xl bg-brand-light text-brand">
-                    <Link2 size={20} strokeWidth={1.8} />
-                  </span>
                   <span>
                     <span className="block text-sm font-extrabold text-ink">{tr('Lien du produit', 'رابط المنتج')}</span>
                     <span className="mt-0.5 block text-[11px] font-medium text-muted">SHEIN, Zara, Amazon, AliExpress…</span>
@@ -604,9 +601,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                           className="ayrovix-product-gallery-image"
                         />
                       ) : (
-                        <div className="flex h-full items-center justify-center text-muted">
-                          <ImageIcon size={40} strokeWidth={1.4} />
-                        </div>
+                        <div className="flex h-full items-center justify-center text-muted">{tr('Sans image', 'بدون صورة')}</div>
                       )}
                       <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold text-ink">{tr('Prix repéré', 'سعر مكتشف')}</span>
                       <span className="absolute end-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.detectedPrice.sourceCurrency}</span>
@@ -617,7 +612,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                           {candidatesView.detectedPrice.title || candidatesView.queryLabel || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX')}
                         </h3>
                         <p className="mt-1 text-[11px] text-muted">
-                          {candidatesView.detectedPrice.isCartScreenshot ? <span className="inline-flex items-center gap-1"><ShoppingBag className="h-3.5 w-3.5" />{tr('Panier repéré — total calculé', 'تم اكتشاف سلة — حُسب الإجمالي')}</span> : <span className="inline-flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" />{tr('Produit repéré sur l’image', 'تم اكتشاف المنتج في الصورة')}</span>} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
+                          {candidatesView.detectedPrice.isCartScreenshot ? tr('Panier repéré — total calculé', 'تم اكتشاف سلة — حُسب الإجمالي') : tr('Produit repéré sur l’image', 'تم اكتشاف المنتج في الصورة')} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
                         </p>
                       </div>
                       <div className="rounded-2xl border border-accent/30 bg-accent/10 p-3.5">
@@ -691,7 +686,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
 
               <button type="button" onClick={reset} className="ay-btn-secondary min-h-12 w-full text-sm">
-                <Plus className="h-4 w-4" />
                 {tr('Calculer un autre produit', 'حساب منتج آخر')}
               </button>
 
@@ -712,9 +706,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'barcode' && barcode && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-brand-light text-brand">
-                <Barcode size={28} strokeWidth={1.8} />
-              </div>
               <p className="text-sm font-extrabold text-ink">{tr('Code-barres détecté', 'تم اكتشاف الرمز الشريطي')}</p>
               <p className="mx-auto w-fit rounded-xl bg-surface px-5 py-3 font-mono text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">
@@ -722,7 +713,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               </p>
               <div className="flex justify-center gap-2.5">
                 <button type="button" onClick={copyBarcode} className="ay-btn-secondary text-xs">
-                  {copied ? <span className="inline-flex items-center gap-1.5">{tr('Copié', 'تم النسخ')}<Check className="h-3.5 w-3.5" /></span> : tr('Copier le code', 'نسخ الرمز')}
+                  {copied ? tr('Copié', 'تم النسخ') : tr('Copier le code', 'نسخ الرمز')}
                 </button>
                 <button type="button" onClick={reset} className="ay-btn-primary text-xs">{tr('Photographier le produit', 'تصوير المنتج')}</button>
               </div>
@@ -732,7 +723,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           {stage === 'error' && error && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-danger/5 text-danger">
-                <AlertCircle size={28} strokeWidth={1.8} />
               </div>
               <p className="text-sm font-extrabold text-ink">{error.code === 'AYROVIX_UNAVAILABLE' ? tr('AYROVIX arrive très bientôt', 'AYROVIX متاحة قريبًا') : tr('Petit obstacle', 'عائق بسيط')}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>

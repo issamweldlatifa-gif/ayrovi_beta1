@@ -1,13 +1,10 @@
 import * as React from 'react';
-import { AYROVI_ICON_SIGNATURE, AyroviSignature, createAyroviIcon } from './AyroviIcon';
+import { createAyroviIcon } from './AyroviIcon';
 
 /**
  * AYROVI Icon System — catalog unique (style Zalando : monoline 1.5, géométrie nette).
  * Chaque icône = 1 concept. Les noms de compatibilité vivent dans QatafoIcons.
  */
-
-const S = AyroviSignature;
-const A = AYROVI_ICON_SIGNATURE;
 
 /* ============================ 01 — NAVIGATION ============================ */
 
@@ -16,23 +13,19 @@ export const AyroviMenu = createAyroviIcon('Menu', (
     <path d="M4.5 7.2h12" />
     <path d="M4.5 12h12" />
     <path d="M4.5 16.8h12" />
-    <S cx={19.2} cy={7.2} />
-    <S cx={19.2} cy={12} />
-    <S cx={19.2} cy={16.8} />
+
   </>
 ));
 export const AyroviBack = createAyroviIcon('Back', (
   <>
     <path d="M10.3 5.4 5 9.5l5.3 4.1" />
     <path d="M5 9.5h10.4a3.1 3.1 0 0 1 3.1 3.1v3.4" />
-    <S cx={16} cy={13.6} />
   </>
 ));
 export const AyroviClose = createAyroviIcon('Close', <path d="M6 6l12 12M18 6 6 18" />);
 export const AyroviOptions = createAyroviIcon('Options', (
   <>
     <circle cx="12" cy="6" r="1.4" fill="currentColor" stroke="none" />
-    <S cx={12} cy={12} />
     <circle cx="12" cy="18" r="1.4" fill="currentColor" stroke="none" />
   </>
 ));
@@ -40,7 +33,6 @@ export const AyroviHome = createAyroviIcon('Home', (
   <>
     <path d="M4.7 19.5V10.9L12 4.5l7.3 6.4v8.6H4.7Z" />
     <path d="M9.7 19.5v-3.6a2.3 2.3 0 0 1 4.6 0v3.6" />
-    <S cx={14.5} cy={16.6} />
   </>
 ));
 export const AyroviChevronRight = createAyroviIcon('ChevronRight', <path d="M9 6.2 15.4 12 9 17.8" />);
@@ -49,7 +41,7 @@ export const AyroviChevronDown = createAyroviIcon('ChevronDown', <path d="M6.2 9
 export const AyroviSearch = createAyroviIcon('Search', (
   <>
     <circle cx="10.5" cy="10.5" r="5.85" />
-    <path d="m15 15 4 4" stroke={A} data-ayrovi-accent="true" />
+    <path d="m15 15 4 4" />
   </>
 ));
 export const AyroviArrowRight = createAyroviIcon('ArrowRight', <path d="M4.8 12h14.4M13.8 6.6 19.2 12l-5.4 5.4" />);
@@ -59,7 +51,6 @@ export const AyroviArrowUpRight = createAyroviIcon('ArrowUpRight', <path d="M7 1
 export const AyroviSwap = createAyroviIcon('Swap', (
   <>
     <path d="M4.4 8.2h15M16 5.2l3.4 3-3.4 3M19.6 15.8H4.6M8 12.8l-3.4 3 3.4 3" />
-    <S cx={18.4} cy={8.2} />
   </>
 ));
 export const AyroviNav = createAyroviIcon('Nav', <path d="m4.6 12 15.2-7.4L12 19.4l-1.6-6.4z" />);
@@ -73,7 +64,6 @@ export const AyroviEdit = createAyroviIcon('Edit', (
   <>
     <path d="M6.5 6.5h8.2L17.5 9.3v8.2H6.5z" />
     <path d="M10.2 14.8 16.4 8.6l1.5 1.5-6.2 6.2H10.2z" />
-    <S cx={19.5} cy={6} />
   </>
 ));
 export const AyroviTrash = createAyroviIcon('Trash', (
@@ -81,14 +71,13 @@ export const AyroviTrash = createAyroviIcon('Trash', (
     <path d="M4.6 7.6h14.8" />
     <path d="M9.4 7.6V6.1a1.7 1.7 0 0 1 1.7-1.7h1.8a1.7 1.7 0 0 1 1.7 1.7v1.5" />
     <path d="M6.4 7.6l.8 11.1a2.3 2.3 0 0 0 2.3 2.1h5a2.3 2.3 0 0 0 2.3-2.1l.8-11.1" />
-    <path d="M10.2 11.2v5.4M13.8 11.2v5.4" stroke={A} data-ayrovi-accent="true" />
+    <path d="M10.2 11.2v5.4M13.8 11.2v5.4" />
   </>
 ));
 export const AyroviCopy = createAyroviIcon('Copy', (
   <>
     <rect x="8.2" y="8.2" width="11.2" height="11.2" rx="2" />
     <path d="M15.8 8.2V6.4A1.8 1.8 0 0 0 14 4.6H6.4A1.8 1.8 0 0 0 4.6 6.4V14a1.8 1.8 0 0 0 1.8 1.8h1.8" />
-    <S cx={17.4} cy={17.4} />
   </>
 ));
 export const AyroviSave = createAyroviIcon('Save', (
@@ -103,7 +92,6 @@ export const AyroviShare = createAyroviIcon('Share', (
     <circle cx="16.8" cy="6.4" r="2.15" />
     <circle cx="16.8" cy="17.6" r="2.15" />
     <path d="m8.3 10.9 4.8-3.2M8.3 13.1l4.8 3.2" />
-    <S cx={16.8} cy={17.6} />
   </>
 ));
 export const AyroviRefresh = createAyroviIcon('Refresh', (
@@ -134,26 +122,22 @@ export const AyroviBag = createAyroviIcon('Bag', (
   <>
     <path d="M6.6 8.8h10.8a2.3 2.3 0 0 1 2.3 2.2l.45 8.1a2.35 2.35 0 0 1-2.35 2.45H6.2a2.35 2.35 0 0 1-2.35-2.45l.45-8.1a2.3 2.3 0 0 1 2.3-2.2Z" />
     <path d="M8.7 8.8V6.7a3.3 3.3 0 0 1 6.6 0v2.1" />
-    <S cx={16.7} cy={17.6} />
   </>
 ));
 export const AyroviHeart = createAyroviIcon('Heart', (
   <>
     <path d="M12 19.4S4.6 14.2 4.6 9.6A3.85 3.85 0 0 1 12 8.1a3.85 3.85 0 0 1 7.4 1.5c0 4.6-7.4 9.8-7.4 9.8Z" />
-    <S cx={13.8} cy={17.7} />
   </>
 ));
 export const AyroviHeartFilled = createAyroviIcon('HeartFilled', (
   <>
     <path d="M12 19.4S4.6 14.2 4.6 9.6A3.85 3.85 0 0 1 12 8.1a3.85 3.85 0 0 1 7.4 1.5c0 4.6-7.4 9.8-7.4 9.8Z" fill="currentColor" />
-    <S cx={13.8} cy={17.7} />
   </>
 ));
 export const AyroviCube = createAyroviIcon('Cube', (
   <>
     <path d="M12 4.6 19.2 8.4v7.2L12 19.4 4.8 15.6V8.4Z" />
     <path d="M12 19.4v-7.6M4.8 8.4 12 11.8 19.2 8.4" />
-    <S cx={16.8} cy={16.6} />
   </>
 ));
 export const AyroviPackageCheck = createAyroviIcon('PackageCheck', (
@@ -169,7 +153,6 @@ export const AyroviPercent = createAyroviIcon('Percent', (
     <circle cx="8" cy="8" r="2.15" />
     <circle cx="16" cy="16" r="2.15" />
     <path d="m17.6 5.6-11.2 12.8" />
-    <S cx={15.9} cy={17.1} />
   </>
 ));
 export const AyroviTag = createAyroviIcon('Tag', (
@@ -190,14 +173,12 @@ export const AyroviCard = createAyroviIcon('Card', (
     <rect x="3.6" y="6.2" width="16.8" height="11.6" rx="2.1" />
     <path d="M3.6 10.4h16.8" />
     <path d="M6.6 15h4" />
-    <S cx={17.8} cy={15.8} />
   </>
 ));
 export const AyroviReceipt = createAyroviIcon('Receipt', (
   <>
     <path d="M7 4.4h10v15.4l-1.6-1-1.6 1-1.6-1-1.6 1-1.6-1-1.6 1z" />
     <path d="M9.2 9h5.6M9.2 12.2h5.6M9.2 15.4h3.6" />
-    <S cx={16.6} cy={18.4} />
   </>
 ));
 export const AyroviTruck = createAyroviIcon('Truck', (
@@ -206,7 +187,6 @@ export const AyroviTruck = createAyroviIcon('Truck', (
     <path d="M14.2 9.4h2.8l3.4 3.4v2.8h-6.2z" />
     <circle cx="7.2" cy="17.4" r="1.55" />
     <circle cx="17.2" cy="17.4" r="1.55" />
-    <S cx={19.6} cy={9.6} />
   </>
 ));
 export const AyroviCalculator = createAyroviIcon('Calculator', (
@@ -221,7 +201,6 @@ export const AyroviClipboard = createAyroviIcon('Clipboard', (
     <rect x="6.2" y="5.6" width="11.6" height="14.4" rx="2" />
     <path d="M9.2 5.6V4.4h5.6v1.2" />
     <path d="M9.2 11h5.6M9.2 14.4h3.6" />
-    <S cx={16.4} cy={16.8} />
   </>
 ));
 export const AyroviHistory = createAyroviIcon('History', (
@@ -237,7 +216,6 @@ export const AyroviChart = createAyroviIcon('Chart', (
     <path d="m6.4 15.8 3.6-3.8 3 2.6 5.4-6.4" />
     <circle cx="6.4" cy="15.8" r="1.1" fill="currentColor" stroke="none" />
     <circle cx="10" cy="12" r="1.1" fill="currentColor" stroke="none" />
-    <S cx={18.4} cy={7.8} />
   </>
 ));
 
@@ -246,7 +224,7 @@ export const AyroviChart = createAyroviIcon('Chart', (
 export const AyroviSparkles = createAyroviIcon('Sparkles', (
   <>
     <path d="M11.2 3.1c.18 4.55 3.35 7.72 7.9 7.9-4.55.18-7.72 3.35-7.9 7.9-.18-4.55-3.35-7.72-7.9-7.9 4.55-.18 7.72-3.35 7.9-7.9Z" />
-    <path d="M18.55 3.35c.08 1.12.78 1.82 1.9 1.9-1.12.08-1.82.78-1.9 1.9-.08-1.12-.78-1.82-1.9-1.9 1.12-.08 1.82-.78 1.9-1.9Z" stroke={A} data-ayrovi-accent="true" />
+    <path d="M18.55 3.35c.08 1.12.78 1.82 1.9 1.9-1.12.08-1.82.78-1.9 1.9-.08-1.12-.78-1.82-1.9-1.9 1.12-.08 1.82-.78 1.9-1.9Z" />
   </>
 ));
 export const AyroviLens = createAyroviIcon('Lens', (
@@ -256,22 +234,19 @@ export const AyroviLens = createAyroviIcon('Lens', (
     <path d="M8.4 20.3H5.5a1.8 1.8 0 0 1-1.8-1.8v-2.9" />
     <path d="M15.6 20.3h2.9a1.8 1.8 0 0 0 1.8-1.8v-2.9" />
     <circle cx="12" cy="12" r="4.05" />
-    <S cx={16.35} cy={7.35} />
-    <S cx={17.85} cy={9.05} />
+
   </>
 ));
 export const AyroviScan = createAyroviIcon('Scan', (
   <>
     <path d="M8 4.4H5.2A1.8 1.8 0 0 0 3.4 6.2V9M16 4.4h2.8A1.8 1.8 0 0 1 20.6 6.2V9M8 19.6H5.2A1.8 1.8 0 0 1 3.4 17.8V15M16 19.6h2.8a1.8 1.8 0 0 0 1.8-1.8V15" />
     <circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none" />
-    <S cx={17.4} cy={17.4} />
   </>
 ));
 export const AyroviEye = createAyroviIcon('Eye', (
   <>
     <path d="M3.3 12c2.1-4.1 5.1-6.1 8.7-6.1S18.6 7.9 20.7 12c-2.1 4.1-5.1 6.1-8.7 6.1S5.4 16.1 3.3 12Z" />
     <circle cx="12" cy="12" r="2.7" />
-    <S cx={17.6} cy={16.4} />
   </>
 ));
 export const AyroviEyeOff = createAyroviIcon('EyeOff', (
@@ -288,21 +263,18 @@ export const AyroviCamera = createAyroviIcon('Camera', (
   <>
     <path d="M5.4 8.2h2.1l1.3-2.1h6.4l1.3 2.1h2.1A1.9 1.9 0 0 1 20.5 10v7.3a1.9 1.9 0 0 1-1.9 1.9H5.4A1.9 1.9 0 0 1 3.5 17.3V10a1.9 1.9 0 0 1 1.9-1.8Z" />
     <circle cx="12" cy="13.4" r="3.05" />
-    <S cx={17.6} cy={8.4} />
   </>
 ));
 export const AyroviPlug = createAyroviIcon('Plug', (
   <>
     <path d="M9.2 6.2v3.4M14.8 6.2v3.4M7.6 9.6h8.8v3.2A4.4 4.4 0 0 1 12 17.2h0A4.4 4.4 0 0 1 7.6 12.8Z" />
     <path d="M12 17.2v3.2" />
-    <S cx={12} cy={20.4} />
   </>
 ));
 export const AyroviLink = createAyroviIcon('Link', (
   <>
     <path d="M9.4 14.6 7.6 16.4a3.1 3.1 0 0 1-4.4-4.4L8 8.2a3.1 3.1 0 0 1 4.4 0" />
     <path d="M14.6 9.4 16.4 7.6a3.1 3.1 0 1 1 4.4 4.4L16 15.8a3.1 3.1 0 0 1-4.4 0" />
-    <S cx={17.6} cy={17.4} />
   </>
 ));
 export const AyroviImage = createAyroviIcon('Image', (
@@ -310,13 +282,11 @@ export const AyroviImage = createAyroviIcon('Image', (
     <rect x="3.8" y="5.2" width="16.4" height="13.6" rx="2.1" />
     <circle cx="9" cy="10" r="1.55" />
     <path d="m4.6 16.6 4.6-4.4 3.2 3.1 2.6-2.5 4.4 3.8" />
-    <S cx={17.8} cy={8.2} />
   </>
 ));
 export const AyroviZap = createAyroviIcon('Zap', (
   <>
     <path d="M13.4 3.6 6.6 13.2h5.2L10.6 20.4 17.4 10.8h-5.2Z" />
-    <S cx={8.9} cy={18.9} />
   </>
 ));
 
@@ -326,55 +296,42 @@ export const AyroviChat = createAyroviIcon('Chat', (
   <>
     <path d="M19.6 11.2a7.6 7.6 0 0 1-7.7 7.5 8.8 8.8 0 0 1-3.3-.62L4.4 20.2l1.55-4.2A7.1 7.1 0 0 1 4.5 11.7 7.6 7.6 0 0 1 12.2 4.2a7.6 7.6 0 0 1 7.4 7Z" />
     <path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01" />
-    <S cx={17.5} cy={16.9} />
   </>
 ));
 export const AyroviMessage = createAyroviIcon('Message', (
   <>
     <path d="M6.2 4.6h11.6A2.6 2.6 0 0 1 20.4 7.2v7.2a2.6 2.6 0 0 1-2.6 2.6H9.4L4.8 20.4v-3.6A2.6 2.6 0 0 1 4.4 14.4V7.2A2.6 2.6 0 0 1 6.2 4.6Z" />
-    <path d="M8.4 9.2h7.2" stroke={A} data-ayrovi-accent="true" />
+    <path d="M8.4 9.2h7.2" />
     <path d="M8.4 13h4.6" />
   </>
 ));
 export const AyroviPhone = createAyroviIcon('Phone', (
   <>
     <path d="M7.2 4.8h3.1l1.3 3.3-1.7 1.1a11.2 11.2 0 0 0 4.8 4.8l1.1-1.7 3.3 1.3v3.1a1.8 1.8 0 0 1-1.9 1.8A14.4 14.4 0 0 1 5.4 6.7 1.8 1.8 0 0 1 7.2 4.8Z" />
-    <S cx={16.6} cy={17.4} />
-  </>
-));
-export const AyroviMail = createAyroviIcon('Mail', (
-  <>
-    <rect x="3.6" y="6.2" width="16.8" height="11.6" rx="2.1" />
-    <path d="m4.4 8.2 7.6 5.3 7.6-5.3" />
-    <S cx={18} cy={16.6} />
   </>
 ));
 export const AyroviBell = createAyroviIcon('Bell', (
   <>
     <path d="M7.2 9.2a4.8 4.8 0 0 1 9.6 0c0 5.2 1.6 6.6 1.6 6.6H5.6s1.6-1.4 1.6-6.6Z" />
     <path d="M10.4 18.6a1.6 1.6 0 0 0 3.2 0" />
-    <S cx={16.4} cy={7.4} />
   </>
 ));
 export const AyroviInfo = createAyroviIcon('Info', (
   <>
     <circle cx="12" cy="12" r="8.25" />
     <path d="M12 10.6v5.4M12 7.7h.01" />
-    <S cx={17.4} cy={17.4} />
   </>
 ));
 export const AyroviSuccess = createAyroviIcon('Success', (
   <>
     <circle cx="12" cy="12" r="8.25" />
     <path d="m8.2 12.2 2.4 2.4 5.2-5.4" />
-    <S cx={17.4} cy={17.4} />
   </>
 ));
 export const AyroviAlert = createAyroviIcon('Alert', (
   <>
     <circle cx="12" cy="12" r="8.25" />
     <path d="M12 8v5.2M12 16.4h.01" />
-    <S cx={17.4} cy={17.4} />
   </>
 ));
 export const AyroviThumbsUp = createAyroviIcon('ThumbsUp', <path d="M8 11.2V19H5.4v-7.8zm3 0h5.4l1.8-4.6H12V4.4L8 11.2" />);
@@ -410,28 +367,26 @@ export const AyroviUser = createAyroviIcon('User', (
   <>
     <circle cx="11.5" cy="7.2" r="3.6" />
     <path d="M4.6 20.4c.9-4.3 3.6-6.6 6.9-6.6s6 2.3 6.9 6.6" />
-    <S cx={17} cy={19.6} />
   </>
 ));
 export const AyroviLock = createAyroviIcon('Lock', (
   <>
     <rect x="6" y="10.4" width="12" height="9.1" rx="2.2" />
     <path d="M8.4 10.4V8.1a3.6 3.6 0 0 1 7.2 0v2.3" />
-    <circle cx="12" cy="14.7" r="1.15" fill={A} stroke="none" />
+    <circle cx="12" cy="14.7" r="1.15" fill="currentColor" stroke="none" />
   </>
 ));
 export const AyroviLogout = createAyroviIcon('Logout', (
   <>
     <path d="M14.5 6.2H7.6A2.1 2.1 0 0 0 5.5 8.3v7.4a2.1 2.1 0 0 0 2.1 2.1h6.9" />
-    <path d="M10.5 12H20" stroke={A} data-ayrovi-accent="true" />
-    <path d="m16.6 8.6 3.4 3.4-3.4 3.4" stroke={A} data-ayrovi-accent="true" />
+    <path d="M10.5 12H20" />
+    <path d="m16.6 8.6 3.4 3.4-3.4 3.4" />
   </>
 ));
 export const AyroviPin = createAyroviIcon('Pin', (
   <>
     <path d="M18.8 9.6c0 4.9-6.8 10.6-6.8 10.6S5.2 14.5 5.2 9.6a6.8 6.8 0 0 1 13.6 0Z" />
     <circle cx="12" cy="9.6" r="2.2" />
-    <S cx={16.2} cy={18.6} />
   </>
 ));
 export const AyroviLocate = createAyroviIcon('Locate', (
@@ -444,13 +399,11 @@ export const AyroviShield = createAyroviIcon('Shield', (
   <>
     <path d="M12 3.4 19.2 6.4v5.1c0 4.4-3 7.6-7.2 9.2-4.2-1.6-7.2-4.8-7.2-9.2V6.4Z" />
     <path d="m8.6 12 2.2 2.2 4.6-4.7" />
-    <S cx={16.6} cy={16.6} />
   </>
 ));
 export const AyroviMoon = createAyroviIcon('Moon', (
   <>
     <path d="M15.4 4.8A7.8 7.8 0 1 0 19.2 14.6 6.2 6.2 0 0 1 15.4 4.8Z" />
-    <S cx={16.6} cy={8.2} />
   </>
 ));
 export const AyroviSettings = createAyroviIcon('Settings', (
@@ -477,7 +430,6 @@ export const AyroviGrid = createAyroviIcon('Grid', (
 export const AyroviBookmark = createAyroviIcon('Bookmark', (
   <>
     <path d="M7.2 4.6h9.6v15.2L12 16.2 7.2 19.8Z" />
-    <S cx={16.6} cy={17.8} />
   </>
 ));
 
@@ -487,15 +439,13 @@ export const AyroviFile = createAyroviIcon('File', (
   <>
     <path d="M7 3.8h6.4L18.6 9v11.2H7A1.8 1.8 0 0 1 5.2 18.4V5.6A1.8 1.8 0 0 1 7 3.8Z" />
     <path d="M13.4 3.8V9h5.2M8.4 12.6h5.4M8.4 16.2h7.2" />
-    <S cx={16.6} cy={18.4} />
   </>
 ));
 export const AyroviCalendar = createAyroviIcon('Calendar', (
   <>
     <rect x="4.2" y="5.6" width="15.6" height="14" rx="2" />
     <path d="M8 3.8v3.4M16 3.8v3.4M4.2 10.2h15.6" />
-    <path d="M8 14.6h5.4" stroke={A} data-ayrovi-accent="true" />
-    <S cx={17.4} cy={16.8} />
+    <path d="M8 14.6h5.4" />
   </>
 ));
 export const AyroviType = createAyroviIcon('Type', <path d="M5.4 6.2h13.2M12 6.2v11.6M8.4 17.8h7.2" />);
@@ -517,7 +467,6 @@ export const AyroviGlobe = createAyroviIcon('Globe', (
   <>
     <circle cx="12" cy="12" r="8.25" />
     <path d="M3.8 12h16.4M12 3.8c2.2 2.4 3.4 5.2 3.4 8.2S14.2 18.8 12 20.2C9.8 18.8 8.6 16 8.6 12S9.8 6.2 12 3.8Z" />
-    <S cx={17.4} cy={17.4} />
   </>
 ));
 export const AyroviHourglass = createAyroviIcon('Hourglass', <path d="M7.2 4.6h9.6v3.4L12 12l4.8 4v3.4H7.2V16L12 12 7.2 8Z" />);
