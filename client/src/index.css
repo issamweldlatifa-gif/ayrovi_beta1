@@ -73,10 +73,14 @@
   shape-rendering: geometricPrecision;
 }
 
-.ayrovi-icon > *,
-.qatafo-icon > *,
-.lucide > * {
+.ayrovi-icon > *:not([data-ayrovi-signature]),
+.qatafo-icon > *:not([data-ayrovi-signature]),
+.lucide > *:not([data-ayrovi-signature]) {
   vector-effect: non-scaling-stroke;
+}
+
+html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
+  fill: none !important;
 }
 
 .ayrovi-icon [data-ayrovi-signature],

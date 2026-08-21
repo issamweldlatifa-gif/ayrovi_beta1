@@ -21,9 +21,9 @@ export const AyroviOptions = createAyroviIcon('Options', (
 ));
 export const AyroviHome = createAyroviIcon('Home', (
   <>
-    <path d="M4.6 11.2 12 4.6l7.4 6.6" />
-    <path d="M6.6 10.4V19.5h10.8V10.4" />
-    <path d="M10.15 19.5v-3.6a1.85 1.85 0 0 1 3.7 0v3.6" fill={A} stroke="currentColor" data-ayrovi-signature="true" />
+    <path d="M4.7 19.5V10.9L12 4.5l7.3 6.4v8.6H4.7Z" />
+    <path d="M9.7 19.5v-3.7a2.3 2.3 0 0 1 4.6 0v3.7" />
+    <S cx={14.5} cy={16.7} />
   </>
 ));
 export const AyroviChevron = createAyroviIcon('Chevron', (
@@ -123,17 +123,20 @@ export const AyroviCube = createAyroviIcon('Cube', (
 ));
 export const AyroviEye = createAyroviIcon('Eye', (
   <>
-    <path d="M3.2 12s3.3-5.3 8.8-5.3S20.8 12 20.8 12s-3.3 5.3-8.8 5.3S3.2 12 3.2 12Z" />
-    <circle cx="12" cy="12" r="2.45" />
-    <S cx={17.5} cy={16.4} />
+    <path d="M3.3 12c2.1-4.1 5.1-6.1 8.7-6.1S18.6 7.9 20.7 12c-2.1 4.1-5.1 6.1-8.7 6.1S5.4 16.1 3.3 12Z" />
+    <circle cx="12" cy="12" r="3.15" />
+    <S cx={12} cy={12} />
   </>
 ));
 export const AyroviLens = createAyroviIcon('Lens', (
   <>
-    <path d="M8.2 3.6H5.4A1.8 1.8 0 0 0 3.6 5.4v2.8M15.8 3.6h2.8a1.8 1.8 0 0 1 1.8 1.8v2.8M8.2 20.4H5.4a1.8 1.8 0 0 1-1.8-1.8v-2.8M15.8 20.4h2.8a1.8 1.8 0 0 0 1.8-1.8v-2.8" />
-    <circle cx="12" cy="12" r="3.7" />
-    <S cx={16.5} cy={7.2} />
-    <S cx={17.8} cy={12} />
+    <path d="M8.4 3.7H5.5A1.8 1.8 0 0 0 3.7 5.5v2.9" />
+    <path d="M15.6 3.7h2.9a1.8 1.8 0 0 1 1.8 1.8v2.9" />
+    <path d="M8.4 20.3H5.5a1.8 1.8 0 0 1-1.8-1.8v-2.9" />
+    <path d="M15.6 20.3h2.9a1.8 1.8 0 0 0 1.8-1.8v-2.9" />
+    <circle cx="12" cy="12" r="4.05" />
+    <S cx={16.35} cy={7.35} />
+    <S cx={17.85} cy={9.05} />
   </>
 ));
 export const AyroviChat = createAyroviIcon('Chat', (

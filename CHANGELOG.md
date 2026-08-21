@@ -2,6 +2,13 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.10.1] - 2026-08-21
+
+### Fixed
+- Public chrome is locked to AYROVI outline icons (Lens / AI / Vision). Admin Lucide/FA/Material libraries no longer replace the live bar.
+- Solid-fill runtime no longer paints AYROVI strokes as a black blob. Signature dots stay `#FF6A00`.
+- Accueil, Panier, Vision and Lens geometry match the approved crops: door arch, inner bag accent, pupil signature, two Lens dots.
+
 ## [3.10.0] - 2026-08-21
 
 ### Changed

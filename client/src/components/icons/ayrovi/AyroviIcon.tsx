@@ -5,7 +5,7 @@ export const AYROVI_ICON_SIZE = 24;
 export const AYROVI_STROKE = 2;
 export const AYROVI_CORNER = 3;
 export const AYROVI_ICON_SIGNATURE = '#FF6A00';
-export const AYROVI_SIGNATURE_RADIUS = 1.45;
+export const AYROVI_SIGNATURE_RADIUS = 1.85;
 
 export type AyroviIconProps = React.SVGProps<SVGSVGElement> & {
   size?: number | string;

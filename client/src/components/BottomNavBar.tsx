@@ -4,11 +4,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
 import { AppHeader } from '../design/AppHeader';
-import type { InterfaceIconLibrary, PublicInterfaceConfig } from '../config/interfaceConfig';
-import { Bot as LucideBot, Eye as LucideEye, ScanSearch as LucideScanSearch } from 'lucide-react';
-import { FaCamera, FaEye, FaRobot } from 'react-icons/fa6';
-import { BsCamera, BsChatDots, BsEye } from 'react-icons/bs';
-import { MdCenterFocusStrong, MdSmartToy, MdVisibility } from 'react-icons/md';
+import type { PublicInterfaceConfig } from '../config/interfaceConfig';
 
 interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
@@ -18,20 +14,12 @@ interface BottomNavBarProps {
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
-const ICON_SETS: Record<InterfaceIconLibrary, [React.ElementType, React.ElementType, React.ElementType]> = {
-  ayrovi: [LensBox, Sparkles, Eye],
-  lucide: [LucideScanSearch, LucideBot, LucideEye],
-  fontawesome: [FaCamera, FaRobot, FaEye],
-  bootstrap: [BsCamera, BsChatDots, BsEye],
-  material: [MdCenterFocusStrong, MdSmartToy, MdVisibility],
-};
 const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-extrabold text-[#111318] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
-  const [LensIcon, AiIcon, VisionIcon] = ICON_SETS[iconConfig.library];
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
@@ -39,7 +27,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
     width: iconConfig.size,
     height: iconConfig.size,
     color: active ? (iconConfig.activeColor || '#fe7003') : '#111318',
-    fill: iconConfig.style === 'solid' && ['ayrovi', 'lucide'].includes(iconConfig.library) ? 'currentColor' : undefined,
+    fill: 'none',
   });
   useBodyScrollLock(isVisionOpen);
 
@@ -94,15 +82,15 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       >
         <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
-            <LensIcon className="interface-runtime-icon" style={iconStyle(false)} />
+            <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span>{config.lensLabel}</span>}
           </button>
           <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'AYROVI", 'SONIM — المساعد الذكي لـ AYROVI')} aria-pressed={isAiDrawerOpen}>
-            <AiIcon className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
+            <Sparkles className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
             {config.showLabels && <span className={isAiDrawerOpen ? 'text-cta' : undefined}>{config.aiLabel}</span>}
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
-            <VisionIcon className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
+            <Eye className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
             {config.showLabels && <span className={isVisionOpen ? 'text-cta' : undefined}>{config.visionLabel}</span>}
             <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-cta" aria-hidden="true" />
           </button>
