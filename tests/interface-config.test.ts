@@ -29,8 +29,8 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.typography.baseSize).toBe(17);
     expect(normalized.typography.headingColor).toBe('#112233');
     expect(normalized.colors.pageBackground).toBe('#ffffff');
-    expect(normalized.buttons.secondaryColor).toBe('#5025d1');
-    expect(normalized.icons).toMatchObject({ library: 'lucide', color: '#654321', activeColor: '#fbbf24' });
+    expect(normalized.buttons.secondaryColor).toBe('#111318');
+    expect(normalized.icons).toMatchObject({ library: 'lucide', color: '#654321', activeColor: '#fe7003' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });
   });
 

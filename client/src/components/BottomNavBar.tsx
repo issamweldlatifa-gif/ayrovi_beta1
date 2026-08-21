@@ -97,7 +97,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
             <LensIcon className="interface-runtime-icon" style={iconStyle()} />
             {config.showLabels && <span>{config.lensLabel}</span>}
           </button>
-          <button type="button" onClick={onToggleAiDrawer} style={isAiDrawerOpen ? { backgroundColor: 'rgba(17,19,24,.08)' } : undefined} className={NAV_ITEM} aria-label={tr('AI — assistant conversationnel', 'AI — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
+          <button type="button" onClick={onToggleAiDrawer} style={isAiDrawerOpen ? { backgroundColor: 'rgba(17,19,24,.08)' } : undefined} className={NAV_ITEM} aria-label={tr('SONIM BETA — assistant conversationnel', 'SONIM BETA — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
             <AiIcon className="interface-runtime-icon" style={iconStyle()} />
             {config.showLabels && <span>{config.aiLabel}</span>}
           </button>

@@ -530,7 +530,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
           <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={onClose} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
-            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-primary min-w-0 px-2 text-xs">{tr('Continuer vers le paiement', 'المتابعة إلى الدفع')}</button>
+            <button type="button" onClick={handleDeliveryContinue} className="ay-btn-cta min-w-0 px-2 text-xs">{tr('Continuer vers le paiement', 'المتابعة إلى الدفع')}</button>
           </div>
           </>}
 
@@ -600,7 +600,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           </label>
           <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour', 'رجوع')}</button>
-            <button type="submit" disabled={isLoading || !formData.termsAccepted || (hasAvailablePaymentMethod&&!isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod)) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-primary min-w-0 px-2 text-xs sm:text-sm">
+            <button type="submit" disabled={isLoading || !formData.termsAccepted || (hasAvailablePaymentMethod&&!isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod)) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)} className="ay-btn-cta min-w-0 px-2 text-xs sm:text-sm">
               {isLoading ? <><Loader2 className="h-4 w-4 animate-spin" />{tr('Création…', 'جارٍ الإنشاء…')}</> : <><CheckCircle2 className="h-4 w-4" />{!hasAvailablePaymentMethod?tr('Créer la commande','إنشاء الطلب'):formData.paymentMethod.toUpperCase()==='CARD'?tr('Créer et payer','إنشاء ودفع'):tr('Créer puis continuer','إنشاء ثم متابعة')}</>}
             </button>
           </div>

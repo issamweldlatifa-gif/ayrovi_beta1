@@ -2,6 +2,13 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.4] - 2026-08-21
+
+### Changed
+- Official public name is AYROVI. The shopping assistant is SONIM BETA (nav label SONIM).
+- Public chrome is black and white. Orange (`#fe7003`) is reserved for pay/commander CTAs and hearts. Yellow becomes a lighter orange (`#ffb070`).
+- New orders use `AYR-` again.
+
 ## [3.8.3] - 2026-08-21
 
 ### Changed

@@ -549,7 +549,7 @@ describe('AYSONIC platform', () => {
 
     expect(checkoutResponse.status).toBe(200);
     expect(checkoutResponse.body.success).toBe(true);
-    expect(checkoutResponse.body.orderNumber).toMatch(/^AYS-\d{6}$/);
+    expect(checkoutResponse.body.orderNumber).toMatch(/^AYR-\d{6}$/);
     // Acompte de confirmation : 20% du total, statut AWAITING_DEPOSIT tant que l'acompte n'est pas validé.
     expect(checkoutResponse.body.deposit.percent).toBe(20);
     expect(checkoutResponse.body.deposit.status).toBe('PENDING');
@@ -981,7 +981,7 @@ describe('AYSONIC platform', () => {
     expect(commerce.body.data.deposit).toHaveProperty('flouciNumber');
     expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
     expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
-    expect(commerce.body.data.theme.primary).toBe('#673de6');
+    expect(commerce.body.data.theme.primary).toBe('#111318');
     expect(commerce.body.data.pricing.version).toBe(1);
 
     const preview = await request(app).post('/api/public/pricing/preview').send({ originalPrice: 21.99, currency: 'EUR', quantity: 2 });
@@ -1027,8 +1027,8 @@ describe('AYSONIC platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-modern');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#673de6', heroBackground: '#24104f' });
-    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#fbbf24' });
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111318', heroBackground: '#111318' });
+    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#fe7003' });
     expect(row.setting_value.navigation.color).toBe('#ffffff');
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
@@ -1237,7 +1237,7 @@ describe('AYSONIC platform', () => {
     expect(audit.status).toBe(200);
     expect(audit.body.data.some((entry: any) => entry.action === 'CREATE' && entry.module === 'PRODUCTS' && entry.entity_id === createdProductId)).toBe(true);
     const pricingAudit = audit.body.data.find((entry: any) => entry.module === 'PRICING');
-    expect(pricingAudit.user_name).toBe('AYSONIC Admin');
+    expect(pricingAudit.user_name).toBe('AYROVI Admin');
     expect(pricingAudit.old_value.version).toBe(originalPricingVersion);
     expect(pricingAudit.new_value.version).toBe(originalPricingVersion + 1);
   });

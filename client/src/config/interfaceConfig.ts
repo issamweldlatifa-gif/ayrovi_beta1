@@ -149,7 +149,7 @@ export interface PublicInterfaceConfig {
 export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   logoUrl: '/media/logo-ayrovi.png',
   sections: [
-    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#24104f', textColor: '#ffffff', paddingY: 0, contained: false },
+    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#111318', textColor: '#ffffff', paddingY: 0, contained: false },
     { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
     { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fe', textColor: '#1d2130', paddingY: 0, contained: false },
     { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
@@ -189,13 +189,13 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     danger: '#dc2626',
   },
   buttons: {
-    background: '#24104f', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#5025d1',
-    borderColor: '#673de6', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
+    background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111318',
+    borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#673de6', activeColor: '#fbbf24', size: 20, style: 'outline' },
+  icons: { library: 'ayrovi', color: '#111318', activeColor: '#fe7003', size: 20, style: 'outline' },
   navigation: {
-    background: '#17151f', color: '#ffffff', activeBackground: '#673de6', showLabels: true, height: 72,
-    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'AI', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
+    background: '#ffffff', color: '#111318', activeBackground: '#111318', showLabels: true, height: 72,
+    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
   layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },

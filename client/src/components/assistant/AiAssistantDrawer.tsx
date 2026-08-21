@@ -795,7 +795,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       dir={direction}
       role="dialog"
       aria-modal="true"
-      aria-label={tr('Assistant AYROVI', 'مساعد AYROVI')}
+      aria-label={tr('SONIM BETA', 'SONIM BETA')}
     >
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
         <AssistantHeader
@@ -805,7 +805,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         />
 
         {isBooting ? (
-          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-8" aria-busy="true" aria-label={tr('Chargement d’AYROVI AI', 'جارٍ تحميل AYROVI AI')}>
+          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-8" aria-busy="true" aria-label={tr('Chargement de SONIM BETA', 'جارٍ تحميل SONIM BETA')}>
             <div className="mx-auto h-20 w-20 animate-pulse rounded-full bg-brand/10" />
             <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
             <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
@@ -866,7 +866,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onOpenOrders={onOpenOrders}
           onOpenLens={onOpenLens}
           onOpenAccount={onOpenAccount}
-          onHelp={() => { closeAssistantLayer(); sendMessage('Comment utiliser l’assistant AYROVI et Lens ?'); }}
+          onHelp={() => { closeAssistantLayer(); sendMessage('Comment utiliser SONIM BETA et Lens ?'); }}
           onToggleDark={() => setIsDark((dark) => !dark)}
         />
 

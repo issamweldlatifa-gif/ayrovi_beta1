@@ -118,7 +118,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
             {/* Identité AI + accueil personnalisé */}
             <div className="flex flex-col items-center text-center">
               <span className="text-brand"><AyroviMotion state="idle" size={92} /></span>
-              <p className={`mt-4 text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-brand-light' : 'text-brand'}`}>AYROVI AI</p>
+              <p className={`mt-4 text-[10px] font-black uppercase tracking-[0.3em] ${isDark ? 'text-brand-light' : 'text-brand'}`}>SONIM BETA</p>
               <h2 className={`mt-2 text-[26px] font-black leading-tight tracking-tight sm:text-3xl ${isDark ? 'text-white' : 'text-ink'}`}>
                 {tr('Bonjour', 'مرحبًا')}{customerFirstName ? ` ${customerFirstName}` : ''}
               </h2>

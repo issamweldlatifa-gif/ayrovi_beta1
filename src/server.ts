@@ -180,8 +180,8 @@ app.use('/api', createApiRouter(db, scraper, visionExtractor));
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'AYSONIC Universal Shopping & Vision Platform',
-    version: '3.8.3',
+    service: 'AYROVI Universal Shopping & Vision Platform',
+    version: '3.8.4',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });

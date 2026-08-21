@@ -4,6 +4,8 @@
   --color-brand-dark: var(--ayrovi-primary-dark);
   --color-brand-light: var(--ayrovi-primary-light);
   --color-brand-deep: var(--ayrovi-neutral-950);
+  --color-cta: var(--ayrovi-cta);
+  --color-cta-dark: var(--ayrovi-cta-dark);
   --color-accent: var(--ayrovi-accent);
   --color-accent-deep: var(--ayrovi-accent-dark);
   --color-success: var(--ayrovi-success);
@@ -26,11 +28,13 @@
 @layer base {
   :root {
     color-scheme: light;
-    --ayrovi-primary: #673de6;
-    --ayrovi-primary-dark: #5025d1;
-    --ayrovi-primary-light: #7e57ff;
-    --ayrovi-accent: #fbbf24;
-    --ayrovi-accent-dark: #9a6700;
+    --ayrovi-primary: #111318;
+    --ayrovi-primary-dark: #050505;
+    --ayrovi-primary-light: #3f3f46;
+    --ayrovi-cta: #fe7003;
+    --ayrovi-cta-dark: #e05f00;
+    --ayrovi-accent: #ffb070;
+    --ayrovi-accent-dark: #fe7003;
     --ayrovi-success: #15803d;
     --ayrovi-danger: #dc2626;
     --ayrovi-warning: #b77900;
@@ -38,7 +42,7 @@
     --ayrovi-neutral-200: #e2e8f0;
     --ayrovi-neutral-500: #6b7280;
     --ayrovi-neutral-900: #1d2130;
-    --ayrovi-neutral-950: #24104f;
+    --ayrovi-neutral-950: #111318;
     --ayrovi-white: #ffffff;
     --ayrovi-black: #050505;
     --ayrovi-whatsapp: #25d366;
@@ -49,8 +53,8 @@
     --ayrovi-radius-control: 0.75rem;
     --ayrovi-radius-card: 1rem;
     --ayrovi-icon-stroke: 1.5;
-    --ayrovi-shadow-card: 0 12px 30px -22px rgb(36 16 79 / 35%);
-    --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(36 16 79 / 45%);
+    --ayrovi-shadow-card: 0 12px 30px -22px rgb(17 19 24 / 22%);
+    --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(17 19 24 / 35%);
     --ayrovi-page-gap-mobile: 2rem;
     --ayrovi-page-gap-desktop: 3rem;
 

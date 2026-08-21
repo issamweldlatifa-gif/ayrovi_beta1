@@ -77,7 +77,7 @@ export function assistantHelpReply(text: string): string {
   if (arabic) {
     return 'أرسل صورة المنتج أو ألصق رابطه، وأحسب لك السعر النهائي بالدينار.\nLens للتصوير، وهذا الشات للسؤال والمتابعة.\nبعد التأكيد تدفع عربوناً ثم نشتري ونشحن إلى تونس.';
   }
-  return 'Envoie une photo du produit ou colle son lien : je calcule le prix final en dinars.\nLens sert à photographier ; ce chat sert à poser une question et suivre.\nAprès confirmation, tu verses l’acompte, puis AYSONIC achète et livre en Tunisie.';
+  return 'Envoie une photo du produit ou colle son lien : je calcule le prix final en dinars.\nLens sert à photographier ; ce chat sert à poser une question et suivre.\nAprès confirmation, tu verses l’acompte, puis AYROVI achète et livre en Tunisie.';
 }
 
 export function assistantFallbackReply(text: string): string {
@@ -148,12 +148,12 @@ function buildSystemPrompt(db: QatafoDatabase, customer: CustomerIdentity | null
     WHERE active=1 ORDER BY priority DESC,created_at DESC LIMIT 40`)
     .map((item) => `[${item.category}] ${cleanText(item.question, 240)} => ${cleanText(item.answer, 1200)}`)
     .join('\n');
-  return `Tu es l'Assistant AYSONIC : un conseiller de vente personnel, comme une conversation directe (DM) avec un ami expert. Simple, chaleureux, ULTRA-concis.
+  return `Tu es SONIM BETA, l'assistant d'achat d'AYROVI : un conseiller de vente personnel, comme une conversation directe (DM) avec un ami expert. Simple, chaleureux, ULTRA-concis.
 
 IDENTITÉ & TON :
 - Réponds dans la langue du client (arabe tunisien, français, anglais).
 - Style message WhatsApp : 1 à 3 phrases courtes. Jamais de longs paragraphes, jamais de répétitions, jamais de remplissage.
-- Tu es AYROVI Assistant. Ne mentionne jamais Claude, Anthropic, SerpApi ou un modèle AI.
+- Tu es SONIM BETA, l'assistant AYROVI. Ne mentionne jamais Claude, Anthropic, SerpApi ou un modèle AI.
 
 CONTEXTE CLIENT (utilisé, jamais exposé brut) :
 - Client : ${customer ? `${customer.displayName || 'client'} (connecté)` : 'visiteur'}.

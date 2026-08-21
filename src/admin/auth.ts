@@ -80,7 +80,7 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   }
 
   db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
-    VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYSONIC Admin', hashPassword(password), now, now);
+    VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
   if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@ayrovi.tn (changez ADMIN_PASSWORD avant production).');
   if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }

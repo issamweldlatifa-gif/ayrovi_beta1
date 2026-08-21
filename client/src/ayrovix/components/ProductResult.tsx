@@ -261,7 +261,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
             }}
             disabled={ordering || Number(selectedPrice) <= 0 || selectedCurrency == null}
-            className="ay-btn-primary min-h-[52px] flex-1 px-5 text-sm"
+            className="ay-btn-cta min-h-[52px] flex-1 px-5 text-sm"
           >
             {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`)}</>}
           </button>

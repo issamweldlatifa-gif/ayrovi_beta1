@@ -110,7 +110,7 @@ const PostActions: React.FC<{
   };
   return (
   <div className="flex items-center gap-1 px-3 pt-3">
-    <button type="button" onClick={onLike} aria-label={liked ? tr('Ne plus aimer', 'إلغاء الإعجاب') : tr('Aimer', 'إعجاب')} className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${liked ? 'heart-pop text-brand' : 'text-ink hover:bg-surface'}`}>
+    <button type="button" onClick={onLike} aria-label={liked ? tr('Ne plus aimer', 'إلغاء الإعجاب') : tr('Aimer', 'إعجاب')} className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${liked ? 'heart-pop text-cta' : 'text-ink hover:bg-surface'}`}>
       {liked ? <HeartFilled size={24} /> : <Heart size={24} />}
     </button>
     <button type="button" onClick={onComment} aria-label={tr('Commenter', 'تعليق')} className="grid h-12 w-12 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">

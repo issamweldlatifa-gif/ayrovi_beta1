@@ -2,7 +2,7 @@ import React from 'react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'cta';
 export type ButtonSize = 'sm' | 'md' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {

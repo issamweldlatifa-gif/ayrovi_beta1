@@ -142,6 +142,8 @@ export const App: React.FC = () => {
         root.style.setProperty('--ayrovi-primary-dark', colors.primaryDark);
         root.style.setProperty('--ayrovi-primary-light', colors.primaryLight);
         root.style.setProperty('--ayrovi-accent', colors.accent);
+        root.style.setProperty('--ayrovi-cta', '#fe7003');
+        root.style.setProperty('--ayrovi-cta-dark', '#e05f00');
         root.style.setProperty('--ayrovi-neutral-950', colors.heroBackground);
         root.style.setProperty('--ayrovi-success', colors.success);
         root.style.setProperty('--ayrovi-warning', colors.warning);

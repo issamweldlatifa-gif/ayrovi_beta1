@@ -1090,9 +1090,30 @@ export class QatafoDatabase {
       insert.run(category.id, category.label, JSON.stringify(category.keywords), category.customsRate,
         category.tvaRate, category.defaultWeightKg, category.status, index + 1, now);
     });
-    this.db.exec(`UPDATE settings SET setting_value='AYSONIC',updated_at='${now}'
-      WHERE setting_key IN ('company_name','company_legal_name') AND setting_value='AYROVI'`);
-    this.db.exec(`UPDATE admin_users SET name='AYSONIC Admin',updated_at='${now}' WHERE name='AYROVI Admin'`);
+    this.db.exec(`UPDATE settings SET setting_value='AYROVI',updated_at='${now}'
+      WHERE setting_key IN ('company_name','company_legal_name') AND setting_value='AYSONIC'`);
+    this.db.exec(`UPDATE admin_users SET name='AYROVI Admin',updated_at='${now}' WHERE name='AYSONIC Admin'`);
+    this.rebrandNoirOrangePalette();
+  }
+
+  /** Public chrome: black/white with a restrained orange CTA. Rewrites only the old purple/yellow defaults. */
+  private rebrandNoirOrangePalette() {
+    const now = new Date().toISOString();
+    const paint = (raw: string) => raw
+      .replace(/#673de6/gi, '#111318')
+      .replace(/#5025d1/gi, '#050505')
+      .replace(/#7e57ff/gi, '#3f3f46')
+      .replace(/#fbbf24/gi, '#ffb070')
+      .replace(/#24104f/gi, '#111318')
+      .replace(/"aiLabel":"AI"/g, '"aiLabel":"SONIM"')
+      .replace(/"preset":"violet"/g, '"preset":"noir"')
+      .replace(/"activeColor":"#ffb070"/g, '"activeColor":"#fe7003"');
+    for (const key of ['interface_config', 'site_theme']) {
+      const row = this.get<any>('SELECT id,setting_value FROM settings WHERE setting_key=?', key);
+      if (!row?.setting_value) continue;
+      const next = paint(String(row.setting_value));
+      if (next !== row.setting_value) this.run('UPDATE settings SET setting_value=?,updated_at=? WHERE id=?', next, now, row.id);
+    }
   }
 
   private seedCoreData() {
@@ -1109,7 +1130,7 @@ export class QatafoDatabase {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const settings = [
-      ['setting_name', 'GENERAL', 'company_name', 'AYSONIC', 'STRING', 'Nom de la plateforme'],
+      ['setting_name', 'GENERAL', 'company_name', 'AYROVI', 'STRING', 'Nom de la plateforme'],
       ['setting_email', 'GENERAL', 'company_email', 'contact@ayrovi.tn', 'STRING', 'Email'],
       ['setting_phone', 'GENERAL', 'company_phone', '+216 00 000 000', 'STRING', 'Téléphone'],
       ['setting_address', 'GENERAL', 'company_address', 'Tunis, Tunisie', 'STRING', 'Adresse'],
@@ -1121,8 +1142,8 @@ export class QatafoDatabase {
       ['setting_payment_methods', 'PAYMENT', 'payment_methods', JSON.stringify(['CARD','FLOUCI','BANK_TRANSFER','POSTE']), 'JSON', 'Méthodes de paiement de l’acompte'],
       ['setting_deposit_percent', 'PAYMENT', 'deposit_percent', '20', 'NUMBER', 'Pourcentage de l’acompte de confirmation (%)'],
       ['setting_deposit_review_delay', 'PAYMENT', 'deposit_review_delay', 'Sous 1 jour ouvré après réception du justificatif', 'STRING', 'Délai indicatif de vérification de l’acompte'],
-      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYSONIC ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
-      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYSONIC', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
+      ['setting_unavailable_refund', 'PAYMENT', 'unavailable_refund_policy', 'Acompte remboursé si AYROVI ne peut pas valider ou acheter l’article demandé', 'STRING', 'Politique si l’article ne peut pas être validé'],
+      ['setting_company_legal_name', 'PAYMENT', 'company_legal_name', 'AYROVI', 'STRING', 'Nom légal de l’entreprise (reçus/factures)'],
       ['setting_bank_rib', 'PAYMENT', 'bank_rib', '', 'STRING', 'RIB pour le virement bancaire'],
       ['setting_poste_account', 'PAYMENT', 'poste_account', '', 'STRING', 'Compte courant postal (mandat poste)'],
       ['setting_flouci_number', 'PAYMENT', 'flouci_number', '', 'STRING', 'Numéro / identifiant Flouci'],
@@ -1134,24 +1155,24 @@ export class QatafoDatabase {
       ['setting_tiktok_url', 'CHANNELS', 'tiktok_url', '', 'STRING', 'Lien profil TikTok'],
       ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
-        preset: 'violet', primary: '#673de6', primaryDark: '#5025d1', primaryLight: '#7e57ff',
-        accent: '#fbbf24', ink: '#1d2130', gradient: 'linear-gradient(135deg,#24104f 0%,#673de6 100%)',
+        preset: 'noir', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46',
+        accent: '#ffb070', ink: '#1d2130', gradient: 'linear-gradient(135deg,#111318 0%,#3f3f46 100%)',
         font: 'jakarta', radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
         logoUrl: '/media/logo-ayrovi.png',
         sections: [
-          { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#24104f', textColor: '#ffffff', paddingY: 0, contained: false },
+          { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#111318', textColor: '#ffffff', paddingY: 0, contained: false },
           { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
           { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fe', textColor: '#1d2130', paddingY: 0, contained: false },
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
         ],
         typography: { preset: 'ayrovi-modern', body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280', lineHeight: 1.6, letterSpacing: -0.02, headingScale: 1 },
-        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#673de6', primaryDark: '#5025d1', primaryLight: '#7e57ff', accent: '#fbbf24', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#fbbf24', announcementText: '#1d2130', heroBackground: '#24104f', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
-        buttons: { background: '#24104f', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#5025d1', borderColor: '#673de6', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#673de6', activeColor: '#fbbf24', size: 20, style: 'outline' },
-        navigation: { background: '#17151f', color: '#ffffff', activeBackground: '#673de6', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'AI', visionLabel: 'Vision' },
+        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#ffb070', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#ffb070', announcementText: '#1d2130', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
+        buttons: { background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#050505', borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
+        icons: { library: 'ayrovi', color: '#111318', activeColor: '#ffb070', size: 20, style: 'outline' },
+        navigation: { background: '#17151f', color: '#ffffff', activeBackground: '#111318', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
       }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],
@@ -1261,6 +1282,7 @@ export class QatafoDatabase {
         'Ouvrez Lens, collez le lien du produit ou ajoutez une capture, puis confirmez le panier et vos coordonnées.',
         JSON.stringify(['commande','commander','lens','capture']),80,1,now,now);
     }
+    this.rebrandNoirOrangePalette();
   }
 
   public all<T = any>(sql: string, ...params: any[]): T[] {
@@ -1490,7 +1512,7 @@ export class QatafoDatabase {
     const rules = this.getPricingRules();
     const now = new Date().toISOString();
     const orderId = `order_${randomUUID()}`;
-    const orderNumber = `AYS-${randomInt(100000, 1000000)}`;
+    const orderNumber = `AYR-${randomInt(100000, 1000000)}`;
     const normalizedPhone = input.phone.replace(/\s+/g, ' ').trim();
 
     return this.transaction(() => {

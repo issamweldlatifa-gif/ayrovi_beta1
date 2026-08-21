@@ -216,7 +216,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               <button
                 type="button"
                 onClick={onProceedToCheckout}
-                className="ay-btn-primary w-full text-sm"
+                className="ay-btn-cta w-full text-sm"
               >
                 <span>{tr('Continuer vers la livraison', 'المتابعة إلى التوصيل')}</span>
                 <ArrowRight className={`w-4 h-4 ${direction === 'rtl' ? 'rotate-180' : ''}`} />
