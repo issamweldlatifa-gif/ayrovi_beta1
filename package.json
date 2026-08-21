@@ -1,6 +1,6 @@
 {
   "name": "ayrovi",
-  "version": "3.8.1",
+  "version": "3.8.2",
   "description": "AYSONIC — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {

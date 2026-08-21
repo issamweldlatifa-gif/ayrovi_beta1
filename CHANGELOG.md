@@ -2,6 +2,12 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.2] - 2026-08-21
+
+### Changed
+- Official AYSONIC A mark replaces the purple fig leaf on the public site, admin chrome, favicon and PWA icons. Same path `/media/logo-ayrovi.png`.
+- Header logo returns home. Dark admin sidebar uses the white mark.
+
 ## [3.8.1] - 2026-08-20
 
 ### Added

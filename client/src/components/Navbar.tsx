@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     <AppHeader
       sticky
       className="public-site-header"
-      title="AYROVI"
+      title="AYSONIC"
       subtitle={tr('Shopping international, simplement', 'تسوّق عالمي بكل سهولة')}
       logoUrl={logoUrl}
       onLogoClick={onGoHome}

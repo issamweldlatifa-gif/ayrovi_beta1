@@ -167,11 +167,23 @@ export const X = createAyroviIcon('X', [
   ['path', { d: 'm5 5 14 14M19 5 5 19', key: 'close' }],
 ]);
 
-/** AYROVI product and brand marks. */
-export const FigLeaf = createAyroviIcon('FigLeaf', [
-  ['path', { d: 'M12 20c-4.6 0-7.5-3.2-7.5-7.3C4.5 8.3 8.2 5.5 12 4c3.8 1.5 7.5 4.3 7.5 8.7 0 4.1-2.9 7.3-7.5 7.3Z', key: 'fig' }],
-  ['path', { d: 'M12 4v16M12 8.2c-1.8.8-3.1 2.2-3.8 4.1M12 8.2c1.8.8 3.1 2.2 3.8 4.1', key: 'fig-veins' }],
-]);
+/** Official AYSONIC A mark — filled, not the old fig leaf. */
+export const FigLeaf = React.forwardRef<SVGSVGElement, QatafoIconProps>(({ className, strokeWidth: _strokeWidth, ...props }, ref) => (
+  <svg
+    ref={ref}
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    stroke="none"
+    data-ayrovi-icon="FigLeaf"
+    className={iconClassName(className)}
+    {...props}
+  >
+    <path d="M1.9 21.6h6.05L12.15 2.5H6.55L1.9 21.6Z" />
+    <path d="M17.55 2.5H12.2L16.05 21.6h6.05L17.55 2.5Z" />
+    <circle cx="12" cy="15.55" r="2.15" />
+  </svg>
+));
+FigLeaf.displayName = 'FigLeaf';
 
 export const LensBox = createAyroviIcon('LensBox', [
   ['path', { d: 'M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3', key: 'lens-frame' }],
