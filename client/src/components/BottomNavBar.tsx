@@ -35,10 +35,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
-  const iconStyle = (): React.CSSProperties => ({
+  const iconStyle = (active = false): React.CSSProperties => ({
     width: iconConfig.size,
     height: iconConfig.size,
-    color: '#111318',
+    color: active ? (iconConfig.activeColor || '#fe7003') : '#111318',
     fill: iconConfig.style === 'solid' && ['ayrovi', 'lucide'].includes(iconConfig.library) ? 'currentColor' : undefined,
   });
   useBodyScrollLock(isVisionOpen);
@@ -94,17 +94,17 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       >
         <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
-            <LensIcon className="interface-runtime-icon" style={iconStyle()} />
+            <LensIcon className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span>{config.lensLabel}</span>}
           </button>
-          <button type="button" onClick={onToggleAiDrawer} style={isAiDrawerOpen ? { backgroundColor: 'rgba(17,19,24,.08)' } : undefined} className={NAV_ITEM} aria-label={tr('SONIM BETA — assistant conversationnel', 'SONIM BETA — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
-            <AiIcon className="interface-runtime-icon" style={iconStyle()} />
-            {config.showLabels && <span>{config.aiLabel}</span>}
+          <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr('SONIM BETA — assistant conversationnel', 'SONIM BETA — المساعد الذكي')} aria-pressed={isAiDrawerOpen}>
+            <AiIcon className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
+            {config.showLabels && <span className={isAiDrawerOpen ? 'text-cta' : undefined}>{config.aiLabel}</span>}
           </button>
-          <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')}>
-            <VisionIcon className="interface-runtime-icon" style={iconStyle()} />
-            {config.showLabels && <span>{config.visionLabel}</span>}
-            <span className="absolute end-1 top-1 rounded-full bg-accent px-1.5 py-0.5 text-[8px] font-black text-ink">{tr('Bientôt', 'قريبًا')}</span>
+          <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
+            <VisionIcon className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
+            {config.showLabels && <span className={isVisionOpen ? 'text-cta' : undefined}>{config.visionLabel}</span>}
+            <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-cta" aria-hidden="true" />
           </button>
         </nav>
       </div>

@@ -83,18 +83,18 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Segoe UI", Arial, sans-serif; color: #17131f; font-size: 13px; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #673de6; padding-bottom: 20px; }
-  .brand { font-size: 26px; font-weight: 900; color: #673de6; letter-spacing: -0.5px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #fe7003; padding-bottom: 20px; }
+  .brand { font-size: 26px; font-weight: 900; color: #111318; letter-spacing: -0.5px; }
   .brand small { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
   .doc h1 { font-size: 22px; font-weight: 900; }
-  .doc .num { color: #673de6; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
+  .doc .num { color: #111318; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
   .meta { display: flex; gap: 24px; margin: 24px 0; }
   .card { flex: 1; border: 1px solid #e5e7f0; border-radius: 12px; padding: 14px 16px; }
   .card h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #8b8494; margin-bottom: 8px; }
   .card p { line-height: 1.55; }
   table { width: 100%; border-collapse: collapse; margin: 18px 0; }
-  th { background: #f5f2ff; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #4e28b9; padding: 10px 12px; }
+  th { background: #f4f4f5; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #111318; padding: 10px 12px; }
   td { padding: 10px 12px; border-bottom: 1px solid #eef0f6; vertical-align: top; }
   td small { display: block; color: #8b8494; margin-top: 3px; font-size: 11px; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -105,8 +105,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   .deposit strong { color: #047857; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: #f5f2ff; border: 1px dashed #673de6; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
-  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #4e28b9; letter-spacing: 1px; }
+  .tracking { background: #f4f4f5; border: 1px dashed #fe7003; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #111318; letter-spacing: 1px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7f0; color: #8b8494; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
   <div class="header">
@@ -246,9 +246,9 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
 
 export function invoiceEmailHtml(input: { customerName: string; orderNumber: string; invoiceNumber: string; trackingCode: string; totalLabel: string; depositLabel: string; balanceLabel: string; company: string }): string {
   const e = escapeHtml;
-  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#17131f;background:#f7f5fb;padding:24px;">
-  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e2ee;">
-    <div style="background:#673de6;padding:22px 26px;color:#fff;">
+  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#17131f;background:#f7f7f7;padding:24px;">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
+    <div style="background:#111318;padding:22px 26px;color:#fff;">
       <strong style="font-size:20px;">${e(input.company)}</strong>
       <p style="margin:4px 0 0;font-size:12px;opacity:.85;">Confirmation d'acompte & facture électronique</p>
     </div>
@@ -260,7 +260,7 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
         <tr><td style="padding:8px 0;color:#6b7280;">Facture</td><td style="text-align:right;font-weight:700;">${e(input.invoiceNumber)}</td></tr>
         <tr><td style="padding:8px 0;color:#6b7280;">Acompte encaissé</td><td style="text-align:right;font-weight:700;color:#047857;">${e(input.depositLabel)}</td></tr>
         <tr><td style="padding:8px 0;color:#6b7280;">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
-        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#4e28b9;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
+        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#111318;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
       <p style="line-height:1.6;color:#374151;">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
       <p style="margin-top:22px;font-size:12px;color:#8b8494;">Merci de votre confiance — l'équipe ${e(input.company)}</p>

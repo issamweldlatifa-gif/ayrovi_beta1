@@ -62,7 +62,8 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).toContain('else if (delta < -8) setIsVisible(true)');
     expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*rgba\(255,255,255,\.72\)[^}]*backdrop-filter:blur\(22px\)/);
     expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
-    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#111318!important}');
+    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#111318}');
+    expect(runtimeCss).toContain("[aria-pressed='true'] .interface-runtime-icon");
   });
 
   it('removes the exchange-rate card and restores the sticky parallax scene', () => {

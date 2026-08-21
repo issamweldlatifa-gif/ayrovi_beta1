@@ -9,6 +9,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   primary: 'ay-runtime-button--primary border border-brand bg-brand text-white shadow-card hover:border-brand-dark hover:bg-brand-dark',
   secondary: 'ay-runtime-button--secondary border border-brand bg-white text-brand-dark hover:bg-brand/5',
   ghost: 'ay-runtime-button--ghost border border-transparent bg-transparent text-brand-dark hover:bg-brand/5',
+  cta: 'ay-btn-cta border border-cta bg-cta text-white hover:border-cta-dark hover:bg-cta-dark',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

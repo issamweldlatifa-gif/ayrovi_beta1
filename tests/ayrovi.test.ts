@@ -1027,9 +1027,9 @@ describe('AYSONIC platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-modern');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111318', heroBackground: '#111318' });
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111318', heroBackground: '#111318', announcementBackground: '#111318', accent: '#fe7003' });
     expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#fe7003' });
-    expect(row.setting_value.navigation.color).toBe('#ffffff');
+    expect(row.setting_value.navigation.color).toBe('#111318');
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
       value: { ...row.setting_value, sections: row.setting_value.sections.slice(0, 4) },
@@ -1040,7 +1040,7 @@ describe('AYSONIC platform', () => {
     expect(saved.status).toBe(200);
     const publicConfig = await request(app).get('/api/public/commerce-config');
     expect(publicConfig.status).toBe(200);
-    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#17151f');
+    expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#ffffff');
   });
 
   test('admin mutations require a valid CSRF token', async () => {

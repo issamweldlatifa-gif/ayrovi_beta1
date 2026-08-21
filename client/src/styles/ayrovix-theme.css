@@ -64,7 +64,7 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li:not
 
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-current::before,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-complete::before {
-  background-color: var(--ayrovi-primary);
+  background-color: var(--ayrovi-cta);
 }
 
 @media (max-width: 359px) {

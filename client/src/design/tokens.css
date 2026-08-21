@@ -1,4 +1,8 @@
-/* AYROVI design tokens — the only source of brand, semantic, spacing and shape values. */
+/* AYROVI design tokens — the only source of brand, semantic, spacing and shape values.
+   Visual weight (not a pixel count): 70% white/off-white · 25% black/near-black · 5% orange.
+   Orange (#fe7003) = attention, not decoration. Never body/heading text, full cards,
+   page chrome or every button. Allowed: logo dot, primary CTA, active nav, selected
+   state, progress, AI/Lens accent, thin glow. Hero orange coverage ≤ 8%. */
 @theme inline {
   --color-brand: var(--ayrovi-primary);
   --color-brand-dark: var(--ayrovi-primary-dark);
@@ -33,8 +37,10 @@
     --ayrovi-primary-light: #3f3f46;
     --ayrovi-cta: #fe7003;
     --ayrovi-cta-dark: #e05f00;
-    --ayrovi-accent: #ffb070;
-    --ayrovi-accent-dark: #fe7003;
+    --ayrovi-orange: #fe7003;
+    --ayrovi-accent: #fe7003;
+    --ayrovi-accent-soft: #ffb070;
+    --ayrovi-accent-dark: #e05f00;
     --ayrovi-success: #15803d;
     --ayrovi-danger: #dc2626;
     --ayrovi-warning: #b77900;

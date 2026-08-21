@@ -4,6 +4,20 @@ import {
 } from '../client/src/config/interfaceConfig';
 
 describe('واجهتي full interface configuration', () => {
+  test('locks the 70/25/5 AYROVI palette on public defaults', () => {
+    expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
+      pageBackground: '#ffffff',
+      primary: '#111318',
+      accent: '#fe7003',
+      announcementBackground: '#111318',
+      announcementText: '#ffffff',
+      heroBackground: '#111318',
+    });
+    expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#fe7003');
+    expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#111318' });
+    expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#111318');
+  });
+
   test('publishes exactly five font presets and five icon models', () => {
     expect(INTERFACE_FONT_PRESETS).toHaveLength(5);
     expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).size).toBe(5);

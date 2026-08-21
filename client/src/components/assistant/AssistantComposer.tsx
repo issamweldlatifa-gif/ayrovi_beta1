@@ -82,7 +82,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           </div>
         ) : isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
-            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-brand/25 border-t-brand" />
+            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cta/25 border-t-cta" />
             <span className={`text-sm ${isDark ? 'text-white/80' : 'text-muted'}`}>{tr('Transcription du message vocal…', 'جارٍ تحويل الرسالة الصوتية إلى نص…')}</span>
           </div>
         ) : (
@@ -116,7 +116,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               type="button"
               onClick={isGenerating ? onStop : onSend}
               disabled={isTranscribing || (!isGenerating && (!canSend || isRecording))}
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-30 bg-brand text-white hover:bg-brand-dark`}
+              className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-30 bg-cta text-white hover:bg-cta-dark`}
               aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
             >
               {isGenerating ? <Pause className="h-[17px] w-[17px] fill-current" /> : <ArrowUp className="h-[18px] w-[18px] stroke-[2.5]" />}

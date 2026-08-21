@@ -80,7 +80,8 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ settings, title, subtitl
           ))}
         </div>
         <div className="absolute inset-0 z-[2] bg-gradient-to-t from-black/70 via-black/10 to-black/35" />
-        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-brand-deep/20 via-transparent to-brand-deep/15" />
+        <div className="absolute inset-0 z-[2] bg-gradient-to-r from-black/25 via-transparent to-black/15" />
+        <div className="ayrovi-hero-glow" aria-hidden="true" />
         {settings?.showArrows !== false && <>
           <button type="button" onClick={showPrevious} className="absolute left-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white shadow-lg backdrop-blur-md transition duration-300 hover:scale-105 hover:bg-black/35 sm:left-7 sm:h-12 sm:w-12" aria-label="Image précédente"><ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" /></button>
           <button type="button" onClick={showNext} className="absolute right-4 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white shadow-lg backdrop-blur-md transition duration-300 hover:scale-105 hover:bg-black/35 sm:right-7 sm:h-12 sm:w-12" aria-label="Image suivante"><ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" /></button>

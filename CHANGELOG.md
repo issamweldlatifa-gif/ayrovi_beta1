@@ -2,6 +2,14 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.5] - 2026-08-21
+
+### Changed
+- Official color system: 70% white / 25% black / 5% AYROVI orange (`#fe7003`).
+- Orange is attention only: logo dot, primary CTA, active navigation, selected state, progress, AI/Lens scan, thin hero glow (≤ 8%).
+- Orange is forbidden on body/heading text, full cards, page background, full navigation and non-CTA buttons.
+- Announcement bar is black with a 2px orange underline. Bottom-nav icons stay black until active.
+
 ## [3.8.4] - 2026-08-21
 
 ### Changed

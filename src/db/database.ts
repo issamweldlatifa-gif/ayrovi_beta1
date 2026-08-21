@@ -1096,18 +1096,51 @@ export class QatafoDatabase {
     this.rebrandNoirOrangePalette();
   }
 
-  /** Public chrome: black/white with a restrained orange CTA. Rewrites only the old purple/yellow defaults. */
+  /** Public chrome: 70% white / 25% black / 5% orange. Rewrites old purple/yellow/orange-wash defaults. */
   private rebrandNoirOrangePalette() {
     const now = new Date().toISOString();
-    const paint = (raw: string) => raw
-      .replace(/#673de6/gi, '#111318')
-      .replace(/#5025d1/gi, '#050505')
-      .replace(/#7e57ff/gi, '#3f3f46')
-      .replace(/#fbbf24/gi, '#ffb070')
-      .replace(/#24104f/gi, '#111318')
-      .replace(/"aiLabel":"AI"/g, '"aiLabel":"SONIM"')
-      .replace(/"preset":"violet"/g, '"preset":"noir"')
-      .replace(/"activeColor":"#ffb070"/g, '"activeColor":"#fe7003"');
+    const wash = new Set(['#ffb070', '#fbbf24', '#fe7003', '#f7c948']);
+    const paint = (raw: string) => {
+      let next = raw
+        .replace(/#673de6/gi, '#111318')
+        .replace(/#5025d1/gi, '#050505')
+        .replace(/#7e57ff/gi, '#3f3f46')
+        .replace(/#24104f/gi, '#111318')
+        .replace(/"aiLabel":"AI"/g, '"aiLabel":"SONIM"')
+        .replace(/"preset":"violet"/g, '"preset":"noir"');
+      try {
+        const parsed = JSON.parse(next);
+        if (parsed?.colors) {
+          const announcement = String(parsed.colors.announcementBackground || '').toLowerCase();
+          if (wash.has(announcement)) {
+            parsed.colors.announcementBackground = '#111318';
+            parsed.colors.announcementText = '#ffffff';
+          }
+          const accent = String(parsed.colors.accent || '').toLowerCase();
+          if (accent === '#fbbf24' || accent === '#ffb070') parsed.colors.accent = '#fe7003';
+        }
+        if (parsed?.icons) {
+          const active = String(parsed.icons.activeColor || '').toLowerCase();
+          if (active === '#ffb070' || active === '#fbbf24' || active === '#111318') parsed.icons.activeColor = '#fe7003';
+        }
+        if (parsed?.navigation) {
+          const navBg = String(parsed.navigation.background || '').toLowerCase();
+          if (navBg === '#17151f' || navBg === '#24104f') {
+            parsed.navigation.background = '#ffffff';
+            if (String(parsed.navigation.color || '').toLowerCase() === '#ffffff') parsed.navigation.color = '#111318';
+          }
+          if (String(parsed.navigation.activeBackground || '').toLowerCase() === '#111318') {
+            parsed.navigation.activeBackground = '#ffffff';
+          }
+        }
+        if (parsed?.preset === 'noir' && String(parsed.accent || '').toLowerCase() === '#ffb070') {
+          parsed.accent = '#fe7003';
+        }
+        return JSON.stringify(parsed);
+      } catch {
+        return next;
+      }
+    };
     for (const key of ['interface_config', 'site_theme']) {
       const row = this.get<any>('SELECT id,setting_value FROM settings WHERE setting_key=?', key);
       if (!row?.setting_value) continue;
@@ -1156,7 +1189,7 @@ export class QatafoDatabase {
       ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
         preset: 'noir', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46',
-        accent: '#ffb070', ink: '#1d2130', gradient: 'linear-gradient(135deg,#111318 0%,#3f3f46 100%)',
+        accent: '#fe7003', ink: '#1d2130', gradient: 'linear-gradient(135deg,#111318 0%,#050505 100%)',
         font: 'jakarta', radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
@@ -1169,10 +1202,10 @@ export class QatafoDatabase {
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
         ],
         typography: { preset: 'ayrovi-modern', body: "'Inter', 'Segoe UI', Helvetica, Arial, sans-serif", display: "'Plus Jakarta Sans', 'Segoe UI', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280', lineHeight: 1.6, letterSpacing: -0.02, headingScale: 1 },
-        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#ffb070', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#ffb070', announcementText: '#1d2130', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
+        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#fe7003', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#111318', announcementText: '#ffffff', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
         buttons: { background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#050505', borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#111318', activeColor: '#ffb070', size: 20, style: 'outline' },
-        navigation: { background: '#17151f', color: '#ffffff', activeBackground: '#111318', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
+        icons: { library: 'ayrovi', color: '#111318', activeColor: '#fe7003', size: 20, style: 'outline' },
+        navigation: { background: '#ffffff', color: '#111318', activeBackground: '#ffffff', showLabels: true, height: 72, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
       }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],

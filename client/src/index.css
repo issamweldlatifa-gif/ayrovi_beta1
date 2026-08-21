@@ -271,6 +271,10 @@
 
 .assistant-motion-badge[data-active='true'] {
   animation: assistantMotionBadgeGlow 1.55s ease-in-out infinite;
+  box-shadow:
+    0 9px 22px -11px color-mix(in srgb, var(--ayrovi-primary-dark) 90%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--ayrovi-cta) 45%, transparent),
+    0 0 18px color-mix(in srgb, var(--ayrovi-cta) 22%, transparent);
 }
 
 /* Branded task cards: no emoji, just AYROVI vector icons and the purple light effect. */
@@ -398,20 +402,20 @@
 .lens-scan { position: relative; overflow: hidden; }
 .lens-scan::before {
   content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--ayrovi-purple) 26%, transparent) 46%, color-mix(in oklab, var(--ayrovi-purple) 60%, transparent) 50%, color-mix(in oklab, var(--ayrovi-purple) 26%, transparent) 54%, transparent 100%);
+  background: linear-gradient(180deg, transparent 0%, color-mix(in oklab, var(--ayrovi-cta) 22%, transparent) 46%, color-mix(in oklab, var(--ayrovi-cta) 55%, transparent) 50%, color-mix(in oklab, var(--ayrovi-cta) 22%, transparent) 54%, transparent 100%);
   animation: lens-sweep 2.1s ease-in-out infinite;
 }
 .lens-scan::after {
   content: ""; position: absolute; inset: 10px; z-index: 2; pointer-events: none; border-radius: 12px;
   background:
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top left / 22px 2px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top left / 2px 22px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top right / 22px 2px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) top right / 2px 22px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom left / 22px 2px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom left / 2px 22px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom right / 22px 2px,
-    linear-gradient(var(--ayrovi-purple), var(--ayrovi-purple)) bottom right / 2px 22px;
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) top left / 22px 2px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) top left / 2px 22px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) top right / 22px 2px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) top right / 2px 22px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) bottom left / 22px 2px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) bottom left / 2px 22px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) bottom right / 22px 2px,
+    linear-gradient(var(--ayrovi-cta), var(--ayrovi-cta)) bottom right / 2px 22px;
   background-repeat: no-repeat;
   animation: lens-corners 2.1s ease-in-out infinite;
 }
