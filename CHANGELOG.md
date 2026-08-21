@@ -2,6 +2,12 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.7] - 2026-08-21
+
+### Changed
+- SONIM chat uses a 52px minimal toolbar: back (previous AYROVI page), SONIM mark, and menu.
+- SONIM menu lists Nouvelle conversation, Historique, Mes commandes, AYROVIX and Paramètres.
+
 ## [3.8.6] - 2026-08-21
 
 ### Changed

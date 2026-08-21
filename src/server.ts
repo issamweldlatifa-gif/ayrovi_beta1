@@ -181,7 +181,7 @@ app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
     service: 'AYROVI Universal Shopping & Vision Platform',
-    version: '3.8.6',
+    version: '3.8.7',
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });

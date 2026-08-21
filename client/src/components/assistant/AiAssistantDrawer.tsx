@@ -399,7 +399,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setIsRecording(false);
     setRecordSeconds(0);
     setFeedbackMessage(null);
-    onClose();
+    const start = navigation.stack.findIndex((layer) => layer.id === 'app:assistant');
+    const pops = start >= 0 ? navigation.stack.length - start : 1;
+    if (navigation.entry.depth <= 0 || pops >= navigation.entry.depth) navigation.goHome();
+    else window.history.go(-pops);
   };
 
   if (!isOpen) return null;
@@ -801,7 +804,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         <AssistantHeader
           isDark={isDark}
           onBack={handleCloseAssistant}
-          onOpenHistory={() => navigation.pushLayer({ id: 'assistant:menu' })}
+          onOpenMenu={() => navigation.pushLayer({ id: 'assistant:menu' })}
         />
 
         {isBooting ? (

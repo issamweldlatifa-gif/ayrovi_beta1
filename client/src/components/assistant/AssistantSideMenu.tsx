@@ -1,11 +1,11 @@
 import React from 'react';
 import {
-  ArrowLeft,
   Box,
+  History,
   LensBox,
-  MessageCircle,
   Moon,
   PenSquare,
+  Settings,
   Trash2,
   User,
 } from '../QatafoIcons';
@@ -42,7 +42,6 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
   onOpenOrders,
   onOpenLens,
   onOpenAccount,
-  onHelp,
   onToggleDark,
 }) => {
   const { direction, formatDate, tr } = useLocale();
@@ -55,16 +54,11 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
 
   return (
     <>
-      <button type="button" onClick={onClose} className="absolute inset-0 z-30 bg-ink/40 backdrop-blur-[2px]" aria-label={tr('Fermer l’historique', 'إغلاق السجل')} />
-      <aside className={`assistant-side-menu absolute inset-y-0 end-0 z-40 flex w-[91%] max-w-[430px] flex-col px-[18px] pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-overlay ${isDark ? 'bg-ink' : 'bg-surface'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('Historique et menu AYROVI', 'سجل وقائمة AYROVI')}>
-        <div className="flex items-center gap-3 pb-3">
-          <button type="button" onClick={onClose} className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 ${isDark ? 'bg-ink text-white/80' : 'bg-surface text-ink'}`} aria-label={tr('Retour au chat', 'العودة إلى المحادثة')}>
-            <ArrowLeft className={`h-[18px] w-[18px] ${direction === 'rtl' ? 'rotate-180' : ''}`} />
-          </button>
-          <div>
-            <strong className={`block text-base ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Historique', 'السجل')}</strong>
-            <span className="text-[11px] text-muted">{tr('Vos conversations sur cet appareil', 'محادثاتك على هذا الجهاز')}</span>
-          </div>
+      <button type="button" onClick={onClose} className="absolute inset-0 z-30 bg-ink/40 backdrop-blur-[2px]" aria-label={tr('Fermer le menu', 'إغلاق القائمة')} />
+      <aside className={`assistant-side-menu absolute inset-y-0 end-0 z-40 flex w-[91%] max-w-[430px] flex-col px-[18px] pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-overlay ${isDark ? 'bg-ink' : 'bg-white'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('Menu SONIM', 'قائمة SONIM')}>
+        <div className="flex items-center gap-2.5 pb-3">
+          <img src="/media/logo-ayrovi.png" alt="" className="h-7 w-7 bg-transparent object-contain" />
+          <strong className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-ink'}`}>SONIM</strong>
         </div>
 
         <button type="button" onClick={onNewConversation} className="ay-btn-primary mt-1 w-full text-sm">
@@ -72,11 +66,11 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
         </button>
 
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">
-          <p className={sectionLabel}>{tr('Conversations récentes', 'المحادثات الأخيرة')}</p>
+          <p className={sectionLabel}><span className="inline-flex items-center gap-2"><History className="h-3.5 w-3.5" />{tr('Historique', 'السجل')}</span></p>
           {conversations.length ? (
             <div className="space-y-1">
               {conversations.map((conversation) => (
-                <div key={conversation.id} className={`group flex items-center rounded-[14px] pe-1 transition ${conversation.id === activeConversationId ? (isDark ? 'bg-white/9' : 'bg-brand/10') : (isDark ? 'hover:bg-white/6' : 'hover:bg-ink/5')}`}>
+                <div key={conversation.id} className={`group flex items-center rounded-[14px] pe-1 transition ${conversation.id === activeConversationId ? (isDark ? 'bg-white/9' : 'bg-black/[0.04]') : (isDark ? 'hover:bg-white/6' : 'hover:bg-ink/5')}`}>
                   <button type="button" onClick={() => onSelectConversation(conversation)} className={`min-w-0 flex-1 px-3 py-2.5 text-start ${isDark ? 'text-white' : 'text-ink'}`}>
                     <span className="block truncate text-[13px] font-semibold">{conversation.title}</span>
                     <span className="mt-0.5 block text-[10px] text-muted">{formatDate(conversation.updatedAt)}</span>
@@ -88,19 +82,17 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
               ))}
             </div>
           ) : (
-            <p className={`rounded-[14px] px-3 py-4 text-center text-xs leading-5 ${isDark ? 'bg-white/5 text-muted' : 'bg-surface text-muted'}`}>{tr('Votre première conversation apparaîtra ici.', 'ستظهر محادثتك الأولى هنا.')}</p>
+            <p className={`rounded-[14px] px-3 py-4 text-center text-xs leading-5 ${isDark ? 'bg-white/5 text-muted' : 'bg-[#F7F7F7] text-muted'}`}>{tr('Votre première conversation apparaîtra ici.', 'ستظهر محادثتك الأولى هنا.')}</p>
           )}
 
-          <p className={sectionLabel}>AYROVI</p>
           <button type="button" onClick={onOpenOrders} className={mainItem}><Box className="h-[17px] w-[17px] text-muted" />{tr('Mes commandes', 'طلباتي')}</button>
-          <button type="button" onClick={onOpenLens} className={mainItem}><LensBox className="h-[17px] w-[17px] text-muted" />{tr('Ouvrir AYROVIX Lens', 'فتح عدسة AYROVIX')}</button>
-          <button type="button" onClick={onOpenAccount} className={mainItem}><User className="h-[17px] w-[17px] text-muted" />{isAuthenticated ? tr('Mon compte', 'حسابي') : tr('Se connecter', 'تسجيل الدخول')}</button>
-          <button type="button" onClick={onHelp} className={mainItem}><MessageCircle className="h-[17px] w-[17px] text-muted" />{tr('Aide AYROVI', 'مساعدة AYROVI')}</button>
+          <button type="button" onClick={onOpenLens} className={mainItem}><LensBox className="h-[17px] w-[17px] text-muted" />AYROVIX</button>
 
-          <p className={sectionLabel}>{tr('Apparence', 'المظهر')}</p>
+          <p className={sectionLabel}><span className="inline-flex items-center gap-2"><Settings className="h-3.5 w-3.5" />{tr('Paramètres', 'الإعدادات')}</span></p>
+          <button type="button" onClick={onOpenAccount} className={mainItem}><User className="h-[17px] w-[17px] text-muted" />{isAuthenticated ? tr('Mon compte', 'حسابي') : tr('Se connecter', 'تسجيل الدخول')}</button>
           <button type="button" onClick={onToggleDark} className={`${mainItem} justify-between`}>
             <span className="flex items-center gap-3"><Moon className="h-[17px] w-[17px] text-muted" />{tr('Mode sombre', 'الوضع الداكن')}</span>
-            <span className={`relative h-[26px] w-11 rounded-full transition ${isDark ? 'bg-brand' : 'bg-line'}`} aria-hidden="true">
+            <span className={`relative h-[26px] w-11 rounded-full transition ${isDark ? 'bg-[#111318]' : 'bg-line'}`} aria-hidden="true">
               <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow transition ${isDark ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
             </span>
           </button>
