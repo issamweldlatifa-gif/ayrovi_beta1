@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__00__Produits.png",
+  "sourcePx": [
+    82,
+    87
+  ],
+  "croppedPx": [
+    67,
+    71
+  ],
+  "cropBox": [
+    8,
+    8,
+    75,
+    79
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 226
+  },
+  "strokeIn24": 1.177,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29437,
+  "orange": [
+    {
+      "cx": 18.918,
+      "cy": 18.285,
+      "r": 1.544,
+      "fillRatio": 1.052
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

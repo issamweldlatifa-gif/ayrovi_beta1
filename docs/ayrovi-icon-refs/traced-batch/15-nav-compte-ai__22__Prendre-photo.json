@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__22__Prendre-photo.png",
+  "sourcePx": [
+    88,
+    77
+  ],
+  "croppedPx": [
+    73,
+    61
+  ],
+  "cropBox": [
+    8,
+    8,
+    81,
+    69
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 225
+  },
+  "strokeIn24": 1.145,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.2863,
+  "orange": [
+    {
+      "cx": 19.677,
+      "cy": 18.105,
+      "r": 1.383,
+      "fillRatio": 0.995
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring"
+  ]
+}

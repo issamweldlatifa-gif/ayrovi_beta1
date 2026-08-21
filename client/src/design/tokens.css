@@ -114,7 +114,7 @@
     --ayrovi-font-body: var(--font-primary);
     --ayrovi-radius-control: 0.75rem;
     --ayrovi-radius-card: 1rem;
-    --ayrovi-icon-stroke: 2;
+    --ayrovi-icon-stroke: 1.5;
     --ayrovi-icon-signature: #FF6A00;
     --ayrovi-shadow-card: 0 12px 30px -22px rgb(17 19 24 / 22%);
     --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(17 19 24 / 35%);

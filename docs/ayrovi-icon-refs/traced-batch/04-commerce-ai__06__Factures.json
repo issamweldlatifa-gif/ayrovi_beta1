@@ -1,0 +1,45 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__06__Factures.png",
+  "sourcePx": [
+    69,
+    82
+  ],
+  "croppedPx": [
+    53,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 196
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 11.842,
+      "cy": 10.892,
+      "r": 3.487,
+      "fillRatio": 0.231
+    },
+    {
+      "cx": 10.417,
+      "cy": 14.533,
+      "r": 2.083,
+      "fillRatio": 0.39
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "stroke"
+  ]
+}

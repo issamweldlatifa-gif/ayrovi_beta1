@@ -1,0 +1,31 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__21__Support.png",
+  "sourcePx": [
+    90,
+    81
+  ],
+  "croppedPx": [
+    74,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    82,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 188
+  },
+  "strokeIn24": 1.13,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.28243,
+  "orange": [],
+  "inkKinds": [
+    "path"
+  ]
+}

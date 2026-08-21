@@ -1,0 +1,42 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__18__Stockage.png",
+  "sourcePx": [
+    84,
+    78
+  ],
+  "croppedPx": [
+    69,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    77,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 286
+  },
+  "strokeIn24": 1.212,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3029,
+  "orange": [
+    {
+      "cx": 19.65,
+      "cy": 18.686,
+      "r": 1.504,
+      "fillRatio": 1.02
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "path",
+    "path",
+    "stroke",
+    "stroke"
+  ]
+}

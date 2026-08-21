@@ -1,0 +1,47 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__18__AYROVIX-Lens.png",
+  "sourcePx": [
+    78,
+    75
+  ],
+  "croppedPx": [
+    64,
+    59
+  ],
+  "cropBox": [
+    8,
+    8,
+    72,
+    67
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 136
+  },
+  "strokeIn24": 1.306,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32656,
+  "orange": [
+    {
+      "cx": 16.245,
+      "cy": 4.979,
+      "r": 1.346,
+      "fillRatio": 1.011
+    },
+    {
+      "cx": 19.572,
+      "cy": 4.979,
+      "r": 1.406,
+      "fillRatio": 1.03
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring",
+    "stroke",
+    "stroke"
+  ]
+}

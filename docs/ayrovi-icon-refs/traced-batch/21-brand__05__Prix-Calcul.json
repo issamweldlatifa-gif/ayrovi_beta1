@@ -1,0 +1,53 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__05__Prix-Calcul.png",
+  "sourcePx": [
+    66,
+    77
+  ],
+  "croppedPx": [
+    50,
+    61
+  ],
+  "cropBox": [
+    8,
+    8,
+    58,
+    69
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 236
+  },
+  "strokeIn24": 1.37,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34262,
+  "orange": [
+    {
+      "cx": 14.912,
+      "cy": 13.713,
+      "r": 0.874,
+      "fillRatio": 0.93
+    },
+    {
+      "cx": 11.714,
+      "cy": 16.797,
+      "r": 0.7,
+      "fillRatio": 1.146
+    },
+    {
+      "cx": 14.912,
+      "cy": 16.797,
+      "r": 0.874,
+      "fillRatio": 1.077
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "path",
+    "stroke",
+    "path"
+  ]
+}

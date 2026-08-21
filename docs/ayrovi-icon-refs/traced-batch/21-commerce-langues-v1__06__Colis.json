@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__06__Colis.png",
+  "sourcePx": [
+    77,
+    78
+  ],
+  "croppedPx": [
+    62,
+    62
+  ],
+  "cropBox": [
+    8,
+    8,
+    70,
+    70
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 201
+  },
+  "strokeIn24": 0.944,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3371,
+  "orange": [
+    {
+      "cx": 19.328,
+      "cy": 17.511,
+      "r": 1.692,
+      "fillRatio": 1.036
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

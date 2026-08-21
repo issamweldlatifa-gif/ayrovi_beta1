@@ -1,0 +1,56 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__03__Acompte.png",
+  "sourcePx": [
+    76,
+    78
+  ],
+  "croppedPx": [
+    61,
+    62
+  ],
+  "cropBox": [
+    8,
+    8,
+    69,
+    70
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 143
+  },
+  "strokeIn24": 0.944,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3371,
+  "orange": [
+    {
+      "cx": 8.725,
+      "cy": 9.664,
+      "r": 1.455,
+      "fillRatio": 1.008
+    },
+    {
+      "cx": 11.326,
+      "cy": 12.169,
+      "r": 4.554,
+      "fillRatio": 0.147
+    },
+    {
+      "cx": 13.747,
+      "cy": 14.59,
+      "r": 1.365,
+      "fillRatio": 1.049
+    },
+    {
+      "cx": 18.888,
+      "cy": 18.795,
+      "r": 1.775,
+      "fillRatio": 1.056
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

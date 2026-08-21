@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__06__Colis.png",
+  "sourcePx": [
+    77,
+    80
+  ],
+  "croppedPx": [
+    62,
+    64
+  ],
+  "cropBox": [
+    8,
+    8,
+    70,
+    72
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 202
+  },
+  "strokeIn24": 0.914,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32656,
+  "orange": [
+    {
+      "cx": 19.184,
+      "cy": 17.552,
+      "r": 1.46,
+      "fillRatio": 1.082
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__31__Confidentialite.png",
+  "sourcePx": [
+    86,
+    125
+  ],
+  "croppedPx": [
+    70,
+    109
+  ],
+  "cropBox": [
+    8,
+    8,
+    78,
+    117
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 264
+  },
+  "strokeIn24": 0.767,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.19174,
+  "orange": [
+    {
+      "cx": 16.506,
+      "cy": 12.192,
+      "r": 0.949,
+      "fillRatio": 1.039
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke",
+    "path",
+    "stroke",
+    "path",
+    "stroke"
+  ]
+}

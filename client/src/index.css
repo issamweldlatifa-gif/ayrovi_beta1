@@ -59,38 +59,25 @@
   }
 }
 
-/* AYROVI icon system: reference-derived monoline geometry across public + Admin. */
-.ayrovi-icon,
-.qatafo-icon,
-.lucide {
+/* AYROVI Icon System — monoline fine (style Zalando) sur grille 24.
+   Un seul sélecteur : .ayrovi-icon (rendu par AyroviSvg). */
+.ayrovi-icon {
   display: block;
   flex: 0 0 auto;
   overflow: visible;
   fill: none;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: var(--ayrovi-icon-stroke, 2);
+  stroke-width: var(--ayrovi-icon-stroke, 1.5);
   shape-rendering: geometricPrecision;
-}
-
-.ayrovi-icon > *:not([data-ayrovi-signature]),
-.qatafo-icon > *:not([data-ayrovi-signature]),
-.lucide > *:not([data-ayrovi-signature]) {
-  vector-effect: non-scaling-stroke;
-}
-
-/* Profile: stroke must scale with the 24 grid — non-scaling made it small and heavy. */
-.ayrovi-icon[data-ayrovi-icon='Profile'],
-.ayrovi-icon[data-ayrovi-icon='Profile'] > * {
-  vector-effect: none !important;
+  vector-effect: none;
 }
 
 html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   fill: none !important;
 }
 
-.ayrovi-icon [data-ayrovi-signature],
-.lucide [data-ayrovi-signature] {
+.ayrovi-icon [data-ayrovi-signature] {
   fill: var(--ayrovi-icon-signature, #FF6A00) !important;
   stroke: none !important;
 }
@@ -100,13 +87,10 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   fill: none !important;
 }
 
-/* Fill is semantic: only selected/liked/saved states opt into currentColor. */
-.qatafo-icon[fill='currentColor'],
-.lucide[fill='currentColor'],
-.qatafo-icon.fill-current,
-.lucide.fill-current,
-.qatafo-icon.fill-brand,
-.lucide.fill-brand {
+/* Fill sémantique : seuls les états sélectionnés/aimés optent pour currentColor. */
+.ayrovi-icon[fill='currentColor'],
+.ayrovi-icon.fill-current,
+.ayrovi-icon.fill-brand {
   fill: currentColor;
 }
 

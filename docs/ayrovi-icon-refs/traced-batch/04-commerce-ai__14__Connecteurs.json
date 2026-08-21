@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__14__Connecteurs.png",
+  "sourcePx": [
+    57,
+    81
+  ],
+  "croppedPx": [
+    41,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    49,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 125
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 11.879,
+      "cy": 19.572,
+      "r": 1.584,
+      "fillRatio": 0.98
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

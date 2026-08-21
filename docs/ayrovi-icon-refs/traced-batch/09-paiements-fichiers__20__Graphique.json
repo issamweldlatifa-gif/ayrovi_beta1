@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__20__Graphique.png",
+  "sourcePx": [
+    93,
+    87
+  ],
+  "croppedPx": [
+    77,
+    71
+  ],
+  "cropBox": [
+    8,
+    8,
+    85,
+    79
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 237
+  },
+  "strokeIn24": 1.086,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.27143,
+  "orange": [
+    {
+      "cx": 6.093,
+      "cy": 16.844,
+      "r": 1.362,
+      "fillRatio": 0.973
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "stroke"
+  ]
+}

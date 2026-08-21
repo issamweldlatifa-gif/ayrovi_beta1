@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__10__Transporteur.png",
+  "sourcePx": [
+    77,
+    79
+  ],
+  "croppedPx": [
+    62,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    70,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 202
+  },
+  "strokeIn24": 0.929,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.33175,
+  "orange": [
+    {
+      "cx": 18.967,
+      "cy": 17.474,
+      "r": 1.692,
+      "fillRatio": 1.053
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

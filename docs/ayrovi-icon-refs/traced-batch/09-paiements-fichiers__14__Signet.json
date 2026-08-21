@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__14__Signet.png",
+  "sourcePx": [
+    68,
+    83
+  ],
+  "croppedPx": [
+    53,
+    68
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    76
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 162
+  },
+  "strokeIn24": 1.229,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.30735,
+  "orange": [
+    {
+      "cx": 17.071,
+      "cy": 19.53,
+      "r": 1.634,
+      "fillRatio": 0.946
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

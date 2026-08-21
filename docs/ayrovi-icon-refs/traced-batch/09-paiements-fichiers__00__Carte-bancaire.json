@@ -1,0 +1,47 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__00__Carte-bancaire.png",
+  "sourcePx": [
+    87,
+    72
+  ],
+  "croppedPx": [
+    72,
+    57
+  ],
+  "cropBox": [
+    8,
+    8,
+    80,
+    65
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 237
+  },
+  "strokeIn24": 1.161,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29028,
+  "orange": [
+    {
+      "cx": 16.282,
+      "cy": 14.322,
+      "r": 0.7,
+      "fillRatio": 1.078
+    },
+    {
+      "cx": 17.806,
+      "cy": 17.515,
+      "r": 3.275,
+      "fillRatio": 0.305
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "path",
+    "path"
+  ]
+}

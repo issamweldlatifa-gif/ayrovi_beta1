@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__09__International.png",
+  "sourcePx": [
+    81,
+    82
+  ],
+  "croppedPx": [
+    65,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    73,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 308
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 11.648,
+      "cy": 11.877,
+      "r": 1.16,
+      "fillRatio": 0.973
+    },
+    {
+      "cx": 15.483,
+      "cy": 18.967,
+      "r": 1.353,
+      "fillRatio": 0.942
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

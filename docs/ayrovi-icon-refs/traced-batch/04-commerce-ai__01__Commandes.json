@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__01__Commandes.png",
+  "sourcePx": [
+    69,
+    81
+  ],
+  "croppedPx": [
+    53,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 187
+  },
+  "strokeIn24": 1.286,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 11.839,
+      "cy": 12.161,
+      "r": 2.592,
+      "fillRatio": 0.284
+    },
+    {
+      "cx": 11.839,
+      "cy": 15.055,
+      "r": 2.592,
+      "fillRatio": 0.318
+    }
+  ],
+  "inkKinds": [
+    "path"
+  ]
+}

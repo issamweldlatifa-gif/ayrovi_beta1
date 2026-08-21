@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 09-paiements-fichiers__00__Carte-bancaire.png | stroke≈1.161 in 24-grid -->
+  <path d="M12.290 18.241 L10.258 18.241 L8.226 18.241 L6.194 18.241 L4.163 17.951 L3.001 15.919 L3.001 13.887 L3.001 11.855 L3.001 9.823 L3.001 7.791 L3.872 5.759 L5.904 5.178 L7.936 5.469 L9.968 5.469 L12.000 5.469 L14.032 5.469 L16.064 5.469 L18.096 5.469 L20.128 6.340 L20.128 8.372 L19.547 9.823 L17.515 9.823 L15.483 9.823 L13.451 9.823 L11.419 9.823 L9.387 9.823 L7.356 9.823 L5.324 9.823 L3.292 9.823" fill="none" stroke="#111827" stroke-width="1.161" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M15.483 14.758 L15.193 14.467 L15.193 14.177 L15.483 13.887 L15.774 13.597 L16.064 13.597 L16.354 13.597 L16.644 13.597 L16.935 13.887" fill="none" stroke="#111827" stroke-width="1.161" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M6.194 14.177 L6.194 14.758 L6.485 15.048 L6.775 15.048 L7.065 14.758 L7.936 14.758 L8.226 14.467 L8.226 14.177 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M15.193 17.660 L14.612 17.660 L14.032 18.241 L14.322 18.531 L14.612 18.531 L14.322 18.241 L14.903 17.660 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <circle cx="16.282" cy="14.322" r="0.700" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="17.806" cy="17.515" r="3.275" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__08__Adresses.png",
+  "sourcePx": [
+    71,
+    82
+  ],
+  "croppedPx": [
+    55,
+    67
+  ],
+  "cropBox": [
+    8,
+    8,
+    63,
+    75
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 157
+  },
+  "strokeIn24": 1.248,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31194,
+  "orange": [
+    {
+      "cx": 12.069,
+      "cy": 19.643,
+      "r": 1.473,
+      "fillRatio": 0.985
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring"
+  ]
+}

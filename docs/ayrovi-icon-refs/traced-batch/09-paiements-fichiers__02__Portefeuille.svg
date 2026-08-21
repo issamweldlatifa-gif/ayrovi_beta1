@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 09-paiements-fichiers__02__Portefeuille.png | stroke≈1.229 in 24-grid -->
+  <path d="M20.145 12.000 L20.145 10.156 L20.145 8.312 L18.608 6.775 L16.764 6.775 L16.457 4.931 L14.920 3.087 L13.076 3.394 L11.232 4.316 L9.387 4.931 L7.851 6.160 L6.007 6.468 L4.163 7.082 L3.240 8.926 L3.240 10.771 L3.240 12.615 L3.240 14.459 L3.240 16.303 L3.548 18.147 L4.470 19.991 L6.314 20.299 L8.158 20.299 L10.002 20.299 L11.846 20.299 L13.690 20.299 L15.535 20.299 L17.379 20.299 L19.223 19.991 L20.145 18.454 L20.145 16.918" fill="none" stroke="#111827" stroke-width="1.229" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18.301 15.381 L17.993 15.381 L17.686 15.074 L17.379 15.074 L17.071 15.074 L16.764 14.766 L16.457 14.459 L16.457 14.151 L16.457 13.844 L16.457 13.537 L16.457 13.229 L16.764 12.922 L17.071 12.615 L17.379 12.307 L17.686 12.307 L17.993 12.307 L18.301 12.307 L18.608 12.000" fill="none" stroke="#111827" stroke-width="1.229" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="19.837" cy="15.074" r="0.972" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

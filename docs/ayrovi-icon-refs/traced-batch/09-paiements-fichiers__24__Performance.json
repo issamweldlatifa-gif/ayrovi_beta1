@@ -1,0 +1,46 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__24__Performance.png",
+  "sourcePx": [
+    90,
+    79
+  ],
+  "croppedPx": [
+    74,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    82,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 185
+  },
+  "strokeIn24": 1.13,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.28243,
+  "orange": [
+    {
+      "cx": 12.0,
+      "cy": 15.954,
+      "r": 1.579,
+      "fillRatio": 0.642
+    },
+    {
+      "cx": 18.948,
+      "cy": 18.637,
+      "r": 0.96,
+      "fillRatio": 1.019
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke"
+  ]
+}

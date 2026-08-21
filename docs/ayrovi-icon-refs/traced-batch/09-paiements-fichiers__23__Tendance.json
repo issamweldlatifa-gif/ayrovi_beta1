@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__23__Tendance.png",
+  "sourcePx": [
+    86,
+    61
+  ],
+  "croppedPx": [
+    76,
+    49
+  ],
+  "cropBox": [
+    8,
+    4,
+    84,
+    53
+  ],
+  "strokePxSource": {
+    "strokePx": 4.394,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.394,
+    "samples": 48
+  },
+  "strokeIn24": 1.208,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.275,
+  "orange": [
+    {
+      "cx": 18.737,
+      "cy": 8.7,
+      "r": 3.117,
+      "fillRatio": 0.493
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

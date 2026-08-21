@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__07__Expedition.png",
+  "sourcePx": [
+    91,
+    71
+  ],
+  "croppedPx": [
+    75,
+    55
+  ],
+  "cropBox": [
+    8,
+    8,
+    83,
+    63
+  ],
+  "strokePxSource": {
+    "strokePx": 2.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 239
+  },
+  "strokeIn24": 0.557,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.27867,
+  "orange": [
+    {
+      "cx": 18.827,
+      "cy": 17.573,
+      "r": 1.088,
+      "fillRatio": 0.668
+    }
+  ],
+  "inkKinds": [
+    "path"
+  ]
+}

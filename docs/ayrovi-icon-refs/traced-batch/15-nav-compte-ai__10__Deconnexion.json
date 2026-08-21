@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__10__Deconnexion.png",
+  "sourcePx": [
+    72,
+    85
+  ],
+  "croppedPx": [
+    64,
+    69
+  ],
+  "cropBox": [
+    8,
+    8,
+    72,
+    77
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 131
+  },
+  "strokeIn24": 1.212,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3029,
+  "orange": [
+    {
+      "cx": 15.332,
+      "cy": 11.849,
+      "r": 5.461,
+      "fillRatio": 0.298
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

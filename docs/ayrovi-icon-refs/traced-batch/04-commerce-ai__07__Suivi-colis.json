@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__07__Suivi-colis.png",
+  "sourcePx": [
+    89,
+    71
+  ],
+  "croppedPx": [
+    73,
+    55
+  ],
+  "cropBox": [
+    8,
+    8,
+    81,
+    63
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 194
+  },
+  "strokeIn24": 1.145,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.2863,
+  "orange": [
+    {
+      "cx": 6.417,
+      "cy": 16.295,
+      "r": 1.883,
+      "fillRatio": 0.419
+    },
+    {
+      "cx": 16.867,
+      "cy": 16.438,
+      "r": 2.05,
+      "fillRatio": 0.348
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

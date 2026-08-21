@@ -1,0 +1,41 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__01__Virement-bancaire.png",
+  "sourcePx": [
+    82,
+    83
+  ],
+  "croppedPx": [
+    66,
+    67
+  ],
+  "cropBox": [
+    8,
+    8,
+    74,
+    75
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 272
+  },
+  "strokeIn24": 1.248,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31194,
+  "orange": [
+    {
+      "cx": 19.067,
+      "cy": 17.255,
+      "r": 1.541,
+      "fillRatio": 1.018
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke",
+    "stroke"
+  ]
+}

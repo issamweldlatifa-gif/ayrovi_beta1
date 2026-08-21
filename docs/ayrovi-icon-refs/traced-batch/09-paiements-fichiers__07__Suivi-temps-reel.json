@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__07__Suivi-temps-reel.png",
+  "sourcePx": [
+    73,
+    84
+  ],
+  "croppedPx": [
+    57,
+    69
+  ],
+  "cropBox": [
+    8,
+    8,
+    65,
+    77
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 169
+  },
+  "strokeIn24": 1.212,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3029,
+  "orange": [
+    {
+      "cx": 12.151,
+      "cy": 19.572,
+      "r": 1.492,
+      "fillRatio": 0.866
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__09__Suivi.png",
+  "sourcePx": [
+    80,
+    79
+  ],
+  "croppedPx": [
+    65,
+    64
+  ],
+  "cropBox": [
+    8,
+    8,
+    73,
+    72
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 215
+  },
+  "strokeIn24": 0.9,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 19.235,
+      "cy": 19.074,
+      "r": 1.64,
+      "fillRatio": 0.992
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "path"
+  ]
+}

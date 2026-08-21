@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__28__Mode-sombre.png",
+  "sourcePx": [
+    66,
+    68
+  ],
+  "croppedPx": [
+    50,
+    52
+  ],
+  "cropBox": [
+    8,
+    8,
+    58,
+    60
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 102
+  },
+  "strokeIn24": 1.125,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.40192,
+  "orange": [
+    {
+      "cx": 17.979,
+      "cy": 18.632,
+      "r": 1.67,
+      "fillRatio": 1.051
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

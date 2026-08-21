@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__26__Attention.png",
+  "sourcePx": [
+    88,
+    87
+  ],
+  "croppedPx": [
+    72,
+    71
+  ],
+  "cropBox": [
+    8,
+    8,
+    80,
+    79
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 170
+  },
+  "strokeIn24": 1.161,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29028,
+  "orange": [
+    {
+      "cx": 17.577,
+      "cy": 18.676,
+      "r": 1.456,
+      "fillRatio": 0.873
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "path"
+  ]
+}

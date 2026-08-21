@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__04__Chevron.png",
+  "sourcePx": [
+    51,
+    75
+  ],
+  "croppedPx": [
+    35,
+    60
+  ],
+  "cropBox": [
+    8,
+    8,
+    43,
+    68
+  ],
+  "strokePxSource": {
+    "strokePx": 4.394,
+    "strokePxP25": 4.394,
+    "strokePxP75": 4.394,
+    "samples": 40
+  },
+  "strokeIn24": 1.531,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34833,
+  "orange": [
+    {
+      "cx": 8.691,
+      "cy": 19.315,
+      "r": 1.558,
+      "fillRatio": 1.066
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

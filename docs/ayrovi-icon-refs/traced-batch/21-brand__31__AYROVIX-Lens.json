@@ -1,0 +1,41 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__31__AYROVIX-Lens.png",
+  "sourcePx": [
+    79,
+    121
+  ],
+  "croppedPx": [
+    79,
+    105
+  ],
+  "cropBox": [
+    0,
+    8,
+    79,
+    113
+  ],
+  "strokePxSource": {
+    "strokePx": 2.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 305
+  },
+  "strokeIn24": 0.398,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.19905,
+  "orange": [],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke",
+    "stroke",
+    "stroke",
+    "stroke",
+    "stroke",
+    "stroke",
+    "ring",
+    "stroke",
+    "stroke"
+  ]
+}

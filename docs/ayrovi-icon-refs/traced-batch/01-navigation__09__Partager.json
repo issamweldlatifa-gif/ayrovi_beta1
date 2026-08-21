@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/01-navigation__09__Partager.png",
+  "sourcePx": [
+    87,
+    95
+  ],
+  "croppedPx": [
+    71,
+    79
+  ],
+  "cropBox": [
+    8,
+    8,
+    79,
+    87
+  ],
+  "strokePxSource": {
+    "strokePx": 4.394,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.394,
+    "samples": 182
+  },
+  "strokeIn24": 1.162,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.26456,
+  "orange": [
+    {
+      "cx": 15.307,
+      "cy": 16.894,
+      "r": 1.183,
+      "fillRatio": 0.907
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "stroke"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__20__Chat.png",
+  "sourcePx": [
+    82,
+    82
+  ],
+  "croppedPx": [
+    66,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    74,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 154
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 18.914,
+      "cy": 18.914,
+      "r": 1.677,
+      "fillRatio": 1.032
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "path",
+    "path",
+    "path"
+  ]
+}

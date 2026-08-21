@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__08__Livraison.png",
+  "sourcePx": [
+    67,
+    81
+  ],
+  "croppedPx": [
+    51,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    59,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 2.8,
+    "samples": 150
+  },
+  "strokeIn24": 0.9,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 15.055,
+      "cy": 19.235,
+      "r": 1.438,
+      "fillRatio": 1.034
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring"
+  ]
+}

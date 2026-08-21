@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 21-commerce-langues-v1__01__Carte-bancaire.png | stroke≈1.267 in 24-grid -->
+  <path d="M3.133 5.825 L2.817 6.458 L2.817 17.542 L4.083 18.808 L19.600 18.808 L20.550 18.175 L20.867 17.542 L20.867 6.142 L20.233 5.192 L19.600 4.875 L4.400 4.875 Z M3.450 10.258 L4.083 9.625 L19.917 9.625 L20.550 10.258 L20.550 16.908 L20.233 17.225 L20.233 17.542 L18.967 18.492 L4.717 18.492 L3.450 17.225 Z M3.450 6.458 L4.400 5.508 L4.717 5.508 L5.033 5.192 L5.667 5.192 L5.983 5.508 L19.600 5.508 L20.233 6.142 L20.233 6.458 L20.550 6.775 L20.550 8.358 L19.917 8.992 L12.633 8.992 L12.317 9.308 L12.000 9.308 L11.683 8.992 L4.083 8.992 L3.450 8.358 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M10.100 14.375 L10.417 14.375 L10.733 14.375 L11.050 14.375 L11.367 14.375 L11.683 14.375 L12.000 14.375 L12.317 14.058" fill="none" stroke="#111827" stroke-width="1.267" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16.592" cy="14.375" r="1.153" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

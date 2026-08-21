@@ -1,0 +1,40 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__34__AYROVI-Logo.png",
+  "sourcePx": [
+    74,
+    81
+  ],
+  "croppedPx": [
+    59,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    67,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": null,
+    "samples": 0
+  },
+  "strokeIn24": null,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 9.106,
+      "cy": 11.839,
+      "r": 9.615,
+      "fillRatio": 0.287
+    },
+    {
+      "cx": 18.523,
+      "cy": 19.166,
+      "r": 1.696,
+      "fillRatio": 0.996
+    }
+  ],
+  "inkKinds": []
+}

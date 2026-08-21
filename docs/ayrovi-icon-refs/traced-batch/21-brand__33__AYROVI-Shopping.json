@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__33__AYROVI-Shopping.png",
+  "sourcePx": [
+    68,
+    78
+  ],
+  "croppedPx": [
+    53,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 167
+  },
+  "strokeIn24": 0.929,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.33175,
+  "orange": [
+    {
+      "cx": 11.668,
+      "cy": 13.548,
+      "r": 2.273,
+      "fillRatio": 0.454
+    },
+    {
+      "cx": 17.872,
+      "cy": 19.464,
+      "r": 1.455,
+      "fillRatio": 1.075
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__35__AI-Sparkle.png",
+  "sourcePx": [
+    63,
+    70
+  ],
+  "croppedPx": [
+    53,
+    54
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    62
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 2.8,
+    "samples": 110
+  },
+  "strokeIn24": 1.084,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.38704,
+  "orange": [
+    {
+      "cx": 17.612,
+      "cy": 17.612,
+      "r": 0.968,
+      "fillRatio": 0.917
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

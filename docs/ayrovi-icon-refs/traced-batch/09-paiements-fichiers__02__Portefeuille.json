@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__02__Portefeuille.png",
+  "sourcePx": [
+    83,
+    84
+  ],
+  "croppedPx": [
+    67,
+    68
+  ],
+  "cropBox": [
+    8,
+    8,
+    75,
+    76
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 218
+  },
+  "strokeIn24": 1.229,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.30735,
+  "orange": [
+    {
+      "cx": 19.837,
+      "cy": 15.074,
+      "r": 0.972,
+      "fillRatio": 0.828
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

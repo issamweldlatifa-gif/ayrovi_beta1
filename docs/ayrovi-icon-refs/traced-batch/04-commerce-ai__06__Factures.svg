@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 04-commerce-ai__06__Factures.png | stroke≈1.267 in 24-grid -->
+  <path d="M4.875 3.767 L4.875 20.233 L5.508 20.867 L6.458 20.867 L7.092 20.233 L8.358 19.917 L9.308 20.867 L10.575 20.867 L11.525 19.917 L12.158 19.917 L13.108 20.867 L14.375 20.867 L15.958 19.600 L16.908 20.550 L17.542 20.867 L18.492 20.867 L18.808 20.550 L18.808 3.767 L17.542 2.817 L6.142 2.817 Z M6.142 3.767 L17.542 3.767 L18.175 4.400 L18.175 19.283 L17.542 19.917 L16.275 18.967 L15.325 18.967 L13.742 20.233 L12.158 18.967 L11.525 18.967 L9.942 20.233 L8.358 18.967 L7.092 19.283 L6.142 20.233 L5.508 19.600 L5.508 4.400 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M8.992 7.250 L9.308 7.250 L9.625 7.250 L9.942 7.250 L10.258 7.250 L10.575 7.250 L10.892 7.250 L11.208 7.250 L11.525 7.250 L11.842 7.250 L12.158 7.250 L12.475 6.933" fill="none" stroke="#111827" stroke-width="1.267" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="11.842" cy="10.892" r="3.487" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="10.417" cy="14.533" r="2.083" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

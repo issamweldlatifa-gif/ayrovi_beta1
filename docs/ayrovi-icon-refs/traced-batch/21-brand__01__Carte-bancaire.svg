@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 21-brand__01__Carte-bancaire.png | stroke≈1.286 in 24-grid -->
+  <path d="M2.836 6.052 L2.836 17.627 L3.801 18.592 L5.408 18.592 L5.730 18.913 L7.981 18.913 L8.302 18.592 L18.913 18.913 L20.199 18.270 L20.842 16.984 L20.842 6.695 L20.521 6.373 L20.521 5.730 L19.878 5.087 L19.235 4.765 L4.444 4.765 Z M3.158 10.553 L3.801 9.910 L19.556 9.910 L20.199 10.553 L20.199 17.305 L19.235 18.270 L4.444 18.270 L3.158 16.984 Z M3.158 6.695 L4.444 5.408 L19.235 5.408 L20.199 6.373 L20.199 8.624 L19.556 9.267 L3.801 9.267 L3.158 8.624 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M9.910 14.733 L10.232 14.733 L10.553 14.733 L10.875 14.733 L11.196 14.733 L11.518 14.733 L11.839 14.733 L12.161 14.733 L12.482 14.412" fill="none" stroke="#111827" stroke-width="1.286" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="16.341" cy="14.572" r="1.079" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

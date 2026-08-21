@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 09-paiements-fichiers__04__Recu.png | stroke≈1.212 in 24-grid -->
+  <path d="M16.543 20.027 L15.029 19.421 L13.212 20.330 L11.394 19.421 L9.577 20.330 L7.759 19.421 L5.942 20.027 L4.428 19.421 L4.428 17.604 L4.428 15.786 L4.428 13.969 L4.428 12.151 L4.428 10.334 L4.428 8.517 L4.428 6.699 L4.428 4.882 L5.336 3.064 L7.154 3.064 L8.971 3.064 L10.788 3.064 L12.606 3.064 L14.423 3.064 L16.241 3.064 L18.058 3.670 L18.361 5.488 L18.361 7.305 L18.361 9.122 L18.361 10.940 L18.361 12.757 L18.361 14.575 L18.361 16.392 L18.664 16.998" fill="none" stroke="#111827" stroke-width="1.212" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M8.062 7.305 L8.365 7.305 L8.668 7.305 L8.971 7.305 L9.274 7.305 L9.577 7.305 L9.880 7.305 L10.183 7.305 L10.486 7.305 L10.788 7.305 L11.091 7.305 L11.394 7.305 L11.697 7.305 L12.000 7.305 L12.303 7.305 L12.606 7.305" fill="none" stroke="#111827" stroke-width="1.212" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="11.546" cy="10.486" r="3.487" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="10.183" cy="14.272" r="1.817" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="18.126" cy="19.695" r="1.579" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__11__Adresse-livraison.png",
+  "sourcePx": [
+    73,
+    76
+  ],
+  "croppedPx": [
+    58,
+    61
+  ],
+  "cropBox": [
+    8,
+    8,
+    66,
+    69
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 148
+  },
+  "strokeIn24": 0.959,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34262,
+  "orange": [
+    {
+      "cx": 18.715,
+      "cy": 19.503,
+      "r": 1.522,
+      "fillRatio": 1.033
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

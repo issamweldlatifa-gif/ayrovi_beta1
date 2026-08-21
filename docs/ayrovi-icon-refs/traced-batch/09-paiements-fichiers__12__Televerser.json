@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__12__Televerser.png",
+  "sourcePx": [
+    65,
+    80
+  ],
+  "croppedPx": [
+    49,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    57,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.394,
+    "samples": 80
+  },
+  "strokeIn24": 1.286,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 11.839,
+      "cy": 20.199,
+      "r": 4.513,
+      "fillRatio": 0.183
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

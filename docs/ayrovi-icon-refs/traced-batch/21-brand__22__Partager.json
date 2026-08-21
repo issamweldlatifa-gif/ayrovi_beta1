@@ -1,0 +1,31 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__22__Partager.png",
+  "sourcePx": [
+    67,
+    75
+  ],
+  "croppedPx": [
+    51,
+    59
+  ],
+  "cropBox": [
+    8,
+    8,
+    59,
+    67
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 144
+  },
+  "strokeIn24": 0.992,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.35424,
+  "orange": [],
+  "inkKinds": [
+    "path"
+  ]
+}

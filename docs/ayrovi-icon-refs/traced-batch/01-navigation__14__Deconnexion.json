@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/01-navigation__14__Deconnexion.png",
+  "sourcePx": [
+    72,
+    93
+  ],
+  "croppedPx": [
+    64,
+    77
+  ],
+  "cropBox": [
+    8,
+    8,
+    72,
+    85
+  ],
+  "strokePxSource": {
+    "strokePx": 6.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 6.0,
+    "samples": 119
+  },
+  "strokeIn24": 1.629,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.27143,
+  "orange": [
+    {
+      "cx": 15.96,
+      "cy": 12.0,
+      "r": 4.791,
+      "fillRatio": 0.391
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

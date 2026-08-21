@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__09__Suivi.png",
+  "sourcePx": [
+    82,
+    82
+  ],
+  "croppedPx": [
+    66,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    74,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 215
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 17.267,
+      "cy": 17.865,
+      "r": 1.393,
+      "fillRatio": 1.004
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

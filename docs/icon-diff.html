@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="ar" dir="ltr"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AYROVI — قبل / بعد</title><style>
+:root { --ink:#111827; --muted:#6b7280; --line:#e8eaef; --sig:#FF6A00; --ayrovi-icon-stroke: 2; --ayrovi-icon-signature: #FF6A00; }
+* { box-sizing: border-box; }
+body { margin:0; background:#fff; color:var(--ink); font-family:Inter,Helvetica,Arial,sans-serif; padding:24px; }
+h1 { font-size:20px; margin:0 0 4px; letter-spacing:-.02em; }
+.sub { color:var(--muted); font-size:13px; margin-bottom:18px; }
+.row { display:grid; grid-template-columns:1fr 1fr 220px; gap:12px; align-items:center; border:1px solid var(--line); border-radius:14px; padding:12px 14px; margin-bottom:10px; }
+.row.changed { border-color:#FF6A00; background:#fff7f0; }
+.box { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 8px; text-align:center; }
+.box .tag { font-size:10px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); display:block; margin-bottom:6px; }
+.name { font-weight:700; font-size:13px; }
+.name small { display:block; color:var(--muted); font-weight:500; font-size:11px; margin-top:2px; }
+.badge { display:inline-block; margin-left:8px; font-size:10px; font-weight:700; color:#fff; background:var(--sig); border-radius:999px; padding:2px 8px; vertical-align:middle; }
+.ayrovi-icon,.lucide { display:block; margin:0 auto; overflow:visible; fill:none; stroke-linecap:round; stroke-linejoin:round; stroke-width:var(--ayrovi-icon-stroke,2); shape-rendering:geometricPrecision; }
+.ayrovi-icon > *:not([data-ayrovi-signature]), .lucide > *:not([data-ayrovi-signature]) { vector-effect:non-scaling-stroke; }
+.ayrovi-icon[data-ayrovi-icon='Profile'], .ayrovi-icon[data-ayrovi-icon='Profile'] > * { vector-effect:none !important; }
+.ayrovi-icon [data-ayrovi-signature], .lucide [data-ayrovi-signature] { fill:var(--ayrovi-icon-signature,#FF6A00) !important; stroke:none !important; }
+.ayrovi-icon [data-ayrovi-accent] { stroke:var(--ayrovi-icon-signature,#FF6A00) !important; fill:none !important; }
+</style></head><body>
+<h1>AYROVI Icon System — قبل / بعد (قبل = git HEAD، بعد = الكود الحالي)</h1>
+<p class="sub">الصفوف البرتقالية = أيقونة تغيّرت هندسيًا أو في موضع نقطة الـ signature. الرموز في «قبل» مأخوذة مباشرة من آخر commit.</p>
+<p style="font-size:13px;color:#374151;margin:0 0 14px"><strong>29</strong> أيقونة تغيّرت · <strong>21</strong> أيقونة جديدة · باقي العائلة (≈91) بدون تغيير عمداً (كانت مطابقة للوحات أصلاً).</p>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="AI"><path d="M11.2 3.1c.18 4.55 3.35 7.72 7.9 7.9-4.55.18-7.72 3.35-7.9 7.9-.18-4.55-3.35-7.72-7.9-7.9 4.55-.18 7.72-3.35 7.9-7.9Z"></path><path d="M18.55 3.35c.08 1.12.78 1.82 1.9 1.9-1.12.08-1.82.78-1.9 1.9-.08-1.12-.78-1.82-1.9-1.9 1.12-.08 1.82-.78 1.9-1.9Z"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="AI"><path d="M11.2 3.1c.18 4.55 3.35 7.72 7.9 7.9-4.55.18-7.72 3.35-7.9 7.9-.18-4.55-3.35-7.72-7.9-7.9 4.55-.18 7.72-3.35 7.9-7.9Z"></path><path d="M18.55 3.35c.08 1.12.78 1.82 1.9 1.9-1.12.08-1.82.78-1.9 1.9-.08-1.12-.78-1.82-1.9-1.9 1.12-.08 1.82-.78 1.9-1.9Z" stroke="#FF6A00" data-ayrovi-accent="true"></path></svg></div>
+  <div class="name">AI<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Accessibility"><circle cx="12" cy="12" r="8.2"></circle><circle cx="12" cy="7.6" r="1.25" fill="currentColor" stroke="none"></circle><path d="M12 9.8v4M12 9.8l-3.6-1.4M12 9.8l3.6-1.4M12 13.8l-2.3 3.8M12 13.8l2.3 3.8"></path><circle cx="17.6" cy="17.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Accessibility<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.147" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Profile"><circle cx="11.179" cy="6.661" r="3.909"></circle><path d="M3.189 20.606 L3.394 19.991 L3.599 19.376 L3.804 18.762 L4.009 18.147 L4.419 17.532 L4.828 16.918 L5.443 16.303 L6.058 15.688 L6.673 15.278 L7.287 14.869 L7.902 14.459 L8.517 14.254 L9.131 14.049 L9.746 13.844 L10.361 13.844 L10.975 13.844 L11.590 13.844 L12.205 13.844 L12.820 13.844 L13.434 14.049 L14.049 14.254 L14.664 14.459 L15.278 14.869 L15.893 15.074 L16.508 15.483 L17.123 16.098 L17.737 16.713 L17.942 17.123"></path><circle cx="19.283" cy="19.970" r="1.546" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Account<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Acompte"><path d="M7 3.8h6.6l4.8 4.8v9.8a1.8 1.8 0 0 1-1.8 1.8H7a1.8 1.8 0 0 1-1.8-1.8V5.6A1.8 1.8 0 0 1 7 3.8Z"></path><path d="M13.6 3.8v4.8h4.8"></path><path d="m11 15 3.4-4.4"></path><circle cx="10.6" cy="11.6" r="1" fill="currentColor" stroke="none"></circle><circle cx="14" cy="15" r="1" fill="currentColor" stroke="none"></circle><circle cx="16.6" cy="18.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Acompte<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Arabe"><circle cx="12" cy="12" r="8.25"></circle><path d="M15.9 9.2c-2.2.9-3.9 1.2-5.3 1.6-1 .3-1.6.9-1.6 1.7 0 1 .9 1.7 2 1.7 1.9 0 3.7-1 4.9-2.7"></path><circle cx="9.7" cy="15" r="0.85" fill="currentColor" stroke="none"></circle><circle cx="17.6" cy="17.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Arabe<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Arrivages"><path d="M6.8 9.6v8.2a1.8 1.8 0 0 0 1.8 1.8h6.8a1.8 1.8 0 0 0 1.8-1.8V9.6"></path><path d="M12 15.4V6.6M8.8 9.8 12 6.6l3.2 3.2"></path><circle cx="16.9" cy="18.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Arrivages<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Bank"><path d="M4.4 9.6 12 4.8l7.6 4.8"></path><path d="M5 12.8h14M6.2 12.8v4.4M12 12.8v4.4M17.8 12.8v4.4"></path><path d="M4.2 19.6h15.6"></path><circle cx="18.9" cy="19.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Bank<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Bars"><path d="M7.2 18.4V11M12 18.4V6.4M16.8 18.4v-4.8"></path><circle cx="16.8" cy="13.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Bars"><rect x="5.5" y="12.5" width="3" height="6" rx="1"></rect><rect x="10.5" y="9" width="3" height="9.5" rx="1"></rect><rect x="15.5" y="5.5" width="3" height="13" rx="1"></rect><circle cx="18.8" cy="6.2" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Bars<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Brain"><path d="M11.9 5.2C10.6 3.9 8.4 4 7.5 5.5c-1.8-.4-3.3 1.1-2.9 2.9-1.1.9-1 2.6.2 3.4-.3 1.6 1.1 3 2.7 2.6.5 1.5 2.3 2 3.4 1.1"></path><path d="M12.1 5.2c1.3-1.3 3.5-1.2 4.4.3 1.8-.4 3.3 1.1 2.9 2.9 1.1.9 1 2.6-.2 3.4.3 1.6-1.1 3-2.7 2.6-.5 1.5-2.3 2-3.4 1.1"></path><path d="M12 4.8v14.4"></path><circle cx="17.9" cy="19.2" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Brain<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Building"><path d="M5.4 20.2V7.4L12 3.8l6.6 3.6v12.8z"></path><path d="M9.2 20.2v-4.8h5.6v4.8"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Bank"><path d="M4.4 9.6 12 4.8l7.6 4.8"></path><path d="M5 12.8h14M6.2 12.8v4.4M12 12.8v4.4M17.8 12.8v4.4"></path><path d="M4.2 19.6h15.6"></path><circle cx="18.9" cy="19.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Building<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Calculator"><rect x="5.4" y="3.6" width="13.2" height="16.8" rx="2.1"></rect><rect x="7.4" y="6" width="9.2" height="3.2" rx="0.8"></rect><path d="M8.4 12.2h.01M12 12.2h.01M15.6 12.2h.01M8.4 15.6h.01M12 15.6h.01M15.6 15.6h.01"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Calculator"><rect x="5.4" y="3.6" width="13.2" height="16.8" rx="2.1"></rect><rect x="7.4" y="6" width="9.2" height="3.2" rx="0.8"></rect><path d="M8.4 12.2h.01M12 12.2h.01M15.6 12.2h.01M8.4 15.6h.01M12 15.6h.01M15.6 15.6h.01"></path><circle cx="17" cy="18.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Calculator<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Calendar"><rect x="4.2" y="5.6" width="15.6" height="14" rx="2"></rect><path d="M8 3.8v3.4M16 3.8v3.4M4.2 10.2h15.6"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Calendar"><rect x="4.2" y="5.6" width="15.6" height="14" rx="2"></rect><path d="M8 3.8v3.4M16 3.8v3.4M4.2 10.2h15.6"></path><path d="M8 14.6h5.4" stroke="#FF6A00" data-ayrovi-accent="true"></path><circle cx="17.4" cy="16.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Calendar<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Card"><rect x="3.6" y="6.2" width="16.8" height="11.6" rx="2.1"></rect><path d="M3.6 10.4h16.8"></path><circle cx="17.8" cy="15.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Card"><rect x="3.6" y="6.2" width="16.8" height="11.6" rx="2.1"></rect><path d="M3.6 10.4h16.8"></path><path d="M6.6 15h4"></path><circle cx="17.8" cy="15.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Card<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Chart"><path d="M4.4 18.8h15.2"></path><path d="m5.2 14.2 4.2-4.2 3.4 2.6 6-7.2"></path><circle cx="18.8" cy="5.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Chart"><path d="M4.6 4.8v14.6h14.8"></path><path d="m6.4 15.8 3.6-3.8 3 2.6 5.4-6.4"></path><circle cx="6.4" cy="15.8" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="10" cy="12" r="1.1" fill="currentColor" stroke="none"></circle><circle cx="18.4" cy="7.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Chart<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Chat"><path d="M19.6 11.2a7.6 7.6 0 0 1-7.7 7.5 8.8 8.8 0 0 1-3.3-.62L4.4 20.2l1.55-4.2A7.1 7.1 0 0 1 4.5 11.7 7.6 7.6 0 0 1 12.2 4.2a7.6 7.6 0 0 1 7.4 7Z"></path><path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Chat"><path d="M19.6 11.2a7.6 7.6 0 0 1-7.7 7.5 8.8 8.8 0 0 1-3.3-.62L4.4 20.2l1.55-4.2A7.1 7.1 0 0 1 4.5 11.7 7.6 7.6 0 0 1 12.2 4.2a7.6 7.6 0 0 1 7.4 7Z"></path><path d="M8.6 11.4h.01M12 11.4h.01M15.4 11.4h.01"></path><circle cx="17.5" cy="16.9" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Chat<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Clipboard"><rect x="6.2" y="5.6" width="11.6" height="14.4" rx="2"></rect><path d="M9.2 5.6V4.4h5.6v1.2"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Clipboard"><rect x="6.2" y="5.6" width="11.6" height="14.4" rx="2"></rect><path d="M9.2 5.6V4.4h5.6v1.2"></path><path d="M9.2 11h5.6M9.2 14.4h3.6"></path><circle cx="16.4" cy="16.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Clipboard<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Clock"><circle cx="12" cy="12" r="8.25"></circle><path d="M12 7.4V12l3.2 2"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Clock"><circle cx="12" cy="12" r="8.25"></circle><path d="M12 7.4V12l3.2 2"></path><circle cx="17.6" cy="17.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Clock<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Cloud"><path d="M7 18.6a4 4 0 0 1-.6-7.95 5.2 5.2 0 0 1 10.15-1.2 4.4 4.4 0 0 1-1.75 9.15Z"></path><circle cx="16.9" cy="16.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Cloud<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Database"><ellipse cx="12" cy="6.4" rx="7" ry="2.4"></ellipse><path d="M5 6.4v11.2c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4V6.4"></path><path d="M5 12c0 1.3 3.1 2.4 7 2.4s7-1.1 7-2.4"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Servers"><rect x="4.6" y="5.4" width="14.8" height="5.4" rx="1.6"></rect><rect x="4.6" y="13.2" width="14.8" height="5.4" rx="1.6"></rect><circle cx="7.6" cy="8.1" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="7.6" cy="15.9" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="18.3" cy="16.9" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Database<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Edit"><path d="M6.5 6.5h8.2L17.5 9.3v8.2H6.5z"></path><path d="M10.2 14.8 16.4 8.6l1.5 1.5-6.2 6.2H10.2z"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Edit"><path d="M6.5 6.5h8.2L17.5 9.3v8.2H6.5z"></path><path d="M10.2 14.8 16.4 8.6l1.5 1.5-6.2 6.2H10.2z"></path><circle cx="19.6" cy="5.9" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Edit<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Eye"><path d="M3.3 12c2.1-4.1 5.1-6.1 8.7-6.1S18.6 7.9 20.7 12c-2.1 4.1-5.1 6.1-8.7 6.1S5.4 16.1 3.3 12Z"></path><circle cx="12" cy="12" r="3.15"></circle><circle cx="12" cy="12" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Eye"><path d="M3.3 12c2.1-4.1 5.1-6.1 8.7-6.1S18.6 7.9 20.7 12c-2.1 4.1-5.1 6.1-8.7 6.1S5.4 16.1 3.3 12Z"></path><circle cx="12" cy="12" r="2.7"></circle><circle cx="17.6" cy="16.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Eye<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="FlagFr"><path d="M8.25 4.65A8.25 8.25 0 0 0 8.25 19.35Z" fill="#0055A4" stroke="none"></path><path d="M15.75 4.65A8.25 8.25 0 0 1 15.75 19.35Z" fill="#EF4135" stroke="none"></path><circle cx="12" cy="12" r="8.25"></circle><circle cx="17.6" cy="17.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">FlagFr<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Folder"><path d="M3.8 6.4h4.6l2 2.4h9.2a1.4 1.4 0 0 1 1.4 1.4v7.4a2 2 0 0 1-2 2H6.2a2.4 2.4 0 0 1-2.4-2.4Z"></path><circle cx="17" cy="9.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Folder<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Gauge"><path d="M5.2 16.2a7.8 7.8 0 1 1 13.6 0"></path><path d="m12 13.2 3.6-4.2"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Gauge"><path d="M5.2 16.2a7.8 7.8 0 1 1 13.6 0"></path><path d="m12 13.2 3.6-4.2"></path><circle cx="17.4" cy="16.9" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Gauge<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Heart"><path d="M12 19.4S4.6 14.2 4.6 9.6A3.85 3.85 0 0 1 12 8.1a3.85 3.85 0 0 1 7.4 1.5c0 4.6-7.4 9.8-7.4 9.8Z"></path><circle cx="16.6" cy="16.5" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Heart"><path d="M12 19.4S4.6 14.2 4.6 9.6A3.85 3.85 0 0 1 12 8.1a3.85 3.85 0 0 1 7.4 1.5c0 4.6-7.4 9.8-7.4 9.8Z"></path><circle cx="13.8" cy="17.7" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Heart<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="HeartFilled"><path d="M12 19.4S4.6 14.2 4.6 9.6A3.85 3.85 0 0 1 12 8.1a3.85 3.85 0 0 1 7.4 1.5c0 4.6-7.4 9.8-7.4 9.8Z" fill="currentColor"></path><circle cx="16.6" cy="16.5" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="HeartFilled"><path d="M12 19.4S4.6 14.2 4.6 9.6A3.85 3.85 0 0 1 12 8.1a3.85 3.85 0 0 1 7.4 1.5c0 4.6-7.4 9.8-7.4 9.8Z" fill="currentColor"></path><circle cx="13.8" cy="17.7" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">HeartFilled<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Lock"><rect x="6" y="10.4" width="12" height="9.1" rx="2.2"></rect><path d="M8.4 10.4V8.1a3.6 3.6 0 0 1 7.2 0v2.3"></path><circle cx="12" cy="14.7" r="1.05"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Lock"><rect x="6" y="10.4" width="12" height="9.1" rx="2.2"></rect><path d="M8.4 10.4V8.1a3.6 3.6 0 0 1 7.2 0v2.3"></path><circle cx="12" cy="14.7" r="1.15" fill="#FF6A00" stroke="none"></circle></svg></div>
+  <div class="name">Lock<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Options"><circle cx="12" cy="6" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="12" cy="18" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Options"><circle cx="12" cy="6" r="1.35" fill="currentColor" stroke="none"></circle><circle cx="12" cy="12" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle><circle cx="12" cy="18" r="1.35" fill="currentColor" stroke="none"></circle></svg></div>
+  <div class="name">Options<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Pencil"><path d="M13.2 5.8 18.2 10.8 9.4 19.6H4.4v-5z"></path><path d="m12.1 6.9 5 5"></path><circle cx="17.6" cy="8.2" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Pencil"><path d="M13.2 5.8 18.2 10.8 9.4 19.6H4.4v-5z"></path><path d="m12.1 6.9 5 5"></path><circle cx="19.4" cy="19.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Pencil<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Percent"><circle cx="8" cy="8" r="2.15"></circle><circle cx="16" cy="16" r="2.15"></circle><path d="m17.6 5.6-11.2 12.8"></path><circle cx="17.8" cy="8.2" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Percent"><circle cx="8" cy="8" r="2.15"></circle><circle cx="16" cy="16" r="2.15"></circle><path d="m17.6 5.6-11.2 12.8"></path><circle cx="15.9" cy="17.1" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Percent<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Pie"><circle cx="12" cy="12" r="7.9"></circle><path d="M12 4.1V12h7.9"></path><circle cx="17.2" cy="6.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Pie<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Refund"><circle cx="12" cy="12" r="8.2"></circle><path d="M18.4 12H9.8"></path><path d="m12.8 8.6-3.4 3.4 3.4 3.4"></path><circle cx="17.6" cy="17.6" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Refund<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Reminder"><path d="M7.2 9.2a4.8 4.8 0 0 1 9.6 0c0 5.2 1.6 6.6 1.6 6.6H5.6s1.6-1.4 1.6-6.6Z"></path><path d="M10.4 18.6a1.6 1.6 0 0 0 3.2 0"></path><circle cx="17.9" cy="6.1" r="1.9" fill="#FF6A00" stroke="none"></circle></svg></div>
+  <div class="name">Reminder<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Scan"><path d="M8 4.4H5.2A1.8 1.8 0 0 0 3.4 6.2V9M16 4.4h2.8A1.8 1.8 0 0 1 20.6 6.2V9M8 19.6H5.2A1.8 1.8 0 0 1 3.4 17.8V15M16 19.6h2.8a1.8 1.8 0 0 0 1.8-1.8V15"></path><circle cx="12" cy="12" r="3.2"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Scan"><path d="M8 4.4H5.2A1.8 1.8 0 0 0 3.4 6.2V9M16 4.4h2.8A1.8 1.8 0 0 1 20.6 6.2V9M8 19.6H5.2A1.8 1.8 0 0 1 3.4 17.8V15M16 19.6h2.8a1.8 1.8 0 0 0 1.8-1.8V15"></path><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"></circle><circle cx="17.4" cy="17.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Scan<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Servers"><rect x="4.6" y="5.4" width="14.8" height="5.4" rx="1.6"></rect><rect x="4.6" y="13.2" width="14.8" height="5.4" rx="1.6"></rect><circle cx="7.6" cy="8.1" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="7.6" cy="15.9" r="0.9" fill="currentColor" stroke="none"></circle><circle cx="18.3" cy="16.9" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Servers<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Settings"><circle cx="12" cy="12" r="3.05"></circle><path d="M12 3.6v2.1M12 18.3v2.1M4.7 7.6l1.8 1.1M17.5 15.3l1.8 1.1M4.7 16.4l1.8-1.1M17.5 8.7l1.8-1.1M3.6 12h2.1M18.3 12h2.1"></path><circle cx="17.4" cy="8.2" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Settings"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle><circle cx="18.4" cy="18.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Settings<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Sliders"><path d="M5 8h14M5 16h14"></path><circle cx="9" cy="8" r="1.6"></circle><circle cx="15" cy="16" r="1.6"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Sliders"><path d="M5 8h14M5 16h14"></path><circle cx="9" cy="8" r="1.6"></circle><circle cx="15" cy="16" r="1.6"></circle><circle cx="17.4" cy="17.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Sliders<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Sort"><path d="M8 5.2v13.6M4.9 8.3 8 5.2l3.1 3.1"></path><path d="M16 18.8V5.2M12.9 15.7l3.1 3.1 3.1-3.1" stroke="#FF6A00" data-ayrovi-accent="true"></path><circle cx="19.2" cy="18.4" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Sort<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Sparkle"><path d="M11.2 3.1c.18 4.55 3.35 7.72 7.9 7.9-4.55.18-7.72 3.35-7.9 7.9-.18-4.55-3.35-7.72-7.9-7.9 4.55-.18 7.72-3.35 7.9-7.9Z"></path><path d="M17.8 15.6c.1 1.5 1.2 2.6 2.7 2.7-1.5.1-2.6 1.2-2.7 2.7-.1-1.5-1.2-2.6-2.7-2.7 1.5-.1 2.6-1.2 2.7-2.7Z"></path></svg></div>
+  <div class="name">Sparkle<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Sun"><circle cx="12" cy="12" r="3.4"></circle><path d="M12 3.6v2.2M12 18.2v2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M3.6 12h2.2M18.2 12h2.2M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Sun"><circle cx="12" cy="12" r="3.4"></circle><path d="M12 3.6v2.2M12 18.2v2.2M4.7 4.7l1.6 1.6M17.7 17.7l1.6 1.6M3.6 12h2.2M18.2 12h2.2M4.7 19.3l1.6-1.6M17.7 6.3l1.6-1.6"></path><circle cx="17.8" cy="17.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Sun<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Tag"><path d="M4.4 4.4h7.1l8.3 8.3-7 7-8.4-8.4z"></path><circle cx="8.4" cy="8.4" r="1.15"></circle></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Tag"><path d="M4.4 4.4h7.1l8.3 8.3-7 7-8.4-8.4z"></path><circle cx="8.4" cy="8.4" r="1.15"></circle><circle cx="17.2" cy="17.2" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Tag<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Track"><circle cx="12" cy="12" r="5.9"></circle><path d="M12 3.2v2.2M12 18.6v2.2M3.2 12h2.2M18.6 12h2.2"></path><path d="M12 9.9l2 1.1v2.4l-2 1.1-2-1.1v-2.4Z"></path><path d="M12 14.5v-2.4M10 11l2 1.1 2-1.1"></path><circle cx="17.8" cy="17.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Track<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Transaction"><path d="M5.6 10.2A6.6 6.6 0 0 1 18.6 8.2"></path><path d="M18.6 4.9v3.3h-3.3"></path><path d="M18.4 13.8a6.6 6.6 0 0 1-13 2"></path><path d="M5.4 19.1v-3.3h3.3"></path><path d="M14.4 10.2a3.1 3.1 0 1 0 0 3.6"></path><path d="M8.8 11.2h4.2M8.8 12.8h4.2"></path></svg></div>
+  <div class="name">Transaction<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Trash"><path d="M5 8h14"></path><path d="M9.2 8V6.2h5.6V8"></path><path d="M7.2 8v11.2h9.6V8"></path><path d="M10.2 11v5.2M13.8 11v5.2"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Trash"><path d="M5 8h14"></path><path d="M9.2 8V6.2h5.6V8"></path><path d="M7.2 8v11.2h9.6V8"></path><path d="M10.2 11v5.2M13.8 11v5.2" stroke="#FF6A00" data-ayrovi-accent="true"></path></svg></div>
+  <div class="name">Trash<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="TrendUp"><path d="m4.6 16.4 4.6-4.6 3.4 3.2 6-6.6"></path><path d="M14.4 7.6h4.2v4.2" stroke="#FF6A00" data-ayrovi-accent="true"></path><circle cx="5.2" cy="17.8" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">TrendUp<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Upload"><path d="M12 16.6V5.6M8.2 9.2 12 5.6l3.8 3.6" stroke="#FF6A00" data-ayrovi-accent="true"></path><path d="M5.2 18.6h13.6"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Upload"><path d="M12 16.6V5.6M8.2 9.2 12 5.6l3.8 3.6"></path><path d="M5.2 18.6h13.6" stroke="#FF6A00" data-ayrovi-accent="true"></path></svg></div>
+  <div class="name">Upload<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="UserLine"><circle cx="12" cy="7.4" r="2.9"></circle><path d="M7.2 17.6h9.6"></path><circle cx="17.9" cy="17.5" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">UserLine<span class="badge">جديدة</span></div>
+</div>
+<div class="row ">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><span style="color:#9ca3af">—</span></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Wallet"><path d="M4.6 7.4v9.2a2 2 0 0 0 2 2h10.8a2 2 0 0 0 2-2V9.4a2 2 0 0 0-2-2H6.4a1.8 1.8 0 0 1 0-3.6h9.2"></path><rect x="14.6" y="10.6" width="4.8" height="3.8" rx="1.2"></rect><circle cx="17.2" cy="12.5" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Wallet<span class="badge">جديدة</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Warning"><path d="M12 4.6 20.6 19.4H3.4Z"></path><path d="M12 10v4.2M12 16.8h.01"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Warning"><path d="M12 4.6 20.6 19.4H3.4Z"></path><path d="M12 10v4.2M12 16.8h.01"></path><circle cx="17.8" cy="18.3" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Warning<span class="badge">تغيّرت</span></div>
+</div>
+<div class="row changed">
+  <div class="box"><span class="tag">قبل (git HEAD)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Zap"><path d="M13.4 3.6 6.6 13.2h5.2L10.6 20.4 17.4 10.8h-5.2Z"></path></svg></div>
+  <div class="box"><span class="tag">بعد (الحالي)</span><svg xmlns="http://www.w3.org/2000/svg" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" overflow="visible" class="ayrovi-icon" aria-hidden="true" data-ayrovi-icon="Zap"><path d="M13.4 3.6 6.6 13.2h5.2L10.6 20.4 17.4 10.8h-5.2Z"></path><circle cx="8.9" cy="18.9" r="1.85" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"></circle></svg></div>
+  <div class="name">Zap<span class="badge">تغيّرت</span></div>
+</div>
+</body></html>

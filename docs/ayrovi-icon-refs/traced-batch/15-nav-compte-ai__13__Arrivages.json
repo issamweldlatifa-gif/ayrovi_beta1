@@ -1,0 +1,46 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__13__Arrivages.png",
+  "sourcePx": [
+    74,
+    81
+  ],
+  "croppedPx": [
+    58,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    66,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 199
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 11.842,
+      "cy": 13.478,
+      "r": 1.486,
+      "fillRatio": 0.78
+    },
+    {
+      "cx": 14.533,
+      "cy": 19.6,
+      "r": 1.416,
+      "fillRatio": 1.05
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke"
+  ]
+}

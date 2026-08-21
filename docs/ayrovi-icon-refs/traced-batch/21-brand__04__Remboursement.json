@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__04__Remboursement.png",
+  "sourcePx": [
+    76,
+    78
+  ],
+  "croppedPx": [
+    60,
+    62
+  ],
+  "cropBox": [
+    8,
+    8,
+    68,
+    70
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 163
+  },
+  "strokeIn24": 0.944,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3371,
+  "orange": [
+    {
+      "cx": 18.565,
+      "cy": 17.303,
+      "r": 1.528,
+      "fillRatio": 1.022
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

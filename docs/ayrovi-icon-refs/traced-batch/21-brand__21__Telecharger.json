@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__21__Telecharger.png",
+  "sourcePx": [
+    68,
+    70
+  ],
+  "croppedPx": [
+    53,
+    54
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    62
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 95
+  },
+  "strokeIn24": 1.084,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.38704,
+  "orange": [
+    {
+      "cx": 18.967,
+      "cy": 17.806,
+      "r": 1.653,
+      "fillRatio": 1.046
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

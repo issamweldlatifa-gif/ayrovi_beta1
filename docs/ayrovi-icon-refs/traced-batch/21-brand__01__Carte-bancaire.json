@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__01__Carte-bancaire.png",
+  "sourcePx": [
+    81,
+    69
+  ],
+  "croppedPx": [
+    65,
+    53
+  ],
+  "cropBox": [
+    8,
+    8,
+    73,
+    61
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 237
+  },
+  "strokeIn24": 1.286,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 16.341,
+      "cy": 14.572,
+      "r": 1.079,
+      "fillRatio": 1.075
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "stroke"
+  ]
+}

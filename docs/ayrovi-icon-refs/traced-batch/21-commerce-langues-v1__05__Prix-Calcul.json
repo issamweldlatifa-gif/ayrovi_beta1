@@ -1,0 +1,47 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__05__Prix-Calcul.png",
+  "sourcePx": [
+    67,
+    77
+  ],
+  "croppedPx": [
+    51,
+    61
+  ],
+  "cropBox": [
+    8,
+    8,
+    59,
+    69
+  ],
+  "strokePxSource": {
+    "strokePx": 2.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.0,
+    "samples": 243
+  },
+  "strokeIn24": 0.685,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34262,
+  "orange": [
+    {
+      "cx": 14.912,
+      "cy": 13.542,
+      "r": 0.766,
+      "fillRatio": 1.337
+    },
+    {
+      "cx": 14.952,
+      "cy": 16.744,
+      "r": 0.859,
+      "fillRatio": 1.063
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "path",
+    "stroke",
+    "stroke"
+  ]
+}

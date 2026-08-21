@@ -1,0 +1,40 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__16__Promotions.png",
+  "sourcePx": [
+    71,
+    78
+  ],
+  "croppedPx": [
+    55,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    63,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 124
+  },
+  "strokeIn24": 1.327,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.33175,
+  "orange": [
+    {
+      "cx": 16.81,
+      "cy": 19.464,
+      "r": 1.484,
+      "fillRatio": 1.034
+    }
+  ],
+  "inkKinds": [
+    "ring",
+    "stroke",
+    "stroke"
+  ]
+}

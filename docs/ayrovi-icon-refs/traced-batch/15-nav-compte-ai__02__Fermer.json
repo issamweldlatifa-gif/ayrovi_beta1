@@ -1,0 +1,31 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__02__Fermer.png",
+  "sourcePx": [
+    70,
+    73
+  ],
+  "croppedPx": [
+    54,
+    57
+  ],
+  "cropBox": [
+    8,
+    8,
+    62,
+    65
+  ],
+  "strokePxSource": {
+    "strokePx": 4.394,
+    "strokePxP25": 4.394,
+    "strokePxP75": 4.394,
+    "samples": 92
+  },
+  "strokeIn24": 1.611,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.36667,
+  "orange": [],
+  "inkKinds": [
+    "stroke"
+  ]
+}

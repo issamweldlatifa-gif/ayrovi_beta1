@@ -1,0 +1,40 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__27__Informations.png",
+  "sourcePx": [
+    82,
+    82
+  ],
+  "croppedPx": [
+    66,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    74,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 159
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 18.175,
+      "cy": 19.035,
+      "r": 1.588,
+      "fillRatio": 1.038
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "path",
+    "stroke"
+  ]
+}

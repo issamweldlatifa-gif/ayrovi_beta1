@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__12__AYVISI-Vision.png",
+  "sourcePx": [
+    88,
+    68
+  ],
+  "croppedPx": [
+    72,
+    52
+  ],
+  "cropBox": [
+    8,
+    8,
+    80,
+    60
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 180
+  },
+  "strokeIn24": 1.161,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29028,
+  "orange": [
+    {
+      "cx": 12.0,
+      "cy": 11.855,
+      "r": 0.726,
+      "fillRatio": 1.019
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "ring"
+  ]
+}

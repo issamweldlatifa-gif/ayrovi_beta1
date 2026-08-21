@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__03__Paiement-securise.png",
+  "sourcePx": [
+    79,
+    88
+  ],
+  "croppedPx": [
+    63,
+    72
+  ],
+  "cropBox": [
+    8,
+    8,
+    71,
+    80
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 175
+  },
+  "strokeIn24": 1.161,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29028,
+  "orange": [
+    {
+      "cx": 16.209,
+      "cy": 18.241,
+      "r": 1.429,
+      "fillRatio": 0.853
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

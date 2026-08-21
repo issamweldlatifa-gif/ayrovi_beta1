@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 09-paiements-fichiers__27__Alerte.png | stroke≈1.13 in 24-grid -->
+  <path d="M12.000 19.767 L10.588 19.767 L9.176 19.484 L7.764 19.767 L6.351 19.767 L4.939 19.767 L3.527 19.202 L2.962 17.790 L3.527 16.378 L4.374 14.966 L4.939 13.553 L5.786 12.141 L6.634 10.729 L7.481 9.317 L8.328 7.905 L9.176 6.493 L10.023 5.080 L10.870 3.668 L12.282 3.668 L13.412 4.516 L14.259 5.928 L15.107 7.340 L15.954 8.752 L16.801 10.164 L17.366 11.576 L18.214 12.989 L19.061 14.401 L19.908 15.813 L20.755 17.225 L20.473 18.637 L19.343 19.484 L17.931 19.484 L16.519 19.767 L16.236 19.767" fill="none" stroke="#111827" stroke-width="1.130" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M11.718 15.530 L11.435 15.813 L11.435 16.378 L12.282 16.378 L12.282 15.530 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <circle cx="12.000" cy="11.443" r="2.409" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="15.060" cy="19.296" r="1.368" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

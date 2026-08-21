@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__05__Colis.png",
+  "sourcePx": [
+    84,
+    87
+  ],
+  "croppedPx": [
+    69,
+    71
+  ],
+  "cropBox": [
+    8,
+    8,
+    77,
+    79
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 243
+  },
+  "strokeIn24": 1.177,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29437,
+  "orange": [
+    {
+      "cx": 19.359,
+      "cy": 16.626,
+      "r": 1.476,
+      "fillRatio": 0.987
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

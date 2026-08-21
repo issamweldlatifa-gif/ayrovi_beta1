@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/01-navigation__13__Securite.png",
+  "sourcePx": [
+    84,
+    99
+  ],
+  "croppedPx": [
+    68,
+    83
+  ],
+  "cropBox": [
+    8,
+    8,
+    76,
+    91
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.394,
+    "samples": 239
+  },
+  "strokeIn24": 1.007,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.25181,
+  "orange": [
+    {
+      "cx": 11.874,
+      "cy": 14.675,
+      "r": 2.081,
+      "fillRatio": 0.513
+    }
+  ],
+  "inkKinds": [
+    "path"
+  ]
+}

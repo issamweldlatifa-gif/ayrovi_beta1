@@ -1,0 +1,4958 @@
+[
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__00__Menu.svg",
+    "strokeIn24": 1.441,
+    "strokePxSource": {
+      "strokePx": 6.0,
+      "strokePxP25": 5.6,
+      "strokePxP75": 6.0,
+      "samples": 168
+    },
+    "croppedPx": [
+      87,
+      75
+    ],
+    "orange": [
+      {
+        "cx": 20.434,
+        "cy": 5.2,
+        "r": 1.296,
+        "fillRatio": 0.995
+      },
+      {
+        "cx": 20.408,
+        "cy": 11.88,
+        "r": 1.343,
+        "fillRatio": 0.998
+      },
+      {
+        "cx": 20.448,
+        "cy": 18.686,
+        "r": 1.291,
+        "fillRatio": 1.014
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__01__Retour.svg",
+    "strokeIn24": 1.032,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 146
+    },
+    "croppedPx": [
+      89,
+      79
+    ],
+    "orange": [
+      {
+        "cx": 8.505,
+        "cy": 15.771,
+        "r": 1.092,
+        "fillRatio": 0.986
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__02__Fermer.svg",
+    "strokeIn24": 1.858,
+    "strokePxSource": {
+      "strokePx": 5.6,
+      "strokePxP25": 4.394,
+      "strokePxP75": 5.6,
+      "samples": 95
+    },
+    "croppedPx": [
+      62,
+      63
+    ],
+    "orange": [],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__03__Options.svg",
+    "strokeIn24": 3.175,
+    "strokePxSource": {
+      "strokePx": 12.0,
+      "strokePxP25": 12.0,
+      "strokePxP75": 12.0,
+      "samples": 2
+    },
+    "croppedPx": [
+      21,
+      79
+    ],
+    "orange": [
+      {
+        "cx": 11.916,
+        "cy": 11.868,
+        "r": 1.732,
+        "fillRatio": 1.032
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__04__Accueil.svg",
+    "strokeIn24": 1.02,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 213
+    },
+    "croppedPx": [
+      75,
+      82
+    ],
+    "orange": [
+      {
+        "cx": 14.676,
+        "cy": 20.156,
+        "r": 1.14,
+        "fillRatio": 0.987
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__05__Recherche.svg",
+    "strokeIn24": 1.134,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 154
+    },
+    "croppedPx": [
+      80,
+      81
+    ],
+    "orange": [
+      {
+        "cx": 19.354,
+        "cy": 19.225,
+        "r": 2.257,
+        "fillRatio": 0.537
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__06__Ajouter.svg",
+    "strokeIn24": 1.13,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 126
+    },
+    "croppedPx": [
+      74,
+      74
+    ],
+    "orange": [],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__07__Modifier.svg",
+    "strokeIn24": 1.52,
+    "strokePxSource": {
+      "strokePx": 5.6,
+      "strokePxP25": 4.394,
+      "strokePxP75": 6.0,
+      "samples": 269
+    },
+    "croppedPx": [
+      77,
+      77
+    ],
+    "orange": [],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__08__Supprimer.svg",
+    "strokeIn24": 1.482,
+    "strokePxSource": {
+      "strokePx": 5.6,
+      "strokePxP25": 4.0,
+      "strokePxP75": 6.0,
+      "samples": 237
+    },
+    "croppedPx": [
+      71,
+      79
+    ],
+    "orange": [
+      {
+        "cx": 10.148,
+        "cy": 13.587,
+        "r": 2.544,
+        "fillRatio": 0.385
+      },
+      {
+        "cx": 13.72,
+        "cy": 13.587,
+        "r": 2.527,
+        "fillRatio": 0.335
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__09__Partager.svg",
+    "strokeIn24": 1.162,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 182
+    },
+    "croppedPx": [
+      71,
+      79
+    ],
+    "orange": [
+      {
+        "cx": 15.307,
+        "cy": 16.894,
+        "r": 1.183,
+        "fillRatio": 0.907
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__10__Profil.svg",
+    "strokeIn24": 1.162,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 141
+    },
+    "croppedPx": [
+      74,
+      79
+    ],
+    "orange": [
+      {
+        "cx": 19.155,
+        "cy": 19.696,
+        "r": 1.458,
+        "fillRatio": 1.007
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__11__Compte.svg",
+    "strokeIn24": 1.148,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 146
+    },
+    "croppedPx": [
+      76,
+      80
+    ],
+    "orange": [
+      {
+        "cx": 19.184,
+        "cy": 19.837,
+        "r": 1.46,
+        "fillRatio": 1.059
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__12__Informations.svg",
+    "strokeIn24": 1.193,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 202
+    },
+    "croppedPx": [
+      77,
+      77
+    ],
+    "orange": [
+      {
+        "cx": 11.864,
+        "cy": 8.064,
+        "r": 1.119,
+        "fillRatio": 1.011
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__13__Securite.svg",
+    "strokeIn24": 1.007,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 239
+    },
+    "croppedPx": [
+      68,
+      83
+    ],
+    "orange": [
+      {
+        "cx": 11.874,
+        "cy": 14.675,
+        "r": 2.081,
+        "fillRatio": 0.513
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/01-navigation__14__Deconnexion.svg",
+    "strokeIn24": 1.629,
+    "strokePxSource": {
+      "strokePx": 6.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 6.0,
+      "samples": 119
+    },
+    "croppedPx": [
+      64,
+      77
+    ],
+    "orange": [
+      {
+        "cx": 15.96,
+        "cy": 12.0,
+        "r": 4.791,
+        "fillRatio": 0.391
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__00__Produits.svg",
+    "strokeIn24": 1.177,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 226
+    },
+    "croppedPx": [
+      67,
+      71
+    ],
+    "orange": [
+      {
+        "cx": 18.918,
+        "cy": 18.285,
+        "r": 1.544,
+        "fillRatio": 1.052
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__01__Commandes.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 187
+    },
+    "croppedPx": [
+      53,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 11.839,
+        "cy": 12.161,
+        "r": 2.592,
+        "fillRatio": 0.284
+      },
+      {
+        "cx": 11.839,
+        "cy": 15.055,
+        "r": 2.592,
+        "fillRatio": 0.318
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__02__Arrivages.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 196
+    },
+    "croppedPx": [
+      59,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 18.695,
+        "cy": 19.184,
+        "r": 1.665,
+        "fillRatio": 1.004
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__03__Panier.svg",
+    "strokeIn24": 1.194,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 172
+    },
+    "croppedPx": [
+      61,
+      70
+    ],
+    "orange": [
+      {
+        "cx": 18.091,
+        "cy": 19.614,
+        "r": 1.53,
+        "fillRatio": 1.006
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__04__Favoris.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 120
+    },
+    "croppedPx": [
+      64,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 11.813,
+        "cy": 18.941,
+        "r": 1.621,
+        "fillRatio": 1.033
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__05__Paiements.svg",
+    "strokeIn24": 1.229,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 205
+    },
+    "croppedPx": [
+      68,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 15.996,
+        "cy": 14.305,
+        "r": 1.119,
+        "fillRatio": 1.033
+      },
+      {
+        "cx": 11.693,
+        "cy": 18.147,
+        "r": 0.972,
+        "fillRatio": 1.05
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__06__Factures.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 196
+    },
+    "croppedPx": [
+      53,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 11.842,
+        "cy": 10.892,
+        "r": 3.487,
+        "fillRatio": 0.231
+      },
+      {
+        "cx": 10.417,
+        "cy": 14.533,
+        "r": 2.083,
+        "fillRatio": 0.39
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__07__Suivi-colis.svg",
+    "strokeIn24": 1.145,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 194
+    },
+    "croppedPx": [
+      73,
+      55
+    ],
+    "orange": [
+      {
+        "cx": 6.417,
+        "cy": 16.295,
+        "r": 1.883,
+        "fillRatio": 0.419
+      },
+      {
+        "cx": 16.867,
+        "cy": 16.438,
+        "r": 2.05,
+        "fillRatio": 0.348
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__08__Adresses.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 157
+    },
+    "croppedPx": [
+      55,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 12.069,
+        "cy": 19.643,
+        "r": 1.473,
+        "fillRatio": 0.985
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__09__Notifications.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 160
+    },
+    "croppedPx": [
+      62,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 13.092,
+        "cy": 19.643,
+        "r": 1.878,
+        "fillRatio": 0.492
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__10__AYROVI-AI.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 145
+    },
+    "croppedPx": [
+      69,
+      69
+    ],
+    "orange": [
+      {
+        "cx": 18.815,
+        "cy": 5.488,
+        "r": 2.442,
+        "fillRatio": 0.612
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__11__AYROVIX-Lens.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 149
+    },
+    "croppedPx": [
+      65,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 18.138,
+        "cy": 4.283,
+        "r": 2.78,
+        "fillRatio": 0.434
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__12__AYVISI-Vision.svg",
+    "strokeIn24": 1.161,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 180
+    },
+    "croppedPx": [
+      72,
+      52
+    ],
+    "orange": [
+      {
+        "cx": 12.0,
+        "cy": 11.855,
+        "r": 0.726,
+        "fillRatio": 1.019
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__13__Recherche-Web.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 326
+    },
+    "croppedPx": [
+      66,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 11.61,
+        "cy": 11.883,
+        "r": 1.05,
+        "fillRatio": 1.068
+      },
+      {
+        "cx": 17.147,
+        "cy": 19.097,
+        "r": 1.49,
+        "fillRatio": 1.019
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__14__Connecteurs.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 125
+    },
+    "croppedPx": [
+      41,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 11.879,
+        "cy": 19.572,
+        "r": 1.584,
+        "fillRatio": 0.98
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__15__Code.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 235
+    },
+    "croppedPx": [
+      62,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 19.484,
+        "cy": 19.416,
+        "r": 1.479,
+        "fillRatio": 0.943
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "path",
+      "path",
+      "stroke",
+      "path",
+      "path",
+      "stroke",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__16__Flash.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 127
+    },
+    "croppedPx": [
+      54,
+      69
+    ],
+    "orange": [
+      {
+        "cx": 10.921,
+        "cy": 13.166,
+        "r": 1.119,
+        "fillRatio": 1.049
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__17__Capture.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 194
+    },
+    "croppedPx": [
+      66,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 19.487,
+        "cy": 18.333,
+        "r": 1.518,
+        "fillRatio": 1.052
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__18__Lien.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 118
+    },
+    "croppedPx": [
+      62,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 17.056,
+        "cy": 13.011,
+        "r": 1.066,
+        "fillRatio": 0.923
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__19__Ajouter-image.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 231
+    },
+    "croppedPx": [
+      63,
+      60
+    ],
+    "orange": [
+      {
+        "cx": 19.344,
+        "cy": 18.876,
+        "r": 1.557,
+        "fillRatio": 1.026
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__20__Chat.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 154
+    },
+    "croppedPx": [
+      66,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 18.914,
+        "cy": 18.914,
+        "r": 1.677,
+        "fillRatio": 1.032
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__21__Support.svg",
+    "strokeIn24": 1.13,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 188
+    },
+    "croppedPx": [
+      74,
+      65
+    ],
+    "orange": [],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__22__Social.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 151
+    },
+    "croppedPx": [
+      62,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 19.152,
+        "cy": 18.564,
+        "r": 1.64,
+        "fillRatio": 0.984
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__23__Message.svg",
+    "strokeIn24": 1.393,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 168
+    },
+    "croppedPx": [
+      60,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 13.404,
+        "cy": 9.039,
+        "r": 2.798,
+        "fillRatio": 0.316
+      },
+      {
+        "cx": 11.652,
+        "cy": 12.522,
+        "r": 1.102,
+        "fillRatio": 0.732
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__24__Appel.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 124
+    },
+    "croppedPx": [
+      61,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 19.152,
+        "cy": 19.152,
+        "r": 1.599,
+        "fillRatio": 1.052
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__25__Email.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 187
+    },
+    "croppedPx": [
+      63,
+      53
+    ],
+    "orange": [
+      {
+        "cx": 19.243,
+        "cy": 17.64,
+        "r": 1.557,
+        "fillRatio": 1.04
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__26__Info.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 152
+    },
+    "croppedPx": [
+      64,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 11.837,
+        "cy": 7.918,
+        "r": 0.952,
+        "fillRatio": 1.198
+      },
+      {
+        "cx": 17.715,
+        "cy": 18.858,
+        "r": 1.54,
+        "fillRatio": 1.001
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__27__Aide.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 171
+    },
+    "croppedPx": [
+      65,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 17.466,
+        "cy": 18.672,
+        "r": 1.536,
+        "fillRatio": 1.033
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__28__Conditions.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 215
+    },
+    "croppedPx": [
+      53,
+      64
+    ],
+    "orange": [],
+    "inkKinds": [
+      "path",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__29__Confidentialite.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 146
+    },
+    "croppedPx": [
+      57,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 16.572,
+        "cy": 18.041,
+        "r": 1.405,
+        "fillRatio": 0.912
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__30__Mentions-legales.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 166
+    },
+    "croppedPx": [
+      50,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 10.071,
+        "cy": 12.804,
+        "r": 1.64,
+        "fillRatio": 0.502
+      },
+      {
+        "cx": 17.024,
+        "cy": 19.355,
+        "r": 1.501,
+        "fillRatio": 1.023
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__31__A-propos.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 145
+    },
+    "croppedPx": [
+      63,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 11.751,
+        "cy": 7.853,
+        "r": 0.927,
+        "fillRatio": 1.141
+      },
+      {
+        "cx": 17.703,
+        "cy": 18.898,
+        "r": 1.607,
+        "fillRatio": 1.018
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__32__Langue.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 302
+    },
+    "croppedPx": [
+      61,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 19.048,
+        "cy": 19.195,
+        "r": 1.697,
+        "fillRatio": 1.038
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__33__Mode-sombre.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 128
+    },
+    "croppedPx": [
+      60,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 17.825,
+        "cy": 18.804,
+        "r": 1.643,
+        "fillRatio": 1.052
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__34__Parametres.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 160
+    },
+    "croppedPx": [
+      62,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 11.933,
+        "cy": 11.933,
+        "r": 3.16,
+        "fillRatio": 0.692
+      }
+    ],
+    "inkKinds": [
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__35__Filtre.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 122
+    },
+    "croppedPx": [
+      57,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 14.029,
+        "cy": 19.221,
+        "r": 1.659,
+        "fillRatio": 1.046
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__36__Tri.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 109
+    },
+    "croppedPx": [
+      61,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 16.454,
+        "cy": 16.625,
+        "r": 4.297,
+        "fillRatio": 0.279
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/04-commerce-ai__37__Localisation.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 129
+    },
+    "croppedPx": [
+      52,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 17.308,
+        "cy": 13.99,
+        "r": 3.272,
+        "fillRatio": 0.272
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__00__Carte-bancaire.svg",
+    "strokeIn24": 1.161,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 237
+    },
+    "croppedPx": [
+      72,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 16.282,
+        "cy": 14.322,
+        "r": 0.7,
+        "fillRatio": 1.078
+      },
+      {
+        "cx": 17.806,
+        "cy": 17.515,
+        "r": 3.275,
+        "fillRatio": 0.305
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__01__Virement-bancaire.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 272
+    },
+    "croppedPx": [
+      66,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 19.067,
+        "cy": 17.255,
+        "r": 1.541,
+        "fillRatio": 1.018
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__02__Portefeuille.svg",
+    "strokeIn24": 1.229,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 218
+    },
+    "croppedPx": [
+      67,
+      68
+    ],
+    "orange": [
+      {
+        "cx": 19.837,
+        "cy": 15.074,
+        "r": 0.972,
+        "fillRatio": 0.828
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__03__Paiement-securise.svg",
+    "strokeIn24": 1.161,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 175
+    },
+    "croppedPx": [
+      63,
+      72
+    ],
+    "orange": [
+      {
+        "cx": 16.209,
+        "cy": 18.241,
+        "r": 1.429,
+        "fillRatio": 0.853
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__04__Recu.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 201
+    },
+    "croppedPx": [
+      60,
+      69
+    ],
+    "orange": [
+      {
+        "cx": 11.546,
+        "cy": 10.486,
+        "r": 3.487,
+        "fillRatio": 0.202
+      },
+      {
+        "cx": 10.183,
+        "cy": 14.272,
+        "r": 1.817,
+        "fillRatio": 0.203
+      },
+      {
+        "cx": 18.126,
+        "cy": 19.695,
+        "r": 1.579,
+        "fillRatio": 0.925
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__05__Colis.svg",
+    "strokeIn24": 1.177,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 243
+    },
+    "croppedPx": [
+      69,
+      71
+    ],
+    "orange": [
+      {
+        "cx": 19.359,
+        "cy": 16.626,
+        "r": 1.476,
+        "fillRatio": 0.987
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__06__Livraison.svg",
+    "strokeIn24": 1.161,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 213
+    },
+    "croppedPx": [
+      72,
+      55
+    ],
+    "orange": [
+      {
+        "cx": 8.734,
+        "cy": 15.12,
+        "r": 0.827,
+        "fillRatio": 0.509
+      },
+      {
+        "cx": 18.531,
+        "cy": 17.515,
+        "r": 1.249,
+        "fillRatio": 0.74
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__07__Suivi-temps-reel.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 169
+    },
+    "croppedPx": [
+      57,
+      69
+    ],
+    "orange": [
+      {
+        "cx": 12.151,
+        "cy": 19.572,
+        "r": 1.492,
+        "fillRatio": 0.866
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__08__Estimation-livraison.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 269
+    },
+    "croppedPx": [
+      64,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 11.683,
+        "cy": 15.008,
+        "r": 3.34,
+        "fillRatio": 0.246
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__09__International.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 308
+    },
+    "croppedPx": [
+      65,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 11.648,
+        "cy": 11.877,
+        "r": 1.16,
+        "fillRatio": 0.973
+      },
+      {
+        "cx": 15.483,
+        "cy": 18.967,
+        "r": 1.353,
+        "fillRatio": 0.942
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__10__Ecrire.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.197,
+      "samples": 223
+    },
+    "croppedPx": [
+      62,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 10.892,
+        "cy": 13.132,
+        "r": 0.8,
+        "fillRatio": 0.96
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__11__Nouveau-document.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 200
+    },
+    "croppedPx": [
+      55,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 11.844,
+        "cy": 12.156,
+        "r": 3.431,
+        "fillRatio": 0.221
+      },
+      {
+        "cx": 11.22,
+        "cy": 15.899,
+        "r": 2.184,
+        "fillRatio": 0.136
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__12__Televerser.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 80
+    },
+    "croppedPx": [
+      49,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 11.839,
+        "cy": 20.199,
+        "r": 4.513,
+        "fillRatio": 0.183
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__13__Dossier.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 153
+    },
+    "croppedPx": [
+      66,
+      59
+    ],
+    "orange": [
+      {
+        "cx": 19.442,
+        "cy": 18.333,
+        "r": 1.63,
+        "fillRatio": 0.937
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__14__Signet.svg",
+    "strokeIn24": 1.229,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 162
+    },
+    "croppedPx": [
+      53,
+      68
+    ],
+    "orange": [
+      {
+        "cx": 17.071,
+        "cy": 19.53,
+        "r": 1.634,
+        "fillRatio": 0.946
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__15__Fichier.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 200
+    },
+    "croppedPx": [
+      56,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 12.0,
+        "cy": 12.156,
+        "r": 3.135,
+        "fillRatio": 0.258
+      },
+      {
+        "cx": 12.0,
+        "cy": 15.899,
+        "r": 2.825,
+        "fillRatio": 0.148
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__16__Telecharger.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 147
+    },
+    "croppedPx": [
+      66,
+      65
+    ],
+    "orange": [],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__17__Cloud.svg",
+    "strokeIn24": 1.145,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 140
+    },
+    "croppedPx": [
+      73,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 16.724,
+        "cy": 17.583,
+        "r": 1.32,
+        "fillRatio": 0.869
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__18__Stockage.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 286
+    },
+    "croppedPx": [
+      69,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 19.65,
+        "cy": 18.686,
+        "r": 1.504,
+        "fillRatio": 1.02
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path",
+      "path",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__19__Corbeille.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 199
+    },
+    "croppedPx": [
+      63,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 9.942,
+        "cy": 12.95,
+        "r": 2.868,
+        "fillRatio": 0.276
+      },
+      {
+        "cx": 13.742,
+        "cy": 13.267,
+        "r": 2.868,
+        "fillRatio": 0.213
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__20__Graphique.svg",
+    "strokeIn24": 1.086,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 237
+    },
+    "croppedPx": [
+      77,
+      71
+    ],
+    "orange": [
+      {
+        "cx": 6.093,
+        "cy": 16.844,
+        "r": 1.362,
+        "fillRatio": 0.973
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__21__Rapports.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 201
+    },
+    "croppedPx": [
+      69,
+      68
+    ],
+    "orange": [
+      {
+        "cx": 16.998,
+        "cy": 6.851,
+        "r": 4.503,
+        "fillRatio": 0.239
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__22__Statistiques.svg",
+    "strokeIn24": 1.115,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 260
+    },
+    "croppedPx": [
+      75,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 19.703,
+        "cy": 18.438,
+        "r": 1.364,
+        "fillRatio": 0.984
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__23__Tendance.svg",
+    "strokeIn24": 1.208,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 48
+    },
+    "croppedPx": [
+      76,
+      49
+    ],
+    "orange": [
+      {
+        "cx": 18.737,
+        "cy": 8.7,
+        "r": 3.117,
+        "fillRatio": 0.493
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__24__Performance.svg",
+    "strokeIn24": 1.13,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 185
+    },
+    "croppedPx": [
+      74,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 12.0,
+        "cy": 15.954,
+        "r": 1.579,
+        "fillRatio": 0.642
+      },
+      {
+        "cx": 18.948,
+        "cy": 18.637,
+        "r": 0.96,
+        "fillRatio": 1.019
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__25__Succes.svg",
+    "strokeIn24": 1.177,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 187
+    },
+    "croppedPx": [
+      71,
+      71
+    ],
+    "orange": [
+      {
+        "cx": 17.933,
+        "cy": 18.816,
+        "r": 1.454,
+        "fillRatio": 0.926
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__26__Attention.svg",
+    "strokeIn24": 1.161,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 170
+    },
+    "croppedPx": [
+      72,
+      71
+    ],
+    "orange": [
+      {
+        "cx": 17.577,
+        "cy": 18.676,
+        "r": 1.456,
+        "fillRatio": 0.873
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__27__Alerte.svg",
+    "strokeIn24": 1.13,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 165
+    },
+    "croppedPx": [
+      74,
+      71
+    ],
+    "orange": [
+      {
+        "cx": 12.0,
+        "cy": 11.443,
+        "r": 2.409,
+        "fillRatio": 0.293
+      },
+      {
+        "cx": 15.06,
+        "cy": 19.296,
+        "r": 1.368,
+        "fillRatio": 0.976
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__28__Erreur.svg",
+    "strokeIn24": 1.194,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 196
+    },
+    "croppedPx": [
+      70,
+      70
+    ],
+    "orange": [
+      {
+        "cx": 18.001,
+        "cy": 18.718,
+        "r": 1.383,
+        "fillRatio": 0.979
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/09-paiements-fichiers__29__Rappel.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 153
+    },
+    "croppedPx": [
+      60,
+      69
+    ],
+    "orange": [
+      {
+        "cx": 17.755,
+        "cy": 6.093,
+        "r": 2.442,
+        "fillRatio": 0.837
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__00__Menu.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 111
+    },
+    "croppedPx": [
+      62,
+      53
+    ],
+    "orange": [
+      {
+        "cx": 19.374,
+        "cy": 5.595,
+        "r": 1.401,
+        "fillRatio": 1.032
+      },
+      {
+        "cx": 19.324,
+        "cy": 11.801,
+        "r": 1.441,
+        "fillRatio": 0.993
+      },
+      {
+        "cx": 19.336,
+        "cy": 17.944,
+        "r": 1.458,
+        "fillRatio": 1.038
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__01__Retour.svg",
+    "strokeIn24": 1.229,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 97
+    },
+    "croppedPx": [
+      68,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 19.715,
+        "cy": 17.778,
+        "r": 1.445,
+        "fillRatio": 0.979
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__02__Fermer.svg",
+    "strokeIn24": 1.611,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.394,
+      "strokePxP75": 4.394,
+      "samples": 92
+    },
+    "croppedPx": [
+      54,
+      57
+    ],
+    "orange": [],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__03__Options.svg",
+    "strokeIn24": 2.654,
+    "strokePxSource": {
+      "strokePx": 8.0,
+      "strokePxP25": 8.0,
+      "strokePxP75": 8.098,
+      "samples": 4
+    },
+    "croppedPx": [
+      18,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 11.913,
+        "cy": 11.719,
+        "r": 1.665,
+        "fillRatio": 1.036
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__04__Chevron.svg",
+    "strokeIn24": 1.531,
+    "strokePxSource": {
+      "strokePx": 4.394,
+      "strokePxP25": 4.394,
+      "strokePxP75": 4.394,
+      "samples": 40
+    },
+    "croppedPx": [
+      35,
+      60
+    ],
+    "orange": [
+      {
+        "cx": 8.691,
+        "cy": 19.315,
+        "r": 1.558,
+        "fillRatio": 1.066
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__05__Accueil.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 169
+    },
+    "croppedPx": [
+      60,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 14.322,
+        "cy": 19.464,
+        "r": 1.484,
+        "fillRatio": 0.573
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__06__Profil.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 125
+    },
+    "croppedPx": [
+      63,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 18.748,
+        "cy": 19.519,
+        "r": 1.524,
+        "fillRatio": 1.027
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__07__Infos-personnelles.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 144
+    },
+    "croppedPx": [
+      64,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 18.908,
+        "cy": 19.518,
+        "r": 1.526,
+        "fillRatio": 1.037
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__08__Securite.svg",
+    "strokeIn24": 1.145,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 170
+    },
+    "croppedPx": [
+      62,
+      73
+    ],
+    "orange": [
+      {
+        "cx": 17.651,
+        "cy": 18.541,
+        "r": 1.437,
+        "fillRatio": 1.036
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__09__Parametres.svg",
+    "strokeIn24": 1.161,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 225
+    },
+    "croppedPx": [
+      70,
+      72
+    ],
+    "orange": [
+      {
+        "cx": 18.194,
+        "cy": 18.199,
+        "r": 1.435,
+        "fillRatio": 1.029
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__10__Deconnexion.svg",
+    "strokeIn24": 1.212,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 131
+    },
+    "croppedPx": [
+      64,
+      69
+    ],
+    "orange": [
+      {
+        "cx": 15.332,
+        "cy": 11.849,
+        "r": 5.461,
+        "fillRatio": 0.298
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__11__Produits.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 194
+    },
+    "croppedPx": [
+      60,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 18.959,
+        "cy": 18.092,
+        "r": 1.606,
+        "fillRatio": 1.037
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__12__Commandes.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 187
+    },
+    "croppedPx": [
+      55,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 12.0,
+        "cy": 12.0,
+        "r": 3.22,
+        "fillRatio": 0.213
+      },
+      {
+        "cx": 11.157,
+        "cy": 15.708,
+        "r": 2.384,
+        "fillRatio": 0.356
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__13__Arrivages.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 199
+    },
+    "croppedPx": [
+      58,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 11.842,
+        "cy": 13.478,
+        "r": 1.486,
+        "fillRatio": 0.78
+      },
+      {
+        "cx": 14.533,
+        "cy": 19.6,
+        "r": 1.416,
+        "fillRatio": 1.05
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__14__Panier.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 172
+    },
+    "croppedPx": [
+      54,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 17.806,
+        "cy": 19.464,
+        "r": 1.634,
+        "fillRatio": 0.984
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__15__Favoris.svg",
+    "strokeIn24": 1.348,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 116
+    },
+    "croppedPx": [
+      61,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 11.865,
+        "cy": 19.248,
+        "r": 1.562,
+        "fillRatio": 1.023
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__16__Promotions.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 124
+    },
+    "croppedPx": [
+      55,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 16.81,
+        "cy": 19.464,
+        "r": 1.484,
+        "fillRatio": 1.034
+      }
+    ],
+    "inkKinds": [
+      "ring",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__17__AYROVI-AI.svg",
+    "strokeIn24": 1.229,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 148
+    },
+    "croppedPx": [
+      68,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 18.424,
+        "cy": 5.73,
+        "r": 2.2,
+        "fillRatio": 0.634
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__18__AYROVIX-Lens.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 136
+    },
+    "croppedPx": [
+      64,
+      59
+    ],
+    "orange": [
+      {
+        "cx": 16.245,
+        "cy": 4.979,
+        "r": 1.346,
+        "fillRatio": 1.011
+      },
+      {
+        "cx": 19.572,
+        "cy": 4.979,
+        "r": 1.406,
+        "fillRatio": 1.03
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__19__AYVISI-Vision.svg",
+    "strokeIn24": 1.194,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 161
+    },
+    "croppedPx": [
+      70,
+      48
+    ],
+    "orange": [
+      {
+        "cx": 19.227,
+        "cy": 15.078,
+        "r": 1.446,
+        "fillRatio": 1.032
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__20__Recherche-Web.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 312
+    },
+    "croppedPx": [
+      64,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 18.695,
+        "cy": 18.695,
+        "r": 1.549,
+        "fillRatio": 1.061
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__21__Connecteurs.svg",
+    "strokeIn24": 1.327,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 133
+    },
+    "croppedPx": [
+      43,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 16.147,
+        "cy": 18.801,
+        "r": 1.484,
+        "fillRatio": 1.034
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__22__Prendre-photo.svg",
+    "strokeIn24": 1.145,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 225
+    },
+    "croppedPx": [
+      73,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 19.677,
+        "cy": 18.105,
+        "r": 1.383,
+        "fillRatio": 0.995
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__23__Galerie.svg",
+    "strokeIn24": 0.746,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 409
+    },
+    "croppedPx": [
+      99,
+      112
+    ],
+    "orange": [
+      {
+        "cx": 19.434,
+        "cy": 20.65,
+        "r": 0.922,
+        "fillRatio": 1.042
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "path",
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__24__Lien.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.394,
+      "samples": 121
+    },
+    "croppedPx": [
+      61,
+      60
+    ],
+    "orange": [
+      {
+        "cx": 15.304,
+        "cy": 17.276,
+        "r": 1.677,
+        "fillRatio": 1.024
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__25__Flash.svg",
+    "strokeIn24": 1.248,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 145
+    },
+    "croppedPx": [
+      56,
+      67
+    ],
+    "orange": [
+      {
+        "cx": 15.525,
+        "cy": 18.176,
+        "r": 1.521,
+        "fillRatio": 1.031
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__26__Code.svg",
+    "strokeIn24": 1.306,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 274
+    },
+    "croppedPx": [
+      63,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 19.261,
+        "cy": 19.386,
+        "r": 1.611,
+        "fillRatio": 1.033
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path",
+      "path",
+      "path",
+      "path",
+      "stroke",
+      "stroke",
+      "path",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__27__Informations.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 159
+    },
+    "croppedPx": [
+      66,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 18.175,
+        "cy": 19.035,
+        "r": 1.588,
+        "fillRatio": 1.038
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__28__Aide.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 172
+    },
+    "croppedPx": [
+      65,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 17.885,
+        "cy": 19.173,
+        "r": 1.614,
+        "fillRatio": 1.005
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__29__Support.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 168
+    },
+    "croppedPx": [
+      55,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 11.518,
+        "cy": 11.839,
+        "r": 3.231,
+        "fillRatio": 0.255
+      },
+      {
+        "cx": 10.553,
+        "cy": 15.537,
+        "r": 2.257,
+        "fillRatio": 0.362
+      },
+      {
+        "cx": 17.841,
+        "cy": 19.181,
+        "r": 1.558,
+        "fillRatio": 0.963
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__30__Conditions.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 178
+    },
+    "croppedPx": [
+      57,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 17.959,
+        "cy": 18.981,
+        "r": 1.513,
+        "fillRatio": 1.018
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/15-nav-compte-ai__31__Confidentialite.svg",
+    "strokeIn24": 0.767,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 264
+    },
+    "croppedPx": [
+      70,
+      109
+    ],
+    "orange": [
+      {
+        "cx": 16.506,
+        "cy": 12.192,
+        "r": 0.949,
+        "fillRatio": 1.039
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke",
+      "path",
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__00__Paiement.svg",
+    "strokeIn24": 0.633,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 211
+    },
+    "croppedPx": [
+      66,
+      54
+    ],
+    "orange": [
+      {
+        "cx": 15.8,
+        "cy": 14.375,
+        "r": 1.277,
+        "fillRatio": 0.803
+      },
+      {
+        "cx": 19.663,
+        "cy": 17.7,
+        "r": 1.389,
+        "fillRatio": 1.059
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__01__Carte-bancaire.svg",
+    "strokeIn24": 1.286,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 237
+    },
+    "croppedPx": [
+      65,
+      53
+    ],
+    "orange": [
+      {
+        "cx": 16.341,
+        "cy": 14.572,
+        "r": 1.079,
+        "fillRatio": 1.075
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__02__Transaction.svg",
+    "strokeIn24": 0.944,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 177
+    },
+    "croppedPx": [
+      60,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 18.098,
+        "cy": 18.581,
+        "r": 1.568,
+        "fillRatio": 1.044
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__03__Acompte.svg",
+    "strokeIn24": 0.959,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 138
+    },
+    "croppedPx": [
+      58,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 8.916,
+        "cy": 9.43,
+        "r": 1.532,
+        "fillRatio": 1.034
+      },
+      {
+        "cx": 11.315,
+        "cy": 12.0,
+        "r": 4.523,
+        "fillRatio": 0.155
+      },
+      {
+        "cx": 13.982,
+        "cy": 14.252,
+        "r": 1.479,
+        "fillRatio": 1.026
+      },
+      {
+        "cx": 18.75,
+        "cy": 18.852,
+        "r": 1.56,
+        "fillRatio": 1.044
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__04__Remboursement.svg",
+    "strokeIn24": 0.944,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 163
+    },
+    "croppedPx": [
+      60,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 18.565,
+        "cy": 17.303,
+        "r": 1.528,
+        "fillRatio": 1.022
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__05__Prix-Calcul.svg",
+    "strokeIn24": 1.37,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 236
+    },
+    "croppedPx": [
+      50,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 14.912,
+        "cy": 13.713,
+        "r": 0.874,
+        "fillRatio": 0.93
+      },
+      {
+        "cx": 11.714,
+        "cy": 16.797,
+        "r": 0.7,
+        "fillRatio": 1.146
+      },
+      {
+        "cx": 14.912,
+        "cy": 16.797,
+        "r": 0.874,
+        "fillRatio": 1.077
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path",
+      "stroke",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__06__Colis.svg",
+    "strokeIn24": 0.914,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 202
+    },
+    "croppedPx": [
+      62,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 19.184,
+        "cy": 17.552,
+        "r": 1.46,
+        "fillRatio": 1.082
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__07__Expedition.svg",
+    "strokeIn24": 0.813,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 239
+    },
+    "croppedPx": [
+      72,
+      55
+    ],
+    "orange": [],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__08__Livraison.svg",
+    "strokeIn24": 0.9,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 2.8,
+      "samples": 150
+    },
+    "croppedPx": [
+      51,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 15.055,
+        "cy": 19.235,
+        "r": 1.438,
+        "fillRatio": 1.034
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__09__Suivi.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 215
+    },
+    "croppedPx": [
+      66,
+      66
+    ],
+    "orange": [
+      {
+        "cx": 17.267,
+        "cy": 17.865,
+        "r": 1.393,
+        "fillRatio": 1.004
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__10__Transporteur.svg",
+    "strokeIn24": 0.929,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 217
+    },
+    "croppedPx": [
+      60,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 18.967,
+        "cy": 18.137,
+        "r": 1.484,
+        "fillRatio": 1.082
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__11__Adresse-livraison.svg",
+    "strokeIn24": 0.959,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 148
+    },
+    "croppedPx": [
+      58,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 18.715,
+        "cy": 19.503,
+        "r": 1.522,
+        "fillRatio": 1.033
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__12__Succes.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 131
+    },
+    "croppedPx": [
+      54,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.317,
+        "cy": 17.992,
+        "r": 1.551,
+        "fillRatio": 1.032
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__13__Erreur.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 150
+    },
+    "croppedPx": [
+      57,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 18.847,
+        "cy": 18.486,
+        "r": 1.539,
+        "fillRatio": 1.029
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__14__Attention.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 118
+    },
+    "croppedPx": [
+      58,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 12.0,
+        "cy": 10.919,
+        "r": 2.905,
+        "fillRatio": 0.313
+      },
+      {
+        "cx": 12.0,
+        "cy": 15.964,
+        "r": 0.806,
+        "fillRatio": 1.146
+      },
+      {
+        "cx": 15.423,
+        "cy": 19.162,
+        "r": 1.497,
+        "fillRatio": 1.069
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__15__Information.svg",
+    "strokeIn24": 1.045,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 128
+    },
+    "croppedPx": [
+      55,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.531,
+        "cy": 17.971,
+        "r": 1.539,
+        "fillRatio": 1.011
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__16__Notification.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 126
+    },
+    "croppedPx": [
+      52,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.306,
+        "cy": 18.078,
+        "r": 1.589,
+        "fillRatio": 1.068
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__17__En-attente.svg",
+    "strokeIn24": 0.76,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 131
+    },
+    "croppedPx": [
+      54,
+      55
+    ],
+    "orange": [
+      {
+        "cx": 18.406,
+        "cy": 17.89,
+        "r": 1.651,
+        "fillRatio": 1.029
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__18__Ajouter.svg",
+    "strokeIn24": 1.084,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 85
+    },
+    "croppedPx": [
+      54,
+      53
+    ],
+    "orange": [
+      {
+        "cx": 18.87,
+        "cy": 18.773,
+        "r": 1.69,
+        "fillRatio": 1.035
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__19__Modifier.svg",
+    "strokeIn24": 1.084,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 2.8,
+      "samples": 103
+    },
+    "croppedPx": [
+      53,
+      54
+    ],
+    "orange": [
+      {
+        "cx": 18.967,
+        "cy": 19.015,
+        "r": 1.608,
+        "fillRatio": 1.069
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__20__Supprimer.svg",
+    "strokeIn24": 0.746,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 3.7,
+      "samples": 170
+    },
+    "croppedPx": [
+      53,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 9.947,
+        "cy": 13.131,
+        "r": 2.997,
+        "fillRatio": 0.242
+      },
+      {
+        "cx": 13.679,
+        "cy": 13.131,
+        "r": 2.997,
+        "fillRatio": 0.291
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__21__Telecharger.svg",
+    "strokeIn24": 1.084,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 95
+    },
+    "croppedPx": [
+      53,
+      54
+    ],
+    "orange": [
+      {
+        "cx": 18.967,
+        "cy": 17.806,
+        "r": 1.653,
+        "fillRatio": 1.046
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__22__Partager.svg",
+    "strokeIn24": 0.992,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 144
+    },
+    "croppedPx": [
+      51,
+      59
+    ],
+    "orange": [],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__23__Copier.svg",
+    "strokeIn24": 0.746,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 174
+    },
+    "croppedPx": [
+      53,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.429,
+        "cy": 18.141,
+        "r": 1.685,
+        "fillRatio": 1.016
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__24__Francais.svg",
+    "strokeIn24": 1.045,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 114
+    },
+    "croppedPx": [
+      55,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.345,
+        "cy": 18.345,
+        "r": 1.594,
+        "fillRatio": 1.029
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__25__Arabe.svg",
+    "strokeIn24": 1.045,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 169
+    },
+    "croppedPx": [
+      55,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.485,
+        "cy": 18.531,
+        "r": 1.551,
+        "fillRatio": 1.069
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__26__Globe.svg",
+    "strokeIn24": 1.045,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 268
+    },
+    "croppedPx": [
+      54,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.075,
+        "cy": 18.376,
+        "r": 1.597,
+        "fillRatio": 1.043
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__27__Mode-clair.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 102
+    },
+    "croppedPx": [
+      52,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 16.144,
+        "cy": 17.405,
+        "r": 1.7,
+        "fillRatio": 0.73
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "path",
+      "ring",
+      "path",
+      "stroke",
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__28__Mode-sombre.svg",
+    "strokeIn24": 1.125,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 102
+    },
+    "croppedPx": [
+      50,
+      52
+    ],
+    "orange": [
+      {
+        "cx": 17.979,
+        "cy": 18.632,
+        "r": 1.67,
+        "fillRatio": 1.051
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__29__Accessibilite.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 183
+    },
+    "croppedPx": [
+      55,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.389,
+        "cy": 18.344,
+        "r": 1.589,
+        "fillRatio": 1.051
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__30__AYROVI-AI-brain.svg",
+    "strokeIn24": 0.929,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 210
+    },
+    "croppedPx": [
+      61,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 15.152,
+        "cy": 9.18,
+        "r": 2.018,
+        "fillRatio": 0.447
+      },
+      {
+        "cx": 15.152,
+        "cy": 13.99,
+        "r": 2.052,
+        "fillRatio": 0.433
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__31__AYROVIX-Lens.svg",
+    "strokeIn24": 0.398,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 305
+    },
+    "croppedPx": [
+      79,
+      105
+    ],
+    "orange": [],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke",
+      "ring",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__32__AYVISI-Vision.svg",
+    "strokeIn24": 0.873,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 160
+    },
+    "croppedPx": [
+      67,
+      50
+    ],
+    "orange": [
+      {
+        "cx": 19.709,
+        "cy": 10.463,
+        "r": 1.346,
+        "fillRatio": 1.008
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__33__AYROVI-Shopping.svg",
+    "strokeIn24": 0.929,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 167
+    },
+    "croppedPx": [
+      53,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 11.668,
+        "cy": 13.548,
+        "r": 2.273,
+        "fillRatio": 0.454
+      },
+      {
+        "cx": 17.872,
+        "cy": 19.464,
+        "r": 1.455,
+        "fillRatio": 1.075
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__34__AYROVI-Logo.svg",
+    "strokeIn24": null,
+    "strokePxSource": {
+      "strokePx": null,
+      "samples": 0
+    },
+    "croppedPx": [
+      59,
+      65
+    ],
+    "orange": [
+      {
+        "cx": 9.106,
+        "cy": 11.839,
+        "r": 9.615,
+        "fillRatio": 0.287
+      },
+      {
+        "cx": 18.523,
+        "cy": 19.166,
+        "r": 1.696,
+        "fillRatio": 0.996
+      }
+    ],
+    "inkKinds": []
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__35__AI-Sparkle.svg",
+    "strokeIn24": 1.084,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 2.8,
+      "samples": 110
+    },
+    "croppedPx": [
+      53,
+      54
+    ],
+    "orange": [
+      {
+        "cx": 17.612,
+        "cy": 17.612,
+        "r": 0.968,
+        "fillRatio": 0.917
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-brand__36__Scan-Reconnaissance.svg",
+    "strokeIn24": 0.76,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 153
+    },
+    "croppedPx": [
+      55,
+      55
+    ],
+    "orange": [],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "ring",
+      "path",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__00__Paiement.svg",
+    "strokeIn24": 0.848,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 213
+    },
+    "croppedPx": [
+      69,
+      55
+    ],
+    "orange": [
+      {
+        "cx": 15.805,
+        "cy": 13.969,
+        "r": 1.231,
+        "fillRatio": 0.714
+      },
+      {
+        "cx": 19.421,
+        "cy": 17.366,
+        "r": 1.608,
+        "fillRatio": 1.05
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__01__Carte-bancaire.svg",
+    "strokeIn24": 1.267,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 242
+    },
+    "croppedPx": [
+      66,
+      53
+    ],
+    "orange": [
+      {
+        "cx": 16.592,
+        "cy": 14.375,
+        "r": 1.153,
+        "fillRatio": 0.889
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__02__Transaction.svg",
+    "strokeIn24": 0.929,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 178
+    },
+    "croppedPx": [
+      63,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 17.782,
+        "cy": 18.137,
+        "r": 1.781,
+        "fillRatio": 1.005
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__03__Acompte.svg",
+    "strokeIn24": 0.944,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 143
+    },
+    "croppedPx": [
+      61,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 8.725,
+        "cy": 9.664,
+        "r": 1.455,
+        "fillRatio": 1.008
+      },
+      {
+        "cx": 11.326,
+        "cy": 12.169,
+        "r": 4.554,
+        "fillRatio": 0.147
+      },
+      {
+        "cx": 13.747,
+        "cy": 14.59,
+        "r": 1.365,
+        "fillRatio": 1.049
+      },
+      {
+        "cx": 18.888,
+        "cy": 18.795,
+        "r": 1.775,
+        "fillRatio": 1.056
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__04__Remboursement.svg",
+    "strokeIn24": 0.959,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 164
+    },
+    "croppedPx": [
+      61,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 18.735,
+        "cy": 17.288,
+        "r": 1.804,
+        "fillRatio": 1.056
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__05__Prix-Calcul.svg",
+    "strokeIn24": 0.685,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.0,
+      "samples": 243
+    },
+    "croppedPx": [
+      51,
+      61
+    ],
+    "orange": [
+      {
+        "cx": 14.912,
+        "cy": 13.542,
+        "r": 0.766,
+        "fillRatio": 1.337
+      },
+      {
+        "cx": 14.952,
+        "cy": 16.744,
+        "r": 0.859,
+        "fillRatio": 1.063
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path",
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__06__Colis.svg",
+    "strokeIn24": 0.944,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 201
+    },
+    "croppedPx": [
+      62,
+      62
+    ],
+    "orange": [
+      {
+        "cx": 19.328,
+        "cy": 17.511,
+        "r": 1.692,
+        "fillRatio": 1.036
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__07__Expedition.svg",
+    "strokeIn24": 0.557,
+    "strokePxSource": {
+      "strokePx": 2.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 239
+    },
+    "croppedPx": [
+      75,
+      55
+    ],
+    "orange": [
+      {
+        "cx": 18.827,
+        "cy": 17.573,
+        "r": 1.088,
+        "fillRatio": 0.668
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__08__Livraison.svg",
+    "strokeIn24": 0.914,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 154
+    },
+    "croppedPx": [
+      51,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 15.66,
+        "cy": 19.224,
+        "r": 1.688,
+        "fillRatio": 1.013
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "ring"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__09__Suivi.svg",
+    "strokeIn24": 0.9,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 215
+    },
+    "croppedPx": [
+      65,
+      64
+    ],
+    "orange": [
+      {
+        "cx": 19.235,
+        "cy": 19.074,
+        "r": 1.64,
+        "fillRatio": 0.992
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__10__Transporteur.svg",
+    "strokeIn24": 0.929,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 202
+    },
+    "croppedPx": [
+      62,
+      63
+    ],
+    "orange": [
+      {
+        "cx": 18.967,
+        "cy": 17.474,
+        "r": 1.692,
+        "fillRatio": 1.053
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__11__Adresse-livraison.svg",
+    "strokeIn24": 0.975,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 147
+    },
+    "croppedPx": [
+      60,
+      60
+    ],
+    "orange": [
+      {
+        "cx": 19.141,
+        "cy": 18.967,
+        "r": 1.818,
+        "fillRatio": 0.993
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__12__Succes.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 137
+    },
+    "croppedPx": [
+      57,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 18.847,
+        "cy": 18.126,
+        "r": 1.811,
+        "fillRatio": 1.034
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__13__Erreur.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 150
+    },
+    "croppedPx": [
+      58,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 19.089,
+        "cy": 18.149,
+        "r": 1.841,
+        "fillRatio": 1.012
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__14__Attention.svg",
+    "strokeIn24": 0.959,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 2.8,
+      "samples": 121
+    },
+    "croppedPx": [
+      61,
+      60
+    ],
+    "orange": [
+      {
+        "cx": 12.171,
+        "cy": 10.972,
+        "r": 2.762,
+        "fillRatio": 0.318
+      },
+      {
+        "cx": 12.114,
+        "cy": 15.598,
+        "r": 0.7,
+        "fillRatio": 1.234
+      },
+      {
+        "cx": 15.598,
+        "cy": 18.852,
+        "r": 1.747,
+        "fillRatio": 1.004
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__15__Information.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 136
+    },
+    "croppedPx": [
+      58,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 18.666,
+        "cy": 18.162,
+        "r": 1.847,
+        "fillRatio": 1.006
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__16__Notification.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 130
+    },
+    "croppedPx": [
+      55,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.437,
+        "cy": 18.07,
+        "r": 1.854,
+        "fillRatio": 1.021
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__17__En-attente.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 135
+    },
+    "croppedPx": [
+      58,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.503,
+        "cy": 17.962,
+        "r": 1.825,
+        "fillRatio": 1.055
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__18__Ajouter.svg",
+    "strokeIn24": 1.467,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 4.0,
+      "strokePxP75": 4.0,
+      "samples": 86
+    },
+    "croppedPx": [
+      57,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.753,
+        "cy": 18.715,
+        "r": 1.881,
+        "fillRatio": 1.016
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__19__Modifier.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 2.8,
+      "samples": 110
+    },
+    "croppedPx": [
+      58,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 19.027,
+        "cy": 18.563,
+        "r": 1.807,
+        "fillRatio": 1.038
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__20__Supprimer.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 176
+    },
+    "croppedPx": [
+      55,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 10.018,
+        "cy": 13.092,
+        "r": 2.894,
+        "fillRatio": 0.311
+      },
+      {
+        "cx": 13.622,
+        "cy": 13.261,
+        "r": 3.063,
+        "fillRatio": 0.229
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__21__Telecharger.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 96
+    },
+    "croppedPx": [
+      57,
+      54
+    ],
+    "orange": [
+      {
+        "cx": 18.979,
+        "cy": 17.272,
+        "r": 1.855,
+        "fillRatio": 1.032
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__22__Partager.svg",
+    "strokeIn24": 1.045,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 121
+    },
+    "croppedPx": [
+      53,
+      56
+    ],
+    "orange": [
+      {
+        "cx": 18.158,
+        "cy": 17.673,
+        "r": 1.941,
+        "fillRatio": 1.001
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__23__Copier.svg",
+    "strokeIn24": 1.467,
+    "strokePxSource": {
+      "strokePx": 4.0,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 182
+    },
+    "croppedPx": [
+      57,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.6,
+        "cy": 17.317,
+        "r": 1.843,
+        "fillRatio": 1.021
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__24__Francais.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 120
+    },
+    "croppedPx": [
+      58,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 18.983,
+        "cy": 18.446,
+        "r": 1.856,
+        "fillRatio": 1.02
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__25__Arabe.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 162
+    },
+    "croppedPx": [
+      58,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 18.847,
+        "cy": 18.456,
+        "r": 1.832,
+        "fillRatio": 1.022
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "path",
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__26__Globe.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.8,
+      "strokePxP75": 4.0,
+      "samples": 275
+    },
+    "croppedPx": [
+      57,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.417,
+        "cy": 18.71,
+        "r": 1.907,
+        "fillRatio": 0.977
+      }
+    ],
+    "inkKinds": [
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__27__Mode-clair.svg",
+    "strokeIn24": 1.009,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 99
+    },
+    "croppedPx": [
+      52,
+      58
+    ],
+    "orange": [
+      {
+        "cx": 16.424,
+        "cy": 18.146,
+        "r": 1.84,
+        "fillRatio": 1.001
+      }
+    ],
+    "inkKinds": [
+      "path",
+      "path",
+      "path",
+      "ring",
+      "path",
+      "stroke",
+      "path",
+      "path"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__28__Mode-sombre.svg",
+    "strokeIn24": 1.064,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 2.8,
+      "samples": 109
+    },
+    "croppedPx": [
+      53,
+      55
+    ],
+    "orange": [
+      {
+        "cx": 17.605,
+        "cy": 18.65,
+        "r": 1.959,
+        "fillRatio": 0.995
+      }
+    ],
+    "inkKinds": [
+      "stroke"
+    ]
+  },
+  {
+    "file": "docs/ayrovi-icon-refs/traced-batch/21-commerce-langues-v1__29__Accessibilite.svg",
+    "strokeIn24": 1.027,
+    "strokePxSource": {
+      "strokePx": 2.8,
+      "strokePxP25": 2.0,
+      "strokePxP75": 4.0,
+      "samples": 187
+    },
+    "croppedPx": [
+      56,
+      57
+    ],
+    "orange": [
+      {
+        "cx": 18.692,
+        "cy": 18.325,
+        "r": 1.856,
+        "fillRatio": 1.019
+      }
+    ],
+    "inkKinds": [
+      "stroke",
+      "stroke"
+    ]
+  }
+]

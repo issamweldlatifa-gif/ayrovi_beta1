@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 21-brand__05__Prix-Calcul.png | stroke≈1.37 in 24-grid -->
+  <path d="M5.148 3.606 L4.805 4.291 L4.805 19.366 L5.148 20.052 L6.175 20.737 L17.482 20.737 L18.167 20.394 L18.852 19.366 L18.852 4.291 L17.139 2.920 L6.518 2.920 Z M6.175 3.606 L17.482 3.606 L18.167 4.291 L18.167 19.366 L17.482 20.052 L16.797 20.394 L6.518 20.394 L5.148 19.024 L5.148 4.976 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M8.231 6.689 L8.231 10.801 L8.574 11.143 L14.741 11.143 L15.426 10.458 L15.426 6.689 L15.084 6.347 L8.574 6.347 Z M8.574 7.717 L9.259 7.032 L14.398 7.032 L15.084 7.717 L15.084 9.773 L14.398 10.458 L9.259 10.458 L8.574 9.773 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M8.574 13.884 L8.574 14.227 L8.574 14.570 L8.574 14.912 L8.574 15.255 L8.574 15.598 L8.574 15.940 L8.574 16.283 L8.574 16.625" fill="none" stroke="#111827" stroke-width="1.370" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M12.000 13.199 L11.657 13.199 L11.315 13.542 L11.315 14.570 L12.000 14.570 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <circle cx="14.912" cy="13.713" r="0.874" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="11.714" cy="16.797" r="0.700" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+  <circle cx="14.912" cy="16.797" r="0.874" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

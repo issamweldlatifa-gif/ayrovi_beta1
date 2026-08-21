@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__05__Paiements.png",
+  "sourcePx": [
+    84,
+    71
+  ],
+  "croppedPx": [
+    68,
+    56
+  ],
+  "cropBox": [
+    8,
+    8,
+    76,
+    64
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 205
+  },
+  "strokeIn24": 1.229,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.30735,
+  "orange": [
+    {
+      "cx": 15.996,
+      "cy": 14.305,
+      "r": 1.119,
+      "fillRatio": 1.033
+    },
+    {
+      "cx": 11.693,
+      "cy": 18.147,
+      "r": 0.972,
+      "fillRatio": 1.05
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

@@ -1,81 +1,47 @@
-# نظام أيقونات AYROVI
+# نظام أيقونات AYROVI — النسخة المعتمدة (2026-08-21)
 
-> المرجع البصري: `file_00000000697c81f4bbd9d7abfd6842b7.png` (1254 × 1254 px)
+> **Style Zalando : monoline fine 1.5 sur grille 24, coins arrondis, currentColor, point signature #FF6A00.**
 
-## 1. دراسة النموذج المرجعي
-
-النموذج يحتوي على خمسة رموز وظيفية: حقيبة تسوق، منزل، قائمة، قلب، ومستخدم. اللغة البصرية المشتركة بينها هي:
-
-- **Monoline** بلا تعبئة افتراضية.
-- لون الرسم يتبع `currentColor`، لذلك لا يُثبت اللون داخل SVG.
-- نهايات الخطوط والوصلات دائرية: `stroke-linecap="round"` و`stroke-linejoin="round"`.
-- هندسة بسيطة وقليلة العقد، مع منحنيات واسعة ومقروئية جيدة في الأحجام الصغيرة.
-- سماكة الخط المرصودة في الملف تقارب 12 px ضمن رموز بعرض يقارب 200–280 px؛ التطبيع المناسب على شبكة 24 هو **1.5 وحدة**.
-- لا توجد حاويات أو خلفيات جزءًا من الأيقونة نفسها.
-
-### قياسات الأشكال في المرجع
-
-| الرمز | صندوق الرسم التقريبي داخل الملف | الملاحظة الهندسية |
-|---|---:|---|
-| حقيبة | 278 × 308 px | جسم بحواف دائرية ومقبض قوسي منفصل |
-| منزل | 265 × 284 px | محيط واحد وسقف لين وباب مركزي مفتوح بصريًا |
-| قائمة | 169 × 139 px | ثلاثة خطوط متساوية، نهايات دائرية |
-| قلب | 205 × 184 px | محيط متناظر بلا تعبئة |
-| مستخدم | 208 × 194 px | رأس دائري وقوس كتفين مستقل |
-
-## 2. مواصفة AYROVI المعتمدة
+## 1. مواصفة التنفيذ
 
 | الخاصية | القيمة |
 |---|---|
-| Canvas | `24 × 24` |
-| ViewBox | `0 0 24 24` |
-| Stroke | `1.5` عبر `--ayrovi-icon-stroke` |
+| Canvas / ViewBox | `24 × 24` / `0 0 24 24` |
+| Stroke | **1.5** عبر `--ayrovi-icon-stroke` (تناسبية مع الحجم — `vector-effect: none`) |
 | Line cap / join | `round / round` |
-| Default fill | `none` |
-| Colour | `currentColor` |
-| Optical scaling | `vector-effect: non-scaling-stroke` |
-| أحجام الاستخدام | 16 للبيانات الكثيفة، 20 للتحكم، 24 للتنقل، 28–32 للحالات البارزة |
-| حالة Active | اللون الدلالي؛ التعبئة محجوزة فقط لحالات liked/saved/selected الصريحة |
+| Default fill | `none` (التعبئة لحالات selected/liked فقط) |
+| Colour | `currentColor` — لا لون مثبت داخل SVG |
+| Point signature | دائرة ممتلئة `#FF6A00` (r 1.5) في موضع اللوحة — `data-ayrovi-signature` |
+| Accent | عناصر محددة بلون signature (مقبض البحث، سهم الخروج، شريطا الحذف، السطر العلوي للرسالة، سطر التقدير) — `data-ayrovi-accent` |
+| أحجام الاستخدام | 16 / 20 / 24 / 28–32 |
 
-## 3. الجرد الحالي
+## 2. بنية التنفيذ
 
-المسح الساكن داخل `client/src` وجد **89 اسمًا دلاليًا مستعملًا** من البوابة المركزية، عبر 289 موضع استيراد مسمى:
+- `client/src/components/icons/ayrovi/AyroviIcon.tsx` — الأساس: `AyroviSvg` + `AyroviSignature` + `createAyroviIcon` + الثوابت.
+- `client/src/components/icons/ayrovi/catalog.tsx` — **الكتالوج الوحيد**: 89 أيقونة، أيقونة لكل مفهوم (لا نسخ).
+- `client/src/components/QatafoIcons.tsx` — **البوابة الوحيدة**: 90 اسما مستعملا فعلا في الواجهة، والدوال المكررة مفهوميا تشير إلى أيقونة واحدة (Grid = LayoutGrid, Package = Box = Cube…).
+- `client/src/index.css` + `client/src/design/tokens.css` — عقد الرسم: ممنتوج واحد `.ayrovi-icon`، سمك 1.5، نقاط الـ signature.
+- `docs/ayrovi-icon-family.html` — contact sheet للعائلة الكاملة (توليد: `scripts/family-sheet-entry.tsx`).
+- `docs/brand-clone/` (أرشيف دراسة): الاستنساخ من المواقع الرسمية (Apple / Zalando / Amazon).
 
-`AlertCircle`, `ArrowDown`, `ArrowLeft`, `ArrowRight`, `ArrowRightLeft`, `ArrowUp`, `ArrowUpRight`, `Barcode`, `Bell`, `Bookmark`, `Box`, `Calculator`, `Calendar`, `Camera`, `ChartLine`, `Check`, `CheckCircle2`, `ChevronDown`, `ChevronLeft`, `ChevronRight`, `Clipboard`, `Copy`, `CreditCard`, `Eye`, `EyeOff`, `FigLeaf`, `FileText`, `Gift`, `Globe2`, `Grid`, `Heart`, `HeartFilled`, `History`, `Home`, `Hourglass`, `Image`, `Info`, `LayoutGrid`, `LensBox`, `Link2`, `Loader2`, `LocateFixed`, `LogOut`, `Mail`, `MapPin`, `Menu`, `MessageCircle`, `MessageSquare`, `Mic`, `Minus`, `Monitor`, `Moon`, `MoreVertical`, `MousePointer2`, `Navigation`, `Package`, `PackageCheck`, `Palette`, `Pause`, `PenSquare`, `Pencil`, `Percent`, `Phone`, `Plug`, `Plus`, `RefreshCw`, `RotateCcw`, `Save`, `Search`, `Settings`, `Share2`, `ShieldCheck`, `ShoppingBag`, `SlidersHorizontal`, `Sparkles`, `Square`, `Star`, `Tag`, `ThumbsDown`, `ThumbsUp`, `Trash2`, `Truck`, `Type`, `User`, `Video`, `Volume2`, `VolumeX`, `X`, `Zap`.
+## 3. قرارات نظيفة (2026-08-21)
 
-كما تحافظ البوابة على أسماء توافق إضافية تستخدمها الواجهات أو يمكن أن تستخدمها إعدادات Admin من دون ربط المكونات بالمكتبة الخارجية مباشرة.
+1. **حذف كامل** للإصدارات القديمة: ملفات الأبطال الخمسة المستقلة، الكتالوج الموسع (140+)، الشيم `Icons.tsx` — مع إبقاء كل سياق الاستخدام يعمل (البوابة تغطي كل الأسماء المستوردة فعلا).
+2. **إزالة مكتبة lucide-react كليا** (0 مرجع في الكود، 0 في package.json) — أداة «واجهتي» تحتفظ بموديل AYROVI الوحيد.
+3. **تقليص العدد**: من 140+ إلى 89 أيقونة (أيقونة/مفهوم)، و90 اسما في البوابة (كلها مستعملة).
+4. **السمك 2 → 1.5** (نمط زلاندو) مع بقاء تناسبية الخط في كل الأحجام.
+5. الاختبارات (`tests/icon-system.test.tsx`) تثبّت: 24px/1.5/round، مواضع النقاط، عدم وجود lucide، دمج المكرر.
 
-## 4. بنية التنفيذ
+## 4. الاستثناءات الموثقة
 
-### البوابة المركزية
+- علامات Google/Facebook/Instagram/TikTok/WhatsApp تبقى من `react-icons` (هويات تجارية).
+- `HeartFilled` معبّأ مقصودا (حالة وظيفية).
+- عناصر الـ accent البرتقالية موثقة في الكتالوج (5 عناصر).
 
-`client/src/components/QatafoIcons.tsx` هي مصدر الأيقونات الوحيد للمتجر، حساب العميل، AYROVIX، الواجهات الاجتماعية، وAdmin.
+## 5. قواعد الإضافة
 
-- أعيد رسم `ShoppingBag`, `Home`, `Menu`, `Heart`, `User` كأشكال AYROVI أصلية مبنية على المرجع.
-- أُعيد رسم الرموز العامة الأكثر ظهورًا أيضًا: `Eye`, `MessageCircle`, `MessageSquare`, `Package`, `PackageCheck`, `ShieldCheck`, `Truck`, `Sparkles`, `ArrowRightLeft`, `Percent`, `FileText`, `MapPin`, `Info`, `Globe2`, `Search`, `X`, و`Grid`.
-- بُني `ShoppingBagPlus` من هندسة الحقيبة نفسها للمحافظة على عائلة شكلية واحدة.
-- احتُفظ بعلامات المنتج الخاصة `FigLeaf`, `LensBox`, و`AiMark` كرسومات AYROVI، لا كرموز عامة.
-- كل رمز دلالي ثانوي يمر الآن عبر مكوّن AYROVI فعلي يحمل `data-ayrovi-icon` وسماكة `1.5` بدل الاكتفاء بإعادة تصديره من المكتبة الخارجية.
-
-### التطبيق الشامل
-
-`client/src/index.css` يطبق عقد الرسم على `.lucide` و`.qatafo-icon` في كامل التطبيق، بما فيه Admin، بدل تكرار خصائص SVG داخل كل صفحة.
-
-### واجهتي
-
-تبقى حزم الأيقونات الخمس في **واجهتي** متاحة للمقارنة والاختيار. حزمة `ayrovi` هي النظام الجديد، بينما Lucide وFont Awesome وBootstrap وMaterial خيارات معاينة مستقلة وليست بديلًا عن بوابة التطبيق المركزية.
-
-## 5. الاستثناءات المتعمدة
-
-- شعارات Google وFacebook وInstagram وTikTok وWhatsApp تبقى علامات تجارية أصلية من `react-icons` أو SVG مخصص.
-- تعبئة `HeartFilled` وBookmark المحفوظ والنجمة التقييمية مقصودة لأنها تنقل حالة وظيفية.
-- علامات AYROVIX/AYVISI المميزة لا تُستبدل بأيقونات عامة لأن شكلها جزء من هوية المنتج.
-
-## 6. قواعد الإضافة مستقبلًا
-
-1. لا تستورد أيقونة جديدة في صفحة المنتج مباشرة من مكتبة خارجية؛ أضفها أولًا إلى `QatafoIcons.tsx`.
-2. استعمل شبكة 24، وقلل عدد المسارات والعقد، واختبر الرمز عند 16 و20 و24 px.
-3. لا تثبت لونًا داخل SVG ولا تضف خلفية إلى هندسة الأيقونة.
-4. لا تستخدم التعبئة إلا لحالة مختارة واضحة، مع بقاء النسخة غير النشطة outline.
-5. لا تغيّر سماكة أيقونة منفردة إلا بسبب بصري موثق؛ القيمة الافتراضية هي `--ayrovi-icon-stroke: 1.5`.
-6. لا تُعد رسم شعار تجاري كرمز خطي عام.
+1. أضف الرمز إلى `catalog.tsx` أولًا، ثم اسمه في `QatafoIcons.tsx`.
+2. شبكة 24، خط 1.5، قلل المسارات، جرّب عند 16/20/24 px.
+3. نقطة signature فقط إن كانت في المرجع؛ لا زخرفة إضافية.
+4. لا لون داخل SVG عدا استثناءات accent الموثقة.
+5. شغّل `npm run typecheck` + `npm test` بعد كل تعديل.

@@ -1,0 +1,52 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/01-navigation__00__Menu.png",
+  "sourcePx": [
+    95,
+    87
+  ],
+  "croppedPx": [
+    87,
+    75
+  ],
+  "cropBox": [
+    8,
+    6,
+    95,
+    81
+  ],
+  "strokePxSource": {
+    "strokePx": 6.0,
+    "strokePxP25": 5.6,
+    "strokePxP75": 6.0,
+    "samples": 168
+  },
+  "strokeIn24": 1.441,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.24023,
+  "orange": [
+    {
+      "cx": 20.434,
+      "cy": 5.2,
+      "r": 1.296,
+      "fillRatio": 0.995
+    },
+    {
+      "cx": 20.408,
+      "cy": 11.88,
+      "r": 1.343,
+      "fillRatio": 0.998
+    },
+    {
+      "cx": 20.448,
+      "cy": 18.686,
+      "r": 1.291,
+      "fillRatio": 1.014
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke"
+  ]
+}

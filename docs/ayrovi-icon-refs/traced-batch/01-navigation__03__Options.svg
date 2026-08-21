@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none">
+  <!-- traced from 01-navigation__03__Options.png | stroke≈3.175 in 24-grid -->
+  <path d="M11.603 2.608 L11.339 2.873 L11.074 2.873 L10.545 3.402 L10.545 4.989 L11.074 5.518 L11.603 5.518 L11.868 5.783 L12.132 5.783 L12.397 5.518 L12.661 5.518 L13.455 4.725 L13.455 3.666 L12.926 2.873 L12.661 2.873 L12.397 2.608 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <path d="M11.603 17.953 L11.339 18.217 L11.074 18.217 L10.545 18.746 L10.545 20.334 L11.339 21.127 L12.397 21.127 L13.191 20.598 L13.191 20.334 L13.455 20.069 L13.455 19.011 L12.926 18.217 L12.397 18.217 L12.132 17.953 Z" fill="#111827" fill-rule="evenodd" stroke="none"/>
+  <circle cx="11.916" cy="11.868" r="1.732" fill="#FF6A00" stroke="none" data-ayrovi-signature="true"/>
+</svg>

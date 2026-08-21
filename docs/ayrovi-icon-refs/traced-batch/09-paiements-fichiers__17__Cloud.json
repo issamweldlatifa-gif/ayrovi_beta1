@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__17__Cloud.png",
+  "sourcePx": [
+    89,
+    73
+  ],
+  "croppedPx": [
+    73,
+    58
+  ],
+  "cropBox": [
+    8,
+    8,
+    81,
+    66
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 140
+  },
+  "strokeIn24": 1.145,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.2863,
+  "orange": [
+    {
+      "cx": 16.724,
+      "cy": 17.583,
+      "r": 1.32,
+      "fillRatio": 0.869
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

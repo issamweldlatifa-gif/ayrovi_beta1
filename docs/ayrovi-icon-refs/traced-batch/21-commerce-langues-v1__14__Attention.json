@@ -1,0 +1,50 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__14__Attention.png",
+  "sourcePx": [
+    77,
+    75
+  ],
+  "croppedPx": [
+    61,
+    60
+  ],
+  "cropBox": [
+    8,
+    8,
+    69,
+    68
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 2.8,
+    "samples": 121
+  },
+  "strokeIn24": 0.959,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34262,
+  "orange": [
+    {
+      "cx": 12.171,
+      "cy": 10.972,
+      "r": 2.762,
+      "fillRatio": 0.318
+    },
+    {
+      "cx": 12.114,
+      "cy": 15.598,
+      "r": 0.7,
+      "fillRatio": 1.234
+    },
+    {
+      "cx": 15.598,
+      "cy": 18.852,
+      "r": 1.747,
+      "fillRatio": 1.004
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

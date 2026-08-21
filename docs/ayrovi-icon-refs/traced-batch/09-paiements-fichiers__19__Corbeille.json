@@ -1,0 +1,45 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__19__Corbeille.png",
+  "sourcePx": [
+    79,
+    82
+  ],
+  "croppedPx": [
+    63,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    71,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 199
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 9.942,
+      "cy": 12.95,
+      "r": 2.868,
+      "fillRatio": 0.276
+    },
+    {
+      "cx": 13.742,
+      "cy": 13.267,
+      "r": 2.868,
+      "fillRatio": 0.213
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

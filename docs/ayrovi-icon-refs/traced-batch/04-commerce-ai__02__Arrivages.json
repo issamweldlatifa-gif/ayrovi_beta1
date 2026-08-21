@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__02__Arrivages.png",
+  "sourcePx": [
+    74,
+    79
+  ],
+  "croppedPx": [
+    59,
+    64
+  ],
+  "cropBox": [
+    8,
+    8,
+    67,
+    72
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 196
+  },
+  "strokeIn24": 1.306,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32656,
+  "orange": [
+    {
+      "cx": 18.695,
+      "cy": 19.184,
+      "r": 1.665,
+      "fillRatio": 1.004
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

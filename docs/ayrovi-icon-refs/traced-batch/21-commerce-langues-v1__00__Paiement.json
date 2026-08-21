@@ -1,0 +1,44 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__00__Paiement.png",
+  "sourcePx": [
+    84,
+    70
+  ],
+  "croppedPx": [
+    69,
+    55
+  ],
+  "cropBox": [
+    8,
+    8,
+    77,
+    63
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 213
+  },
+  "strokeIn24": 0.848,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3029,
+  "orange": [
+    {
+      "cx": 15.805,
+      "cy": 13.969,
+      "r": 1.231,
+      "fillRatio": 0.714
+    },
+    {
+      "cx": 19.421,
+      "cy": 17.366,
+      "r": 1.608,
+      "fillRatio": 1.05
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

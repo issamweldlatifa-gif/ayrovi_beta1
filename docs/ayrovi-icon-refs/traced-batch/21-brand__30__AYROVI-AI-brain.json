@@ -1,0 +1,45 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__30__AYROVI-AI-brain.png",
+  "sourcePx": [
+    77,
+    79
+  ],
+  "croppedPx": [
+    61,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    69,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 210
+  },
+  "strokeIn24": 0.929,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.33175,
+  "orange": [
+    {
+      "cx": 15.152,
+      "cy": 9.18,
+      "r": 2.018,
+      "fillRatio": 0.447
+    },
+    {
+      "cx": 15.152,
+      "cy": 13.99,
+      "r": 2.052,
+      "fillRatio": 0.433
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

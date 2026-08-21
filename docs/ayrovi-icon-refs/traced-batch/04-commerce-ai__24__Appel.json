@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__24__Appel.png",
+  "sourcePx": [
+    77,
+    76
+  ],
+  "croppedPx": [
+    61,
+    61
+  ],
+  "cropBox": [
+    8,
+    8,
+    69,
+    69
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 124
+  },
+  "strokeIn24": 1.37,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34262,
+  "orange": [
+    {
+      "cx": 19.152,
+      "cy": 19.152,
+      "r": 1.599,
+      "fillRatio": 1.052
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

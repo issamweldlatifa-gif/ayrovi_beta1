@@ -1,0 +1,33 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__28__Conditions.png",
+  "sourcePx": [
+    69,
+    80
+  ],
+  "croppedPx": [
+    53,
+    64
+  ],
+  "cropBox": [
+    8,
+    8,
+    61,
+    72
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 215
+  },
+  "strokeIn24": 1.306,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32656,
+  "orange": [],
+  "inkKinds": [
+    "path",
+    "stroke",
+    "stroke"
+  ]
+}

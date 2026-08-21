@@ -1,0 +1,31 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__07__Expedition.png",
+  "sourcePx": [
+    88,
+    71
+  ],
+  "croppedPx": [
+    72,
+    55
+  ],
+  "cropBox": [
+    8,
+    8,
+    80,
+    63
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 239
+  },
+  "strokeIn24": 0.813,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29028,
+  "orange": [],
+  "inkKinds": [
+    "path"
+  ]
+}

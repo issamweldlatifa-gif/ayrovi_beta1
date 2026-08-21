@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__17__En-attente.png",
+  "sourcePx": [
+    70,
+    71
+  ],
+  "croppedPx": [
+    54,
+    55
+  ],
+  "cropBox": [
+    8,
+    8,
+    62,
+    63
+  ],
+  "strokePxSource": {
+    "strokePx": 2.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 131
+  },
+  "strokeIn24": 0.76,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.38,
+  "orange": [
+    {
+      "cx": 18.406,
+      "cy": 17.89,
+      "r": 1.651,
+      "fillRatio": 1.029
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

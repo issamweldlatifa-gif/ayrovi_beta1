@@ -1,0 +1,41 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__11__AYROVIX-Lens.png",
+  "sourcePx": [
+    80,
+    78
+  ],
+  "croppedPx": [
+    65,
+    62
+  ],
+  "cropBox": [
+    8,
+    8,
+    73,
+    70
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 149
+  },
+  "strokeIn24": 1.286,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.32154,
+  "orange": [
+    {
+      "cx": 18.138,
+      "cy": 4.283,
+      "r": 2.78,
+      "fillRatio": 0.434
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring",
+    "stroke",
+    "stroke"
+  ]
+}

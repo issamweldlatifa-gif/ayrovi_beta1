@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__26__Globe.png",
+  "sourcePx": [
+    70,
+    72
+  ],
+  "croppedPx": [
+    54,
+    56
+  ],
+  "cropBox": [
+    8,
+    8,
+    62,
+    64
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 268
+  },
+  "strokeIn24": 1.045,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.37321,
+  "orange": [
+    {
+      "cx": 18.075,
+      "cy": 18.376,
+      "r": 1.597,
+      "fillRatio": 1.043
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

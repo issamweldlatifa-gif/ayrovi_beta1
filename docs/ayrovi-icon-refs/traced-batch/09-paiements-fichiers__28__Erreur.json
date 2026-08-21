@@ -1,0 +1,40 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__28__Erreur.png",
+  "sourcePx": [
+    86,
+    86
+  ],
+  "croppedPx": [
+    70,
+    70
+  ],
+  "cropBox": [
+    8,
+    8,
+    78,
+    78
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 196
+  },
+  "strokeIn24": 1.194,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29857,
+  "orange": [
+    {
+      "cx": 18.001,
+      "cy": 18.718,
+      "r": 1.383,
+      "fillRatio": 0.979
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "stroke"
+  ]
+}

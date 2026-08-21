@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__32__AYVISI-Vision.png",
+  "sourcePx": [
+    82,
+    66
+  ],
+  "croppedPx": [
+    67,
+    50
+  ],
+  "cropBox": [
+    8,
+    8,
+    75,
+    58
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 160
+  },
+  "strokeIn24": 0.873,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31194,
+  "orange": [
+    {
+      "cx": 19.709,
+      "cy": 10.463,
+      "r": 1.346,
+      "fillRatio": 1.008
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring"
+  ]
+}

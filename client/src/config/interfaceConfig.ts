@@ -43,11 +43,7 @@ export const INTERFACE_FONT_PRESETS = [
 export type InterfaceFontPresetId = (typeof INTERFACE_FONT_PRESETS)[number]['id'];
 
 export const INTERFACE_ICON_LIBRARIES = [
-  { id: 'ayrovi', label: 'AYROVI', description: 'Pictogrammes maison' },
-  { id: 'lucide', label: 'Lucide', description: 'Contour universel' },
-  { id: 'fontawesome', label: 'Font Awesome', description: 'Dense et reconnaissable' },
-  { id: 'bootstrap', label: 'Bootstrap', description: 'Simple et produit' },
-  { id: 'material', label: 'Material', description: 'Géométrique et affirmé' },
+  { id: 'ayrovi', label: 'AYROVI', description: 'Pictogrammes maison — monoline fine' },
 ] as const;
 export type InterfaceIconLibrary = (typeof INTERFACE_ICON_LIBRARIES)[number]['id'];
 

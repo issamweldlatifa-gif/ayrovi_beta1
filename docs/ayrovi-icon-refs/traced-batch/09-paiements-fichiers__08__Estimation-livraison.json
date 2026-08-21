@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__08__Estimation-livraison.png",
+  "sourcePx": [
+    80,
+    82
+  ],
+  "croppedPx": [
+    64,
+    66
+  ],
+  "cropBox": [
+    8,
+    8,
+    72,
+    74
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 269
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 11.683,
+      "cy": 15.008,
+      "r": 3.34,
+      "fillRatio": 0.246
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

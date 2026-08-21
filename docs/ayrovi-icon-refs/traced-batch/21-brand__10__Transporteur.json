@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__10__Transporteur.png",
+  "sourcePx": [
+    75,
+    79
+  ],
+  "croppedPx": [
+    60,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    68,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 217
+  },
+  "strokeIn24": 0.929,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.33175,
+  "orange": [
+    {
+      "cx": 18.967,
+      "cy": 18.137,
+      "r": 1.484,
+      "fillRatio": 1.082
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

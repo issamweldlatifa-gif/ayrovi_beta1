@@ -1,0 +1,40 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__22__Statistiques.png",
+  "sourcePx": [
+    90,
+    80
+  ],
+  "croppedPx": [
+    75,
+    65
+  ],
+  "cropBox": [
+    8,
+    8,
+    83,
+    73
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 260
+  },
+  "strokeIn24": 1.115,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.27867,
+  "orange": [
+    {
+      "cx": 19.703,
+      "cy": 18.438,
+      "r": 1.364,
+      "fillRatio": 0.984
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "path",
+    "path"
+  ]
+}

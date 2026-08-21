@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__01__Carte-bancaire.png",
+  "sourcePx": [
+    82,
+    69
+  ],
+  "croppedPx": [
+    66,
+    53
+  ],
+  "cropBox": [
+    8,
+    8,
+    74,
+    61
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 4.0,
+    "samples": 242
+  },
+  "strokeIn24": 1.267,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.31667,
+  "orange": [
+    {
+      "cx": 16.592,
+      "cy": 14.375,
+      "r": 1.153,
+      "fillRatio": 0.889
+    }
+  ],
+  "inkKinds": [
+    "path",
+    "stroke"
+  ]
+}

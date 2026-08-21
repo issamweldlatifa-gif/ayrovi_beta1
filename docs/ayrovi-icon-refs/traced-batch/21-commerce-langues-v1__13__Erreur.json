@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__13__Erreur.png",
+  "sourcePx": [
+    74,
+    74
+  ],
+  "croppedPx": [
+    58,
+    58
+  ],
+  "cropBox": [
+    8,
+    8,
+    66,
+    66
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 150
+  },
+  "strokeIn24": 1.009,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.36034,
+  "orange": [
+    {
+      "cx": 19.089,
+      "cy": 18.149,
+      "r": 1.841,
+      "fillRatio": 1.012
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "stroke"
+  ]
+}

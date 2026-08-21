@@ -1,0 +1,36 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__36__Scan-Reconnaissance.png",
+  "sourcePx": [
+    71,
+    71
+  ],
+  "croppedPx": [
+    55,
+    55
+  ],
+  "cropBox": [
+    8,
+    8,
+    63,
+    63
+  ],
+  "strokePxSource": {
+    "strokePx": 2.0,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 153
+  },
+  "strokeIn24": 0.76,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.38,
+  "orange": [],
+  "inkKinds": [
+    "stroke",
+    "stroke",
+    "ring",
+    "path",
+    "stroke",
+    "stroke"
+  ]
+}

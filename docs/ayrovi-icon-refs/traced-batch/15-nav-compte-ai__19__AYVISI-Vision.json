@@ -1,0 +1,39 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/15-nav-compte-ai__19__AYVISI-Vision.png",
+  "sourcePx": [
+    86,
+    64
+  ],
+  "croppedPx": [
+    70,
+    48
+  ],
+  "cropBox": [
+    8,
+    8,
+    78,
+    56
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 161
+  },
+  "strokeIn24": 1.194,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.29857,
+  "orange": [
+    {
+      "cx": 19.227,
+      "cy": 15.078,
+      "r": 1.446,
+      "fillRatio": 1.032
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "ring"
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/04-commerce-ai__33__Mode-sombre.png",
+  "sourcePx": [
+    76,
+    77
+  ],
+  "croppedPx": [
+    60,
+    61
+  ],
+  "cropBox": [
+    8,
+    8,
+    68,
+    69
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 128
+  },
+  "strokeIn24": 1.37,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34262,
+  "orange": [
+    {
+      "cx": 17.825,
+      "cy": 18.804,
+      "r": 1.643,
+      "fillRatio": 1.052
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

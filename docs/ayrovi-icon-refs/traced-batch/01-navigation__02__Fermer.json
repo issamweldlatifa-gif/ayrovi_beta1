@@ -1,0 +1,31 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/01-navigation__02__Fermer.png",
+  "sourcePx": [
+    78,
+    79
+  ],
+  "croppedPx": [
+    62,
+    63
+  ],
+  "cropBox": [
+    8,
+    8,
+    70,
+    71
+  ],
+  "strokePxSource": {
+    "strokePx": 5.6,
+    "strokePxP25": 4.394,
+    "strokePxP75": 5.6,
+    "samples": 95
+  },
+  "strokeIn24": 1.858,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.33175,
+  "orange": [],
+  "inkKinds": [
+    "stroke"
+  ]
+}

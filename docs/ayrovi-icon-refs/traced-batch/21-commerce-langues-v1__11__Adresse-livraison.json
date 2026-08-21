@@ -1,0 +1,38 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-commerce-langues-v1__11__Adresse-livraison.png",
+  "sourcePx": [
+    75,
+    75
+  ],
+  "croppedPx": [
+    60,
+    60
+  ],
+  "cropBox": [
+    8,
+    8,
+    68,
+    68
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.8,
+    "strokePxP75": 4.0,
+    "samples": 147
+  },
+  "strokeIn24": 0.975,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.34833,
+  "orange": [
+    {
+      "cx": 19.141,
+      "cy": 18.967,
+      "r": 1.818,
+      "fillRatio": 0.993
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

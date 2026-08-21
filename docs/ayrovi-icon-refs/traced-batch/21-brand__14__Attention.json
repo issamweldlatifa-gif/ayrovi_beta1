@@ -1,0 +1,50 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/21-brand__14__Attention.png",
+  "sourcePx": [
+    74,
+    73
+  ],
+  "croppedPx": [
+    58,
+    58
+  ],
+  "cropBox": [
+    8,
+    8,
+    66,
+    66
+  ],
+  "strokePxSource": {
+    "strokePx": 2.8,
+    "strokePxP25": 2.0,
+    "strokePxP75": 2.8,
+    "samples": 118
+  },
+  "strokeIn24": 1.009,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.36034,
+  "orange": [
+    {
+      "cx": 12.0,
+      "cy": 10.919,
+      "r": 2.905,
+      "fillRatio": 0.313
+    },
+    {
+      "cx": 12.0,
+      "cy": 15.964,
+      "r": 0.806,
+      "fillRatio": 1.146
+    },
+    {
+      "cx": 15.423,
+      "cy": 19.162,
+      "r": 1.497,
+      "fillRatio": 1.069
+    }
+  ],
+  "inkKinds": [
+    "stroke"
+  ]
+}

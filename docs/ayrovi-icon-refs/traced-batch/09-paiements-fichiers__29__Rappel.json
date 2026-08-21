@@ -1,0 +1,40 @@
+{
+  "source": "docs/ayrovi-icon-refs/sheets-cropped/09-paiements-fichiers__29__Rappel.png",
+  "sourcePx": [
+    76,
+    85
+  ],
+  "croppedPx": [
+    60,
+    69
+  ],
+  "cropBox": [
+    8,
+    8,
+    68,
+    77
+  ],
+  "strokePxSource": {
+    "strokePx": 4.0,
+    "strokePxP25": 4.0,
+    "strokePxP75": 4.0,
+    "samples": 153
+  },
+  "strokeIn24": 1.212,
+  "viewBox": 24,
+  "padding": 1.55,
+  "scaleTo24": 0.3029,
+  "orange": [
+    {
+      "cx": 17.755,
+      "cy": 6.093,
+      "r": 2.442,
+      "fillRatio": 0.837
+    }
+  ],
+  "inkKinds": [
+    "stroke",
+    "path",
+    "stroke"
+  ]
+}
