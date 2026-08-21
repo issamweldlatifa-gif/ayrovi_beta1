@@ -557,7 +557,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setFeedback({});
     setFeedbackComments({});
     setSelectedProduct(null);
-    closeAssistantLayer();
+    if (isMenuOpen) closeAssistantLayer();
     showToast('Nouvelle conversation');
   };
 
@@ -803,12 +803,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
         <AssistantHeader
           isDark={isDark}
-          onBack={handleCloseAssistant}
           onOpenMenu={() => navigation.pushLayer({ id: 'assistant:menu' })}
+          onNewConversation={resetConversation}
         />
 
         {isBooting ? (
-          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 py-8" aria-busy="true" aria-label={tr('Chargement de SONIM', 'جارٍ تحميل SONIM')}>
+          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 pb-8 pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))]" aria-busy="true" aria-label={tr('Chargement de SONIM', 'جارٍ تحميل SONIM')}>
             <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
             <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
               {[0, 1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-card bg-line" />)}
@@ -870,6 +870,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onOpenAccount={onOpenAccount}
           onHelp={() => { closeAssistantLayer(); sendMessage('Comment utiliser SONIM et Lens ?'); }}
           onToggleDark={() => setIsDark((dark) => !dark)}
+          onExit={handleCloseAssistant}
         />
 
         <AssistantAttachmentSheet

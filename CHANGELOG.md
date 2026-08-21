@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.8.8] - 2026-08-21
+
+### Changed
+- SONIM has no header bar or logo. ChatGPT-style overlay chips sit on the conversation; messages scroll underneath.
+
 ## [3.8.7] - 2026-08-21
 
 ### Changed

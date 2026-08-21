@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ArrowLeft,
   Box,
   History,
   LensBox,
@@ -27,6 +28,7 @@ interface AssistantSideMenuProps {
   onOpenAccount: () => void;
   onHelp: () => void;
   onToggleDark: () => void;
+  onExit: () => void;
 }
 
 export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
@@ -43,6 +45,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
   onOpenLens,
   onOpenAccount,
   onToggleDark,
+  onExit,
 }) => {
   const { direction, formatDate, tr } = useLocale();
   if (!isOpen) return null;
@@ -61,6 +64,10 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
           <strong className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-ink'}`}>SONIM</strong>
         </div>
 
+        <button type="button" onClick={onExit} className={mainItem}>
+          <ArrowLeft className={`h-[17px] w-[17px] text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
+          {tr('Retour', 'رجوع')}
+        </button>
         <button type="button" onClick={onNewConversation} className="ay-btn-primary mt-1 w-full text-sm">
           <PenSquare className="h-4 w-4" /> {tr('Nouvelle conversation', 'محادثة جديدة')}
         </button>

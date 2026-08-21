@@ -1,40 +1,61 @@
 import React from 'react';
-import { ArrowLeft, Menu } from '../QatafoIcons';
+import { Menu, MoreVertical, PenSquare } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 
 interface AssistantHeaderProps {
   isDark: boolean;
-  onBack: () => void;
   onOpenMenu: () => void;
+  onNewConversation: () => void;
 }
 
-export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onBack, onOpenMenu }) => {
+export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpenMenu, onNewConversation }) => {
   const { tr } = useLocale();
-  const iconButton = `flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 ${
-    isDark ? 'text-white hover:bg-white/10' : 'text-[#111318] hover:bg-black/[0.04]'
-  }`;
+  const chip = isDark
+    ? 'border-white/10 bg-white/10 text-white shadow-[0_8px_24px_-16px_rgba(0,0,0,.7)]'
+    : 'border-black/[0.04] bg-white/72 text-[#111318] shadow-[0_8px_24px_-18px_rgba(17,19,24,.45)]';
+  const iconBtn = 'flex h-11 w-11 items-center justify-center rounded-full transition active:scale-95';
 
   return (
-    <header
-      className={`sonim-chat-toolbar relative z-40 shrink-0 border-b ${isDark ? 'border-white/10 bg-ink/90' : 'border-[#EDEDED] bg-white/92'}`}
-      style={{
-        paddingTop: 'env(safe-area-inset-top)',
-        backdropFilter: 'saturate(1.4) blur(14px)',
-        WebkitBackdropFilter: 'saturate(1.4) blur(14px)',
-      }}
-    >
-      <div className="grid h-[52px] grid-cols-[40px_minmax(0,1fr)_40px] items-center px-4" dir="ltr">
-        <button type="button" onClick={onBack} className={iconButton} aria-label={tr('Retour', 'رجوع')} title={tr('Retour', 'رجوع')}>
-          <ArrowLeft className="h-5 w-5" />
+    <div className="pointer-events-none absolute inset-x-0 top-0 z-40" aria-label={tr('Commandes SONIM', 'أوامر SONIM')}>
+      <div
+        className={`pointer-events-none absolute inset-x-0 top-0 h-24 ${isDark ? 'bg-gradient-to-b from-ink/80 to-transparent' : 'bg-gradient-to-b from-white/80 to-transparent'}`}
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-auto relative flex items-center justify-between px-3"
+        dir="ltr"
+        style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top))' }}
+      >
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          className={`${iconBtn} ${chip} backdrop-blur-xl`}
+          aria-label={tr('Menu', 'القائمة')}
+          title={tr('Menu', 'القائمة')}
+        >
+          <Menu className="h-[18px] w-[18px]" />
         </button>
-        <div className="flex min-w-0 items-center justify-center gap-2">
-          <img src="/media/logo-ayrovi.png" alt="" className="h-[26px] w-[26px] shrink-0 bg-transparent object-contain" />
-          <strong className={`truncate text-[15px] font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-[#111318]'}`}>SONIM</strong>
+        <div className={`flex items-center rounded-full border p-1 backdrop-blur-xl ${chip}`}>
+          <button
+            type="button"
+            onClick={onNewConversation}
+            className={iconBtn}
+            aria-label={tr('Nouvelle conversation', 'محادثة جديدة')}
+            title={tr('Nouvelle conversation', 'محادثة جديدة')}
+          >
+            <PenSquare className="h-[18px] w-[18px]" />
+          </button>
+          <button
+            type="button"
+            onClick={onOpenMenu}
+            className={iconBtn}
+            aria-label={tr('Plus d’options', 'المزيد')}
+            title={tr('Plus d’options', 'المزيد')}
+          >
+            <MoreVertical className="h-[18px] w-[18px]" />
+          </button>
         </div>
-        <button type="button" onClick={onOpenMenu} className={`${iconButton} justify-self-end`} aria-label={tr('Menu', 'القائمة')} title={tr('Menu', 'القائمة')}>
-          <Menu className="h-5 w-5" />
-        </button>
       </div>
-    </header>
+    </div>
   );
 };

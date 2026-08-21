@@ -112,7 +112,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
 
   return (
     <main dir={direction} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-ink text-white' : 'bg-surface text-ink'}`}>
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-10 pt-8 sm:px-7 sm:pb-12 sm:pt-10">
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-10 pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))] sm:px-7 sm:pb-12">
         {!hasMessages ? (
           <div className="assistant-welcome flex flex-1 flex-col">
             {/* Identité AI + accueil personnalisé */}
