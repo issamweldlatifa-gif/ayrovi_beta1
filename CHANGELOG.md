@@ -2,6 +2,11 @@
 
 All notable AYROVI changes are recorded in this file.
 
+## [3.10.2] - 2026-08-21
+
+### Changed
+- Profile / user icon redrawn from the attached crop: larger head ring, symmetric shoulder arc, orange signature on the right terminus only.
+
 ## [3.10.1] - 2026-08-21
 
 ### Fixed
