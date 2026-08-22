@@ -4,7 +4,7 @@ import { FaFacebookF } from 'react-icons/fa6';
 import {
   ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, Heart, Home, Loader2, LogOut,
   MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X, Hourglass, AlertCircle, ArrowDown,
-  CreditCard, ReceiptText, Truck, Moon, Settings, Lock, ScanSearch, FileText, ChevronRight, ExternalLink, RefreshCw,
+  CreditCard, ReceiptText, Truck, Moon, Settings, Lock, ScanSearch, FileText, ChevronRight, ChevronDown, ExternalLink, RefreshCw,
   Person, Camera,
 } from './QatafoIcons';
 
@@ -63,6 +63,13 @@ const AccountAvatar: React.FC<{ account: any; size?: string; uploadedUrl?: strin
 /* ===== رفع صورة الحساب (حفظ محلي في المعاينة) ===== */
 const avatarStorageKey = (account: any) => `ayrovi-avatar:${account?.id || account?.email || 'guest'}`;
 const genderStorageKey = (account: any) => `ayrovi-gender:${account?.id || account?.email || 'guest'}`;
+
+/* ===== قائمة الولايات التونسية (حقل الموقع بأسلوب Zalando) ===== */
+const TUNISIAN_GOVERNORATES = [
+  'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan', 'Bizerte', 'Béja',
+  'Jendouba', 'Le Kef', 'Siliana', 'Sousse', 'Monastir', 'Mahdia', 'Sfax', 'Kairouan',
+  'Kasserine', 'Sidi Bouzid', 'Gabès', 'Médenine', 'Tataouine', 'Gafsa', 'Tozeur', 'Kébili',
+];
 
 interface CustomerAccountPageProps {
   isOpen: boolean;
@@ -209,6 +216,8 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [profile, setProfile] = useState({ displayName: '', email: '', marketingOptIn: false });
   const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(() => { try { return localStorage.getItem(avatarStorageKey(session?.account)) || null; } catch { return null; } });
   const [selectedGender, setSelectedGender] = useState<AvatarGender | null>(() => { try { return (localStorage.getItem(genderStorageKey(session?.account)) as AvatarGender) || null; } catch { return null; } });
+  const [governorate, setGovernorate] = useState<string>(() => { try { return localStorage.getItem('ayrovi-gov') || ''; } catch { return ''; } });
+  const chooseGovernorate = (g: string) => { setGovernorate(g); try { localStorage.setItem('ayrovi-gov', g); } catch { /* ignore */ } };
   const avatarFileRef = useRef<HTMLInputElement>(null);
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -561,9 +570,27 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const showPhoneLogin = phoneLinkOpen || phoneLoginOpen || (config !== null && !socialLoginEnabled);
 
   const authPanel = (
-    <div className="mx-auto flex min-h-full w-full max-w-lg flex-col justify-center px-5 py-10 sm:my-10 sm:min-h-0 sm:rounded-card sm:border sm:border-line sm:bg-white sm:px-10 sm:py-12 sm:shadow-overlay">
-      <div className="mb-8 text-center"><img src="/media/logo-ayrovi.png" alt="AYROVI" className="mx-auto h-11 w-11 object-contain" /><h1 className="mt-5 text-3xl font-black tracking-[-0.045em] text-ink">{phoneLinkOpen ? tr('Vérifier mon téléphone', 'توثيق هاتفي') : tr('Bienvenue chez AYROVI', 'مرحبًا بك في AYROVI')}</h1><p className="mt-2 text-sm leading-6 text-muted">{phoneLinkOpen ? (session?.account.emailVerified ? tr('Ajoutez un second canal vérifié pour renforcer votre compte.', 'أضف قناة موثقة ثانية لتعزيز أمان حسابك.') : tr('Un e-mail ou un téléphone vérifié est requis pour confirmer une commande.', 'يلزم بريد إلكتروني أو هاتف موثّق لتأكيد الطلب.')) : tr('Votre panier, vos commandes et vos adresses sur tous vos appareils.', 'سلّتك وطلباتك وعناوينك متاحة على جميع أجهزتك.')}</p></div>
+    <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-5 py-10 sm:my-12 sm:min-h-0 sm:rounded-[28px] sm:border sm:border-line sm:bg-white sm:px-9 sm:py-11 sm:shadow-overlay">
+      <div className="mb-7 text-center">
+        <div className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-brand-gradient shadow-card"><img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-9 w-9 object-contain" /></div>
+        <h1 className="mt-4 text-[28px] font-black tracking-[-0.04em] text-ink">{phoneLinkOpen ? tr('Vérifier mon téléphone', 'توثيق هاتفي') : tr('Rejoignez AYROVI', 'انضم إلى AYROVI')}</h1>
+        <p className="mt-1.5 text-sm leading-6 text-muted">{phoneLinkOpen ? (session?.account.emailVerified ? tr('Ajoutez un second canal vérifié pour renforcer votre compte.', 'أضف قناة موثقة ثانية لتعزيز أمان حسابك.') : tr('Un e-mail ou un téléphone vérifié est requis pour confirmer une commande.', 'يلزم بريد إلكتروني أو هاتف موثّق لتأكيد الطلب.')) : tr('Créez votre compte en quelques secondes — votre panier et vos commandes vous suivront partout.', 'أنشئ حسابك في ثوانٍ — تبقى سلّتك وطلباتك معك في كل مكان.')}</p>
+      </div>
       {error && <div className="mb-4 border border-danger/20 bg-danger/5 px-4 py-3 text-sm font-bold text-danger">{error}</div>}
+      {/* Localisation — style Zalando */}
+      {!otpOpen && !phoneLinkOpen && (
+        <div className="mb-5">
+          <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted">{tr('Votre région', 'منطقتك')}</label>
+          <div className="relative">
+            <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-6 w-6 -translate-y-1/2 text-brand" />
+            <select value={governorate} onChange={(e) => chooseGovernorate(e.target.value)} className={`${inputClass} appearance-none pl-11 pr-10`}>
+              <option value="">{tr('Choisir le gouvernorat', 'اختر الولاية')}</option>
+              {TUNISIAN_GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
+          </div>
+        </div>
+      )}
       {/* Connexions OAuth principales; Facebook reste masqué tant que Meta n'est pas configuré. */}
       {!otpOpen && !phoneLinkOpen && <>
         <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} className={`ay-btn-secondary w-full text-sm ${googleEnabled ? '' : 'pointer-events-none opacity-50'}`}><span className="grid h-8 w-8 place-items-center rounded-full bg-white"><FcGoogle size={30} aria-hidden /></span>{tr('Continuer avec Google', 'المتابعة عبر Google')}</a>
