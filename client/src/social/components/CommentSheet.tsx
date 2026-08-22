@@ -34,12 +34,12 @@ export const CommentSheet: React.FC<{
       <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} transition={{ type: 'spring', damping: 30, stiffness: 360 }} className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[75dvh] w-full max-w-2xl flex-col rounded-t-3xl bg-white shadow-2xl">
         <div className="flex items-center justify-between px-5 pb-3 pt-4">
           <h3 className="text-sm font-black text-ink">{tr('Commentaires', 'التعليقات')}</h3>
-          <button type="button" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} className="grid h-11 w-11 place-items-center rounded-full text-muted transition hover:bg-surface active:scale-90"><X size={20} /></button>
+          <button type="button" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} className="grid h-11 w-11 place-items-center rounded-full text-muted transition hover:bg-surface active:scale-90"><X size={23} /></button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
           {comments.length ? comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-2.5 py-2.5">
-              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand/10 text-[10px] font-black text-brand">{comment.author.slice(0, 2).toUpperCase()}</span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-[10px] font-black text-brand">{comment.author.slice(0, 2).toUpperCase()}</span>
               <div className="min-w-0">
                 <p className="text-xs font-extrabold text-ink">{comment.author} <span className="ms-1 font-semibold text-muted">{timeAgo(comment.createdAt, locale)}</span></p>
                 <p className="mt-0.5 text-sm leading-6 text-ink/90">{comment.text}</p>
@@ -49,7 +49,7 @@ export const CommentSheet: React.FC<{
         </div>
         {isAuthenticated ? (
           <form onSubmit={(event) => void submit(event)} className="flex items-center gap-2 border-t border-line px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
-            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><User size={18} /></span>
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><User size={21} /></span>
             <input
               value={text}
               onChange={(event) => setText(event.target.value.slice(0, 500))}
@@ -65,7 +65,7 @@ export const CommentSheet: React.FC<{
           <div className="border-t border-line px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-center">
             <p className="text-sm font-semibold text-muted">{tr('Connectez-vous pour commenter et liker.', 'سجّل الدخول للتعليق والإعجاب.')}</p>
             <button type="button" onClick={onRequireAuth} className="ay-btn-primary mt-3 min-h-11 rounded-full px-6 text-xs uppercase tracking-widest">
-              <User size={15} />Créer un compte / Se connecter
+              <User size={18} />Créer un compte / Se connecter
             </button>
           </div>
         )}

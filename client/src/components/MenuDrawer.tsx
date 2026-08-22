@@ -77,13 +77,13 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
             <div className="flex min-w-0 items-center gap-3">
               {session?.account.avatarUrl
                 ? <img src={session.account.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
-                : <span className="grid h-11 w-11 place-items-center rounded-full bg-brand text-sm font-black text-white">{session ? firstName.slice(0, 2).toUpperCase() : <User className="h-5 w-5" />}</span>}
+                : <span className="grid h-11 w-11 place-items-center rounded-full bg-brand text-sm font-black text-white">{session ? firstName.slice(0, 2).toUpperCase() : <User className="h-6 w-6" />}</span>}
               <div className="min-w-0">
                 <strong className="block truncate text-sm font-black text-ink">{session ? tr(`Bonjour, ${firstName}`, `مرحبًا، ${firstName}`) : 'AYROVI'}</strong>
                 <button type="button" onClick={() => onOpenAccount('home')} className="mt-0.5 text-xs font-bold text-brand underline-offset-4 hover:underline">{session ? tr('Mon compte', 'حسابي') : tr('Se connecter / Créer un compte', 'تسجيل الدخول / إنشاء حساب')}</button>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')}><X className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')}><X className="h-6 w-6" /></Button>
           </header>
 
           <div className="flex-1 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">

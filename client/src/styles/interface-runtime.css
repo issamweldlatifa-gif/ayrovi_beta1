@@ -32,7 +32,7 @@ html{font-size:var(--ayrovi-base-font-size,16px)}
 .ay-btn-cta:hover{background:var(--ayrovi-cta-dark,#e05f00)!important;border-color:var(--ayrovi-cta-dark,#e05f00)!important}
 .ay-runtime-button--secondary,.ay-btn-secondary{min-height:var(--ayrovi-button-height,44px)!important;border:var(--ayrovi-button-border-width,1px) solid var(--ayrovi-button-border,var(--ayrovi-primary))!important;background:var(--ayrovi-button-secondary-bg,var(--ayrovi-white))!important;color:var(--ayrovi-button-secondary-color,var(--ayrovi-primary-dark))!important;border-radius:var(--ayrovi-radius-control)!important}
 .ay-runtime-button--ghost{color:var(--ayrovi-button-secondary-color,var(--ayrovi-primary-dark))!important;border-radius:var(--ayrovi-radius-control)!important}
-.interface-runtime-icon{width:var(--ayrovi-icon-size,20px);height:var(--ayrovi-icon-size,20px);color:var(--ayrovi-icon-color,var(--ayrovi-primary))}
+.interface-runtime-icon{width:var(--ayrovi-icon-size,28px);height:var(--ayrovi-icon-size,28px);color:var(--ayrovi-icon-color,var(--ayrovi-primary))}
 html[data-ayrovi-icon-style='solid'] .interface-runtime-icon{fill:currentColor}
 html[data-ayrovi-shadow='none'] .shadow-card,html[data-ayrovi-shadow='none'] .shadow-overlay{box-shadow:none!important}
 html[data-ayrovi-shadow='soft'] .shadow-card{box-shadow:var(--ayrovi-shadow-card)!important}
@@ -44,7 +44,7 @@ html[data-ayrovi-shadow='strong'] .shadow-overlay{box-shadow:0 30px 85px -28px c
 .ayrovi-glass-bottom-nav{background:rgba(255,255,255,.72);color:#111318;border-color:rgba(17,19,24,.1);box-shadow:0 -18px 40px -28px rgba(17,19,24,.5);-webkit-backdrop-filter:blur(22px) saturate(190%);backdrop-filter:blur(22px) saturate(190%);transition:transform .32s cubic-bezier(.22,1,.36,1),opacity .22s ease;will-change:transform}
 .ayrovi-glass-bottom-nav.is-visible{transform:translate3d(0,0,0);opacity:1;pointer-events:auto}
 .ayrovi-glass-bottom-nav.is-hidden{transform:translate3d(0,calc(100% + env(safe-area-inset-bottom)),0);opacity:0;pointer-events:none}
-.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#111318}
+.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#5b6472}
 .ayrovi-glass-bottom-nav [aria-pressed='true'] .interface-runtime-icon,
 .ayrovi-glass-bottom-nav [aria-current='page'] .interface-runtime-icon{color:var(--ayrovi-icon-active-color,var(--ayrovi-cta,#fe7003))}
 .ayrovi-glass-bottom-nav [aria-pressed='true'] span,

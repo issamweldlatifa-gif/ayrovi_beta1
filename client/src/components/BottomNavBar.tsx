@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Eye, LensBox, Sparkles } from './QatafoIcons';
+import { Eye, LensBox, Sparkles, Story } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
@@ -14,19 +14,20 @@ interface BottomNavBarProps {
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
-const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl text-[10px] font-extrabold text-[#111318] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
+const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl text-[11px] font-extrabold text-[#1d2130] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
+  const isStoriesOpen = navigation.stack.some((layer) => layer.id === 'cms:stories');
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
   const iconStyle = (active = false): React.CSSProperties => ({
     width: iconConfig.size,
     height: iconConfig.size,
-    color: active ? (iconConfig.activeColor || '#fe7003') : '#111318',
+    color: active ? (iconConfig.activeColor || '#fe7003') : (iconConfig.color || '#5b6472'),
     fill: 'none',
   });
   useBodyScrollLock(isVisionOpen);
@@ -66,7 +67,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           <AppHeader title="AYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
           <div className="grid min-h-[calc(100dvh-5rem)] place-items-center px-5 pb-24 text-center">
             <div className="w-full max-w-sm rounded-card border border-line bg-white p-8 shadow-overlay">
-              <span className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-brand/10 text-brand"><Eye className="h-10 w-10" /></span>
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-brand/10 text-brand"><Eye className="h-11 w-11" /></span>
               <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-brand">AYROVI Vision</p>
               <h2 className="mt-2 font-display text-3xl font-black text-ink">{tr('Bientôt disponible', 'قريبًا')}</h2>
               <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-muted">{tr('Une nouvelle expérience visuelle AYROVI est en préparation.', 'نعمل على تجربة بصرية جديدة من AYROVI.')}</p>
@@ -80,7 +81,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >
-        <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
+        <nav className="mx-auto grid max-w-md grid-cols-4 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span>{config.lensLabel}</span>}
@@ -88,6 +89,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'AYROVI", 'SONIM — المساعد الذكي لـ AYROVI')} aria-pressed={isAiDrawerOpen}>
             <Sparkles className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
             {config.showLabels && <span className={isAiDrawerOpen ? 'text-cta' : undefined}>{config.aiLabel}</span>}
+          </button>
+          <button type="button" onClick={() => navigation.navigate([{ id: 'cms:stories' }])} className={NAV_ITEM} aria-label={tr('Stories AYROVI', 'قصص AYROVI')} aria-current={isStoriesOpen ? 'page' : undefined}>
+            <Story className="interface-runtime-icon" style={iconStyle(isStoriesOpen)} />
+            {config.showLabels && <span className={isStoriesOpen ? 'text-cta' : undefined}>{tr('Stories', 'القصص')}</span>}
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
             <Eye className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />

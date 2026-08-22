@@ -408,6 +408,25 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 @keyframes lens-sweep { 0%, 100% { transform: translateY(-100%); } 50% { transform: translateY(100%); } }
 @keyframes lens-corners { 0%, 100% { opacity: .45; transform: scale(1); } 50% { opacity: 1; transform: scale(1.015); } }
 
+/* نقاط القراءة المتحركة — إحساس «المستشعرات تقرأ الصورة» (طلب العميل) */
+.lens-scan-dots { position: absolute; inset: 0; z-index: 3; pointer-events: none; overflow: hidden; }
+.lens-scan-dots::before {
+  content: ""; position: absolute; inset: -10%;
+  background-image: radial-gradient(circle, rgba(254,112,3,.95) 1.6px, transparent 2.2px);
+  background-size: 24px 24px;
+  animation: lens-dots-drift 3.4s linear infinite;
+  opacity: .55;
+}
+.lens-scan-dots::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: radial-gradient(circle, rgba(255,255,255,.9) 1.4px, transparent 2px);
+  background-size: 38px 38px;
+  background-position: 12px 6px;
+  animation: lens-dots-drift 4.6s linear infinite reverse;
+  opacity: .4;
+}
+@keyframes lens-dots-drift { from { background-position: 0 0, 12px 6px; } to { background-position: 24px 48px, 50px 44px; } }
+
 /* AYROVIX V2 - Glassmorphism Laser & Particles (legacy) + Google Lens Stars (new) */
 .lens-laser {
   top: 0;

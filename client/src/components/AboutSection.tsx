@@ -73,8 +73,8 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
                   <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentClassName}`} />
 
                   <div className="flex items-start justify-between gap-5">
-                    <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-md sm:h-14 sm:w-14 ${iconClassName}`}>
-                      <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
+                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-md sm:h-11 sm:w-11 ${iconClassName}`}>
+                      <Icon className="h-8 w-8 sm:h-9 sm:w-9" />
                     </span>
                     <span className="text-5xl font-black leading-none text-ink/[0.07] sm:text-6xl">
                       {step}

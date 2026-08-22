@@ -38,7 +38,7 @@ export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = 
   return <button type="button" onClick={onOpen} className="flex w-16 shrink-0 flex-col items-center gap-1.5" aria-label={tr(`Stories de ${group.publisher.name}`, `قصص ${group.publisher.name}`)}>
     <span className={`rounded-full p-[2.5px] ${group.hasUnseen ? 'bg-gradient-to-tr from-brand via-brand-light to-accent' : 'bg-line'}`}>
       <span className="block rounded-full bg-white p-[2px]">
-        <Avatar publisher={group.publisher} size={54} />
+        <Avatar publisher={group.publisher} size={44} />
       </span>
     </span>
     <span className="w-full truncate text-center text-[10px] font-bold text-ink">{group.publisher.name}</span>

@@ -62,6 +62,16 @@ html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li:not
   background-color: var(--ayrovix-dark-line);
 }
 
+/* توحيد الفواصل والظلال في الوضع الداكن (إزالة تضارب اللون الفاتح على الخلفية الداكنة) */
+html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .divide-line > *,
+html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .divide-y > *,
+html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .divide-x > * {
+  border-color: var(--ayrovix-dark-line) !important;
+}
+html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .shadow-card,
+html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .shadow-overlay {
+  box-shadow: 0 18px 48px -22px rgba(0, 0, 0, .65) !important;
+}
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-current::before,
 html[data-ayrovix-theme='dark'] .ayrovix-theme-scope .ay-journey-progress li.is-complete::before {
   background-color: var(--ayrovi-cta);

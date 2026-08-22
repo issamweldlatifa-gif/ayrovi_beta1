@@ -53,12 +53,12 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
             <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Votre avis nous aide', 'رأيك يساعدنا')}</h3>
             <p className="mt-1 text-xs leading-5 text-muted">{tr('Évaluez la réponse et laissez un commentaire facultatif.', 'قيّم الرد واترك تعليقًا اختياريًا.')}</p>
           </div>
-          <button type="button" onClick={onClose} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${isDark ? 'bg-white/7 text-white/80' : 'bg-surface text-muted'}`} aria-label={tr('Fermer', 'إغلاق')}><X className="h-4 w-4" /></button>
+          <button type="button" onClick={onClose} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isDark ? 'bg-white/7 text-white/80' : 'bg-surface text-muted'}`} aria-label={tr('Fermer', 'إغلاق')}><X className="h-7 w-7" /></button>
         </div>
 
         <div className="mt-5 flex gap-2">
-          <button type="button" onClick={() => setRating('up')} className={ratingClass('up')}><ThumbsUp className="h-4 w-4" />{tr('Utile', 'مفيد')}</button>
-          <button type="button" onClick={() => setRating('down')} className={ratingClass('down')}><ThumbsDown className="h-4 w-4" />{tr('À améliorer', 'يحتاج إلى تحسين')}</button>
+          <button type="button" onClick={() => setRating('up')} className={ratingClass('up')}><ThumbsUp className="h-7 w-7" />{tr('Utile', 'مفيد')}</button>
+          <button type="button" onClick={() => setRating('down')} className={ratingClass('down')}><ThumbsDown className="h-7 w-7" />{tr('À améliorer', 'يحتاج إلى تحسين')}</button>
         </div>
 
         <label className="mt-4 block">

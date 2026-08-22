@@ -26,10 +26,10 @@ export const FullscreenActionRail: React.FC<FullscreenActionRailProps> = ({ like
   const { tr } = useLocale();
   return (
     <div className="absolute bottom-24 end-2 z-30 flex flex-col items-center gap-3">
-      <Action label={tr('J’aime', 'إعجاب')} count={likes} active={liked} onClick={onLike}>{liked ? <HeartFilled size={29} /> : <Heart size={29} />}</Action>
-      <Action label={tr('Commenter', 'تعليق')} count={comments} onClick={onComment}><MessageSquare size={27} /></Action>
-      <Action label={tr('Partager', 'مشاركة')} count={shares} onClick={onShare}><Share2 size={27} /></Action>
-      <Action label={saved ? tr('Retirer des éléments enregistrés', 'إزالة من المحفوظات') : tr('Enregistrer', 'حفظ')} active={saved} onClick={onSave}><Bookmark size={27} className={saved ? 'fill-current' : ''} /></Action>
+      <Action label={tr('J’aime', 'إعجاب')} count={likes} active={liked} onClick={onLike}>{liked ? <HeartFilled size={32} /> : <Heart size={32} />}</Action>
+      <Action label={tr('Commenter', 'تعليق')} count={comments} onClick={onComment}><MessageSquare size={30} /></Action>
+      <Action label={tr('Partager', 'مشاركة')} count={shares} onClick={onShare}><Share2 size={30} /></Action>
+      <Action label={saved ? tr('Retirer des éléments enregistrés', 'إزالة من المحفوظات') : tr('Enregistrer', 'حفظ')} active={saved} onClick={onSave}><Bookmark size={30} className={saved ? 'fill-current' : ''} /></Action>
     </div>
   );
 };

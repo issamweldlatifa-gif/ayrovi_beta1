@@ -213,7 +213,7 @@ export const StoryViewer: React.FC<{
       />
       <div className="absolute inset-x-0 bottom-0 z-30 px-4 pe-20 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-16">
         {story.caption && <p className="line-clamp-3 text-sm font-semibold leading-6 text-white drop-shadow">{story.caption}</p>}
-        {story.cta && <button type="button" onClick={() => onCta(story.cta!)} className="ay-btn-secondary mt-2 min-h-11 text-xs">{story.cta.label}<ArrowRight size={16} /></button>}
+        {story.cta && <button type="button" onClick={() => onCta(story.cta!)} className="ay-btn-secondary mt-2 min-h-11 text-xs">{story.cta.label}<ArrowRight size={19} /></button>}
       </div>
     </div>
   );

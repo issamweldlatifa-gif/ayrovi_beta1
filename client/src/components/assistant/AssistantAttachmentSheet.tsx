@@ -30,7 +30,7 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
   const rowClass = `flex w-full items-center justify-between rounded-[18px] p-3 text-start transition ${
     isDark ? 'bg-ink hover:bg-ink' : 'bg-surface hover:bg-line'
   }`;
-  const iconClass = `flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-sm ${
+  const iconClass = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm ${
     isDark ? 'bg-ink text-white/80' : 'bg-white text-muted'
   }`;
 
@@ -52,44 +52,44 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
         <div className={`mx-auto my-2 h-1 w-10 rounded-full ${isDark ? 'bg-ink/70' : 'bg-line'}`} />
         <div className="relative mb-5 flex items-center justify-center">
           <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Ajouter au chat', 'إضافة إلى المحادثة')}</h2>
-          <button type="button" onClick={onClose} className={`absolute end-0 flex h-8 w-8 items-center justify-center rounded-full ${isDark ? 'bg-ink text-white/80' : 'bg-surface text-muted'}`} aria-label={tr('Fermer', 'إغلاق')}>
-            <X className="h-4 w-4" />
+          <button type="button" onClick={onClose} className={`absolute end-0 flex h-9 w-9 items-center justify-center rounded-full ${isDark ? 'bg-ink text-white/80' : 'bg-surface text-muted'}`} aria-label={tr('Fermer', 'إغلاق')}>
+            <X className="h-7 w-7" />
           </button>
         </div>
 
         <div className="space-y-2.5">
           <button type="button" onClick={() => chooseFile('image')} className={rowClass}>
             <span className="flex items-center gap-3">
-              <span className={iconClass}><Image className="h-4 w-4" /></span>
+              <span className={iconClass}><Image className="h-7 w-7" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Ajouter une image', 'إضافة صورة')}</strong><small className="text-xs text-muted">{tr('Joindre une image à la conversation', 'إرفاق صورة بالمحادثة')}</small></span>
             </span>
-            <ChevronRight className={`h-4 w-4 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
+            <ChevronRight className={`h-7 w-7 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
           </button>
 
           <button type="button" onClick={() => chooseFile('file')} className={rowClass}>
             <span className="flex items-center gap-3">
-              <span className={iconClass}><Camera className="h-4 w-4" /></span>
+              <span className={iconClass}><Camera className="h-7 w-7" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Prendre une photo', 'التقاط صورة')}</strong><small className="text-xs text-muted">{tr('Photographier un produit, un prix ou une étiquette', 'تصوير منتج أو سعر أو ملصق')}</small></span>
             </span>
-            <ChevronRight className={`h-4 w-4 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
+            <ChevronRight className={`h-7 w-7 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
           </button>
 
           <button type="button" onClick={onToggleWebSearch} className={rowClass}>
             <span className="flex items-center gap-3">
-              <span className={iconClass}><Globe2 className="h-4 w-4" /></span>
+              <span className={iconClass}><Globe2 className="h-7 w-7" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Recherche Web', 'بحث الويب')}</strong><small className="text-xs text-muted">{tr('Activer ou désactiver la recherche Web', 'تشغيل بحث الويب أو إيقافه')}</small></span>
             </span>
             <span className={`relative h-[26px] w-11 rounded-full transition ${webSearchEnabled ? 'bg-brand' : isDark ? 'bg-ink/70' : 'bg-line'}`}>
-              <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow transition ${webSearchEnabled ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
+              <span className={`absolute top-0.5 h-8 w-8 rounded-full bg-white shadow transition ${webSearchEnabled ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
             </span>
           </button>
 
           <button type="button" onClick={onConnectors} className={rowClass}>
             <span className="flex items-center gap-3">
-              <span className={iconClass}><Plug className="h-4 w-4" /></span>
+              <span className={iconClass}><Plug className="h-7 w-7" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Connecteurs', 'الخدمات المتصلة')}</strong><small className="text-xs text-muted">{tr('Accéder aux services connectés', 'الوصول إلى الخدمات المتصلة')}</small></span>
             </span>
-            <ChevronRight className={`h-4 w-4 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
+            <ChevronRight className={`h-7 w-7 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
           </button>
         </div>
 

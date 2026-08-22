@@ -18,15 +18,15 @@ export const FullscreenMediaHeader: React.FC<FullscreenMediaHeaderProps> = ({ ti
   const { tr, direction } = useLocale();
   return (
     <div className={`absolute inset-x-0 z-40 flex items-center gap-2.5 bg-gradient-to-b from-black/60 to-transparent px-3 pb-8 ${offsetForProgress ? 'top-3 pt-[max(1.25rem,env(safe-area-inset-top))]' : 'top-0 pt-[max(.75rem,env(safe-area-inset-top))]'}`} dir={direction}>
-      <button type="button" onClick={onBack} aria-label={tr('Retour', 'رجوع')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white transition hover:bg-white/10 active:scale-90"><ArrowLeft className={`h-6 w-6 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></button>
+      <button type="button" onClick={onBack} aria-label={tr('Retour', 'رجوع')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-white transition hover:bg-white/10 active:scale-90"><ArrowLeft className={`h-7 w-7 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></button>
       {title && <>
-        <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-white/40 bg-white">
+        <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full border border-white/40 bg-white">
           {official ? <img src="/media/logo-ayrovi.png" alt="" className="h-full w-full object-contain p-1" /> : avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : <span className="text-xs font-black text-brand">{title.slice(0, 2).toUpperCase()}</span>}
         </span>
         <div className="min-w-0 flex-1"><p className="truncate text-sm font-extrabold text-white">{title}{verified && <CheckCircle2 className="ms-1 inline h-3.5 w-3.5 text-accent" />}</p>{subtitle && <p className="truncate text-[10px] font-semibold text-white/75">{subtitle}</p>}</div>
       </>}
       {!title && <span className="flex-1" />}
-      <button type="button" onClick={onToggleMute} aria-label={muted ? tr('Activer le son', 'تشغيل الصوت') : tr('Couper le son', 'كتم الصوت')} className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-black/40 text-white transition active:scale-90">{muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}</button>
+      <button type="button" onClick={onToggleMute} aria-label={muted ? tr('Activer le son', 'تشغيل الصوت') : tr('Couper le son', 'كتم الصوت')} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-black/40 text-white transition active:scale-90">{muted ? <VolumeX className="h-6 w-6" /> : <Volume2 className="h-6 w-6" />}</button>
     </div>
   );
 };

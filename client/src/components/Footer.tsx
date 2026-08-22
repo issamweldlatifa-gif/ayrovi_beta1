@@ -98,7 +98,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-9 space-y-3 text-xs">
           <div className="flex items-center gap-2.5">
-            <img src={logoUrl} alt="" className="h-10 w-10 object-contain" />
+            <img src={logoUrl} alt="" className="h-11 w-11 object-contain" />
             <span className="text-lg font-extrabold tracking-[-0.04em] text-ink">{introTitle || 'AYROVI'}</span>
           </div>
           <p className="max-w-xl leading-relaxed text-muted">{introText || footerAbout}</p>
@@ -108,7 +108,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <div className="mb-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {trustBadges.map(({ Icon, title, text }) => (
             <div key={title} className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-5 text-center">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/10 text-brand"><Icon className="h-5 w-5" /></span>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/10 text-brand"><Icon className="h-7 w-7" /></span>
               <strong className="text-[13px] font-black leading-tight text-ink">{title}</strong>
               <span className="text-[11px] leading-4 text-muted">{text}</span>
             </div>
@@ -123,7 +123,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
               {socials.map(({ id, url, label, Glyph }) => (
                 <a key={id} href={url} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
                   className="grid h-11 w-11 place-items-center rounded-full border border-line bg-white text-ink transition hover:border-brand hover:text-brand">
-                  <Glyph className="h-5 w-5" />
+                  <Glyph className="h-6 w-6" />
                 </a>
               ))}
             </div>

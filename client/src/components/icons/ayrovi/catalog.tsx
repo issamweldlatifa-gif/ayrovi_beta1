@@ -58,6 +58,24 @@ export const AyroviNav = createAyroviIcon('Nav', <path d="m4.6 12 15.2-7.4L12 19
 /* ============================== 02 — ACTION ============================== */
 
 export const AyroviPlus = createAyroviIcon('Plus', <path d="M12 5.5v13M5.5 12h13" />);
+
+/* ============================ STORY / SOCIAL ============================ */
+
+export const AyroviStory = createAyroviIcon('Story', (
+  <>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 8.4v7.2M8.4 12h7.2" />
+  </>
+));
+
+/* ============================ PERSON / AVATAR ============================ */
+
+export const AyroviPerson = createAyroviIcon('Person', (
+  <>
+    <circle cx="12" cy="8.4" r="3.6" />
+    <path d="M5.4 20c0-3.8 3-6.6 6.6-6.6s6.6 2.8 6.6 6.6" />
+  </>
+));
 export const AyroviMinus = createAyroviIcon('Minus', <path d="M6 12h12" />);
 export const AyroviCheck = createAyroviIcon('Check', <path d="m5.4 12.4 4.3 4.3 8.9-9.2" />);
 export const AyroviEdit = createAyroviIcon('Edit', (

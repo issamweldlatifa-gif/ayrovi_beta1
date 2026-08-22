@@ -28,6 +28,8 @@ export const Navigation = I.AyroviNav;
 /* Action */
 export const Plus = I.AyroviPlus;
 export const Minus = I.AyroviMinus;
+export const Story = I.AyroviStory;
+export const Person = I.AyroviPerson;
 export const Check = I.AyroviCheck;
 export const Pencil = I.AyroviEdit;
 export const PenSquare = I.AyroviEdit;

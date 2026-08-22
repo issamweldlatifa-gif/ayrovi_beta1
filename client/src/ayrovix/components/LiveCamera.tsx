@@ -31,6 +31,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const [torchAvailable, setTorchAvailable] = useState(false);
   const [torchHint, setTorchHint] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
   const [linkInput, setLinkInput] = useState('');
   const modeRef = useRef<CameraMode>('search');
   modeRef.current = mode;
@@ -95,7 +96,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
     }
   };
 
-  const capturePhoto = () => {
+  const performCapture = () => {
     const video = videoRef.current;
     if (!video || video.videoWidth === 0) return;
     const canvas = document.createElement('canvas');
@@ -108,6 +109,13 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       if (!blob) return;
       onPhoto(new File([blob], `ayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' }));
     }, 'image/jpeg', 0.88);
+  };
+
+  // تفاعل «قبل الالتقاط»: ردّة فعل لمسية + رسالة، ثم الالتقاط الفعلي بعد تأخير قصير.
+  const capturePhoto = () => {
+    if (capturing) return;
+    setCapturing(true);
+    window.setTimeout(() => { setCapturing(false); performCapture(); }, 300);
   };
 
   const pickFromGallery = () => fileRef.current?.click();
@@ -168,7 +176,11 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
       <div className="relative z-10 px-6 pb-2 text-center">
         {mode === 'search' && (
-          <p className="text-xs font-semibold text-white/80">{tr("Cadrez le produit, puis touchez l'obturateur.", 'ضع المنتج داخل الإطار ثم اضغط زر التصوير.')}</p>
+          capturing ? (
+            <p className="text-xs font-extrabold text-accent">{tr('Capture en cours…', 'جارٍ الالتقاط…')}</p>
+          ) : (
+            <p className="text-xs font-semibold text-white/80">{tr("Cadrez le produit, puis touchez l'obturateur pour le capturer.", 'ضع المنتج داخل الإطار ثم اضغط زر التصوير للالتقاط.')}</p>
+          )
         )}
         {mode === 'code' && (
           notice
@@ -183,9 +195,9 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             type="button"
             onClick={capturePhoto}
             aria-label={tr('Photographier', 'التقاط صورة')}
-            className="grid h-[74px] w-[74px] place-items-center rounded-full border-[4px] border-white/90 bg-white/10 backdrop-blur"
+            className={`grid h-[74px] w-[74px] place-items-center rounded-full border-[4px] border-white/90 backdrop-blur transition active:scale-95 ${capturing ? 'scale-90 bg-accent' : 'bg-white/10'}`}
           >
-            <span className="h-12 w-12 rounded-full bg-white" />
+            <span className={`h-12 w-12 rounded-full bg-white transition-transform ${capturing ? 'scale-75' : ''}`} />
           </button>
         </div>
       )}

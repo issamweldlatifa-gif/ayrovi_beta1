@@ -557,7 +557,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           {stage === 'preview' && previewUrl && (
             <div className="mx-auto max-w-md space-y-4">
               <div className="relative overflow-hidden rounded-[22px] border border-line">
-                <img src={previewUrl} alt={tr('Aperçu du produit à analyser', 'معاينة المنتج المراد تحليله')} className="max-h-[46vh] w-full bg-surface object-contain" />
+                <img src={previewUrl} alt={tr('Aperçu du produit à analyser', 'معاينة المنتج المراد تحليله')} className="max-h-[62vh] w-full bg-surface object-contain" />
+                <div className="lens-scan-dots absolute inset-0" aria-hidden="true" />
               </div>
               <div className="flex gap-2.5">
                 <button type="button" onClick={reset} className="ay-btn-secondary text-sm">{tr('Reprendre', 'إعادة الالتقاط')}</button>
@@ -570,12 +571,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
             <div className="mx-auto max-w-md space-y-4 pt-2">
               <div className="relative overflow-hidden rounded-[22px] border border-line">
                 {previewUrl
-                  ? <img src={previewUrl} alt="" className="max-h-[46vh] w-full bg-surface object-contain opacity-90" />
-                  : <div className="grid h-52 w-full place-items-center bg-surface"><span className="h-8 w-8 animate-spin rounded-full border-[3px] border-brand border-r-transparent" /></div>}
+                  ? <img src={previewUrl} alt="" className="max-h-[62vh] w-full bg-surface object-contain opacity-90" />
+                  : <div className="grid h-52 w-full place-items-center bg-surface"><span className="h-9 w-9 animate-spin rounded-full border-[3px] border-brand border-r-transparent" /></div>}
                 <div className="lens-scan absolute inset-0" />
+                <div className="lens-scan-dots absolute inset-0" aria-hidden="true" />
               </div>
               <div className="flex items-center justify-center gap-2.5 text-sm font-bold text-ink" role="status" aria-live="polite">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-r-transparent" />
+                <span className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-r-transparent" />
                 {[tr('Recherche en cours…', 'جارٍ البحث…'), tr('Vérification du produit…', 'جارٍ التحقق من المنتج…'), tr('Récupération du prix…', 'جارٍ جلب السعر…')][analysisProgress]}
               </div>
               <ol className="grid grid-cols-3 gap-2" aria-label={tr("Étapes de l'analyse", 'مراحل التحليل')}>
@@ -722,7 +724,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'error' && error && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
-              <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-danger/5 text-danger">
+              <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-danger/5 text-danger">
               </div>
               <p className="text-sm font-extrabold text-ink">{error.code === 'AYROVIX_UNAVAILABLE' ? tr('AYROVIX arrive très bientôt', 'AYROVIX متاحة قريبًا') : tr('Petit obstacle', 'عائق بسيط')}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>

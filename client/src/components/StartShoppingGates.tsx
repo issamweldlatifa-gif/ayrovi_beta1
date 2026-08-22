@@ -53,9 +53,6 @@ export const StartShoppingGates: React.FC<StartShoppingGatesProps> = ({ onOpenLe
             );
           })}
         </div>
-        <p className="mt-4 text-center text-[11px] font-bold text-muted">
-          {tr('Acompte 20% · Suivi après expédition réelle · Pas de paiement à la livraison', 'عربون 20% · التتبع بعد الشحن الفعلي · لا دفع عند الاستلام')}
-        </p>
       </div>
     </section>
   );

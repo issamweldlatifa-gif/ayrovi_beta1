@@ -490,7 +490,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   {(uploadPreview || product?.mainImage) ? (
                     <img src={uploadPreview || product?.mainImage || ''} alt={title} className="w-full h-full object-contain" />
                   ) : (
-                    <PackageCheck className="h-7 w-7 text-brand" aria-hidden="true" />
+                    <PackageCheck className="h-8 w-8 text-brand" aria-hidden="true" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">

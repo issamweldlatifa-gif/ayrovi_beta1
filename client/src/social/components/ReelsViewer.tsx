@@ -123,7 +123,7 @@ export const ReelsViewer: React.FC<{
               className={`absolute inset-0 h-full w-full bg-brand-deep object-cover ${videoFailed[post.id] ? 'hidden' : ''}`}
               onError={() => setVideoFailed((current) => ({ ...current, [post.id]: true }))}
             />
-            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-brand-gradient"><img src="/media/logo-ayrovi.png" alt="" className="h-24 w-24 rounded-card bg-white object-contain p-3" /></div>}
+            {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-brand-gradient"><img src="/media/logo-ayrovi.png" alt="" className="h-11 w-11 rounded-card bg-white object-contain p-3" /></div>}
 
             <FullscreenActionRail
               liked={Boolean(liked[post.id])}
@@ -141,8 +141,8 @@ export const ReelsViewer: React.FC<{
             <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pe-20 pt-16">
               {'views' in (post as ReelItem) && <p className="mb-1 text-[11px] font-bold text-white/70">▶ {(post as ReelItem).views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr('vues', 'مشاهدة')}</p>}
               <div className="flex items-center gap-2.5">
-                <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-                  {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+                <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
+                  {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-11 w-11 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-11 w-11 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
                 </span>
                 <p className="text-sm font-extrabold text-white drop-shadow">{post.publisher.name}</p>
               </div>

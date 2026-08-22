@@ -33,7 +33,7 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpen
           aria-label={tr('Menu', 'القائمة')}
           title={tr('Menu', 'القائمة')}
         >
-          <Menu className="h-[18px] w-[18px]" />
+          <Menu className="h-7 w-7" />
         </button>
         <div className={`flex items-center rounded-full border p-1 backdrop-blur-xl ${chip}`}>
           <button
@@ -43,7 +43,7 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpen
             aria-label={tr('Nouvelle conversation', 'محادثة جديدة')}
             title={tr('Nouvelle conversation', 'محادثة جديدة')}
           >
-            <PenSquare className="h-[18px] w-[18px]" />
+            <PenSquare className="h-7 w-7" />
           </button>
           <button
             type="button"
@@ -52,7 +52,7 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpen
             aria-label={tr('Plus d’options', 'المزيد')}
             title={tr('Plus d’options', 'المزيد')}
           >
-            <MoreVertical className="h-[18px] w-[18px]" />
+            <MoreVertical className="h-7 w-7" />
           </button>
         </div>
       </div>

@@ -61,9 +61,9 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           <div className="mb-2.5 flex flex-wrap gap-2">
             {attachments.map((attachment) => (
               <div key={attachment.id} className={`flex max-w-[190px] items-center gap-2 rounded-[14px] py-1.5 ps-2 pe-1.5 text-xs ${isDark ? 'bg-ink text-white/90' : 'bg-surface text-ink'}`}>
-                {attachment.preview ? <img src={attachment.preview} alt="" className="h-6 w-6 shrink-0 rounded-md object-cover" /> : <FileText className="h-4 w-4 shrink-0 text-muted" />}
+                {attachment.preview ? <img src={attachment.preview} alt="" className="h-7 w-7 shrink-0 rounded-md object-cover" /> : <FileText className="h-7 w-7 shrink-0 text-muted" />}
                 <span className="truncate">{attachment.name}</span>
-                <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted hover:text-ink" aria-label={tr(`Retirer ${attachment.name}`, `إزالة ${attachment.name}`)}><X className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-ink" aria-label={tr(`Retirer ${attachment.name}`, `إزالة ${attachment.name}`)}><X className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -78,11 +78,11 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               ))}
             </div>
             <span className="text-xs font-medium tabular-nums text-muted">{formatTime(recordSeconds)}</span>
-            <button type="button" onClick={onCancelRecording} className="flex h-7 w-7 items-center justify-center rounded-full text-muted hover:text-danger" aria-label={tr('Annuler l’enregistrement', 'إلغاء التسجيل')}><X className="h-4 w-4" /></button>
+            <button type="button" onClick={onCancelRecording} className="flex h-8 w-8 items-center justify-center rounded-full text-muted hover:text-danger" aria-label={tr('Annuler l’enregistrement', 'إلغاء التسجيل')}><X className="h-7 w-7" /></button>
           </div>
         ) : isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
-            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-cta/25 border-t-cta" />
+            <span className="h-7 w-7 shrink-0 animate-spin rounded-full border-2 border-cta/25 border-t-cta" />
             <span className={`text-sm ${isDark ? 'text-white/80' : 'text-muted'}`}>{tr('Transcription du message vocal…', 'جارٍ تحويل الرسالة الصوتية إلى نص…')}</span>
           </div>
         ) : (
@@ -98,8 +98,8 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
         )}
 
         <div className="flex items-center justify-between">
-          <button type="button" onClick={onOpenAttachments} disabled={isGenerating || isRecording || isTranscribing} className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`} aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}>
-            <Plus className="h-[18px] w-[18px]" />
+          <button type="button" onClick={onOpenAttachments} disabled={isGenerating || isRecording || isTranscribing} className={`flex h-11 w-11 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`} aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}>
+            <Plus className="h-7 w-7" />
           </button>
 
           <div className="flex items-center gap-2">
@@ -107,19 +107,19 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               type="button"
               onClick={isRecording ? onFinishRecording : onStartRecording}
               disabled={isGenerating || isTranscribing}
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${isRecording ? 'animate-pulse bg-danger text-white' : surfaceButton}`}
+              className={`flex h-11 w-11 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${isRecording ? 'animate-pulse bg-danger text-white' : surfaceButton}`}
               aria-label={isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل رسالة صوتية')}
             >
-              {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-[18px] w-[18px]" />}
+              {isRecording ? <Square className="h-3.5 w-3.5 fill-current" /> : <Mic className="h-7 w-7" />}
             </button>
             <button
               type="button"
               onClick={isGenerating ? onStop : onSend}
               disabled={isTranscribing || (!isGenerating && (!canSend || isRecording))}
-              className={`flex h-10 w-10 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-30 bg-cta text-white hover:bg-cta-dark`}
+              className={`flex h-11 w-11 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-30 bg-cta text-white hover:bg-cta-dark`}
               aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
             >
-              {isGenerating ? <Pause className="h-[17px] w-[17px] fill-current" /> : <ArrowUp className="h-[18px] w-[18px] stroke-[2.5]" />}
+              {isGenerating ? <Pause className="h-7 w-7 fill-current" /> : <ArrowUp className="h-7 w-7 stroke-[2.5]" />}
             </button>
           </div>
         </div>

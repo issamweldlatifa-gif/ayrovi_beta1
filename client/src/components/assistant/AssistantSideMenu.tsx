@@ -50,7 +50,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
       <button type="button" onClick={onClose} className="absolute inset-0 z-30 bg-ink/40 backdrop-blur-[2px]" aria-label={tr('Fermer le menu', 'إغلاق القائمة')} />
       <aside className={`assistant-side-menu absolute inset-y-0 end-0 z-40 flex w-[91%] max-w-[430px] flex-col px-[18px] pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] shadow-overlay ${isDark ? 'bg-ink' : 'bg-white'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('Menu SONIM', 'قائمة SONIM')}>
         <div className="flex items-center gap-2.5 pb-3">
-          <img src="/media/logo-ayrovi.png" alt="" className="h-7 w-7 bg-transparent object-contain" />
+          <img src="/media/logo-ayrovi.png" alt="" className="h-8 w-8 bg-transparent object-contain" />
           <strong className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-ink'}`}>SONIM</strong>
         </div>
 
@@ -72,7 +72,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
                     <span className="block truncate text-[13px] font-semibold">{conversation.title}</span>
                     <span className="mt-0.5 block text-[10px] text-muted">{formatDate(conversation.updatedAt)}</span>
                   </button>
-                  <button type="button" onClick={() => onDeleteConversation(conversation.id)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-danger/5 hover:text-danger" aria-label={tr(`Supprimer ${conversation.title}`, `حذف ${conversation.title}`)}>
+                  <button type="button" onClick={() => onDeleteConversation(conversation.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-danger/5 hover:text-danger" aria-label={tr(`Supprimer ${conversation.title}`, `حذف ${conversation.title}`)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>

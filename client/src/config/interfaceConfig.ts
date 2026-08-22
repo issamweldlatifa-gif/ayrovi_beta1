@@ -190,9 +190,9 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111318',
     borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#111318', activeColor: '#fe7003', size: 20, style: 'outline' },
+  icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#fe7003', size: 28, style: 'outline' },
   navigation: {
-    background: '#ffffff', color: '#111318', activeBackground: '#111318', showLabels: true, height: 72,
+    background: '#ffffff', color: '#111318', activeBackground: '#111318', showLabels: true, height: 80,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
@@ -294,7 +294,7 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
       library: iconLibraryIds.has(String(icons.library || '')) ? icons.library as InterfaceIconLibrary : 'ayrovi',
       color: safeColor(icons.color, DEFAULT_INTERFACE_CONFIG.icons.color),
       activeColor: safeColor(icons.activeColor, DEFAULT_INTERFACE_CONFIG.icons.activeColor),
-      size: safeNumber(icons.size, 20, 14, 40),
+      size: safeNumber(icons.size, 28, 14, 44),
       style: icons.style === 'solid' ? 'solid' : 'outline',
     },
     navigation: {

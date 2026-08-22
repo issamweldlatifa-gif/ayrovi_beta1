@@ -97,7 +97,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {tr("Importez une capture d'écran ou collez un lien pour ajouter des articles.", 'ارفع لقطة شاشة أو ألصق رابطًا لإضافة المنتجات.')}
                 </p>
                 <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-primary mt-2 min-h-12 text-sm">
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-5 w-5" />
                   {tr('Calculer un produit avec Lens', 'حساب منتج باستخدام Lens')}
                 </button>
               </div>
@@ -204,7 +204,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               </div>
 
               <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-secondary min-h-12 w-full text-sm">
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
                 {tr('Calculer un autre produit', 'حساب منتج آخر')}
               </button>
 
