@@ -1,4 +1,4 @@
-import { randomBytes, randomInt, randomUUID } from 'node:crypto';
+import { createSign, randomBytes, randomInt, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import multer from 'multer';
@@ -105,6 +105,88 @@ export function googleOAuthAvailable(): boolean {
 
 export function facebookOAuthAvailable(): boolean {
   return facebookConfig().ready;
+}
+
+/** Apple Sign in — requiert des clés Apple Developer (Services ID + clé ES256). */
+function appleConfig() {
+  const clientId = String(process.env.APPLE_CLIENT_ID || '').trim();
+  const teamId = String(process.env.APPLE_TEAM_ID || '').trim();
+  const keyId = String(process.env.APPLE_KEY_ID || '').trim();
+  const privateKey = String(process.env.APPLE_PRIVATE_KEY || '').replace(/\\n/g, '\n').trim();
+  const baseUrl = String(process.env.PUBLIC_BASE_URL || '').trim();
+  const callbackUrl = String(process.env.APPLE_CALLBACK_URL || (baseUrl ? `${baseUrl}/api/customer/auth/apple/callback` : '')).trim();
+  return { clientId, teamId, keyId, privateKey, callbackUrl, ready: Boolean(clientId && teamId && keyId && privateKey && callbackUrl) };
+}
+
+export function appleOAuthAvailable(): boolean {
+  return appleConfig().ready;
+}
+
+/** Client-secret JWT ES256 exigé par le point d'échange de jetons Apple. */
+function appleClientSecretJwt(apple: ReturnType<typeof appleConfig>): string {
+  const header = { alg: 'ES256', kid: apple.keyId };
+  const nowSec = Math.floor(Date.now() / 1000);
+  const payload = { iss: apple.teamId, iat: nowSec, exp: nowSec + 30 * 60, aud: 'https://appleid.apple.com', sub: apple.clientId };
+  const b64url = (input: string | Buffer) => Buffer.from(input).toString('base64url');
+  const signingInput = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
+  const signer = createSign('SHA256');
+  signer.update(signingInput);
+  // JWT ES256 attend la signature brute r||s (64 octets), pas l'enveloppe DER de Node.
+  const der = signer.sign(apple.privateKey);
+  let offset = 2;
+  if (der[1] & 0x80) offset += der[1] & 0x7f;
+  const readInteger = (): Buffer => {
+    const length = der[offset + 1];
+    const start = offset + 2;
+    offset = start + length;
+    let value = der.slice(start, start + length);
+    let i = 0;
+    while (i < value.length - 1 && value[i] === 0) i++;
+    value = value.slice(i);
+    return Buffer.concat([Buffer.alloc(32 - value.length), value]);
+  };
+  const rawSignature = Buffer.concat([readInteger(), readInteger()]);
+  return `${signingInput}.${rawSignature.toString('base64url')}`;
+}
+
+/** Mots de passe e-mail — scrypt avec sel unique et comparaison en temps constant. */
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString('hex');
+  const derived = scryptSync(password, salt, 64).toString('hex');
+  return `scrypt$${salt}$${derived}`;
+}
+
+function verifyPassword(password: string, stored: string | null | undefined): boolean {
+  if (typeof stored !== 'string' || !stored) return false;
+  const [scheme, salt, digest] = stored.split('$');
+  if (scheme !== 'scrypt' || !salt || !digest) return false;
+  const derived = scryptSync(password, salt, 64);
+  const expected = Buffer.from(digest, 'hex');
+  return derived.length === expected.length && timingSafeEqual(derived, expected);
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+
+function normalizedEmail(value: any): string {
+  return String(value || '').trim().toLowerCase().slice(0, 180);
+}
+
+/** Limiteur mémoire simple : 5 échecs de connexion e-mail par IP sur 15 minutes. */
+const emailLoginFailures = new Map<string, number[]>();
+const EMAIL_LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const EMAIL_LOGIN_MAX_FAILURES = 5;
+
+function emailLoginAllowed(ip: string): boolean {
+  const since = Date.now() - EMAIL_LOGIN_WINDOW_MS;
+  const failures = (emailLoginFailures.get(ip) || []).filter((stamp) => stamp > since);
+  emailLoginFailures.set(ip, failures);
+  return failures.length < EMAIL_LOGIN_MAX_FAILURES;
+}
+
+function registerEmailFailure(ip: string): void {
+  const failures = emailLoginFailures.get(ip) || [];
+  failures.push(Date.now());
+  emailLoginFailures.set(ip, failures);
 }
 
 function publicAccount(row: any) {
@@ -306,10 +388,13 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
   router.get('/auth/config', (_req, res) => {
     const google = googleConfig();
     const facebook = facebookConfig();
+    const apple = appleConfig();
     res.json({ success: true, data: {
       phoneOtp: { enabled: customerAuthReady() && phoneOtpAvailable() },
       google: { enabled: customerAuthReady() && google.ready },
       facebook: { enabled: customerAuthReady() && facebook.ready },
+      apple: { enabled: customerAuthReady() && apple.ready },
+      email: { enabled: customerAuthReady() },
       checkoutRequiresAuthentication: true,
     } });
   });
@@ -413,6 +498,159 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       if (error?.message === 'PHONE_CHANGE_NOT_SUPPORTED') return res.status(409).json({ success: false, error: 'Ce compte possède déjà un autre numéro vérifié.' });
       console.error('[Customer OTP Verification]', error);
       return res.status(500).json({ success: false, error: 'La connexion n’a pas pu être finalisée.' });
+    }
+  });
+
+  router.post('/auth/email/register', (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
+    const displayName = String(req.body?.displayName || '').trim().slice(0, 100);
+    const email = normalizedEmail(req.body?.email);
+    const password = String(req.body?.password || '');
+    const marketingOptIn = Boolean(req.body?.marketingOptIn);
+    if (displayName.length < 2) return res.status(400).json({ success: false, code: 'NAME_INVALID', error: 'Indiquez votre nom complet.' });
+    if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ success: false, code: 'EMAIL_INVALID', error: 'Adresse e-mail invalide.' });
+    if (password.length < 8) return res.status(400).json({ success: false, code: 'PASSWORD_WEAK', error: 'Le mot de passe doit contenir au moins 8 caractères.' });
+    const existing = db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+    if (existing) return res.status(409).json({ success: false, code: 'EMAIL_TAKEN', error: 'Un compte existe déjà avec cette adresse e-mail.' });
+    try {
+      const now = new Date().toISOString();
+      const accountId = `account_${randomUUID()}`;
+      db.run(`INSERT INTO customer_accounts
+        (id,display_name,email,password_hash,marketing_opt_in,status,last_login_at,created_at,updated_at)
+        VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`,
+        accountId, displayName, email, hashPassword(password), marketingOptIn ? 1 : 0, now, now, now);
+      notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+      const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
+      if (cartSession) db.attachCartToAccount(cartSession, accountId);
+      const prior = resolveCustomer(db, req) as any;
+      if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+      const session = createCustomerSession(db, accountId, req);
+      setCustomerCookie(res, session.token);
+      return res.json({ success: true, data: {
+        account: publicAccount(accountRow(db, accountId)),
+        csrfToken: session.csrfToken,
+        expiresAt: session.expiresAt,
+      } });
+    } catch (error) {
+      console.error('[Customer Email Register]', error);
+      return res.status(500).json({ success: false, error: 'La création du compte a échoué.' });
+    }
+  });
+
+  router.post('/auth/email/login', (req, res) => {
+    if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
+    const email = normalizedEmail(req.body?.email);
+    const password = String(req.body?.password || '');
+    const fail = () => res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', error: 'E-mail ou mot de passe incorrect.' });
+    if (!EMAIL_PATTERN.test(email) || password.length < 8) return fail();
+    if (!emailLoginAllowed(req.ip || '')) return res.status(429).json({ success: false, code: 'LOGIN_RATE_LIMITED', error: 'Trop de tentatives. Réessayez dans un quart d’heure.' });
+    const account = db.get<any>('SELECT * FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
+    if (!account || !verifyPassword(password, account.password_hash)) { registerEmailFailure(req.ip || ''); return fail(); }
+    if (account.status !== 'ACTIVE') return res.status(403).json({ success: false, code: 'ACCOUNT_BLOCKED', error: 'Ce compte est bloqué. Contactez le support.' });
+    const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
+    if (cartSession) db.attachCartToAccount(cartSession, account.id);
+    const prior = resolveCustomer(db, req) as any;
+    if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+    const session = createCustomerSession(db, account.id, req);
+    setCustomerCookie(res, session.token);
+    return res.json({ success: true, data: {
+      account: publicAccount(accountRow(db, account.id)),
+      csrfToken: session.csrfToken,
+      expiresAt: session.expiresAt,
+    } });
+  });
+
+  router.get('/auth/apple/start', (req, res) => {
+    const apple = appleConfig();
+    if (!customerAuthReady() || !apple.ready) return res.status(503).send('Connexion Apple non configurée.');
+    const state = randomBytes(32).toString('base64url');
+    const stateId = hashToken(state);
+    const now = new Date();
+    const current = resolveCustomer(db, req);
+    db.run(`INSERT INTO customer_oauth_states (id,account_id,provider,cart_session_id,return_to,expires_at,created_at)
+      VALUES (?,?,'APPLE',?,?,?,?)`, stateId, current?.id || null, validCartSession(req.query.cartSessionId), validReturnTo(req.query.returnTo),
+      new Date(now.getTime() + 10 * 60 * 1000).toISOString(), now.toISOString());
+    const params = new URLSearchParams({
+      client_id: apple.clientId,
+      redirect_uri: apple.callbackUrl,
+      response_type: 'code',
+      scope: 'name email',
+      state,
+      response_mode: 'query',
+    });
+    return res.redirect(`https://appleid.apple.com/auth/authorize?${params}`);
+  });
+
+  router.get('/auth/apple/callback', async (req, res) => {
+    const apple = appleConfig();
+    const stateValue = String(req.query.state || '');
+    const stateHash = hashToken(stateValue);
+    const state = db.get<any>("SELECT * FROM customer_oauth_states WHERE id=? AND provider='APPLE' AND expires_at>?", stateHash, new Date().toISOString());
+    const failure = () => res.redirect('/?customerAuth=error');
+    if (!customerAuthReady() || !apple.ready || !state || typeof req.query.code !== 'string') {
+      if (state) db.run('DELETE FROM customer_oauth_states WHERE id=?', state.id);
+      return failure();
+    }
+    db.run('DELETE FROM customer_oauth_states WHERE id=?', state.id);
+    try {
+      const tokenResponse = await fetch('https://appleid.apple.com/auth/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code: req.query.code,
+          client_id: apple.clientId,
+          client_secret: appleClientSecretJwt(apple),
+          grant_type: 'authorization_code',
+          redirect_uri: apple.callbackUrl,
+        }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!tokenResponse.ok) throw new Error('APPLE_TOKEN_FAILED');
+      const tokens: any = await tokenResponse.json();
+      const [, payloadB64] = String(tokens.id_token || '').split('.');
+      const payload = payloadB64 ? JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) : {};
+      const subject = String(payload.sub || '');
+      if (!subject) throw new Error('APPLE_IDENTITY_INVALID');
+      const email = String(payload.email || '').trim().toLowerCase();
+      const emailVerifiedHere = Boolean(payload.email_verified === true || payload.email_verified === 'true');
+      const nowIso = new Date().toISOString();
+      const identityOwnerId = db.get<any>(`SELECT account_id FROM customer_auth_identities WHERE provider='APPLE' AND provider_subject=?`, subject)?.account_id as string | undefined;
+      const emailOwner = email
+        ? db.get<any>('SELECT id,email_verified_at FROM customer_accounts WHERE email=? COLLATE NOCASE', email)
+        : undefined;
+      const verifiedEmailOwnerId = emailOwner?.email_verified_at ? emailOwner.id as string : undefined;
+      let accountId = (state.account_id || identityOwnerId || verifiedEmailOwnerId) as string | undefined;
+      if (!accountId) {
+        accountId = `account_${randomUUID()}`;
+        db.run(`INSERT INTO customer_accounts
+          (id,display_name,email,email_verified_at,status,last_login_at,created_at,updated_at)
+          VALUES (?,?,?,?, 'ACTIVE', ?, ?, ?)`,
+          accountId, 'Client AYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+      } else {
+        const currentAccount = accountRow(db, accountId);
+        if (!currentAccount) throw new Error('ACCOUNT_MISSING');
+        const adoptAppleEmail = email && (!currentAccount.email || !currentAccount.email_verified_at);
+        db.run(`UPDATE customer_accounts SET
+          email=CASE WHEN ?!='' AND ? THEN ? ELSE email END,
+          email_verified_at=CASE WHEN ?!='' AND ? THEN ? ELSE email_verified_at END,
+          last_login_at=?,updated_at=? WHERE id=?`,
+          email, adoptAppleEmail ? 1 : 0, email,
+          email, adoptAppleEmail ? 1 : 0, nowIso,
+          nowIso, nowIso, accountId);
+      }
+      db.run(`INSERT OR IGNORE INTO customer_auth_identities (id,account_id,provider,provider_subject,created_at)
+        VALUES (?,?,'APPLE',?,?)`, `identity_${randomUUID()}`, accountId, subject, nowIso);
+      if (state.cart_session_id) db.attachCartToAccount(state.cart_session_id, accountId);
+      const prior = resolveCustomer(db, req) as any;
+      if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+      const session = createCustomerSession(db, accountId, req);
+      setCustomerCookie(res, session.token);
+      const returnTo = validReturnTo(state.return_to);
+      return res.redirect(`${returnTo}${returnTo.includes('?') ? '&' : '?'}customerAuth=success`);
+    } catch (error) {
+      console.error('[Customer Apple OAuth]', error);
+      return failure();
     }
   });
 

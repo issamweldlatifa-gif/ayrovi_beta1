@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { FcGoogle } from 'react-icons/fc';
-import { FaFacebookF } from 'react-icons/fa6';
+import { FaApple, FaFacebookF } from 'react-icons/fa6';
 import {
   ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, Heart, Home, Loader2, LogOut,
   MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X, Hourglass, AlertCircle, ArrowDown,
   CreditCard, ReceiptText, Truck, Moon, Settings, Lock, ScanSearch, FileText, ChevronRight, ChevronDown, ExternalLink, RefreshCw,
-  Person, Camera,
+  Person, Camera, Eye, EyeOff,
 } from './QatafoIcons';
 
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
@@ -90,6 +90,8 @@ type AuthConfig = {
   phoneOtp: { enabled: boolean };
   google: { enabled: boolean };
   facebook: { enabled: boolean };
+  apple: { enabled: boolean };
+  email: { enabled: boolean };
   checkoutRequiresAuthentication: boolean;
 };
 
@@ -199,6 +201,11 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const closeAccountLayer = () => navigation.back();
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [phone, setPhone] = useState('');
+  const [emailMode, setEmailMode] = useState<'login' | 'register'>('login');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [emailName, setEmailName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [challengeId, setChallengeId] = useState('');
   const [maskedPhone, setMaskedPhone] = useState('');
   const [code, setCode] = useState('');
@@ -254,7 +261,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setNotice(initialMessage || '');
     }
     customerApi<any>('/api/customer/auth/config').then((result) => setConfig(result.data)).catch(() => setConfig({
-      phoneOtp: { enabled: false }, google: { enabled: false }, facebook: { enabled: false }, checkoutRequiresAuthentication: true,
+      phoneOtp: { enabled: false }, google: { enabled: false }, facebook: { enabled: false }, apple: { enabled: false }, email: { enabled: true }, checkoutRequiresAuthentication: true,
     }));
   }, [isOpen, initialMessage, initialSection]);
 
@@ -333,6 +340,25 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setCode('');
     }
   }, [otpOpen]);
+
+  const submitEmailAuth = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAuthBusy(true); setError(''); setNotice('');
+    try {
+      const endpoint = emailMode === 'register' ? '/api/customer/auth/email/register' : '/api/customer/auth/email/login';
+      const payload = emailMode === 'register'
+        ? { displayName: emailName.trim(), email: emailAddress.trim(), password: emailPassword, cartSessionId: getSessionId() }
+        : { email: emailAddress.trim(), password: emailPassword, cartSessionId: getSessionId() };
+      const result = await customerApi<any>(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+      onSession({ account: result.data.account, csrfToken: result.data.csrfToken });
+      setEmailPassword('');
+      setNotice(emailMode === 'register'
+        ? tr('Bienvenue ! Votre compte AYROVI est actif.', 'مرحباً بك! تم تفعيل حسابك في AYROVI.')
+        : tr('Content de vous revoir !', 'سعداء بعودتك!'));
+      onCartChanged();
+    } catch (reason: any) { setError(reason.message); }
+    finally { setAuthBusy(false); }
+  };
 
   const sendCode = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -567,58 +593,159 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const oauthQuery = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
   const googleStartHref = `/api/customer/auth/google/start?${oauthQuery}`;
   const facebookStartHref = `/api/customer/auth/facebook/start?${oauthQuery}`;
-  const showPhoneLogin = phoneLinkOpen || phoneLoginOpen || (config !== null && !socialLoginEnabled);
 
+  const appleEnabled = Boolean(config?.apple.enabled);
+  const appleStartHref = `/api/customer/auth/apple/start?${oauthQuery}`;
   const authPanel = (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col justify-center px-5 py-10 sm:my-12 sm:min-h-0 sm:rounded-[28px] sm:border sm:border-line sm:bg-white sm:px-9 sm:py-11 sm:shadow-overlay">
-      <div className="mb-7 text-center">
-        <div className="mx-auto grid h-14 w-14 place-items-center overflow-hidden rounded-2xl bg-brand-gradient shadow-card"><img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-9 w-9 object-contain" /></div>
-        <h1 className="mt-4 text-[28px] font-black tracking-[-0.04em] text-ink">{phoneLinkOpen ? tr('Vérifier mon téléphone', 'توثيق هاتفي') : tr('Rejoignez AYROVI', 'انضم إلى AYROVI')}</h1>
-        <p className="mt-1.5 text-sm leading-6 text-muted">{phoneLinkOpen ? (session?.account.emailVerified ? tr('Ajoutez un second canal vérifié pour renforcer votre compte.', 'أضف قناة موثقة ثانية لتعزيز أمان حسابك.') : tr('Un e-mail ou un téléphone vérifié est requis pour confirmer une commande.', 'يلزم بريد إلكتروني أو هاتف موثّق لتأكيد الطلب.')) : tr('Créez votre compte en quelques secondes — votre panier et vos commandes vous suivront partout.', 'أنشئ حسابك في ثوانٍ — تبقى سلّتك وطلباتك معك في كل مكان.')}</p>
-      </div>
-      {error && <div className="mb-4 border border-danger/20 bg-danger/5 px-4 py-3 text-sm font-bold text-danger">{error}</div>}
-      {/* Localisation — style Zalando */}
-      {!otpOpen && !phoneLinkOpen && (
-        <div className="mb-5">
-          <label className="mb-1.5 block text-[11px] font-extrabold uppercase tracking-[0.14em] text-muted">{tr('Votre région', 'منطقتك')}</label>
-          <div className="relative">
-            <MapPin className="pointer-events-none absolute left-3.5 top-1/2 h-6 w-6 -translate-y-1/2 text-brand" />
-            <select value={governorate} onChange={(e) => chooseGovernorate(e.target.value)} className={`${inputClass} appearance-none pl-11 pr-10`}>
-              <option value="">{tr('Choisir le gouvernorat', 'اختر الولاية')}</option>
-              {TUNISIAN_GOVERNORATES.map((g) => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-          </div>
+    /* صفحة الدخول/التسجيل — تصميم فخم على نمط المتاجر الكبرى */
+    <div className="flex min-h-full flex-col bg-white">
+      {/* هيدر نحيفة */}
+      <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur">
+        <div className="flex items-center gap-2.5">
+          <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-8 w-8 object-contain brightness-0" />
+          <strong className="font-display text-base font-black tracking-tight text-ink">AYROVI</strong>
         </div>
-      )}
-      {/* Connexions OAuth principales; Facebook reste masqué tant que Meta n'est pas configuré. */}
-      {!otpOpen && !phoneLinkOpen && <>
-        <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} className={`ay-btn-secondary w-full text-sm ${googleEnabled ? '' : 'pointer-events-none opacity-50'}`}><span className="grid h-8 w-8 place-items-center rounded-full bg-white"><FcGoogle size={30} aria-hidden /></span>{tr('Continuer avec Google', 'المتابعة عبر Google')}</a>
-        {facebookEnabled && <a href={facebookStartHref} className="ay-btn-secondary mt-3 w-full text-sm"><span className="grid h-8 w-8 place-items-center rounded-full bg-white text-brand"><FaFacebookF size={19} aria-hidden /></span>{tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}</a>}
-        {config !== null && !socialLoginEnabled && <p className="mt-2 text-center text-xs text-muted">{tr('La connexion sociale sera disponible après sa configuration.', 'سيتاح تسجيل الدخول الاجتماعي بعد ضبطه.')}</p>}
-        {socialLoginEnabled && !showPhoneLogin && <p className="mt-2 text-center text-xs text-muted">{tr('Connexion instantanée et sécurisée, sans partager votre mot de passe avec AYROVI.', 'دخول سريع وآمن دون مشاركة كلمة مرورك مع AYROVI.')}</p>}
-      </>}
-      {/* Connexion par téléphone : secondaire (optionnelle) */}
-      {!otpOpen && showPhoneLogin && <>
-        {!phoneLinkOpen && <div className="my-6 flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-muted"><span className="h-px flex-1 bg-line" />{tr('ou', 'أو')}<span className="h-px flex-1 bg-line" /></div>}
-        <form onSubmit={sendCode} className="space-y-4">
-          <Field label={tr('Numéro de téléphone tunisien', 'رقم هاتف تونسي')}><div className="relative"><Phone className="absolute left-3.5 top-1/2 h-7 w-7 -translate-y-1/2 text-brand" /><input autoFocus type="tel" inputMode="tel" autoComplete="tel" maxLength={24} pattern="[+0-9 ()-]{8,24}" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} pl-11`} required /></div></Field>
-          <button disabled={authBusy || config?.phoneOtp.enabled === false} className="ay-btn-primary w-full text-sm">{authBusy && <Loader2 className="h-7 w-7 animate-spin" />}{tr('Recevoir mon code SMS', 'استلام رمز SMS')}</button>
-          {config?.phoneOtp.enabled === false && <p className="text-center text-xs font-semibold text-warning">{tr('L’envoi SMS doit être configuré sur le serveur.', 'يجب ضبط خدمة SMS على الخادم.')}</p>}
-        </form>
-      </>}
-      {!otpOpen && !phoneLinkOpen && socialLoginEnabled && !showPhoneLogin && (
-        <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-login' })} className="mt-5 w-full py-2 text-xs font-black text-brand">{tr('Utiliser mon numéro de téléphone (SMS)', 'استخدام رقم هاتفي (SMS)')}</button>
-      )}
-      {otpOpen && challengeId && <form onSubmit={verifyCode} className="space-y-4">
-        <div className="border border-brand/20 bg-brand/5 p-4 text-center"><p className="text-xs font-bold text-muted">{tr('Code envoyé au', 'أُرسل الرمز إلى')}</p><strong className="mt-1 block text-base text-ink">{maskedPhone}</strong></div>
-        <Field label={tr('Code à 6 chiffres', 'رمز من 6 أرقام')}><input autoFocus inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="000000" className={`${inputClass} text-center font-mono text-2xl tracking-[0.35em]`} required /></Field>
-        {developmentCode && <button type="button" onClick={() => setCode(developmentCode)} className="w-full border border-accent/30 bg-accent/10 p-3 text-xs font-bold text-warning">{tr('Mode développement — utiliser', 'وضع التطوير — استخدم')} {developmentCode}</button>}
-        <button disabled={authBusy || code.length !== 6} className="ay-btn-primary w-full text-sm">{authBusy && <Loader2 className="h-7 w-7 animate-spin" />}{tr('Valider et activer mon compte', 'تأكيد حسابي وتفعيله')}</button>
-        <button type="button" onClick={() => { closeAccountLayer(); setError(''); }} className="w-full py-2 text-xs font-black text-brand">{tr('Modifier le numéro', 'تغيير الرقم')}</button>
-      </form>}
-      {phoneLinkOpen && !otpOpen && <button type="button" onClick={() => { closeAccountLayer(); setError(''); }} className="mt-6 flex w-full items-center justify-center gap-2 py-2 text-xs font-black text-muted"><ArrowLeft className={`h-7 w-7 ${isArabic ? 'rotate-180' : ''}`} />{tr('Retour au compte', 'العودة إلى الحساب')}</button>}
-      <p className="mt-7 text-center text-[11px] leading-5 text-muted">{tr('Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone ou message.', 'دخول آمن. لن تطلب منك AYROVI رمزك عبر مكالمة أو رسالة.')}</p>
+        <button type="button" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white text-muted transition hover:border-ink/30 hover:text-ink">
+          <X className="h-4.5 w-4.5" aria-hidden />
+        </button>
+      </header>
+
+      <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-6 pb-5 pt-9">
+        {otpOpen && challengeId ? (
+          /* ===== شاشة رمز التحقق ===== */
+          <form onSubmit={verifyCode} className="flex flex-1 flex-col">
+            <button type="button" onClick={() => { closeAccountLayer(); setError(''); }} className="mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink">
+              <ArrowLeft className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />{tr('Retour', 'رجوع')}
+            </button>
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-brand/10 text-brand"><Phone className="h-8 w-8" aria-hidden /></div>
+            <h1 className="mt-5 text-center text-[26px] font-black leading-9 tracking-[-0.02em] text-ink">{tr('Entrez votre code', 'أدخل رمز التحقق')}</h1>
+            <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Code envoyé au', 'أُرسل الرمز إلى')} <strong className="text-ink">{maskedPhone}</strong></p>
+            {error && <div className="mt-5 border border-danger/20 bg-danger/5 px-4 py-3 text-center text-sm font-bold text-danger">{error}</div>}
+            <div className="mt-6">
+              <Field label={tr('Code à 6 chiffres', 'رمز من 6 أرقام')}>
+                <input autoFocus inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="••••••" className={`${inputClass} text-center text-2xl font-black tracking-[0.35em]`} required />
+              </Field>
+            </div>
+            {developmentCode && <button type="button" onClick={() => setCode(developmentCode)} className="mt-3 w-full border border-accent/30 bg-accent/10 p-3 text-xs font-bold text-warning">{tr('Mode développement — utiliser', 'وضع التطوير — استخدم')} {developmentCode}</button>}
+            <button disabled={authBusy || code.length !== 6} className="ay-btn-primary mt-5 w-full text-sm">{authBusy && <Loader2 className="h-5 w-5 animate-spin" />}{tr('Valider mon compte', 'تأكيد حسابي')}</button>
+            <p className="mt-auto pt-8 text-center text-[11px] leading-5 text-muted">{tr('Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك AYROVI رمزك عبر مكالمة أو رسالة.')}</p>
+          </form>
+        ) : phoneLoginOpen || phoneLinkOpen ? (
+          /* ===== شاشة الدخول برقم الهاتف ===== */
+          <form onSubmit={sendCode} className="flex flex-1 flex-col">
+            <button type="button" onClick={() => { closeAccountLayer(); setError(''); }} className="mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink">
+              <ArrowLeft className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />{tr('Retour', 'رجوع')}
+            </button>
+            <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-brand/10 text-brand"><Phone className="h-8 w-8" aria-hidden /></div>
+            <h1 className="mt-5 text-center text-[26px] font-black leading-9 tracking-[-0.02em] text-ink">{phoneLinkOpen ? tr('Vérifier mon téléphone', 'توثيق هاتفي') : tr('Continuer par téléphone', 'المتابعة عبر الهاتف')}</h1>
+            <p className="mt-1.5 text-center text-sm leading-6 text-muted">{phoneLinkOpen ? tr('Un téléphone vérifié est requis pour confirmer une commande.', 'يلزم رقم هاتف موثّق لتأكيد الطلب.') : tr('Nous vous enverrons un code SMS pour vous connecter en toute sécurité.', 'سنرسل لك رمز SMS لتسجيل الدخول بأمان.')}</p>
+            {error && <div className="mt-5 border border-danger/20 bg-danger/5 px-4 py-3 text-center text-sm font-bold text-danger">{error}</div>}
+            <div className="mt-6">
+              <Field label={tr('Numéro de téléphone tunisien', 'رقم الهاتف التونسي')}>
+                <div className="relative">
+                  <Phone className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
+                  <input autoFocus type="tel" inputMode="tel" autoComplete="tel" maxLength={24} pattern="[+0-9 ()-]{8,24}" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+216 98 123 456" className={`${inputClass} pl-11 text-base`} required />
+                </div>
+              </Field>
+            </div>
+            <button disabled={authBusy || config?.phoneOtp.enabled === false} className="ay-btn-primary mt-5 w-full text-sm">{authBusy && <Loader2 className="h-5 w-5 animate-spin" />}{tr('Recevoir mon code SMS', 'استلام رمز SMS')}</button>
+            {config?.phoneOtp.enabled === false && <p className="mt-3 text-center text-xs font-semibold text-warning">{tr('L’envoi SMS doit être configuré sur le serveur.', 'يجب ضبط خدمة SMS على الخادم.')}</p>}
+            <p className="mt-auto pt-8 text-center text-[11px] leading-5 text-muted">{tr('Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك AYROVI رمزك عبر مكالمة أو رسالة.')}</p>
+          </form>
+        ) : (
+          /* ===== الشاشة الرئيسية ===== */
+          <div className="flex flex-1 flex-col">
+            {/* شعار بارز — أسود فاخر */}
+            <div className="mx-auto grid h-20 w-20 place-items-center overflow-hidden rounded-[26px] bg-black shadow-card">
+              <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-12 w-12 object-contain brightness-0 invert" />
+            </div>
+            <h1 className="mt-6 text-center font-display text-[27px] font-black leading-9 tracking-[-0.02em] text-ink">{tr('Bienvenue chez AYROVI', 'مرحباً بك في AYROVI')}</h1>
+            <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Connectez-vous ou créez votre compte en quelques secondes.', 'سجّل دخولك أو أنشئ حسابك في ثوانٍ معدودة.')}</p>
+
+            {/* أزرار التواصل الاجتماعي */}
+            <div className="mt-7 grid grid-cols-3 gap-3">
+              <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} title={googleEnabled ? undefined : tr('Google sera disponible après sa configuration.', 'سيتاح Google بعد إعداده.')} className={`group flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${googleEnabled ? '' : 'pointer-events-none opacity-40'}`}>
+                <FcGoogle size={26} aria-hidden />
+              </a>
+              <a href={facebookEnabled ? facebookStartHref : undefined} aria-disabled={!facebookEnabled} title={facebookEnabled ? undefined : tr('Facebook sera disponible après sa configuration.', 'سيتاح Facebook بعد إعدامه.')} className={`flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${facebookEnabled ? '' : 'pointer-events-none opacity-40'}`}>
+                <FaFacebookF size={24} className="text-[#1877F2]" aria-hidden />
+              </a>
+              <a href={appleEnabled ? appleStartHref : undefined} aria-disabled={!appleEnabled} title={appleEnabled ? undefined : tr('Apple sera disponible après sa configuration.', 'سيتاح Apple بعد إعداده.')} className={`flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${appleEnabled ? '' : 'pointer-events-none opacity-40'}`}>
+                <FaApple size={28} className="text-ink" aria-hidden />
+              </a>
+            </div>
+
+            {/* فاصل */}
+            <div className="my-7 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.16em] text-muted">
+              <span className="h-px flex-1 bg-line" />
+              {tr('ou par e-mail', 'أو عبر البريد الإلكتروني')}
+              <span className="h-px flex-1 bg-line" />
+            </div>
+
+            {/* مبدّل دخول/تسجيل */}
+            <div className="mb-5 grid grid-cols-2 rounded-full border border-line bg-surface p-1">
+              {(['login', 'register'] as const).map((mode) => (
+                <button key={mode} type="button" onClick={() => { setEmailMode(mode); setError(''); }}
+                  className={`h-10 rounded-full text-[13px] font-black transition ${emailMode === mode ? 'bg-white text-ink shadow-card' : 'text-muted hover:text-ink'}`}>
+                  {mode === 'login' ? tr('Connexion', 'تسجيل الدخول') : tr('Créer un compte', 'إنشاء حساب')}
+                </button>
+              ))}
+            </div>
+
+            {error && <div className="mb-4 border border-danger/20 bg-danger/5 px-4 py-3 text-center text-sm font-bold text-danger">{error}</div>}
+
+            {/* نموذج البريد الإلكتروني */}
+            <form onSubmit={submitEmailAuth} className="space-y-4">
+              {emailMode === 'register' && (
+                <Field label={tr('Nom et prénom', 'الاسم واللقب')}>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
+                    <input autoFocus type="text" autoComplete="name" maxLength={100} value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Votre nom complet', 'اسمك الكامل')} className={`${inputClass} pl-11 text-base`} required />
+                  </div>
+                </Field>
+              )}
+              <Field label={tr('Adresse e-mail', 'البريد الإلكتروني')}>
+                <input type="email" autoComplete="email" maxLength={180} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={emailMode === 'login' ? tr('Votre adresse e-mail', 'بريدك الإلكتروني') : 'vous@exemple.com'} className={`${inputClass} text-base`} required />
+              </Field>
+              <Field label={tr('Mot de passe', 'كلمة المرور')}>
+                <div className="relative">
+                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
+                  <input type={showPassword ? 'text' : 'password'} autoComplete={emailMode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={100} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} placeholder={tr('Au moins 8 caractères', '8 أحرف على الأقل')} className={`${inputClass} pl-11 pr-12 text-base`} required />
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={tr('Afficher le mot de passe', 'إظهار كلمة المرور')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition hover:text-ink">
+                    {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                  </button>
+                </div>
+              </Field>
+              <button disabled={authBusy} className="ay-btn-primary h-12 w-full text-[15px] font-black">
+                {authBusy && <Loader2 className="h-5 w-5 animate-spin" />}
+                {emailMode === 'login' ? tr('Se connecter', 'تسجيل الدخول') : tr('Créer mon compte', 'إنشاء حسابي')}
+              </button>
+            </form>
+
+            {emailMode === 'register' && (
+              <p className="mt-4 text-center text-[11px] leading-5 text-muted">
+                {tr('En créant un compte, vous acceptez nos ', 'بإنشاء حسابك فأنت توافق على ')}
+                <a href="/terms.html" target="_blank" rel="noreferrer" className="font-bold text-brand hover:underline">{tr("Conditions d'utilisation", 'شروط الاستخدام')}</a>
+                {tr(' et notre ', ' و')}
+                <a href="/privacy.html" target="_blank" rel="noreferrer" className="font-bold text-brand hover:underline">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>.
+              </p>
+            )}
+
+            {/* خيار الهاتف */}
+            <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-login' })} className="mt-6 flex w-full items-center justify-center gap-2 border-t border-line pt-5 text-xs font-black text-brand transition hover:text-accent">
+              <Phone className="h-4.5 w-4.5" aria-hidden />
+              {tr('Utiliser mon numéro de téléphone (SMS)', 'الدخول برقم الهاتف (SMS)')}
+            </button>
+
+            {/* تذييل */}
+            <div className="mt-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-line pt-5 text-[11px] text-muted">
+              <a href="/terms.html" target="_blank" rel="noreferrer" className="hover:text-ink hover:underline">{tr("Conditions d'utilisation", 'شروط الاستخدام')}</a>
+              <a href="/privacy.html" target="_blank" rel="noreferrer" className="hover:text-ink hover:underline">{tr('Confidentialité', 'الخصوصية')}</a>
+              <span className="inline-flex items-center gap-1"><ShieldCheck className="h-4 w-4 text-success" aria-hidden />{tr('Paiement sécurisé', 'دفع آمن')}</span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 
@@ -700,8 +827,8 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   };
 
   return <div className="ayrovix-theme-scope fixed inset-0 z-[95] overflow-hidden bg-surface" dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte AYROVI','حسابي في AYROVI'):tr('Connexion client AYROVI','تسجيل الدخول إلى AYROVI')}>
-    <AppHeader title="AYROVI" subtitle={tr('Espace client','فضاء العميل')} onClose={onClose} actionLabel={tr('Fermer','إغلاق')}/>
-    <div className="h-[calc(100dvh-4.25rem)] overflow-y-auto sm:h-[calc(100dvh-5.25rem)]">{loadingSession?<div className="grid h-full place-items-center"><Loader2 className="h-9 w-9 animate-spin text-brand"/></div>:(!session||phoneLinkOpen)?authPanel:<div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
+    {(!session || phoneLinkOpen || phoneLoginOpen) && !loadingSession ? null : <AppHeader title="AYROVI" subtitle={tr('Espace client','فضاء العميل')} onClose={onClose} actionLabel={tr('Fermer','إغلاق')}/>}
+    <div className={`${(!session || phoneLinkOpen || phoneLoginOpen) && !loadingSession ? 'h-[100dvh]' : 'h-[calc(100dvh-4.25rem)] sm:h-[calc(100dvh-5.25rem)]'} overflow-y-auto`}>{loadingSession?<div className="grid h-full place-items-center"><Loader2 className="h-9 w-9 animate-spin text-brand"/></div>:(!session||phoneLinkOpen||phoneLoginOpen)?authPanel:<div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
       <aside className={`${section==='home'?'block':'hidden'} order-2 min-w-0 border-t border-line bg-white p-4 lg:order-1 lg:block lg:border-e lg:border-t-0 lg:p-5`}><div className="mb-4 hidden items-center gap-3 border-b border-line pb-5 lg:flex"><div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-brand text-sm font-black text-white">{session.account.avatarUrl?<img src={session.account.avatarUrl} alt="" className="h-full w-full object-cover"/>:(session.account.displayName||'AY').slice(0,2).toUpperCase()}</div><div className="min-w-0"><strong className="block truncate text-sm">{session.account.displayName}</strong><span className="block truncate text-[10px] text-muted">{session.account.email||session.account.phone}</span></div></div><AccountTabs section={section} unread={Number(overview?.counts?.unreadNotifications||0)} onOpen={openSection} onLogout={logout}/></aside>
       <main className="order-1 min-w-0 px-4 py-5 sm:px-7 lg:order-2 lg:px-10"><div className="mb-5 flex items-center gap-3">{section!=='home'&&<button onClick={()=>openSection('home')} className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-white lg:hidden"><ArrowLeft className={`h-7 w-7 ${isArabic?'rotate-180':''}`}/></button>}<div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-[0.18em] text-brand">{tr('Mon compte','حسابي')}</p><h1 className="truncate text-2xl font-black">{(()=>{const item=sectionItems.find((entry)=>entry.id===section);return item?(isArabic?item.labelAr:item.label):''})()}</h1></div></div>{notice&&<div className="mb-5 flex items-start gap-2 rounded-2xl border border-success/20 bg-success/5 p-3 text-sm font-bold text-success"><CheckCircle2 className="h-7 w-7 shrink-0"/><span>{notice}</span><button onClick={()=>setNotice('')} className="ms-auto"><X className="h-7 w-7"/></button></div>}{error&&<div className="mb-5 rounded-2xl border border-danger/20 bg-danger/5 p-3 text-sm font-bold text-danger">{error}</div>}{renderSection()}</main>
     </div>}</div>

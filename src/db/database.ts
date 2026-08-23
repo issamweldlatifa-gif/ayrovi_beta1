@@ -139,10 +139,20 @@ const CUSTOMER_NOTIFICATIONS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_no
 const CUSTOMER_AUTH_IDENTITIES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_auth_identities (
   id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
-  provider TEXT NOT NULL CHECK(provider IN ('PHONE','GOOGLE','FACEBOOK')),
+  provider TEXT NOT NULL CHECK(provider IN ('PHONE','GOOGLE','FACEBOOK','APPLE')),
   provider_subject TEXT NOT NULL,
   created_at TEXT NOT NULL,
   UNIQUE(provider, provider_subject)
+);`;
+
+const CUSTOMER_OAUTH_STATES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_oauth_states (
+  id TEXT PRIMARY KEY,
+  account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
+  provider TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK','APPLE')),
+  cart_session_id TEXT NOT NULL DEFAULT '',
+  return_to TEXT NOT NULL DEFAULT '/',
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
 );`;
 
 export class QatafoDatabase {
@@ -507,7 +517,7 @@ export class QatafoDatabase {
       CREATE TABLE IF NOT EXISTS customer_oauth_states (
         id TEXT PRIMARY KEY,
         account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
-        provider TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK')),
+        provider TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK','APPLE')),
         cart_session_id TEXT NOT NULL DEFAULT '',
         return_to TEXT NOT NULL DEFAULT '/',
         expires_at TEXT NOT NULL,
@@ -762,8 +772,16 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('customers', 'normalized_phone', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('customer_otp_challenges', 'provider', "TEXT NOT NULL DEFAULT 'local'");
-    this.ensureColumn('customer_oauth_states', 'provider', "TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK'))");
+    this.ensureColumn('customer_accounts', 'password_hash', 'TEXT');
+    this.ensureColumn('customer_oauth_states', 'provider', "TEXT NOT NULL DEFAULT 'GOOGLE' CHECK(provider IN ('GOOGLE','FACEBOOK','APPLE'))");
+    // ترقية القيود القديمة لتشمل دخول Apple (CHECK القديم لا يقبل 'APPLE')
+    this.rebuildTableIfLegacy('customer_oauth_states', "'APPLE'", CUSTOMER_OAUTH_STATES_TABLE_SQL, [
+      'CREATE INDEX IF NOT EXISTS idx_customer_oauth_expiry ON customer_oauth_states(expires_at);',
+    ]);
     this.rebuildTableIfLegacy('customer_auth_identities', "'FACEBOOK'", CUSTOMER_AUTH_IDENTITIES_TABLE_SQL, [
+      'CREATE INDEX IF NOT EXISTS idx_customer_identities_account ON customer_auth_identities(account_id);',
+    ]);
+    this.rebuildTableIfLegacy('customer_auth_identities', "'APPLE'", CUSTOMER_AUTH_IDENTITIES_TABLE_SQL, [
       'CREATE INDEX IF NOT EXISTS idx_customer_identities_account ON customer_auth_identities(account_id);',
     ]);
     const customersMissingNormalizedPhone = this.db.prepare(
