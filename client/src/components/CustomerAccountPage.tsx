@@ -600,13 +600,13 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     /* صفحة الدخول/التسجيل — تصميم فخم على نمط المتاجر الكبرى */
     <div className="flex min-h-full flex-col bg-white">
       {/* هيدر نحيفة */}
-      <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur">
-        <div className="flex items-center gap-2.5">
-          <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-8 w-8 object-contain brightness-0" />
-          <strong className="font-display text-base font-black tracking-tight text-ink">AYROVI</strong>
+      <header className="sticky top-0 z-20 flex h-11 shrink-0 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur">
+        <div className="flex items-center gap-2">
+          <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-6.5 w-6.5 object-contain brightness-0" />
+          <strong className="font-display text-[15px] font-black tracking-tight text-ink">AYROVI</strong>
         </div>
-        <button type="button" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white text-muted transition hover:border-ink/30 hover:text-ink">
-          <X className="h-4.5 w-4.5" aria-hidden />
+        <button type="button" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} className="grid h-7.5 w-7.5 place-items-center rounded-full border border-line bg-white text-muted transition hover:border-ink/30 hover:text-ink">
+          <X className="h-4 w-4" aria-hidden />
         </button>
       </header>
 

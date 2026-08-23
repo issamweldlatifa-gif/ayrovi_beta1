@@ -340,7 +340,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 
 /* AYROVI assistant subview entrance animations */
 @keyframes assistantSideMenuIn {
-  from { transform: translateX(100%); }
+  from { transform: translateX(-100%); }
   to { transform: translateX(0); }
 }
 

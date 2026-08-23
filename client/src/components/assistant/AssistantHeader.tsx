@@ -1,14 +1,14 @@
 import React from 'react';
-import { Menu, MoreVertical, PenSquare } from '../QatafoIcons';
+import { Menu, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 
 interface AssistantHeaderProps {
   isDark: boolean;
   onOpenMenu: () => void;
-  onNewConversation: () => void;
+  onClose: () => void;
 }
 
-export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpenMenu, onNewConversation }) => {
+export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpenMenu, onClose }) => {
   const { tr } = useLocale();
   const chip = isDark
     ? 'border-white/10 bg-white/10 text-white shadow-[0_8px_24px_-16px_rgba(0,0,0,.7)]'
@@ -35,26 +35,15 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpen
         >
           <Menu className="h-7 w-7" />
         </button>
-        <div className={`flex items-center rounded-full border p-1 backdrop-blur-xl ${chip}`}>
-          <button
-            type="button"
-            onClick={onNewConversation}
-            className={iconBtn}
-            aria-label={tr('Nouvelle conversation', 'محادثة جديدة')}
-            title={tr('Nouvelle conversation', 'محادثة جديدة')}
-          >
-            <PenSquare className="h-7 w-7" />
-          </button>
-          <button
-            type="button"
-            onClick={onOpenMenu}
-            className={iconBtn}
-            aria-label={tr('Plus d’options', 'المزيد')}
-            title={tr('Plus d’options', 'المزيد')}
-          >
-            <MoreVertical className="h-7 w-7" />
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className={`${iconBtn} ${chip} backdrop-blur-xl`}
+          aria-label={tr('Fermer SONIM', 'إغلاق SONIM')}
+          title={tr('Fermer SONIM', 'إغلاق SONIM')}
+        >
+          <X className="h-7 w-7" />
+        </button>
       </div>
     </div>
   );

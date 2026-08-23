@@ -804,7 +804,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         <AssistantHeader
           isDark={isDark}
           onOpenMenu={() => navigation.pushLayer({ id: 'assistant:menu' })}
-          onNewConversation={resetConversation}
+          onClose={handleCloseAssistant}
         />
 
         {isBooting ? (
