@@ -644,14 +644,14 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         ) : (
           /* ===== الشاشة الرئيسية ===== */
           <div className="flex flex-1 flex-col">
-            {/* زر رجوع بسيط أعلى اليسار — مثل الصورة المرجعية */}
-            <button type="button" onClick={onClose} aria-label={tr('Retour', 'رجوع')} className="-ms-2.5 grid h-11 w-11 place-items-center text-ink transition hover:opacity-70">
+            {/* زر رجوع عائم — لا يستهلك مساحة عمودية */}
+            <button type="button" onClick={onClose} aria-label={tr('Retour', 'رجوع')} className="absolute start-2 top-2.5 z-10 grid h-10 w-10 place-items-center text-ink transition hover:opacity-70">
               <ArrowLeft className={`h-6 w-6 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />
             </button>
 
             {/* شعار بارز في الوسط — بدون مربع */}
-            <img src="/media/logo-ayrovi.png" alt="AYROVI" className="mx-auto mt-3 h-[76px] w-auto object-contain" />
-            <h1 className="mt-6 text-center font-display text-[27px] font-black leading-9 tracking-[-0.02em] text-ink">{tr('Bienvenue chez AYROVI', 'مرحباً بك في AYROVI')}</h1>
+            <img src="/media/logo-ayrovi.png" alt="AYROVI" className="mx-auto h-[68px] w-auto object-contain" />
+            <h1 className="mt-3 text-center font-display text-[26px] font-black leading-8 tracking-[-0.02em] text-ink">{tr('Bienvenue chez AYROVI', 'مرحباً بك في AYROVI')}</h1>
             <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Connectez-vous ou créez votre compte en quelques secondes.', 'سجّل دخولك أو أنشئ حسابك في ثوانٍ معدودة.')}</p>
 
             {/* أزرار التواصل الاجتماعي */}
