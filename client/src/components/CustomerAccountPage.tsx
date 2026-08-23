@@ -598,8 +598,8 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const appleStartHref = `/api/customer/auth/apple/start?${oauthQuery}`;
   const authPanel = (
     /* صفحة الدخول/التسجيل — تصميم فخم على نمط المتاجر الكبرى */
-    <div className="flex min-h-full flex-col bg-white">
-      <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-6 pb-5 pt-5">
+    <div className="relative flex min-h-full flex-col bg-white">
+      <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-6 pb-5 pt-6">
         {otpOpen && challengeId ? (
           /* ===== شاشة رمز التحقق ===== */
           <form onSubmit={verifyCode} className="flex flex-1 flex-col">
@@ -608,7 +608,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             </button>
             <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-brand/10 text-brand"><Phone className="h-8 w-8" aria-hidden /></div>
             <h1 className="mt-5 text-center text-[26px] font-black leading-9 tracking-[-0.02em] text-ink">{tr('Entrez votre code', 'أدخل رمز التحقق')}</h1>
-            <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Code envoyé au', 'أُرسل الرمز إلى')} <strong className="text-ink">{maskedPhone}</strong></p>
+            <p className="mt-1 text-center text-sm leading-6 text-muted">{tr('Code envoyé au', 'أُرسل الرمز إلى')} <strong className="text-ink">{maskedPhone}</strong></p>
             {error && <div className="mt-5 border border-danger/20 bg-danger/5 px-4 py-3 text-center text-sm font-bold text-danger">{error}</div>}
             <div className="mt-6">
               <Field label={tr('Code à 6 chiffres', 'رمز من 6 أرقام')}>
@@ -655,7 +655,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Connectez-vous ou créez votre compte en quelques secondes.', 'سجّل دخولك أو أنشئ حسابك في ثوانٍ معدودة.')}</p>
 
             {/* أزرار التواصل الاجتماعي */}
-            <div className="mt-7 grid grid-cols-3 gap-3">
+            <div className="mt-6 grid grid-cols-3 gap-3">
               <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} title={googleEnabled ? undefined : tr('Google sera disponible après sa configuration.', 'سيتاح Google بعد إعداده.')} className={`group flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${googleEnabled ? '' : 'pointer-events-none opacity-40'}`}>
                 <FcGoogle size={26} aria-hidden />
               </a>
@@ -668,14 +668,14 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             </div>
 
             {/* فاصل */}
-            <div className="my-7 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.16em] text-muted">
+            <div className="my-5 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.16em] text-muted">
               <span className="h-px flex-1 bg-line" />
               {tr('ou par e-mail', 'أو عبر البريد الإلكتروني')}
               <span className="h-px flex-1 bg-line" />
             </div>
 
             {/* مبدّل دخول/تسجيل */}
-            <div className="mb-5 grid grid-cols-2 rounded-full border border-line bg-surface p-1">
+            <div className="mb-4 grid grid-cols-2 rounded-full border border-line bg-surface p-1">
               {(['login', 'register'] as const).map((mode) => (
                 <button key={mode} type="button" onClick={() => { setEmailMode(mode); setError(''); }}
                   className={`h-10 rounded-full text-[13px] font-black transition ${emailMode === mode ? 'bg-white text-ink shadow-card' : 'text-muted hover:text-ink'}`}>
@@ -724,13 +724,13 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             )}
 
             {/* خيار الهاتف */}
-            <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-login' })} className="mt-6 flex w-full items-center justify-center gap-2 border-t border-line pt-5 text-xs font-black text-brand transition hover:text-accent">
+            <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-login' })} className="mt-5 flex w-full items-center justify-center gap-2 border-t border-line pt-4 text-xs font-black text-brand transition hover:text-accent">
               <Phone className="h-4.5 w-4.5" aria-hidden />
               {tr('Utiliser mon numéro de téléphone (SMS)', 'الدخول برقم الهاتف (SMS)')}
             </button>
 
             {/* تذييل */}
-            <div className="mt-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-line pt-5 text-[11px] text-muted">
+            <div className="mt-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-line pt-4 text-[11px] text-muted">
               <a href="/terms.html" target="_blank" rel="noreferrer" className="hover:text-ink hover:underline">{tr("Conditions d'utilisation", 'شروط الاستخدام')}</a>
               <a href="/privacy.html" target="_blank" rel="noreferrer" className="hover:text-ink hover:underline">{tr('Confidentialité', 'الخصوصية')}</a>
               <span className="inline-flex items-center gap-1"><ShieldCheck className="h-4 w-4 text-success" aria-hidden />{tr('Paiement sécurisé', 'دفع آمن')}</span>
