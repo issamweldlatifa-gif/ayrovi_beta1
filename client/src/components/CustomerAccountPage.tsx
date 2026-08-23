@@ -599,18 +599,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const authPanel = (
     /* صفحة الدخول/التسجيل — تصميم فخم على نمط المتاجر الكبرى */
     <div className="flex min-h-full flex-col bg-white">
-      {/* هيدر نحيفة */}
-      <header className="sticky top-0 z-20 flex h-11 shrink-0 items-center justify-between border-b border-line bg-white/95 px-4 backdrop-blur">
-        <div className="flex items-center gap-2">
-          <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-6.5 w-6.5 object-contain brightness-0" />
-          <strong className="font-display text-[15px] font-black tracking-tight text-ink">AYROVI</strong>
-        </div>
-        <button type="button" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} className="grid h-7.5 w-7.5 place-items-center rounded-full border border-line bg-white text-muted transition hover:border-ink/30 hover:text-ink">
-          <X className="h-4 w-4" aria-hidden />
-        </button>
-      </header>
-
-      <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-6 pb-5 pt-9">
+      <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-6 pb-5 pt-5">
         {otpOpen && challengeId ? (
           /* ===== شاشة رمز التحقق ===== */
           <form onSubmit={verifyCode} className="flex flex-1 flex-col">
@@ -655,10 +644,13 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         ) : (
           /* ===== الشاشة الرئيسية ===== */
           <div className="flex flex-1 flex-col">
-            {/* شعار بارز — أسود فاخر */}
-            <div className="mx-auto grid h-20 w-20 place-items-center overflow-hidden rounded-[26px] bg-black shadow-card">
-              <img src="/media/logo-ayrovi.png" alt="AYROVI" className="h-12 w-12 object-contain brightness-0 invert" />
-            </div>
+            {/* زر رجوع بسيط أعلى اليسار — مثل الصورة المرجعية */}
+            <button type="button" onClick={onClose} aria-label={tr('Retour', 'رجوع')} className="-ms-2.5 grid h-11 w-11 place-items-center text-ink transition hover:opacity-70">
+              <ArrowLeft className={`h-6 w-6 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />
+            </button>
+
+            {/* شعار بارز في الوسط — بدون مربع */}
+            <img src="/media/logo-ayrovi.png" alt="AYROVI" className="mx-auto mt-3 h-[76px] w-auto object-contain" />
             <h1 className="mt-6 text-center font-display text-[27px] font-black leading-9 tracking-[-0.02em] text-ink">{tr('Bienvenue chez AYROVI', 'مرحباً بك في AYROVI')}</h1>
             <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Connectez-vous ou créez votre compte en quelques secondes.', 'سجّل دخولك أو أنشئ حسابك في ثوانٍ معدودة.')}</p>
 
