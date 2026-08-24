@@ -811,3 +811,35 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   .evergreen-hero-content--portrait  { min-height: min(82vh, 800px); }
   .evergreen-hero-content--square    { min-height: min(74vh, 720px); }
 }
+
+/* ============ COMPACT TRUST BAR — 4 عناصر ثابتة في سطر واحد ============ */
+.trust-bar-compact { position: relative; width: 100%; }
+
+.trust-bar-compact__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  padding: 2px 4px;
+  text-align: center;
+}
+
+.trust-bar-compact__icon { display: inline-flex; align-items: center; justify-content: center; }
+
+.trust-bar-compact__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 1024px) {
+  .trust-bar-compact__label { font-size: 13.5px; }
+}

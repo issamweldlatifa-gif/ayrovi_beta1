@@ -140,31 +140,14 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           </div>
         </div>
         <div className={`admin-trustbar-preview ${previewMode}`} style={{ background: settings.background_color, borderTop: '1px solid rgba(255,255,255,0.08)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          {previewMode === 'desktop' ? (
-            <div className="trust-bar__row" style={{ display: 'flex' }}>
-              {previewItems.map((item, index) => (
-                <React.Fragment key={item.id}>
-                  {index > 0 && <span className="trust-bar__divider" style={{ width: 1, alignSelf: 'stretch', background: settings.divider_color }} />}
-                  <div className="trust-bar__item">
-                    <span className="trust-bar__icon">{React.createElement(ICON_COMPONENTS[item.icon] || ShieldCheck, { className: 'h-8 w-8', style: { color: item.iconColor || '#FFFFFF' } })}</span>
-                    <div className="trust-bar__text">
-                      <strong className="trust-bar__title" style={{ color: item.titleColor || settings.title_color }}>{item.title}</strong>
-                      <span className="trust-bar__desc" style={{ color: item.descriptionColor || settings.description_color }}>{item.description}</span>
-                    </div>
-                  </div>
-                </React.Fragment>
-              ))}
-            </div>
-          ) : (
-            <div className="trust-bar__item" style={{ minWidth: 240 }}>
-              <span className="trust-bar__icon">{React.createElement(ICON_COMPONENTS[previewItems[0]?.icon] || ShieldCheck, { className: 'h-7 w-7', style: { color: previewItems[0]?.iconColor || '#FFFFFF' } })}</span>
-              <div className="trust-bar__text">
-                <strong className="trust-bar__title" style={{ color: previewItems[0]?.titleColor || settings.title_color }}>{previewItems[0]?.title}</strong>
-                <span className="trust-bar__desc" style={{ color: previewItems[0]?.descriptionColor || settings.description_color }}>{previewItems[0]?.description}</span>
+          <div className="mx-auto grid grid-cols-4" style={{ gap: 0, padding: previewMode === 'mobile' ? '10px 8px' : '14px 18px' }}>
+            {previewItems.slice(0, 4).map((item, index) => (
+              <div key={item.id} className="trust-bar-compact__item">
+                <span className="trust-bar-compact__icon">{React.createElement(ICON_COMPONENTS[item.icon] || ShieldCheck, { className: previewMode === 'mobile' ? 'h-[22px] w-[22px]' : 'h-6 w-6', style: { color: item.iconColor || '#FFFFFF' } })}</span>
+                <span className="trust-bar-compact__label" style={{ color: item.titleColor || settings.title_color }}>{item.title}</span>
               </div>
-              <span style={{ marginInlineStart: 'auto', color: settings.accent_color, fontSize: 11, fontWeight: 700 }}>{previewItems.length} avantages — glissez sur le site</span>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </section>
 

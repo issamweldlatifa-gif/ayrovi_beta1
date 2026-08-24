@@ -800,6 +800,17 @@ export class QatafoDatabase {
     this.db.exec(HERO_VISUALS_TABLE_SQL);
 
     // AYROVI Trust Bar — العناصر والإعدادات العامة
+    // COMPACT TRUST BAR: ترحيل البذر القديم إلى العناوين المختصرة وحذف العنصر الخامس
+    this.db.transaction(() => {
+      const remap: Array<[string, string]> = [
+        ['Produits authentiques', 'Authentique'],
+        ['Dédouanement inclus', 'Dédouanement'],
+        ['Acompte sécurisé 20 %', 'Acompte 20%'],
+        ['Livraison rapide', 'Livraison rapide'],
+      ];
+      for (const [oldTitle, newTitle] of remap) this.run('UPDATE trust_bar_items SET title=?,updated_at=? WHERE title=?', newTitle, new Date().toISOString(), oldTitle)
+      this.run("DELETE FROM trust_bar_items WHERE title='Service client 7j/7' OR title='Service client 7j/7 '");
+    })();
     this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_items (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -831,11 +842,10 @@ export class QatafoDatabase {
       const insertTrust = this.db.prepare('INSERT INTO trust_bar_items (id,title,description,icon,enabled,sort_order,created_at,updated_at) VALUES (?,?,?,?,1,?,?,?)');
       this.db.transaction(() => {
         [
-          ['Produits authentiques', 'Achetés auprès des boutiques officielles', 'ShieldCheck'],
-          ['Dédouanement inclus', 'Toutes les démarches prises en charge', 'Truck'],
-          ['Acompte sécurisé 20 %', 'Pour confirmer votre commande', 'Lock'],
-          ['Livraison rapide', 'Dans les 24 gouvernorats de Tunisie', 'Zap'],
-          ['Service client 7j/7', 'Une assistance à votre écoute', 'MessageCircle'],
+          ['Authentique', 'Produits achetés auprès des boutiques officielles', 'ShieldCheck'],
+          ['Dédouanement', 'Toutes les démarches prises en charge', 'Truck'],
+          ['Acompte 20%', 'Pour confirmer votre commande', 'Lock'],
+          ['Livraison rapide', 'Livraison dans les 24 gouvernorats', 'Zap'],
         ].forEach(([title, description, icon], index) => insertTrust.run(`trust_${randomUUID()}`, title, description, icon, index + 1, seededAt, seededAt));
       })();
     }
