@@ -4,8 +4,6 @@ import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
 import { TrustBar } from './components/TrustBar';
 import { TransitionCard } from './components/TransitionCard';
-import { DiscoveryTabs } from './components/DiscoveryTabs';
-import { FeaturesShowcase } from './components/FeaturesShowcase';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
@@ -411,7 +409,7 @@ export const App: React.FC = () => {
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
-      if (section.id === 'hero') content = <><EvergreenHero /><TrustBar /><div className="pb-14"><TransitionCard /><DiscoveryTabs /><FeaturesShowcase onOpenLens={handleOpenLens} onOpenSonim={() => openAppView('app:assistant')} onOpenTracking={() => { setAccountInitialSection('orders'); openAppView('app:account'); }} /></div></>;
+      if (section.id === 'hero') content = <><EvergreenHero /><TrustBar /><div className="bg-white pb-10"><TransitionCard /></div></>;
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;
