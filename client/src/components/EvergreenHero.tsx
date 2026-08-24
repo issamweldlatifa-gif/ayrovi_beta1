@@ -12,7 +12,7 @@ const HEADLINE_A = 'Vous le voyez.';
 const HEADLINE_B = 'AYROVI vous le livre.';
 const DESCRIPTION = 'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.';
 
-interface HeroAnalysis { luminance: number; brightness: string; dominantColor: string; }
+interface HeroAnalysis { luminance: number; brightness: string; dominantColor: string; orientation?: string; topLuminance?: number; bottomLuminance?: number; }
 
 interface HeroVisual {
   imageUrl: string;
@@ -28,6 +28,8 @@ interface HeroVisual {
   mobileFocalY: number;
   overlayMode: 'AUTO' | 'MANUAL';
   overlayStrength: number | null;
+  orientation?: 'landscape' | 'portrait' | 'square';
+  orientationOverride?: 'AUTO' | 'LANDSCAPE' | 'PORTRAIT';
   analysis: HeroAnalysis | null;
   isDefault: boolean;
 }
@@ -88,6 +90,13 @@ export const EvergreenHero: React.FC = () => {
   const strength = resolveOverlayStrength(visual);
   const dominant = visual.analysis?.dominantColor || '#302926';
 
+  // ===== تكيف الاتجاه: الـHero يتبع الصورة (لا ratio مفروض) =====
+  const orientation = visual.orientation || 'landscape';
+  const topLum = visual.analysis?.topLuminance;
+  const bottomLum = visual.analysis?.bottomLuminance;
+  // موضع النص: فوق المنطقة الأدكن إن توفر التحليل، وإلا الأعلى (الافتراضي الحالي)
+  const textAtBottom = typeof topLum === 'number' && typeof bottomLum === 'number' && bottomLum + 0.08 < topLum;
+
   // طبقة الحماية التكيفية: أعلى أدكن (هيدر + نص) وأسفل متوسط — تحافظ على الصورة ظاهرة
   const overlay = `linear-gradient(180deg, rgba(11,12,16,${(0.38 + strength * 0.32).toFixed(2)}) 0%, rgba(11,12,16,${(strength * 0.42).toFixed(2)}) 46%, rgba(11,12,16,${(strength * 0.8).toFixed(2)}) 100%)`;
   // لمسة atmosphere خفيفة جداً من اللون السائد للصورة (لا تغيّر هوية العلامة)
@@ -139,7 +148,9 @@ export const EvergreenHero: React.FC = () => {
       </div>
 
       {/* ===== المحتوى فوق الصورة — ثابت، بدون CTA ===== */}
-      <div className="evergreen-hero-content relative z-10 mx-auto flex w-full max-w-7xl flex-col justify-start px-6 pb-14 pt-[88px] sm:pt-[104px] lg:px-8 lg:pb-16 lg:pt-[120px]">
+      <div
+        className={`evergreen-hero-content evergreen-hero-content--${orientation} relative z-10 mx-auto flex w-full max-w-7xl flex-col px-6 pb-14 pt-[88px] sm:pt-[104px] lg:px-8 lg:pb-16 lg:pt-[120px] ${textAtBottom ? 'justify-end' : 'justify-start'}`}
+      >
         <div className="relative max-w-xl">
           <span aria-hidden className="mb-4 block h-1 w-24 rounded-full bg-[#FE7003] lg:w-[120px]" />
           <h1 className="evergreen-hero-title hero-anim-up-1 text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.35)]">

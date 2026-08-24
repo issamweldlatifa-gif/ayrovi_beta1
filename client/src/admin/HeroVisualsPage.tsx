@@ -24,6 +24,7 @@ interface HeroVisualRow {
   mobileFocalY?: number;
   overlayMode?: 'AUTO' | 'MANUAL';
   overlayStrength?: number | null;
+  orientationOverride?: 'AUTO' | 'LANDSCAPE' | 'PORTRAIT';
   analysis?: string;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   startDate: string | null;
@@ -58,8 +59,9 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   const [mobileFocalX, setMobileFocalX] = useState(0.5);
   const [mobileFocalY, setMobileFocalY] = useState(0.5);
   const [overlayMode, setOverlayMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
+  const [orientationOverride, setOrientationOverride] = useState<'AUTO' | 'LANDSCAPE' | 'PORTRAIT'>('AUTO');
   const [overlayStrength, setOverlayStrength] = useState(0.3);
-  const [analysis, setAnalysis] = useState<{ luminance: number; brightness: string; dominantColor: string } | null>(null);
+  const [analysis, setAnalysis] = useState<{ luminance: number; brightness: string; dominantColor: string; orientation?: string } | null>(null);
   const [meta, setMeta] = useState<HeroMeta | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
@@ -87,7 +89,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
   const resetForm = () => {
     setFile(null); setMobileFile(null); setAltText(''); setStartDate(''); setEndDate('');
-    setFocalX(0.5); setFocalY(0.5); setMobileFocalX(0.5); setMobileFocalY(0.5); setOverlayMode('AUTO'); setOverlayStrength(0.3); setAnalysis(null); setMeta(null); setPreviewUrl(''); setEditId(null);
+    setFocalX(0.5); setFocalY(0.5); setMobileFocalX(0.5); setMobileFocalY(0.5); setOverlayMode('AUTO'); setOverlayStrength(0.3); setOrientationOverride('AUTO'); setAnalysis(null); setMeta(null); setPreviewUrl(''); setEditId(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -119,6 +121,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       form.append('mobileFocalX', String(mobileFocalX));
       form.append('mobileFocalY', String(mobileFocalY));
       form.append('overlayMode', overlayMode);
+      form.append('orientationOverride', orientationOverride);
       form.append('overlayStrength', overlayMode === 'MANUAL' ? String(overlayStrength) : '');
       const created = await adminApi<any>(editId ? `/hero-visuals/${editId}` : '/hero-visuals', {
         method: editId ? 'PUT' : 'POST',
@@ -272,11 +275,19 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           </div>
           {analysis && (
             <p className="admin-hero-analysis">
-              Analyse auto — luminosité <strong>{analysis.luminance}</strong> ({analysis.brightness === 'dark' ? 'sombre' : analysis.brightness === 'light' ? 'claire' : 'moyenne'})
+              Analyse auto — <strong>orientation détectée : {analysis.orientation === 'portrait' ? 'PORTRAIT 📱' : analysis.orientation === 'square' ? 'SQUARE ◼' : 'LANDSCAPE 🖼'}</strong>
+              · luminosité <strong>{analysis.luminance}</strong> ({analysis.brightness === 'dark' ? 'sombre' : analysis.brightness === 'light' ? 'claire' : 'moyenne'})
               · couleur dominante <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, background: analysis.dominantColor, verticalAlign: 'middle' }} /> <strong>{analysis.dominantColor}</strong>
               {overlayMode === 'AUTO' ? ` · overlay auto ${(analysis.luminance < 0.35 ? 18 : analysis.luminance > 0.6 ? 50 : 32)}%` : ''}
             </p>
           )}
+          <Field label="Orientation du Hero (Auto par défaut — s'adapte à l'image)">
+            <select value={orientationOverride} onChange={(event) => setOrientationOverride(event.target.value as 'AUTO' | 'LANDSCAPE' | 'PORTRAIT')}>
+              <option value="AUTO">AUTO — détection intelligente</option>
+              <option value="LANDSCAPE">LANDSCAPE — forcer Hero large</option>
+              <option value="PORTRAIT">PORTRAIT — forcer Hero vertical</option>
+            </select>
+          </Field>
           {warnings.length > 0 && (
             <ul className="admin-hero-warnings">
               {warnings.map((warning) => <li key={warning}><X size={14} /> {warning}</li>)}
@@ -326,7 +337,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                   <td>
                     {canWrite && (
                       <div className="admin-row-actions">
-                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setOverlayMode(row.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO'); setOverlayStrength(typeof row.overlayStrength === 'number' ? row.overlayStrength : 0.3); try { setAnalysis(row.analysis ? JSON.parse(row.analysis) : null); } catch { setAnalysis(null); } setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
+                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setOverlayMode(row.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO'); setOverlayStrength(typeof row.overlayStrength === 'number' ? row.overlayStrength : 0.3); setOrientationOverride(row.orientationOverride === 'LANDSCAPE' ? 'LANDSCAPE' : row.orientationOverride === 'PORTRAIT' ? 'PORTRAIT' : 'AUTO'); try { setAnalysis(row.analysis ? JSON.parse(row.analysis) : null); } catch { setAnalysis(null); } setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
                         {row.status === 'PUBLISHED'
                           ? <button type="button" title="Dépublier" onClick={() => void unpublish(row)}><X size={16} /></button>
                           : <button type="button" title="Publier" onClick={() => void publish(row)}>✓</button>}

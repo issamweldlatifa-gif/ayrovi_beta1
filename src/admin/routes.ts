@@ -473,6 +473,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     mobileImageUrl: row.mobile_image_url, altText: row.alt_text, focalX: row.focal_x, focalY: row.focal_y,
     mobileFocalX: row.mobile_focal_x ?? 0.5, mobileFocalY: row.mobile_focal_y ?? 0.5,
     overlayMode: row.overlay_mode === 'MANUAL' ? 'MANUAL' : 'AUTO', overlayStrength: row.overlay_strength, analysis: row.analysis_json || '',
+    orientationOverride: row.orientation_override || 'AUTO',
     status: row.status, startDate: row.start_date, endDate: row.end_date, priority: row.priority,
     createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at,
   });
@@ -499,17 +500,18 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       const { startDate, endDate } = normalizeSchedule(req.body.startDate, req.body.endDate);
       const now = new Date().toISOString();
       const priority = Math.min(999, Math.max(0, Number(req.body.priority) || 0));
+      const orientationOverride = ['AUTO', 'LANDSCAPE', 'PORTRAIT'].includes(String(req.body.orientationOverride)) ? String(req.body.orientationOverride) : 'AUTO';
       const overlayMode = req.body.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO';
       const overlayStrength = req.body.overlayStrength === undefined || req.body.overlayStrength === '' || req.body.overlayStrength === null
         ? null : Math.min(1, Math.max(0, Number(req.body.overlayStrength)));
       const analysisJson = JSON.stringify(stored.analysis || null);
       db.run(`INSERT INTO hero_visuals
-        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,mobile_focal_x,mobile_focal_y,overlay_mode,overlay_strength,analysis_json,status,start_date,end_date,priority,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
+        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,mobile_focal_x,mobile_focal_y,overlay_mode,overlay_strength,analysis_json,orientation_override,status,start_date,end_date,priority,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
         id, stored.url, stored.width, stored.height, mobileStored?.url || '', String(req.body.altText || '').slice(0, 200),
         Math.min(1, Math.max(0, Number(req.body.focalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.focalY ?? 0.5))),
         Math.min(1, Math.max(0, Number(req.body.mobileFocalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.mobileFocalY ?? 0.5))),
-        overlayMode, overlayStrength, analysisJson,
+        overlayMode, overlayStrength, analysisJson, orientationOverride,
         startDate, endDate, priority, now, now);
       audit(db, req, 'CREATE', 'HERO', id, null, { image_url: stored.url });
       const row = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', id);
@@ -548,9 +550,12 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       );
       const now = new Date().toISOString();
       const nextOverlayMode = req.body.overlayMode === 'MANUAL' ? 'MANUAL' : req.body.overlayMode === 'AUTO' ? 'AUTO' : (existing.overlay_mode || 'AUTO');
+      const nextOrientationOverride = ['AUTO', 'LANDSCAPE', 'PORTRAIT'].includes(String(req.body.orientationOverride))
+        ? String(req.body.orientationOverride)
+        : (req.body.orientationOverride === undefined ? (existing.orientation_override || 'AUTO') : 'AUTO');
       const nextOverlayStrength = req.body.overlayStrength === undefined ? existing.overlay_strength : (req.body.overlayStrength === '' || req.body.overlayStrength === null ? null : Math.min(1, Math.max(0, Number(req.body.overlayStrength))));
       const analysisJson = newAnalysis ?? (existing.analysis_json || '');
-      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,mobile_focal_x=?,mobile_focal_y=?,overlay_mode=?,overlay_strength=?,analysis_json=?,
+      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,mobile_focal_x=?,mobile_focal_y=?,overlay_mode=?,overlay_strength=?,analysis_json=?,orientation_override=?,
         start_date=?,end_date=?,priority=?,updated_at=? WHERE id=?`,
         imageUrl, imageWidth, imageHeight, mobileImageUrl,
         String(req.body.altText !== undefined ? req.body.altText : existing.alt_text).slice(0, 200),
@@ -558,7 +563,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         Math.min(1, Math.max(0, Number(req.body.focalY !== undefined ? req.body.focalY : existing.focal_y))),
         Math.min(1, Math.max(0, Number(req.body.mobileFocalX !== undefined ? req.body.mobileFocalX : existing.mobile_focal_x ?? 0.5))),
         Math.min(1, Math.max(0, Number(req.body.mobileFocalY !== undefined ? req.body.mobileFocalY : existing.mobile_focal_y ?? 0.5))),
-        nextOverlayMode, nextOverlayStrength, analysisJson,
+        nextOverlayMode, nextOverlayStrength, analysisJson, nextOrientationOverride,
         startDate, endDate,
         Math.min(999, Math.max(0, Number(req.body.priority !== undefined ? req.body.priority : existing.priority))),
         now, existing.id);

@@ -800,3 +800,14 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 @media (min-width: 1024px) {
   .evergreen-hero-content { min-height: min(70vh, 660px); }
 }
+
+/* تكيف الـHero مع اتجاه الصورة — HERO يتبع الصورة لا العكس */
+.evergreen-hero-content--landscape { min-height: clamp(540px, 62vh, 700px); }
+.evergreen-hero-content--portrait  { min-height: clamp(560px, 78vh, 88vh); }
+.evergreen-hero-content--square    { min-height: clamp(540px, 68vh, 740px); }
+
+@media (min-width: 1024px) {
+  .evergreen-hero-content--landscape { min-height: min(70vh, 660px); }
+  .evergreen-hero-content--portrait  { min-height: min(82vh, 800px); }
+  .evergreen-hero-content--square    { min-height: min(74vh, 720px); }
+}

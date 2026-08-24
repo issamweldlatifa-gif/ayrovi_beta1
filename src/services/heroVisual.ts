@@ -31,7 +31,9 @@ export interface ActiveHeroVisual {
   mobileFocalY: number;
   overlayMode: 'AUTO' | 'MANUAL';
   overlayStrength: number | null;
-  analysis: { luminance: number; brightness: string; dominantColor: string } | null;
+  orientation: 'landscape' | 'portrait' | 'square';
+  orientationOverride: 'AUTO' | 'LANDSCAPE' | 'PORTRAIT';
+  analysis: { luminance: number; brightness: string; dominantColor: string; orientation?: string; topLuminance?: number; bottomLuminance?: number } | null;
   publishedAt: string | null;
   isDefault: boolean;
 }
@@ -55,7 +57,9 @@ export const DEFAULT_HERO_VISUAL: ActiveHeroVisual = {
   mobileFocalY: 0.45,
   overlayMode: 'AUTO',
   overlayStrength: null,
-  analysis: { luminance: 0.16, brightness: 'dark', dominantColor: '#302926' },
+  orientation: 'landscape',
+  orientationOverride: 'AUTO',
+  analysis: { luminance: 0.16, brightness: 'dark', dominantColor: '#302926', orientation: 'landscape', topLuminance: 0.14, bottomLuminance: 0.18 },
   publishedAt: null,
   isDefault: true,
 };
@@ -93,6 +97,12 @@ function serializeHeroVisual(row: any): ActiveHeroVisual {
     mobileFocalY: clampFocal(row.mobile_focal_y, 0.5),
     overlayMode: row.overlay_mode === 'MANUAL' ? 'MANUAL' : 'AUTO',
     overlayStrength: row.overlay_strength === null || row.overlay_strength === undefined ? null : Math.min(1, Math.max(0, Number(row.overlay_strength))),
+    orientation: (() => {
+      if (row.orientation_override === 'LANDSCAPE') return 'landscape';
+      if (row.orientation_override === 'PORTRAIT') return 'portrait';
+      try { const parsed = JSON.parse(row.analysis_json || 'null'); return parsed?.orientation || 'landscape'; } catch { return 'landscape'; }
+    })(),
+    orientationOverride: row.orientation_override === 'LANDSCAPE' ? 'LANDSCAPE' : row.orientation_override === 'PORTRAIT' ? 'PORTRAIT' : 'AUTO',
     analysis: (() => { try { const parsed = JSON.parse(row.analysis_json || 'null'); return parsed && typeof parsed.luminance === 'number' ? parsed : null; } catch { return null; } })(),
     publishedAt: row.published_at || null,
     isDefault: false,
@@ -142,21 +152,39 @@ export interface HeroImageAnalysis {
   luminance: number;
   brightness: 'dark' | 'mid' | 'light';
   dominantColor: string;
+  orientation: 'landscape' | 'portrait' | 'square';
+  topLuminance: number;
+  bottomLuminance: number;
 }
 
 /** تحليل تلقائي: luminance + اللون السائد — يحدد الـoverlay والتكيف (AUTO) */
-async function analyzeHeroImage(buffer: Buffer): Promise<HeroImageAnalysis> {
+async function analyzeHeroImage(buffer: Buffer, width: number, height: number): Promise<HeroImageAnalysis> {
   const { data, info } = await sharp(buffer).resize(8, 8, { fit: 'fill' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const pixels = info.width * info.height;
   let red = 0, green = 0, blue = 0;
-  for (let index = 0; index < data.length; index += info.channels) {
-    red += data[index]; green += data[index + 1]; blue += data[index + 2];
+  let topLum = 0, bottomLum = 0;
+  for (let y = 0; y < info.height; y += 1) {
+    const isTop = y < info.height / 2;
+    for (let x = 0; x < info.width; x += 1) {
+      const index = (y * info.width + x) * info.channels;
+      const r = data[index], g = data[index + 1], b = data[index + 2];
+      red += r; green += g; blue += b;
+      const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      if (isTop) topLum += lum; else bottomLum += lum;
+    }
   }
   red /= pixels; green /= pixels; blue /= pixels;
   const hex = (value: number) => Math.round(value).toString(16).padStart(2, '0');
   const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
   const brightness: HeroImageAnalysis['brightness'] = luminance < 0.35 ? 'dark' : luminance > 0.6 ? 'light' : 'mid';
-  return { luminance: Math.round(luminance * 100) / 100, brightness, dominantColor: `#${hex(red)}${hex(green)}${hex(blue)}` };
+  // كشف الاتجاه من الأبعاد الأصلية — لا ratio مفروض على كل الصور
+  const ratio = width / height;
+  const orientation: HeroImageAnalysis['orientation'] = ratio > 1.15 ? 'landscape' : ratio < 0.87 ? 'portrait' : 'square';
+  // إضاءة النصفين — تحدد موضع النص تلقائياً (فوق المنطقة الأدكن)
+  const half = pixels / 2;
+  const topLuminance = Math.round((topLum / half) * 100) / 100;
+  const bottomLuminance = Math.round((bottomLum / half) * 100) / 100;
+  return { luminance: Math.round(luminance * 100) / 100, brightness, dominantColor: `#${hex(red)}${hex(green)}${hex(blue)}`, orientation, topLuminance, bottomLuminance };
 }
 
 /** قوة الـOverlay المحسوبة تلقائياً من الإضاءة */
@@ -198,7 +226,7 @@ export async function storeHeroImage(file: Express.Multer.File, visualId: string
   const fileName = `${baseName}.jpg`;
   fs.writeFileSync(path.join(UPLOADS_DIR, fileName), normalized);
   const srcset = await saveVariants(normalized, baseName);
-  const analysis = await analyzeHeroImage(normalized);
+  const analysis = await analyzeHeroImage(normalized, width, height);
 
   const aspect = width / height;
   const warnings: string[] = [];
