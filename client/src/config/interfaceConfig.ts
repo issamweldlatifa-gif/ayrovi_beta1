@@ -192,7 +192,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   },
   icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#fe7003', size: 28, style: 'outline' },
   navigation: {
-    background: '#ffffff', color: '#111318', activeBackground: '#111318', showLabels: true, height: 80,
+    background: '#ffffff', color: '#111318', activeBackground: '#111318', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },

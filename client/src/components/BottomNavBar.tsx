@@ -14,7 +14,7 @@ interface BottomNavBarProps {
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
-const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-2xl text-[11px] font-extrabold text-[#1d2130] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
+const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-[10px] rounded-2xl text-[11px] font-extrabold text-[#1d2130] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();
@@ -24,8 +24,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
   const iconStyle = (active = false): React.CSSProperties => ({
-    width: iconConfig.size,
-    height: iconConfig.size,
+    width: Math.max(iconConfig.size, 30),
+    height: Math.max(iconConfig.size, 30),
     color: active ? (iconConfig.activeColor || '#fe7003') : (iconConfig.color || '#5b6472'),
     fill: 'none',
   });
@@ -76,11 +76,11 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       )}
 
       <div
-        className={`ayrovi-glass-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1.5 ${isVisible ? 'is-visible' : 'is-hidden'}`}
+        className={`ayrovi-glass-bottom-nav fixed inset-x-0 bottom-0 z-30 border-t px-3 pb-[max(.5rem,env(safe-area-inset-bottom))] pt-1 ${isVisible ? 'is-visible' : 'is-hidden'}`}
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >
-        <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: config.height }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
+        <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span>{config.lensLabel}</span>}
