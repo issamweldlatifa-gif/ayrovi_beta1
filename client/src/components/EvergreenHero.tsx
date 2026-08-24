@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * EVERGREEN HERO — AYROVI
- * المحتوى ثابت حرفياً ولا يُدار من الـ Admin (المواصفة #26):
- * Headline + Description + هوية Black/White/Orange + بلا CTA + بلا Carousel.
- * الـ Visual الوحيد ديناميكي من GET /api/public/hero/active مع Focal Point.
+ * EVERGREEN HERO — AYROVI (refined)
+ * المحتوى ثابت حرفياً: Headline + Description قصير + بلا CTA.
+ * هوية Black / White / Orange فقط. Visual واحد متجاوب مع Focal Point.
  */
 
-const HEADLINE = 'Vous le voyez. AYROVI vous le livre.';
-const DESCRIPTION = 'Mode, beauté, technologie, maison… trouvez votre produit en ligne, envoyez-nous son lien ou sa photo, et AYROVI s’occupe de l’achat, de l’importation et de la livraison.';
+const HEADLINE_A = 'Vous le voyez.';
+const HEADLINE_B = 'AYROVI vous le livre.';
+const DESCRIPTION = 'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.';
 
 interface HeroVisual {
   imageUrl: string;
@@ -59,8 +59,6 @@ export const EvergreenHero: React.FC = () => {
     return () => { cancelled = true; };
   }, []);
 
-  // أبعاد ثابتة لمنع Layout Shift — aspect-ratio محجوز دائماً
-  const aspectDesktop = 'aspect-[4/3] lg:aspect-[16/11]';
   const focal = `${Math.round(visual.focalX * 100)}% ${Math.round(visual.focalY * 100)}%`;
 
   const image = () => {
@@ -95,23 +93,23 @@ export const EvergreenHero: React.FC = () => {
       aria-label="AYROVI — achat international et livraison en Tunisie"
       className="relative -mt-16 w-full bg-[#111217] text-white sm:-mt-20"
     >
-      <div className="mx-auto w-full max-w-7xl px-5 pb-10 pt-24 sm:px-6 sm:pt-28 lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-8 lg:pb-16 lg:pt-16">
-        {/* ===== Copy Area — ثابت ==== */}
-        <div className="hero-copy-area relative z-10 order-1 lg:max-w-xl">
-          <span aria-hidden className="mb-5 block h-1 w-14 rounded-full bg-[#FE7003]" />
-          <h1 className="evergreen-hero-title text-white">
-            Vous le voyez.
+      <div className="mx-auto w-full max-w-7xl px-6 pb-6 pt-[72px] sm:pt-24 lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-8 lg:pb-16 lg:pt-16">
+        {/* ===== Copy Area — ثابت، بدون CTA ===== */}
+        <div className="relative z-10 order-1 lg:max-w-xl">
+          <span aria-hidden className="mb-4 block h-1 w-24 rounded-full bg-[#FE7003] sm:w-28 lg:mb-5 lg:w-[120px]" />
+          <h1 className="evergreen-hero-title hero-anim-up-1 text-white">
+            {HEADLINE_A}
             <br />
             <span className="text-[#FE7003]">AYROVI</span> vous le livre.
           </h1>
-          <p className="evergreen-hero-desc mt-5 max-w-lg font-medium text-white/70 lg:mt-6">
+          <p className="evergreen-hero-desc hero-anim-up-2 mt-5 max-w-[640px] font-medium text-white/75 lg:mt-6">
             {DESCRIPTION}
           </p>
         </div>
 
-        {/* ===== Hero Visual — واحد فقط، متجاوب، Focal Point ==== */}
-        <figure className="order-2 mt-8 w-full lg:mt-0">
-          <div className={`hero-visual-frame relative w-full overflow-hidden rounded-2xl bg-[#1b1c23] ${aspectDesktop}`}>
+        {/* ===== Hero Visual — واحد فقط، متجاوب، Focal Point ===== */}
+        <figure className="order-2 mt-7 w-full lg:mt-0">
+          <div className="hero-anim-fade-3 relative aspect-[16/9] w-full overflow-hidden rounded-[24px] bg-[#1b1c23] lg:aspect-[16/11] lg:rounded-[28px]">
             <span aria-hidden className="pointer-events-none absolute -inset-x-8 -bottom-10 top-1/2 z-[1] rounded-full bg-[#FE7003]/10 blur-3xl" />
             {image()}
           </div>

@@ -687,17 +687,41 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .heart-pop { animation: heartPop 320ms cubic-bezier(0.22, 0.61, 0.36, 1); }
 
 /* ============ EVERGREEN HERO — قواعد غير طبقية لضمان العلوية على typography.css ============ */
+/* مواصفة HERO REFINEMENT: عنوان 40–48 موبايل / 56–72 ديسكتوب بclamp */
 .evergreen-hero-title {
-  font-size: clamp(32px, 2.6vw + 25px, 56px) !important;
-  line-height: 1.04 !important;
+  font-size: clamp(40px, 2.2vw + 31px, 68px) !important;
+  line-height: 1.06 !important;
   letter-spacing: -0.03em !important;
   font-weight: 900 !important;
 }
 
+/* وصف 16–18px بارتفاع سطر 1.5–1.65 */
 .evergreen-hero-desc {
-  font-size: clamp(14px, 0.4vw + 13px, 17px) !important;
-  line-height: 1.75 !important;
+  font-size: clamp(16px, 0.3vw + 15px, 18px) !important;
+  line-height: 1.6 !important;
 }
+
+/* حركات خفيفة متتابعة: Fade Up للنصوص ثم Fade In للصورة */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hero-anim-up-1 { animation: heroFadeUp 520ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.hero-anim-up-2 { animation: heroFadeUp 520ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both; }
+.hero-anim-fade-3 { animation: heroFadeIn 640ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
+
+/* أيقونات الهيدر فوق الـ Hero: بيضاء واضحة بstroke موحّد 2px + hover برتقالي */
+.public-site-header .ayrovi-icon { stroke-width: 2px; }
+.public-site-header.is-over-hero .public-site-header-icon:hover,
+.public-site-header.is-over-hero .public-site-header-icon:focus-visible,
+.public-site-header.is-over-hero .public-site-header-icon:active { color: #FE7003 !important; }
+.public-site-header.is-over-hero .public-site-header-icon { color: #fff !important; }
 
 /* الهيدر فوق الـ Hero: شفاف تماماً بلا زجاجية — بخصوصية أعلى من قاعدة public-site-header */
 .public-site-header.is-over-hero {

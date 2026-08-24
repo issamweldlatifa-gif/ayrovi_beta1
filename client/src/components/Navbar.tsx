@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     };
   }, []);
 
-  const iconButtonClass = overHero ? 'text-white hover:bg-white/10' : undefined;
+  const iconButtonClass = overHero ? 'public-site-header-icon' : undefined;
 
   return (
     <header
@@ -79,10 +79,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             size="icon"
             onClick={onOpenAccount}
             className={`relative ${iconButtonClass ?? ''}`}
-            aria-label={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
+            aria-label={tr('Ouvrir mon espace', 'فتح فضائي')}
             title={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
           >
-            <User className="h-7 w-7" />
+            <User className="h-6 w-6" />
             {isAuthenticated && <span className="absolute bottom-2 end-2 h-2.5 w-2.5 rounded-full border-2 border-white bg-brand" />}
           </Button>
         </div>
