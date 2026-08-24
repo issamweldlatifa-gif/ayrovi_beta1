@@ -62,12 +62,15 @@ export const DiscoveryHub: React.FC = () => {
   const article = home?.news?.[0];
 
   return (
-    <section aria-label="Discovery AYROVI" className="mx-5 mt-14 sm:mx-6 lg:mx-auto lg:mt-16 lg:max-w-7xl lg:px-8">
-      {/* مقدمة تحريرية مضغوطة */}
-      <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#FF7A00]">DISCOVERY</p>
-      <h2 className="mt-1.5 text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[26px]">Ce qui mérite votre attention.</h2>
+    <section aria-label="Discovery AYROVI" className="mt-14 lg:mt-16">
+      <div className="mx-5 sm:mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
+        {/* مقدمة تحريرية مضغوطة */}
+        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#FF7A00]">DISCOVERY</p>
+        <h2 className="mt-1.5 text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[26px]">Ce qui mérite votre attention.</h2>
+      </div>
 
       {/* التبويبات: سطر واحد، تمرير أفقي بلا scrollbar، خط برتقالي للنشط */}
+      <div className="mx-5 sm:mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
       <div role="tablist" aria-label="Discovery AYROVI" onKeyDown={onKeyDown} className="no-scrollbar -mx-5 mt-6 flex gap-6 overflow-x-auto px-5 sm:mx-0 sm:px-0">
         {TABS.map((tab) => (
           <button
@@ -86,27 +89,33 @@ export const DiscoveryHub: React.FC = () => {
         ))}
       </div>
 
-      {/* منطقة المحتوى الديناميكية — المعاينة النشطة فقط */}
+      </div>
+
+      {/* منطقة المحتوى الديناميكية — المعاينة النشطة فقط بعرض الصفحة كاملاً */}
       <div className="discovery-panel mt-6" key={active} role="tabpanel" aria-label={TABS.find((tab) => tab.key === active)?.label}>
 
         {/* ARRIVAGES — اكتشاف منتجات: صف صور مضغوط */}
         {active === 'arrivages' && (
           <div>
-            <div className="overflow-hidden rounded-[20px] border border-line bg-white">
-              <img src={media(products[0]?.image || home?.arrivals?.[0]?.main_image, heroFemme)} alt={products[0]?.name || 'Arrivages AYROVI'} className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]" />
+            <div className="relative overflow-hidden bg-white">
+              <img src={media(products[0]?.image || home?.arrivals?.[0]?.main_image, heroFemme)} alt={products[0]?.name || 'Arrivages AYROVI'} className="aspect-[4/3] w-full object-cover sm:aspect-[21/10]" />
+              <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-[#FF7A00]" />
             </div>
-            <h3 className="mt-5 text-[20px] font-bold leading-snug tracking-[-0.01em] text-ink sm:text-[24px]">Les nouveautés viennent d’arriver.</h3>
+            <div className="px-5 sm:px-8">
+              <h3 className="mt-5 text-[20px] font-bold leading-snug tracking-[-0.01em] text-ink sm:text-[24px]">Les nouveautés viennent d’arriver.</h3>
             <p className="mt-2 max-w-lg text-[14px] leading-[1.6] text-muted sm:text-[15px]">Découvrez une sélection de produits récemment disponibles.</p>
-            <Cta onClick={() => open('arrivals')}>Explorer les arrivages →</Cta>
+              <Cta onClick={() => open('arrivals')}>Explorer les arrivages →</Cta>
+            </div>
           </div>
         )}
 
         {/* PROMOTIONS — عرض واحد مضغوط (معالجة مختلفة تماماً) */}
         {active === 'promotions' && (
-          <div className="overflow-hidden rounded-[20px] border border-line bg-white">
+          <div className="relative overflow-hidden bg-white">
             <div className="relative">
               <img src={media(promo?.image, heroHomme)} alt={promo?.name || 'Offre du moment'} className="aspect-[16/10] w-full object-cover sm:aspect-[16/9]" loading="lazy" />
-              <span className="absolute bottom-3 start-3 rounded-full bg-[#FF7A00] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">OFFRE DU MOMENT</span>
+              <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-[#FF7A00]" />
+              <span className="absolute bottom-3 start-4 rounded-full bg-[#FF7A00] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">OFFRE DU MOMENT</span>
             </div>
             <div className="p-5">
               <h3 className="text-[18px] font-bold leading-snug text-ink sm:text-[21px]">{promo?.name || 'Les offres AYROVI'}</h3>
@@ -120,7 +129,7 @@ export const DiscoveryHub: React.FC = () => {
         {/* COMMUNAUTÉ — بطاقات Reels رأسية (نظام الستوريز القائم) */}
         {active === 'communaute' && (
           <div>
-            <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+            <div className="no-scrollbar flex gap-3 overflow-x-auto">
               {(stories.length ? stories : [{ id: 'r1', media_url: heroFemme, title: 'Sélection communauté' }, { id: 'r2', media_url: heroHomme, title: 'Découverte' }, { id: 'r3', media_url: heroEnfants, title: 'Style du jour' }]).map((story: any, index: number) => (
                 <div key={story.id || index} className="relative aspect-[9/16] w-[64%] shrink-0 overflow-hidden rounded-[18px] bg-[#111217] sm:w-[240px]">
                   <img src={media(story.media_url, heroFemme)} alt={story.title || ''} className="absolute inset-0 h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
@@ -137,7 +146,7 @@ export const DiscoveryHub: React.FC = () => {
 
         {/* MAGAZINE — قصة تحريرية بعرض كامل */}
         {active === 'magazine' && (
-          <div className="relative overflow-hidden rounded-[20px] bg-[#111217]">
+          <div className="relative overflow-hidden bg-[#111217]">
             <img src={media(article?.image, heroFemme)} alt={article?.title || 'Magazine AYROVI'} className="aspect-[4/3] w-full object-cover opacity-95 sm:aspect-[21/10]" loading="lazy" />
             <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
             <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">

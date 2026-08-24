@@ -689,7 +689,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 /* ============ EVERGREEN HERO — قواعد غير طبقية لضمان العلوية على typography.css ============ */
 /* مواصفة HERO REFINEMENT: عنوان 40–48 موبايل / 56–72 ديسكتوب بclamp */
 .evergreen-hero-title {
-  font-size: clamp(40px, 2.2vw + 31px, 68px) !important;
+  font-size: clamp(42px, 2.4vw + 34px, 72px) !important;
   line-height: 1.06 !important;
   letter-spacing: -0.03em !important;
   font-weight: 900 !important;
@@ -795,11 +795,11 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 
 
 /* الـHero يتبع نسبة أبعاد الصورة: height = clamp(حد أدنى للنص، 100vw/ratio، حد أقصى) */
-.evergreen-hero-section { height: clamp(360px, calc(100vw / var(--hero-ratio, 1.6)), 86vh); min-height: -moz-fit-content; min-height: fit-content; }
+.evergreen-hero-section { height: clamp(480px, calc(100vw / var(--hero-ratio, 1.6) * 1.5), 88vh); min-height: -moz-fit-content; min-height: fit-content; }
 .evergreen-hero-content { height: 100%; }
 
 @media (min-width: 1024px) {
-  .evergreen-hero-section { height: clamp(460px, calc(60vw / var(--hero-ratio, 1.6)), 82vh); min-height: -moz-fit-content; min-height: fit-content; }
+  .evergreen-hero-section { height: clamp(500px, calc(75vw / var(--hero-ratio, 1.6)), 84vh); min-height: -moz-fit-content; min-height: fit-content; }
 }
 
 /* ============ COMPACT TRUST BAR — 4 عناصر ثابتة في سطر واحد ============ */

@@ -149,7 +149,7 @@ export const EvergreenHero: React.FC = () => {
 
       {/* ===== المحتوى فوق الصورة — ثابت، بدون CTA ===== */}
       <div
-        className={`evergreen-hero-content relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-6 pb-10 pt-[80px] sm:pt-[96px] lg:px-8 lg:pb-12 lg:pt-[104px] ${textAtBottom ? 'justify-end' : 'justify-start'}`}
+        className={`evergreen-hero-content relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 pb-12 pt-[96px] sm:pt-[104px] lg:px-8 lg:pb-14 lg:pt-[120px] ${textAtBottom ? 'justify-end' : 'justify-center'}`}
       >
         <div className="relative max-w-xl">
           <span aria-hidden className="mb-4 block h-1 w-24 rounded-full bg-[#FE7003] lg:w-[120px]" />
