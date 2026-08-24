@@ -800,17 +800,6 @@ export class QatafoDatabase {
     this.db.exec(HERO_VISUALS_TABLE_SQL);
 
     // AYROVI Trust Bar — العناصر والإعدادات العامة
-    // COMPACT TRUST BAR: ترحيل البذر القديم إلى العناوين المختصرة وحذف العنصر الخامس
-    this.db.transaction(() => {
-      const remap: Array<[string, string]> = [
-        ['Produits authentiques', 'Authentique'],
-        ['Dédouanement inclus', 'Dédouanement'],
-        ['Acompte sécurisé 20 %', 'Acompte 20%'],
-        ['Livraison rapide', 'Livraison rapide'],
-      ];
-      for (const [oldTitle, newTitle] of remap) this.run('UPDATE trust_bar_items SET title=?,updated_at=? WHERE title=?', newTitle, new Date().toISOString(), oldTitle)
-      this.run("DELETE FROM trust_bar_items WHERE title='Service client 7j/7' OR title='Service client 7j/7 '");
-    })();
     this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_items (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
@@ -849,6 +838,17 @@ export class QatafoDatabase {
         ].forEach(([title, description, icon], index) => insertTrust.run(`trust_${randomUUID()}`, title, description, icon, index + 1, seededAt, seededAt));
       })();
     }
+    // COMPACT TRUST BAR: ترحيل البذر القديم إلى العناوين المختصرة وحذف العنصر الخامس
+    this.db.transaction(() => {
+      const remap: Array<[string, string]> = [
+        ['Produits authentiques', 'Authentique'],
+        ['Dédouanement inclus', 'Dédouanement'],
+        ['Acompte sécurisé 20 %', 'Acompte 20%'],
+        ['Livraison rapide', 'Livraison rapide'],
+      ];
+      for (const [oldTitle, newTitle] of remap) this.run('UPDATE trust_bar_items SET title=?,updated_at=? WHERE title=?', newTitle, new Date().toISOString(), oldTitle)
+      this.run("DELETE FROM trust_bar_items WHERE title='Service client 7j/7' OR title='Service client 7j/7 '");
+    })();
     if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
       const seededAt = new Date().toISOString();
       const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
