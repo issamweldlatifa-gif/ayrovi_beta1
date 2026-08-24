@@ -792,24 +792,14 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 
 .trust-bar__scroller::-webkit-scrollbar { display: none; }
 
-/* FULL-BLEED HERO — ارتفاع مرن مضغوط (موبايل أولاً)، الصورة مطلقة تغطي الكل */
-.evergreen-hero-content {
-  min-height: clamp(540px, 62vh, 700px);
-}
+
+
+/* الـHero يتبع نسبة أبعاد الصورة: height = clamp(حد أدنى للنص، 100vw/ratio، حد أقصى) */
+.evergreen-hero-section { height: clamp(360px, calc(100vw / var(--hero-ratio, 1.6)), 86vh); min-height: -moz-fit-content; min-height: fit-content; }
+.evergreen-hero-content { height: 100%; }
 
 @media (min-width: 1024px) {
-  .evergreen-hero-content { min-height: min(70vh, 660px); }
-}
-
-/* تكيف الـHero مع اتجاه الصورة — HERO يتبع الصورة لا العكس */
-.evergreen-hero-content--landscape { min-height: clamp(540px, 62vh, 700px); }
-.evergreen-hero-content--portrait  { min-height: clamp(560px, 78vh, 88vh); }
-.evergreen-hero-content--square    { min-height: clamp(540px, 68vh, 740px); }
-
-@media (min-width: 1024px) {
-  .evergreen-hero-content--landscape { min-height: min(70vh, 660px); }
-  .evergreen-hero-content--portrait  { min-height: min(82vh, 800px); }
-  .evergreen-hero-content--square    { min-height: min(74vh, 720px); }
+  .evergreen-hero-section { height: clamp(460px, calc(60vw / var(--hero-ratio, 1.6)), 82vh); min-height: -moz-fit-content; min-height: fit-content; }
 }
 
 /* ============ COMPACT TRUST BAR — 4 عناصر ثابتة في سطر واحد ============ */
@@ -903,4 +893,51 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 
 @media (prefers-reduced-motion: reduce) {
   .transition-card-fade, .discovery-panel { animation: none; }
+}
+
+/* ============ BRANDS SHOWCASE — marquee بطيء ambient ============ */
+.brands-marquee { position: relative; width: 100%; }
+
+.brands-marquee__track {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  animation: brandsMarquee 48s linear infinite;
+}
+
+.brands-marquee:hover .brands-marquee__track { animation-play-state: paused; }
+
+@keyframes brandsMarquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.brand-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 108px;
+  padding: 14px 10px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(17, 18, 23, 0.08);
+  background: #fff;
+  transition: border-color 250ms ease, transform 250ms ease;
+  flex-shrink: 0;
+}
+
+.brand-tile:hover { border-color: rgba(255, 122, 0, 0.45); transform: translateY(-2px); }
+
+.brand-tile__logo { display: grid; place-items: center; width: 100%; height: 34px; }
+.brand-tile__logo img { max-height: 34px; max-width: 84px; object-fit: contain; }
+.brand-tile__letter { font-size: 18px; font-weight: 900; color: #111318; }
+
+.brand-tile__name { font-size: 12.5px; font-weight: 700; color: #111318; text-align: center; }
+.brand-tile__cat { font-size: 10.5px; font-weight: 500; color: #6b7280; }
+
+@media (prefers-reduced-motion: reduce) {
+  .brands-marquee__track { animation: none; }
+  .brands-marquee { overflow-x: auto; scrollbar-width: none; }
+  .brands-marquee::-webkit-scrollbar { display: none; }
 }

@@ -92,12 +92,8 @@ export const DiscoveryHub: React.FC = () => {
         {/* ARRIVAGES — اكتشاف منتجات: صف صور مضغوط */}
         {active === 'arrivages' && (
           <div>
-            <div className="grid grid-cols-3 gap-3">
-              {(products.length ? products : [{ id: 'f1', image: heroFemme }, { id: 'f2', image: heroHomme }, { id: 'f3', image: heroEnfants }]).map((product: any, index: number) => (
-                <div key={product.id || index} className="overflow-hidden rounded-2xl border border-line bg-white">
-                  <img src={media(product.image, heroFemme)} alt={product.name || ''} className="aspect-[4/5] w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
-                </div>
-              ))}
+            <div className="overflow-hidden rounded-[20px] border border-line bg-white">
+              <img src={media(products[0]?.image || home?.arrivals?.[0]?.main_image, heroFemme)} alt={products[0]?.name || 'Arrivages AYROVI'} className="aspect-[4/3] w-full object-cover sm:aspect-[16/9]" />
             </div>
             <h3 className="mt-5 text-[20px] font-bold leading-snug tracking-[-0.01em] text-ink sm:text-[24px]">Les nouveautés viennent d’arriver.</h3>
             <p className="mt-2 max-w-lg text-[14px] leading-[1.6] text-muted sm:text-[15px]">Découvrez une sélection de produits récemment disponibles.</p>
@@ -109,7 +105,7 @@ export const DiscoveryHub: React.FC = () => {
         {active === 'promotions' && (
           <div className="overflow-hidden rounded-[20px] border border-line bg-white">
             <div className="relative">
-              <img src={media(promo?.image, heroHomme)} alt={promo?.name || 'Offre du moment'} className="aspect-[16/9] w-full object-cover" loading="lazy" />
+              <img src={media(promo?.image, heroHomme)} alt={promo?.name || 'Offre du moment'} className="aspect-[16/10] w-full object-cover sm:aspect-[16/9]" loading="lazy" />
               <span className="absolute bottom-3 start-3 rounded-full bg-[#FF7A00] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">OFFRE DU MOMENT</span>
             </div>
             <div className="p-5">
@@ -126,7 +122,7 @@ export const DiscoveryHub: React.FC = () => {
           <div>
             <div className="no-scrollbar -mx-5 flex gap-3 overflow-x-auto px-5 sm:mx-0 sm:px-0">
               {(stories.length ? stories : [{ id: 'r1', media_url: heroFemme, title: 'Sélection communauté' }, { id: 'r2', media_url: heroHomme, title: 'Découverte' }, { id: 'r3', media_url: heroEnfants, title: 'Style du jour' }]).map((story: any, index: number) => (
-                <div key={story.id || index} className="relative aspect-[9/16] w-[44%] shrink-0 overflow-hidden rounded-[18px] bg-[#111217] sm:w-[200px]">
+                <div key={story.id || index} className="relative aspect-[9/16] w-[64%] shrink-0 overflow-hidden rounded-[18px] bg-[#111217] sm:w-[240px]">
                   <img src={media(story.media_url, heroFemme)} alt={story.title || ''} className="absolute inset-0 h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
                   <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <span aria-hidden className="absolute left-1/2 top-1/2 grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-lg text-ink">▶</span>

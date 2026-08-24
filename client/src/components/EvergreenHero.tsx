@@ -138,7 +138,7 @@ export const EvergreenHero: React.FC = () => {
       id="home-hero"
       aria-label="AYROVI — achat international et livraison en Tunisie"
       className="evergreen-hero-section relative -mt-16 w-full overflow-hidden bg-[#111217] text-white sm:-mt-20"
-      style={positionVars}
+      style={{ ...positionVars, '--hero-ratio': String(visual.imageWidth && visual.imageHeight ? visual.imageWidth / visual.imageHeight : 1.6) } as React.CSSProperties}
     >
       {/* ===== طبقة الصورة — الصورة هي الـHero (Full-Bleed) ===== */}
       <div className="absolute inset-0" aria-hidden={false}>
@@ -149,7 +149,7 @@ export const EvergreenHero: React.FC = () => {
 
       {/* ===== المحتوى فوق الصورة — ثابت، بدون CTA ===== */}
       <div
-        className={`evergreen-hero-content evergreen-hero-content--${orientation} relative z-10 mx-auto flex w-full max-w-7xl flex-col px-6 pb-14 pt-[88px] sm:pt-[104px] lg:px-8 lg:pb-16 lg:pt-[120px] ${textAtBottom ? 'justify-end' : 'justify-start'}`}
+        className={`evergreen-hero-content relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col px-6 pb-10 pt-[80px] sm:pt-[96px] lg:px-8 lg:pb-12 lg:pt-[104px] ${textAtBottom ? 'justify-end' : 'justify-start'}`}
       >
         <div className="relative max-w-xl">
           <span aria-hidden className="mb-4 block h-1 w-24 rounded-full bg-[#FE7003] lg:w-[120px]" />
