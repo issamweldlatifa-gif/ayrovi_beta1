@@ -89,7 +89,7 @@ export const LensHero: React.FC<{ onOpenLens?: () => void }> = ({ onOpenLens }) 
   const focal = `${Math.round(data.focalX * 100)}% ${Math.round(data.focalY * 100)}%`;
 
   return (
-    <section aria-label="AYROVIX Lens" className="lens-hero mt-14 lg:mt-16" style={{ marginInline: '12px' }}>
+    <section aria-label="AYROVIX Lens" className="lens-hero mt-20 lg:mt-24" style={{ marginInline: '24px' }}>
       <div
         className="lens-hero__bg relative overflow-hidden rounded-[24px] lg:rounded-[28px]"
         style={{ background: data.bgType === 'IMAGE' && data.bgImage ? undefined : data.bgColor }}
@@ -105,7 +105,7 @@ export const LensHero: React.FC<{ onOpenLens?: () => void }> = ({ onOpenLens }) 
           {/* المحتوى */}
           <div className="lens-hero__content order-1 max-w-xl">
             <p className="text-[11px] font-black uppercase tracking-[0.24em] text-[#FF7A00]">{data.eyebrow}</p>
-            <h2 className="lens-hero__title mt-2.5 text-[30px] font-black leading-[1.08] tracking-[-0.03em] text-ink sm:text-[36px] lg:text-[44px]">
+            <h2 className="lens-hero__title ay-edit-36 mt-3 text-ink">
               {data.title.split('.').filter(Boolean).map((line, index, all) => (
                 <React.Fragment key={index}>{line.trim()}.{index < all.length - 1 && <br />}</React.Fragment>
               ))}

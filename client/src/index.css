@@ -983,3 +983,20 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   .lens-hero__content, .lens-phone__frame { animation: none; }
   .lens-phone__beam { animation: none; top: 40%; }
 }
+
+/* ============ العناوين التحريرية للأقسام — تتغلب على قواعد h2 العامة ============ */
+.ay-edit-32 { font-size: 32px !important; font-weight: 800 !important; line-height: 1.02 !important; letter-spacing: -0.025em !important; }
+.ay-edit-30 { font-size: 30px !important; font-weight: 800 !important; line-height: 1.05 !important; letter-spacing: -0.02em !important; }
+.ay-edit-36 { font-size: 36px !important; font-weight: 800 !important; line-height: 1.04 !important; letter-spacing: -0.025em !important; }
+.ay-edit-26 { font-size: 26px !important; font-weight: 800 !important; line-height: 1.05 !important; letter-spacing: -0.02em !important; }
+@media (min-width: 640px) {
+  .ay-edit-32 { font-size: 34px !important; }
+  .ay-edit-36 { font-size: 38px !important; }
+  .ay-edit-26 { font-size: 28px !important; }
+}
+@media (min-width: 1024px) {
+  .ay-edit-32 { font-size: 36px !important; }
+  .ay-edit-30 { font-size: 32px !important; }
+  .ay-edit-36 { font-size: 46px !important; }
+  .ay-edit-26 { font-size: 32px !important; }
+}

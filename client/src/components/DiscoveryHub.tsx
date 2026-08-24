@@ -62,16 +62,16 @@ export const DiscoveryHub: React.FC = () => {
   const article = home?.news?.[0];
 
   return (
-    <section aria-label="Discovery AYROVI" className="mt-14 lg:mt-16">
-      <div className="mx-5 sm:mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
+    <section aria-label="Discovery AYROVI" className="mt-20 lg:mt-24">
+      <div className="mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
         {/* مقدمة تحريرية مضغوطة */}
         <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#FF7A00]">DISCOVERY</p>
-        <h2 className="mt-1.5 text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink sm:text-[26px]">Ce qui mérite votre attention.</h2>
+        <h2 className="ay-edit-32 mt-2 max-w-[300px] text-ink lg:max-w-none">Ce qui mérite votre attention.</h2>
       </div>
 
       {/* التبويبات: سطر واحد، تمرير أفقي بلا scrollbar، خط برتقالي للنشط */}
       <div className="mx-5 sm:mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
-      <div role="tablist" aria-label="Discovery AYROVI" onKeyDown={onKeyDown} className="no-scrollbar -mx-5 mt-6 flex gap-6 overflow-x-auto px-5 sm:mx-0 sm:px-0">
+      <div role="tablist" aria-label="Discovery AYROVI" onKeyDown={onKeyDown} className="no-scrollbar -mx-6 mt-8 flex gap-6 overflow-x-auto px-6 sm:mx-0 sm:px-0">
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -92,7 +92,7 @@ export const DiscoveryHub: React.FC = () => {
       </div>
 
       {/* منطقة المحتوى الديناميكية — المعاينة النشطة فقط بعرض الصفحة كاملاً */}
-      <div className="discovery-panel mt-6" key={active} role="tabpanel" aria-label={TABS.find((tab) => tab.key === active)?.label}>
+      <div className="discovery-panel mt-8" key={active} role="tabpanel" aria-label={TABS.find((tab) => tab.key === active)?.label}>
 
         {/* ARRIVAGES — اكتشاف منتجات: صف صور مضغوط */}
         {active === 'arrivages' && (
@@ -102,8 +102,8 @@ export const DiscoveryHub: React.FC = () => {
               <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-[#FF7A00]" />
             </div>
             <div className="px-5 sm:px-8">
-              <h3 className="mt-5 text-[20px] font-bold leading-snug tracking-[-0.01em] text-ink sm:text-[24px]">Les nouveautés viennent d’arriver.</h3>
-            <p className="mt-2 max-w-lg text-[14px] leading-[1.6] text-muted sm:text-[15px]">Découvrez une sélection de produits récemment disponibles.</p>
+              <h3 className="mt-6 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-[28px]">Les nouveautés viennent d’arriver.</h3>
+            <p className="mt-3 max-w-md text-[15.5px] leading-[1.6] text-muted sm:text-base">Découvrez une sélection de produits récemment disponibles.</p>
               <Cta onClick={() => open('arrivals')}>Explorer les arrivages →</Cta>
             </div>
           </div>
@@ -118,7 +118,7 @@ export const DiscoveryHub: React.FC = () => {
               <span className="absolute bottom-3 start-4 rounded-full bg-[#FF7A00] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">OFFRE DU MOMENT</span>
             </div>
             <div className="p-5">
-              <h3 className="text-[18px] font-bold leading-snug text-ink sm:text-[21px]">{promo?.name || 'Les offres AYROVI'}</h3>
+              <h3 className="text-[22px] font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-[24px]">{promo?.name || 'Les offres AYROVI'}</h3>
               {promo?.description && <p className="mt-1.5 text-[13.5px] leading-[1.55] text-muted sm:text-sm">{String(promo.description).slice(0, 110)}</p>}
               {promo?.ends_at && <p className="mt-2 text-[11.5px] font-semibold text-muted">Jusqu’au {new Date(promo.ends_at).toLocaleDateString('fr-TN')}</p>}
               <Cta onClick={() => open('promotions')}>Explorer les promotions →</Cta>
@@ -139,7 +139,7 @@ export const DiscoveryHub: React.FC = () => {
                 </div>
               ))}
             </div>
-            <h3 className="mt-5 text-[20px] font-bold leading-snug tracking-[-0.01em] text-ink sm:text-[24px]">Ce que la communauté découvre.</h3>
+            <h3 className="mt-6 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-[28px]">Ce que la communauté découvre.</h3>
             <Cta onClick={() => open('stories')}>Découvrir la communauté →</Cta>
           </div>
         )}
@@ -151,7 +151,7 @@ export const DiscoveryHub: React.FC = () => {
             <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
             <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
               <span className="text-[10.5px] font-black uppercase tracking-[0.2em] text-[#FF7A00]">{article?.category || 'STYLE'}</span>
-              <h3 className="mt-1.5 max-w-xl text-[20px] font-bold leading-snug text-white sm:text-[26px]">{article?.title || 'Les tendances qui méritent votre attention.'}</h3>
+              <h3 className="mt-2 max-w-xl text-[24px] font-extrabold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">{article?.title || 'Les tendances qui méritent votre attention.'}</h3>
               <p className="mt-2 max-w-lg text-[12.5px] leading-relaxed text-white/80 sm:text-[14px]">{article?.summary || 'Découvrez les inspirations et nouveautés sélectionnées par AYROVI.'}</p>
               <button type="button" onClick={() => open('news')} className="mt-3.5 inline-flex items-center gap-1.5 text-[14.5px] font-bold text-white transition-colors hover:text-[#FF7A00]">
                 Explorer le magazine →

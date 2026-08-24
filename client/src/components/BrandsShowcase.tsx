@@ -49,9 +49,9 @@ export const BrandsShowcase: React.FC = () => {
   );
 
   return (
-    <section aria-label="Marques disponibles" className="mt-14 rounded-[24px] bg-[#111217] px-5 py-10 sm:px-6 lg:mx-auto lg:max-w-7xl lg:rounded-[28px] lg:px-10 lg:py-12" style={{ marginInline: '12px' }}>
+    <section aria-label="Marques disponibles" className="mt-20 rounded-[24px] bg-[#111217] px-6 py-12 lg:mx-auto lg:max-w-7xl lg:rounded-[28px] lg:px-10 lg:py-14" style={{ marginInline: '24px' }}>
       <div className="text-center">
-        <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-white sm:text-[26px]">Les marques que vous aimez.</h2>
+        <h2 className="ay-edit-30 mx-auto max-w-[320px] text-white">Les marques que vous aimez.</h2>
         <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-[1.6] text-white/60 sm:text-[15px]">Découvrez les marques et boutiques disponibles avec AYROVI.</p>
       </div>
 
