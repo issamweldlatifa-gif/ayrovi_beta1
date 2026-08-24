@@ -29,6 +29,9 @@ export interface ActiveHeroVisual {
   focalY: number;
   mobileFocalX: number;
   mobileFocalY: number;
+  overlayMode: 'AUTO' | 'MANUAL';
+  overlayStrength: number | null;
+  analysis: { luminance: number; brightness: string; dominantColor: string } | null;
   publishedAt: string | null;
   isDefault: boolean;
 }
@@ -50,6 +53,9 @@ export const DEFAULT_HERO_VISUAL: ActiveHeroVisual = {
   focalY: 0.45,
   mobileFocalX: 0.5,
   mobileFocalY: 0.45,
+  overlayMode: 'AUTO',
+  overlayStrength: null,
+  analysis: { luminance: 0.16, brightness: 'dark', dominantColor: '#302926' },
   publishedAt: null,
   isDefault: true,
 };
@@ -85,6 +91,9 @@ function serializeHeroVisual(row: any): ActiveHeroVisual {
     focalY: clampFocal(row.focal_y, 0.5),
     mobileFocalX: clampFocal(row.mobile_focal_x, 0.5),
     mobileFocalY: clampFocal(row.mobile_focal_y, 0.5),
+    overlayMode: row.overlay_mode === 'MANUAL' ? 'MANUAL' : 'AUTO',
+    overlayStrength: row.overlay_strength === null || row.overlay_strength === undefined ? null : Math.min(1, Math.max(0, Number(row.overlay_strength))),
+    analysis: (() => { try { const parsed = JSON.parse(row.analysis_json || 'null'); return parsed && typeof parsed.luminance === 'number' ? parsed : null; } catch { return null; } })(),
     publishedAt: row.published_at || null,
     isDefault: false,
   };
@@ -126,6 +135,36 @@ export interface HeroUploadResult {
   format: string;
   srcset: Array<{ url: string; width: number }>;
   warnings: string[];
+  analysis: HeroImageAnalysis;
+}
+
+export interface HeroImageAnalysis {
+  luminance: number;
+  brightness: 'dark' | 'mid' | 'light';
+  dominantColor: string;
+}
+
+/** تحليل تلقائي: luminance + اللون السائد — يحدد الـoverlay والتكيف (AUTO) */
+async function analyzeHeroImage(buffer: Buffer): Promise<HeroImageAnalysis> {
+  const { data, info } = await sharp(buffer).resize(8, 8, { fit: 'fill' }).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const pixels = info.width * info.height;
+  let red = 0, green = 0, blue = 0;
+  for (let index = 0; index < data.length; index += info.channels) {
+    red += data[index]; green += data[index + 1]; blue += data[index + 2];
+  }
+  red /= pixels; green /= pixels; blue /= pixels;
+  const hex = (value: number) => Math.round(value).toString(16).padStart(2, '0');
+  const luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255;
+  const brightness: HeroImageAnalysis['brightness'] = luminance < 0.35 ? 'dark' : luminance > 0.6 ? 'light' : 'mid';
+  return { luminance: Math.round(luminance * 100) / 100, brightness, dominantColor: `#${hex(red)}${hex(green)}${hex(blue)}` };
+}
+
+/** قوة الـOverlay المحسوبة تلقائياً من الإضاءة */
+export function autoOverlayStrength(analysis: HeroImageAnalysis | null | undefined): number {
+  if (!analysis) return 0.3;
+  if (analysis.brightness === 'dark') return 0.18;
+  if (analysis.brightness === 'light') return 0.5;
+  return 0.32;
 }
 
 function saveVariants(buffer: Buffer, baseName: string): Promise<Array<{ url: string; width: number }>> {
@@ -159,6 +198,7 @@ export async function storeHeroImage(file: Express.Multer.File, visualId: string
   const fileName = `${baseName}.jpg`;
   fs.writeFileSync(path.join(UPLOADS_DIR, fileName), normalized);
   const srcset = await saveVariants(normalized, baseName);
+  const analysis = await analyzeHeroImage(normalized);
 
   const aspect = width / height;
   const warnings: string[] = [];
@@ -166,7 +206,7 @@ export async function storeHeroImage(file: Express.Multer.File, visualId: string
   if (aspect < 1.15) warnings.push('Image presque carrée/portrait — risque de recadrage vertical sur Desktop.');
   if (aspect > 2.2) warnings.push('Image très large — risque de recadrage sur Mobile.');
   if (file.size > 3 * 1024 * 1024) warnings.push('Fichier lourd — des versions WebP allégées ont été générées automatiquement.');
-  return { url: `/uploads/hero/${fileName}`, width, height, format: String(meta.format || ''), srcset, warnings };
+  return { url: `/uploads/hero/${fileName}`, width, height, format: String(meta.format || ''), srcset, warnings, analysis };
 }
 
 /** حذف ملفات الـ visual (الأصل + النسخ) — best-effort */

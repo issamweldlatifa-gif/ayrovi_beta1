@@ -22,6 +22,9 @@ interface HeroVisualRow {
   focalY: number;
   mobileFocalX?: number;
   mobileFocalY?: number;
+  overlayMode?: 'AUTO' | 'MANUAL';
+  overlayStrength?: number | null;
+  analysis?: string;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   startDate: string | null;
   endDate: string | null;
@@ -54,6 +57,9 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   const [focalY, setFocalY] = useState(0.5);
   const [mobileFocalX, setMobileFocalX] = useState(0.5);
   const [mobileFocalY, setMobileFocalY] = useState(0.5);
+  const [overlayMode, setOverlayMode] = useState<'AUTO' | 'MANUAL'>('AUTO');
+  const [overlayStrength, setOverlayStrength] = useState(0.3);
+  const [analysis, setAnalysis] = useState<{ luminance: number; brightness: string; dominantColor: string } | null>(null);
   const [meta, setMeta] = useState<HeroMeta | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
@@ -81,7 +87,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
   const resetForm = () => {
     setFile(null); setMobileFile(null); setAltText(''); setStartDate(''); setEndDate('');
-    setFocalX(0.5); setFocalY(0.5); setMobileFocalX(0.5); setMobileFocalY(0.5); setMeta(null); setPreviewUrl(''); setEditId(null);
+    setFocalX(0.5); setFocalY(0.5); setMobileFocalX(0.5); setMobileFocalY(0.5); setOverlayMode('AUTO'); setOverlayStrength(0.3); setAnalysis(null); setMeta(null); setPreviewUrl(''); setEditId(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -112,12 +118,17 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       form.append('focalY', String(focalY));
       form.append('mobileFocalX', String(mobileFocalX));
       form.append('mobileFocalY', String(mobileFocalY));
+      form.append('overlayMode', overlayMode);
+      form.append('overlayStrength', overlayMode === 'MANUAL' ? String(overlayStrength) : '');
       const created = await adminApi<any>(editId ? `/hero-visuals/${editId}` : '/hero-visuals', {
         method: editId ? 'PUT' : 'POST',
         body: form,
       });
       const id: string = editId || created?.data?.id;
-      if (created?.meta?.desktop) setMeta({ warnings: created.meta.desktop.warnings, width: created.meta.desktop.width, height: created.meta.desktop.height });
+      if (created?.meta?.desktop) {
+        setMeta({ warnings: created.meta.desktop.warnings, width: created.meta.desktop.width, height: created.meta.desktop.height });
+        if (created.meta.desktop.analysis) setAnalysis(created.meta.desktop.analysis);
+      }
       if (publishNow && id) await adminApi(`/hero-visuals/${id}/publish`, { method: 'POST' });
       setToast({ message: publishNow ? 'Visual publié — le Hero est à jour.' : 'Brouillon enregistré. Publiez quand vous êtes prêt.', tone: 'success' });
       if (publishNow) resetForm();
@@ -169,8 +180,12 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
     finally { setBusy(false); }
   };
 
-  // إطار معاينة بنفس نسب الـ Hero الحقيقي
-  const PreviewFrame: React.FC<{ label: string; frameClass: string; copyOverlay: boolean; mode?: 'desktop' | 'mobile' }> = ({ label, frameClass, copyOverlay, mode = 'desktop' }) => {
+  // معاينة Full-Bleed — كما سيظهر فعلاً (نص فوق الصورة + overlay تكيفي)
+  const overlayFor = () => {
+    const strength = overlayMode === 'MANUAL' ? overlayStrength : (analysis ? (analysis.luminance < 0.35 ? 0.18 : analysis.luminance > 0.6 ? 0.5 : 0.32) : 0.32);
+    return `linear-gradient(180deg, rgba(11,12,16,${0.38 + strength * 0.32}) 0%, rgba(11,12,16,${strength * 0.42}) 46%, rgba(11,12,16,${strength * 0.8}) 100%)`;
+  };
+  const PreviewFrame: React.FC<{ label: string; frameClass: string; mode?: 'desktop' | 'mobile' }> = ({ label, frameClass, mode = 'desktop' }) => {
     const url = previewUrl || rows.find((row) => row.id === editId)?.imageUrl || active?.imageUrl || '';
     const isMobileFrame = mode === 'mobile';
     const fx = isMobileFrame ? mobileFocalX : focalX;
@@ -184,23 +199,24 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       <div className="hero-preview">
         <span className="hero-preview__label">{label}</span>
         <div
-          className={`hero-preview__frame ${frameClass}`}
+          className={`hero-fullbleed-preview ${frameClass}`}
           onClick={onPick}
         >
-          {url ? <img src={url} alt="" style={{ objectPosition: `${fx * 100}% ${fy * 100}%` }} /> : <div className="hero-preview__empty"><ImageIcon /></div>}
+          {url ? <img src={url} alt="" className="hfb-img" style={{ objectPosition: `${fx * 100}% ${fy * 100}%` }} /> : <div className="hero-preview__empty"><ImageIcon /></div>}
+          <span aria-hidden style={{ position: 'absolute', inset: 0, background: overlayFor(), zIndex: 1 }} />
+          <div className="hero-fullbleed-copy" aria-hidden>
+            <span className="hfb-accent" />
+            <strong>Vous le voyez.<br /><em>AYROVI</em> vous le livre.</strong>
+            <small>Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s'occupe du reste.</small>
+          </div>
           {url && canWrite && (
-            <span className="hero-preview__focal" style={{ left: `${fx * 100}%`, top: `${fy * 100}%` }} />
-          )}
-          {copyOverlay && (
-            <div className="hero-preview__copy" aria-hidden>
-              <strong>{HERO_HEADLINE}</strong>
-              <small>{HERO_DESCRIPTION.slice(0, 90)}…</small>
-            </div>
+            <span className="hero-preview__focal" style={{ left: `${fx * 100}%`, top: `${fy * 100}%`, zIndex: 3 }} />
           )}
         </div>
       </div>
     );
   };
+
 
   return (
     <div className="admin-hero-page">
@@ -241,6 +257,26 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
             <Field label="Start Date (planification)"><input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} /></Field>
             <Field label="End Date"><input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} /></Field>
           </div>
+          <div className="admin-hero-dates">
+            <Field label="Overlay (Auto — analyse de l'image)">
+              <select value={overlayMode} onChange={(event) => setOverlayMode(event.target.value as 'AUTO' | 'MANUAL')}>
+                <option value="AUTO">AUTO — selon la luminosité</option>
+                <option value="MANUAL">MANUEL — réglage fin</option>
+              </select>
+            </Field>
+            {overlayMode === 'MANUAL' && (
+              <Field label={`Overlay manuel — ${Math.round(overlayStrength * 100)}%`}>
+                <input type="range" min={0} max={100} value={Math.round(overlayStrength * 100)} onChange={(event) => setOverlayStrength(Number(event.target.value) / 100)} style={{ width: '100%' }} />
+              </Field>
+            )}
+          </div>
+          {analysis && (
+            <p className="admin-hero-analysis">
+              Analyse auto — luminosité <strong>{analysis.luminance}</strong> ({analysis.brightness === 'dark' ? 'sombre' : analysis.brightness === 'light' ? 'claire' : 'moyenne'})
+              · couleur dominante <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, background: analysis.dominantColor, verticalAlign: 'middle' }} /> <strong>{analysis.dominantColor}</strong>
+              {overlayMode === 'AUTO' ? ` · overlay auto ${(analysis.luminance < 0.35 ? 18 : analysis.luminance > 0.6 ? 50 : 32)}%` : ''}
+            </p>
+          )}
           {warnings.length > 0 && (
             <ul className="admin-hero-warnings">
               {warnings.map((warning) => <li key={warning}><X size={14} /> {warning}</li>)}
@@ -252,9 +288,8 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           <div className="admin-hero-previews">
             <p className="admin-hero-previews__hint">Cliquez sur l’aperçu Desktop (position ordinateur) ou Mobile (position téléphone) pour régler le cadrage de chaque écran.</p>
             <div className="admin-hero-previews__grid">
-              <PreviewFrame label="Desktop" frameClass="frame-desktop" copyOverlay mode="desktop" />
-              <PreviewFrame label="Tablet" frameClass="frame-tablet" copyOverlay mode="desktop" />
-              <PreviewFrame label="Mobile" frameClass="frame-mobile" copyOverlay mode="mobile" />
+              <PreviewFrame label="Desktop (cliquez = position)" frameClass="hfb-frame-desktop" mode="desktop" />
+              <PreviewFrame label="Mobile (cliquez = position)" frameClass="hfb-frame-mobile" mode="mobile" />
             </div>
             <div className="admin-hero-actions">
               <Button variant="secondary" disabled={busy || !canWrite} onClick={() => void submit(false)}>Enregistrer le brouillon</Button>
@@ -291,7 +326,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                   <td>
                     {canWrite && (
                       <div className="admin-row-actions">
-                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
+                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setOverlayMode(row.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO'); setOverlayStrength(typeof row.overlayStrength === 'number' ? row.overlayStrength : 0.3); try { setAnalysis(row.analysis ? JSON.parse(row.analysis) : null); } catch { setAnalysis(null); } setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
                         {row.status === 'PUBLISHED'
                           ? <button type="button" title="Dépublier" onClick={() => void unpublish(row)}><X size={16} /></button>
                           : <button type="button" title="Publier" onClick={() => void publish(row)}>✓</button>}

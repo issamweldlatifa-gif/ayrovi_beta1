@@ -791,3 +791,12 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 }
 
 .trust-bar__scroller::-webkit-scrollbar { display: none; }
+
+/* FULL-BLEED HERO — ارتفاع مرن مضغوط (موبايل أولاً)، الصورة مطلقة تغطي الكل */
+.evergreen-hero-content {
+  min-height: clamp(540px, 62vh, 700px);
+}
+
+@media (min-width: 1024px) {
+  .evergreen-hero-content { min-height: min(70vh, 660px); }
+}
