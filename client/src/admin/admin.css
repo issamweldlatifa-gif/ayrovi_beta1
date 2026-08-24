@@ -622,3 +622,26 @@ input[type="color"]{width:100%;height:40px;border:1px solid #e5e2ee;border-radiu
 .admin-hero-thumb img { width: 100%; height: 100%; object-fit: cover; }
 .admin-hero-quick { display: flex; gap: 6px; margin-top: 4px; }
 .admin-hero-quick input { font-size: 11px; padding: 2px 4px; border: 1px solid var(--admin-line, #e5e7eb); border-radius: 6px; }
+
+/* ============ TRUST BAR ADMIN ============ */
+.admin-trustbar-page { display: flex; flex-direction: column; }
+.admin-trustbar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.admin-trustbar-desc { max-width: 320px; }
+.admin-trustbar-preview { border-radius: 12px; padding: 18px 22px; }
+.admin-trustbar-preview.mobile { max-width: 360px; margin: 0 auto; padding: 14px 18px; }
+.admin-trustbar-preview .trust-bar__title { color: #fff; }
+.admin-preview-toggle { display: inline-flex; border: 1px solid var(--admin-line, #e5e7eb); border-radius: 999px; overflow: hidden; }
+.admin-preview-toggle button { padding: 6px 14px; font-size: 12px; font-weight: 700; background: transparent; border: 0; cursor: pointer; color: #6b7280; }
+.admin-preview-toggle button.is-active { background: #111318; color: #fff; }
+.admin-icon-picker { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--admin-line, #e5e7eb); border-radius: 10px; }
+.admin-icon-picker button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid transparent; border-radius: 9px; background: #f9fafb; cursor: pointer; color: #374151; }
+.admin-icon-picker button.is-active { border-color: #fe7003; color: #fe7003; background: #fff7ed; }
+.admin-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
+.admin-toggle input { width: 34px; height: 18px; appearance: none; background: #d1d5db; border-radius: 999px; position: relative; cursor: pointer; transition: background .2s; }
+.admin-toggle input:checked { background: #15803d; }
+.admin-toggle input::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .2s; }
+.admin-toggle input:checked::after { left: 18px; }
+.admin-table tr.is-muted td { opacity: .45; }
+.admin-table td[style*="grab"] { font-size: 13px; letter-spacing: -1px; }
+.modal-overlay { position: fixed; inset: 0; z-index: 200; background: rgba(17,19,24,.55); display: grid; place-items: center; padding: 18px; overflow-y: auto; }
+.modal-card { width: min(560px, 100%); display: flex; flex-direction: column; gap: 12px; }

@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
+import { TrustBar } from './components/TrustBar';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
@@ -407,7 +408,7 @@ export const App: React.FC = () => {
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
-      if (section.id === 'hero') content = <EvergreenHero />;
+      if (section.id === 'hero') content = <><EvergreenHero /><TrustBar /></>;
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;

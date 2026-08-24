@@ -375,6 +375,96 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: { user: { id: identity.id, email: identity.email, name: identity.name, role: identity.role, permissions: identity.permissions }, csrfToken } });
   });
 
+
+  /* ==================== TRUST BAR — إدارة كاملة للمحتوى، التصميم محكوم بالهوية ==================== */
+  const TRUST_BAR_ICONS = new Set(['ShieldCheck', 'Truck', 'Lock', 'Zap', 'MessageCircle', 'PackageCheck', 'Phone', 'CreditCard', 'MapPin', 'Star', 'CheckCircle2', 'RefreshCw', 'Bell', 'Globe2']);
+  const trustItemRow = (row: any) => ({
+    id: row.id, title: row.title, description: row.description, icon: row.icon,
+    enabled: Boolean(row.enabled), sortOrder: row.sort_order,
+    titleColor: row.title_color, descriptionColor: row.description_color, iconColor: row.icon_color,
+    createdAt: row.created_at, updatedAt: row.updated_at,
+  });
+  const validColor = (value: unknown, fallback: string): string => {
+    const text = String(value || '').trim();
+    if (/^#[0-9a-fA-F]{3,8}$/.test(text) || /^rgba?\([^)]+\)$/.test(text)) return text.slice(0, 60);
+    return fallback;
+  };
+
+  router.get('/trust-bar', requireAdmin(db, 'content:read'), (_req, res) => {
+    const settings = db.get<any>(`SELECT * FROM trust_bar_settings WHERE id='global'`);
+    const items = db.all<any>('SELECT * FROM trust_bar_items ORDER BY sort_order,id');
+    res.json({ success: true, data: { items: items.map(trustItemRow), settings } });
+  });
+
+  router.post('/trust-bar/items', requireAdmin(db, 'content:write'), (req, res) => {
+    const title = String(req.body?.title || '').trim().slice(0, 80);
+    const description = String(req.body?.description || '').trim().slice(0, 160);
+    const icon = String(req.body?.icon || 'ShieldCheck');
+    if (title.length < 2) return res.status(400).json({ success: false, error: 'Titre requis.' });
+    if (!TRUST_BAR_ICONS.has(icon)) return res.status(400).json({ success: false, error: 'Icône non autorisée — choisissez dans la bibliothèque.' });
+    const now = new Date().toISOString();
+    const id = `trust_${randomUUID()}`;
+    const nextOrder = Number(db.get<any>('SELECT MAX(sort_order) maxOrder FROM trust_bar_items')?.maxOrder || 0) + 1;
+    db.run(`INSERT INTO trust_bar_items (id,title,description,icon,enabled,sort_order,title_color,description_color,icon_color,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      id, title, description, icon, req.body?.enabled === false ? 0 : 1, Math.min(999, Math.max(1, Number(req.body?.sortOrder) || nextOrder)),
+      validColor(req.body?.titleColor, ''), validColor(req.body?.descriptionColor, ''), validColor(req.body?.iconColor, ''), now, now);
+    audit(db, req, 'CREATE', 'TRUST_BAR', id, null, { title });
+    res.json({ success: true, data: trustItemRow(db.get<any>('SELECT * FROM trust_bar_items WHERE id=?', id)) });
+  });
+
+  router.put('/trust-bar/items/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM trust_bar_items WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Élément introuvable.' });
+    const icon = String(req.body?.icon ?? existing.icon);
+    if (!TRUST_BAR_ICONS.has(icon)) return res.status(400).json({ success: false, error: 'Icône non autorisée.' });
+    db.run(`UPDATE trust_bar_items SET title=?,description=?,icon=?,enabled=?,sort_order=?,title_color=?,description_color=?,icon_color=?,updated_at=? WHERE id=?`,
+      String(req.body?.title ?? existing.title).trim().slice(0, 80) || existing.title,
+      String(req.body?.description ?? existing.description).trim().slice(0, 160),
+      icon,
+      req.body?.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
+      req.body?.sortOrder === undefined ? existing.sort_order : Math.min(999, Math.max(1, Number(req.body.sortOrder) || existing.sort_order)),
+      req.body?.titleColor === undefined ? existing.title_color : validColor(req.body.titleColor, ''),
+      req.body?.descriptionColor === undefined ? existing.description_color : validColor(req.body.descriptionColor, ''),
+      req.body?.iconColor === undefined ? existing.icon_color : validColor(req.body.iconColor, ''),
+      new Date().toISOString(), existing.id);
+    audit(db, req, 'UPDATE', 'TRUST_BAR', existing.id, trustItemRow(existing), trustItemRow(db.get<any>('SELECT * FROM trust_bar_items WHERE id=?', existing.id)));
+    res.json({ success: true, data: trustItemRow(db.get<any>('SELECT * FROM trust_bar_items WHERE id=?', existing.id)) });
+  });
+
+  router.delete('/trust-bar/items/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM trust_bar_items WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Élément introuvable.' });
+    db.run('DELETE FROM trust_bar_items WHERE id=?', existing.id);
+    audit(db, req, 'DELETE', 'TRUST_BAR', existing.id, trustItemRow(existing), null);
+    res.json({ success: true });
+  });
+
+  router.put('/trust-bar/reorder', requireAdmin(db, 'content:write'), (req, res) => {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map(String).slice(0, 20) : [];
+    if (!ids.length) return res.status(400).json({ success: false, error: 'Liste d’ordre vide.' });
+    const now = new Date().toISOString();
+    db.transaction(() => {
+      ids.forEach((id, index) => db.run('UPDATE trust_bar_items SET sort_order=?,updated_at=? WHERE id=?', index + 1, now, id));
+    });
+    audit(db, req, 'UPDATE', 'TRUST_BAR', 'reorder', null, { ids });
+    res.json({ success: true });
+  });
+
+  router.put('/trust-bar/settings', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>(`SELECT * FROM trust_bar_settings WHERE id='global'`);
+    db.run(`UPDATE trust_bar_settings SET background_color=?,title_color=?,description_color=?,accent_color=?,divider_color=?,enabled=?,updated_at=? WHERE id='global'`,
+      validColor(req.body?.backgroundColor, existing?.background_color || '#111217'),
+      validColor(req.body?.titleColor, existing?.title_color || '#FFFFFF'),
+      validColor(req.body?.descriptionColor, existing?.description_color || 'rgba(255,255,255,0.68)'),
+      validColor(req.body?.accentColor, existing?.accent_color || '#FF7A00'),
+      validColor(req.body?.dividerColor, existing?.divider_color || 'rgba(255,255,255,0.15)'),
+      req.body?.enabled === undefined ? (existing?.enabled ?? 1) : (req.body.enabled ? 1 : 0),
+      new Date().toISOString());
+    audit(db, req, 'UPDATE', 'TRUST_BAR', 'settings', null, null);
+    res.json({ success: true, data: db.get<any>(`SELECT * FROM trust_bar_settings WHERE id='global'`) });
+  });
+
   /* ==================== HERO MANAGEMENT — Visual واحد نشط، محتوى الـ Hero غير قابل للتعديل ==================== */
   const heroUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
 

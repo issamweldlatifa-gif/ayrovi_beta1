@@ -139,6 +139,23 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
+  /** AYROVI Trust Bar — العناصر المفعّلة + الإعدادات العامة */
+  router.get('/trust-bar', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    const settings = db.get<any>(`SELECT * FROM trust_bar_settings WHERE id='global'`);
+    const items = db.all<any>(`SELECT title,description,icon,title_color titleColor,description_color descriptionColor,icon_color iconColor
+      FROM trust_bar_items WHERE enabled=1 ORDER BY sort_order,id`);
+    res.json({ success: true, data: {
+      enabled: Boolean(settings?.enabled ?? 1),
+      settings: settings ? {
+        backgroundColor: settings.background_color, titleColor: settings.title_color,
+        descriptionColor: settings.description_color, accentColor: settings.accent_color,
+        dividerColor: settings.divider_color,
+      } : null,
+      items,
+    } });
+  });
+
   router.get('/brands', (_req, res) => {
     const rows = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
       FROM brands WHERE active=1 ORDER BY display_order,name`);

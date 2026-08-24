@@ -798,6 +798,47 @@ export class QatafoDatabase {
 
     // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
     this.db.exec(HERO_VISUALS_TABLE_SQL);
+
+    // AYROVI Trust Bar — العناصر والإعدادات العامة
+    this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_items (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      icon TEXT NOT NULL DEFAULT 'ShieldCheck',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      title_color TEXT NOT NULL DEFAULT '',
+      description_color TEXT NOT NULL DEFAULT '',
+      icon_color TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );`);
+    this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      background_color TEXT NOT NULL DEFAULT '#111217',
+      title_color TEXT NOT NULL DEFAULT '#FFFFFF',
+      description_color TEXT NOT NULL DEFAULT 'rgba(255,255,255,0.68)',
+      accent_color TEXT NOT NULL DEFAULT '#FF7A00',
+      divider_color TEXT NOT NULL DEFAULT 'rgba(255,255,255,0.15)',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM trust_bar_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run(`INSERT INTO trust_bar_settings (id,updated_at) VALUES ('global',?)`, new Date().toISOString());
+    }
+    if (!(this.db.prepare('SELECT COUNT(*) count FROM trust_bar_items').get() as { count: number }).count) {
+      const seededAt = new Date().toISOString();
+      const insertTrust = this.db.prepare('INSERT INTO trust_bar_items (id,title,description,icon,enabled,sort_order,created_at,updated_at) VALUES (?,?,?,?,1,?,?,?)');
+      this.db.transaction(() => {
+        [
+          ['Produits authentiques', 'Achetés auprès des boutiques officielles', 'ShieldCheck'],
+          ['Dédouanement inclus', 'Toutes les démarches prises en charge', 'Truck'],
+          ['Acompte sécurisé 20 %', 'Pour confirmer votre commande', 'Lock'],
+          ['Livraison rapide', 'Dans les 24 gouvernorats de Tunisie', 'Zap'],
+          ['Service client 7j/7', 'Une assistance à votre écoute', 'MessageCircle'],
+        ].forEach(([title, description, icon], index) => insertTrust.run(`trust_${randomUUID()}`, title, description, icon, index + 1, seededAt, seededAt));
+      })();
+    }
     if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
       const seededAt = new Date().toISOString();
       const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
