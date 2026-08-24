@@ -112,6 +112,14 @@ const resources: Record<string, ResourceDefinition> = {
       { key: 'display_order', label: 'Ordre', type: 'number' }, { key: 'active', label: 'Visible', type: 'boolean' },
     ],
   },
+  ticker: {
+    title: 'Ticker annonces', singular: 'message', description: 'Messages du bandeau supérieur AYROVI — contenu uniquement, le design reste fixe.', endpoint: '/announcements', keyField: 'text', statusField: 'active', permission: 'content:write',
+    defaults: { text: '', display_order: 0, active: true },
+    fields: [
+      { key: 'text', label: 'Message affiché', type: 'text', required: true, full: true },
+      { key: 'display_order', label: 'Ordre d’affichage', type: 'number' }, { key: 'active', label: 'Publié', type: 'boolean' },
+    ],
+  },
   assistant: {
     title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant AYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'settings:write',
     defaults: { category: 'FAQ', question: '', answer: '', keywords: [], priority: 0, active: true },
@@ -130,7 +138,7 @@ const navGroups = [
     { id: 'promotions', label: 'Promotions', icon: Gift, permission: 'content:read' as Permission }, { id: 'social', label: 'Social', icon: ChartLine, permission: 'content:read' as Permission },
     { id: 'news', label: 'مجلتي', icon: FileText, permission: 'content:read' as Permission }, { id: 'magazine-agent', label: 'وكيل مجلتي', icon: Sparkles, permission: 'content:read' as Permission },
     { id: 'brands', label: 'Marques', icon: Tag, permission: 'content:read' as Permission },
-    { id: 'hero', label: 'Hero Slider', icon: Sparkles, permission: 'content:read' as Permission },
+    { id: 'hero', label: 'Hero Slider', icon: Sparkles, permission: 'content:read' as Permission }, { id: 'ticker', label: 'Ticker annonces', icon: Bell, permission: 'content:read' as Permission },
   ]},
   { label: 'Commerce', items: [
     { id: 'orders', label: 'Commandes', icon: Package, permission: 'commerce:read' as Permission }, { id: 'lens-requests', label: 'Demandes Lens', icon: Sparkles, permission: 'commerce:read' as Permission },
@@ -254,7 +262,7 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
   };
   const displayStatus = (row: any) => definition.statusField === 'active' ? (row.active ? 'ACTIVE' : 'INACTIVE') : row[definition.statusField || 'status'];
   const columns: DataColumn<any>[] = [
-    { key: definition.keyField, label: definition.keyField === 'name' ? 'Nom' : definition.keyField === 'question' ? 'Question' : 'Titre', render: (row) => <div className="admin-entity"><span>{row.image || row.main_image || row.logo || row.media_url ? <img src={row.image || row.main_image || row.logo || row.media_url} alt="" /> : <i><FileText /></i>}</span><div><strong>{row[definition.keyField] || (resource === 'assistant' ? row.answer.slice(0, 60) : 'Sans titre')}</strong><small>{row.type || row.category || row.source_platform || row.media_type || ''}</small></div></div> },
+    { key: definition.keyField, label: definition.keyField === 'name' ? 'Nom' : definition.keyField === 'question' ? 'Question' : definition.keyField === 'text' ? 'Message' : 'Titre', render: (row) => <div className="admin-entity"><span>{row.image || row.main_image || row.logo || row.media_url ? <img src={row.image || row.main_image || row.logo || row.media_url} alt="" /> : <i><FileText /></i>}</span><div><strong>{row[definition.keyField] || (resource === 'assistant' ? row.answer.slice(0, 60) : 'Sans titre')}</strong><small>{row.type || row.category || row.source_platform || row.media_type || ''}</small></div></div> },
     { key: 'status', label: 'Statut', render: (row) => <StatusBadge status={displayStatus(row)} /> },
     { key: 'updated_at', label: 'Dernière modification', render: (row) => formatDate(row.updated_at, true) },
     { key: 'actions', label: '', render: (row) => canWrite && <div className="admin-row-actions"><button type="button" onClick={(event) => { event.stopPropagation(); openEdit(row); }} aria-label="Modifier"><Pencil size={17} /></button><button type="button" onClick={(event) => { event.stopPropagation(); setArchiveTarget(row); }} aria-label="Archiver"><X size={17} /></button></div> },

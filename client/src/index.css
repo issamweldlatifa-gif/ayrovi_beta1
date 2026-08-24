@@ -338,23 +338,51 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Announcement Bar — تدوير رسائل هادئ وفاخر (Fade + Slide خفيف جدًا) */
+/* Announcement Bar — Premium Trust Ticker (Fade + Slide عمودي خفيف فقط) */
 @keyframes announcementIn {
-  from { opacity: 0; transform: translateY(0.3rem); }
+  from { opacity: 0; transform: translateY(0.35rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes announcementOut {
   from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-0.3rem); }
+  to { opacity: 0; transform: translateY(-0.35rem); }
 }
 
 .announcement-in {
-  animation: announcementIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: announcementIn 460ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .announcement-out {
-  animation: announcementOut 420ms cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: announcementOut 440ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* وميض ضوئي شبه محسوس يعبر الخط البرتقالي السفلي عند كل رسالة جديدة */
+.announcement-sweep {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  overflow: hidden;
+}
+
+.announcement-sweep::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 32%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: announcementSweep 1300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes announcementSweep {
+  from { transform: translateX(-140%); opacity: 0; }
+  25% { opacity: 0.7; }
+  to { transform: translateX(440%); opacity: 0; }
 }
 
 /* AYROVI assistant subview entrance animations */

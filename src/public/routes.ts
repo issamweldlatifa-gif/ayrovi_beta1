@@ -126,6 +126,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: rows });
   });
 
+  router.get('/announcement-messages', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    const rows = db.all<any>(`SELECT id,text FROM announcement_messages WHERE active=1 ORDER BY display_order,id`);
+    res.json({ success: true, data: rows });
+  });
+
   router.get('/brands', (_req, res) => {
     const rows = db.all<any>(`SELECT id,name,logo,image,category,url,description,display_order displayOrder
       FROM brands WHERE active=1 ORDER BY display_order,name`);

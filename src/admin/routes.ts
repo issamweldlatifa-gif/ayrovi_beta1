@@ -118,6 +118,12 @@ const resources: Record<string, ResourceConfig> = {
     fields: ['image','video','title','subtitle','cta','target_url','display_order','active'], required: ['image','title'],
     searchable: ['title','subtitle','cta'], sortable: ['title','display_order','active','created_at'], defaultSort: 'display_order', softDelete: { active: 0 },
   },
+  announcements: {
+    table: 'announcement_messages', module: 'ANNOUNCEMENTS', prefix: 'announcement', permission: 'content:write',
+    fields: ['text','display_order','active'], required: ['text'],
+    searchable: ['text'], sortable: ['text','display_order','active','created_at'], defaultSort: 'display_order',
+    softDelete: { active: 0 },
+  },
   'ai-knowledge': {
     table: 'ai_knowledge', module: 'AI_KNOWLEDGE', prefix: 'knowledge', permission: 'settings:write',
     fields: ['category','question','answer','keywords','priority','active'], required: ['category','answer'],
