@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Menu, User } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
 import { Button } from '../design/Button';
@@ -16,7 +16,8 @@ interface NavbarProps {
 /**
  * En-tête minimaliste (ordre du client) :
  * [Menu] — [Logo + nom au centre] — [Profil]
- * Panier et bascule de langue : dans le tiroir de menu.
+ * فوق الـ Hero: شفاف بالكامل — الشعار الأبيض والأيقونات بيضاء.
+ * بعد تجاوز الـ Hero: خلفية بيضاء والشعار العادي.
  */
 export const Navbar: React.FC<NavbarProps> = ({
   onOpenMenuDrawer,
@@ -26,25 +27,58 @@ export const Navbar: React.FC<NavbarProps> = ({
   logoUrl,
 }) => {
   const { tr } = useLocale();
+  const [overHero, setOverHero] = useState(false);
+
+  useEffect(() => {
+    let raf = 0;
+    const update = () => {
+      const hero = document.querySelector('[data-hero]');
+      if (!hero) { setOverHero(false); return; }
+      const rect = hero.getBoundingClientRect();
+      setOverHero(rect.bottom > 8);
+    };
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  const iconButtonClass = overHero ? 'text-white hover:bg-white/10' : undefined;
 
   return (
-    <header className="public-site-header sticky top-0 z-40 border-b border-line bg-white">
+    <header
+      className={`public-site-header sticky top-0 z-40 border-b transition-[background-color,border-color] duration-300 ${
+        overHero ? 'is-over-hero' : 'border-line'
+      }`}
+    >
       <div className="mx-auto grid h-16 w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center px-3 sm:h-20 sm:px-6">
         <div className="flex justify-start">
-          <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
+          <Button variant="ghost" size="icon" onClick={onOpenMenuDrawer} className={iconButtonClass} aria-label={tr('Ouvrir le menu', 'فتح القائمة')} title={tr('Menu', 'القائمة')}>
             <Menu className="h-6 w-6" />
           </Button>
         </div>
         <button type="button" onClick={onGoHome} className="flex items-center gap-2.5 bg-transparent" aria-label="AYROVI">
-          <img src={logoUrl ?? '/media/logo-ayrovi.png'} alt="" className="h-11 w-11 bg-transparent object-contain sm:h-11 sm:w-11" />
-          <strong className="font-display text-lg font-black tracking-tight text-ink sm:text-xl">AYROVI</strong>
+          <img
+            src={overHero ? '/media/logo-ayrovi-light.png' : (logoUrl ?? '/media/logo-ayrovi.png')}
+            alt=""
+            className={`h-11 w-11 bg-transparent object-contain transition-opacity duration-300 sm:h-11 sm:w-11 ${overHero ? '' : 'brightness-0'}`}
+          />
+          <strong className={`font-display text-lg font-black tracking-tight transition-colors duration-300 sm:text-xl ${overHero ? 'text-white' : 'text-ink'}`}>AYROVI</strong>
         </button>
         <div className="flex justify-end">
           <Button
             variant="ghost"
             size="icon"
             onClick={onOpenAccount}
-            className="relative"
+            className={`relative ${iconButtonClass ?? ''}`}
             aria-label={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
             title={isAuthenticated ? tr('Mon compte AYROVI', 'حسابي في AYROVI') : tr('Se connecter', 'تسجيل الدخول')}
           >

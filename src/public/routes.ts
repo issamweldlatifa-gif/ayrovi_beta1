@@ -5,6 +5,7 @@ import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
+import { resolveActiveHeroVisual } from '../services/heroVisual';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -130,6 +131,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     const rows = db.all<any>(`SELECT id,text FROM announcement_messages WHERE active=1 ORDER BY display_order,id`);
     res.json({ success: true, data: rows });
+  });
+
+  /** Visual الـ Hero النشط — المجدول الصالح حالياً، وإلا آخر منشور، وإلا الافتراضي */
+  router.get('/hero/active', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
   router.get('/brands', (_req, res) => {

@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
-import { HeroSlider } from './components/HeroSlider';
+import { EvergreenHero } from './components/EvergreenHero';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
@@ -405,9 +405,7 @@ export const App: React.FC = () => {
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
-      if (section.id === 'hero') content = <>
-        <HeroSlider settings={interfaceConfig.slider} title={section.title} subtitle={section.subtitle || tr('Envoyez une photo ou un lien, on confirme le prix et on livre en Tunisie.', 'أرسل صورة أو رابطًا، نؤكد السعر ونوصل إلى تونس.')} image={section.image} />
-      </>;
+      if (section.id === 'hero') content = <EvergreenHero />;
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;

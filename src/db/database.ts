@@ -97,6 +97,24 @@ const ANNOUNCEMENT_MESSAGES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement
   updated_at TEXT NOT NULL
 );`;
 
+const HERO_VISUALS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS hero_visuals (
+  id TEXT PRIMARY KEY,
+  image_url TEXT NOT NULL DEFAULT '',
+  image_width INTEGER NOT NULL DEFAULT 0,
+  image_height INTEGER NOT NULL DEFAULT 0,
+  mobile_image_url TEXT NOT NULL DEFAULT '',
+  alt_text TEXT NOT NULL DEFAULT '',
+  focal_x REAL NOT NULL DEFAULT 0.5,
+  focal_y REAL NOT NULL DEFAULT 0.5,
+  status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','PUBLISHED','ARCHIVED')),
+  start_date TEXT,
+  end_date TEXT,
+  priority INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  published_at TEXT
+);`;
+
 const PAYMENTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS payments (
   id TEXT PRIMARY KEY,
   payment_number TEXT,
@@ -777,6 +795,9 @@ export class QatafoDatabase {
 
     // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
     this.db.exec(ANNOUNCEMENT_MESSAGES_TABLE_SQL);
+
+    // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
+    this.db.exec(HERO_VISUALS_TABLE_SQL);
     if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
       const seededAt = new Date().toISOString();
       const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');

@@ -4,6 +4,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase } from '../db/database';
 import multer from 'multer';
+import {
+  deleteHeroVisualFiles,
+  invalidateHeroVisualCache,
+  newHeroVisualId,
+  normalizeSchedule,
+  resolveActiveHeroVisual,
+  storeHeroImage,
+} from '../services/heroVisual';
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
 import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
@@ -365,6 +373,124 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     }
     const csrfToken = rotateCsrfToken(db, req);
     res.json({ success: true, data: { user: { id: identity.id, email: identity.email, name: identity.name, role: identity.role, permissions: identity.permissions }, csrfToken } });
+  });
+
+  /* ==================== HERO MANAGEMENT — Visual واحد نشط، محتوى الـ Hero غير قابل للتعديل ==================== */
+  const heroUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
+
+  const heroRowForAdmin = (row: any) => ({
+    id: row.id, imageUrl: row.image_url, imageWidth: row.image_width, imageHeight: row.image_height,
+    mobileImageUrl: row.mobile_image_url, altText: row.alt_text, focalX: row.focal_x, focalY: row.focal_y,
+    status: row.status, startDate: row.start_date, endDate: row.end_date, priority: row.priority,
+    createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at,
+  });
+
+  router.get('/hero-visuals', requireAdmin(db, 'content:read'), (_req, res) => {
+    const rows = db.all<any>(`SELECT * FROM hero_visuals WHERE status!='ARCHIVED' ORDER BY created_at DESC`);
+    res.json({ success: true, data: rows.map(heroRowForAdmin), active: resolveActiveHeroVisual(db) });
+  });
+
+  router.post('/hero-visuals', requireAdmin(db, 'content:write'), heroUpload.fields([
+    { name: 'image', maxCount: 1 }, { name: 'mobileImage', maxCount: 1 },
+  ]), async (req, res) => {
+    try {
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      const imageFile = files?.image?.[0];
+      if (!imageFile) return res.status(400).json({ success: false, error: 'Image principale requise.' });
+      const id = newHeroVisualId();
+      const stored = await storeHeroImage(imageFile, id, 'desktop');
+      let mobileStored: Awaited<ReturnType<typeof storeHeroImage>> | null = null;
+      if (files?.mobileImage?.[0]) {
+        try { mobileStored = await storeHeroImage(files.mobileImage[0], id, 'mobile'); }
+        catch (error: any) { return res.status(400).json({ success: false, error: `Image mobile — ${error?.message || 'invalide'}` }); }
+      }
+      const { startDate, endDate } = normalizeSchedule(req.body.startDate, req.body.endDate);
+      const now = new Date().toISOString();
+      const priority = Math.min(999, Math.max(0, Number(req.body.priority) || 0));
+      db.run(`INSERT INTO hero_visuals
+        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,status,start_date,end_date,priority,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
+        id, stored.url, stored.width, stored.height, mobileStored?.url || '', String(req.body.altText || '').slice(0, 200),
+        Math.min(1, Math.max(0, Number(req.body.focalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.focalY ?? 0.5))),
+        startDate, endDate, priority, now, now);
+      audit(db, req, 'CREATE', 'HERO', id, null, { image_url: stored.url });
+      const row = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', id);
+      return res.json({ success: true, data: heroRowForAdmin(row), meta: { desktop: stored, mobile: mobileStored } });
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: error?.message || 'Téléversement invalide.' });
+    }
+  });
+
+  router.put('/hero-visuals/:id', requireAdmin(db, 'content:write'), heroUpload.fields([
+    { name: 'image', maxCount: 1 }, { name: 'mobileImage', maxCount: 1 },
+  ]), async (req, res) => {
+    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
+    try {
+      const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+      let imageUrl = existing.image_url;
+      let imageWidth = existing.image_width;
+      let imageHeight = existing.image_height;
+      if (files?.image?.[0]) {
+        const stored = await storeHeroImage(files.image[0], existing.id, 'desktop');
+        imageUrl = stored.url; imageWidth = stored.width; imageHeight = stored.height;
+        deleteHeroVisualFiles(existing.image_url, '');
+      }
+      let mobileImageUrl = req.body.mobileImageUrl !== undefined ? String(req.body.mobileImageUrl) : existing.mobile_image_url;
+      if (files?.mobileImage?.[0]) {
+        const stored = await storeHeroImage(files.mobileImage[0], existing.id, 'mobile');
+        mobileImageUrl = stored.url;
+        deleteHeroVisualFiles('', existing.mobile_image_url);
+      }
+      const { startDate, endDate } = normalizeSchedule(
+        req.body.startDate !== undefined ? req.body.startDate : existing.start_date,
+        req.body.endDate !== undefined ? req.body.endDate : existing.end_date,
+      );
+      const now = new Date().toISOString();
+      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,
+        start_date=?,end_date=?,priority=?,updated_at=? WHERE id=?`,
+        imageUrl, imageWidth, imageHeight, mobileImageUrl,
+        String(req.body.altText !== undefined ? req.body.altText : existing.alt_text).slice(0, 200),
+        Math.min(1, Math.max(0, Number(req.body.focalX !== undefined ? req.body.focalX : existing.focal_x))),
+        Math.min(1, Math.max(0, Number(req.body.focalY !== undefined ? req.body.focalY : existing.focal_y))),
+        startDate, endDate,
+        Math.min(999, Math.max(0, Number(req.body.priority !== undefined ? req.body.priority : existing.priority))),
+        now, existing.id);
+      invalidateHeroVisualCache();
+      audit(db, req, 'UPDATE', 'HERO', existing.id, heroRowForAdmin(existing), heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)));
+      return res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)) });
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: error?.message || 'Mise à jour invalide.' });
+    }
+  });
+
+  router.post('/hero-visuals/:id/publish', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
+    const now = new Date().toISOString();
+    db.run(`UPDATE hero_visuals SET status='PUBLISHED', published_at=?, updated_at=? WHERE id=?`, now, now, existing.id);
+    invalidateHeroVisualCache();
+    audit(db, req, 'PUBLISH', 'HERO', existing.id, null, null);
+    res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)), active: resolveActiveHeroVisual(db) });
+  });
+
+  router.post('/hero-visuals/:id/unpublish', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
+    db.run(`UPDATE hero_visuals SET status='DRAFT', published_at=NULL, updated_at=? WHERE id=?`, new Date().toISOString(), existing.id);
+    invalidateHeroVisualCache();
+    audit(db, req, 'UNPUBLISH', 'HERO', existing.id, null, null);
+    res.json({ success: true, data: heroRowForAdmin(db.get<any>('SELECT * FROM hero_visuals WHERE id=?', existing.id)), active: resolveActiveHeroVisual(db) });
+  });
+
+  router.delete('/hero-visuals/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', req.params.id);
+    if (!existing) return res.status(404).json({ success: false, error: 'Visual introuvable.' });
+    deleteHeroVisualFiles(existing.image_url, existing.mobile_image_url);
+    db.run('DELETE FROM hero_visuals WHERE id=?', existing.id);
+    invalidateHeroVisualCache();
+    audit(db, req, 'DELETE', 'HERO', existing.id, heroRowForAdmin(existing), null);
+    res.json({ success: true, active: resolveActiveHeroVisual(db) });
   });
 
   router.post('/auth/logout', requireAdmin(db), (req, res) => {
