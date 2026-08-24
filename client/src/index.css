@@ -730,3 +730,8 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* EVERGREEN HERO — موضع قصّ مستقل للموبايل يتحكم به الـAdmin */
+@media (max-width: 1023px) {
+  .evergreen-hero-img { object-position: var(--hero-pos-mobile, 50% 45%) !important; }
+}

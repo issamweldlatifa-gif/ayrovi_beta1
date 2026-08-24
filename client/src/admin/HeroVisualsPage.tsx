@@ -20,6 +20,8 @@ interface HeroVisualRow {
   altText: string;
   focalX: number;
   focalY: number;
+  mobileFocalX?: number;
+  mobileFocalY?: number;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   startDate: string | null;
   endDate: string | null;
@@ -50,6 +52,8 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   const [endDate, setEndDate] = useState('');
   const [focalX, setFocalX] = useState(0.5);
   const [focalY, setFocalY] = useState(0.5);
+  const [mobileFocalX, setMobileFocalX] = useState(0.5);
+  const [mobileFocalY, setMobileFocalY] = useState(0.5);
   const [meta, setMeta] = useState<HeroMeta | null>(null);
   const [previewUrl, setPreviewUrl] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
   const resetForm = () => {
     setFile(null); setMobileFile(null); setAltText(''); setStartDate(''); setEndDate('');
-    setFocalX(0.5); setFocalY(0.5); setMeta(null); setPreviewUrl(''); setEditId(null);
+    setFocalX(0.5); setFocalY(0.5); setMobileFocalX(0.5); setMobileFocalY(0.5); setMeta(null); setPreviewUrl(''); setEditId(null);
     if (fileRef.current) fileRef.current.value = '';
   };
 
@@ -106,6 +110,8 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       if (endDate) form.append('endDate', endDate);
       form.append('focalX', String(focalX));
       form.append('focalY', String(focalY));
+      form.append('mobileFocalX', String(mobileFocalX));
+      form.append('mobileFocalY', String(mobileFocalY));
       const created = await adminApi<any>(editId ? `/hero-visuals/${editId}` : '/hero-visuals', {
         method: editId ? 'PUT' : 'POST',
         body: form,
@@ -164,23 +170,25 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   };
 
   // إطار معاينة بنفس نسب الـ Hero الحقيقي
-  const PreviewFrame: React.FC<{ label: string; frameClass: string; copyOverlay: boolean; showFocalPicker?: boolean }> = ({ label, frameClass, copyOverlay, showFocalPicker }) => {
+  const PreviewFrame: React.FC<{ label: string; frameClass: string; copyOverlay: boolean; mode?: 'desktop' | 'mobile' }> = ({ label, frameClass, copyOverlay, mode = 'desktop' }) => {
     const url = previewUrl || rows.find((row) => row.id === editId)?.imageUrl || active?.imageUrl || '';
-    const fx = showFocalPicker ? focalX : (editId ? (rows.find((row) => row.id === editId)?.focalX ?? 0.5) : focalX);
-    const fy = showFocalPicker ? focalY : (editId ? (rows.find((row) => row.id === editId)?.focalY ?? 0.5) : focalY);
+    const isMobileFrame = mode === 'mobile';
+    const fx = isMobileFrame ? mobileFocalX : focalX;
+    const fy = isMobileFrame ? mobileFocalY : focalY;
+    const onPick = canWrite ? (event: React.MouseEvent<HTMLDivElement>) => {
+      const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+      if (isMobileFrame) { setMobileFocalX(Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))); setMobileFocalY(Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height))); }
+      else { setFocalX(Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width))); setFocalY(Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height))); }
+    } : undefined;
     return (
       <div className="hero-preview">
         <span className="hero-preview__label">{label}</span>
         <div
           className={`hero-preview__frame ${frameClass}`}
-          onClick={showFocalPicker ? (event) => {
-            const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-            setFocalX(Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width)));
-            setFocalY(Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height)));
-          } : undefined}
+          onClick={onPick}
         >
           {url ? <img src={url} alt="" style={{ objectPosition: `${fx * 100}% ${fy * 100}%` }} /> : <div className="hero-preview__empty"><ImageIcon /></div>}
-          {showFocalPicker && url && canWrite && (
+          {url && canWrite && (
             <span className="hero-preview__focal" style={{ left: `${fx * 100}%`, top: `${fy * 100}%` }} />
           )}
           {copyOverlay && (
@@ -242,11 +250,11 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
         {(previewUrl || editId) && (
           <div className="admin-hero-previews">
-            <p className="admin-hero-previews__hint">Cliquez sur l’aperçu Desktop pour définir le point focal.</p>
+            <p className="admin-hero-previews__hint">Cliquez sur l’aperçu Desktop (position ordinateur) ou Mobile (position téléphone) pour régler le cadrage de chaque écran.</p>
             <div className="admin-hero-previews__grid">
-              <PreviewFrame label="Desktop" frameClass="frame-desktop" copyOverlay />
-              <PreviewFrame label="Tablet" frameClass="frame-tablet" copyOverlay />
-              <PreviewFrame label="Mobile" frameClass="frame-mobile" copyOverlay showFocalPicker />
+              <PreviewFrame label="Desktop" frameClass="frame-desktop" copyOverlay mode="desktop" />
+              <PreviewFrame label="Tablet" frameClass="frame-tablet" copyOverlay mode="desktop" />
+              <PreviewFrame label="Mobile" frameClass="frame-mobile" copyOverlay mode="mobile" />
             </div>
             <div className="admin-hero-actions">
               <Button variant="secondary" disabled={busy || !canWrite} onClick={() => void submit(false)}>Enregistrer le brouillon</Button>
@@ -278,12 +286,12 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                       </span>
                     )}
                   </td>
-                  <td>{Math.round(row.focalX * 100)}% / {Math.round(row.focalY * 100)}%</td>
+                  <td>D {Math.round(row.focalX * 100)}/{Math.round(row.focalY * 100)} · M {Math.round((row.mobileFocalX ?? 0.5) * 100)}/{Math.round((row.mobileFocalY ?? 0.5) * 100)}</td>
                   <td>{row.publishedAt ? new Date(row.publishedAt).toLocaleDateString('fr-TN') : '—'}</td>
                   <td>
                     {canWrite && (
                       <div className="admin-row-actions">
-                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
+                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
                         {row.status === 'PUBLISHED'
                           ? <button type="button" title="Dépublier" onClick={() => void unpublish(row)}><X size={16} /></button>
                           : <button type="button" title="Publier" onClick={() => void publish(row)}>✓</button>}

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * EVERGREEN HERO — AYROVI (refined)
+ * EVERGREEN HERO — AYROVI (final dynamic visual system)
  * المحتوى ثابت حرفياً: Headline + Description قصير + بلا CTA.
- * هوية Black / White / Orange فقط. Visual واحد متجاوب مع Focal Point.
+ * Dark Hero background + Typography + Large full-width Hero Image تحتها.
+ * الصورة ديناميكية من الـAdmin مع موضعي قصّ مستقلين (Desktop / Mobile).
  */
 
 const HEADLINE_A = 'Vous le voyez.';
@@ -20,6 +21,8 @@ interface HeroVisual {
   altText: string;
   focalX: number;
   focalY: number;
+  mobileFocalX: number;
+  mobileFocalY: number;
   isDefault: boolean;
 }
 
@@ -37,6 +40,8 @@ const FALLBACK_VISUAL: HeroVisual = {
   altText: '',
   focalX: 0.5,
   focalY: 0.45,
+  mobileFocalX: 0.5,
+  mobileFocalY: 0.45,
   isDefault: true,
 };
 
@@ -52,14 +57,18 @@ export const EvergreenHero: React.FC = () => {
     fetch('/api/public/hero/active')
       .then((response) => (response.ok ? response.json() : null))
       .then((result) => {
-        if (cancelled || !result?.success?.imageUrl) return;
-        setVisual({ ...FALLBACK_VISUAL, ...result.data });
+        if (cancelled || !result?.data?.imageUrl) return;
+        setVisual((current) => ({ ...current, ...result.data }));
       })
-      .catch(() => {/* الافتراضي يبقى */});
+      .catch(() => {/* الافتراضي يبقى — لا Hero مكسور أبداً */});
     return () => { cancelled = true; };
   }, []);
 
-  const focal = `${Math.round(visual.focalX * 100)}% ${Math.round(visual.focalY * 100)}%`;
+  // موضعا القصّ: Desktop (focal) و Mobile (mobileFocal) — يتحكم بهما الـAdmin
+  const positionVars = {
+    '--hero-pos-desktop': `${Math.round(visual.focalX * 100)}% ${Math.round(visual.focalY * 100)}%`,
+    '--hero-pos-mobile': `${Math.round(visual.mobileFocalX * 100)}% ${Math.round(visual.mobileFocalY * 100)}%`,
+  } as React.CSSProperties;
 
   const image = () => {
     const mobileSet = visual.mobileSrcset.length ? srcsetValue(visual.mobileSrcset) : srcsetValue(visual.srcset);
@@ -71,16 +80,16 @@ export const EvergreenHero: React.FC = () => {
         <img
           src={visual.imageUrl}
           srcSet={srcsetValue(visual.srcset)}
-          sizes="(max-width: 1024px) 100vw, 50vw"
+          sizes="100vw"
           width={visual.imageWidth || 1600}
-          height={visual.imageHeight || 1100}
-          alt={visual.altText}
+          height={visual.imageHeight || 900}
+          alt={visual.altText || 'Sélection de produits internationaux livrés en Tunisie par AYROVI'}
           fetchPriority="high"
           decoding="async"
           onLoad={() => setLoaded(true)}
           onError={() => setLoaded(true)}
-          style={{ objectPosition: focal }}
-          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          style={{ objectPosition: 'var(--hero-pos-desktop, 50% 45%)' }}
+          className={`evergreen-hero-img absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
         />
       </picture>
     );
@@ -92,11 +101,12 @@ export const EvergreenHero: React.FC = () => {
       id="home-hero"
       aria-label="AYROVI — achat international et livraison en Tunisie"
       className="relative -mt-16 w-full bg-[#111217] text-white sm:-mt-20"
+      style={positionVars}
     >
-      <div className="mx-auto w-full max-w-7xl px-6 pb-6 pt-[72px] sm:pt-24 lg:grid lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-8 lg:pb-16 lg:pt-16">
+      <div className="mx-auto w-full max-w-7xl px-6 pb-8 pt-[72px] sm:pt-24 lg:px-8 lg:pb-14 lg:pt-14">
         {/* ===== Copy Area — ثابت، بدون CTA ===== */}
-        <div className="relative z-10 order-1 lg:max-w-xl">
-          <span aria-hidden className="mb-4 block h-1 w-24 rounded-full bg-[#FE7003] sm:w-28 lg:mb-5 lg:w-[120px]" />
+        <div className="relative z-10">
+          <span aria-hidden className="mb-7 block h-1 w-24 rounded-full bg-[#FE7003] lg:mb-8 lg:w-[120px]" />
           <h1 className="evergreen-hero-title hero-anim-up-1 text-white">
             {HEADLINE_A}
             <br />
@@ -107,10 +117,13 @@ export const EvergreenHero: React.FC = () => {
           </p>
         </div>
 
-        {/* ===== Hero Visual — واحد فقط، متجاوب، Focal Point ===== */}
-        <figure className="order-2 mt-7 w-full lg:mt-0">
-          <div className="hero-anim-fade-3 relative aspect-[16/9] w-full overflow-hidden rounded-[24px] bg-[#1b1c23] lg:aspect-[16/11] lg:rounded-[28px]">
-            <span aria-hidden className="pointer-events-none absolute -inset-x-8 -bottom-10 top-1/2 z-[1] rounded-full bg-[#FE7003]/10 blur-3xl" />
+        {/* ===== LARGE HERO VISUAL — بعرض الحاوية كاملاً تحت المحتوى ===== */}
+        <figure className="hero-anim-fade-3 mt-7 w-full lg:mt-8">
+          <div
+            className="evergreen-hero-visual relative w-full overflow-hidden rounded-[24px] bg-[#1b1c23]"
+            style={{ height: 'clamp(320px, 82vw, 420px)' }}
+            data-height-mobile
+          >
             {image()}
           </div>
         </figure>

@@ -381,6 +381,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   const heroRowForAdmin = (row: any) => ({
     id: row.id, imageUrl: row.image_url, imageWidth: row.image_width, imageHeight: row.image_height,
     mobileImageUrl: row.mobile_image_url, altText: row.alt_text, focalX: row.focal_x, focalY: row.focal_y,
+    mobileFocalX: row.mobile_focal_x ?? 0.5, mobileFocalY: row.mobile_focal_y ?? 0.5,
     status: row.status, startDate: row.start_date, endDate: row.end_date, priority: row.priority,
     createdAt: row.created_at, updatedAt: row.updated_at, publishedAt: row.published_at,
   });
@@ -408,10 +409,11 @@ export function createAdminRouter(db: QatafoDatabase): Router {
       const now = new Date().toISOString();
       const priority = Math.min(999, Math.max(0, Number(req.body.priority) || 0));
       db.run(`INSERT INTO hero_visuals
-        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,status,start_date,end_date,priority,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
+        (id,image_url,image_width,image_height,mobile_image_url,alt_text,focal_x,focal_y,mobile_focal_x,mobile_focal_y,status,start_date,end_date,priority,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,'DRAFT',?,?,?,?,?)`,
         id, stored.url, stored.width, stored.height, mobileStored?.url || '', String(req.body.altText || '').slice(0, 200),
         Math.min(1, Math.max(0, Number(req.body.focalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.focalY ?? 0.5))),
+        Math.min(1, Math.max(0, Number(req.body.mobileFocalX ?? 0.5))), Math.min(1, Math.max(0, Number(req.body.mobileFocalY ?? 0.5))),
         startDate, endDate, priority, now, now);
       audit(db, req, 'CREATE', 'HERO', id, null, { image_url: stored.url });
       const row = db.get<any>('SELECT * FROM hero_visuals WHERE id=?', id);
@@ -447,12 +449,14 @@ export function createAdminRouter(db: QatafoDatabase): Router {
         req.body.endDate !== undefined ? req.body.endDate : existing.end_date,
       );
       const now = new Date().toISOString();
-      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,
+      db.run(`UPDATE hero_visuals SET image_url=?,image_width=?,image_height=?,mobile_image_url=?,alt_text=?,focal_x=?,focal_y=?,mobile_focal_x=?,mobile_focal_y=?,
         start_date=?,end_date=?,priority=?,updated_at=? WHERE id=?`,
         imageUrl, imageWidth, imageHeight, mobileImageUrl,
         String(req.body.altText !== undefined ? req.body.altText : existing.alt_text).slice(0, 200),
         Math.min(1, Math.max(0, Number(req.body.focalX !== undefined ? req.body.focalX : existing.focal_x))),
         Math.min(1, Math.max(0, Number(req.body.focalY !== undefined ? req.body.focalY : existing.focal_y))),
+        Math.min(1, Math.max(0, Number(req.body.mobileFocalX !== undefined ? req.body.mobileFocalX : existing.mobile_focal_x ?? 0.5))),
+        Math.min(1, Math.max(0, Number(req.body.mobileFocalY !== undefined ? req.body.mobileFocalY : existing.mobile_focal_y ?? 0.5))),
         startDate, endDate,
         Math.min(999, Math.max(0, Number(req.body.priority !== undefined ? req.body.priority : existing.priority))),
         now, existing.id);

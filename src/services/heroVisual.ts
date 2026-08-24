@@ -27,6 +27,8 @@ export interface ActiveHeroVisual {
   altText: string;
   focalX: number;
   focalY: number;
+  mobileFocalX: number;
+  mobileFocalY: number;
   publishedAt: string | null;
   isDefault: boolean;
 }
@@ -46,6 +48,8 @@ export const DEFAULT_HERO_VISUAL: ActiveHeroVisual = {
   altText: 'Sélectionner un produit en ligne et se faire livrer en Tunisie par AYROVI',
   focalX: 0.5,
   focalY: 0.45,
+  mobileFocalX: 0.5,
+  mobileFocalY: 0.45,
   publishedAt: null,
   isDefault: true,
 };
@@ -79,6 +83,8 @@ function serializeHeroVisual(row: any): ActiveHeroVisual {
     altText: String(row.alt_text || ''),
     focalX: clampFocal(row.focal_x, 0.5),
     focalY: clampFocal(row.focal_y, 0.5),
+    mobileFocalX: clampFocal(row.mobile_focal_x, 0.5),
+    mobileFocalY: clampFocal(row.mobile_focal_y, 0.5),
     publishedAt: row.published_at || null,
     isDefault: false,
   };
