@@ -143,8 +143,9 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           <div className="mx-auto grid grid-cols-4" style={{ gap: 0, padding: previewMode === 'mobile' ? '10px 8px' : '14px 18px' }}>
             {previewItems.slice(0, 4).map((item, index) => (
               <div key={item.id} className="trust-bar-compact__item">
-                <span className="trust-bar-compact__icon">{React.createElement(ICON_COMPONENTS[item.icon] || ShieldCheck, { className: previewMode === 'mobile' ? 'h-[22px] w-[22px]' : 'h-6 w-6', style: { color: item.iconColor || '#FFFFFF' } })}</span>
+                <span className="trust-bar-compact__icon">{React.createElement(ICON_COMPONENTS[item.icon] || ShieldCheck, { className: previewMode === 'mobile' ? 'h-7 w-7' : 'h-8 w-8', style: { color: item.iconColor || settings.accent_color || '#FF7A00' } })}</span>
                 <span className="trust-bar-compact__label" style={{ color: item.titleColor || settings.title_color }}>{item.title}</span>
+                {Boolean(item.description) && <span className="trust-bar-compact__desc">{item.description}</span>}
               </div>
             ))}
           </div>

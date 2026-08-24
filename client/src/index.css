@@ -819,20 +819,45 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 4px;
   min-width: 0;
-  padding: 2px 4px;
+  padding: 2px 6px;
   text-align: center;
+}
+
+.trust-bar-compact__icon { margin-bottom: 6px; }
+
+/* فاصل رأسي رفيع شبه شفاف بين العناصر — بارتفاع جزئي متمركز (مطابق للمرجع) */
+.trust-bar-compact__item.has-divider { position: relative; }
+
+.trust-bar-compact__item.has-divider::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 22%;
+  height: 56%;
+  width: 1px;
+  background: var(--trust-divider, rgba(255,255,255,0.15));
 }
 
 .trust-bar-compact__icon { display: inline-flex; align-items: center; justify-content: center; }
 
 .trust-bar-compact__label {
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: -0.01em;
-  line-height: 1.15;
+  line-height: 1.2;
+  color: #fff;
+  text-align: center;
+}
+
+.trust-bar-compact__desc {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.55);
+  text-align: center;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -841,5 +866,6 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 }
 
 @media (min-width: 1024px) {
-  .trust-bar-compact__label { font-size: 13.5px; }
+  .trust-bar-compact__label { font-size: 14px; }
+  .trust-bar-compact__desc { font-size: 12px; }
 }

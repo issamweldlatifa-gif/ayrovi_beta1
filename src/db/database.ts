@@ -831,10 +831,10 @@ export class QatafoDatabase {
       const insertTrust = this.db.prepare('INSERT INTO trust_bar_items (id,title,description,icon,enabled,sort_order,created_at,updated_at) VALUES (?,?,?,?,1,?,?,?)');
       this.db.transaction(() => {
         [
-          ['Authentique', 'Produits achetés auprès des boutiques officielles', 'ShieldCheck'],
-          ['Dédouanement', 'Toutes les démarches prises en charge', 'Truck'],
+          ['Authentique', 'Produits officiels', 'ShieldCheck'],
+          ['Dédouanement', 'Inclus', 'Truck'],
           ['Acompte 20%', 'Pour confirmer votre commande', 'Lock'],
-          ['Livraison rapide', 'Livraison dans les 24 gouvernorats', 'Zap'],
+          ['Livraison rapide', 'Dans les 24 jours ouvrables', 'Zap'],
         ].forEach(([title, description, icon], index) => insertTrust.run(`trust_${randomUUID()}`, title, description, icon, index + 1, seededAt, seededAt));
       })();
     }
@@ -848,6 +848,14 @@ export class QatafoDatabase {
       ];
       for (const [oldTitle, newTitle] of remap) this.run('UPDATE trust_bar_items SET title=?,updated_at=? WHERE title=?', newTitle, new Date().toISOString(), oldTitle)
       this.run("DELETE FROM trust_bar_items WHERE title='Service client 7j/7' OR title='Service client 7j/7 '");
+      const descRemap: Array<[string, string]> = [
+        ['Authentique', 'Produits officiels'],
+        ['Dédouanement', 'Inclus'],
+        ['Acompte 20%', 'Pour confirmer votre commande'],
+        ['Livraison rapide', 'Dans les 24 jours ouvrables'],
+      ];
+      for (const [title, nextDescription] of descRemap) this.run('UPDATE trust_bar_items SET description=?,updated_at=? WHERE title=?', nextDescription, new Date().toISOString(), title);
+      this.run("UPDATE trust_bar_settings SET background_color='#000000',updated_at=? WHERE background_color='#111217'", new Date().toISOString());
     })();
     if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
       const seededAt = new Date().toISOString();
