@@ -78,9 +78,9 @@ function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number
   );
 }
 
-interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; }
+interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; homepageVisible?: boolean; }
 
-export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount }) => {
+export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount, homepageVisible = true }) => {
   const navigation = useNavigationHistory();
   const { tr, isArabic, direction, formatMoney } = useLocale();
   const cmsLayerId = navigation.stack[0]?.id || '';
@@ -180,26 +180,35 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
   return (
     <>
-      {/* Strip stories au-dessus des cartes (cahier des charges §7) */}
-      <HomeStoryStrip isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />
+      {/*
+        HOMEPAGE CLEANUP: كتل الصفحة الرئيسية (شريط الستوريز + شريط التبويبات القديم)
+        مخفية مؤقتاً من العرض — homepageVisible=false — مع إبقاء صفحات CMS بملء
+        الشاشة تعمل أدناه. المكوّن والبيانات لم يُحذفا من المشروع.
+      */}
+      {homepageVisible && (
+        <>
+          {/* Strip stories au-dessus des cartes (cahier des charges §7) */}
+          <HomeStoryStrip isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />
 
-      <section id="arrivages" className="w-full border-y border-line bg-white" aria-label={tr('Contenus AYROVI', 'محتوى AYROVI')}>
-        <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
-          <div className="grid w-full grid-cols-4 items-center">
-            {pageDefinitions.map((definition) => (
-              <button
-                key={definition.id}
-                type="button"
-                onClick={() => openCmsPage(definition.id)}
-                aria-label={tr(`Ouvrir ${definition.label}`, `فتح ${definition.labelAr}`)}
-                className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-brand focus-visible:text-brand sm:text-lg"
-              >
-                {isArabic ? definition.labelAr : definition.label}
-              </button>
-            ))}
-          </div>
-        </nav>
-      </section>
+          <section id="arrivages" className="w-full border-y border-line bg-white" aria-label={tr('Contenus AYROVI', 'محتوى AYROVI')}>
+            <nav className="mx-auto w-full max-w-7xl px-2 py-6 sm:px-8 sm:py-10" aria-label="Contenus AYROVI">
+              <div className="grid w-full grid-cols-4 items-center">
+                {pageDefinitions.map((definition) => (
+                  <button
+                    key={definition.id}
+                    type="button"
+                    onClick={() => openCmsPage(definition.id)}
+                    aria-label={tr(`Ouvrir ${definition.label}`, `فتح ${definition.labelAr}`)}
+                    className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-brand focus-visible:text-brand sm:text-lg"
+                  >
+                    {isArabic ? definition.labelAr : definition.label}
+                  </button>
+                ))}
+              </div>
+            </nav>
+          </section>
+        </>
+      )}
 
       {activePage && activeDefinition && (
         <div className={`no-scrollbar fixed inset-0 z-[70] overflow-y-auto ${activePage === 'stories' ? 'bg-white' : 'bg-surface'}`} dir={activePage === 'news' ? 'rtl' : direction} role="dialog" aria-modal="true" aria-label={isArabic ? activeDefinition.labelAr : activeDefinition.label}>

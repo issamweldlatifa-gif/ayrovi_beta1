@@ -400,13 +400,15 @@ export const App: React.FC = () => {
     openAppView('app:order-success', true);
   };
 
+  // HOMEPAGE CLEANUP: عرض الـHero والفوتر فقط مؤقتاً — الأقسام القديمة (brands/about)
+  // محذوفة من العرض لا من المشروع، وكتل cms مخفية عبر homepageVisible={false}
   const publicSections = [...interfaceConfig.sections]
-    .filter((section) => section.visible)
+    .filter((section) => section.visible && !['brands', 'about'].includes(section.id))
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
       if (section.id === 'hero') content = <EvergreenHero />;
-      else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />;
+      else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;
       else content = <Footer logoUrl={interfaceConfig.logoUrl} introTitle={section.title} introText={section.subtitle} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />;
