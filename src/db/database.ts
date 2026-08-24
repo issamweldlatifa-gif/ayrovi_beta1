@@ -799,6 +799,27 @@ export class QatafoDatabase {
     // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
     this.db.exec(HERO_VISUALS_TABLE_SQL);
 
+    // AYROVIX LENS HERO — إعدادات قابلة للإدارة من الـAdmin (المحتوى فقط)
+    this.db.exec(`CREATE TABLE IF NOT EXISTS lens_hero_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      eyebrow TEXT NOT NULL DEFAULT 'LENS',
+      title TEXT NOT NULL DEFAULT 'Analysez. Comparez. Achetez mieux.',
+      description TEXT NOT NULL DEFAULT 'Prenez une photo ou importez une image. LENS analyse le produit, compare les prix et vous donne les meilleures options en quelques secondes.',
+      cta_label TEXT NOT NULL DEFAULT 'Ouvrir LENS',
+      bg_type TEXT NOT NULL DEFAULT 'COLOR' CHECK(bg_type IN ('COLOR','IMAGE')),
+      bg_color TEXT NOT NULL DEFAULT '#F6F7F9',
+      bg_image TEXT NOT NULL DEFAULT '',
+      overlay_strength REAL NOT NULL DEFAULT 0.25,
+      focal_x REAL NOT NULL DEFAULT 0.5,
+      focal_y REAL NOT NULL DEFAULT 0.45,
+      phone_enabled INTEGER NOT NULL DEFAULT 1,
+      enabled INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM lens_hero_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run("INSERT INTO lens_hero_settings (id,updated_at) VALUES ('global',?)", new Date().toISOString());
+    }
+
     // AYROVI Trust Bar — العناصر والإعدادات العامة
     this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_items (
       id TEXT PRIMARY KEY,

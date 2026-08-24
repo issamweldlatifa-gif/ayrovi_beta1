@@ -468,6 +468,45 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   /* ==================== HERO MANAGEMENT — Visual واحد نشط، محتوى الـ Hero غير قابل للتعديل ==================== */
   const heroUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
 
+  /* ==================== LENS HERO — إدارة المحتوى والخلفية فقط ==================== */
+  router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
+    const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
+    res.json({ success: true, data: row || null });
+  });
+
+  router.put('/lens-hero', requireAdmin(db, 'content:write'), heroUpload.single('bgImage'), async (req, res) => {
+    const existing = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
+    if (!existing) return res.status(404).json({ success: false, error: 'Paramètres LENS introuvables.' });
+    let bgImage = req.body.bgImage !== undefined ? String(req.body.bgImage) : existing.bg_image;
+    if (req.file) {
+      try {
+        const stored = await storeHeroImage(req.file, `lens_${randomUUID().slice(0, 8)}`, 'desktop');
+        bgImage = stored.url;
+      } catch (error: any) {
+        return res.status(400).json({ success: false, error: `Image de fond — ${error?.message || 'invalide'}` });
+      }
+    }
+    if (req.body.removeImage === 'true' || req.body.removeImage === true) bgImage = '';
+    const bgType = req.body.bgType === 'IMAGE' ? 'IMAGE' : 'COLOR';
+    const validColor = (value: unknown, fallback: string) => (/^#[0-9a-fA-F]{3,8}$/.test(String(value || '')) ? String(value) : fallback);
+    db.run(`UPDATE lens_hero_settings SET eyebrow=?,title=?,description=?,cta_label=?,bg_type=?,bg_color=?,bg_image=?,overlay_strength=?,focal_x=?,focal_y=?,phone_enabled=?,enabled=?,updated_at=? WHERE id='global'`,
+      String(req.body.eyebrow ?? existing.eyebrow).slice(0, 40) || 'LENS',
+      String(req.body.title ?? existing.title).slice(0, 160) || existing.title,
+      String(req.body.description ?? existing.description).slice(0, 400),
+      String(req.body.ctaLabel ?? existing.cta_label).slice(0, 40) || 'Ouvrir LENS',
+      bgType,
+      validColor(req.body.bgColor, existing.bg_color),
+      bgImage,
+      Math.min(1, Math.max(0, Number(req.body.overlayStrength ?? existing.overlay_strength))),
+      Math.min(1, Math.max(0, Number(req.body.focalX ?? existing.focal_x))),
+      Math.min(1, Math.max(0, Number(req.body.focalY ?? existing.focal_y))),
+      req.body.phoneEnabled === undefined ? existing.phone_enabled : (req.body.phoneEnabled ? 1 : 0),
+      req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
+      new Date().toISOString());
+    audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
+    res.json({ success: true, data: db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'") });
+  });
+
   const heroRowForAdmin = (row: any) => ({
     id: row.id, imageUrl: row.image_url, imageWidth: row.image_width, imageHeight: row.image_height,
     mobileImageUrl: row.mobile_image_url, altText: row.alt_text, focalX: row.focal_x, focalY: row.focal_y,

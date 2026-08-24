@@ -139,6 +139,18 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
+  /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) */
+  router.get('/lens-hero', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
+    res.json({ success: true, data: row ? {
+      eyebrow: row.eyebrow, title: row.title, description: row.description, ctaLabel: row.cta_label,
+      bgType: row.bg_type, bgColor: row.bg_color, bgImage: row.bg_image,
+      overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
+      phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled),
+    } : null });
+  });
+
   /** AYROVI Trust Bar — العناصر المفعّلة + الإعدادات العامة */
   router.get('/trust-bar', (_req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
