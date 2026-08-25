@@ -19,26 +19,10 @@ interface LensFeature {
 }
 
 const FEATURES: LensFeature[] = [
-  {
-    icon: Search,
-    title: 'Analyse intelligente',
-    description: 'LENS détecte le produit, les caractéristiques et les détails importants.',
-  },
-  {
-    icon: Tag,
-    title: 'Compare les prix',
-    description: 'Trouvez les meilleures offres parmi plusieurs boutiques fiables.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Fiable & sécurisé',
-    description: 'Vos données sont protégées. Achats 100% sécurisés.',
-  },
-  {
-    icon: Zap,
-    title: 'Rapide & précis',
-    description: 'Obtenez des résultats clairs en quelques secondes seulement.',
-  },
+  { icon: Search, title: 'Analyse intelligente', description: 'LENS détecte le produit, les caractéristiques et les détails importants.' },
+  { icon: Tag, title: 'Compare les prix', description: 'Trouvez les meilleures offres parmi plusieurs boutiques fiables.' },
+  { icon: ShieldCheck, title: 'Fiable & sécurisé', description: 'Vos données sont protégées. Achats 100% sécurisés.' },
+  { icon: Zap, title: 'Rapide & précis', description: 'Obtenez des résultats clairs en quelques secondes seulement.' },
 ];
 
 export const LensFeaturesSection: React.FC = () => (
