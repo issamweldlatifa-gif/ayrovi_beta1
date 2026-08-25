@@ -7,6 +7,7 @@ import { TransitionCard } from './components/TransitionCard';
 import { DiscoveryHub } from './components/DiscoveryHub';
 import { BrandsShowcase } from './components/BrandsShowcase';
 import { LensHero } from './components/LensHero';
+import { LensFeaturesSection } from './components/LensFeaturesSection';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
@@ -33,7 +34,7 @@ const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').th
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
 /** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
-export const DEFAULT_HOME_BLOCKS = ['transition', 'discovery', 'brands', 'lens'];
+export const DEFAULT_HOME_BLOCKS = ['transition', 'discovery', 'brands', 'lens', 'lens-features'];
 
 const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => {
   const style = {
@@ -446,6 +447,7 @@ export const App: React.FC = () => {
               if (block === 'discovery') return <DiscoveryHub key="discovery" />;
               if (block === 'brands') return <BrandsShowcase key="brands" />;
               if (block === 'lens') return <LensHero key="lens" onOpenLens={handleOpenLens} />;
+              if (block === 'lens-features') return <LensFeaturesSection key="lens-features" />;
               return null;
             })}
           </div>

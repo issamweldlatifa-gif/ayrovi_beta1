@@ -867,7 +867,11 @@ export class QatafoDatabase {
     if (!(this.db.prepare('SELECT COUNT(*) count FROM home_blocks').get() as { count: number }).count) {
       const nowBlock = new Date().toISOString();
       const insertBlock = this.db.prepare('INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES (?,?,1,?)');
-      [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
+      [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40], ['lens-features', 50]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
+    }
+    // الترقية: أضف قسم LENS Features (Section 02) إن لم يكن موجودًا في تثبيتات سابقة
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM home_blocks WHERE id='lens-features'").get() as { count: number }).count) {
+      this.run("INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES ('lens-features',50,1,?)", new Date().toISOString());
     }
 
     // AYROVI Trust Bar — العناصر والإعدادات العامة

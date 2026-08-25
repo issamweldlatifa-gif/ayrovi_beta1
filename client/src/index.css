@@ -1059,6 +1059,55 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 @media (min-width: 1024px) {
   .lens-phone { width: min(300px, 32vw); margin-inline: 0; }
 }
+
+/* ============ SECTION 02 — LENS FEATURES (Editorial / Premium) ============ */
+.lens-features { width: 100%; background: #ffffff; padding-block: var(--ay-section-y); }
+
+.lens-features__head { padding-inline: var(--ay-gutter); }
+.lens-features__title {
+  margin: 0;
+  max-width: 90%;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.025em;
+  color: #111217;
+}
+.lens-features__subtitle {
+  margin: var(--ay-heading-to-text) 0 0;
+  max-width: 92%;
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(17, 18, 23, 0.6);
+}
+@media (min-width: 1024px) {
+  .lens-features__title { font-size: 40px; max-width: 720px; }
+  .lens-features__subtitle { font-size: 17px; max-width: 560px; }
+}
+
+/* الهاتف: عمود واحد واسع، فواصل أفقية رفيعة بين الـ Features */
+.lens-features__grid { margin-top: var(--ay-heading-to-slider); padding-inline: var(--ay-gutter); }
+.lens-feature { padding-block: 26px; }
+.lens-feature + .lens-feature { border-top: 1px solid rgba(17, 18, 23, 0.08); }
+.lens-feature__icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 11%, #ffffff);
+  color: var(--ayrovi-cta, #ff7a00);
+}
+.lens-feature__title { margin: 16px 0 0; font-size: 17px; font-weight: 800; letter-spacing: -0.015em; color: #111217; }
+.lens-feature__desc { margin: 8px 0 0; font-size: 14px; line-height: 1.62; color: rgba(17, 18, 23, 0.62); max-width: 46ch; }
+
+/* Desktop: 4 أعمدة جنب بعض مع فواصل عمودية رفيعة — مثل المرجع */
+@media (min-width: 1024px) {
+  .lens-features__grid { display: grid; grid-template-columns: repeat(4, 1fr); padding-inline: var(--ay-gutter); }
+  .lens-feature { padding-block: 8px; padding-inline: 28px; }
+  .lens-feature:first-child { padding-inline-start: 0; }
+  .lens-feature + .lens-feature { border-top: 0; border-left: 1px solid rgba(17, 18, 23, 0.08); }
+}
 .lens-phone__frame {
   position: relative;
   border-radius: 38px;
