@@ -1085,28 +1085,41 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   .lens-features__subtitle { font-size: 17px; max-width: 560px; }
 }
 
-/* الهاتف: عمود واحد واسع، فواصل أفقية رفيعة بين الـ Features */
-.lens-features__grid { margin-top: var(--ay-heading-to-slider); padding-inline: var(--ay-gutter); }
-.lens-feature { padding-block: 26px; }
-.lens-feature + .lens-feature { border-top: 1px solid rgba(17, 18, 23, 0.08); }
+/* 4 أعمدة جنب بعض على كل العرضات — الهاتف نسخة مصغّرة من Desktop (بلا سكرول أفقي) */
+.lens-features__grid {
+  margin-top: var(--ay-heading-to-slider);
+  padding-inline: var(--ay-gutter);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+.lens-feature { min-width: 0; padding: 2px 8px 0 0; }
+.lens-feature + .lens-feature { border-left: 1px solid rgba(17, 18, 23, 0.08); padding-left: 10px; }
 .lens-feature__icon {
   display: grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 11%, #ffffff);
   color: var(--ayrovi-cta, #ff7a00);
 }
-.lens-feature__title { margin: 16px 0 0; font-size: 17px; font-weight: 800; letter-spacing: -0.015em; color: #111217; }
-.lens-feature__desc { margin: 8px 0 0; font-size: 14px; line-height: 1.62; color: rgba(17, 18, 23, 0.62); max-width: 46ch; }
+.lens-feature__title { margin: 12px 0 0; font-size: 12.5px; font-weight: 800; letter-spacing: -0.01em; color: #111217; }
+.lens-feature__desc { margin: 6px 0 0; font-size: 10.5px; line-height: 1.5; color: rgba(17, 18, 23, 0.62); }
 
-/* Desktop: 4 أعمدة جنب بعض مع فواصل عمودية رفيعة — مثل المرجع */
+@media (min-width: 640px) {
+  .lens-feature__icon { width: 40px; height: 40px; border-radius: 12px; }
+  .lens-feature__title { font-size: 15px; }
+  .lens-feature__desc { font-size: 12px; }
+}
+
+/* Desktop: نفس المرجع بحجم كامل */
 @media (min-width: 1024px) {
-  .lens-features__grid { display: grid; grid-template-columns: repeat(4, 1fr); padding-inline: var(--ay-gutter); }
-  .lens-feature { padding-block: 8px; padding-inline: 28px; }
+  .lens-feature { padding: 8px 28px 8px 0; }
   .lens-feature:first-child { padding-inline-start: 0; }
-  .lens-feature + .lens-feature { border-top: 0; border-left: 1px solid rgba(17, 18, 23, 0.08); }
+  .lens-feature + .lens-feature { padding-left: 28px; }
+  .lens-feature__icon { width: 46px; height: 46px; border-radius: 14px; }
+  .lens-feature__title { font-size: 17px; margin-top: 16px; }
+  .lens-feature__desc { font-size: 14px; margin-top: 8px; line-height: 1.62; max-width: 46ch; }
 }
 .lens-phone__frame {
   position: relative;
