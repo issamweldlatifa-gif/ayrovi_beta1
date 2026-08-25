@@ -427,10 +427,11 @@ export const App: React.FC = () => {
     openAppView('app:order-success', true);
   };
 
-  // HOMEPAGE CLEANUP: عرض الـHero والفوتر فقط مؤقتاً — الأقسام القديمة (brands/about)
-  // محذوفة من العرض لا من المشروع، وكتل cms مخفية عبر homepageVisible={false}
+  // HOMEPAGE CLEANUP: الصفحة تنتهي عند قسم LENS — لا فوتر ولا أي محتوى تحته.
+  // الأقسام القديمة (brands/about) والفوتر محذوفة من العرض لا من المشروع،
+  // مع إبقاء cms لأنها تستضيف صفحات CMS بملء الشاشة (تُفتح من Discovery/Menu).
   const publicSections = [...interfaceConfig.sections]
-    .filter((section) => section.visible && !['brands', 'about'].includes(section.id))
+    .filter((section) => section.visible && !['brands', 'about', 'footer'].includes(section.id))
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
@@ -439,7 +440,7 @@ export const App: React.FC = () => {
         <>
           <EvergreenHero />
           <TrustBar />
-          <div className="bg-white pt-8 pb-14">
+          <div className="bg-white pt-8 pb-10">
             {homeBlocks.map((block) => {
               if (block === 'transition') return <TransitionCard key="transition" />;
               if (block === 'discovery') return <DiscoveryHub key="discovery" />;

@@ -52,4 +52,4 @@ html[data-ayrovi-shadow='strong'] .shadow-overlay{box-shadow:0 30px 85px -28px c
 .ayrovi-parallax{overflow:visible!important;contain:none}
 .ayrovi-parallax-media{position:sticky!important;top:0!important;will-change:transform}
 @media(prefers-reduced-motion:reduce){.ayrovi-glass-bottom-nav{transition:none}.ayrovi-parallax-media{will-change:auto}}
-@media(max-width:640px){.ayrovi-app-shell{padding-bottom:calc(var(--ayrovi-bottom-nav-height,72px) + max(.75rem,env(safe-area-inset-bottom)) + 1.25rem)}}
+@media(max-width:640px){.ayrovi-app-shell{padding-bottom:calc(var(--ayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom))}}

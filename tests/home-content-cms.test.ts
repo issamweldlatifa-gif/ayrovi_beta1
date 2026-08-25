@@ -11,6 +11,7 @@ import { app } from '../src/server';
 const admin = request.agent(app);
 let csrf = '';
 
+const appSource = readFileSync('client/src/App.tsx', 'utf8');
 const lensSource = readFileSync('client/src/components/LensHero.tsx', 'utf8');
 const brandsSource = readFileSync('client/src/components/BrandsShowcase.tsx', 'utf8');
 const heroSource = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
@@ -191,5 +192,12 @@ describe('AYROVI mobile width-first layout rule', () => {
     expect(indexCss).toContain('--ay-cta-to-visual: 36px;');
     expect(lensSource).toContain('className="lens-hero mt-12 lg:mt-24"');
     expect(lensSource).not.toContain('mt-20 lg:mt-24');
+  });
+
+  test('the homepage ends at LENS — no footer or content rendered below it', () => {
+    // الفوتر مستثنى من أقسام الصفحة الرئيسية المعروضة
+    expect(appSource).toContain("!['brands', 'about', 'footer'].includes(section.id)");
+    // قسم الـhero يُغلق بدون padding سفلي حتى تنتهي الصفحة عند LENS
+    expect(indexCss).toContain(".managed-public-section[data-public-section='hero'] { padding-block-end: 0 !important; }");
   });
 });

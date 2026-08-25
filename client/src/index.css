@@ -913,6 +913,9 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   :root { --ay-section-y: 72px; }
 }
 
+/* الصفحة تنتهي عند LENS: أزل padding أسفل قسم الـhero حتى تُغلق الصفحة مباشرة بعده */
+.managed-public-section[data-public-section='hero'] { padding-block-end: 0 !important; }
+
 /* خروج بصري من أي container نحو حواف الشاشة (بلا overflow أفقي) */
 .ay-full-bleed {
   width: 100vw;
