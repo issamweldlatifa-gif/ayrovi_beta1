@@ -1,9 +1,16 @@
 import React, { useEffect, useState } from 'react';
 
 /**
- * SUPPORTED BRANDS SHOWCASE — فصل جديد بعد Discovery
- * عنوان تحريري متمركز + عرض ماركات ببطء ambient marquee (من بيانات
- * الماركات القائمة في النظام فقط). خلفية بيضاء، Orange كـaccent فقط.
+ * SUPPORTED BRANDS SHOWCASE — فصل بعد Discovery
+ *
+ * الهيكل المطلوب (Zalando-style):
+ *   Section → Heading block → Title → Subtitle → 32px → Full-width slider
+ *
+ * العنوان والوصف خارج الـ slider تماماً: كتلة نصية ثابتة في تدفق الصفحة
+ * بـ padding أفقي 24px، بينما الـ slider وحدة بصرية مستقلة بعرض الشاشة
+ * (تخرج من أي container). على الهاتف: سحب أفقي أصلي مع snap وبطاقة تالية
+ * ظاهرة جزئياً. على Desktop: نفس الـ ambient marquee الحالي.
+ *
  * يحترم prefers-reduced-motion (إيقاف الحركة + سحب يدوي).
  */
 
@@ -13,8 +20,22 @@ const CATEGORY_LABELS: Record<string, string> = {
   FASHION: 'Fashion', SPORT_LIFESTYLE: 'Sport', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison', OTHER: 'Boutique',
 };
 
+/** Desktop = marquee محيطي (يحتاج نسختين من القائمة)، الهاتف = سحب أصلي (نسخة واحدة) */
+const useIsDesktopViewport = (): boolean => {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)');
+    const sync = () => setIsDesktop(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+  return isDesktop;
+};
+
 export const BrandsShowcase: React.FC = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
+  const isDesktop = useIsDesktopViewport();
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +60,8 @@ export const BrandsShowcase: React.FC = () => {
       rel="noreferrer"
       aria-label={brand.url ? `${brand.name} — ouvrir la boutique` : brand.name}
       className="brand-tile group"
+      aria-hidden={isDesktop && index >= brands.length}
+      tabIndex={isDesktop && index >= brands.length ? -1 : undefined}
     >
       <span className="brand-tile__logo">
         {brand.logo ? <img src={brand.logo} alt="" loading="lazy" /> : <span className="brand-tile__letter">{brand.name.slice(0, 1)}</span>}
@@ -48,17 +71,23 @@ export const BrandsShowcase: React.FC = () => {
     </a>
   );
 
+  // Desktop: نسختان لحلقة الـ marquee المستمرة. الهاتف: نسخة واحدة قابلة للسحب.
+  const railItems = isDesktop ? [...brands, ...brands] : brands;
+
   return (
-    <section aria-label="Marques disponibles" className="mt-20 rounded-[24px] bg-[#111217] px-6 py-12 lg:mx-auto lg:max-w-7xl lg:rounded-[28px] lg:px-10 lg:py-14" style={{ marginInline: '24px' }}>
-      <div className="text-center">
-        <h2 className="ay-edit-30 mx-auto max-w-[320px] text-white">Les marques que vous aimez.</h2>
-        <p className="mx-auto mt-2 max-w-md text-[13.5px] leading-[1.6] text-white/60 sm:text-[15px]">Découvrez les marques et boutiques disponibles avec AYROVI.</p>
+    <section aria-label="Marques disponibles" className="brands-section">
+      {/* ===== Heading block — في تدفق الصفحة، خارج الـ slider ===== */}
+      <div className="brands-heading">
+        <h2 className="brands-heading__title">Les marques que vous aimez.</h2>
+        <p className="brands-heading__subtitle">Découvrez les marques et boutiques disponibles avec AYROVI.</p>
       </div>
 
-      {/* عرض الماركات: شريط بطيء شبه محيط — نسختان للحلقة المستمرة */}
-      <div className="brands-marquee mt-7 overflow-hidden" aria-label="Marques">
-        <div className="brands-marquee__track">
-          {[...brands, ...brands].map((brand, index) => tile(brand, index))}
+      {/* ===== Full-width visual module — وحدة مستقلة بعرض الشاشة ===== */}
+      <div className="brands-rail">
+        <div className="brands-marquee" aria-label="Marques">
+          <div className="brands-marquee__track">
+            {railItems.map((brand, index) => tile(brand, index))}
+          </div>
         </div>
       </div>
     </section>

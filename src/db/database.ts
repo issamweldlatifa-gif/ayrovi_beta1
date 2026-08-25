@@ -820,6 +820,56 @@ export class QatafoDatabase {
       this.run("INSERT INTO lens_hero_settings (id,updated_at) VALUES ('global',?)", new Date().toISOString());
     }
 
+    // LENS — بقية المحتوى يُدار من الـ Dashboard (لا يوجد أي نص ثابت في الواجهة)
+    this.ensureColumn('lens_hero_settings', 'cta_url', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('lens_hero_settings', 'proof_line', "TEXT NOT NULL DEFAULT 'Fiable. Rapide. Intelligent.'");
+    this.ensureColumn('lens_hero_settings', 'accent_color', "TEXT NOT NULL DEFAULT '#FF7A00'");
+    this.ensureColumn('lens_hero_settings', 'element_order', "TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta,proof'");
+    this.ensureColumn('lens_hero_settings', 'sort_order', 'INTEGER NOT NULL DEFAULT 40');
+    this.ensureColumn('lens_hero_settings', 'phone_image', "TEXT NOT NULL DEFAULT '/media/hero-femme.jpg'");
+    this.ensureColumn('lens_hero_settings', 'phone_status_label', "TEXT NOT NULL DEFAULT 'AYROVI LENS'");
+    this.ensureColumn('lens_hero_settings', 'phone_result_label', "TEXT NOT NULL DEFAULT 'Produit identifié'");
+    this.ensureColumn('lens_hero_settings', 'phone_product_name', "TEXT NOT NULL DEFAULT 'Sneakers blanches — 89,00 €'");
+    this.ensureColumn('lens_hero_settings', 'phone_price_chip', "TEXT NOT NULL DEFAULT '≈ 298,900 TND'");
+    this.ensureColumn('lens_hero_settings', 'phone_meta_chip', "TEXT NOT NULL DEFAULT '7 jours'");
+    this.ensureColumn('lens_hero_settings', 'phone_stock_chip', "TEXT NOT NULL DEFAULT 'Disponible'");
+    this.ensureColumn('lens_hero_settings', 'phone_cta_label', "TEXT NOT NULL DEFAULT 'Ajouter au panier'");
+
+    // HERO — المحتوى (عنوان/وصف/CTA) يُدار من الـ Dashboard، لا من الكود
+    this.db.exec(`CREATE TABLE IF NOT EXISTS hero_content_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      eyebrow TEXT NOT NULL DEFAULT '',
+      title TEXT NOT NULL DEFAULT '',
+      highlight TEXT NOT NULL DEFAULT 'AYROVI',
+      description TEXT NOT NULL DEFAULT '',
+      cta_label TEXT NOT NULL DEFAULT '',
+      cta_url TEXT NOT NULL DEFAULT '',
+      accent_color TEXT NOT NULL DEFAULT '#FE7003',
+      element_order TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 10,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) count FROM hero_content_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run(`INSERT INTO hero_content_settings (id,title,description,updated_at) VALUES ('global',?,?,?)`,
+        'Vous le voyez.\nAYROVI vous le livre.',
+        'Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s’occupe du reste.',
+        new Date().toISOString());
+    }
+
+    // ترتيب كتل الصفحة الرئيسية (transition / discovery / brands / lens) — يُدار من الـ Dashboard
+    this.db.exec(`CREATE TABLE IF NOT EXISTS home_blocks (
+      id TEXT PRIMARY KEY,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      visible INTEGER NOT NULL DEFAULT 1,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare('SELECT COUNT(*) count FROM home_blocks').get() as { count: number }).count) {
+      const nowBlock = new Date().toISOString();
+      const insertBlock = this.db.prepare('INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES (?,?,1,?)');
+      [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
+    }
+
     // AYROVI Trust Bar — العناصر والإعدادات العامة
     this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_items (
       id TEXT PRIMARY KEY,

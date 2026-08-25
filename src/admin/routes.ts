@@ -13,6 +13,7 @@ import {
   storeHeroImage,
 } from '../services/heroVisual';
 import { normalizeUploadedImage } from '../services/imageValidation';
+import { parsePublicHttpUrl } from '../services/safeUrl';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
 import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
 import { ocrRecognize } from '../services/vision';
@@ -468,43 +469,177 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   /* ==================== HERO MANAGEMENT — Visual واحد نشط، محتوى الـ Hero غير قابل للتعديل ==================== */
   const heroUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
 
-  /* ==================== LENS HERO — إدارة المحتوى والخلفية فقط ==================== */
+  /* ==================== LENS SECTION — إدارة كاملة للمحتوى (Dashboard = source of truth) ==================== */
+  const LENS_ELEMENT_ORDER = ['eyebrow', 'title', 'description', 'cta', 'proof'] as const;
+  const HERO_ELEMENT_ORDER = ['eyebrow', 'title', 'description', 'cta'] as const;
+
+  /** ترتيب العناصر: يُحافظ على القيم المعروفة ويُلحق الناقصة في النهاية (لا يُفقد أي عنصر) */
+  const normalizeElementOrder = (value: unknown, allowed: readonly string[], fallback: string): string => {
+    const requested = String(value ?? '').split(',').map((token) => token.trim().toLowerCase()).filter(Boolean);
+    const kept = requested.filter((token, index) => allowed.includes(token as never) && requested.indexOf(token) === index);
+    allowed.forEach((token) => { if (!kept.includes(token)) kept.push(token); });
+    return kept.length ? kept.join(',') : fallback;
+  };
+
+  /** رابط CTA: مسار داخلي، anchor، أو URL http(s) عامة آمنة — javascript: وغيرها مرفوضة */
+  const normalizeCtaUrl = (value: unknown): string => {
+    if (value === undefined) return '';
+    const raw = String(value ?? '').trim().slice(0, 500);
+    if (!raw) return '';
+    if (raw.startsWith('#')) return raw;
+    if (raw.startsWith('/') && !raw.startsWith('//')) return raw;
+    return parsePublicHttpUrl(raw).toString();
+  };
+
+  const lensUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
+
+  const lensRowForApi = (row: any) => (row ? {
+    eyebrow: row.eyebrow, title: row.title, description: row.description,
+    ctaLabel: row.cta_label, ctaUrl: row.cta_url || '', proofLine: row.proof_line || '',
+    accentColor: row.accent_color || '#FF7A00', elementOrder: row.element_order || LENS_ELEMENT_ORDER.join(','),
+    bgType: row.bg_type, bgColor: row.bg_color, bgImage: row.bg_image,
+    overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
+    phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 40),
+    phone: {
+      image: row.phone_image || '', statusLabel: row.phone_status_label || '', resultLabel: row.phone_result_label || '',
+      productName: row.phone_product_name || '', priceChip: row.phone_price_chip || '', metaChip: row.phone_meta_chip || '',
+      stockChip: row.phone_stock_chip || '', ctaLabel: row.phone_cta_label || '',
+    },
+    updatedAt: row.updated_at,
+  } : null);
+
   router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
-    const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
-    res.json({ success: true, data: row || null });
+    res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
   });
 
-  router.put('/lens-hero', requireAdmin(db, 'content:write'), heroUpload.single('bgImage'), async (req, res) => {
+  router.put('/lens-hero', requireAdmin(db, 'content:write'), lensUpload.fields([{ name: 'bgImage', maxCount: 1 }, { name: 'phoneImage', maxCount: 1 }]), async (req, res) => {
     const existing = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
     if (!existing) return res.status(404).json({ success: false, error: 'Paramètres LENS introuvables.' });
+    const files = (req.files || {}) as Record<string, Express.Multer.File[]>;
     let bgImage = req.body.bgImage !== undefined ? String(req.body.bgImage) : existing.bg_image;
-    if (req.file) {
-      try {
-        const stored = await storeHeroImage(req.file, `lens_${randomUUID().slice(0, 8)}`, 'desktop');
-        bgImage = stored.url;
-      } catch (error: any) {
-        return res.status(400).json({ success: false, error: `Image de fond — ${error?.message || 'invalide'}` });
-      }
+    let phoneImage = req.body.phoneImage !== undefined ? String(req.body.phoneImage) : existing.phone_image;
+    const storeUpload = async (file: Express.Multer.File | undefined, role: 'desktop' | 'mobile') => {
+      if (!file) return null;
+      try { return (await storeHeroImage(file, `lens_${randomUUID().slice(0, 8)}`, role)).url; }
+      catch (error: any) { throw new Error(`${role === 'desktop' ? 'Image de fond' : 'Visuel du mockup'} — ${error?.message || 'invalide'}`); }
+    };
+    try {
+      const storedBg = await storeUpload(files.bgImage?.[0], 'desktop');
+      if (storedBg) bgImage = storedBg;
+      const storedPhone = await storeUpload(files.phoneImage?.[0], 'mobile');
+      if (storedPhone) phoneImage = storedPhone;
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: error?.message || 'Image invalide.' });
     }
     if (req.body.removeImage === 'true' || req.body.removeImage === true) bgImage = '';
+    if (req.body.removePhoneImage === 'true' || req.body.removePhoneImage === true) phoneImage = '';
+
+    let ctaUrl = existing.cta_url || '';
+    if (req.body.ctaUrl !== undefined) {
+      try { ctaUrl = normalizeCtaUrl(req.body.ctaUrl); }
+      catch { return res.status(400).json({ success: false, error: 'Lien CTA invalide — utilisez une URL https:// ou un chemin interne /…' }); }
+    }
+
     const bgType = req.body.bgType === 'IMAGE' ? 'IMAGE' : 'COLOR';
     const validColor = (value: unknown, fallback: string) => (/^#[0-9a-fA-F]{3,8}$/.test(String(value || '')) ? String(value) : fallback);
-    db.run(`UPDATE lens_hero_settings SET eyebrow=?,title=?,description=?,cta_label=?,bg_type=?,bg_color=?,bg_image=?,overlay_strength=?,focal_x=?,focal_y=?,phone_enabled=?,enabled=?,updated_at=? WHERE id='global'`,
-      String(req.body.eyebrow ?? existing.eyebrow).slice(0, 40) || 'LENS',
-      String(req.body.title ?? existing.title).slice(0, 160) || existing.title,
-      String(req.body.description ?? existing.description).slice(0, 400),
-      String(req.body.ctaLabel ?? existing.cta_label).slice(0, 40) || 'Ouvrir LENS',
+    const clamp = (value: unknown, fallback: number) => Math.min(1, Math.max(0, Number(value ?? fallback) || 0));
+    const text = (value: unknown, fallback: string, max: number) => String(value ?? fallback).slice(0, max);
+    db.run(`UPDATE lens_hero_settings SET eyebrow=?,title=?,description=?,cta_label=?,cta_url=?,proof_line=?,accent_color=?,element_order=?,
+      bg_type=?,bg_color=?,bg_image=?,overlay_strength=?,focal_x=?,focal_y=?,phone_enabled=?,enabled=?,sort_order=?,
+      phone_image=?,phone_status_label=?,phone_result_label=?,phone_product_name=?,phone_price_chip=?,phone_meta_chip=?,phone_stock_chip=?,phone_cta_label=?,
+      updated_at=? WHERE id='global'`,
+      text(req.body.eyebrow, existing.eyebrow, 40) || 'LENS',
+      text(req.body.title, existing.title, 160) || existing.title,
+      text(req.body.description, existing.description, 400),
+      text(req.body.ctaLabel, existing.cta_label, 40) || 'Ouvrir LENS',
+      ctaUrl,
+      text(req.body.proofLine, existing.proof_line, 120),
+      validColor(req.body.accentColor, existing.accent_color || '#FF7A00'),
+      normalizeElementOrder(req.body.elementOrder, LENS_ELEMENT_ORDER, LENS_ELEMENT_ORDER.join(',')),
       bgType,
       validColor(req.body.bgColor, existing.bg_color),
       bgImage,
-      Math.min(1, Math.max(0, Number(req.body.overlayStrength ?? existing.overlay_strength))),
-      Math.min(1, Math.max(0, Number(req.body.focalX ?? existing.focal_x))),
-      Math.min(1, Math.max(0, Number(req.body.focalY ?? existing.focal_y))),
+      clamp(req.body.overlayStrength, existing.overlay_strength),
+      clamp(req.body.focalX, existing.focal_x),
+      clamp(req.body.focalY, existing.focal_y),
       req.body.phoneEnabled === undefined ? existing.phone_enabled : (req.body.phoneEnabled ? 1 : 0),
       req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
+      Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
+      phoneImage,
+      text(req.body.phone?.statusLabel ?? req.body.phoneStatusLabel, existing.phone_status_label, 40),
+      text(req.body.phone?.resultLabel ?? req.body.phoneResultLabel, existing.phone_result_label, 40),
+      text(req.body.phone?.productName ?? req.body.phoneProductName, existing.phone_product_name, 80),
+      text(req.body.phone?.priceChip ?? req.body.phonePriceChip, existing.phone_price_chip, 40),
+      text(req.body.phone?.metaChip ?? req.body.phoneMetaChip, existing.phone_meta_chip, 40),
+      text(req.body.phone?.stockChip ?? req.body.phoneStockChip, existing.phone_stock_chip, 40),
+      text(req.body.phone?.ctaLabel ?? req.body.phoneCtaLabel, existing.phone_cta_label, 40),
       new Date().toISOString());
     audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
-    res.json({ success: true, data: db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'") });
+    res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
+  });
+
+  /* ==================== HERO CONTENT — العنوان/الوصف/CTA من الـ Dashboard ==================== */
+  const heroContentRowForApi = (row: any) => (row ? {
+    eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
+    ctaLabel: row.cta_label, ctaUrl: row.cta_url, accentColor: row.accent_color,
+    elementOrder: row.element_order, enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 10),
+    updatedAt: row.updated_at,
+  } : null);
+
+  router.get('/hero-content', requireAdmin(db, 'content:read'), (_req, res) => {
+    res.json({ success: true, data: heroContentRowForApi(db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'")) });
+  });
+
+  router.put('/hero-content', requireAdmin(db, 'content:write'), async (req, res) => {
+    const existing = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
+    if (!existing) return res.status(404).json({ success: false, error: 'Contenu Hero introuvable.' });
+    let ctaUrl = existing.cta_url || '';
+    if (req.body.ctaUrl !== undefined) {
+      try { ctaUrl = normalizeCtaUrl(req.body.ctaUrl); }
+      catch { return res.status(400).json({ success: false, error: 'Lien CTA invalide — utilisez une URL https:// ou un chemin interne /…' }); }
+    }
+    const title = String(req.body.title ?? existing.title).replace(/\r\n/g, '\n').slice(0, 200);
+    if (!title.trim()) return res.status(400).json({ success: false, error: 'Le titre du Hero est obligatoire.' });
+    const validColor = (value: unknown, fallback: string) => (/^#[0-9a-fA-F]{3,8}$/.test(String(value || '')) ? String(value) : fallback);
+    db.run(`UPDATE hero_content_settings SET eyebrow=?,title=?,highlight=?,description=?,cta_label=?,cta_url=?,accent_color=?,element_order=?,enabled=?,sort_order=?,updated_at=? WHERE id='global'`,
+      String(req.body.eyebrow ?? existing.eyebrow).slice(0, 40),
+      title,
+      String(req.body.highlight ?? existing.highlight).slice(0, 40),
+      String(req.body.description ?? existing.description).slice(0, 400),
+      String(req.body.ctaLabel ?? existing.cta_label).slice(0, 40),
+      ctaUrl,
+      validColor(req.body.accentColor, existing.accent_color),
+      normalizeElementOrder(req.body.elementOrder, HERO_ELEMENT_ORDER, HERO_ELEMENT_ORDER.join(',')),
+      req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
+      Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
+      new Date().toISOString());
+    invalidateHeroVisualCache();
+    audit(db, req, 'UPDATE', 'HERO_CONTENT', 'global', null, null);
+    res.json({ success: true, data: heroContentRowForApi(db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'")) });
+  });
+
+  /* ==================== HOME BLOCKS — ترتيب وإظهار كتل الصفحة الرئيسية ==================== */
+  const HOME_BLOCK_IDS = ['transition', 'discovery', 'brands', 'lens'] as const;
+
+  router.get('/home-blocks', requireAdmin(db, 'content:read'), (_req, res) => {
+    const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');
+    res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
+  });
+
+  router.put('/home-blocks', requireAdmin(db, 'content:write'), (req, res) => {
+    const incoming = Array.isArray(req.body?.blocks) ? req.body.blocks : [];
+    if (!incoming.length) return res.status(400).json({ success: false, error: 'Aucun bloc reçu.' });
+    const now = new Date().toISOString();
+    incoming.forEach((block: any, index: number) => {
+      const id = String(block?.id || '');
+      if (!HOME_BLOCK_IDS.includes(id as never)) return;
+      const existing = db.get<any>('SELECT id FROM home_blocks WHERE id=?', id);
+      if (existing) db.run('UPDATE home_blocks SET sort_order=?,visible=?,updated_at=? WHERE id=?', index, block?.visible === false ? 0 : 1, now, id);
+      else db.run('INSERT INTO home_blocks (id,sort_order,visible,updated_at) VALUES (?,?,?,?)', id, index, block?.visible === false ? 0 : 1, now);
+    });
+    audit(db, req, 'UPDATE', 'HOME_BLOCKS', 'all', null, null);
+    const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');
+    res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
   });
 
   const heroRowForAdmin = (row: any) => ({

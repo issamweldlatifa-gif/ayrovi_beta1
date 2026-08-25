@@ -32,6 +32,9 @@ const CheckoutModal = lazy(() => import('./components/CheckoutModal').then((modu
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
+/** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
+export const DEFAULT_HOME_BLOCKS = ['transition', 'discovery', 'brands', 'lens'];
+
 const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => {
   const style = {
     '--ayrovi-section-background': section.backgroundColor,
@@ -71,6 +74,8 @@ export const App: React.FC = () => {
 
   const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
   const [interfaceConfig, setInterfaceConfig] = useState<PublicInterfaceConfig>(() => structuredClone(DEFAULT_INTERFACE_CONFIG));
+  // ترتيب كتل الصفحة الرئيسية (transition/discovery/brands/lens) — يُدار من Admin → Sections
+  const [homeBlocks, setHomeBlocks] = useState<string[]>(DEFAULT_HOME_BLOCKS);
 
   // Cart & Checkout State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -193,6 +198,23 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (isLensOpen && !lensSessionActive) setLensSessionActive(true);
   }, [isLensOpen, lensSessionActive]);
+
+  // ترتيب وإظهار كتل الصفحة الرئيسية — من الـ Dashboard (Admin → Sections)
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/public/home-blocks')
+      .then((response) => (response.ok ? response.json() : null))
+      .then((result) => {
+        if (cancelled || !Array.isArray(result?.data) || !result.data.length) return;
+        const ordered = result.data
+          .filter((block: any) => block?.visible !== false && DEFAULT_HOME_BLOCKS.includes(String(block.id)))
+          .sort((a: any, b: any) => Number(a.sortOrder) - Number(b.sortOrder))
+          .map((block: any) => String(block.id));
+        if (ordered.length) setHomeBlocks(ordered);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -412,7 +434,22 @@ export const App: React.FC = () => {
     .sort((a, b) => a.order - b.order)
     .map((section) => {
       let content: React.ReactNode;
-      if (section.id === 'hero') content = <><EvergreenHero /><TrustBar /><div className="bg-white pt-8 pb-20"><TransitionCard /><DiscoveryHub /><BrandsShowcase /><LensHero onOpenLens={handleOpenLens} /></div></>;
+      // كتل الصفحة الرئيسية تُرتَّب وتُخفى من الـ Dashboard (Admin → Sections)
+      if (section.id === 'hero') content = (
+        <>
+          <EvergreenHero />
+          <TrustBar />
+          <div className="bg-white pt-8 pb-14">
+            {homeBlocks.map((block) => {
+              if (block === 'transition') return <TransitionCard key="transition" />;
+              if (block === 'discovery') return <DiscoveryHub key="discovery" />;
+              if (block === 'brands') return <BrandsShowcase key="brands" />;
+              if (block === 'lens') return <LensHero key="lens" onOpenLens={handleOpenLens} />;
+              return null;
+            })}
+          </div>
+        </>
+      );
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;

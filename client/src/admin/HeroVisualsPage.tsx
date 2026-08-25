@@ -1,15 +1,29 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
+import { ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
 import { Button, ConfirmDialog, Field, StatusBadge, Toast } from './components';
 import { adminApi } from './api';
 
 /**
- * HERO MANAGEMENT — إدارة الـ Visual فقط.
- * محتوى الـ Hero (Headline/Description/Typography/Colors/Layout) ثابت في الكود ولا يظهر هنا إطلاقاً.
+ * HERO MANAGEMENT — Visual + Contenu.
+ * Dashboard = Control · Database = Source of Truth · Frontend = Presentation:
+ * الصورة وجدولتها تُدار هنا، وكذلك محتوى الـ Hero (eyebrow، العنوان، الوصف،
+ * الـ CTA ورابطه، الكلمة المميّزة، ترتيب العناصر، إظهار/إخفاء). لا يوجد أي
+ * نص Hero ثابت في الكود.
  */
 
-const HERO_HEADLINE = 'Vous le voyez. AYROVI vous le livre.';
-const HERO_DESCRIPTION = 'Mode, beauté, technologie, maison… trouvez votre produit en ligne, envoyez-nous son lien ou sa photo, et AYROVI s’occupe de l’achat, de l’importation et de la livraison.';
+interface HeroContentRow {
+  eyebrow: string; title: string; highlight: string; description: string;
+  ctaLabel: string; ctaUrl: string; accentColor: string; elementOrder: string; enabled: boolean;
+}
+
+const HERO_CONTENT_EMPTY: HeroContentRow = {
+  eyebrow: '', title: '', highlight: 'AYROVI', description: '',
+  ctaLabel: '', ctaUrl: '', accentColor: '#FE7003', elementOrder: 'eyebrow,title,description,cta', enabled: true,
+};
+
+const HERO_ELEMENT_LABELS: Record<string, string> = {
+  eyebrow: 'Label (eyebrow)', title: 'Titre principal', description: 'Sous-titre / description', cta: 'Bouton CTA',
+};
 
 interface HeroVisualRow {
   id: string;
@@ -68,6 +82,10 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   const [deleteTarget, setDeleteTarget] = useState<HeroVisualRow | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // محتوى الـ Hero — من الـ CMS (لا نص ثابت في الكود)
+  const [content, setContent] = useState<HeroContentRow>(HERO_CONTENT_EMPTY);
+  const [contentBusy, setContentBusy] = useState(false);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -79,7 +97,25 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
     } finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  const loadContent = useCallback(async () => {
+    try {
+      const result = await adminApi<any>('/hero-content');
+      if (result.data) setContent({ ...HERO_CONTENT_EMPTY, ...result.data });
+    } catch { /* الـ Visual يبقى قابلاً للإدارة حتى لو تعذّر محتوى النص */ }
+  }, []);
+
+  const saveContent = async () => {
+    if (!content.title.trim()) { setToast({ message: 'Le titre du Hero est obligatoire.', tone: 'error' }); return; }
+    setContentBusy(true);
+    try {
+      const result = await adminApi<any>('/hero-content', { method: 'PUT', body: JSON.stringify(content) });
+      if (result.data) setContent({ ...HERO_CONTENT_EMPTY, ...result.data });
+      setToast({ message: 'Contenu du Hero enregistré — visible immédiatement sur le site.', tone: 'success' });
+    } catch (reason: any) { setToast({ message: reason.message, tone: 'error' }); }
+    finally { setContentBusy(false); }
+  };
+
+  useEffect(() => { void load(); void loadContent(); }, [load, loadContent]);
 
   useEffect(() => {
     if (!toast) return;
@@ -208,9 +244,12 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           {url ? <img src={url} alt="" className="hfb-img" style={{ objectPosition: `${fx * 100}% ${fy * 100}%` }} /> : <div className="hero-preview__empty"><ImageIcon /></div>}
           <span aria-hidden style={{ position: 'absolute', inset: 0, background: overlayFor(), zIndex: 1 }} />
           <div className="hero-fullbleed-copy" aria-hidden>
-            <span className="hfb-accent" />
-            <strong>Vous le voyez.<br /><em>AYROVI</em> vous le livre.</strong>
-            <small>Mode, beauté, technologie, maison… trouvez ce que vous cherchez. AYROVI s'occupe du reste.</small>
+            <span className="hfb-accent" style={{ background: content.accentColor }} />
+            <strong>{heroPreviewTitle.map((line, index) => (
+              <React.Fragment key={index}>{index > 0 && <br />}{highlightedLine(line, index)}</React.Fragment>
+            ))}</strong>
+            {content.description && <small>{content.description}</small>}
+            {content.ctaLabel && <em className="hfb-cta" style={{ background: content.accentColor }}>{content.ctaLabel}</em>}
           </div>
           {url && canWrite && (
             <span className="hero-preview__focal" style={{ left: `${fx * 100}%`, top: `${fy * 100}%`, zIndex: 3 }} />
@@ -221,15 +260,72 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   };
 
 
+  // معاينة المحتوى كما سيظهر على الموقع (نفس النص المخزّن في الـ CMS)
+  const heroPreviewTitle = String(content.title || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  const highlightedLine = (line: string, index: number) => {
+    const highlight = String(content.highlight || '').trim();
+    if (!highlight || !line.includes(highlight)) return line;
+    const at = line.indexOf(highlight);
+    return (
+      <React.Fragment key={`hl-${index}`}>
+        {line.slice(0, at)}<em style={{ color: content.accentColor, fontStyle: 'normal' }}>{highlight}</em>{line.slice(at + highlight.length)}
+      </React.Fragment>
+    );
+  };
+
+  const heroKeys = String(content.elementOrder || '').split(',').map((token) => token.trim()).filter(Boolean);
+  const moveHeroKey = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= heroKeys.length) return;
+    const next = [...heroKeys];
+    [next[index], next[target]] = [next[target], next[index]];
+    setContent((current) => ({ ...current, elementOrder: next.join(',') }));
+  };
+
   return (
     <div className="admin-hero-page">
       {toast && <Toast message={toast.message} tone={toast.tone} />}
+
+      {/* ===== CONTENU DU HERO — يُدار من الـ Dashboard، لا من الكود ===== */}
+      <section className="admin-card" style={{ marginBottom: 16 }}>
+        <div className="admin-card-head">
+          <div>
+            <h3>Contenu du Hero</h3>
+            <p>Titre, sous-titre, label, CTA et son lien, mot accentué, ordre des éléments. Le site affiche uniquement ce contenu.</p>
+          </div>
+          <Button onClick={() => void saveContent()} busy={contentBusy} disabled={!canWrite || loading}>Enregistrer le contenu</Button>
+        </div>
+        <div className="admin-form">
+          <Field label="Label (eyebrow)" hint="Vide = fine barre orange (identité actuelle)."><input disabled={!canWrite} value={content.eyebrow} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, eyebrow: event.target.value }))} /></Field>
+          <Field label="Mot accentué" hint="Mot colorié dans le titre (AYROVI par défaut)."><input disabled={!canWrite} value={content.highlight} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, highlight: event.target.value }))} /></Field>
+          <Field label="Titre principal" required full hint="Une ligne = un saut de ligne dans le Hero."><textarea disabled={!canWrite} rows={3} value={content.title} maxLength={200} onChange={(event) => setContent((current) => ({ ...current, title: event.target.value }))} /></Field>
+          <Field label="Sous-titre / description" full><textarea disabled={!canWrite} rows={3} value={content.description} maxLength={400} onChange={(event) => setContent((current) => ({ ...current, description: event.target.value }))} /></Field>
+          <Field label="Texte du CTA" hint="Vide = aucun bouton (design actuel)."><input disabled={!canWrite} value={content.ctaLabel} maxLength={40} onChange={(event) => setContent((current) => ({ ...current, ctaLabel: event.target.value }))} /></Field>
+          <Field label="Destination du CTA" hint="https://… ou chemin interne /…"><input disabled={!canWrite} value={content.ctaUrl} onChange={(event) => setContent((current) => ({ ...current, ctaUrl: event.target.value }))} placeholder="https://ayrovi.tn/…" /></Field>
+          <Field label="Couleur d’accent"><input disabled={!canWrite} type="color" value={content.accentColor} onChange={(event) => setContent((current) => ({ ...current, accentColor: event.target.value }))} /></Field>
+          <Field label="Afficher le contenu" full>
+            <button type="button" disabled={!canWrite} className={`admin-switch ${content.enabled ? 'is-on' : ''}`} onClick={() => setContent((current) => ({ ...current, enabled: !current.enabled }))}><i /><span>{content.enabled ? 'Contenu visible' : 'Contenu masqué'}</span></button>
+          </Field>
+        </div>
+        <h4 style={{ margin: '16px 0 8px' }}>Ordre des éléments</h4>
+        <ul className="admin-list">
+          {heroKeys.map((key, index) => (
+            <li key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+              <span>{index + 1}. {HERO_ELEMENT_LABELS[key] || key}</span>
+              <span style={{ display: 'flex', gap: 6 }}>
+                <Button variant="ghost" disabled={!canWrite || index === 0} onClick={() => moveHeroKey(index, -1)} aria-label="Monter"><ArrowUp size={15} /></Button>
+                <Button variant="ghost" disabled={!canWrite || index === heroKeys.length - 1} onClick={() => moveHeroKey(index, 1)} aria-label="Descendre"><ArrowDown size={15} /></Button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section className="admin-card" style={{ marginBottom: 16 }}>
         <div className="admin-card-head">
           <div>
             <h3>Visual actif</h3>
-            <p>Le Hero affiche une seule image à la fois — le contenu texte est fixe et non modifiable.</p>
+            <p>Le Hero affiche une seule image à la fois. Le texte se gère dans « Contenu du Hero » ci-dessus.</p>
           </div>
           <StatusBadge status={active?.isDefault ? 'DRAFT' : 'PUBLISHED'} />
         </div>

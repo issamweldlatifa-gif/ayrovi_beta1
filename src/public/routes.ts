@@ -139,16 +139,47 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
-  /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) */
+  /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
   router.get('/lens-hero', (_req, res) => {
     res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
     const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
     res.json({ success: true, data: row ? {
-      eyebrow: row.eyebrow, title: row.title, description: row.description, ctaLabel: row.cta_label,
+      eyebrow: row.eyebrow, title: row.title, description: row.description,
+      ctaLabel: row.cta_label, ctaUrl: row.cta_url || '', proofLine: row.proof_line || '',
+      accentColor: row.accent_color || '#FF7A00', elementOrder: row.element_order || 'eyebrow,title,description,cta,proof',
       bgType: row.bg_type, bgColor: row.bg_color, bgImage: row.bg_image,
       overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
       phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled),
+      sortOrder: Number(row.sort_order ?? 40),
+      phone: {
+        image: row.phone_image || '',
+        statusLabel: row.phone_status_label || '',
+        resultLabel: row.phone_result_label || '',
+        productName: row.phone_product_name || '',
+        priceChip: row.phone_price_chip || '',
+        metaChip: row.phone_meta_chip || '',
+        stockChip: row.phone_stock_chip || '',
+        ctaLabel: row.phone_cta_label || '',
+      },
     } : null });
+  });
+
+  /** محتوى الـ Hero (عنوان/وصف/CTA) — الـ Visual يبقى في /hero/active */
+  router.get('/hero-content', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    const row = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
+    res.json({ success: true, data: row ? {
+      eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
+      ctaLabel: row.cta_label, ctaUrl: row.cta_url, accentColor: row.accent_color,
+      elementOrder: row.element_order, enabled: Boolean(row.enabled),
+    } : null });
+  });
+
+  /** ترتيب وإظهار كتل الصفحة الرئيسية */
+  router.get('/home-blocks', (_req, res) => {
+    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');
+    res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
   });
 
   /** AYROVI Trust Bar — العناصر المفعّلة + الإعدادات العامة */
