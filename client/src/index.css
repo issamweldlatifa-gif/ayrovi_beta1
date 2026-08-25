@@ -1092,9 +1092,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
 }
-.lens-feature { min-width: 0; padding: 2px 10px; }
-.lens-feature:first-child { padding-left: 0; }
-.lens-feature:last-child { padding-right: 0; }
+.lens-feature { min-width: 0; padding: 2px 6px; text-align: center; }
 .lens-feature + .lens-feature { border-left: 1px solid rgba(17, 18, 23, 0.08); }
 .lens-feature__icon {
   display: grid;
@@ -1102,6 +1100,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
+  margin-inline: auto;
   background: color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 11%, #ffffff);
   color: var(--ayrovi-cta, #ff7a00);
 }
@@ -1114,12 +1113,12 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   .lens-feature__title { font-size: 15px; }
 }
 
-/* Desktop: نفس المرجع بحجم كامل مع الوصف */
+/* Desktop: نفس المرجع بحجم كامل مع الوصف (محاذاة يسار) */
 @media (min-width: 1024px) {
-  .lens-feature { padding: 8px 28px; }
+  .lens-feature { padding: 8px 28px; text-align: left; }
   .lens-feature:first-child { padding-left: 0; }
   .lens-feature:last-child { padding-right: 0; }
-  .lens-feature__icon { width: 46px; height: 46px; border-radius: 14px; }
+  .lens-feature__icon { width: 46px; height: 46px; border-radius: 14px; margin-inline: 0; }
   .lens-feature__title { font-size: 17px; margin-top: 16px; }
   .lens-feature__desc { display: block; margin: 8px 0 0; font-size: 14px; line-height: 1.62; color: rgba(17, 18, 23, 0.62); max-width: 46ch; }
 }

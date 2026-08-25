@@ -222,14 +222,14 @@ describe('Section 02 — LENS features rebuilt from the reference composition', 
   test('the features build is horizontal — 4 columns at every viewport, no horizontal scroll', () => {
     // الشبكة 4 أعمدة دائمًا (الهاتف نسخة مصغّرة من Desktop)
     expect(indexCss).toMatch(/\.lens-features__grid \{[\s\S]*?display: grid;[\s\S]*?grid-template-columns: repeat\(4, 1fr\);[\s\S]*?\}/);
-    // فواصل عمودية رفيعة بين الأعمدة وتباعد منتظم (padding متساوي الطرفين)
+    // فواصل عمودية رفيعة بين الأعمدة
     expect(indexCss).toMatch(/\.lens-feature \+ \.lens-feature \{ border-left: 1px solid rgba\(17, 18, 23, 0\.08\); \}/);
-    expect(indexCss).toMatch(/\.lens-feature \{ min-width: 0; padding: 2px 10px; \}/);
-    expect(indexCss).toMatch(/\.lens-feature:first-child \{ padding-left: 0; \}/);
-    expect(indexCss).toMatch(/\.lens-feature:last-child \{ padding-right: 0; \}/);
     expect(indexCss).not.toMatch(/\.lens-feature \+ \.lens-feature \{ border-top: 1px solid/);
-    // الأعمدة تقدر تتقلّص بدون overflow
-    expect(indexCss).toMatch(/\.lens-feature \{ min-width: 0;[\s\S]*?\}/);
+    // الهاتف: توسيط المحتوى (أيقونة+عنوان) لضمان تباعد متساوٍ فعلي بين الأيقونات
+    expect(indexCss).toMatch(/\.lens-feature \{ min-width: 0; padding: 2px 6px; text-align: center; \}/);
+    expect(indexCss).toMatch(/\.lens-feature__icon \{[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
+    // Desktop يعود لمحاذاة اليسار كما المرجع
+    expect(indexCss).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*?\.lens-feature \{ padding: 8px 28px; text-align: left; \}[\s\S]*?\}/);
     // الهاتف: الوصف مخفي (أيقونة + عنوان فقط) ويظهر على Desktop
     expect(indexCss).toMatch(/\.lens-feature__desc \{ display: none; \}/);
     expect(indexCss).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*?\.lens-feature__desc \{ display: block;[\s\S]*?\}/);
