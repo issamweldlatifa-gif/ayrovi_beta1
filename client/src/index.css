@@ -1240,3 +1240,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .lens-analyzing__card p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, currentColor 62%, transparent); }
 
 @media (prefers-reduced-motion: reduce) { .lens-frame__beam, .lens-spinner { animation: none; } }
+
+/* CTA برتقالي كبير لصفحة نتائج Lens */
+.ay-cta-orange { background: var(--ayrovi-cta, #ff7a00); border: 0; cursor: pointer; box-shadow: 0 12px 26px -14px color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 70%, transparent); }
+.ay-cta-orange:hover { filter: brightness(0.95); }

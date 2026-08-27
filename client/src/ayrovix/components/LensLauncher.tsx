@@ -17,6 +17,7 @@ import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
+import { LensResults } from './LensResults';
 import { Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles } from '../../components/QatafoIcons';
 
 interface LensLauncherProps {
@@ -465,6 +466,32 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     }
   };
 
+
+  const commandDetectedPrice = (detected: AyrovixDetectedPrice) => {
+    setProduct({
+      title: detected.title || 'Produit détecté par AYROVIX',
+      brand: detected.brand,
+      model: null,
+      description: detected.isCartScreenshot ? `Panier: ${detected.sourcePrice} ${detected.sourceCurrency} - ${detected.title}` : `${detected.title} — Prix repéré ${detected.sourcePrice} ${detected.sourceCurrency}`,
+      image: detected.imageUrl || previewUrl || '',
+      images: detected.imageUrl ? [detected.imageUrl] : previewUrl ? [previewUrl] : [],
+      source: 'Collection AYROVI',
+      sourceUrl: '',
+      price: detected.sourcePrice,
+      currency: detected.sourceCurrency,
+      priceTnd: detected.totalPriceTND,
+      priceToken: detected.priceToken || null,
+      priceVerified: false,
+      priceVerificationStatus: 'PENDING_MANUAL',
+      exchangeRate: null,
+      colors: [],
+      sizes: [],
+      availability: 'unknown',
+    });
+    setVerifiedPriceUrl(false);
+    enterStage('product');
+  };
+
   const repeatHistoryItem = (item: AyrovixHistoryItem) => {
     if (item.kind === 'barcode' && item.inputValue) { void runBarcodeAnalysis(item.inputValue); return; }
     if (item.kind === 'code' && item.inputValue) { void runCodeTextAnalysis(item.inputValue); return; }
@@ -617,7 +644,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 {previewUrl
                   ? <img src={previewUrl} alt="" className="lens-frame__img" />
                   : <div className="lens-frame__empty"><span className="lens-spinner" /></div>}
-                <div className="lens-frame__dots" aria-hidden="true" />
                 <span className="lens-frame__corner tl" /><span className="lens-frame__corner tr" />
                 <span className="lens-frame__corner bl" /><span className="lens-frame__corner br" />
                 <span className="lens-frame__beam" aria-hidden="true" />
@@ -649,99 +675,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           )}
 
           {stage === 'candidates' && candidatesView && (
-            <div className="mx-auto max-w-md space-y-4">
-              {candidatesView.detectedPrice && candidatesView.detectedPrice.sourcePrice > 0 && (
-                <>
-                  {/* Prix visible lu par Claude dans la même analyse d’image. */}
-                  <div className="overflow-hidden rounded-[22px] border-2 border-brand bg-white shadow-lg">
-                    <div className="ayrovix-product-gallery-stage bg-surface">
-                      {(candidatesView.detectedPrice.imageUrl || previewUrl) ? (
-                        <img
-                          src={candidatesView.detectedPrice.imageUrl || previewUrl || ''}
-                          alt={candidatesView.detectedPrice.title}
-                          decoding="async"
-                          draggable={false}
-                          className="ayrovix-product-gallery-image"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-muted">{tr('Sans image', 'بدون صورة')}</div>
-                      )}
-                      <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold text-ink">{tr('Prix repéré', 'سعر مكتشف')}</span>
-                      <span className="absolute end-3 top-3 rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-bold text-white">{candidatesView.detectedPrice.sourceCurrency}</span>
-                    </div>
-                    <div className="space-y-3 p-4">
-                      <div>
-                        <h3 className="text-[15px] font-extrabold leading-snug text-ink line-clamp-2">
-                          {candidatesView.detectedPrice.title || candidatesView.queryLabel || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX')}
-                        </h3>
-                        <p className="mt-1 text-[11px] text-muted">
-                          {candidatesView.detectedPrice.isCartScreenshot ? tr('Panier repéré — total calculé', 'تم اكتشاف سلة — حُسب الإجمالي') : tr('Produit repéré sur l’image', 'تم اكتشاف المنتج في الصورة')} • {candidatesView.detectedPrice.brand || 'Collection AYROVI'}
-                        </p>
-                      </div>
-                      <div className="rounded-2xl border border-accent/30 bg-accent/10 p-3.5">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wide text-warning">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-                        <p className="mt-1 text-[26px] font-black leading-none text-ink">{candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || '—'} DT</p>
-                        <p className="mt-1.5 text-[11px] font-semibold text-muted">{tr('Prix visible', 'السعر الظاهر')} {candidatesView.detectedPrice.sourcePrice.toFixed(2)} {candidatesView.detectedPrice.sourceCurrency} · {tr('Tout inclus', 'شامل كل شيء')}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const detected = candidatesView!.detectedPrice!;
-                          setProduct({
-                            title: detected.title || 'Produit détecté par AYROVIX',
-                            brand: detected.brand,
-                            model: null,
-                            description: detected.isCartScreenshot ? `Panier: ${detected.sourcePrice} ${detected.sourceCurrency} - ${detected.title}` : `${detected.title} — Prix repéré ${detected.sourcePrice} ${detected.sourceCurrency}`,
-                            image: detected.imageUrl || previewUrl || '',
-                            images: detected.imageUrl ? [detected.imageUrl] : previewUrl ? [previewUrl] : [],
-                            source: 'Collection AYROVI',
-                            sourceUrl: '',
-                            price: detected.sourcePrice,
-                            currency: detected.sourceCurrency,
-                            priceTnd: detected.totalPriceTND,
-                            priceToken: detected.priceToken || null,
-                            priceVerified: false,
-                            priceVerificationStatus: 'PENDING_MANUAL',
-                            exchangeRate: null,
-                            colors: [],
-                            sizes: [],
-                            availability: 'unknown',
-                          });
-                          setVerifiedPriceUrl(false);
-                          enterStage('product');
-                        }}
-                        className="ay-btn-primary w-full text-sm"
-                      >
-                        {tr('Commander avec ce prix', 'الطلب بهذا السعر')} • {candidatesView.detectedPrice.totalPriceTND?.toFixed(2) || candidatesView.detectedPrice.sourcePrice.toFixed(2)} DT
-                      </button>
-                      <p className="text-center text-[10px] font-semibold text-warning">{tr("Le lien exact sera demandé à l'étape suivante pour l'achat manuel.", 'سيُطلب الرابط الدقيق في الخطوة التالية للشراء اليدوي.')}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[16px] bg-surface px-3 py-2 text-center">
-                    <p className="text-[11px] font-bold text-muted">{tr('Ou choisissez une correspondance externe ci-dessous', 'أو اختر تطابقًا خارجيًا أدناه')}</p>
-                  </div>
-                </>
-              )}
-              {candidatesView.queryLabel && (
-                <p className="rounded-2xl bg-surface px-4 py-3 text-center text-[11px] font-semibold text-muted">
-                  {tr('Recherche', 'البحث')} : <span className="font-extrabold text-ink">{candidatesView.queryLabel}</span>
-                </p>
-              )}
-              {candidatesView.list.length > 0 ? (
-                <ProductCandidates candidates={candidatesView.list} onChoose={handleChooseCandidate} />
-              ) : (
-                <div className="space-y-4 rounded-[22px] border border-dashed border-line p-6 text-center">
-                  <p className="text-sm font-extrabold text-ink">{tr('Aucune correspondance externe', 'لا توجد مطابقة خارجية')}</p>
-                  {candidatesView.detectedPrice && candidatesView.detectedPrice.sourcePrice > 0 ? (
-                    <p className="text-xs text-muted">{tr("Utilisez le prix visible ci-dessus ; notre équipe le vérifiera manuellement après l'acompte.", 'استخدم السعر الظاهر أعلاه؛ سيتحقق منه فريقنا يدويًا بعد العربون.')}</p>
-                  ) : (
-                    <p className="text-xs leading-relaxed text-muted">{tr('Essayez le lien direct de la page boutique pour un calcul exact.', 'جرّب الرابط المباشر لصفحة المتجر للحصول على حساب دقيق.')}</p>
-                  )}
-                  <button type="button" onClick={reset} className="ay-btn-primary text-xs">{tr('Nouvelle recherche', 'بحث جديد')}</button>
-                </div>
-              )}
-            </div>
+            <LensResults
+              view={candidatesView}
+              fallbackImage={previewUrl}
+              onChoose={handleChooseCandidate}
+              onReset={reset}
+              onCommandDetected={commandDetectedPrice}
+            />
           )}
 
           {stage === 'product' && product && (
