@@ -11,6 +11,9 @@ const cartSource = readFileSync('client/src/components/CartDrawer.tsx', 'utf8');
 const checkoutCss = readFileSync('client/src/styles/checkout-flow.css', 'utf8');
 const runtimeCss = readFileSync('client/src/styles/interface-runtime.css', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
+const lensLauncherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
+const lensCameraSource = readFileSync('client/src/ayrovix/components/LensCamera.tsx', 'utf8');
+const lensUploadSource = readFileSync('client/src/ayrovix/components/LensUpload.tsx', 'utf8');
 
 describe('homepage close, sticky header and scroll-aware navigation', () => {
   it('closes the customer profile to the homepage instead of treating X as Back', () => {
@@ -45,9 +48,11 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     foregroundMarkers.forEach(([path, marker]) => expect(readFileSync(path, 'utf8')).toContain(marker));
   });
 
-  it('offers three start gates and keeps the three-tool bottom bar', () => {
-    expect(appSource).toContain('StartShoppingGates');
-    expect(appSource).toContain('onOpenLink={handleToggleProductDrawer}');
+  it('offers the three Lens entry points and keeps the three-tool bottom bar', () => {
+    // بوابات الدخول الثلاث انتقلت إلى الصفحة الأولى لـ Lens (صورة / استيراد / رابط)
+    expect(lensCameraSource).toContain('Prendre une photo');
+    expect(lensUploadSource).toContain('Importer une image');
+    expect(lensLauncherSource).toContain('ayrovix-url');
     expect(navbarSource).toContain('onClick={onGoHome}');
     expect(navbarSource).toContain('onOpenCart');
     expect(bottomNavSource).toContain('grid-cols-3');
@@ -55,14 +60,15 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).not.toContain('grid-cols-5');
   });
 
-  it('uses a white glass bottom navigation with black icons that hides down and returns up', () => {
+  it('uses a white glass bottom navigation with muted icons that hides down and returns up', () => {
     expect(bottomNavSource).toContain('const [isVisible, setIsVisible] = useState(true)');
     expect(bottomNavSource).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
     expect(bottomNavSource).toContain('else if (delta > 8) setIsVisible(false)');
     expect(bottomNavSource).toContain('else if (delta < -8) setIsVisible(true)');
     expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*rgba\(255,255,255,\.72\)[^}]*backdrop-filter:blur\(22px\)/);
     expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
-    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#111318}');
+    // الأيقونات غير النشطة رمادية هادئة والنشطة برتقالية (الهوية الحالية)
+    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#5b6472}');
     expect(runtimeCss).toContain("[aria-pressed='true'] .interface-runtime-icon");
   });
 

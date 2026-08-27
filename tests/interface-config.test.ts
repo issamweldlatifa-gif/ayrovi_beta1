@@ -70,7 +70,7 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.colors.primary).toBe(DEFAULT_INTERFACE_CONFIG.colors.primary);
     expect(normalized.typography.baseSize).toBe(22);
     expect(normalized.typography.lineHeight).toBe(1.2);
-    expect(normalized.icons).toMatchObject({ library: 'ayrovi', size: 40 });
+    expect(normalized.icons).toMatchObject({ library: 'ayrovi', size: 44 });
     expect(normalized.layout.cardRadius).toBe(48);
     expect(normalized.sections[0].paddingY).toBe(160);
   });

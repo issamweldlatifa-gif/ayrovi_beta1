@@ -2,6 +2,8 @@ node_modules/
 .cache/
 .npm/
 dist/
+# نواتج بناء Vite (تُعاد توليدها من client/ عند npm run build)
+public/
 *.zip
 .arena/
 .env
