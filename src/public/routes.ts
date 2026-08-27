@@ -78,6 +78,12 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
       deliveryDelay: String(facts.delivery_delay || ''),
       capabilities: { cardGateway: cardGatewayAvailable() },
+      // Feature flags — LIVE multi-product vision behind a flag, sans toucher les modes existants
+      features: {
+        ayrovixLensLive: process.env.AYROVIX_LENS_LIVE_ENABLED !== undefined
+          ? process.env.AYROVIX_LENS_LIVE_ENABLED === 'true'
+          : process.env.NODE_ENV !== 'production',
+      },
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
       deposit: {
         percent: Number(facts.deposit_percent) > 0 ? Number(facts.deposit_percent) : 20,

@@ -6,6 +6,7 @@ import type {
 import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { rememberAyrovixHistory } from '../services/history';
+import { getCommerceConfig } from '../../services/publicApi';
 
 import { useLocale } from '../../i18n/LocaleContext';
 import { LiveCamera } from './LiveCamera';
@@ -108,6 +109,16 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [liveEnabled, setLiveEnabled] = useState(false);
+
+  // Feature flag LIVE (AYROVIX_LENS_LIVE_ENABLED) — sans toucher les modes existants
+  useEffect(() => {
+    let cancelled = false;
+    getCommerceConfig()
+      .then((payload) => { if (!cancelled) setLiveEnabled(Boolean((payload as any)?.data?.features?.ayrovixLensLive)); })
+      .catch(() => { if (!cancelled) setLiveEnabled(false); });
+    return () => { cancelled = true; };
+  }, []);
   const previewRef = useRef<string | null>(null);
   const dropInputRef = useRef<HTMLInputElement | null>(null);
   const stageRef = useRef<Stage>(stage);
@@ -532,6 +543,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           onClose={handleClose}
           onMenu={() => setMenuOpen(true)}
           onCameraFailed={() => replaceStage('home')}
+          liveEnabled={liveEnabled}
+          onLiveResults={(view) => {
+            setCandidatesView(view);
+            setVerifiedPriceUrl(false);
+            replaceStage('candidates');
+          }}
         />}
         <LensHistory open={historyOpen} scope={historyScope} onClose={() => navigation.back()} onRepeat={repeatHistoryItem} onNewScan={reset} />
         {menu}

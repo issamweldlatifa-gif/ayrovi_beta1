@@ -1,8 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { Barcode, Camera, Image as ImageIcon, Zap } from '../../components/QatafoIcons';
+import { Barcode, Camera, Check, Image as ImageIcon, ShoppingBag, Zap } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import { LensContextHeader } from './LensNavigation';
+import { analyzeImage } from '../services/lensApi';
+import { frameSignature, signatureDistance, liveObjectId, type LiveDetectedObject } from '../services/liveScanner';
+
+export interface LiveResultsView {
+  queryLabel: string | null;
+  list: import('../types').AyrovixCandidate[];
+  eventId: string;
+  detectedPrice?: import('../types').AyrovixDetectedPrice | null;
+}
 
 interface LiveCameraProps {
   onPhoto: (file: File) => void;
@@ -13,6 +22,8 @@ interface LiveCameraProps {
   onClose: () => void;
   onMenu: () => void;
   onCameraFailed: () => void;
+  liveEnabled?: boolean;
+  onLiveResults?: (view: LiveResultsView) => void;
 }
 
 type CameraMode = 'search' | 'upload' | 'code';
@@ -21,7 +32,7 @@ type CameraMode = 'search' | 'upload' | 'code';
  * AYROVIX Lens — caméra sans effets (user request: remove stars/Xray, keep clean & fast)
  * Radical performance: no animations, no particles, simple white corners only.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed }) => {
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults }) => {
   const { direction, tr } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -35,6 +46,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const [linkInput, setLinkInput] = useState('');
   const modeRef = useRef<CameraMode>('search');
   modeRef.current = mode;
+
+  // ===== LIVE multi-product vision (analysis continu, sans capture obligatoire) =====
+  const [lockedObjects, setLockedObjects] = useState<LiveDetectedObject[]>([]);
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [liveGuidance, setLiveGuidance] = useState<string | null>(null);
+  const [liveScanning, setLiveScanning] = useState(false);
+  const lastSigRef = useRef('');
+  const lastDescRef = useRef('');
+  const confirmRef = useRef(0);
+  const pendingAbortRef = useRef<AbortController | null>(null);
+  const inflightRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,6 +103,84 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
     };
   }, [mode, onQrUrl, onBarcode, onCodeText]);
 
+  // ===== LIVE: échantillonnage adaptatif + confirmation temporelle (pas de faux résultats) =====
+  useEffect(() => {
+    if (mode !== 'search' || !liveEnabled) { setLiveScanning(false); return undefined; }
+    setLiveScanning(true);
+    let cancelled = false;
+
+    const drawSample = (): HTMLCanvasElement | null => {
+      const video = videoRef.current;
+      if (!video || video.videoWidth === 0) return null;
+      const scale = Math.min(1, 512 / video.videoWidth);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(video.videoWidth * scale));
+      canvas.height = Math.max(1, Math.round(video.videoHeight * scale));
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      return canvas;
+    };
+
+    const lockObject = (result: any, canvas: HTMLCanvasElement) => {
+      const desc = result.identification?.description || result.query || '';
+      const best = (result.candidates || [])[0];
+      const id = liveObjectId(desc);
+      const thumb = canvas.toDataURL('image/jpeg', 0.6);
+      setLockedObjects((prev) => {
+        const next: LiveDetectedObject = {
+          id,
+          label: best?.title || desc,
+          confidence: best?.match ?? Math.round((result.identification?.confidence || 0) * 100),
+          image: thumb,
+          candidates: result.candidates || [],
+          detectedPrice: result.detectedPrice || null,
+          status: 'locked',
+          box: null,
+          code: null,
+        };
+        const existing = prev.find((o) => o.id === id);
+        if (existing) return prev.map((o) => (o.id === id ? { ...next, confidence: Math.max(o.confidence, next.confidence) } : o));
+        return [...prev, next];
+      });
+      setSelected((s) => (s[id] === undefined ? { ...s, [id]: true } : s));
+    };
+
+    const sample = () => {
+      if (cancelled || inflightRef.current) return;
+      const canvas = drawSample();
+      if (!canvas) return;
+      const sig = frameSignature(canvas);
+      if (sig && lastSigRef.current && signatureDistance(sig, lastSigRef.current) < 0.06) return; // scène inchangée
+      lastSigRef.current = sig;
+      inflightRef.current = true;
+      canvas.toBlob(async (blob) => {
+        if (cancelled || !blob) { inflightRef.current = false; return; }
+        pendingAbortRef.current?.abort();
+        const ctrl = new AbortController();
+        pendingAbortRef.current = ctrl;
+        try {
+          const result = await analyzeImage(new File([blob], 'ayrovix-live.jpg', { type: 'image/jpeg' }), ctrl.signal);
+          const desc = result.identification?.description || '';
+          const usable = (result.identification?.confidence || 0) > 0 && desc !== 'PRODUIT_NON_IDENTIFIE';
+          if (!usable) { confirmRef.current = 0; lastDescRef.current = ''; setLiveGuidance(tr('Keep the product visible', 'أبقِ المنتج ظاهرًا')); return; }
+          if (desc === lastDescRef.current) confirmRef.current += 1; else { lastDescRef.current = desc; confirmRef.current = 1; }
+          if (confirmRef.current >= 2) { lockObject(result, canvas); setLiveGuidance(null); }
+        } catch { /* abort / réseau : aucun faux résultat */ }
+        finally { inflightRef.current = false; }
+      }, 'image/jpeg', 0.8);
+    };
+
+    const timer = window.setInterval(sample, 2200);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      pendingAbortRef.current?.abort();
+      inflightRef.current = false;
+      setLiveScanning(false);
+    };
+  }, [mode, liveEnabled, tr]);
+
   const toggleTorch = async () => {
     const track = streamRef.current?.getVideoTracks()[0];
     if (!track) { setTorchHint(true); setTimeout(() => setTorchHint(false), 2200); return; }
@@ -119,6 +219,19 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   };
 
   const pickFromGallery = () => fileRef.current?.click();
+
+  // ===== Collection (Scan Collection) : sélection + total + ouverture des résultats =====
+  const selectedObjects = lockedObjects.filter((o) => selected[o.id]);
+  const collectionTotal = selectedObjects.reduce((sum, o) => sum + (o.candidates[0]?.priceTnd ?? o.detectedPrice?.totalPriceTND ?? 0), 0);
+  const openLiveResults = () => {
+    if (!onLiveResults || !selectedObjects.length) return;
+    onLiveResults({
+      queryLabel: selectedObjects.length > 1 ? `${selectedObjects.length} ${tr('produits détectés', 'منتجات مكتشفة')}` : selectedObjects[0].label,
+      list: selectedObjects.flatMap((o) => o.candidates),
+      eventId: `live_${Date.now()}`,
+      detectedPrice: selectedObjects[0]?.detectedPrice || null,
+    });
+  };
 
   const MODES: Array<{ id: CameraMode; label: string; icon: React.ReactNode; action?: () => void }> = [
     {
@@ -161,6 +274,28 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[11px] font-semibold text-white/90">
           {tr('Flash non disponible — utilisez un bon éclairage.', 'الفلاش غير متاح — استخدم إضاءة جيدة.')}
         </p>
+      )}
+
+      {/* LIVE: état d'analyse + guidance discrète */}
+      {liveEnabled && mode === 'search' && (
+        <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
+          {liveGuidance
+            ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-semibold text-white/85">{liveGuidance}</p>
+            : liveScanning && <p className="rounded-full bg-black/45 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-accent">Live scan</p>}
+        </div>
+      )}
+
+      {/* LIVE: verrous légers (ne couvrent pas la caméra) */}
+      {liveEnabled && mode === 'search' && lockedObjects.length > 0 && (
+        <div className="absolute inset-x-0 top-32 z-20 flex flex-wrap justify-center gap-2 px-4">
+          {lockedObjects.map((obj) => (
+            <span key={obj.id} className="flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur">
+              <Check size={12} className="text-accent" />
+              {obj.label}
+              <em className="not-italic text-accent">{obj.confidence}%</em>
+            </span>
+          ))}
+        </div>
       )}
 
       {/* Viseur SANS effets - clean & fast */}
@@ -220,6 +355,36 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             {tr('Analyser', 'تحليل')}
           </button>
         </form>
+      )}
+
+      {/* LIVE: Scan Collection — sélection multiple + total + ouverture résultats */}
+      {liveEnabled && mode === 'search' && lockedObjects.length > 0 && (
+        <div className="relative z-10 mx-4 mb-2 rounded-2xl bg-black/60 p-3 backdrop-blur">
+          <div className="flex items-center justify-between">
+            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-white/85">
+              <ShoppingBag size={13} className="text-accent" />
+              {lockedObjects.length} {tr('produits détectés', 'منتجات مكتشفة')} · {selectedObjects.length} {tr('sélectionnés', 'محدّد')}
+            </p>
+            <p className="text-[12px] font-black text-accent">{collectionTotal.toFixed(2)} DT</p>
+          </div>
+          <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">
+            {lockedObjects.map((obj) => (
+              <button
+                key={obj.id}
+                type="button"
+                onClick={() => setSelected((s) => ({ ...s, [obj.id]: !s[obj.id] }))}
+                aria-pressed={Boolean(selected[obj.id])}
+                className={`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold ${selected[obj.id] ? 'border-accent bg-accent/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}
+              >
+                <span className={`grid h-4 w-4 place-items-center rounded ${selected[obj.id] ? 'bg-accent text-ink' : 'bg-white/20'}`}>{selected[obj.id] && <Check size={11} />}</span>
+                {obj.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={openLiveResults} disabled={!selectedObjects.length} className="ay-cta-orange mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-extrabold text-white">
+            {tr('Sélectionner les produits', 'اختيار المنتجات')}
+          </button>
+        </div>
       )}
 
       <nav className="relative z-10 grid grid-cols-3 border-t border-white/10 bg-black/35 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 backdrop-blur" aria-label={tr('Modes', 'الأوضاع')}>
