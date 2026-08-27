@@ -15,7 +15,6 @@ const BLOCK_LABELS: Record<string, { title: string; hint: string }> = {
   discovery: { title: 'Discovery Hub', hint: 'Onglets Arrivages / Promotions / Communauté / Magazine.' },
   brands: { title: 'Marques', hint: 'Titre éditorial + slider de marques en pleine largeur.' },
   lens: { title: 'LENS', hint: 'Section LENS (contenu géré dans Contenu → LENS).' },
-  'lens-features': { title: 'LENS Features (Section 02)', hint: 'Les 4 avantages sous LENS (analyse, comparaison, sécurité, rapidité).' },
 };
 
 const DEFAULT_ORDER: BlockRow[] = [
@@ -23,7 +22,6 @@ const DEFAULT_ORDER: BlockRow[] = [
   { id: 'discovery', sortOrder: 1, visible: true },
   { id: 'brands', sortOrder: 2, visible: true },
   { id: 'lens', sortOrder: 3, visible: true },
-  { id: 'lens-features', sortOrder: 4, visible: true },
 ];
 
 export const HomeSectionsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {

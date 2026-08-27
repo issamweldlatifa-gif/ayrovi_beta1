@@ -619,7 +619,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
   });
 
   /* ==================== HOME BLOCKS — ترتيب وإظهار كتل الصفحة الرئيسية ==================== */
-  const HOME_BLOCK_IDS = ['transition', 'discovery', 'brands', 'lens', 'lens-features'] as const;
+  const HOME_BLOCK_IDS = ['transition', 'discovery', 'brands', 'lens'] as const;
 
   router.get('/home-blocks', requireAdmin(db, 'content:read'), (_req, res) => {
     const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');

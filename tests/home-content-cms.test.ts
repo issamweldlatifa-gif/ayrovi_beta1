@@ -106,22 +106,20 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
   test('home sections are reordered and hidden from the dashboard', async () => {
     const before = await request(app).get('/api/public/home-blocks');
     expect(before.status).toBe(200);
-    expect(before.body.data.map((row: any) => row.id)).toEqual(['transition', 'discovery', 'brands', 'lens', 'lens-features']);
+    expect(before.body.data.map((row: any) => row.id)).toEqual(['transition', 'discovery', 'brands', 'lens']);
 
     const saved = await admin.put('/api/admin/home-blocks').set('x-csrf-token', csrf).send({
       blocks: [
         { id: 'lens', visible: true }, { id: 'brands', visible: true },
         { id: 'discovery', visible: true }, { id: 'transition', visible: false },
-        { id: 'lens-features', visible: true },
       ],
     });
     expect(saved.status).toBe(200);
 
     const published = await request(app).get('/api/public/home-blocks');
-    expect(published.body.data.map((row: any) => row.id)).toEqual(['lens', 'brands', 'discovery', 'transition', 'lens-features']);
+    expect(published.body.data.map((row: any) => row.id)).toEqual(['lens', 'brands', 'discovery', 'transition']);
     expect(published.body.data.find((row: any) => row.id === 'transition').visible).toBe(false);
     expect(published.body.data.find((row: any) => row.id === 'lens').visible).toBe(true);
-    expect(published.body.data.find((row: any) => row.id === 'lens-features').visible).toBe(true);
 
     const rejected = await admin.put('/api/admin/home-blocks').set('x-csrf-token', csrf).send({ blocks: [] });
     expect(rejected.status).toBe(400);
@@ -194,39 +192,5 @@ describe('AYROVI mobile width-first layout rule', () => {
     expect(appSource).toContain("!['brands', 'about', 'footer'].includes(section.id)");
     // قسم الـhero يُغلق بدون padding سفلي حتى تنتهي الصفحة عند LENS
     expect(indexCss).toContain(".managed-public-section[data-public-section='hero'] { padding-block-end: 0 !important; }");
-  });
-});
-
-describe('Section 02 — LENS features rebuilt from the reference composition', () => {
-  const featuresSource = readFileSync('client/src/components/LensFeaturesSection.tsx', 'utf8');
-
-  test('Section 02 renders immediately after LENS and keeps the heading outside the features', () => {
-    expect(appSource).toContain("if (block === 'lens-features') return <LensFeaturesSection key=\"lens-features\" />;");
-    expect(appSource).toContain("['transition', 'discovery', 'brands', 'lens', 'lens-features']");
-    // العنوان خارج شبكة الـ Features
-    expect(featuresSource).toContain('lens-features__head');
-    expect(featuresSource).toContain('lens-features__grid');
-    // نفس الأيقونات من نظام AYROVI فقط (لا مكتبة جديدة)
-    expect(featuresSource).toContain("from './QatafoIcons'");
-    expect(featuresSource).not.toContain("react-icons");
-    expect(featuresSource).toContain('LENS, simplement plus intelligent.');
-  });
-
-  test('the features build is horizontal — 4 columns at every viewport, no horizontal scroll', () => {
-    // الشبكة 4 أعمدة دائمًا (الهاتف نسخة مصغّرة من Desktop)
-    expect(indexCss).toMatch(/\.lens-features__grid \{[\s\S]*?display: grid;[\s\S]*?grid-template-columns: repeat\(4, 1fr\);[\s\S]*?\}/);
-    // فواصل عمودية رفيعة بين الأعمدة
-    expect(indexCss).toMatch(/\.lens-feature \+ \.lens-feature \{ border-left: 1px solid rgba\(17, 18, 23, 0\.08\); \}/);
-    expect(indexCss).not.toMatch(/\.lens-feature \+ \.lens-feature \{ border-top: 1px solid/);
-    // الهاتف: توسيط المحتوى (أيقونة+عنوان) لضمان تباعد متساوٍ فعلي بين الأيقونات
-    expect(indexCss).toMatch(/\.lens-feature \{ min-width: 0; padding: 2px 6px; text-align: center; \}/);
-    expect(indexCss).toMatch(/\.lens-feature__icon \{[\s\S]*?margin-inline: auto;[\s\S]*?\}/);
-    // Desktop يعود لمحاذاة اليسار كما المرجع
-    expect(indexCss).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*?\.lens-feature \{ padding: 8px 28px; text-align: left; \}[\s\S]*?\}/);
-    // الهاتف: الوصف مخفي (أيقونة + عنوان فقط) ويظهر على Desktop
-    expect(indexCss).toMatch(/\.lens-feature__desc \{ display: none; \}/);
-    expect(indexCss).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*?\.lens-feature__desc \{ display: block;[\s\S]*?\}/);
-    // أيقونة داخل مربع برتقالي ناعم (accent فقط، لا shadows قوية)
-    expect(indexCss).toMatch(/\.lens-feature__icon \{[\s\S]*?background: color-mix\(in srgb, var\(--ayrovi-cta, #ff7a00\) 11%, #ffffff\)/);
   });
 });
