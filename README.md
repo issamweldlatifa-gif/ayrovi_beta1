@@ -58,11 +58,11 @@ Les tarifs, moyens de paiement, gouvernorats et délais affichés publiquement p
 - `client/src/components/` : site public, Lens, panier, checkout et Assistant.
 - `tests/ayrovi.test.ts` : tests d’intégration backend.
 
-La description complète des fichiers, rôles, données et routes se trouve dans [`ADMIN_CMS.md`](./ADMIN_CMS.md).
+La description complète des fichiers, rôles, données et routes se trouve dans [`ADMIN_CMS.md`](./docs/ADMIN_CMS.md).
 
 ## Déploiement
 
-Le projet inclut un Blueprint `render.yaml` prêt pour Render avec Node.js, healthcheck, plan Starter et disque persistant partagé par SQLite et les médias Admin. Consultez [`RENDER_DEPLOY.md`](./RENDER_DEPLOY.md) pour la procédure complète.
+Le projet inclut un Blueprint `render.yaml` prêt pour Render avec Node.js, healthcheck, plan Starter et disque persistant partagé par SQLite et les médias Admin. Consultez [`RENDER_DEPLOY.md`](./docs/RENDER_DEPLOY.md) pour la procédure complète.
 
 Variables de base obligatoires en production : `NODE_ENV=production`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `DATABASE_PATH`, `CUSTOMER_AUTH_SECRET` et `PUBLIC_BASE_URL`. Google utilise `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` et `GOOGLE_CALLBACK_URL`; Facebook utilise `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` et `FACEBOOK_CALLBACK_URL`. Pour la Tunisie, l’OTP SMS doit passer par un fournisseur local via `CUSTOMER_OTP_PROVIDER=webhook`; l’adaptateur Twilio reste uniquement optionnel. Les sauvegardes peuvent être envoyées vers S3/R2/B2 avec les variables `BACKUP_S3_*`. Aucun secret ne doit être exposé au frontend.
 
