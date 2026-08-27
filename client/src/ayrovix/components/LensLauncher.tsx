@@ -17,6 +17,7 @@ import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
+import { Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles } from '../../components/QatafoIcons';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -107,6 +108,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const previewRef = useRef<string | null>(null);
+  const dropInputRef = useRef<HTMLInputElement | null>(null);
   const stageRef = useRef<Stage>(stage);
   stageRef.current = stage;
   const abortRef = useRef(0);
@@ -136,7 +138,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   useEffect(() => {
     if (stage !== 'analyzing') { setAnalysisProgress(0); return undefined; }
     setAnalysisProgress(0);
-    const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 2)), 1400);
+    const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 3)), 1400);
     return () => window.clearInterval(timer);
   }, [stage]);
 
@@ -525,9 +527,50 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
         <main className="ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8">
           {stage === 'home' && (
-            <div className="mx-auto max-w-md space-y-3 pt-2">
-              <LensCamera onImage={(file) => void handleImage(file, false)} />
-              <LensUpload onImage={(file) => void handleImage(file, false)} />
+            <div className="lens-home mx-auto max-w-md pt-2">
+              <input
+                ref={dropInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                aria-hidden="true"
+                tabIndex={-1}
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImage(file, false); e.target.value = ''; }}
+              />
+
+              {/* Intro — ماذا يفعل Lens؟ ماذا أضع؟ ماذا سيحدث؟ */}
+              <div className="lens-home__intro">
+                <h2 className="lens-home__title">
+                  {tr('Voyez-le.', 'شاهده.')}<br /><span className="lens-home__accent">LENS</span> {tr('le trouve.', 'يجده.')}
+                </h2>
+                <p className="lens-home__desc">
+                  {tr("Prenez une photo ou importez une image. LENS identifie le produit et recherche les meilleures options disponibles.", 'التقط صورة أو ارفعها — يتعرّف LENS على المنتج ويبحث عن أفضل الخيارات المتاحة.')}
+                </p>
+                <div className="lens-home__benefits">
+                  <span className="lens-home__benefit"><Search size={15} />{tr('Identification du produit', 'تحديد المنتج')}</span>
+                  <span className="lens-home__benefit"><Percent size={15} />{tr('Comparaison des prix', 'مقارنة الأسعار')}</span>
+                  <span className="lens-home__benefit"><ShieldCheck size={15} />{tr('Vérification de disponibilité', 'التحقق من التوفر')}</span>
+                </div>
+              </div>
+
+              {/* Dropzone — منطقة كبيرة للرفع/الالتقاط (Drag & Drop) */}
+              <button
+                type="button"
+                className="lens-drop"
+                onClick={() => dropInputRef.current?.click()}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files?.[0]; if (file) void handleImage(file, false); }}
+              >
+                <span className="lens-drop__icon"><GalleryIcon size={22} /></span>
+                <strong>{tr('Glissez une image ici', 'أفلِت صورة هنا')}</strong>
+                <small>{tr('ou choisissez une méthode ci-dessous', 'أو اختر طريقة أدناه')}</small>
+              </button>
+
+              <div className="lens-home__actions">
+                <LensCamera onImage={(file) => void handleImage(file, false)} />
+                <LensUpload onImage={(file) => void handleImage(file, false)} />
+              </div>
+
               <form
                 className="space-y-2.5 rounded-[22px] border border-line bg-white p-4"
                 onSubmit={(e) => {
@@ -568,22 +611,40 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           )}
 
           {stage === 'analyzing' && (
-            <div className="mx-auto max-w-md space-y-4 pt-2">
-              <div className="relative overflow-hidden rounded-[22px] border border-line">
+            <div className="lens-analyzing mx-auto max-w-md pt-2">
+              {/* صورة المستخدم داخل إطار Lens — لا صورة Demo */}
+              <div className="lens-frame">
                 {previewUrl
-                  ? <img src={previewUrl} alt="" className="max-h-[62vh] w-full bg-surface object-contain opacity-90" />
-                  : <div className="grid h-52 w-full place-items-center bg-surface"><span className="h-9 w-9 animate-spin rounded-full border-[3px] border-brand border-r-transparent" /></div>}
-                <div className="lens-scan absolute inset-0" />
-                <div className="lens-scan-dots absolute inset-0" aria-hidden="true" />
+                  ? <img src={previewUrl} alt="" className="lens-frame__img" />
+                  : <div className="lens-frame__empty"><span className="lens-spinner" /></div>}
+                <div className="lens-frame__dots" aria-hidden="true" />
+                <span className="lens-frame__corner tl" /><span className="lens-frame__corner tr" />
+                <span className="lens-frame__corner bl" /><span className="lens-frame__corner br" />
+                <span className="lens-frame__beam" aria-hidden="true" />
               </div>
-              <div className="flex items-center justify-center gap-2.5 text-sm font-bold text-ink" role="status" aria-live="polite">
-                <span className="h-5 w-5 animate-spin rounded-full border-2 border-brand border-r-transparent" />
-                {[tr('Recherche en cours…', 'جارٍ البحث…'), tr('Vérification du produit…', 'جارٍ التحقق من المنتج…'), tr('Récupération du prix…', 'جارٍ جلب السعر…')][analysisProgress]}
+
+              <div className="lens-analyzing__head" role="status" aria-live="polite">
+                <Sparkles size={18} />
+                <strong>{[tr('Analyse du produit…', 'جارٍ تحليل المنتج…'), tr('Recherche en cours…', 'جارٍ البحث…'), tr('Vérification du produit…', 'جارٍ التحقق من المنتج…'), tr('Récupération du prix…', 'جارٍ جلب السعر…')][Math.min(analysisProgress, 3)]}</strong>
               </div>
-              <ol className="grid grid-cols-3 gap-2" aria-label={tr("Étapes de l'analyse", 'مراحل التحليل')}>
-                {[tr('Recherche', 'البحث'), tr('Vérification', 'التحقق'), tr('Prix', 'السعر')].map((label, index) => <li key={label} className={`rounded-full px-2 py-1.5 text-center text-[9px] font-extrabold ${index <= analysisProgress ? 'bg-brand text-white' : 'bg-surface text-muted'}`}>{label}</li>)}
+              <p className="lens-analyzing__sub">{tr("AYROVIX analyse l'image et recherche les meilleures correspondances.", 'تحلل AYROVIX الصورة وتبحث عن أفضل التطابقات.')}</p>
+
+              <ol className="lens-steps" aria-label={tr("Étapes de l'analyse", 'مراحل التحليل')}>
+                {[tr('Analyse', 'تحليل'), tr('Recherche', 'بحث'), tr('Vérification', 'تحقق'), tr('Prix', 'السعر')].map((label, index) => (
+                  <li key={label} className={`lens-step ${index < analysisProgress ? 'is-done' : index === analysisProgress ? 'is-active' : ''}`}>
+                    <span className="lens-step__dot">{index < analysisProgress ? <Check size={12} /> : null}</span>
+                    <span className="lens-step__label">{label}</span>
+                  </li>
+                ))}
               </ol>
-              <p className="text-center text-[11px] text-muted">{tr('AYROVIX compare les correspondances et récupère un prix traçable.', 'تقارن AYROVIX النتائج وتجلب سعرًا قابلًا للتتبع.')}</p>
+
+              <div className="lens-analyzing__card">
+                <span className="lens-analyzing__cardicon"><Sparkles size={18} /></span>
+                <div>
+                  <strong>{tr('AYROVI analyse votre produit', 'AYROVI تحلّل منتجك')}</strong>
+                  <p>{tr('Recherche de correspondances fiables et vérification des marchands en cours…', 'جارٍ البحث عن تطابقات موثوقة والتحقق من التجار…')}</p>
+                </div>
+              </div>
             </div>
           )}
 

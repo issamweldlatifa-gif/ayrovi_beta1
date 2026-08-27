@@ -1185,3 +1185,58 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .lens2__banner-text strong { display: block; font-size: 15.5px; font-weight: 800; }
 .lens2__banner-text p { margin: 5px 0 0; font-size: 12.5px; line-height: 1.5; opacity: 0.92; }
 .lens2__banner-cta { display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 999px; background: #fff; color: var(--lens2-accent); font-size: 14px; font-weight: 800; padding: 12px 22px; cursor: pointer; flex-shrink: 0; }
+
+/* ============ AYROVIX LENS — الصفحة الأولى (home) + حالة التحليل ============ */
+.lens-home { display: flex; flex-direction: column; gap: 18px; }
+.lens-home__intro { text-align: center; padding: 8px 4px 0; }
+.lens-home__title { margin: 0; font-size: 30px; line-height: 1.1; font-weight: 800; letter-spacing: -0.02em; }
+.lens-home__accent { color: var(--ayrovi-cta, #ff7a00); }
+.lens-home__desc { margin: 12px auto 0; max-width: 34ch; font-size: 13.5px; line-height: 1.6; color: color-mix(in srgb, currentColor 62%, transparent); }
+.lens-home__benefits { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px 14px; margin-top: 16px; }
+.lens-home__benefit { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: color-mix(in srgb, currentColor 78%, transparent); }
+.lens-home__benefit svg { color: var(--ayrovi-cta, #ff7a00); }
+
+.lens-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; width: 100%; padding: 26px 16px; border-radius: 22px; border: 1.5px dashed color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 45%, transparent); background: color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 5%, transparent); color: inherit; cursor: pointer; }
+.lens-drop__icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 14px; background: color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 12%, transparent); color: var(--ayrovi-cta, #ff7a00); }
+.lens-drop strong { font-size: 14px; font-weight: 800; }
+.lens-drop small { font-size: 11px; color: color-mix(in srgb, currentColor 60%, transparent); }
+.lens-home__actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* إطار Lens لصورة المستخدم أثناء التحليل — لا صورة Demo */
+.lens-frame { position: relative; overflow: hidden; border-radius: 22px; border: 1px solid color-mix(in srgb, currentColor 12%, transparent); background: color-mix(in srgb, currentColor 5%, transparent); }
+.lens-frame__img { display: block; width: 100%; max-height: 52vh; object-fit: cover; }
+.lens-frame__empty { display: grid; place-items: center; height: 220px; }
+.lens-frame__dots { position: absolute; inset: 0; pointer-events: none; background-image: radial-gradient(color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 55%, transparent) 1.5px, transparent 1.6px); background-size: 22px 22px; opacity: .5; }
+.lens-frame__corner { position: absolute; width: 26px; height: 26px; border: 3px solid var(--ayrovi-cta, #ff7a00); z-index: 2; }
+.lens-frame__corner.tl { top: 14px; left: 14px; border-right: 0; border-bottom: 0; border-radius: 10px 0 0 0; }
+.lens-frame__corner.tr { top: 14px; right: 14px; border-left: 0; border-bottom: 0; border-radius: 0 10px 0 0; }
+.lens-frame__corner.bl { bottom: 14px; left: 14px; border-right: 0; border-top: 0; border-radius: 0 0 0 10px; }
+.lens-frame__corner.br { bottom: 14px; right: 14px; border-left: 0; border-top: 0; border-radius: 0 0 10px 0; }
+.lens-frame__beam { position: absolute; left: 6%; right: 6%; top: 45%; height: 2px; background: var(--ayrovi-cta, #ff7a00); box-shadow: 0 0 16px color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 70%, transparent); animation: lensBeam 2.6s ease-in-out infinite; z-index: 2; }
+
+.lens-spinner { width: 34px; height: 34px; border-radius: 999px; border: 3px solid var(--ayrovi-cta, #ff7a00); border-right-color: transparent; animation: lensSpin 0.9s linear infinite; }
+@keyframes lensSpin { to { transform: rotate(360deg); } }
+
+.lens-analyzing { display: flex; flex-direction: column; gap: 14px; }
+.lens-analyzing__head { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.lens-analyzing__head svg { color: var(--ayrovi-cta, #ff7a00); }
+.lens-analyzing__head strong { font-size: 16px; font-weight: 800; }
+.lens-analyzing__sub { margin: -6px auto 0; max-width: 36ch; text-align: center; font-size: 12.5px; line-height: 1.55; color: color-mix(in srgb, currentColor 62%, transparent); }
+
+/* Stepper 4 مراحل: Analyse → Recherche → Vérification → Prix */
+.lens-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; list-style: none; margin: 4px 0 0; padding: 14px 10px; border-radius: 18px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
+.lens-step { position: relative; display: flex; flex-direction: column; align-items: center; gap: 7px; text-align: center; }
+.lens-step:not(:first-child)::before { content: ''; position: absolute; top: 11px; right: calc(50% + 14px); left: calc(-50% + 14px); height: 1.5px; background: color-mix(in srgb, currentColor 18%, transparent); }
+.lens-step.is-done:not(:first-child)::before, .lens-step.is-active:not(:first-child)::before { background: var(--ayrovi-cta, #ff7a00); }
+.lens-step__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); color: #fff; z-index: 1; }
+.lens-step.is-active .lens-step__dot { border-color: var(--ayrovi-cta, #ff7a00); background: var(--ayrovi-cta, #ff7a00); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 18%, transparent); }
+.lens-step.is-done .lens-step__dot { border-color: var(--ayrovi-cta, #ff7a00); background: var(--ayrovi-cta, #ff7a00); }
+.lens-step__label { font-size: 10px; font-weight: 700; color: color-mix(in srgb, currentColor 66%, transparent); }
+.lens-step.is-active .lens-step__label, .lens-step.is-done .lens-step__label { color: var(--ayrovi-cta, #ff7a00); }
+
+.lens-analyzing__card { display: flex; gap: 12px; align-items: flex-start; padding: 14px; border-radius: 16px; border: 1px solid color-mix(in srgb, currentColor 10%, transparent); background: color-mix(in srgb, currentColor 4%, transparent); }
+.lens-analyzing__cardicon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: color-mix(in srgb, var(--ayrovi-cta, #ff7a00) 12%, transparent); color: var(--ayrovi-cta, #ff7a00); }
+.lens-analyzing__card strong { display: block; font-size: 13.5px; font-weight: 800; }
+.lens-analyzing__card p { margin: 4px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, currentColor 62%, transparent); }
+
+@media (prefers-reduced-motion: reduce) { .lens-frame__beam, .lens-spinner { animation: none; } }
