@@ -151,6 +151,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
       phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled),
       sortOrder: Number(row.sort_order ?? 40),
+      sections: (() => { try { return JSON.parse(row.sections_json || '{}'); } catch { return {}; } })(),
       phone: {
         image: row.phone_image || '',
         statusLabel: row.phone_status_label || '',

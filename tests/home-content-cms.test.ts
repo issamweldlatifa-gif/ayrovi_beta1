@@ -32,17 +32,14 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(response.status).toBe(200);
     const data = response.body.data;
     expect(data.eyebrow).toBe('LENS');
-    expect(data.title).toBe('Analysez. Comparez. Achetez mieux.');
-    expect(data.proofLine).toBe('Fiable. Rapide. Intelligent.');
+    expect(data.title).toBe('Voyez-le.\nLENS le trouve.\nOn s’occupe du reste.');
     expect(data.accentColor).toBe('#FF7A00');
-    expect(data.elementOrder).toBe('eyebrow,title,description,cta,proof');
-    expect(data.phone).toMatchObject({
-      statusLabel: 'AYROVI LENS',
-      resultLabel: 'Produit identifié',
-      productName: 'Sneakers blanches — 89,00 €',
-      priceChip: '≈ 298,900 TND',
-      ctaLabel: 'Ajouter au panier',
-    });
+    // النموذج الجديد: المحتوى الموسّع كله من الـ DB (sections)
+    expect(data.sections.miniFeatures).toHaveLength(4);
+    expect(data.sections.steps.items).toHaveLength(4);
+    expect(data.sections.banner.title).toBe('Plus qu’un outil, votre meilleur allié shopping.');
+    expect(data.sections.phone.merchants).toHaveLength(3);
+    expect(data.sections.phone.productName).toBe('Sneakers blanches');
   });
 
   test('editing LENS in the dashboard changes the public site without touching code', async () => {
@@ -182,18 +179,14 @@ describe('AYROVI mobile width-first layout rule', () => {
     expect(indexCss).toMatch(/\.brands-rail \{[^}]*margin-top: var\(--ay-heading-to-slider\)/);
   });
 
-  test('LENS uses the full mobile viewport and an 88–92% wide mockup', () => {
-    expect(indexCss).toMatch(/\.lens-hero \{ width: 100vw; max-width: 100vw; margin-left: calc\(50% - 50vw\); margin-right: calc\(50% - 50vw\); \}/);
-    expect(indexCss).toMatch(/\.lens-hero__inner \{ padding-inline: var\(--ay-gutter\); padding-block: 44px 48px; gap: var\(--ay-cta-to-visual\); \}/);
-    // mockup = عرض الشاشة (viewport) ناقص 20px من كل جانب (≈ 88–92%)
-    expect(indexCss).toMatch(/\.lens-phone \{ width: calc\(100vw - 40px\); max-width: none; flex: 0 0 auto; margin-inline: auto; \}/);
-    expect(indexCss).not.toContain('.lens-phone { width: min(280px, 78vw); }');
-    // إيقاع رأسي محسوب بدل الفراغات الضخمة
-    expect(indexCss).toContain('--ay-section-y: 48px;');
-    expect(indexCss).toContain('--ay-text-to-cta: 28px;');
-    expect(indexCss).toContain('--ay-cta-to-visual: 36px;');
-    expect(lensSource).toContain('className="lens-hero mt-12 lg:mt-24"');
-    expect(lensSource).not.toContain('mt-20 lg:mt-24');
+  test('LENS v2 section is full-width with a large phone mockup (reference composition)', () => {
+    expect(indexCss).toContain('.lens2__inner { position: relative; z-index: 1; padding-inline: var(--ay-gutter);');
+    expect(indexCss).toMatch(/\.lens2__phone-frame \{ position: relative; width: min\(340px, 88vw\);/);
+    expect(indexCss).toContain('.lens2__merchant');
+    expect(indexCss).toContain('.lens2__steps-grid');
+    expect(indexCss).toContain('.lens2__banner');
+    expect(lensSource).toContain('className="lens2"');
+    expect(lensSource).toContain("fetch('/api/public/lens-hero')");
   });
 
   test('the homepage ends at LENS — no footer or content rendered below it', () => {

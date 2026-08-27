@@ -1,185 +1,202 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Camera, Search, ShieldCheck, ShoppingBag, Sparkles, Tag, Zap, ArrowRight, ArrowLeft, Image as ImageIcon } from './QatafoIcons';
 
 /**
- * AYROVIX LENS — قسم مستقل بعد قسم الماركات.
+ * AYROVIX LENS — SECTION v2 (مطابق للنموذج المرجعي)
  *
- * قاعدة AYROVI: Dashboard = Control · Database/CMS = Source of Truth ·
- * Frontend = Presentation. لا يوجد أي نص أو صورة ثابتة في هذا الملف:
- * كل المحتوى (label، عنوان، وصف، CTA + رابطه، proof line، خلفية، accent،
- * ترتيب العناصر، mockup ومحتواه) يأتي من /api/public/lens-hero ويُدار من
- * Admin → Contenu → LENS. الواجهة مسؤولة فقط عن "كيف يظهر" (Responsive).
+ * كل النصوص والبيانات من /api/public/lens-hero (مصدر الحقيقة = الـ DB / Dashboard).
+ * لا يوجد أي نص تجاري ثابت في هذا الملف.
  *
- * Mobile-first: القسم بعرض الشاشة بالكامل، والـ mockup ≈ 88–92% من العرض.
+ * التكوين: محتوى يسار (eyebrow/عنوان/وصف/CTA/mini-features/AI-card) + mockup هاتف يمين،
+ * ثم بطاقة «Comment ça marche ?» ثم banner برتقالي. Mobile-first: يتكدس عموديًا على الهاتف.
  */
 
-export interface LensPhoneContent {
-  image: string;
-  statusLabel: string;
-  resultLabel: string;
-  productName: string;
-  priceChip: string;
-  metaChip: string;
-  stockChip: string;
-  ctaLabel: string;
-}
-
-export interface LensHeroData {
-  eyebrow: string;
-  title: string;
-  description: string;
-  ctaLabel: string;
-  ctaUrl: string;
-  proofLine: string;
-  accentColor: string;
-  elementOrder: string;
-  bgType: 'COLOR' | 'IMAGE';
-  bgColor: string;
-  bgImage: string;
-  overlayStrength: number;
-  focalX: number;
-  focalY: number;
-  phoneEnabled: boolean;
-  enabled: boolean;
-  phone: LensPhoneContent;
-}
-
-type LensElementKey = 'eyebrow' | 'title' | 'description' | 'cta' | 'proof';
-const LENS_ELEMENT_KEYS: LensElementKey[] = ['eyebrow', 'title', 'description', 'cta', 'proof'];
-
-const orderedKeys = (elementOrder: string): LensElementKey[] => {
-  const requested = String(elementOrder || '').split(',').map((token) => token.trim().toLowerCase());
-  const kept = requested.filter((token, index): token is LensElementKey =>
-    (LENS_ELEMENT_KEYS as string[]).includes(token) && requested.indexOf(token) === index);
-  LENS_ELEMENT_KEYS.forEach((key) => { if (!kept.includes(key)) kept.push(key); });
-  return kept;
+type IconKey = 'search' | 'tag' | 'shield' | 'zap' | 'camera' | 'bag';
+const ICONS: Record<IconKey, React.ComponentType<{ size?: number; className?: string }>> = {
+  search: Search, tag: Tag, shield: ShieldCheck, zap: Zap, camera: Camera, bag: ShoppingBag,
 };
+const iconFor = (key: string) => ICONS[(key as IconKey)] || Search;
 
-/** واجهة Lens الحقيقية معروضة داخل إطار iPhone — المحتوى كله من الـ CMS */
-const LensPhone: React.FC<{ content: LensPhoneContent }> = ({ content }) => (
-  <div className="lens-phone" aria-hidden>
-    <div className="lens-phone__frame">
-      <span className="lens-phone__island" />
-      <div className="lens-phone__screen">
-        {/* شريط علوي */}
-        <div className="lens-phone__status"><span>9:41</span><span>{content.statusLabel}</span></div>
-        {/* منطقة المسح */}
-        <div className="lens-phone__scan">
-          {content.image && <img src={content.image} alt="" className="lens-phone__photo" loading="lazy" />}
-          <span className="lens-phone__corner tl" /><span className="lens-phone__corner tr" />
-          <span className="lens-phone__corner bl" /><span className="lens-phone__corner br" />
-          <span className="lens-phone__beam" />
-        </div>
-        {/* نتيجة التحليل */}
-        <div className="lens-phone__result">
-          {content.resultLabel && <strong>{content.resultLabel}</strong>}
-          {content.productName && <span className="lens-phone__name">{content.productName}</span>}
-          <div className="lens-phone__meta">
-            {content.priceChip && <span className="lens-phone__chip is-on">{content.priceChip}</span>}
-            {content.metaChip && <span className="lens-phone__chip">{content.metaChip}</span>}
-            {content.stockChip && <span className="lens-phone__chip">{content.stockChip}</span>}
-          </div>
-          {content.ctaLabel && <span className="lens-phone__cta">{content.ctaLabel}</span>}
-        </div>
-      </div>
-    </div>
-  </div>
-);
+interface Merchant { name: string; price: string; }
+interface StepItem { icon: string; title: string; text: string; }
+interface Sections {
+  headlineHighlight?: string;
+  miniFeatures?: Array<{ icon: string; label: string }>;
+  aiCard?: { title: string; text: string };
+  phone?: {
+    topLabel: string; resultLabel: string; productName: string; price: string;
+    priceChip: string; metaChip: string; stockChip: string; optionsLabel: string; merchants: Merchant[];
+    image?: string;
+  };
+  steps?: { title: string; items: StepItem[] };
+  banner?: { title: string; text: string; ctaLabel: string };
+}
+
+interface LensData {
+  eyebrow: string; title: string; description: string; ctaLabel: string; ctaUrl: string;
+  accentColor: string; enabled: boolean; sections: Sections;
+}
 
 export const LensHero: React.FC<{ onOpenLens?: () => void }> = ({ onOpenLens }) => {
-  const [data, setData] = useState<LensHeroData | null>(null);
+  const [data, setData] = useState<LensData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     fetch('/api/public/lens-hero')
       .then((response) => (response.ok ? response.json() : null))
-      .then((result) => {
-        if (cancelled || !result?.data) return;
-        setData(result.data as LensHeroData);
-      })
+      .then((result) => { if (!cancelled && result?.data) setData(result.data as LensData); })
       .catch(() => undefined);
     return () => { cancelled = true; };
   }, []);
 
-  const keys = useMemo(() => orderedKeys(data?.elementOrder || ''), [data?.elementOrder]);
+  const accent = data?.accentColor || '#FF7A00';
+  const s = useMemo<Sections>(() => data?.sections || {}, [data]);
 
-  // لا محتوى = لا قسم (المصدر الوحيد هو الـ Dashboard)
   if (!data || !data.enabled) return null;
 
-  const focal = `${Math.round((data.focalX ?? 0.5) * 100)}% ${Math.round((data.focalY ?? 0.45) * 100)}%`;
-  const accent = data.accentColor || '#FF7A00';
-
-  // العنوان: سطر لكل جملة (أو لكل سطر صريح) — قاعدة عرض فقط، النص من الـ CMS
-  const titleLines = data.title.includes('\n')
-    ? data.title.split('\n').map((line) => line.trim()).filter(Boolean)
-    : data.title.split('.').map((line) => line.trim()).filter(Boolean).map((line) => `${line}.`);
-
-  const ctaIsSafeLink = /^(\/[^/]|#)/.test(data.ctaUrl) || /^https?:\/\//i.test(data.ctaUrl);
-
-  const elements: Record<LensElementKey, React.ReactNode> = {
-    eyebrow: data.eyebrow
-      ? <p key="eyebrow" className="lens-hero__eyebrow text-[11px] font-black uppercase tracking-[0.24em]" style={{ color: accent }}>{data.eyebrow}</p>
-      : null,
-    title: titleLines.length
-      ? (
-        <h2 key="title" className="lens-hero__title ay-edit-36 mt-3 text-ink">
-          {titleLines.map((line, index) => (
-            <React.Fragment key={index}>{line}{index < titleLines.length - 1 && <br />}</React.Fragment>
-          ))}
-        </h2>
-      )
-      : null,
-    description: data.description
-      ? <p key="description" className="mt-4 max-w-md text-[14.5px] leading-[1.65] text-muted sm:text-base">{data.description}</p>
-      : null,
-    cta: data.ctaLabel
-      ? (data.ctaUrl && ctaIsSafeLink
-        ? (
-          <a
-            key="cta"
-            href={data.ctaUrl}
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-ink px-7 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-black"
-          >
-            {data.ctaLabel}
-          </a>
-        )
-        : (
-          <button
-            key="cta"
-            type="button"
-            onClick={() => onOpenLens?.()}
-            className="mt-7 inline-flex items-center gap-2 rounded-full bg-ink px-7 py-3.5 text-[15px] font-bold text-white transition-colors hover:bg-black"
-          >
-            {data.ctaLabel}
-          </button>
-        ))
-      : null,
-    proof: data.proofLine
-      ? <p key="proof" className="lens-hero__proof mt-4 text-[12.5px] font-bold tracking-[0.04em] text-muted">{data.proofLine}</p>
-      : null,
+  const highlight = s.headlineHighlight || 'LENS';
+  const titleLines = String(data.title || '').split('\n').map((line) => line.trim()).filter(Boolean);
+  const renderLine = (line: string, key: number) => {
+    const at = line.indexOf(highlight);
+    if (!highlight || at === -1) return line;
+    return (
+      <React.Fragment key={key}>
+        {line.slice(0, at)}<span style={{ color: accent }}>{highlight}</span>{line.slice(at + highlight.length)}
+      </React.Fragment>
+    );
   };
 
-  return (
-    <section aria-label="AYROVIX Lens" className="lens-hero mt-12 lg:mt-24" style={{ '--ay-lens-accent': accent } as React.CSSProperties}>
-      <div
-        className="lens-hero__bg relative overflow-hidden rounded-none lg:rounded-[28px]"
-        style={{ background: data.bgType === 'IMAGE' && data.bgImage ? undefined : data.bgColor }}
-      >
-        {data.bgType === 'IMAGE' && data.bgImage && (
-          <>
-            <img src={data.bgImage} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: focal }} loading="lazy" />
-            <span aria-hidden className="absolute inset-0" style={{ background: `linear-gradient(180deg, rgba(255,255,255,${data.overlayStrength * 0.85}) 0%, rgba(255,255,255,${data.overlayStrength * 0.55}) 45%, rgba(255,255,255,${data.overlayStrength}) 100%)` }} />
-          </>
-        )}
+  const ctaIsLink = /^(https?:\/\/|\/(?!\/)|#)/i.test(data.ctaUrl || '');
+  const openLens = () => onOpenLens?.();
 
-        <div className="lens-hero__inner relative z-10 mx-auto grid w-full max-w-6xl gap-9 px-6 py-11 sm:px-8 lg:grid-cols-[1fr_auto] lg:items-center lg:gap-12 lg:px-10 lg:py-14">
-          {/* المحتوى — ترتيب العناصر من الـ Dashboard */}
-          <div className="lens-hero__content order-1 max-w-xl">
-            {keys.map((key) => elements[key])}
+  const phone = s.phone;
+  const steps = s.steps;
+  const banner = s.banner;
+
+  return (
+    <section aria-label={data.eyebrow || 'LENS'} className="lens2" style={{ '--lens2-accent': accent } as React.CSSProperties}>
+      <span aria-hidden className="lens2__diagonal" />
+      <div className="lens2__inner">
+        <div className="lens2__grid">
+          {/* ===== المحتوى ===== */}
+          <div className="lens2__content">
+            {data.eyebrow && <p className="lens2__eyebrow">{data.eyebrow}</p>}
+            <h2 className="lens2__title">
+              {titleLines.map((line, index) => (
+                <React.Fragment key={index}>{index > 0 && <br />}{renderLine(line, index)}</React.Fragment>
+              ))}
+            </h2>
+            {data.description && <p className="lens2__desc">{data.description}</p>}
+
+            {data.ctaLabel && (ctaIsLink
+              ? <a className="lens2__cta" href={data.ctaUrl}><Camera size={18} />{data.ctaLabel}</a>
+              : <button type="button" className="lens2__cta" onClick={openLens}><Camera size={18} />{data.ctaLabel}</button>)}
+
+            {Array.isArray(s.miniFeatures) && s.miniFeatures.length > 0 && (
+              <div className="lens2__minis">
+                {s.miniFeatures.map((feature, index) => {
+                  const Icon = iconFor(feature.icon);
+                  return (
+                    <div key={index} className="lens2__mini">
+                      <Icon size={17} />
+                      <span>{feature.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {s.aiCard && (
+              <div className="lens2__ai">
+                <Sparkles size={20} />
+                <div>
+                  <strong>{s.aiCard.title}</strong>
+                  <p>{s.aiCard.text}</p>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* iPhone Mockup — عنصر مستقل، بعرض الهاتف تقريباً */}
-          {data.phoneEnabled && <div className="lens-hero__mockup order-2 flex justify-center lg:justify-end"><LensPhone content={data.phone} /></div>}
+          {/* ===== mockup الهاتف ===== */}
+          {phone && (
+            <div className="lens2__phone" aria-hidden>
+              <div className="lens2__phone-frame">
+                <span className="lens2__phone-island" />
+                <div className="lens2__phone-screen">
+                  <div className="lens2__phone-top">
+                    <ArrowLeft size={16} />
+                    <span>{phone.topLabel}</span>
+                    <Zap size={15} />
+                  </div>
+                  <div className="lens2__phone-scan">
+                    <img src={phone.image || '/media/lens-sneakers.jpg'} alt="" className="lens2__phone-photo" />
+                    <span className="lens2__corner tl" /><span className="lens2__corner tr" />
+                    <span className="lens2__corner bl" /><span className="lens2__corner br" />
+                    <span className="lens2__phone-gallery"><ImageIcon size={14} /></span>
+                    <span className="lens2__phone-shutter" />
+                  </div>
+                  <div className="lens2__phone-result">
+                    <span className="lens2__phone-resultlabel">{phone.resultLabel}</span>
+                    <strong className="lens2__phone-name">{phone.productName}</strong>
+                    <span className="lens2__phone-price">{phone.price}</span>
+                    <div className="lens2__phone-chips">
+                      <span className="chip is-accent">{phone.priceChip}</span>
+                      <span className="chip">{phone.metaChip}</span>
+                      <span className="chip is-ok">{phone.stockChip}</span>
+                    </div>
+                    <span className="lens2__phone-options">{phone.optionsLabel}</span>
+                    <div className="lens2__phone-merchants">
+                      {(phone.merchants || []).map((merchant, index) => (
+                        <div key={index} className="lens2__merchant">
+                          <span className="lens2__merchant-logo">{merchant.name.slice(0, 1)}</span>
+                          <span className="lens2__merchant-name">{merchant.name}</span>
+                          <span className="lens2__merchant-price">{merchant.price}</span>
+                          <span className="lens2__merchant-go"><ArrowRight size={13} /></span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* ===== Comment ça marche ===== */}
+        {steps && (
+          <div className="lens2__steps">
+            <h3 className="lens2__steps-title">{steps.title}</h3>
+            <div className="lens2__steps-grid">
+              {(steps.items || []).map((step, index) => {
+                const Icon = iconFor(step.icon);
+                return (
+                  <div key={index} className="lens2__step">
+                    <span className="lens2__step-num">{index + 1}</span>
+                    <span className="lens2__step-icon"><Icon size={20} /></span>
+                    <strong>{step.title}</strong>
+                    <p>{step.text}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ===== banner ===== */}
+        {banner && (
+          <div className="lens2__banner">
+            <div className="lens2__banner-text">
+              <Sparkles size={20} />
+              <div>
+                <strong>{banner.title}</strong>
+                <p>{banner.text}</p>
+              </div>
+            </div>
+            {banner.ctaLabel && (ctaIsLink
+              ? <a className="lens2__banner-cta" href={data.ctaUrl}>{banner.ctaLabel}<ArrowRight size={16} /></a>
+              : <button type="button" className="lens2__banner-cta" onClick={openLens}>{banner.ctaLabel}<ArrowRight size={16} /></button>)}
+          </div>
+        )}
       </div>
     </section>
   );

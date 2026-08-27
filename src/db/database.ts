@@ -835,6 +835,63 @@ export class QatafoDatabase {
     this.ensureColumn('lens_hero_settings', 'phone_stock_chip', "TEXT NOT NULL DEFAULT 'Disponible'");
     this.ensureColumn('lens_hero_settings', 'phone_cta_label', "TEXT NOT NULL DEFAULT 'Ajouter au panier'");
 
+    // LENS v2 — المحتوى الموسّع (mini-features / AI card / phone merchants / steps / banner)
+    // يُخزَّن JSON في عمود واحد ويُدار من الـ Dashboard؛ الواجهة تعرضه فقط (لا نص ثابت في الكود).
+    this.ensureColumn('lens_hero_settings', 'sections_json', "TEXT NOT NULL DEFAULT '{}'");
+    {
+      const lensRow = this.db.prepare("SELECT sections_json, title FROM lens_hero_settings WHERE id='global'").get() as { sections_json: string; title: string };
+      if (lensRow && (!lensRow.sections_json || lensRow.sections_json === '{}')) {
+        const seed = {
+          headlineHighlight: 'LENS',
+          miniFeatures: [
+            { icon: 'search', label: 'Analyse intelligente' },
+            { icon: 'tag', label: 'Comparaison des prix' },
+            { icon: 'shield', label: 'Fiable & sécurisé' },
+            { icon: 'zap', label: 'Rapide & précis' },
+          ],
+          aiCard: {
+            title: 'Propulsé par l’IA AYROVI',
+            text: 'Notre intelligence artificielle identifie les produits, compare des milliers d’options et vous aide à acheter mieux, au meilleur prix.',
+          },
+          phone: {
+            topLabel: 'AYROVI LENS',
+            image: '/media/lens-sneakers.jpg',
+            resultLabel: 'Produit identifié',
+            productName: 'Sneakers blanches',
+            price: '89,00 €',
+            priceChip: '≈ 298,800 TND',
+            metaChip: '7 jours',
+            stockChip: 'Disponible',
+            optionsLabel: 'Meilleures options trouvées',
+            merchants: [
+              { name: 'Nike', price: '89,00 €' },
+              { name: 'Zalando', price: '95,00 €' },
+              { name: 'ASOS', price: '99,00 €' },
+            ],
+          },
+          steps: {
+            title: 'Comment ça marche ?',
+            items: [
+              { icon: 'camera', title: 'Prenez une photo', text: 'ou importez votre image.' },
+              { icon: 'search', title: 'LENS analyse', text: 'le produit en quelques secondes.' },
+              { icon: 'tag', title: 'Nous comparons', text: 'des centaines de prix pour vous.' },
+              { icon: 'bag', title: 'Choisissez & commandez', text: 'on s’occupe du reste.' },
+            ],
+          },
+          banner: {
+            title: 'Plus qu’un outil, votre meilleur allié shopping.',
+            text: 'LENS vous fait gagner du temps, de l’argent et vous évite les mauvaises surprises.',
+            ctaLabel: 'Essayer LENS',
+          },
+        };
+        this.run("UPDATE lens_hero_settings SET sections_json=?, title=?, description=?, cta_label=? WHERE id='global'",
+          JSON.stringify(seed),
+          'Voyez-le.\nLENS le trouve.\nOn s’occupe du reste.',
+          'Prenez une photo ou importez une image. LENS analyse le produit, compare les prix et vous trouve les meilleures options en quelques secondes.',
+          'Ouvrir LENS');
+      }
+    }
+
     // HERO — المحتوى (عنوان/وصف/CTA) يُدار من الـ Dashboard، لا من الكود
     this.db.exec(`CREATE TABLE IF NOT EXISTS hero_content_settings (
       id TEXT PRIMARY KEY CHECK(id='global'),
