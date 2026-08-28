@@ -50,6 +50,16 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onExit();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onExit]);
+
+  useEffect(() => {
     let current = smoothedVolume;
     const update = () => {
       current += (volumeLevel - current) * 0.35;
