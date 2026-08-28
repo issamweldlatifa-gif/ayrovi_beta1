@@ -1,5 +1,6 @@
 import { analyzeImage } from './lensApi';
 import { frameSignature, signatureDistance, liveObjectId } from './liveScanner';
+import { loadLocalDetector, type LocalDetector } from './localDetector';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 
 /**
@@ -143,6 +144,7 @@ export class LiveVisionRuntime {
   private lastSig = '';
   private lastCanvas: HTMLCanvasElement | null = null;
   private matchingIds = new Set<string>();
+  private detector: LocalDetector | null = null;
   private inflight = false;
   private abort: AbortController | null = null;
   private aiFailures = 0;
@@ -158,6 +160,8 @@ export class LiveVisionRuntime {
     this.stopped = false;
     this.objects = []; this.aiFailures = 0; this.lastSig = '';
     if (typeof window !== 'undefined') { window.addEventListener('online', this.onOnline); window.addEventListener('offline', this.onOffline); }
+    // كشف محلي خفيف (اختياري): إن تعذّر تحميله يبقى مسار الـ fallback شغّالًا
+    loadLocalDetector().then((d) => { if (!this.stopped) this.detector = d; }).catch(() => { this.detector = null; });
     this.opts.onEvent?.('live_opened');
     this.emit();
     this.schedule();
@@ -168,6 +172,7 @@ export class LiveVisionRuntime {
     if (this.timer != null) { window.clearTimeout(this.timer); this.timer = null; }
     if (typeof window !== 'undefined') { window.removeEventListener('online', this.onOnline); window.removeEventListener('offline', this.onOffline); }
     this.abort?.abort(); this.abort = null; this.inflight = false;
+    this.detector = null;
     this.objects = [];
     this.opts.onState({ objects: [], status: 'idle' });
   }
@@ -268,6 +273,25 @@ export class LiveVisionRuntime {
         this.objects.filter((o) => o.status === 'lost').forEach(() => this.opts.onEvent?.('tracking_lost'));
         this.matchPending(canvas);
         this.emit(); this.schedule(); return;
+      }
+      // كشف محلي خفيف (on-device) عند توفّره: boxes/classes محليًا + Claude انتقائيًا للمطابقة
+      if (!this.inflight && this.detector) {
+        this.inflight = true;
+        try {
+          const preds = await this.detector.detect(canvas);
+          const raw = preds.map((p) => ({
+            label: p.label, category: p.category, confidence: Math.round(p.score * 100),
+            box: { x: p.bbox[0] / canvas.width, y: p.bbox[1] / canvas.height, w: p.bbox[2] / canvas.width, h: p.bbox[3] / canvas.height },
+            color: [] as string[], pattern: null, material: null, candidates: [] as AyrovixCandidate[],
+          }));
+          this.objects = trackObjects(this.objects, raw, Date.now());
+          this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));
+          if (this.objects.length) this.opts.onEvent?.('object_detected', { count: this.objects.length });
+          this.matchPending(canvas);
+          this.emit();
+        } catch { this.detector = null; }
+        finally { this.inflight = false; this.schedule(); }
+        return;
       }
       if (!this.inflight && this.online) {
         this.inflight = true;

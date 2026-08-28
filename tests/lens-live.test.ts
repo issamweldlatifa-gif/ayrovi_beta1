@@ -4,6 +4,7 @@ import request from 'supertest';
 import { app } from '../src/server';
 import { frameSignature, signatureDistance, liveObjectId } from '../client/src/ayrovix/services/liveScanner';
 import { iou, trackObjects, adaptiveNextInterval, computeCropRect, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
+import { loadLocalDetector } from '../client/src/ayrovix/services/localDetector';
 
 const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
 const launcherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
@@ -105,5 +106,10 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     const tiny = computeCropRect(512, 512, { x: 0.5, y: 0.5, w: 0.01, h: 0.01 });
     expect(tiny.w).toBeGreaterThanOrEqual(32);
     expect(tiny.h).toBeGreaterThanOrEqual(32);
+  });
+
+  it('local on-device detector degrades gracefully when unavailable (no DOM/CDN)', async () => {
+    // في بيئة بدون window (Node) يجب أن يرفض التحميل بأناقة دون انهيار
+    await expect(loadLocalDetector()).rejects.toThrow();
   });
 });
