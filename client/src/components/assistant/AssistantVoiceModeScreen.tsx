@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Mic, MicOff, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
+import { Camera, Image as ImageIcon, Mic, MicOff, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
+import type { AssistantAttachment } from './types';
 
-export type VoiceModeState = 'idle' | 'listening' | 'processing' | 'speaking' | 'muted';
+export type VoiceModeState = 'idle' | 'listening' | 'transcribing' | 'processing' | 'tool_call' | 'speaking' | 'muted' | 'error';
 
 interface AssistantVoiceModeScreenProps {
   state: VoiceModeState;
@@ -11,10 +12,21 @@ interface AssistantVoiceModeScreenProps {
   isMuted: boolean;
   isSpeakerMuted: boolean;
   liveTranscript?: string;
+  attachments?: AssistantAttachment[];
+  activeProduct?: {
+    title: string;
+    brand?: string;
+    price?: number;
+    currency?: string;
+    image?: string;
+    priceTnd?: number;
+  } | null;
   onToggleMute: () => void;
   onToggleSpeaker: () => void;
   onExit: () => void;
   onOpenSettings?: () => void;
+  onOpenAttachments?: () => void;
+  onOpenLens?: () => void;
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
@@ -24,10 +36,14 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   isMuted,
   isSpeakerMuted,
   liveTranscript,
+  attachments,
+  activeProduct,
   onToggleMute,
   onToggleSpeaker,
   onExit,
   onOpenSettings,
+  onOpenAttachments,
+  onOpenLens,
 }) => {
   const { tr, direction } = useLocale();
   const [smoothedVolume, setSmoothedVolume] = useState(0);
@@ -53,15 +69,23 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     ? tr('Microphone coupé', 'تم كتم الميكروفون...')
     : state === 'listening'
       ? tr('Écoute en cours…', 'استمع...')
-      : state === 'processing'
-        ? tr('Réflexion en cours…', 'يفكر...')
-        : tr('AYROVI vous répond…', 'يتحدث...');
+      : state === 'transcribing'
+        ? tr('Transcription…', 'تحويل الصوت إلى نص...')
+        : state === 'tool_call'
+          ? tr('Recherche & Calcul en cours…', 'جاري البحث والحساب...')
+          : state === 'processing'
+            ? tr('Réflexion en cours…', 'يفكر...')
+            : state === 'speaking'
+              ? tr('AYROVI vous répond…', 'يتحدث...')
+              : tr('Prêt', 'جاهز');
 
-  const orbGradient = state === 'processing'
+  const orbGradient = state === 'processing' || state === 'tool_call'
     ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
     : state === 'speaking'
       ? 'from-[#FF7A00] via-[#ffa34d] to-[#e06600]'
-      : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
+      : state === 'transcribing'
+        ? 'from-[#f59e0b] via-[#fbbf24] to-[#d97706]'
+        : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
 
   return (
     <div
@@ -73,7 +97,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
       aria-modal="true"
       aria-label={tr('Mode Vocal AYROVI', 'الوضع الصوتي AYROVI')}
     >
-      {/* 1. Header: Exit (X) & Settings */}
+      {/* 1. Header: Exit (X), Attachments / Lens & Settings */}
       <header className="relative z-10 flex items-center justify-between px-6 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))]">
         <button
           type="button"
@@ -89,25 +113,79 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           <X size={20} />
         </button>
 
-        {onOpenSettings && (
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
-              isDark
-                ? 'bg-white/10 text-white hover:bg-white/15'
-                : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
-            }`}
-            aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-            title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-          >
-            <SlidersHorizontal size={20} />
-          </button>
-        )}
+        {/* Quick Lens / Multimodal attachment actions */}
+        <div className="flex items-center gap-2">
+          {onOpenLens && (
+            <button
+              type="button"
+              onClick={onOpenLens}
+              className={`flex h-11 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition active:scale-90 ${
+                isDark
+                  ? 'bg-white/10 text-white hover:bg-white/15'
+                  : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+              }`}
+              title={tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}
+            >
+              <Camera size={16} />
+              <span>Lens</span>
+            </button>
+          )}
+
+          {onOpenAttachments && (
+            <button
+              type="button"
+              onClick={onOpenAttachments}
+              className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
+                attachments && attachments.length > 0
+                  ? 'bg-[#FF7A00] text-white shadow-md'
+                  : isDark
+                    ? 'bg-white/10 text-white hover:bg-white/15'
+                    : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+              }`}
+              title={tr('Ajouter une photo', 'إضافة صورة')}
+            >
+              <ImageIcon size={18} />
+            </button>
+          )}
+
+          {onOpenSettings && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
+                isDark
+                  ? 'bg-white/10 text-white hover:bg-white/15'
+                  : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+              }`}
+              aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
+              title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
+            >
+              <SlidersHorizontal size={20} />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* 2. Center Stage: Large Reactive Voice Orb & Visualizer */}
       <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-4 text-center">
+        {/* Active Product or Image context pill if present */}
+        {(activeProduct || (attachments && attachments.length > 0)) && (
+          <div className="mb-4 flex max-w-xs items-center gap-2 rounded-full border border-black/5 bg-white/80 px-3 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/40">
+            {activeProduct?.image || attachments?.[0]?.preview ? (
+              <img
+                src={activeProduct?.image || attachments?.[0]?.preview}
+                alt=""
+                className="h-7 w-7 rounded-full object-cover"
+              />
+            ) : (
+              <Camera size={16} className="text-[#FF7A00]" />
+            )}
+            <span className="truncate text-xs font-bold">
+              {activeProduct?.title || tr('Photo attachée pour analyse', 'صورة مرفقة للتحليل')}
+            </span>
+          </div>
+        )}
+
         {/* Ambient background glow */}
         <div
           className="pointer-events-none absolute h-72 w-72 rounded-full bg-[#FF7A00]/15 blur-3xl transition-all duration-300"
@@ -203,7 +281,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
               <span
                 key={idx}
                 className={`w-1 rounded-full transition-[height] duration-75 ${
-                  state === 'processing'
+                  state === 'processing' || state === 'tool_call'
                     ? 'bg-blue-500'
                     : 'bg-[#FF7A00]'
                 }`}

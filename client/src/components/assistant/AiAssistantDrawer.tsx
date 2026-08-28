@@ -618,11 +618,24 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         csrfToken: customerCsrfToken,
         signal: controller.signal,
         onEvent: (event) => {
-          if (event.type === 'state') setMotionState(event.state);
+          if (event.type === 'state') {
+            setMotionState(event.state);
+            if (voiceModeRef.current) {
+              if (event.state === 'analyzing' || event.state === 'reasoning') {
+                setVoiceState('tool_call');
+              } else if (event.state === 'thinking' || event.state === 'creating') {
+                setVoiceState('processing');
+              }
+            }
+          }
           if (event.type === 'delta') {
             setMessages((current) => current.map((message) => message.id === responseId ? { ...message, text: message.text + event.text } : message));
           }
-          if (event.type === 'tool') { if (event.name === 'lens_search') setLensActive(true);
+          if (event.type === 'tool') {
+            if (voiceModeRef.current) {
+              setVoiceState('tool_call');
+            }
+            if (event.name === 'lens_search') setLensActive(true);
             if (event.name === 'lens_search' && event.data.product) {
               const product = event.data.product as AyrovixProduct;
               openAssistantProduct({
@@ -1197,10 +1210,21 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             isMuted={isMuted}
             isSpeakerMuted={isSpeakerMuted}
             liveTranscript={liveTranscript}
+            attachments={attachments}
+            activeProduct={selectedProduct ? {
+              title: selectedProduct.product.title,
+              brand: selectedProduct.product.brand,
+              price: selectedProduct.product.price || undefined,
+              currency: selectedProduct.product.currency || undefined,
+              image: selectedProduct.product.image || undefined,
+              priceTnd: selectedProduct.product.priceTnd || undefined,
+            } : null}
             onToggleMute={handleToggleMute}
             onToggleSpeaker={handleToggleSpeaker}
             onExit={stopVoiceMode}
             onOpenSettings={() => setIsMenuOpen(true)}
+            onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
+            onOpenLens={onOpenLens}
           />
         ) : (
           <>
