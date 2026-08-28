@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ShoppingBag, Zap } from '../../components/QatafoIcons';
+import { ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Sparkles, Zap } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import { LensContextHeader } from './LensNavigation';
 import { analyzeImage } from '../services/lensApi';
@@ -263,12 +263,14 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </p>
       )}
 
-      {/* état Live / guidance discrète */}
-      {isVideo && (
+      {/* pill الحالة: Auto (PHOTO) / Live (VIDÉO) + guidance discrète */}
+      {mode === 'search' && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
-          {liveGuidance
+          {liveGuidance && isVideo
             ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-semibold text-white/85">{liveGuidance}</p>
-            : <p className="flex items-center gap-1.5 rounded-full bg-black/45 px-4 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-accent"><span className="h-1.5 w-1.5 rounded-full bg-accent" />{liveScanning ? 'Live' : ''}</p>}
+            : isVideo
+              ? <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-accent backdrop-blur"><span className="h-1.5 w-1.5 rounded-full bg-accent" />{tr('Live', 'مباشر')}</p>
+              : <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-white/85 backdrop-blur"><Sparkles size={13} className="text-accent" />{tr('Auto', 'تلقائي')}</p>}
         </div>
       )}
 
@@ -284,24 +286,24 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
               <span className="absolute -top-6 left-0 rounded-md bg-accent px-2 py-0.5 text-[10px] font-extrabold text-ink">{active.label} · {active.confidence}%</span>
             </span>
           )}
+          {/* بطاقة منتج خفيفة مثبّتة أسفل الـ box — tap → page résultats existante */}
+          {isVideo && active && (
+            <button
+              type="button"
+              onClick={() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}
+              className="pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur"
+            >
+              <span className="h-11 w-11 flex-none overflow-hidden rounded-lg bg-surface">{active.image && <img src={active.image} alt="" className="h-full w-full object-cover" />}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12.5px] font-extrabold text-white">{active.label}</span>
+                <span className="block text-[11px] font-bold text-accent">{active.confidence}%{active.candidates[0]?.priceTnd != null ? ` · ${active.candidates[0].priceTnd.toFixed(2)} DT` : ''}</span>
+              </span>
+              <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white/12"><ArrowRight size={15} className="text-white/80" /></span>
+            </button>
+          )}
           {!isVideo && <div className="lens-scan absolute inset-5 rounded-[18px]" aria-hidden="true" />}
         </div>
       </div>
-
-      {/* Carte produit légère (VIDÉO) — tap → page résultats existante */}
-      {isVideo && active && (
-        <div className="relative z-10 flex justify-center pb-2">
-          <button type="button" onClick={() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}
-            className="flex w-[86%] max-w-sm items-center gap-3 rounded-2xl bg-black/70 p-2.5 text-start backdrop-blur">
-            <span className="h-12 w-12 flex-none overflow-hidden rounded-xl bg-surface">{active.image && <img src={active.image} alt="" className="h-full w-full object-cover" />}</span>
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13px] font-extrabold text-white">{active.label}</span>
-              <span className="block text-[11px] font-bold text-accent">{active.confidence}% {active.candidates[0]?.priceTnd != null ? `· ${active.candidates[0].priceTnd.toFixed(2)} DT` : ''}</span>
-            </span>
-            <ArrowRight size={16} className="text-white/70" />
-          </button>
-        </div>
-      )}
 
       {/* Scan Collection (multi) */}
       {isVideo && lockedObjects.length > 1 && (
@@ -328,8 +330,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </div>
       )}
 
-      {/* Hint contextuel discret */}
-      {hint && mode !== 'code' && (
+      {/* Hint contextuel (سطرين + أيقونة) يختفي تلقائيًا */}
+      {hint && mode === 'search' && (
+        <div className="pointer-events-none relative z-10 mx-auto mb-3 flex w-fit items-center gap-2.5 rounded-2xl bg-black/55 px-4 py-2.5 backdrop-blur">
+          {isVideo ? <ScanSearch size={16} className="text-accent" /> : <Sparkles size={16} className="text-accent" />}
+          <span>
+            <span className="block text-[12px] font-extrabold text-white">{isVideo ? tr('Déplacez la caméra', 'حرّك الكاميرا') : tr('Cadrez le produit', 'ضع المنتج في الإطار')}</span>
+            <span className="block text-[10.5px] font-semibold text-white/70">{isVideo ? tr('pour détecter les produits', 'لاكتشاف المنتجات') : tr('Nous détectons automatiquement', 'نكتشف تلقائيًا')}</span>
+          </span>
+        </div>
+      )}
+      {hint && mode === 'code' && (
         <p className="relative z-10 mx-auto mb-2 w-fit rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-semibold text-white/85 backdrop-blur">{hint}</p>
       )}
 
@@ -356,8 +367,10 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
         {mode !== 'code' ? (
           <button type="button" onClick={capturePhoto} aria-label={tr('Photographier', 'التقاط صورة')}
-            className={`grid h-[78px] w-[78px] place-items-center rounded-full border-4 border-white/90 backdrop-blur transition active:scale-95 ${capturing ? 'scale-90 bg-accent' : isVideo ? 'bg-accent/20' : 'bg-white/10'}`}>
-            <span className={`h-12 w-12 rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-accent' : 'bg-white'}`} />
+            className={`grid h-[78px] w-[78px] place-items-center rounded-full border-4 border-white/90 backdrop-blur transition active:scale-95 ${capturing ? 'scale-90 bg-accent' : isVideo ? 'bg-black/30' : 'bg-white/10'}`}>
+            <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-black/40 text-accent ring-2 ring-accent' : 'bg-white'}`}>
+              {isVideo && !capturing && <ScanSearch size={22} strokeWidth={1.9} />}
+            </span>
           </button>
         ) : (
           <span className="h-[78px] w-[78px]" />
@@ -379,6 +392,20 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
       {mode === 'code' && notice && (
         <p className="relative z-10 mx-auto mb-2 max-w-xs rounded-2xl bg-danger/25 px-4 py-2 text-center text-xs font-semibold text-white">{notice}</p>
+      )}
+
+      {/* بطاقة شرح الوضعين (PHOTO | VIDÉO) — تُبرز الوضع النشط */}
+      {mode !== 'code' && (
+        <div className="relative z-10 mx-4 mb-2 grid grid-cols-2 rounded-2xl bg-black/50 p-3 backdrop-blur">
+          <div className={`pe-3 ${isVideo ? 'opacity-55' : ''}`}>
+            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-accent"><Camera size={13} />{tr('Photo', 'صورة')}</p>
+            <p className="mt-1 text-[10.5px] font-semibold leading-snug text-white/75">{tr("Prenez une photo, l'analyse se fait automatiquement.", 'التقط صورة، ويتم التحليل تلقائيًا.')}</p>
+          </div>
+          <div className={`border-s border-white/10 ps-3 ${isVideo ? '' : 'opacity-55'}`}>
+            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-accent"><ScanSearch size={13} />{tr('Vidéo (Live)', 'فيديو (مباشر)')}</p>
+            <p className="mt-1 text-[10.5px] font-semibold leading-snug text-white/75">{tr('Déplacez la caméra pour détecter les produits en direct.', 'حرّك الكاميرا لاكتشاف المنتجات مباشرة.')}</p>
+          </div>
+        </div>
       )}
 
       <div className="relative z-10 h-[max(0.75rem,env(safe-area-inset-bottom))]" />
