@@ -5,6 +5,7 @@ import { AssistantFeedbackSheet } from './AssistantFeedbackSheet';
 import { AssistantHeader } from './AssistantHeader';
 import { AssistantMessages } from './AssistantMessages';
 import { AssistantSideMenu } from './AssistantSideMenu';
+import { AssistantVoiceModeScreen } from './AssistantVoiceModeScreen';
 import { AssistantVoiceOrb, VoiceState } from './AssistantVoiceOrb';
 import { globalVoicePlayer } from './voicePlayer';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -124,6 +125,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState('');
+  const [isMuted, setIsMuted] = useState(false);
+  const isMutedRef = useRef(false);
+  const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
+  const isSpeakerMutedRef = useRef(false);
   const voiceModeRef = useRef(false);
   const voiceStateRef = useRef<VoiceState>('idle');
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -267,14 +272,22 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const stopVoiceMode = () => {
+    voiceModeRef.current = false;
+    setVoiceMode(false);
+    setVoiceState('idle');
+    setVolumeLevel(0);
+    setLiveTranscript('');
+    setIsMuted(false);
+    isMutedRef.current = false;
     globalVoicePlayer.stop();
-    if (speechSilenceTimerRef.current) {
-      clearTimeout(speechSilenceTimerRef.current);
-      speechSilenceTimerRef.current = null;
-    }
+
     if (volumeAnimRef.current !== null) {
       cancelAnimationFrame(volumeAnimRef.current);
       volumeAnimRef.current = null;
+    }
+    if (speechSilenceTimerRef.current) {
+      clearTimeout(speechSilenceTimerRef.current);
+      speechSilenceTimerRef.current = null;
     }
     try {
       if (speechRecognizerRef.current) {
@@ -285,6 +298,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         speechRecognizerRef.current = null;
       }
     } catch {}
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state && recorder.state !== 'inactive') {
+      discardRecordingRef.current = true;
+      recorder.stop();
+    }
+    mediaRecorderRef.current = null;
     if (audioSourceRef.current) {
       try { audioSourceRef.current.disconnect(); } catch {}
       audioSourceRef.current = null;
@@ -294,14 +313,39 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       analyserRef.current = null;
     }
     if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      try { audioContextRef.current.close(); } catch {}
+      try { void audioContextRef.current.close(); } catch {}
       audioContextRef.current = null;
     }
     releaseMediaStream();
-    setVoiceMode(false);
-    setVoiceState('idle');
-    setVolumeLevel(0);
-    setLiveTranscript('');
+  };
+
+  const handleToggleMute = () => {
+    const next = !isMuted;
+    setIsMuted(next);
+    isMutedRef.current = next;
+    if (next) {
+      if (speechRecognizerRef.current) {
+        try { speechRecognizerRef.current.stop(); } catch {}
+      }
+      const recorder = mediaRecorderRef.current;
+      if (recorder?.state && recorder.state !== 'inactive') {
+        discardRecordingRef.current = true;
+        recorder.stop();
+      }
+      setVoiceState('muted');
+    } else {
+      setVoiceState('listening');
+      void startVoiceListeningTurn();
+    }
+  };
+
+  const handleToggleSpeaker = () => {
+    const next = !isSpeakerMuted;
+    setIsSpeakerMuted(next);
+    isSpeakerMutedRef.current = next;
+    if (next) {
+      globalVoicePlayer.stop();
+    }
   };
 
   const interruptVoiceSpeech = () => {
@@ -587,24 +631,30 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         if (voiceModeRef.current) {
           setMessages((latest) => {
             const resp = latest.find((m) => m.id === responseId);
-            if (resp && resp.text.trim()) {
+            if (resp && resp.text.trim() && !isSpeakerMutedRef.current) {
               setVoiceState('speaking');
               globalVoicePlayer.speak(
                 resp.text,
                 isArabic ? 'ar' : 'fr',
                 () => setVoiceState('speaking'),
                 () => {
-                  if (voiceModeRef.current) {
+                  if (voiceModeRef.current && !isMutedRef.current) {
                     setVoiceState('listening');
                     void startVoiceListeningTurn();
+                  } else if (voiceModeRef.current && isMutedRef.current) {
+                    setVoiceState('muted');
                   } else {
                     setVoiceState('idle');
                   }
                 },
               );
             } else {
-              setVoiceState('listening');
-              void startVoiceListeningTurn();
+              if (voiceModeRef.current && !isMutedRef.current) {
+                setVoiceState('listening');
+                void startVoiceListeningTurn();
+              } else if (voiceModeRef.current && isMutedRef.current) {
+                setVoiceState('muted');
+              }
             }
             return latest;
           });
@@ -1104,69 +1154,76 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onClose={handleCloseAssistant}
         />
 
-        {isBooting ? (
-          <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 pb-8 pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))]" aria-busy="true" aria-label={tr('Chargement de SONIM', 'جارٍ تحميل SONIM')}>
-            <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
-            <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
-              {[0, 1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-card bg-line" />)}
-            </div>
-          </main>
-        ) : <AssistantMessages
-          messages={messages}
-          isGenerating={isGenerating}
-          motionState={motionState}
-          assistantReady={assistantReady}
-          isDark={isDark}
-          copiedId={copiedId}
-          feedback={feedback}
-          selectedProduct={productLayer ? selectedProduct : null}
-          productBusyId={productBusyId}
-          isOrdering={isOrdering}
-          analyzingImage={lensActive}
-          onPrompt={(prompt) => sendMessage(prompt)}
-          onCopy={handleCopy}
-          onRegenerate={handleRegenerate}
-          onFeedback={handleFeedback}
-          onOpenComment={(message) => { setFeedbackMessage(message); navigation.pushLayer({ id: 'assistant:feedback', payload: { messageId: message.id } }); }}
-          onOpenLens={onOpenLens}
-          onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
-          onProductOrder={(selection) => void handleProductOrder(selection)}
-          customerFirstName={customerFirstName}
-        />}
+        {voiceMode ? (
+          <AssistantVoiceModeScreen
+            state={isMuted ? 'muted' : (voiceState as any)}
+            volumeLevel={isMuted ? 0 : volumeLevel}
+            isDark={isDark}
+            isMuted={isMuted}
+            isSpeakerMuted={isSpeakerMuted}
+            liveTranscript={liveTranscript}
+            onToggleMute={handleToggleMute}
+            onToggleSpeaker={handleToggleSpeaker}
+            onExit={stopVoiceMode}
+            onOpenSettings={() => setIsMenuOpen(true)}
+          />
+        ) : (
+          <>
+            {isBooting ? (
+              <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 pb-8 pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))]" aria-busy="true" aria-label={tr('Chargement de SONIM', 'جارٍ تحميل SONIM')}>
+                <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
+                <div className="mx-auto grid w-full max-w-3xl grid-cols-2 gap-3">
+                  {[0, 1, 2, 3].map((item) => <div key={item} className="h-28 animate-pulse rounded-card bg-line" />)}
+                </div>
+              </main>
+            ) : (
+              <AssistantMessages
+                messages={messages}
+                isGenerating={isGenerating}
+                motionState={motionState}
+                assistantReady={assistantReady}
+                isDark={isDark}
+                copiedId={copiedId}
+                feedback={feedback}
+                selectedProduct={productLayer ? selectedProduct : null}
+                productBusyId={productBusyId}
+                isOrdering={isOrdering}
+                analyzingImage={lensActive}
+                onPrompt={(prompt) => sendMessage(prompt)}
+                onCopy={handleCopy}
+                onRegenerate={handleRegenerate}
+                onFeedback={handleFeedback}
+                onOpenComment={(message) => { setFeedbackMessage(message); navigation.pushLayer({ id: 'assistant:feedback', payload: { messageId: message.id } }); }}
+                onOpenLens={onOpenLens}
+                onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
+                onProductOrder={(selection) => void handleProductOrder(selection)}
+                customerFirstName={customerFirstName}
+              />
+            )}
 
-        {voiceMode && (
-          <div className="relative z-20 px-4">
-            <AssistantVoiceOrb
-              state={voiceState}
-              volumeLevel={volumeLevel}
-              isDark={isDark}
-              liveTranscript={liveTranscript}
-              onInterrupt={interruptVoiceSpeech}
-              onExitVoice={stopVoiceMode}
-              onManualFinish={finishVoiceTurn}
-            />
-          </div>
+            {!isBooting && (
+              <AssistantComposer
+                value={input}
+                attachments={attachments}
+                isDark={isDark}
+                isGenerating={isGenerating}
+                isRecording={isRecording}
+                isTranscribing={isTranscribing}
+                voiceMode={voiceMode}
+                recordSeconds={recordSeconds}
+                onChange={setInput}
+                onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
+                onRemoveAttachment={(id) => setAttachments((current) => current.filter((attachment) => attachment.id !== id))}
+                onStartRecording={() => void startRecording()}
+                onFinishRecording={finishRecording}
+                onCancelRecording={cancelRecording}
+                onToggleVoiceMode={handleToggleVoiceMode}
+                onSend={() => sendMessage()}
+                onStop={stopGeneration}
+              />
+            )}
+          </>
         )}
-
-        {!isBooting && <AssistantComposer
-          value={input}
-          attachments={attachments}
-          isDark={isDark}
-          isGenerating={isGenerating}
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          voiceMode={voiceMode}
-          recordSeconds={recordSeconds}
-          onChange={setInput}
-          onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
-          onRemoveAttachment={(id) => setAttachments((current) => current.filter((attachment) => attachment.id !== id))}
-          onStartRecording={() => void startRecording()}
-          onFinishRecording={finishRecording}
-          onCancelRecording={cancelRecording}
-          onToggleVoiceMode={handleToggleVoiceMode}
-          onSend={() => sendMessage()}
-          onStop={stopGeneration}
-        />}
 
         <AssistantSideMenu
           isOpen={isMenuOpen}

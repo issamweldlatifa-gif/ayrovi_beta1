@@ -360,6 +360,16 @@ export const AyroviMic = createAyroviIcon('Mic', (
     <path d="M6.6 11.4a5.4 5.4 0 0 0 10.8 0M12 16.8v2.8" />
   </>
 ));
+export const AyroviMicOff = createAyroviIcon('MicOff', (
+  <>
+    <path d="M9.2 4.6a2.8 2.8 0 0 1 5.3 1.2v2.6M14.8 11.2a2.8 2.8 0 0 1-5.6 0M6.6 11.4a5.4 5.4 0 0 0 8.8 4.2M12 16.8v2.8M3 3l18 18" strokeLinecap="round" strokeLinejoin="round" />
+  </>
+));
+export const AyroviVoiceWave = createAyroviIcon('VoiceWave', (
+  <>
+    <path d="M5.5 10v4M8.75 7v10M12 4v16M15.25 7v10M18.5 10v4" strokeLinecap="round" strokeWidth="2.2" />
+  </>
+));
 export const AyroviVideo = createAyroviIcon('Video', (
   <>
     <rect x="3.6" y="7" width="12.2" height="10" rx="2" />
