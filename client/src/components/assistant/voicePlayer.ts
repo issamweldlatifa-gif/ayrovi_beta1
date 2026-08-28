@@ -5,6 +5,7 @@
 export class AssistantVoicePlayer {
   private activeUtterance: SpeechSynthesisUtterance | null = null;
   private isSpeaking = false;
+  private safetyTimer: ReturnType<typeof setTimeout> | null = null;
 
   public speak(
     text: string,
@@ -50,28 +51,59 @@ export class AssistantVoicePlayer {
       /* Use default */
     }
 
+    let ended = false;
+    const safeEnd = () => {
+      if (ended) return;
+      ended = true;
+      if (this.safetyTimer) {
+        clearTimeout(this.safetyTimer);
+        this.safetyTimer = null;
+      }
+      this.isSpeaking = false;
+      this.activeUtterance = null;
+      onEnd?.();
+    };
+
     utterance.onstart = () => {
       this.isSpeaking = true;
       onStart?.();
     };
 
-    utterance.onend = () => {
-      this.isSpeaking = false;
-      this.activeUtterance = null;
-      onEnd?.();
-    };
+    utterance.onend = safeEnd;
+    utterance.onerror = safeEnd;
 
-    utterance.onerror = () => {
-      this.isSpeaking = false;
-      this.activeUtterance = null;
-      onEnd?.();
-    };
+    // Safety timeout: roughly 150 words per minute plus buffer
+    const estimatedMs = Math.max(4000, Math.min(45000, (clean.length / 15) * 1000));
+    this.safetyTimer = setTimeout(() => {
+      if (this.isSpeaking) {
+        this.stop();
+        safeEnd();
+      }
+    }, estimatedMs);
 
     this.activeUtterance = utterance;
-    window.speechSynthesis.speak(utterance);
+
+    try {
+      if (window.speechSynthesis.paused) {
+        window.speechSynthesis.resume();
+      }
+      window.speechSynthesis.speak(utterance);
+      // Extra resume for Chrome webkit bug
+      setTimeout(() => {
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
+      }, 50);
+    } catch {
+      safeEnd();
+    }
   }
 
   public stop(): void {
+    if (this.safetyTimer) {
+      clearTimeout(this.safetyTimer);
+      this.safetyTimer = null;
+    }
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();

@@ -127,7 +127,7 @@ export const AssistantVoiceOrb: React.FC<AssistantVoiceOrbProps> = ({
         </div>
 
         {/* State Label */}
-        <p className="mt-3 text-sm font-extrabold tracking-tight text-ink">{stateLabel}</p>
+        <p className={`mt-3 text-sm font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-ink'}`}>{stateLabel}</p>
 
         {/* Live Audio Visualizer Bars */}
         {state === 'listening' && (
@@ -147,7 +147,7 @@ export const AssistantVoiceOrb: React.FC<AssistantVoiceOrbProps> = ({
 
         {/* Live Transcript / Subtitle preview */}
         {liveTranscript && (
-          <p className="mt-2.5 max-w-xs rounded-xl bg-surface px-3 py-1.5 text-xs font-semibold italic text-muted">
+          <p className={`mt-2.5 max-w-xs rounded-xl px-3 py-1.5 text-xs font-semibold italic ${isDark ? 'bg-white/10 text-white/90' : 'bg-surface text-muted'}`}>
             « {liveTranscript} »
           </p>
         )}

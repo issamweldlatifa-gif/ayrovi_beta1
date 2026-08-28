@@ -324,7 +324,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const processVoiceInput = async (audio: Blob, duration: number) => {
-    if (duration < 0.6 || audio.size < 200) {
+    if (duration < 0.5 || audio.size < 150) {
       if (voiceModeRef.current) void startVoiceListeningTurn();
       return;
     }
@@ -332,25 +332,34 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     const controller = new AbortController();
     transcriptionAbortRef.current = controller;
     setIsTranscribing(true);
+    let recognizedText = liveTranscript.trim();
+
     try {
       const result = await transcribeAssistantAudio({
         audio,
         csrfToken: customerCsrfToken,
         signal: controller.signal,
       });
-      const text = result.text.trim() || liveTranscript.trim();
-      if (!text) {
-        if (voiceModeRef.current) void startVoiceListeningTurn();
-        return;
+      if (result?.text?.trim()) {
+        recognizedText = result.text.trim();
       }
-      setLiveTranscript('');
-      sendMessage(text, true);
     } catch {
-      if (voiceModeRef.current) void startVoiceListeningTurn();
+      // Fallback: If server transcription is unavailable, use client speech recognition transcript
+      console.warn('[Assistant Voice] Server transcription fallback to client transcript');
     } finally {
       if (transcriptionAbortRef.current === controller) {
         transcriptionAbortRef.current = null;
         setIsTranscribing(false);
+      }
+    }
+
+    if (recognizedText) {
+      setLiveTranscript('');
+      sendMessage(recognizedText, true);
+    } else {
+      if (voiceModeRef.current) {
+        showToast(tr('Parlez plus fort ou tapez votre message', 'تحدث بصوت أوضح أو اكتب رسالتك'));
+        void startVoiceListeningTurn();
       }
     }
   };
@@ -375,6 +384,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtx) {
           const ctx = new AudioCtx();
+          if (ctx.state === 'suspended') {
+            void ctx.resume();
+          }
           audioContextRef.current = ctx;
           const analyser = ctx.createAnalyser();
           analyser.fftSize = 256;
@@ -384,6 +396,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           source.connect(analyser);
           audioSourceRef.current = source;
         }
+      } else if (audioContextRef.current.state === 'suspended') {
+        void audioContextRef.current.resume();
       }
 
       // Volume monitoring loop
@@ -425,10 +439,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       if (volumeAnimRef.current !== null) cancelAnimationFrame(volumeAnimRef.current);
       volumeAnimRef.current = requestAnimationFrame(checkVolume);
 
-      // Web Speech API for instant interim subtitles if supported
+      // Web Speech API for instant interim subtitles & client STT fallback
       const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRec && !speechRecognizerRef.current) {
+      if (SpeechRec) {
         try {
+          if (speechRecognizerRef.current) {
+            try { speechRecognizerRef.current.stop(); } catch {}
+          }
           const recognizer = new SpeechRec();
           recognizer.continuous = true;
           recognizer.interimResults = true;
@@ -441,6 +458,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             if (current.trim()) {
               setLiveTranscript(current.trim());
               spokenInTurnRef.current = true;
+              if (speechSilenceTimerRef.current) {
+                clearTimeout(speechSilenceTimerRef.current);
+                speechSilenceTimerRef.current = null;
+              }
             }
           };
           recognizer.onerror = () => {};
@@ -708,43 +729,44 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const transcribeRecording = async (audio: Blob, duration: number) => {
-    if (duration < 0.7 || audio.size < 200) {
-      showToast('Enregistrement trop court');
+    if (duration < 0.5 || audio.size < 150) {
+      showToast(tr('Enregistrement trop court', 'التسجيل قصير جدًا'));
       return;
     }
     const controller = new AbortController();
     transcriptionAbortRef.current?.abort();
     transcriptionAbortRef.current = controller;
     setIsTranscribing(true);
+    let text = liveTranscript.trim();
     try {
       const result = await transcribeAssistantAudio({
         audio,
         csrfToken: customerCsrfToken,
         signal: controller.signal,
       });
-      if (!result.text) {
-        showToast('Aucune parole détectée');
-        return;
+      if (result.text?.trim()) {
+        text = result.text.trim();
       }
-      sendMessage(result.text, true);
-    } catch (error: any) {
-      if (error?.name !== 'AbortError') showToast(error?.message || 'Transcription vocale indisponible');
+    } catch {
+      // Fallback to client transcript
     } finally {
       if (transcriptionAbortRef.current === controller) {
         transcriptionAbortRef.current = null;
         setIsTranscribing(false);
       }
     }
+    if (text) {
+      setLiveTranscript('');
+      sendMessage(text, true);
+    } else {
+      showToast(tr('Aucune parole détectée — veuillez parler plus clairement', 'لم يتم اكتشاف كلام واضح — يرجى التحدث بوضوح'));
+    }
   };
 
   const startRecording = async () => {
     if (isGenerating || isTranscribing || isRecording || voiceCapturePendingRef.current) return;
-    if (voiceReady === false) {
-      showToast('Le service vocal AYROVI n’est pas encore activé');
-      return;
-    }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      showToast('L’enregistrement vocal n’est pas compatible avec ce navigateur');
+      showToast(tr('L’enregistrement vocal n’est pas compatible avec ce navigateur', 'التسجيل الصوتي غير متوافق مع هذا المتصفح'));
       return;
     }
     const requestId = ++voiceRequestRef.current;
