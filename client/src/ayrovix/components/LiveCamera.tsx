@@ -137,7 +137,24 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
     ctx.drawImage(video, 0, 0);
     canvas.toBlob((blob) => { if (blob) onPhoto(new File([blob], `ayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' })); }, 'image/jpeg', 0.88);
   };
-  const capturePhoto = () => { if (capturing) return; setCapturing(true); window.setTimeout(() => { setCapturing(false); performCapture(); }, 300); };
+  const handleCentralAction = () => {
+    if (capturing) return;
+    if (isVideo) {
+      if (selectedObjects.length > 0) {
+        openLiveResults(selectedObjects);
+        return;
+      }
+      if (active) {
+        openLiveResults([active]);
+        return;
+      }
+    }
+    setCapturing(true);
+    window.setTimeout(() => {
+      setCapturing(false);
+      performCapture();
+    }, 300);
+  };
   const pickFromGallery = () => fileRef.current?.click();
 
   // ===== Collection from runtime objects =====
@@ -181,7 +198,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           {isVideo
             ? liveState.status === 'ai-unavailable'
               ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[10.5px] font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
-              : <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-accent backdrop-blur"><span className="h-1.5 w-1.5 rounded-full bg-accent" />{tr('Live', 'مباشر')}</p>
+              : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-accent backdrop-blur border border-accent/30"><span className="h-2 w-2 rounded-full bg-accent animate-pulse" />{tr('Live', 'مباشر')}</p>
             : <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-white/85 backdrop-blur"><Sparkles size={13} className="text-accent" />{tr('Auto', 'تلقائي')}</p>}
         </div>
       )}
@@ -194,12 +211,20 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           <span className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-[20px] border-b-2 border-l-2 border-white/90" />
           <span className="absolute bottom-0 right-0 h-10 w-10 rounded-br-[20px] border-b-2 border-r-2 border-white/90" />
 
-          {isVideo && lockedObjects.filter((o) => o.box).map((o) => (
-            <span key={o.trackingId} className="absolute rounded-[14px] border-2 border-accent"
-              style={{ left: `${o.box!.x * 100}%`, top: `${o.box!.y * 100}%`, width: `${o.box!.w * 100}%`, height: `${o.box!.h * 100}%` }}>
-              <span className="absolute -top-5 left-0 rounded bg-accent px-1.5 py-0.5 text-[9px] font-extrabold text-ink">{o.label} · {o.confidence}%</span>
-            </span>
-          ))}
+          {isVideo && lockedObjects.filter((o) => o.box).map((o) => {
+            const isSel = Boolean(selected[o.trackingId]);
+            const priceText = o.candidates[0]?.priceTnd != null ? ` · ${o.candidates[0].priceTnd.toFixed(0)} DT` : o.detectedPrice?.totalPriceTND != null ? ` · ${o.detectedPrice.totalPriceTND.toFixed(0)} DT` : '';
+            return (
+              <button key={o.trackingId} type="button" onClick={() => setSelected((s) => ({ ...s, [o.trackingId]: !s[o.trackingId] }))}
+                className={`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-accent bg-accent/20 ring-2 ring-accent' : 'border-accent/90 hover:border-accent hover:bg-white/10'}`}
+                style={{ left: `${o.box!.x * 100}%`, top: `${o.box!.y * 100}%`, width: `${o.box!.w * 100}%`, height: `${o.box!.h * 100}%` }}
+                aria-label={o.label}>
+                <span className="absolute -top-5 left-0 truncate rounded bg-accent px-1.5 py-0.5 text-[9px] font-extrabold text-ink max-w-[120px]">
+                  {o.label} · {o.confidence}%{priceText}
+                </span>
+              </button>
+            );
+          })}
 
           {isVideo && active && !active.box && (
             <span className="absolute inset-6 rounded-[16px] border-2 border-accent" aria-hidden="true">
@@ -209,13 +234,13 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
           {isVideo && active && (
             <button type="button" onClick={() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}
-              className="pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur">
+              className="pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg">
               <span className="h-11 w-11 flex-none overflow-hidden rounded-lg bg-surface">{active.image && <img src={active.image} alt="" className="h-full w-full object-cover" />}</span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[12.5px] font-extrabold text-white">{active.label}</span>
-                <span className="block text-[11px] font-bold text-accent">{active.confidence}%{active.candidates[0]?.priceTnd != null ? ` · ${active.candidates[0].priceTnd.toFixed(2)} DT` : ''}</span>
+                <span className="block text-[11px] font-bold text-accent">{active.confidence}%{active.candidates[0]?.priceTnd != null ? ` · ${active.candidates[0].priceTnd.toFixed(2)} DT` : active.detectedPrice?.totalPriceTND != null ? ` · ${active.detectedPrice.totalPriceTND.toFixed(2)} DT` : ''}</span>
               </span>
-              <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white/12"><ArrowRight size={15} className="text-white/80" /></span>
+              <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white/12"><ArrowRight size={15} className={`text-white/80 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></span>
             </button>
           )}
 
@@ -287,7 +312,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </button>
 
         {mode !== 'code' ? (
-          <button type="button" onClick={capturePhoto} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}
+          <button type="button" onClick={handleCentralAction} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}
             className={`grid h-[78px] w-[78px] place-items-center rounded-full border-4 border-white/90 backdrop-blur transition active:scale-95 ${capturing ? 'scale-90 bg-accent' : isVideo ? 'bg-black/30' : 'bg-white/10'}`}>
             <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-black/40 text-accent ring-2 ring-accent' : 'bg-white'}`}>
               {isVideo && !capturing && <ScanSearch size={22} strokeWidth={1.9} />}

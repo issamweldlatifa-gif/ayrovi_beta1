@@ -7,13 +7,25 @@ import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/pri
 import { extractProductFromUrl, sanitizeProductUrl } from '../ayrovix/services/product';
 import { anthropicExternalSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
 import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
+import { identifyProduct } from '../ayrovix/services/ai';
 import { runLensPipeline, type LensStandardResult } from '../ayrovix/services/lensPipeline';
 import { recordLearningEvent } from './learning';
 import { scanCodeFromImage, type AyrovixScannedCode } from '../ayrovix/services/codeScanner';
 import type { AyrovixCandidate, AyrovixProduct } from '../ayrovix/types';
 import { filterDisplayableCandidates, hasValidProductUrl, withDisplayRating } from '../ayrovix/services/candidatePolicy';
 
-export type AssistantToolName = 'get_order_status' | 'calculate_price' | 'search_products' | 'lens_search' | 'escalate_to_human';
+export type AssistantToolName =
+  | 'get_order_status'
+  | 'calculate_price'
+  | 'search_products'
+  | 'lens_search'
+  | 'identify_product'
+  | 'match_product'
+  | 'detect_products'
+  | 'decode_product_code'
+  | 'extract_product_from_url'
+  | 'search_similar_products'
+  | 'escalate_to_human';
 
 export interface AssistantImageAttachment {
   id: string;
@@ -58,7 +70,7 @@ export const ASSISTANT_TOOLS = [
   },
   {
     name: 'calculate_price',
-    description: 'Calculate the real AYROVI all-inclusive TND price with the current backend pricing rules. Always use this tool for exchange rates, totals or fees.',
+    description: 'Calculate the real AYROVI all-inclusive TND price with the current backend pricing rules (Core Pricing Engine). Always use this tool for exchange rates, totals, duties or fees.',
     input_schema: {
       type: 'object',
       properties: {
@@ -82,8 +94,74 @@ export const ASSISTANT_TOOLS = [
     },
   },
   {
+    name: 'identify_product',
+    description: 'Lens Skill: Vision-based product recognition. Identifies product category, brand, model, colors, materials, and reads visible prices from an attached image.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        image_attachment_id: { type: 'string', description: 'Exact id shown beside the attached image.' },
+      },
+    },
+  },
+  {
+    name: 'match_product',
+    description: 'Lens Skill: Visual product matching using Google Lens reverse-image search and catalog correspondences to find live merchant offers.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        image_attachment_id: { type: 'string', description: 'Exact id shown beside the attached image.' },
+        query: { type: 'string', description: 'Optional product name or brand query to refine visual matching.' },
+      },
+    },
+  },
+  {
+    name: 'detect_products',
+    description: 'Lens Skill: Multi-product detection. Detects and locates multiple distinct products in a single image with bounding boxes.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        image_attachment_id: { type: 'string', description: 'Exact id shown beside the attached image.' },
+      },
+    },
+  },
+  {
+    name: 'decode_product_code',
+    description: 'Lens Skill: QR code and Barcode (EAN/UPC) scanner. Decodes product identifiers from the image and searches matching products.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        image_attachment_id: { type: 'string', description: 'Exact id shown beside the attached image.' },
+        code_value: { type: 'string', description: 'Pre-decoded code text or digits, if available.' },
+      },
+    },
+  },
+  {
+    name: 'extract_product_from_url',
+    description: 'Lens Skill: Scrapes and extracts product metadata (title, price, images, availability, merchant) from a direct public store link.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        url: { type: 'string', description: 'Exact public merchant product URL.' },
+      },
+      required: ['url'],
+    },
+  },
+  {
+    name: 'search_similar_products',
+    description: 'Lens Skill: Searches for similar or cheaper product alternatives based on attributes, category, or price constraints.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Product title, brand, or attributes to search.' },
+        max_price_tnd: { type: 'number', description: 'Optional maximum price in TND.' },
+        category: { type: 'string', description: 'Optional category filter.' },
+      },
+      required: ['query'],
+    },
+  },
+  {
     name: 'lens_search',
-    description: 'Run the complete AYROVIX Lens pipeline inside AYROVI: attached-image vision/OCR, Google Lens, product-link extraction, QR/barcode lookup, catalogue and secure quotes. Always pass a pasted merchant link as product_url. Never invent a result.',
+    description: 'High-level Lens Orchestrator: Combines image vision, OCR, Google Lens visual matching, product-link extraction, and QR/barcode lookup with secure pricing into a complete shopping turn.',
     input_schema: {
       type: 'object',
       properties: {
@@ -512,6 +590,170 @@ function escalateToHuman(input: any, context: AssistantToolContext): AssistantTo
   return { modelResult: { success: true, ticket }, presentation: { ticket } };
 }
 
+async function identifyProductSkill(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const latestUser = context.messages.filter((message) => message.role === 'user').at(-1);
+  const attachmentId = cleanText(input?.image_attachment_id, 120);
+  const attachment = (attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined)
+    || latestUser?.attachments?.at(-1);
+  if (!attachment?.data) {
+    return { modelResult: { success: false, code: 'IMAGE_REQUIRED', message: 'Veuillez joindre une image pour identifier le produit.' } };
+  }
+  try {
+    const identification = await identifyProduct(Buffer.from(attachment.data, 'base64'), attachment.mediaType);
+    return {
+      modelResult: {
+        success: true,
+        category: identification.category,
+        brand: identification.brand,
+        model: identification.model,
+        description: identification.description,
+        confidence: identification.confidence,
+        colors: identification.color,
+        visiblePrice: identification.detected_price?.amount ? identification.detected_price : null,
+        productsCount: identification.products?.length || 1,
+      },
+      presentation: { identification },
+    };
+  } catch (error: any) {
+    return { modelResult: { success: false, code: 'IDENTIFICATION_FAILED', message: 'Impossible d’identifier le produit avec certitude.' } };
+  }
+}
+
+async function matchProductSkill(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const latestUser = context.messages.filter((message) => message.role === 'user').at(-1);
+  const attachmentId = cleanText(input?.image_attachment_id, 120);
+  const attachment = (attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined)
+    || latestUser?.attachments?.at(-1);
+  const query = cleanText(input?.query, 200);
+  const visual = attachment?.data
+    ? await serpApiVisualSearch(Buffer.from(attachment.data, 'base64'), 6).catch(() => [])
+    : attachment?.url
+      ? await serpApiVisualSearchUrl(attachment.url, 6).catch(() => [])
+      : [];
+  const local = query ? catalogSearch(context.db, null, query, 4).map((c) => ({ ...c, match: scoreCandidate(null, query, c) })) : [];
+  const allCandidates = filterDisplayableCandidates([...visual, ...local], 6).map((c) => quoteCandidate(withCalculatedTnd(c, context.db)));
+  const modelProducts = allCandidates.map(({ priceToken: _t, images: _i, image: _img, ...rest }) => rest);
+  return {
+    modelResult: {
+      success: true,
+      matchesCount: allCandidates.length,
+      topMatch: modelProducts[0] || null,
+      matches: modelProducts,
+    },
+    presentation: { products: allCandidates },
+  };
+}
+
+async function detectProductsSkill(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const latestUser = context.messages.filter((message) => message.role === 'user').at(-1);
+  const attachmentId = cleanText(input?.image_attachment_id, 120);
+  const attachment = (attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined)
+    || latestUser?.attachments?.at(-1);
+  if (!attachment?.data) {
+    return { modelResult: { success: false, code: 'IMAGE_REQUIRED', message: 'Image requise pour la détection multi-produits.' } };
+  }
+  try {
+    const identification = await identifyProduct(Buffer.from(attachment.data, 'base64'), attachment.mediaType);
+    const rawItems = (identification.products && identification.products.length > 0)
+      ? identification.products
+      : [{ name: identification.description, category: identification.category, subcategory: null, brand: identification.brand, price: identification.detected_price?.amount || null, currency: identification.detected_price?.currency || null }];
+
+    const items = rawItems.map((item) => {
+      const priceTnd = item.price != null && item.currency
+        ? calculatePrice(context.db.getPricingRules(), item.price, item.currency)?.totalTND ?? null
+        : null;
+      return {
+        ...item,
+        priceTnd,
+      };
+    });
+
+    return {
+      modelResult: {
+        success: true,
+        productsCount: items.length,
+        products: items,
+      },
+      presentation: { products: items, identification },
+    };
+  } catch {
+    return { modelResult: { success: false, code: 'DETECTION_FAILED', message: 'Détection multi-produits indisponible.' } };
+  }
+}
+
+async function decodeProductCodeSkill(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const latestUser = context.messages.filter((message) => message.role === 'user').at(-1);
+  const attachmentId = cleanText(input?.image_attachment_id, 120);
+  const attachment = (attachmentId ? context.imageAttachments.find((item) => item.id === attachmentId) : undefined)
+    || latestUser?.attachments?.at(-1);
+  let codeVal = cleanText(input?.code_value, 200);
+  let codeKind = 'code';
+  if (!codeVal && attachment?.data) {
+    const scanned = await scanCodeFromImage(Buffer.from(attachment.data, 'base64'));
+    if (scanned) {
+      codeVal = scanned.value;
+      codeKind = scanned.kind;
+    }
+  }
+  if (!codeVal) {
+    return { modelResult: { success: false, code: 'NO_CODE_FOUND', message: 'Aucun code QR ou code-barres n’a été détecté dans l’image.' } };
+  }
+  const candidates = filterDisplayableCandidates(
+    catalogSearch(context.db, null, codeVal, 4).map((c) => ({ ...c, match: scoreCandidate(null, codeVal, c) })),
+    4,
+  ).map((c) => quoteCandidate(withCalculatedTnd(c, context.db)));
+  return {
+    modelResult: {
+      success: true,
+      code: { kind: codeKind, value: codeVal },
+      matches: candidates.map(({ priceToken: _t, ...rest }) => rest),
+    },
+    presentation: { query: codeVal, products: candidates },
+  };
+}
+
+async function extractProductFromUrlSkill(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const url = publicProductUrl(input?.url) || productUrlFromText(input?.url);
+  if (!url) return { modelResult: { success: false, code: 'INVALID_URL', message: 'URL de produit invalide.' } };
+  try {
+    const extracted = await extractProductFromUrl(context.db, context.scraper, url);
+    const product = quoteProduct(extracted.product);
+    const alternates = filterDisplayableCandidates(extracted.alternates, 6).map((c) => quoteCandidate(withCalculatedTnd(c, context.db)));
+    return {
+      modelResult: {
+        success: true,
+        product: { title: product.title, brand: product.brand, price: product.price, currency: product.currency, priceTnd: product.priceTnd, source: product.source, sourceUrl: product.sourceUrl },
+        alternatesCount: alternates.length,
+      },
+      presentation: { product, products: alternates, source: 'url' },
+    };
+  } catch {
+    return { modelResult: { success: false, code: 'EXTRACTION_FAILED', message: 'Impossible d’extraire la fiche du produit depuis ce lien.' } };
+  }
+}
+
+async function searchSimilarProductsSkill(input: any, context: AssistantToolContext): Promise<AssistantToolExecution> {
+  const query = cleanText(input?.query, 200);
+  const maxPrice = Number(input?.max_price_tnd);
+  if (query.length < 2) return { modelResult: { success: false, code: 'QUERY_REQUIRED', message: 'Précisez le produit recherché.' } };
+  const local = catalogSearch(context.db, null, query, 8).map((c) => ({ ...c, match: scoreCandidate(null, query, c) }));
+  const external = context.webSearchEnabled && local.length < 3 ? await anthropicExternalSearch(query, 6).catch(() => []) : [];
+  let candidates = filterDisplayableCandidates([...local, ...external.map((c) => ({ ...c, match: scoreCandidate(null, query, c) }))], 8)
+    .map((c) => quoteCandidate(withCalculatedTnd(c, context.db)));
+  if (Number.isFinite(maxPrice) && maxPrice > 0) {
+    candidates = candidates.filter((c) => c.priceTnd == null || c.priceTnd <= maxPrice);
+  }
+  return {
+    modelResult: {
+      success: true,
+      query,
+      resultsCount: candidates.length,
+      results: candidates.map(({ priceToken: _t, ...rest }) => rest),
+    },
+    presentation: { query, products: candidates },
+  };
+}
+
 export async function executeAssistantTool(
   name: string,
   input: any,
@@ -520,6 +762,12 @@ export async function executeAssistantTool(
   if (name === 'get_order_status') return getOrderStatus(input, context);
   if (name === 'calculate_price') return calculateRealPrice(input, context);
   if (name === 'search_products') return searchRealProducts(input, context);
+  if (name === 'identify_product') return identifyProductSkill(input, context);
+  if (name === 'match_product') return matchProductSkill(input, context);
+  if (name === 'detect_products') return detectProductsSkill(input, context);
+  if (name === 'decode_product_code') return decodeProductCodeSkill(input, context);
+  if (name === 'extract_product_from_url') return extractProductFromUrlSkill(input, context);
+  if (name === 'search_similar_products') return searchSimilarProductsSkill(input, context);
   if (name === 'lens_search') return lensSearch(input, context);
   if (name === 'escalate_to_human') return escalateToHuman(input, context);
   return { modelResult: { success: false, code: 'UNKNOWN_TOOL', message: 'Outil non reconnu.' } };

@@ -248,33 +248,83 @@ export class LiveVisionRuntime {
     const id = result.identification || {};
     const conf = Math.round((Number(id.confidence) || 0) * 100);
     const products = Array.isArray(id.products) ? id.products : [];
-    const withBox = products.filter((p: any) => Array.isArray(p?.box) && p.box.length === 4);
     const str = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
-    const colors = (v: unknown) => (Array.isArray(v) ? v.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 30)).slice(0, 3) : []);
-    if (withBox.length) {
-      return withBox.slice(0, 6).map((p: any) => {
-        const box = { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] };
+    const colors = (v: unknown) => (Array.isArray(v) ? v.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 30)).slice(0, 4) : []);
+
+    // Multi-Product Intelligence: إذا توفّرت مصفوفة المنتجات (حتى بدون صناديق صريحة)
+    if (products.length > 0) {
+      return products.slice(0, 8).map((p: any, idx: number) => {
+        const hasBox = Array.isArray(p?.box) && p.box.length === 4;
+        const box: LiveBox = hasBox
+          ? { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] }
+          : { x: 0.1, y: 0.1 + (idx * 0.22) % 0.65, w: 0.8, h: Math.min(0.35, Math.max(0.18, 0.8 / products.length)) };
+
+        // استخراج صورة مصغرة مخصصة لكل منتج بناءً على الصندوق
+        let productThumb = thumb;
+        try {
+          const rect = computeCropRect(canvas.width, canvas.height, box);
+          const c = document.createElement('canvas');
+          c.width = rect.w;
+          c.height = rect.h;
+          const ctx = c.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+            productThumb = c.toDataURL('image/jpeg', 0.8);
+          }
+        } catch { /* fallback to general scene thumb */ }
+
+        let productPrice: AyrovixDetectedPrice | null = null;
+        if (p.price != null && Number(p.price) > 0 && p.currency) {
+          productPrice = {
+            sourcePrice: Number(p.price),
+            sourceCurrency: String(p.currency),
+            convertedPriceTND: p.priceTnd ?? null,
+            serviceFeeTND: null,
+            estimatedShippingTND: null,
+            totalPriceTND: p.priceTnd ?? null,
+            title: String(p.name || 'Produit'),
+            brand: p.brand || null,
+            isCartScreenshot: false,
+            imageUrl: productThumb,
+          };
+        } else if (result.detectedPrice && idx === 0) {
+          productPrice = result.detectedPrice;
+        }
+
         return {
           label: String(p.name || '').slice(0, 80) || 'Produit',
-          category: String(p.category || 'product'), subcategory: str(p.category, 60),
+          category: String(p.category || id.category || 'product'),
+          subcategory: str(p.subcategory || p.category, 60),
           brand: typeof p.brand === 'string' ? p.brand.slice(0, 80) : null,
-          confidence: conf, box,
+          confidence: conf > 0 ? conf : 80,
+          box,
           visualFeatures: computeVisualFeatures(canvas, box),
-          color: colors(p.color), pattern: str(p.pattern), material: str(p.material),
-          candidates: [] as AyrovixCandidate[], detectedPrice: result.detectedPrice || null, image: thumb,
+          color: colors(p.color || id.color),
+          pattern: str(p.pattern || p.motif || id.pattern),
+          material: str(p.material || id.material),
+          candidates: (idx === 0 && result.candidates?.length) ? result.candidates : [] as AyrovixCandidate[],
+          detectedPrice: productPrice,
+          image: productThumb,
         };
       });
     }
+
     const desc = String(id.description || result.query || '');
     if ((Number(id.confidence) || 0) <= 0 || desc === 'PRODUIT_NON_IDENTIFIE') return [];
     return [{
       label: (result.candidates?.[0]?.title || desc).slice(0, 80),
-      category: String(id.category || 'product'), subcategory: str(id.category, 60),
+      category: String(id.category || 'product'),
+      subcategory: str(id.category, 60),
       brand: typeof id.brand === 'string' ? id.brand.slice(0, 80) : null,
-      confidence: conf, box: null,
+      confidence: conf,
+      box: null,
       visualFeatures: computeVisualFeatures(canvas, { x: 0, y: 0, w: 1, h: 1 }),
-      color: colors(id.color), pattern: str(id.pattern), material: str(id.material),
-      candidates: result.candidates || [], detectedPrice: result.detectedPrice || null, image: thumb,
+      color: colors(id.color),
+      pattern: str(id.pattern),
+      material: str(id.material),
+      candidates: result.candidates || [],
+      detectedPrice: result.detectedPrice || null,
+      image: thumb,
     }];
   }
 

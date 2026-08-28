@@ -91,7 +91,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
               <MenuItem label={tr('Arrivages', 'المنتجات القادمة')} onClick={() => openCms('arrivals')} />
               <MenuItem label={tr('Promotions', 'العروض')} onClick={() => openCms('promotions')} />
               <MenuItem label={tr('Social', 'التواصل')} onClick={() => openCms('stories')} />
-              <MenuItem label="مجلتي" onClick={() => openCms('news')} />
+              <MenuItem label={tr('Magazine', 'مجلتي')} onClick={() => openCms('news')} />
             </MenuGroup>
 
             <MenuGroup title={tr('Suite IA', 'مجموعة الذكاء الاصطناعي')}>

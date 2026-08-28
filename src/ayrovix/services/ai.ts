@@ -61,9 +61,9 @@ export function fallbackIdentification(description = 'Produit détecté visuelle
   };
 }
 
-const SYSTEM_PROMPT = `Tu es le moteur visuel d'AYROVIX, un assistant shopping tunisien.
-Analyse uniquement ce qui est réellement visible dans l'image et identifie le produit principal.
-Lis aussi le prix seulement s'il est clairement affiché dans l'image.
+const SYSTEM_PROMPT = `Tu es le moteur visuel et d'intelligence produit d'AYROVIX (AYROVIX Lens Multi-Product Intelligence Engine), assistant shopping tunisien.
+Analyse l'image avec une intelligence multi-produits en temps réel.
+Identifie le produit principal ainsi que TOUS les produits distincts visibles dans la scène (ex. tenue complète : t-shirt, pantalon, chaussures, sac, montre, lunettes, ou plusieurs articles sur une table / un rayon). Ne t'arrête pas au premier produit.
 
 Règles obligatoires :
 - N'invente jamais une marque, un modèle, un code article, un prix ou une devise.
@@ -72,11 +72,20 @@ Règles obligatoires :
 - Pour un prix barré, utilise label "old_price"; pour le prix actuel "product_price"; pour le total d'un panier "cart_total".
 - Si plusieurs prix sont visibles, remplis pricing : sale_price = prix actuel, original_price = prix barré/avant, shipping_price = livraison, total_price = total panier, discount_percent = remise lisible. Ne calcule jamais un prix manquant.
 - detected_price doit refléter sale_price (ou total_price pour un panier). N'utilise jamais le plus grand nombre par défaut.
-- Si plusieurs produits distincts sont visibles, liste-les dans products avec leur prix propre (6 maximum).
-- Pour chaque produit listé, fournis une boîte approximative normalisée box [x, y, largeur, hauteur] entre 0 et 1 si tu peux le localiser dans l'image ; sinon null.
-- Pour chaque produit, ajoute si visible/inférable : color (liste), motif (texte ou null), material (texte ou null). Ne devine jamais.
+- Détecte TOUS les produits pertinents visibles et liste-les dans products (jusqu'à 8 produits).
+- Pour CHAQUE produit listé dans products :
+  - name : nom factuel court et précis du produit (ex. "T-shirt graphique oversize", "Sneakers blanches montantes", "Sac à dos en cuir").
+  - brand : marque si lisible ou clairement identifiable, sinon null.
+  - category : catégorie normalisée (ex. "clothing", "shoes", "bags", "accessories", "electronics", "beauty", "home").
+  - subcategory : sous-catégorie spécifique (ex. "t-shirt", "jeans", "sneakers", "handbag", "smartwatch").
+  - box : boîte englobante normalisée [x, y, largeur, hauteur] entre 0.0 et 1.0 délimitant précisément l'objet dans l'image ; sinon null.
+  - color : liste des couleurs dominantes visibles.
+  - motif : motif si identifiable (ex. "uni", "rayé", "logo-print", "carreaux"), sinon null.
+  - material : matière si visible ou inférable (ex. "coton", "cuir", "denim", "métal", "maille"), sinon null.
+  - price : prix visible propre à ce produit, sinon null.
+  - currency : devise visible (code ISO 3 lettres comme EUR, USD, TND), sinon null.
 - url et seller seulement s'ils sont lisibles dans l'image (barre d'adresse, logo boutique).
-- Si l'image montre plusieurs produits ou un panier, input_kind doit être "cart_screenshot".
+- Si l'image montre plusieurs produits ou un panier, input_kind doit être "cart_screenshot" ou "product_photo".
 - Si aucun produit n'est identifiable, confidence vaut 0 et description vaut "PRODUIT_NON_IDENTIFIE".
 - La description doit être une phrase factuelle courte en français.`;
 
@@ -129,6 +138,7 @@ const IDENTIFICATION_SCHEMA = {
           name: { type: 'string' },
           brand: { type: ['string', 'null'] },
           category: { type: 'string' },
+          subcategory: { type: ['string', 'null'] },
           price: { type: ['number', 'null'] },
           currency: { type: ['string', 'null'] },
           box: { type: ['array', 'null'], items: { type: 'number' } },
@@ -136,7 +146,7 @@ const IDENTIFICATION_SCHEMA = {
           motif: { type: ['string', 'null'] },
           material: { type: ['string', 'null'] },
         },
-        required: ['name', 'brand', 'category', 'price', 'currency'],
+        required: ['name', 'brand', 'category', 'subcategory', 'price', 'currency'],
         additionalProperties: false,
       },
     },
@@ -199,16 +209,17 @@ function parseIdentification(raw: string): AyrovixIdentification {
   };
   const products = (Array.isArray(parsed?.products) ? parsed.products : [])
     .filter((item: any) => typeof item?.name === 'string' && item.name.trim())
-    .slice(0, 6)
+    .slice(0, 8)
     .map((item: any) => ({
       name: String(item.name).trim().slice(0, 140),
       brand: typeof item.brand === 'string' && item.brand.trim() ? item.brand.trim().slice(0, 80) : null,
       category: typeof item.category === 'string' ? item.category.trim().slice(0, 60) : 'product',
+      subcategory: typeof item.subcategory === 'string' && item.subcategory.trim() ? item.subcategory.trim().slice(0, 60) : null,
       price: numOrNull(item.price),
       currency: /^[A-Z]{3}$/.test(String(item.currency || '').trim().toUpperCase()) ? String(item.currency).trim().toUpperCase() : null,
       box: normalizeBox(item.box),
-      color: list(item.color, 3),
-      pattern: typeof item.motif === 'string' && item.motif.trim() ? item.motif.trim().slice(0, 60) : null,
+      color: list(item.color, 4),
+      pattern: typeof (item.motif || item.pattern) === 'string' && (item.motif || item.pattern).trim() ? (item.motif || item.pattern).trim().slice(0, 60) : null,
       material: typeof item.material === 'string' && item.material.trim() ? item.material.trim().slice(0, 60) : null,
     }));
   const urlRaw = typeof parsed?.url === 'string' ? parsed.url.trim().slice(0, 500) : '';

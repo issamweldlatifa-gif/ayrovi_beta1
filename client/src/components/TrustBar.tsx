@@ -45,7 +45,7 @@ const DEFAULT_DATA: TrustBarData = {
     { title: 'Authentique', description: 'Produits officiels', icon: 'ShieldCheck' },
     { title: 'Dédouanement', description: 'Inclus', icon: 'Truck' },
     { title: 'Acompte 20%', description: 'Pour confirmer votre commande', icon: 'Lock' },
-    { title: 'Livraison rapide', description: 'Dans les 24 jours ouvrables', icon: 'Zap' },
+    { title: 'Livraison rapide', description: 'Dans les 24 gouvernorats', icon: 'Zap' },
   ],
 };
 

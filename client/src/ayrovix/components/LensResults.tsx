@@ -140,7 +140,7 @@ export const LensResults: React.FC<LensResultsProps> = ({ view, fallbackImage, o
             </div>
           </div>
           <button type="button" onClick={() => onChoose(best)} className="ay-cta-orange mt-3 flex w-full items-center justify-center gap-2 rounded-full py-3 text-[14px] font-extrabold text-white">
-            {tr('Choisir cette offre', 'اختر هذا العرض')} <ArrowRight size={17} />
+            {tr('Choisir cette offre', 'اختر هذا العرض')} <ArrowRight size={17} className={direction === 'rtl' ? 'rotate-180' : ''} />
           </button>
           {best.sourceUrl && (
             <a href={best.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2.5 flex items-center justify-center gap-1.5 text-[12px] font-bold text-ink underline">
@@ -172,7 +172,7 @@ export const LensResults: React.FC<LensResultsProps> = ({ view, fallbackImage, o
                   </div>
                   <div className="flex flex-none flex-col items-stretch justify-center gap-2">
                     <button type="button" onClick={() => onChoose(candidate)} className="ay-btn-secondary flex items-center justify-center gap-1.5 px-3 py-2 text-[11.5px] font-extrabold">
-                      {tr('Choisir', 'اختيار')} <ArrowRight size={14} className="text-brand" />
+                      {tr('Choisir', 'اختيار')} <ArrowRight size={14} className={`text-brand ${direction === 'rtl' ? 'rotate-180' : ''}`} />
                     </button>
                     {candidate.sourceUrl && (
                       <a href={candidate.sourceUrl} target="_blank" rel="noopener noreferrer" className="flex items-center justify-center gap-1 text-[10.5px] font-bold text-muted underline">

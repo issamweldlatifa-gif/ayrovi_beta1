@@ -1,5 +1,28 @@
 /** AYROVIX — contrats client (miroir 1:1 de src/ayrovix/types.ts). */
 
+export interface AyrovixDetectedProductItem {
+  name: string;
+  brand: string | null;
+  category: string;
+  subcategory?: string | null;
+  price: number | null;
+  currency: string | null;
+  priceTnd?: number | null;
+  box?: [number, number, number, number] | null;
+  color?: string[];
+  pattern?: string | null;
+  material?: string | null;
+}
+
+export interface AyrovixPricingBlock {
+  sale_price: number | null;
+  original_price: number | null;
+  shipping_price: number | null;
+  total_price: number | null;
+  currency: string | null;
+  discount_percent: number | null;
+}
+
 export interface AyrovixIdentification {
   input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
   category: string;
@@ -16,6 +39,10 @@ export interface AyrovixIdentification {
     label: 'none' | 'product_price' | 'old_price' | 'cart_total';
     confidence: number;
   };
+  pricing?: AyrovixPricingBlock;
+  products?: AyrovixDetectedProductItem[];
+  url?: string | null;
+  seller?: string | null;
 }
 
 export interface AyrovixCandidate {

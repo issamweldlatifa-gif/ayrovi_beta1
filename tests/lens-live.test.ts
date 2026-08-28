@@ -114,6 +114,52 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     await expect(loadLocalDetector()).rejects.toThrow();
   });
 
+  it('multi-product intelligence: tracks multiple independent product instances in one scene', () => {
+    const t0 = Date.now();
+    const rawScene = [
+      { label: 'T-shirt Graphic Noir', category: 'clothing', subcategory: 't-shirt', brand: 'Zara', confidence: 92, box: { x: 0.2, y: 0.1, w: 0.6, h: 0.3 }, color: ['black'], pattern: 'graphic', material: 'cotton', visualFeatures: [0.1, 0.2], candidates: [] },
+      { label: 'Jean Slim Bleu', category: 'clothing', subcategory: 'jeans', brand: 'Levi\'s', confidence: 88, box: { x: 0.2, y: 0.4, w: 0.6, h: 0.35 }, color: ['blue'], pattern: 'denim', material: 'denim', visualFeatures: [0.3, 0.4], candidates: [] },
+      { label: 'Sneakers Blanches', category: 'shoes', subcategory: 'sneakers', brand: 'Nike', confidence: 95, box: { x: 0.25, y: 0.75, w: 0.5, h: 0.2 }, color: ['white'], pattern: 'solid', material: 'leather', visualFeatures: [0.5, 0.6], candidates: [] },
+      { label: 'Sac Bandoulière', category: 'bags', subcategory: 'crossbody', brand: 'Guess', confidence: 85, box: { x: 0.65, y: 0.25, w: 0.25, h: 0.3 }, color: ['brown'], pattern: 'monogram', material: 'leather', visualFeatures: [0.7, 0.8], candidates: [] },
+    ];
+
+    const tracked = trackObjects([], rawScene, t0);
+    expect(tracked).toHaveLength(4);
+
+    // كل عنصر له معرف مستقل وبياناته النموذجية كاملة
+    const tshirt = tracked.find((o) => o.subcategory === 't-shirt');
+    const jeans = tracked.find((o) => o.subcategory === 'jeans');
+    const shoes = tracked.find((o) => o.subcategory === 'sneakers');
+    const bag = tracked.find((o) => o.subcategory === 'crossbody');
+
+    expect(tshirt).toBeDefined();
+    expect(tshirt?.brand).toBe('Zara');
+    expect(tshirt?.status).toBe('locked');
+    expect(tshirt?.color).toContain('black');
+
+    expect(jeans).toBeDefined();
+    expect(jeans?.brand).toBe('Levi\'s');
+
+    expect(shoes).toBeDefined();
+    expect(shoes?.brand).toBe('Nike');
+
+    expect(bag).toBeDefined();
+    expect(bag?.brand).toBe('Guess');
+
+    // تتبع في الفريم التالي مع تعديل طفيف للمواقع
+    const t1 = t0 + 1500;
+    const nextFrame = [
+      { label: 'T-shirt Graphic Noir', category: 'clothing', subcategory: 't-shirt', brand: 'Zara', confidence: 94, box: { x: 0.21, y: 0.11, w: 0.6, h: 0.3 }, color: ['black'], pattern: 'graphic', material: 'cotton', visualFeatures: [0.1, 0.2], candidates: [] },
+      { label: 'Jean Slim Bleu', category: 'clothing', subcategory: 'jeans', brand: 'Levi\'s', confidence: 90, box: { x: 0.21, y: 0.41, w: 0.6, h: 0.35 }, color: ['blue'], pattern: 'denim', material: 'denim', visualFeatures: [0.3, 0.4], candidates: [] },
+      { label: 'Sneakers Blanches', category: 'shoes', subcategory: 'sneakers', brand: 'Nike', confidence: 96, box: { x: 0.25, y: 0.76, w: 0.5, h: 0.2 }, color: ['white'], pattern: 'solid', material: 'leather', visualFeatures: [0.5, 0.6], candidates: [] },
+      { label: 'Sac Bandoulière', category: 'bags', subcategory: 'crossbody', brand: 'Guess', confidence: 88, box: { x: 0.66, y: 0.26, w: 0.25, h: 0.3 }, color: ['brown'], pattern: 'monogram', material: 'leather', visualFeatures: [0.7, 0.8], candidates: [] },
+    ];
+
+    const updated = trackObjects(tracked, nextFrame, t1);
+    expect(updated).toHaveLength(4);
+    expect(updated.map((o) => o.trackingId)).toEqual(tracked.map((o) => o.trackingId));
+  });
+
   it('grayToFeatures produces a normalized, deterministic visual signature', () => {
     const f = grayToFeatures([0, 64, 128, 255]);
     expect(f[0]).toBe(0);

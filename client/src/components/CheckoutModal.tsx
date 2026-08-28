@@ -32,6 +32,33 @@ const PAYMENT_METHOD_IMAGES: Record<CheckoutPaymentMethod, string> = {
   POSTE: '/media/payments/poste.png',
 };
 
+const GOVERNORATES_AR: Record<string, string> = {
+  Tunis: 'تونس',
+  Ariana: 'أريانة',
+  'Ben Arous': 'بن عروس',
+  'La Manouba': 'منوبة',
+  Nabeul: 'نابل',
+  Zaghouan: 'زغوان',
+  Bizerte: 'بنزرت',
+  Béja: 'باجة',
+  Jendouba: 'جندوبة',
+  'Le Kef': 'الكاف',
+  Siliana: 'سليانة',
+  Sousse: 'سوسة',
+  Monastir: 'المنستير',
+  Mahdia: 'المهدية',
+  Sfax: 'صفاقس',
+  Kairouan: 'القيروان',
+  Kasserine: 'القصرين',
+  'Sidi Bouzid': 'سيدي بوزيد',
+  Gabès: 'قابس',
+  Médenine: 'مدنين',
+  Tataouine: 'تطاوين',
+  Gafsa: 'قفصة',
+  Tozeur: 'توزر',
+  Kébili: 'قبلي',
+};
+
 const TUNISIAN_GOVERNORATES_FR = [
   'Tunis',
   'Ariana',
@@ -501,7 +528,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             >
               {governorates.map((gov) => (
                 <option key={gov} value={gov}>
-                  {gov}
+                  {locale === 'ar' ? (GOVERNORATES_AR[gov] || gov) : gov}
                 </option>
               ))}
             </select>

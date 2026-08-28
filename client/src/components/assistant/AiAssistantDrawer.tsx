@@ -5,6 +5,8 @@ import { AssistantFeedbackSheet } from './AssistantFeedbackSheet';
 import { AssistantHeader } from './AssistantHeader';
 import { AssistantMessages } from './AssistantMessages';
 import { AssistantSideMenu } from './AssistantSideMenu';
+import { AssistantVoiceOrb, VoiceState } from './AssistantVoiceOrb';
+import { globalVoicePlayer } from './voicePlayer';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getSessionId } from '../../utils/session';
 import { AyroviMotionState } from '../AyroviMotion';
@@ -118,6 +120,28 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: AyrovixProduct; priceVerified: boolean } | null>(null);
   const [productBusyId, setProductBusyId] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
+  const [voiceMode, setVoiceMode] = useState(false);
+  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [volumeLevel, setVolumeLevel] = useState(0);
+  const [liveTranscript, setLiveTranscript] = useState('');
+  const voiceModeRef = useRef(false);
+  const voiceStateRef = useRef<VoiceState>('idle');
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const volumeAnimRef = useRef<number | null>(null);
+  const speechRecognizerRef = useRef<any>(null);
+  const speechSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const spokenInTurnRef = useRef(false);
+
+  useEffect(() => {
+    voiceModeRef.current = voiceMode;
+  }, [voiceMode]);
+
+  useEffect(() => {
+    voiceStateRef.current = voiceState;
+  }, [voiceState]);
+
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
   const openAssistantProduct = (next: { messageId: string; product: AyrovixProduct; priceVerified: boolean }) => {
@@ -242,6 +266,227 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setMotionState('idle');
   };
 
+  const stopVoiceMode = () => {
+    globalVoicePlayer.stop();
+    if (speechSilenceTimerRef.current) {
+      clearTimeout(speechSilenceTimerRef.current);
+      speechSilenceTimerRef.current = null;
+    }
+    if (volumeAnimRef.current !== null) {
+      cancelAnimationFrame(volumeAnimRef.current);
+      volumeAnimRef.current = null;
+    }
+    try {
+      if (speechRecognizerRef.current) {
+        speechRecognizerRef.current.onresult = null;
+        speechRecognizerRef.current.onerror = null;
+        speechRecognizerRef.current.onend = null;
+        speechRecognizerRef.current.stop();
+        speechRecognizerRef.current = null;
+      }
+    } catch {}
+    if (audioSourceRef.current) {
+      try { audioSourceRef.current.disconnect(); } catch {}
+      audioSourceRef.current = null;
+    }
+    if (analyserRef.current) {
+      try { analyserRef.current.disconnect(); } catch {}
+      analyserRef.current = null;
+    }
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      try { audioContextRef.current.close(); } catch {}
+      audioContextRef.current = null;
+    }
+    releaseMediaStream();
+    setVoiceMode(false);
+    setVoiceState('idle');
+    setVolumeLevel(0);
+    setLiveTranscript('');
+  };
+
+  const interruptVoiceSpeech = () => {
+    globalVoicePlayer.stop();
+    setVoiceState('listening');
+    if (voiceModeRef.current) {
+      void startVoiceListeningTurn();
+    }
+  };
+
+  const finishVoiceTurn = () => {
+    if (speechSilenceTimerRef.current) {
+      clearTimeout(speechSilenceTimerRef.current);
+      speechSilenceTimerRef.current = null;
+    }
+    const recorder = mediaRecorderRef.current;
+    if (recorder?.state && recorder.state !== 'inactive') {
+      recorder.stop();
+    }
+  };
+
+  const processVoiceInput = async (audio: Blob, duration: number) => {
+    if (duration < 0.6 || audio.size < 200) {
+      if (voiceModeRef.current) void startVoiceListeningTurn();
+      return;
+    }
+    setVoiceState('processing');
+    const controller = new AbortController();
+    transcriptionAbortRef.current = controller;
+    setIsTranscribing(true);
+    try {
+      const result = await transcribeAssistantAudio({
+        audio,
+        csrfToken: customerCsrfToken,
+        signal: controller.signal,
+      });
+      const text = result.text.trim() || liveTranscript.trim();
+      if (!text) {
+        if (voiceModeRef.current) void startVoiceListeningTurn();
+        return;
+      }
+      setLiveTranscript('');
+      sendMessage(text, true);
+    } catch {
+      if (voiceModeRef.current) void startVoiceListeningTurn();
+    } finally {
+      if (transcriptionAbortRef.current === controller) {
+        transcriptionAbortRef.current = null;
+        setIsTranscribing(false);
+      }
+    }
+  };
+
+  const startVoiceListeningTurn = async () => {
+    if (!voiceModeRef.current || isGenerating || isTranscribing) return;
+    setVoiceState('listening');
+    setLiveTranscript('');
+    spokenInTurnRef.current = false;
+
+    try {
+      let stream = mediaStreamRef.current;
+      if (!stream || !stream.active || stream.getAudioTracks().every((t) => t.readyState === 'ended')) {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        });
+        mediaStreamRef.current = stream;
+      }
+
+      // Web Audio API Analyser for live volume
+      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+        if (AudioCtx) {
+          const ctx = new AudioCtx();
+          audioContextRef.current = ctx;
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.4;
+          analyserRef.current = analyser;
+          const source = ctx.createMediaStreamSource(stream);
+          source.connect(analyser);
+          audioSourceRef.current = source;
+        }
+      }
+
+      // Volume monitoring loop
+      const checkVolume = () => {
+        if (!voiceModeRef.current || !analyserRef.current) return;
+        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
+        analyserRef.current.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+        const average = sum / dataArray.length;
+        const norm = Math.min(1, average / 110);
+        setVolumeLevel(norm);
+
+        // Barge-in check: if currently speaking and user speaks loudly
+        if (voiceStateRef.current === 'speaking' && norm > 0.42) {
+          interruptVoiceSpeech();
+          return;
+        }
+
+        // Silence detection while listening
+        if (voiceStateRef.current === 'listening') {
+          if (norm > 0.12) {
+            spokenInTurnRef.current = true;
+            if (speechSilenceTimerRef.current) {
+              clearTimeout(speechSilenceTimerRef.current);
+              speechSilenceTimerRef.current = null;
+            }
+          } else if (spokenInTurnRef.current && !speechSilenceTimerRef.current) {
+            speechSilenceTimerRef.current = setTimeout(() => {
+              if (voiceModeRef.current && voiceStateRef.current === 'listening' && spokenInTurnRef.current) {
+                finishVoiceTurn();
+              }
+            }, 1800);
+          }
+        }
+
+        volumeAnimRef.current = requestAnimationFrame(checkVolume);
+      };
+      if (volumeAnimRef.current !== null) cancelAnimationFrame(volumeAnimRef.current);
+      volumeAnimRef.current = requestAnimationFrame(checkVolume);
+
+      // Web Speech API for instant interim subtitles if supported
+      const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (SpeechRec && !speechRecognizerRef.current) {
+        try {
+          const recognizer = new SpeechRec();
+          recognizer.continuous = true;
+          recognizer.interimResults = true;
+          recognizer.lang = isArabic ? 'ar-TN' : 'fr-FR';
+          recognizer.onresult = (event: any) => {
+            let current = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+              current += event.results[i][0].transcript;
+            }
+            if (current.trim()) {
+              setLiveTranscript(current.trim());
+              spokenInTurnRef.current = true;
+            }
+          };
+          recognizer.onerror = () => {};
+          recognizer.start();
+          speechRecognizerRef.current = recognizer;
+        } catch {}
+      }
+
+      // Start MediaRecorder for audio capture
+      const mimeType = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'].find((t) => MediaRecorder.isTypeSupported(t));
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current = [];
+      discardRecordingRef.current = false;
+      recordingStartedAtRef.current = Date.now();
+      recorder.ondataavailable = (event) => {
+        if (event.data.size) audioChunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const discarded = discardRecordingRef.current;
+        const duration = (Date.now() - recordingStartedAtRef.current) / 1000;
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        if (discarded || !voiceModeRef.current) return;
+        const audio = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+        void processVoiceInput(audio, duration);
+      };
+      recorder.start(250);
+    } catch (error: any) {
+      stopVoiceMode();
+      showToast(error?.name === 'NotAllowedError'
+        ? tr('Autorisez le microphone pour activer le mode vocal', 'يرجى تفعيل صلاحية الميكروفون لاستخدام الوضع الصوتي')
+        : tr('Microphone indisponible', 'الميكروفون غير متاح'));
+    }
+  };
+
+  const handleToggleVoiceMode = () => {
+    if (voiceMode) {
+      stopVoiceMode();
+    } else {
+      setVoiceMode(true);
+      void startVoiceListeningTurn();
+    }
+  };
+
   const startAssistantReply = async (sourceMessages: AssistantMessage[], responseId: string) => {
     stopGeneration();
     const controller = new AbortController();
@@ -316,6 +561,33 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         generationAbortRef.current = null;
         setIsGenerating(false);
         setMotionState('idle');
+
+        // If in voice mode, speak response aloud!
+        if (voiceModeRef.current) {
+          setMessages((latest) => {
+            const resp = latest.find((m) => m.id === responseId);
+            if (resp && resp.text.trim()) {
+              setVoiceState('speaking');
+              globalVoicePlayer.speak(
+                resp.text,
+                isArabic ? 'ar' : 'fr',
+                () => setVoiceState('speaking'),
+                () => {
+                  if (voiceModeRef.current) {
+                    setVoiceState('listening');
+                    void startVoiceListeningTurn();
+                  } else {
+                    setVoiceState('idle');
+                  }
+                },
+              );
+            } else {
+              setVoiceState('listening');
+              void startVoiceListeningTurn();
+            }
+            return latest;
+          });
+        }
       }
     }
   };
@@ -359,6 +631,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     generationAbortRef.current = null;
     setIsGenerating(false);
     setMotionState('idle');
+    stopVoiceMode();
     voiceRequestRef.current += 1;
     voiceCapturePendingRef.current = false;
     discardRecordingRef.current = true;
@@ -377,6 +650,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     isOpenRef.current = false;
     generationAbortRef.current?.abort();
     transcriptionAbortRef.current?.abort();
+    stopVoiceMode();
     voiceRequestRef.current += 1;
     voiceCapturePendingRef.current = false;
     discardRecordingRef.current = true;
@@ -389,6 +663,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const handleCloseAssistant = () => {
     stopGeneration();
+    stopVoiceMode();
     transcriptionAbortRef.current?.abort();
     voiceRequestRef.current += 1;
     voiceCapturePendingRef.current = false;
@@ -837,6 +1112,20 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           customerFirstName={customerFirstName}
         />}
 
+        {voiceMode && (
+          <div className="relative z-20 px-4">
+            <AssistantVoiceOrb
+              state={voiceState}
+              volumeLevel={volumeLevel}
+              isDark={isDark}
+              liveTranscript={liveTranscript}
+              onInterrupt={interruptVoiceSpeech}
+              onExitVoice={stopVoiceMode}
+              onManualFinish={finishVoiceTurn}
+            />
+          </div>
+        )}
+
         {!isBooting && <AssistantComposer
           value={input}
           attachments={attachments}
@@ -844,6 +1133,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isGenerating={isGenerating}
           isRecording={isRecording}
           isTranscribing={isTranscribing}
+          voiceMode={voiceMode}
           recordSeconds={recordSeconds}
           onChange={setInput}
           onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
@@ -851,6 +1141,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onStartRecording={() => void startRecording()}
           onFinishRecording={finishRecording}
           onCancelRecording={cancelRecording}
+          onToggleVoiceMode={handleToggleVoiceMode}
           onSend={() => sendMessage()}
           onStop={stopGeneration}
         />}

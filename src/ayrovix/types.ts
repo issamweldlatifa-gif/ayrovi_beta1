@@ -4,6 +4,20 @@
  * Claude Web Search découvre des pages, sans devenir la source du prix marchand.
  */
 
+export interface AyrovixDetectedProductItem {
+  name: string;
+  brand: string | null;
+  category: string;
+  subcategory?: string | null;
+  price: number | null;
+  currency: string | null;
+  priceTnd?: number | null;
+  box?: [number, number, number, number] | null;
+  color?: string[];
+  pattern?: string | null;
+  material?: string | null;
+}
+
 /** Données structurées extraites de l'image par Claude Vision. */
 export interface AyrovixIdentification {
   input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
@@ -29,7 +43,7 @@ export interface AyrovixIdentification {
     currency: string | null;
     discount_percent: number | null;
   };
-  products?: Array<{ name: string; brand: string | null; category: string; price: number | null; currency: string | null; box?: [number, number, number, number] | null; color?: string[]; pattern?: string | null; material?: string | null }>;
+  products?: AyrovixDetectedProductItem[];
   url?: string | null;
   seller?: string | null;
 }

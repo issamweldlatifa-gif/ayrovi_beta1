@@ -194,6 +194,19 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         identification = fallbackIdentification(visualCandidates[0]?.title);
         console.warn('[AYROVIX analyze-image] vision failed — continuing with visual matches');
       }
+      if (identification.products?.length) {
+        identification.products = identification.products.map((p) => {
+          if (p.price != null && p.price > 0 && p.currency) {
+            const calc = calculatePrice(db.getPricingRules(), p.price, p.currency);
+            return {
+              ...p,
+              priceTnd: calc?.totalTND ?? null,
+            };
+          }
+          return p;
+        });
+      }
+
       const visiblePrice = identification.detected_price;
       const usablePrice = visiblePrice.confidence >= 0.65
         && visiblePrice.amount > 0

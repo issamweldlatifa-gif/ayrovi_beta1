@@ -85,7 +85,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
         <div className={`relative aspect-[4/3] p-2 ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/><span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-1 text-[9px] font-bold text-white">{product.source}</span></div>
         <div className="p-3">
           <h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className="text-base font-black text-ink">{product.priceTnd != null ? `${product.priceTnd.toFixed(2)} DT` : '—'}</p><p className={`text-[11px] font-semibold ${isDark ? 'text-muted' : 'text-muted'}`}>{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p><p className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-warning"><Star size={22} fill="currentColor" />{displayRating(product).toFixed(1)}/5 <span className={isDark ? 'text-muted' : 'text-muted'}>{product.ratingKind === 'merchant' ? tr('marchand', 'المتجر') : tr('pertinence', 'التطابق')}</span></p></div></div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className={`text-base font-black ${isDark ? 'text-white' : 'text-ink'}`}>{product.priceTnd != null ? `${product.priceTnd.toFixed(2)} DT` : '—'}</p><p className={`text-[11px] font-semibold ${isDark ? 'text-muted' : 'text-muted'}`}>{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p><p className="mt-1 inline-flex items-center gap-1 text-[10px] font-bold text-warning"><Star size={22} fill="currentColor" />{displayRating(product).toFixed(1)}/5 <span className={isDark ? 'text-muted' : 'text-muted'}>{product.ratingKind === 'merchant' ? tr('marchand', 'المتجر') : tr('pertinence', 'التطابق')}</span></p></div></div>
           <div className="mt-3 flex gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-xl border px-3 text-[11px] font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}>{tr('Lien', 'الرابط')}<ArrowUpRight size={17} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="ay-btn-primary min-h-10 flex-1 px-3 text-[11px]">{productBusyId === product.id ? tr('Vérification…', 'جارٍ التحقق…') : tr('Choisir', 'اختيار')}</button></div>
         </div>
       </article>)}
@@ -180,6 +180,12 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                 )}
                 <div className={message.role === 'user' ? 'max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 max-w-[92%]' : 'min-w-0 max-w-[82%]'}>
                   <div className={`rounded-[22px] px-4 py-3 text-[14px] leading-6 ${message.role === 'user' ? 'rounded-br-md bg-brand text-white shadow-card' : isDark ? 'rounded-bl-md border border-white/10 bg-white/[0.055] text-white' : 'rounded-bl-md border border-line bg-white text-ink shadow-card'}`}>
+                    {message.role === 'user' && message.fromVoice && (
+                      <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-[10px] font-black text-white">
+                        <span>🎙️</span>
+                        <span>{tr('Vocal', 'صوتي')}</span>
+                      </span>
+                    )}
                     {assistantText && <p className="whitespace-pre-wrap">{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-xl border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder}/>}

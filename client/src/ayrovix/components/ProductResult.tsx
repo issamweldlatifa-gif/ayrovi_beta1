@@ -161,7 +161,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div className="rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
             <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-brand">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
             <p className="mt-1 text-[28px] font-black leading-none tracking-tight text-ink price-pulse">
-              {selectedPriceTnd != null ? `${selectedPriceTnd.toFixed(2)} DT` : '—'}
+              {selectedPriceTnd != null ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}
             </p>
             <p className="mt-1.5 text-[12px] font-semibold text-muted">
               {selectedPrice != null && selectedCurrency
