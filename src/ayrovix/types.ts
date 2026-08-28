@@ -29,7 +29,7 @@ export interface AyrovixIdentification {
     currency: string | null;
     discount_percent: number | null;
   };
-  products?: Array<{ name: string; brand: string | null; category: string; price: number | null; currency: string | null }>;
+  products?: Array<{ name: string; brand: string | null; category: string; price: number | null; currency: string | null; box?: [number, number, number, number] | null }>;
   url?: string | null;
   seller?: string | null;
 }

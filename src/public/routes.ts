@@ -78,11 +78,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
       deliveryDelay: String(facts.delivery_delay || ''),
       capabilities: { cardGateway: cardGatewayAvailable() },
-      // Feature flags — LIVE multi-product vision behind a flag, sans toucher les modes existants
+      // Feature flags — LIVE multi-product vision. مفعّل افتراضيًا؛ عطّله بـ AYROVIX_LENS_LIVE_ENABLED=false
       features: {
-        ayrovixLensLive: process.env.AYROVIX_LENS_LIVE_ENABLED !== undefined
-          ? process.env.AYROVIX_LENS_LIVE_ENABLED === 'true'
-          : process.env.NODE_ENV !== 'production',
+        ayrovixLensLive: process.env.AYROVIX_LENS_LIVE_ENABLED !== 'false',
       },
       // تعليمات دفع العربون المعروضة في نموذج الطلب (قابلة للتحرير من لوحة الأدمن)
       deposit: {

@@ -73,6 +73,7 @@ Règles obligatoires :
 - Si plusieurs prix sont visibles, remplis pricing : sale_price = prix actuel, original_price = prix barré/avant, shipping_price = livraison, total_price = total panier, discount_percent = remise lisible. Ne calcule jamais un prix manquant.
 - detected_price doit refléter sale_price (ou total_price pour un panier). N'utilise jamais le plus grand nombre par défaut.
 - Si plusieurs produits distincts sont visibles, liste-les dans products avec leur prix propre (6 maximum).
+- Pour chaque produit listé, fournis une boîte approximative normalisée box [x, y, largeur, hauteur] entre 0 et 1 si tu peux le localiser dans l'image ; sinon null.
 - url et seller seulement s'ils sont lisibles dans l'image (barre d'adresse, logo boutique).
 - Si l'image montre plusieurs produits ou un panier, input_kind doit être "cart_screenshot".
 - Si aucun produit n'est identifiable, confidence vaut 0 et description vaut "PRODUIT_NON_IDENTIFIE".
@@ -129,6 +130,7 @@ const IDENTIFICATION_SCHEMA = {
           category: { type: 'string' },
           price: { type: ['number', 'null'] },
           currency: { type: ['string', 'null'] },
+          box: { type: ['array', 'null'], items: { type: 'number' } },
         },
         required: ['name', 'brand', 'category', 'price', 'currency'],
         additionalProperties: false,
@@ -144,6 +146,19 @@ const IDENTIFICATION_SCHEMA = {
   ],
   additionalProperties: false,
 };
+
+/** يقيّد صندوقًا مُرجَعًا من الـ AI إلى [x,y,w,h] مُطبَّع 0..1، أو null إن كان غير صالح. */
+export function normalizeBox(raw: unknown): [number, number, number, number] | null {
+  if (!Array.isArray(raw) || raw.length !== 4) return null;
+  const nums = raw.map((v) => Number(v));
+  if (nums.some((n) => !Number.isFinite(n))) return null;
+  const [x0, y0, w0, h0] = nums;
+  const x = Math.min(1, Math.max(0, x0));
+  const y = Math.min(1, Math.max(0, y0));
+  const w = Math.min(1 - x, Math.max(0.02, w0));
+  const h = Math.min(1 - y, Math.max(0.02, h0));
+  return [x, y, w, h];
+}
 
 function parseIdentification(raw: string): AyrovixIdentification {
   const cleaned = raw.replace(/```(?:json)?/gi, '').trim();
@@ -187,6 +202,7 @@ function parseIdentification(raw: string): AyrovixIdentification {
       category: typeof item.category === 'string' ? item.category.trim().slice(0, 60) : 'product',
       price: numOrNull(item.price),
       currency: /^[A-Z]{3}$/.test(String(item.currency || '').trim().toUpperCase()) ? String(item.currency).trim().toUpperCase() : null,
+      box: normalizeBox(item.box),
     }));
   const urlRaw = typeof parsed?.url === 'string' ? parsed.url.trim().slice(0, 500) : '';
   const url = /^https?:\/\//i.test(urlRaw) ? urlRaw : null;

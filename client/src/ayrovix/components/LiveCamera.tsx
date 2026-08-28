@@ -345,16 +345,20 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
 
       {/* PHOTO / VIDÉO selector */}
-      {liveEnabled && mode !== 'code' && (
+      {/* تحكم سفلي دائم للتبديل بين التصوير والـ Live (بدون إعادة فتح الكاميرا) */}
+      {mode !== 'code' && (
         <div className="relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')}>
-          {(['photo', 'video'] as CamMode[]).map((m) => (
-            <button key={m} type="button" role="tab" aria-selected={camMode === m}
-              onClick={() => { setCamMode(m); setMode('search'); }}
-              className={`relative rounded-full px-5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] transition-colors ${camMode === m ? 'text-white' : 'text-white/55'}`}>
-              {m === 'photo' ? tr('Photo', 'صورة') : tr('Vidéo (Live)', 'فيديو (مباشر)')}
-              {camMode === m && <span className="absolute -bottom-0.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-accent" />}
-            </button>
-          ))}
+          {(['photo', 'video'] as CamMode[]).map((m) => {
+            const disabled = m === 'video' && !liveEnabled;
+            return (
+              <button key={m} type="button" role="tab" aria-selected={camMode === m} disabled={disabled}
+                onClick={() => { setCamMode(m); setMode('search'); }}
+                className={`relative rounded-full px-5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>
+                {m === 'photo' ? tr('Photo', 'تصوير') : tr('Vidéo (Live)', 'فيديو (مباشر)')}
+                {camMode === m && <span className="absolute -bottom-0.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-accent" />}
+              </button>
+            );
+          })}
         </div>
       )}
 
