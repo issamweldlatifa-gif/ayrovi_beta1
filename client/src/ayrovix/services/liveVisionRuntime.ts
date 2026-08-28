@@ -18,23 +18,31 @@ import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 export interface LiveBox { x: number; y: number; w: number; h: number; }
 
 export interface LiveDetection {
+  productInstanceId: string;
   trackingId: string;
   label: string;
   category: string;
+  subcategory: string | null;
+  brand: string | null;
   confidence: number;
   rawConfidence: number;
   box: LiveBox | null;
+  mask: null; // غير متوفر منStructured Outputs/COCO V0 — نقطة توسّع
+  visualFeatures: number[];
+  color: string[];
+  pattern: string | null;
+  material: string | null;
+  position: { x: number; y: number } | null;
   status: 'tracking' | 'locked' | 'lost';
   timestamp: number;
   misses: number;
   vx: number; vy: number;
-  color: string[];
-  pattern: string | null;
-  material: string | null;
   candidates: AyrovixCandidate[];
   detectedPrice?: AyrovixDetectedPrice | null;
   image?: string;
 }
+
+const centerOf = (box: LiveBox | null) => (box ? { x: box.x + box.w / 2, y: box.y + box.h / 2 } : null);
 
 export type LiveStatus = 'idle' | 'live' | 'ai-unavailable' | 'low-confidence' | 'tracking-lost' | 'offline';
 export type LiveEventType = 'live_opened' | 'object_detected' | 'object_locked' | 'tracking_lost' | 'ai_unavailable' | 'match_requested' | 'match_returned';
@@ -53,6 +61,27 @@ export const computeCropRect = (canvasW: number, canvasH: number, box: LiveBox) 
   return { x, y, w, h };
 };
 
+/** بصمة بصرية محلية خفيفة (متجه رمادي مُطبَّع) لإعادة التعرّف على نفس المنتج بين الـ frames. */
+export const grayToFeatures = (gray: number[]): number[] => {
+  if (!gray.length) return [];
+  let max = 1;
+  for (const v of gray) if (v > max) max = v;
+  return gray.map((v) => Math.round((v / max) * 100) / 100);
+};
+
+export const computeVisualFeatures = (canvas: HTMLCanvasElement, box: LiveBox): number[] => {
+  const rect = computeCropRect(canvas.width, canvas.height, box);
+  const c = document.createElement('canvas');
+  c.width = 8; c.height = 8;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return [];
+  ctx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, 8, 8);
+  const d = ctx.getImageData(0, 0, 8, 8).data;
+  const gray: number[] = [];
+  for (let i = 0; i < d.length; i += 4) gray.push(0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]);
+  return grayToFeatures(gray);
+};
+
 export const iou = (a: LiveBox, b: LiveBox): number => {
   const x1 = Math.max(a.x, b.x); const y1 = Math.max(a.y, b.y);
   const x2 = Math.min(a.x + a.w, b.x + b.w); const y2 = Math.min(a.y + a.h, b.y + b.h);
@@ -67,7 +96,9 @@ export const adaptiveNextInterval = (current: number, latencyMs: number): number
   return Math.round(Math.min(4000, Math.max(1200, current * factor)));
 };
 
-interface RawDetection { label: string; category: string; confidence: number; box: LiveBox | null; color: string[]; pattern: string | null; material: string | null; candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null; image?: string; }
+interface RawDetection { label: string; category: string; subcategory: string | null; brand: string | null; confidence: number; box: LiveBox | null; visualFeatures: number[]; color: string[]; pattern: string | null; material: string | null; candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null; image?: string; }
+
+const instanceId = (label: string, brand: string | null) => liveObjectId(`${brand || ''}::${label}`);
 
 /** DETECT→TRACK→PREDICT→UPDATE: مطابقة IoU/label + تنبؤ بالحركة عند الغياب + recovery. */
 export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: number): LiveDetection[] {
@@ -96,13 +127,21 @@ export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: n
       t.color = det.color.length ? det.color : t.color;
       t.pattern = det.pattern ?? t.pattern;
       t.material = det.material ?? t.material;
+      t.brand = det.brand ?? t.brand;
+      t.subcategory = det.subcategory ?? t.subcategory;
+      t.visualFeatures = det.visualFeatures.length ? det.visualFeatures : t.visualFeatures;
+      t.position = centerOf(t.box);
       t.misses = 0; t.timestamp = now;
       t.status = t.confidence >= LOCK_THRESHOLD ? 'locked' : (t.confidence < REDETECT_THRESHOLD ? 'tracking' : t.status === 'locked' ? 'locked' : 'tracking');
       out.push(t);
     } else {
       out.push({
-        trackingId: liveObjectId(det.label), label: det.label, category: det.category,
+        productInstanceId: instanceId(det.label, det.brand),
+        trackingId: instanceId(det.label, det.brand),
+        label: det.label, category: det.category, subcategory: det.subcategory, brand: det.brand,
         confidence: det.confidence, rawConfidence: det.confidence, box: det.box,
+        mask: null, visualFeatures: det.visualFeatures,
+        position: centerOf(det.box),
         status: det.confidence >= LOCK_THRESHOLD ? 'locked' : 'tracking',
         timestamp: now, misses: 0, vx: 0, vy: 0,
         color: det.color, pattern: det.pattern, material: det.material,
@@ -205,7 +244,7 @@ export class LiveVisionRuntime {
     return canvas;
   }
 
-  private toRawDetections(result: any, thumb: string): RawDetection[] {
+  private toRawDetections(result: any, thumb: string, canvas: HTMLCanvasElement): RawDetection[] {
     const id = result.identification || {};
     const conf = Math.round((Number(id.confidence) || 0) * 100);
     const products = Array.isArray(id.products) ? id.products : [];
@@ -213,20 +252,27 @@ export class LiveVisionRuntime {
     const str = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
     const colors = (v: unknown) => (Array.isArray(v) ? v.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 30)).slice(0, 3) : []);
     if (withBox.length) {
-      return withBox.slice(0, 6).map((p: any) => ({
-        label: String(p.name || '').slice(0, 80) || 'Produit',
-        category: String(p.category || 'product'),
-        confidence: conf,
-        box: { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] },
-        color: colors(p.color), pattern: str(p.pattern), material: str(p.material),
-        candidates: [] as AyrovixCandidate[], detectedPrice: result.detectedPrice || null, image: thumb,
-      }));
+      return withBox.slice(0, 6).map((p: any) => {
+        const box = { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] };
+        return {
+          label: String(p.name || '').slice(0, 80) || 'Produit',
+          category: String(p.category || 'product'), subcategory: str(p.category, 60),
+          brand: typeof p.brand === 'string' ? p.brand.slice(0, 80) : null,
+          confidence: conf, box,
+          visualFeatures: computeVisualFeatures(canvas, box),
+          color: colors(p.color), pattern: str(p.pattern), material: str(p.material),
+          candidates: [] as AyrovixCandidate[], detectedPrice: result.detectedPrice || null, image: thumb,
+        };
+      });
     }
     const desc = String(id.description || result.query || '');
     if ((Number(id.confidence) || 0) <= 0 || desc === 'PRODUIT_NON_IDENTIFIE') return [];
     return [{
       label: (result.candidates?.[0]?.title || desc).slice(0, 80),
-      category: String(id.category || 'product'), confidence: conf, box: null,
+      category: String(id.category || 'product'), subcategory: str(id.category, 60),
+      brand: typeof id.brand === 'string' ? id.brand.slice(0, 80) : null,
+      confidence: conf, box: null,
+      visualFeatures: computeVisualFeatures(canvas, { x: 0, y: 0, w: 1, h: 1 }),
       color: colors(id.color), pattern: str(id.pattern), material: str(id.material),
       candidates: result.candidates || [], detectedPrice: result.detectedPrice || null, image: thumb,
     }];
@@ -279,11 +325,15 @@ export class LiveVisionRuntime {
         this.inflight = true;
         try {
           const preds = await this.detector.detect(canvas);
-          const raw = preds.map((p) => ({
-            label: p.label, category: p.category, confidence: Math.round(p.score * 100),
-            box: { x: p.bbox[0] / canvas.width, y: p.bbox[1] / canvas.height, w: p.bbox[2] / canvas.width, h: p.bbox[3] / canvas.height },
-            color: [] as string[], pattern: null, material: null, candidates: [] as AyrovixCandidate[],
-          }));
+          const raw = preds.map((p) => {
+            const box = { x: p.bbox[0] / canvas.width, y: p.bbox[1] / canvas.height, w: p.bbox[2] / canvas.width, h: p.bbox[3] / canvas.height };
+            return {
+              label: p.label, category: p.category, subcategory: null, brand: null,
+              confidence: Math.round(p.score * 100), box,
+              visualFeatures: computeVisualFeatures(canvas, box),
+              color: [] as string[], pattern: null, material: null, candidates: [] as AyrovixCandidate[],
+            };
+          });
           this.objects = trackObjects(this.objects, raw, Date.now());
           this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));
           if (this.objects.length) this.opts.onEvent?.('object_detected', { count: this.objects.length });
@@ -307,7 +357,7 @@ export class LiveVisionRuntime {
             this.aiFailures = 0;
             this.opts.onEvent?.('match_returned', { candidates: (result.candidates || []).length });
             const thumb = canvas.toDataURL('image/jpeg', 0.6);
-            const raw = this.toRawDetections(result, thumb);
+            const raw = this.toRawDetections(result, thumb, canvas);
             const before = this.objects.length;
             this.objects = trackObjects(this.objects, raw, Date.now());
             this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));

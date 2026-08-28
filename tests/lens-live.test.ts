@@ -5,6 +5,7 @@ import { app } from '../src/server';
 import { frameSignature, signatureDistance, liveObjectId } from '../client/src/ayrovix/services/liveScanner';
 import { iou, trackObjects, adaptiveNextInterval, computeCropRect, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
 import { loadLocalDetector } from '../client/src/ayrovix/services/localDetector';
+import { grayToFeatures } from '../client/src/ayrovix/services/liveVisionRuntime';
 
 const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
 const launcherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
@@ -60,13 +61,13 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     expect(iou(boxA, { x: 0.8, y: 0.8, w: 0.1, h: 0.1 })).toBe(0);
 
     const t0 = Date.now();
-    const first = trackObjects([], [{ label: 'Nike', category: 'shoes', confidence: 80, box: boxA, color: [], pattern: null, material: null, candidates: [] }], t0);
+    const first = trackObjects([], [{ label: 'Nike', category: 'shoes', confidence: 80, box: boxA, color: [], pattern: null, material: null, brand: null, subcategory: null, visualFeatures: [], candidates: [] }], t0);
     expect(first).toHaveLength(1);
     expect(first[0].status).toBe('locked'); // confidence >= LOCK_THRESHOLD
     const id = first[0].trackingId;
 
     // même objet frame suivante → garde le même trackingId (pas de doublon)
-    const second = trackObjects(first, [{ label: 'Nike', category: 'shoes', confidence: 85, box: boxB, color: [], pattern: null, material: null, candidates: [] }], t0 + 2000);
+    const second = trackObjects(first, [{ label: 'Nike', category: 'shoes', confidence: 85, box: boxB, color: [], pattern: null, material: null, brand: null, subcategory: null, visualFeatures: [], candidates: [] }], t0 + 2000);
     expect(second.some((o) => o.trackingId === id)).toBe(true);
     expect(second).toHaveLength(1);
 
@@ -111,5 +112,13 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
   it('local on-device detector degrades gracefully when unavailable (no DOM/CDN)', async () => {
     // في بيئة بدون window (Node) يجب أن يرفض التحميل بأناقة دون انهيار
     await expect(loadLocalDetector()).rejects.toThrow();
+  });
+
+  it('grayToFeatures produces a normalized, deterministic visual signature', () => {
+    const f = grayToFeatures([0, 64, 128, 255]);
+    expect(f[0]).toBe(0);
+    expect(f[f.length - 1]).toBe(1);
+    expect(grayToFeatures([0, 64, 128, 255])).toEqual(f);
+    expect(grayToFeatures([])).toEqual([]);
   });
 });
