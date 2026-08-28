@@ -148,6 +148,22 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     return res.json({ success: true, data: listAyrovixHistory(db, customer.id, Number(req.query.limit) || 30) });
   });
 
+  // أحداث Live مجهولة (analytics منتج): لا صورة/لا IP/لا بيانات شخصية.
+  const LIVE_EVENTS = new Set(['live_opened', 'object_detected', 'object_locked', 'tracking_lost', 'ai_unavailable', 'match_requested', 'match_returned']);
+  router.post('/live-events', (req: Request, res: Response) => {
+    const type = String(req.body?.type || '');
+    if (!LIVE_EVENTS.has(type)) return res.status(400).json({ success: false, error: 'Type invalide.' });
+    db.run(`CREATE TABLE IF NOT EXISTS ayrovix_live_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      meta TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL
+    )`);
+    const meta = req.body?.meta && typeof req.body.meta === 'object' ? JSON.stringify(req.body.meta).slice(0, 300) : '{}';
+    db.run('INSERT INTO ayrovix_live_events (type,meta,created_at) VALUES (?,?,?)', type, meta, new Date().toISOString());
+    res.json({ success: true });
+  });
+
   router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
     const file = req.file;
     if (!file?.buffer?.length) {

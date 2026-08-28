@@ -57,7 +57,15 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
   useEffect(() => {
     if (!runtimeRef.current) {
-      runtimeRef.current = new LiveVisionRuntime({ getVideo: () => videoRef.current, onState: setLiveState });
+      runtimeRef.current = new LiveVisionRuntime({
+        getVideo: () => videoRef.current,
+        onState: setLiveState,
+        onEvent: (type, meta) => {
+          try {
+            fetch('/api/ayrovix/live-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, meta }), keepalive: true }).catch(() => {});
+          } catch { /* analytics غير حرجة */ }
+        },
+      });
     }
     const runtime = runtimeRef.current;
     if (isVideo) runtime.start(); else runtime.stop();

@@ -3,17 +3,15 @@ import { frameSignature, signatureDistance, liveObjectId } from './liveScanner';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 
 /**
- * AYROVIX LENS — LiveVisionRuntime (REAL LIVE MODE).
+ * AYROVIX LENS — LiveVisionRuntime (REAL LIVE MODE, V0 category-agnostic).
  *
- * Pipeline: Camera → Frame Sampler → Product Detection → Tracking →
- * Confidence → Temporal Update → Live Overlay.
+ * Pipeline: Camera → Frame Sampler → Product Detection → Tracking(DETECT→TRACK→
+ * PREDICT→UPDATE) → Confidence(EMA) → Temporal Update → Live Overlay.
  *
- * - لا يرسل كل frame: إ sampling adaptif + تخطي المشهد غير المتغيّر.
- * - Tracking زمني (IoU / label) مع recovery عند الفقد، ولا إعادة اكتشاف من الصفر.
- * - Confidence manager: لا تُعرض نتيجة غير موثوقة كمؤكدة (lock بعد استقرار).
- * - Graceful degradation: إذا فشل الـ AI/الشبكة تبقى الكاميرا والـ tracking شغّالين
- *   مع status خفيف، ولا ينهار الـ Live.
- * - LIVE ≠ تسجيل فيديو: لا حفظ/رفع video؛ فقط تحليل الـ stream.
+ * - Adaptive inference FPS منفصل عن preview FPS (لا يُحجب الـ rendering).
+ * - Offline: الكاميرا والـ tracking المحلي يستمران، والـ cloud matching يتأجل حتى العودة.
+ * - Analytics: أحداث مجهولة عبر onEvent (لا صورة/لا IP/لا بيانات شخصية).
+ * - Graceful degradation: فشل الـ AI لا يُسقط الـ Live.
  */
 
 export interface LiveBox { x: number; y: number; w: number; h: number; }
@@ -22,22 +20,25 @@ export interface LiveDetection {
   trackingId: string;
   label: string;
   category: string;
-  confidence: number; // 0..100 (EMA مُنعّمة)
+  confidence: number;
   rawConfidence: number;
   box: LiveBox | null;
   status: 'tracking' | 'locked' | 'lost';
   timestamp: number;
   misses: number;
+  vx: number; vy: number;
   candidates: AyrovixCandidate[];
   detectedPrice?: AyrovixDetectedPrice | null;
   image?: string;
 }
 
-export type LiveStatus = 'idle' | 'live' | 'ai-unavailable' | 'low-confidence' | 'tracking-lost';
+export type LiveStatus = 'idle' | 'live' | 'ai-unavailable' | 'low-confidence' | 'tracking-lost' | 'offline';
+export type LiveEventType = 'live_opened' | 'object_detected' | 'object_locked' | 'tracking_lost' | 'ai_unavailable' | 'match_requested' | 'match_returned';
 
-export const LOCK_THRESHOLD = 60;     // >= → قفل نتيجة
-export const REDETECT_THRESHOLD = 35; // <  → إعادة اكتشاف
-export const MAX_MISSES = 3;          // فقدان متتالي → lost/recovery
+export const LOCK_THRESHOLD = 60;
+export const REDETECT_THRESHOLD = 35;
+export const MAX_MISSES = 3;
+export const PREDICT_FRAMES = 2;
 
 export const iou = (a: LiveBox, b: LiveBox): number => {
   const x1 = Math.max(a.x, b.x); const y1 = Math.max(a.y, b.y);
@@ -47,9 +48,15 @@ export const iou = (a: LiveBox, b: LiveBox): number => {
   return union > 0 ? inter / union : 0;
 };
 
+/** Adaptive inference interval: يبطئ عند inference بطيء ويسرع عند القدرة. */
+export const adaptiveNextInterval = (current: number, latencyMs: number): number => {
+  const factor = latencyMs > 1500 ? 1.4 : latencyMs < 400 ? 0.85 : 1;
+  return Math.round(Math.min(4000, Math.max(1200, current * factor)));
+};
+
 interface RawDetection { label: string; category: string; confidence: number; box: LiveBox | null; candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null; image?: string; }
 
-/** يطابق detections الجديدة مع tracks موجودة (IoU إن وجدت boxes، وإلا بالـ label). */
+/** DETECT→TRACK→PREDICT→UPDATE: مطابقة IoU/label + تنبؤ بالحركة عند الغياب + recovery. */
 export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: number): LiveDetection[] {
   const tracks = prev.map((t) => ({ ...t }));
   const used = new Set<number>();
@@ -64,34 +71,39 @@ export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: n
     });
     if (bestIdx >= 0 && bestScore >= 0.3) {
       const t = tracks[bestIdx]; used.add(bestIdx);
-      const raw = det.confidence;
-      t.confidence = Math.round(t.confidence * 0.6 + raw * 0.4); // EMA/temporal smoothing
-      t.rawConfidence = raw;
+      // UPDATE: velocity من فرق الـ box (لتنبؤ لاحق)
+      if (det.box && t.box) { t.vx = det.box.x - t.box.x; t.vy = det.box.y - t.box.y; }
+      t.confidence = Math.round(t.confidence * 0.6 + det.confidence * 0.4);
+      t.rawConfidence = det.confidence;
       t.box = det.box ?? t.box;
-      t.label = det.label;
+      t.label = det.label; t.category = det.category;
       t.candidates = det.candidates.length ? det.candidates : t.candidates;
       t.detectedPrice = det.detectedPrice ?? t.detectedPrice;
       t.image = det.image ?? t.image;
-      t.misses = 0;
-      t.timestamp = now;
-      t.status = t.confidence >= LOCK_THRESHOLD ? 'locked' : 'tracking';
+      t.misses = 0; t.timestamp = now;
+      t.status = t.confidence >= LOCK_THRESHOLD ? 'locked' : (t.confidence < REDETECT_THRESHOLD ? 'tracking' : t.status === 'locked' ? 'locked' : 'tracking');
       out.push(t);
     } else {
       out.push({
-        trackingId: liveObjectId(det.label),
-        label: det.label, category: det.category,
-        confidence: det.confidence, rawConfidence: det.confidence,
-        box: det.box, status: det.confidence >= LOCK_THRESHOLD ? 'locked' : 'tracking',
-        timestamp: now, misses: 0, candidates: det.candidates, detectedPrice: det.detectedPrice, image: det.image,
+        trackingId: liveObjectId(det.label), label: det.label, category: det.category,
+        confidence: det.confidence, rawConfidence: det.confidence, box: det.box,
+        status: det.confidence >= LOCK_THRESHOLD ? 'locked' : 'tracking',
+        timestamp: now, misses: 0, vx: 0, vy: 0,
+        candidates: det.candidates, detectedPrice: det.detectedPrice, image: det.image,
       });
     }
   }
 
-  // tracks غير المطابقة: increment misses → recovery/lost
-  tracks.forEach((t, i) => {
-    if (used.has(i)) return;
+  // PREDICT/UPDATE للـ tracks غير المطابقة: تنبؤ بالحركة ثم recovery ثم lost
+  tracks.forEach((t) => {
+    if (out.some((o) => o.trackingId === t.trackingId)) return;
     const misses = t.misses + 1;
-    if (misses > MAX_MISSES) return; // أزل بعد محاولات الاسترداد
+    if (misses <= PREDICT_FRAMES && t.box) {
+      const predicted = { x: Math.min(1, Math.max(0, t.box.x + t.vx)), y: Math.min(1, Math.max(0, t.box.y + t.vy)), w: t.box.w, h: t.box.h };
+      out.push({ ...t, box: predicted, misses, status: 'tracking', confidence: Math.max(REDETECT_THRESHOLD, Math.round(t.confidence * 0.9)), timestamp: now });
+      return;
+    }
+    if (misses > MAX_MISSES) return; // إزالة بعد محاولات الاسترداد
     out.push({ ...t, misses, status: 'lost', timestamp: now });
   });
 
@@ -103,41 +115,58 @@ export interface LiveVisionState { objects: LiveDetection[]; status: LiveStatus;
 export interface LiveVisionRuntimeOptions {
   getVideo: () => HTMLVideoElement | null;
   onState: (state: LiveVisionState) => void;
-  sampleInterval?: number;
+  onEvent?: (type: LiveEventType, meta?: Record<string, number | string>) => void;
+  baseInterval?: number;
 }
 
 export class LiveVisionRuntime {
   private opts: LiveVisionRuntimeOptions;
   private timer: number | null = null;
+  private interval: number;
   private objects: LiveDetection[] = [];
   private lastSig = '';
   private inflight = false;
   private abort: AbortController | null = null;
   private aiFailures = 0;
+  private online = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
   private stopped = true;
+  private onOnline = () => { this.online = true; this.aiFailures = 0; this.emit(); };
+  private onOffline = () => { this.online = false; this.emit(); };
 
-  constructor(opts: LiveVisionRuntimeOptions) { this.opts = opts; }
+  constructor(opts: LiveVisionRuntimeOptions) { this.opts = opts; this.interval = opts.baseInterval ?? 2200; }
 
   start(): void {
     if (!this.stopped) return;
     this.stopped = false;
-    this.objects = [];
-    this.aiFailures = 0;
-    this.emit('live');
-    this.timer = window.setInterval(() => void this.tick(), this.opts.sampleInterval ?? 2200);
+    this.objects = []; this.aiFailures = 0; this.lastSig = '';
+    if (typeof window !== 'undefined') { window.addEventListener('online', this.onOnline); window.addEventListener('offline', this.onOffline); }
+    this.opts.onEvent?.('live_opened');
+    this.emit();
+    this.schedule();
   }
 
   stop(): void {
     this.stopped = true;
-    if (this.timer != null) { window.clearInterval(this.timer); this.timer = null; }
-    this.abort?.abort(); this.abort = null;
-    this.inflight = false;
+    if (this.timer != null) { window.clearTimeout(this.timer); this.timer = null; }
+    if (typeof window !== 'undefined') { window.removeEventListener('online', this.onOnline); window.removeEventListener('offline', this.onOffline); }
+    this.abort?.abort(); this.abort = null; this.inflight = false;
     this.objects = [];
-    this.emit('idle');
+    this.opts.onState({ objects: [], status: 'idle' });
   }
 
-  private emit(status: LiveStatus): void {
-    this.opts.onState({ objects: this.objects.filter((o) => o.status !== 'lost' || o.misses <= MAX_MISSES), status });
+  private schedule(): void {
+    if (this.stopped) return;
+    this.timer = window.setTimeout(() => { void this.tick(); }, this.interval);
+  }
+
+  private emit(): void {
+    const visible = this.objects.filter((o) => o.status !== 'lost');
+    const hasLocked = visible.some((o) => o.status === 'locked');
+    const status: LiveStatus = !this.online ? 'offline'
+      : this.aiFailures >= 2 ? 'ai-unavailable'
+        : hasLocked ? 'live'
+          : visible.length ? 'low-confidence' : 'live';
+    this.opts.onState({ objects: visible, status });
   }
 
   private drawSample(): HTMLCanvasElement | null {
@@ -164,58 +193,67 @@ export class LiveVisionRuntime {
         category: String(p.category || 'product'),
         confidence: conf,
         box: { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] },
-        candidates: result.candidates || [],
-        detectedPrice: result.detectedPrice || null,
-        image: thumb,
+        candidates: result.candidates || [], detectedPrice: result.detectedPrice || null, image: thumb,
       }));
     }
     const desc = String(id.description || result.query || '');
     if ((Number(id.confidence) || 0) <= 0 || desc === 'PRODUIT_NON_IDENTIFIE') return [];
     return [{
       label: (result.candidates?.[0]?.title || desc).slice(0, 80),
-      category: String(id.category || 'product'),
-      confidence: conf,
-      box: null,
-      candidates: result.candidates || [],
-      detectedPrice: result.detectedPrice || null,
-      image: thumb,
+      category: String(id.category || 'product'), confidence: conf, box: null,
+      candidates: result.candidates || [], detectedPrice: result.detectedPrice || null, image: thumb,
     }];
   }
 
   private async tick(): Promise<void> {
-    if (this.stopped || this.inflight) return;
+    if (this.stopped) return;
     const canvas = this.drawSample();
-    if (!canvas) return;
-    const sig = frameSignature(canvas);
-    if (sig && this.lastSig && signatureDistance(sig, this.lastSig) < 0.06) {
-      // مشهد ثابت: استمر بالـ tracking بدون inference ثقيل
-      this.objects = trackObjects(this.objects, [], Date.now());
-      this.emit(this.objects.some((o) => o.status === 'locked') ? 'live' : 'low-confidence');
-      return;
-    }
-    this.lastSig = sig;
-    this.inflight = true;
-    canvas.toBlob(async (blob) => {
-      if (this.stopped || !blob) { this.inflight = false; return; }
-      this.abort?.abort();
-      const ctrl = new AbortController(); this.abort = ctrl;
-      try {
-        const result = await analyzeImage(new File([blob], 'ayrovix-live.jpg', { type: 'image/jpeg' }), ctrl.signal);
-        this.aiFailures = 0;
-        const thumb = canvas.toDataURL('image/jpeg', 0.6);
-        const raw = this.toRawDetections(result, thumb);
-        this.objects = trackObjects(this.objects, raw, Date.now());
-        const hasLocked = this.objects.some((o) => o.status === 'locked');
-        const anyTracking = this.objects.length > 0;
-        this.emit(hasLocked ? 'live' : anyTracking ? 'low-confidence' : 'low-confidence');
-      } catch {
-        // Graceful degradation: الكاميرا والـ tracking يستمران، status خفيف
-        this.aiFailures += 1;
+    if (canvas) {
+      const sig = frameSignature(canvas);
+      const unchanged = sig && this.lastSig && signatureDistance(sig, this.lastSig) < 0.06;
+      this.lastSig = sig;
+      if (unchanged) {
+        // مشهد ثابت: tracking/تنبؤ فقط بدون inference ثقيل
         this.objects = trackObjects(this.objects, [], Date.now());
-        this.emit(this.aiFailures >= 2 ? 'ai-unavailable' : 'live');
-      } finally {
-        this.inflight = false;
+        this.objects.filter((o) => o.status === 'lost').forEach(() => this.opts.onEvent?.('tracking_lost'));
+        this.emit(); this.schedule(); return;
       }
-    }, 'image/jpeg', 0.8);
+      if (!this.inflight && this.online) {
+        this.inflight = true;
+        this.opts.onEvent?.('match_requested');
+        const started = Date.now();
+        canvas.toBlob(async (blob) => {
+          if (this.stopped || !blob) { this.inflight = false; this.schedule(); return; }
+          this.abort?.abort();
+          const ctrl = new AbortController(); this.abort = ctrl;
+          try {
+            const result = await analyzeImage(new File([blob], 'ayrovix-live.jpg', { type: 'image/jpeg' }), ctrl.signal);
+            this.interval = adaptiveNextInterval(this.interval, Date.now() - started);
+            this.aiFailures = 0;
+            this.opts.onEvent?.('match_returned', { candidates: (result.candidates || []).length });
+            const thumb = canvas.toDataURL('image/jpeg', 0.6);
+            const raw = this.toRawDetections(result, thumb);
+            const before = this.objects.length;
+            this.objects = trackObjects(this.objects, raw, Date.now());
+            this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));
+            if (this.objects.length > before) this.opts.onEvent?.('object_detected', { count: this.objects.length });
+            this.emit();
+          } catch {
+            this.aiFailures += 1;
+            if (this.aiFailures === 2) this.opts.onEvent?.('ai_unavailable');
+            this.objects = trackObjects(this.objects, [], Date.now());
+            this.emit();
+          } finally {
+            this.inflight = false;
+            this.schedule();
+          }
+        }, 'image/jpeg', 0.8);
+        return;
+      }
+      // offline أو inflight: استمر بالـ tracking المحلي فقط
+      this.objects = trackObjects(this.objects, [], Date.now());
+      this.emit();
+    }
+    this.schedule();
   }
 }

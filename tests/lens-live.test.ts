@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
 import { frameSignature, signatureDistance, liveObjectId } from '../client/src/ayrovix/services/liveScanner';
-import { iou, trackObjects, LOCK_THRESHOLD } from '../client/src/ayrovix/services/liveVisionRuntime';
+import { iou, trackObjects, adaptiveNextInterval, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
 
 const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
 const launcherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
@@ -69,11 +69,26 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     expect(second.some((o) => o.trackingId === id)).toBe(true);
     expect(second).toHaveLength(1);
 
-    // objet perdu → status lost puis supprimé après MAX_MISSES (recovery)
-    let lost = trackObjects(second, [], t0 + 4000);
-    expect(lost.some((o) => o.trackingId === id && o.status === 'lost')).toBe(true);
-    for (let i = 0; i < 5; i++) lost = trackObjects(lost, [], t0 + 5000 + i * 1000);
-    expect(lost.some((o) => o.trackingId === id)).toBe(false);
+    // PREDICT: عند الغياب المؤقت يبقى tracking (تنبؤ بالحركة) قبل الـ lost
+    let cur = second;
+    for (let i = 0; i < PREDICT_FRAMES; i++) {
+      cur = trackObjects(cur, [], t0 + 3000 + i * 500);
+      const o = cur.find((x) => x.trackingId === id);
+      expect(o?.status).toBe('tracking');
+    }
+    // ثم lost (recovery window) ثم إزالة بعد MAX_MISSES
+    cur = trackObjects(cur, [], t0 + 5000);
+    expect(cur.some((o) => o.trackingId === id && o.status === 'lost')).toBe(true);
+    for (let i = 0; i < 5; i++) cur = trackObjects(cur, [], t0 + 6000 + i * 1000);
+    expect(cur.some((o) => o.trackingId === id)).toBe(false);
     expect(LOCK_THRESHOLD).toBeGreaterThan(0);
+  });
+
+  it('adaptive inference interval slows on latency and speeds on capability', () => {
+    expect(adaptiveNextInterval(2200, 3000)).toBeGreaterThan(2200); // بطيء → أبطأ
+    expect(adaptiveNextInterval(2200, 200)).toBeLessThan(2200);      // سريع → أسرع
+    expect(adaptiveNextInterval(2200, 800)).toBe(2200);              // متوسط → ثابت
+    expect(adaptiveNextInterval(4000, 9000)).toBeLessThanOrEqual(4000); // سقف 4000
+    expect(adaptiveNextInterval(1200, 10)).toBeGreaterThanOrEqual(1200); // أرضية 1200
   });
 });
