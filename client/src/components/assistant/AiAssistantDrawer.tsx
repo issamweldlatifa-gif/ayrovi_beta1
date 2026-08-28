@@ -463,7 +463,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
         // Silence detection while listening
         if (voiceStateRef.current === 'listening') {
-          if (norm > 0.12) {
+          if (norm > 0.08) {
             spokenInTurnRef.current = true;
             if (speechSilenceTimerRef.current) {
               clearTimeout(speechSilenceTimerRef.current);
@@ -474,7 +474,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               if (voiceModeRef.current && voiceStateRef.current === 'listening' && spokenInTurnRef.current) {
                 finishVoiceTurn();
               }
-            }, 1800);
+            }, 850);
           }
         }
 
@@ -496,8 +496,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           recognizer.lang = isArabic ? 'ar-TN' : 'fr-FR';
           recognizer.onresult = (event: any) => {
             let current = '';
+            let hasFinal = false;
             for (let i = event.resultIndex; i < event.results.length; ++i) {
               current += event.results[i][0].transcript;
+              if (event.results[i].isFinal) hasFinal = true;
             }
             if (current.trim()) {
               setLiveTranscript(current.trim());
@@ -505,6 +507,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               if (speechSilenceTimerRef.current) {
                 clearTimeout(speechSilenceTimerRef.current);
                 speechSilenceTimerRef.current = null;
+              }
+              if (hasFinal) {
+                speechSilenceTimerRef.current = setTimeout(() => {
+                  if (voiceModeRef.current && voiceStateRef.current === 'listening') {
+                    finishVoiceTurn();
+                  }
+                }, 600);
               }
             }
           };
@@ -548,7 +557,33 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       stopVoiceMode();
     } else {
       setVoiceMode(true);
-      void startVoiceListeningTurn();
+      voiceModeRef.current = true;
+      setIsMuted(false);
+      isMutedRef.current = false;
+
+      const greeting = isArabic
+        ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
+        : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
+
+      setVoiceState('speaking');
+      if (!isSpeakerMutedRef.current) {
+        globalVoicePlayer.speak(
+          greeting,
+          isArabic ? 'ar' : 'fr',
+          () => setVoiceState('speaking'),
+          () => {
+            if (voiceModeRef.current && !isMutedRef.current) {
+              setVoiceState('listening');
+              void startVoiceListeningTurn();
+            } else if (voiceModeRef.current && isMutedRef.current) {
+              setVoiceState('muted');
+            }
+          },
+        );
+      } else {
+        setVoiceState('listening');
+        void startVoiceListeningTurn();
+      }
     }
   };
 
