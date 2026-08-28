@@ -349,10 +349,21 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const interruptVoiceSpeech = () => {
-    globalVoicePlayer.stop();
-    setVoiceState('listening');
-    if (voiceModeRef.current) {
-      void startVoiceListeningTurn();
+    if (globalVoicePlayer.speaking || voiceStateRef.current === 'speaking' || isGenerating) {
+      globalVoicePlayer.stop();
+      if (generationAbortRef.current) {
+        generationAbortRef.current.abort();
+        generationAbortRef.current = null;
+        setIsGenerating(false);
+        setMotionState('idle');
+      }
+      setVoiceState('interrupted');
+      setTimeout(() => {
+        if (voiceModeRef.current && !isMutedRef.current) {
+          setVoiceState('listening');
+          void startVoiceListeningTurn();
+        }
+      }, 220);
     }
   };
 
@@ -368,8 +379,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const processVoiceInput = async (audio: Blob, duration: number) => {
-    if (duration < 0.5 || audio.size < 150) {
-      if (voiceModeRef.current) void startVoiceListeningTurn();
+    if (duration < 0.4 || audio.size < 120) {
+      if (voiceModeRef.current && !isMutedRef.current) void startVoiceListeningTurn();
       return;
     }
     setVoiceState('processing');
@@ -418,12 +429,18 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       let stream = mediaStreamRef.current;
       if (!stream || !stream.active || stream.getAudioTracks().every((t) => t.readyState === 'ended')) {
         stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+            sampleRate: 48000,
+          },
         });
         mediaStreamRef.current = stream;
       }
 
-      // Web Audio API Analyser for live volume
+      // Web Audio API Pipeline with Noise Filtering & Compressor
       if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
         const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
         if (AudioCtx) {
@@ -432,12 +449,29 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             void ctx.resume();
           }
           audioContextRef.current = ctx;
+
+          // High-pass filter to eliminate rumble/background hum
+          const filter = ctx.createBiquadFilter();
+          filter.type = 'highpass';
+          filter.frequency.value = 85;
+
+          // Dynamics compressor to level out user speech vs speaker bleed
+          const compressor = ctx.createDynamicsCompressor();
+          compressor.threshold.value = -30;
+          compressor.knee.value = 30;
+          compressor.ratio.value = 12;
+          compressor.attack.value = 0.003;
+          compressor.release.value = 0.25;
+
           const analyser = ctx.createAnalyser();
           analyser.fftSize = 256;
-          analyser.smoothingTimeConstant = 0.4;
+          analyser.smoothingTimeConstant = 0.35;
           analyserRef.current = analyser;
+
           const source = ctx.createMediaStreamSource(stream);
-          source.connect(analyser);
+          source.connect(filter);
+          filter.connect(compressor);
+          compressor.connect(analyser);
           audioSourceRef.current = source;
         }
       } else if (audioContextRef.current.state === 'suspended') {
@@ -455,13 +489,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         const norm = Math.min(1, average / 110);
         setVolumeLevel(norm);
 
-        // Barge-in check: if currently speaking and user speaks loudly
-        if (voiceStateRef.current === 'speaking' && norm > 0.42) {
+        // Instant Barge-in check: if currently speaking and user speaks
+        if ((voiceStateRef.current === 'speaking' || globalVoicePlayer.speaking) && norm > 0.28) {
           interruptVoiceSpeech();
           return;
         }
 
-        // Silence detection while listening
+        // Silence detection while listening (fast response)
         if (voiceStateRef.current === 'listening') {
           if (norm > 0.08) {
             spokenInTurnRef.current = true;
@@ -474,7 +508,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               if (voiceModeRef.current && voiceStateRef.current === 'listening' && spokenInTurnRef.current) {
                 finishVoiceTurn();
               }
-            }, 850);
+            }, 750);
           }
         }
 
@@ -502,6 +536,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               if (event.results[i].isFinal) hasFinal = true;
             }
             if (current.trim()) {
+              if (voiceStateRef.current === 'speaking' || globalVoicePlayer.speaking) {
+                interruptVoiceSpeech();
+              }
               setLiveTranscript(current.trim());
               spokenInTurnRef.current = true;
               if (speechSilenceTimerRef.current) {
@@ -513,7 +550,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                   if (voiceModeRef.current && voiceStateRef.current === 'listening') {
                     finishVoiceTurn();
                   }
-                }, 600);
+                }, 450);
               }
             }
           };
@@ -593,6 +630,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     generationAbortRef.current = controller;
     setIsGenerating(true);
     setMotionState('thinking'); setLensActive(false);
+
+    let pendingSpeechBuffer = '';
+    let hasStreamSpoken = false;
+
     try {
       await streamAssistantChat({
         conversationId,
@@ -624,12 +665,37 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               if (event.state === 'analyzing' || event.state === 'reasoning') {
                 setVoiceState('tool_call');
               } else if (event.state === 'thinking' || event.state === 'creating') {
-                setVoiceState('processing');
+                if (!globalVoicePlayer.speaking) setVoiceState('processing');
               }
             }
           }
           if (event.type === 'delta') {
             setMessages((current) => current.map((message) => message.id === responseId ? { ...message, text: message.text + event.text } : message));
+
+            // Incremental sentence streaming TTS (sub-second spoken response like ChatGPT Voice)
+            if (voiceModeRef.current && !isSpeakerMutedRef.current) {
+              pendingSpeechBuffer += event.text;
+              const match = pendingSpeechBuffer.match(/^([\s\S]+?[.!?؟\n]+)([\s\S]*)$/);
+              if (match) {
+                const sentence = match[1].trim();
+                pendingSpeechBuffer = match[2];
+                if (sentence) {
+                  hasStreamSpoken = true;
+                  setVoiceState('speaking');
+                  globalVoicePlayer.queueSentence(
+                    sentence,
+                    isArabic ? 'ar' : 'fr',
+                    () => setVoiceState('speaking'),
+                    () => {
+                      if (voiceModeRef.current && !isMutedRef.current && !generationAbortRef.current && !globalVoicePlayer.speaking) {
+                        setVoiceState('listening');
+                        void startVoiceListeningTurn();
+                      }
+                    },
+                  );
+                }
+              }
+            }
           }
           if (event.type === 'tool') {
             if (voiceModeRef.current) {
@@ -675,37 +741,55 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         setIsGenerating(false);
         setMotionState('idle');
 
-        // If in voice mode, speak response aloud!
-        if (voiceModeRef.current) {
-          setMessages((latest) => {
-            const resp = latest.find((m) => m.id === responseId);
-            if (resp && resp.text.trim() && !isSpeakerMutedRef.current) {
-              setVoiceState('speaking');
-              globalVoicePlayer.speak(
-                resp.text,
-                isArabic ? 'ar' : 'fr',
-                () => setVoiceState('speaking'),
-                () => {
-                  if (voiceModeRef.current && !isMutedRef.current) {
-                    setVoiceState('listening');
-                    void startVoiceListeningTurn();
-                  } else if (voiceModeRef.current && isMutedRef.current) {
-                    setVoiceState('muted');
-                  } else {
-                    setVoiceState('idle');
-                  }
-                },
-              );
-            } else {
-              if (voiceModeRef.current && !isMutedRef.current) {
-                setVoiceState('listening');
-                void startVoiceListeningTurn();
-              } else if (voiceModeRef.current && isMutedRef.current) {
-                setVoiceState('muted');
+        // Flush remainder of audio or speak full response if not yet queued
+        if (voiceModeRef.current && !isSpeakerMutedRef.current) {
+          if (pendingSpeechBuffer.trim()) {
+            hasStreamSpoken = true;
+            globalVoicePlayer.queueSentence(
+              pendingSpeechBuffer.trim(),
+              isArabic ? 'ar' : 'fr',
+              () => setVoiceState('speaking'),
+              () => {
+                if (voiceModeRef.current && !isMutedRef.current) {
+                  setVoiceState('listening');
+                  void startVoiceListeningTurn();
+                } else if (voiceModeRef.current && isMutedRef.current) {
+                  setVoiceState('muted');
+                }
+              },
+            );
+          } else if (!hasStreamSpoken) {
+            setMessages((latest) => {
+              const resp = latest.find((m) => m.id === responseId);
+              if (resp && resp.text.trim()) {
+                setVoiceState('speaking');
+                globalVoicePlayer.speak(
+                  resp.text,
+                  isArabic ? 'ar' : 'fr',
+                  () => setVoiceState('speaking'),
+                  () => {
+                    if (voiceModeRef.current && !isMutedRef.current) {
+                      setVoiceState('listening');
+                      void startVoiceListeningTurn();
+                    } else if (voiceModeRef.current && isMutedRef.current) {
+                      setVoiceState('muted');
+                    }
+                  },
+                );
+              } else {
+                if (voiceModeRef.current && !isMutedRef.current) {
+                  setVoiceState('listening');
+                  void startVoiceListeningTurn();
+                }
               }
-            }
-            return latest;
-          });
+              return latest;
+            });
+          }
+        } else if (voiceModeRef.current && isMutedRef.current) {
+          setVoiceState('muted');
+        } else if (voiceModeRef.current) {
+          setVoiceState('listening');
+          void startVoiceListeningTurn();
         }
       }
     }

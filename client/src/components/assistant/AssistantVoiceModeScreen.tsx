@@ -77,15 +77,19 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             ? tr('Réflexion en cours…', 'يفكر...')
             : state === 'speaking'
               ? tr('AYROVI vous répond…', 'يتحدث...')
-              : tr('Prêt', 'جاهز');
+              : state === 'interrupted'
+                ? tr('Interrompu', 'تمت المقاطعة...')
+                : tr('Prêt', 'جاهز');
 
-  const orbGradient = state === 'processing' || state === 'tool_call'
-    ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
-    : state === 'speaking'
-      ? 'from-[#FF7A00] via-[#ffa34d] to-[#e06600]'
-      : state === 'transcribing'
-        ? 'from-[#f59e0b] via-[#fbbf24] to-[#d97706]'
-        : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
+  const orbGradient = state === 'interrupted'
+    ? 'from-[#f97316] via-[#fb923c] to-[#ea580c]'
+    : state === 'processing' || state === 'tool_call'
+      ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
+      : state === 'speaking'
+        ? 'from-[#FF7A00] via-[#ffa34d] to-[#e06600]'
+        : state === 'transcribing'
+          ? 'from-[#f59e0b] via-[#fbbf24] to-[#d97706]'
+          : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
 
   return (
     <div
