@@ -74,6 +74,7 @@ Règles obligatoires :
 - detected_price doit refléter sale_price (ou total_price pour un panier). N'utilise jamais le plus grand nombre par défaut.
 - Si plusieurs produits distincts sont visibles, liste-les dans products avec leur prix propre (6 maximum).
 - Pour chaque produit listé, fournis une boîte approximative normalisée box [x, y, largeur, hauteur] entre 0 et 1 si tu peux le localiser dans l'image ; sinon null.
+- Pour chaque produit, ajoute si visible/inférable : color (liste), motif (texte ou null), material (texte ou null). Ne devine jamais.
 - url et seller seulement s'ils sont lisibles dans l'image (barre d'adresse, logo boutique).
 - Si l'image montre plusieurs produits ou un panier, input_kind doit être "cart_screenshot".
 - Si aucun produit n'est identifiable, confidence vaut 0 et description vaut "PRODUIT_NON_IDENTIFIE".
@@ -131,6 +132,9 @@ const IDENTIFICATION_SCHEMA = {
           price: { type: ['number', 'null'] },
           currency: { type: ['string', 'null'] },
           box: { type: ['array', 'null'], items: { type: 'number' } },
+          color: { type: 'array', items: { type: 'string' } },
+          motif: { type: ['string', 'null'] },
+          material: { type: ['string', 'null'] },
         },
         required: ['name', 'brand', 'category', 'price', 'currency'],
         additionalProperties: false,
@@ -203,6 +207,9 @@ function parseIdentification(raw: string): AyrovixIdentification {
       price: numOrNull(item.price),
       currency: /^[A-Z]{3}$/.test(String(item.currency || '').trim().toUpperCase()) ? String(item.currency).trim().toUpperCase() : null,
       box: normalizeBox(item.box),
+      color: list(item.color, 3),
+      pattern: typeof item.motif === 'string' && item.motif.trim() ? item.motif.trim().slice(0, 60) : null,
+      material: typeof item.material === 'string' && item.material.trim() ? item.material.trim().slice(0, 60) : null,
     }));
   const urlRaw = typeof parsed?.url === 'string' ? parsed.url.trim().slice(0, 500) : '';
   const url = /^https?:\/\//i.test(urlRaw) ? urlRaw : null;

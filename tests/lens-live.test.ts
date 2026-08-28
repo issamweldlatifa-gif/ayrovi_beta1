@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
 import { frameSignature, signatureDistance, liveObjectId } from '../client/src/ayrovix/services/liveScanner';
-import { iou, trackObjects, adaptiveNextInterval, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
+import { iou, trackObjects, adaptiveNextInterval, computeCropRect, LOCK_THRESHOLD, PREDICT_FRAMES } from '../client/src/ayrovix/services/liveVisionRuntime';
 
 const liveSource = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
 const launcherSource = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
@@ -59,13 +59,13 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     expect(iou(boxA, { x: 0.8, y: 0.8, w: 0.1, h: 0.1 })).toBe(0);
 
     const t0 = Date.now();
-    const first = trackObjects([], [{ label: 'Nike', category: 'shoes', confidence: 80, box: boxA, candidates: [] }], t0);
+    const first = trackObjects([], [{ label: 'Nike', category: 'shoes', confidence: 80, box: boxA, color: [], pattern: null, material: null, candidates: [] }], t0);
     expect(first).toHaveLength(1);
     expect(first[0].status).toBe('locked'); // confidence >= LOCK_THRESHOLD
     const id = first[0].trackingId;
 
     // même objet frame suivante → garde le même trackingId (pas de doublon)
-    const second = trackObjects(first, [{ label: 'Nike', category: 'shoes', confidence: 85, box: boxB, candidates: [] }], t0 + 2000);
+    const second = trackObjects(first, [{ label: 'Nike', category: 'shoes', confidence: 85, box: boxB, color: [], pattern: null, material: null, candidates: [] }], t0 + 2000);
     expect(second.some((o) => o.trackingId === id)).toBe(true);
     expect(second).toHaveLength(1);
 
@@ -90,5 +90,20 @@ describe('AYROVIX LENS — LIVE multi-product vision (flag-gated, reuses existin
     expect(adaptiveNextInterval(2200, 800)).toBe(2200);              // متوسط → ثابت
     expect(adaptiveNextInterval(4000, 9000)).toBeLessThanOrEqual(4000); // سقف 4000
     expect(adaptiveNextInterval(1200, 10)).toBeGreaterThanOrEqual(1200); // أرضية 1200
+  });
+
+  it('computeCropRect clamps the crop inside the canvas with a minimum size', () => {
+    const r = computeCropRect(512, 512, { x: 0.25, y: 0.25, w: 0.5, h: 0.5 });
+    expect(r).toEqual({ x: 128, y: 128, w: 256, h: 256 });
+    // خارج الحدود → مقيّد داخل الـ canvas
+    const clamped = computeCropRect(100, 100, { x: 0.9, y: 0.9, w: 0.5, h: 0.5 });
+    expect(clamped.x).toBeLessThanOrEqual(99);
+    expect(clamped.y).toBeLessThanOrEqual(99);
+    expect(clamped.x + clamped.w).toBeLessThanOrEqual(100);
+    expect(clamped.y + clamped.h).toBeLessThanOrEqual(100);
+    // صغير جدًا → حد أدنى 32px
+    const tiny = computeCropRect(512, 512, { x: 0.5, y: 0.5, w: 0.01, h: 0.01 });
+    expect(tiny.w).toBeGreaterThanOrEqual(32);
+    expect(tiny.h).toBeGreaterThanOrEqual(32);
   });
 });

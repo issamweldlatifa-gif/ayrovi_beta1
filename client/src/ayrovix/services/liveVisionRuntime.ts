@@ -27,6 +27,9 @@ export interface LiveDetection {
   timestamp: number;
   misses: number;
   vx: number; vy: number;
+  color: string[];
+  pattern: string | null;
+  material: string | null;
   candidates: AyrovixCandidate[];
   detectedPrice?: AyrovixDetectedPrice | null;
   image?: string;
@@ -39,6 +42,15 @@ export const LOCK_THRESHOLD = 60;
 export const REDETECT_THRESHOLD = 35;
 export const MAX_MISSES = 3;
 export const PREDICT_FRAMES = 2;
+
+/** يحسب مستطيل القصّ بالبكسل لصندوق مُطبَّع، مقيّدًا داخل أبعاد الـ canvas. */
+export const computeCropRect = (canvasW: number, canvasH: number, box: LiveBox) => {
+  const w = Math.min(canvasW, Math.max(32, Math.round(box.w * canvasW)));
+  const h = Math.min(canvasH, Math.max(32, Math.round(box.h * canvasH)));
+  const x = Math.min(Math.max(0, Math.round(box.x * canvasW)), canvasW - w);
+  const y = Math.min(Math.max(0, Math.round(box.y * canvasH)), canvasH - h);
+  return { x, y, w, h };
+};
 
 export const iou = (a: LiveBox, b: LiveBox): number => {
   const x1 = Math.max(a.x, b.x); const y1 = Math.max(a.y, b.y);
@@ -54,7 +66,7 @@ export const adaptiveNextInterval = (current: number, latencyMs: number): number
   return Math.round(Math.min(4000, Math.max(1200, current * factor)));
 };
 
-interface RawDetection { label: string; category: string; confidence: number; box: LiveBox | null; candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null; image?: string; }
+interface RawDetection { label: string; category: string; confidence: number; box: LiveBox | null; color: string[]; pattern: string | null; material: string | null; candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null; image?: string; }
 
 /** DETECT→TRACK→PREDICT→UPDATE: مطابقة IoU/label + تنبؤ بالحركة عند الغياب + recovery. */
 export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: number): LiveDetection[] {
@@ -80,6 +92,9 @@ export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: n
       t.candidates = det.candidates.length ? det.candidates : t.candidates;
       t.detectedPrice = det.detectedPrice ?? t.detectedPrice;
       t.image = det.image ?? t.image;
+      t.color = det.color.length ? det.color : t.color;
+      t.pattern = det.pattern ?? t.pattern;
+      t.material = det.material ?? t.material;
       t.misses = 0; t.timestamp = now;
       t.status = t.confidence >= LOCK_THRESHOLD ? 'locked' : (t.confidence < REDETECT_THRESHOLD ? 'tracking' : t.status === 'locked' ? 'locked' : 'tracking');
       out.push(t);
@@ -89,6 +104,7 @@ export function trackObjects(prev: LiveDetection[], next: RawDetection[], now: n
         confidence: det.confidence, rawConfidence: det.confidence, box: det.box,
         status: det.confidence >= LOCK_THRESHOLD ? 'locked' : 'tracking',
         timestamp: now, misses: 0, vx: 0, vy: 0,
+        color: det.color, pattern: det.pattern, material: det.material,
         candidates: det.candidates, detectedPrice: det.detectedPrice, image: det.image,
       });
     }
@@ -125,6 +141,8 @@ export class LiveVisionRuntime {
   private interval: number;
   private objects: LiveDetection[] = [];
   private lastSig = '';
+  private lastCanvas: HTMLCanvasElement | null = null;
+  private matchingIds = new Set<string>();
   private inflight = false;
   private abort: AbortController | null = null;
   private aiFailures = 0;
@@ -187,13 +205,16 @@ export class LiveVisionRuntime {
     const conf = Math.round((Number(id.confidence) || 0) * 100);
     const products = Array.isArray(id.products) ? id.products : [];
     const withBox = products.filter((p: any) => Array.isArray(p?.box) && p.box.length === 4);
+    const str = (v: unknown, max = 60) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null);
+    const colors = (v: unknown) => (Array.isArray(v) ? v.filter((c) => typeof c === 'string' && c.trim()).map((c) => c.trim().slice(0, 30)).slice(0, 3) : []);
     if (withBox.length) {
       return withBox.slice(0, 6).map((p: any) => ({
         label: String(p.name || '').slice(0, 80) || 'Produit',
         category: String(p.category || 'product'),
         confidence: conf,
         box: { x: p.box[0], y: p.box[1], w: p.box[2], h: p.box[3] },
-        candidates: result.candidates || [], detectedPrice: result.detectedPrice || null, image: thumb,
+        color: colors(p.color), pattern: str(p.pattern), material: str(p.material),
+        candidates: [] as AyrovixCandidate[], detectedPrice: result.detectedPrice || null, image: thumb,
       }));
     }
     const desc = String(id.description || result.query || '');
@@ -201,21 +222,51 @@ export class LiveVisionRuntime {
     return [{
       label: (result.candidates?.[0]?.title || desc).slice(0, 80),
       category: String(id.category || 'product'), confidence: conf, box: null,
+      color: colors(id.color), pattern: str(id.pattern), material: str(id.material),
       candidates: result.candidates || [], detectedPrice: result.detectedPrice || null, image: thumb,
     }];
+  }
+
+  /** مطابقة مستقلة لكل منتج: قصّ صندوقه وإرساله للـ Claude (بحد تزامن + بدون تكرار). */
+  private matchPending(canvas: HTMLCanvasElement): void {
+    for (const obj of this.objects) {
+      if (!obj.box || obj.candidates.length || this.matchingIds.has(obj.trackingId) || this.matchingIds.size >= 3) continue;
+      this.matchingIds.add(obj.trackingId);
+      const rect = computeCropRect(canvas.width, canvas.height, obj.box);
+      const crop = document.createElement('canvas');
+      crop.width = rect.w; crop.height = rect.h;
+      const cctx = crop.getContext('2d');
+      if (!cctx) { this.matchingIds.delete(obj.trackingId); continue; }
+      cctx.drawImage(canvas, rect.x, rect.y, rect.w, rect.h, 0, 0, rect.w, rect.h);
+      crop.toBlob(async (blob) => {
+        if (this.stopped || !blob) { this.matchingIds.delete(obj.trackingId); return; }
+        try {
+          const res = await analyzeImage(new File([blob], 'ayrovix-crop.jpg', { type: 'image/jpeg' }));
+          const cands = res.candidates || [];
+          this.objects = this.objects.map((o) => (o.trackingId === obj.trackingId
+            ? { ...o, candidates: cands, confidence: cands[0]?.match != null ? Math.max(o.confidence, cands[0].match) : o.confidence }
+            : o));
+          if (cands.length) this.opts.onEvent?.('match_returned', { candidates: cands.length });
+          this.emit();
+        } catch { /* فشل مطابقة عنصر واحد غير حرج */ }
+        finally { this.matchingIds.delete(obj.trackingId); }
+      }, 'image/jpeg', 0.85);
+    }
   }
 
   private async tick(): Promise<void> {
     if (this.stopped) return;
     const canvas = this.drawSample();
+    if (canvas) this.lastCanvas = canvas;
     if (canvas) {
       const sig = frameSignature(canvas);
       const unchanged = sig && this.lastSig && signatureDistance(sig, this.lastSig) < 0.06;
       this.lastSig = sig;
       if (unchanged) {
-        // مشهد ثابت: tracking/تنبؤ فقط بدون inference ثقيل
+        // مشهد ثابت: tracking/تنبؤ + مطابقة معلّقة بدون inference كامل جديد
         this.objects = trackObjects(this.objects, [], Date.now());
         this.objects.filter((o) => o.status === 'lost').forEach(() => this.opts.onEvent?.('tracking_lost'));
+        this.matchPending(canvas);
         this.emit(); this.schedule(); return;
       }
       if (!this.inflight && this.online) {
@@ -237,6 +288,7 @@ export class LiveVisionRuntime {
             this.objects = trackObjects(this.objects, raw, Date.now());
             this.objects.filter((o) => o.status === 'locked').forEach((o) => this.opts.onEvent?.('object_locked', { confidence: o.confidence }));
             if (this.objects.length > before) this.opts.onEvent?.('object_detected', { count: this.objects.length });
+            this.matchPending(canvas);
             this.emit();
           } catch {
             this.aiFailures += 1;
