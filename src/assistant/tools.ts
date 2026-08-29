@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
+import type { AiExecutionLane } from '../ai-core/contracts';
 import type { CustomerIdentity } from '../customer/auth';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice } from '../services/pricing';
@@ -46,6 +47,7 @@ export interface AssistantToolContext {
   customer: CustomerIdentity | null;
   sessionId: string;
   conversationId: string;
+  executionLane: AiExecutionLane;
   messages: AssistantConversationLine[];
   imageAttachments: AssistantImageAttachment[];
   webSearchEnabled: boolean;
@@ -445,9 +447,15 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
   }
 
   // Pipeline Lens complète (Vision + OCR + codes + Google Lens) sur l'image jointe.
-  const lens: LensStandardResult | null = attachment?.data
-    ? await runLensPipeline(context.db, Buffer.from(attachment.data, 'base64'), attachment.mediaType).catch(() => null)
+  const lensRun = attachment?.data
+    ? await runLensPipeline(
+      context.db,
+      Buffer.from(attachment.data, 'base64'),
+      attachment.mediaType,
+      { executionLane: context.executionLane },
+    ).catch(() => null)
     : null;
+  const lens: LensStandardResult | null = lensRun?.canonicalValue() ?? null;
   const visual = lens
     ? (lens.visual_matches || [])
     : attachment?.data
@@ -586,7 +594,7 @@ function escalateToHuman(input: any, context: AssistantToolContext): AssistantTo
     VALUES (?,'SYSTEM',?,?,?,?)`, `notification_${randomUUID()}`, 'Nouvelle demande de support IA',
   reason.slice(0, 220), `/admin?section=assistant-support&ticket=${encodeURIComponent(id)}`, now);
   const ticket = { id, status: 'PENDING', priority, createdAt: now, duplicate: false };
-  if (!ticket.duplicate) recordLearningEvent(context.db, { type: 'HUMAN_INTERVENTION', conversationId: context.conversationId, success: false, meta: { reason: reason.slice(0, 120) } });
+  if (!ticket.duplicate) recordLearningEvent(context.db, { executionLane: context.executionLane, type: 'HUMAN_INTERVENTION', conversationId: context.conversationId, success: false, meta: { reason: reason.slice(0, 120) } });
   return { modelResult: { success: true, ticket }, presentation: { ticket } };
 }
 

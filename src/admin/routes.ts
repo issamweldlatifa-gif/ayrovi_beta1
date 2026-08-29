@@ -933,7 +933,8 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     try {
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       const started = Date.now();
-      const lens = await runLensPipeline(db, normalized.buffer, normalized.mimeType);
+      const lensRun = await runLensPipeline(db, normalized.buffer, normalized.mimeType, { executionLane: 'active' });
+      const lens = lensRun.canonicalValue();
       const ocrText = await ocrRecognize(normalized.buffer).catch(() => '');
       const ocr = ocrText ? analyzeOcrText(ocrText) : null;
       const durationMs = Date.now() - started;
@@ -967,6 +968,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const detected = actual?.pricing?.sale_price ?? actual?.pricing?.total_price ?? null;
     const errorType = String(req.body?.errorType || '').trim() || (detected == null ? 'PRICE_MISSED' : 'NONE');
     recordLensEvaluation(db, {
+      executionLane: 'active',
       imageHash: run.image_hash,
       expected: { price: expectedPrice, currency: expectedCurrency },
       actual: { price: detected, currency: actual?.pricing?.currency || null, confidence: actual?.confidence || 0 },

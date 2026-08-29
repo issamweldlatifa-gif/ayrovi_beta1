@@ -768,6 +768,51 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_ai_learning_type ON ai_learning_events(event_type, created_at DESC);
 
+      -- Isolated non-canonical audit sink. The schema intentionally has no
+      -- prompt, response, image, provider diagnostic, or tool payload column.
+      CREATE TABLE IF NOT EXISTS ai_shadow_run_records (
+        record_id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL,
+        phase TEXT NOT NULL CHECK(phase IN ('request','result','error','blocked')),
+        execution_lane TEXT NOT NULL CHECK(execution_lane IN ('shadow','probe')),
+        occurred_at TEXT NOT NULL,
+        request_id TEXT NOT NULL,
+        conversation_id TEXT NOT NULL DEFAULT '',
+        turn_id TEXT NOT NULL DEFAULT '',
+        session_id TEXT NOT NULL DEFAULT '',
+        user_id_hash TEXT NOT NULL DEFAULT '',
+        workload TEXT NOT NULL,
+        active_provider TEXT NOT NULL DEFAULT '',
+        active_model TEXT NOT NULL DEFAULT '',
+        candidate_provider TEXT NOT NULL,
+        candidate_model TEXT NOT NULL,
+        latency_ms INTEGER,
+        input_tokens INTEGER,
+        output_tokens INTEGER,
+        cached_input_tokens INTEGER,
+        audio_input_tokens INTEGER,
+        audio_output_tokens INTEGER,
+        image_input_tokens INTEGER,
+        web_search_calls INTEGER,
+        cost_usd REAL,
+        cost_source TEXT CHECK(cost_source IS NULL OR cost_source IN ('provider','metered','estimated')),
+        comparison_status TEXT,
+        comparison_schema_version TEXT,
+        active_output_hash TEXT,
+        candidate_output_hash TEXT,
+        text_similarity REAL,
+        tool_call_match INTEGER,
+        schema_valid INTEGER,
+        error_code TEXT,
+        retryable INTEGER
+      );
+      CREATE INDEX IF NOT EXISTS idx_ai_shadow_run ON ai_shadow_run_records(run_id, occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_ai_shadow_request ON ai_shadow_run_records(request_id, occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_ai_shadow_turn ON ai_shadow_run_records(turn_id, occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_ai_shadow_session ON ai_shadow_run_records(session_id, occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_ai_shadow_user_day ON ai_shadow_run_records(user_id_hash, occurred_at);
+      CREATE INDEX IF NOT EXISTS idx_ai_shadow_provider_day ON ai_shadow_run_records(candidate_provider, occurred_at);
+
       CREATE TABLE IF NOT EXISTS lens_lab_runs (
         id TEXT PRIMARY KEY,
         image_hash TEXT NOT NULL DEFAULT '',

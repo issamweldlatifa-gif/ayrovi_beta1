@@ -15,9 +15,16 @@ export type AiWorkload =
   | 'magazine'
   | 'voice-delegation';
 
+/**
+ * Only active execution may touch canonical product/customer state. Shadow and
+ * probe are non-canonical audit lanes with no UI, learning, cache, or tool writes.
+ */
+export type AiExecutionLane = 'active' | 'shadow' | 'probe';
+
 /** AYROVI identifiers remain canonical; provider session/response IDs do not. */
 export interface AiExecutionContext {
   requestId: string;
+  executionLane: AiExecutionLane;
   conversationId?: string;
   turnId?: string;
   sessionId?: string;

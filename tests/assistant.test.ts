@@ -26,6 +26,7 @@ function customerIdentity(id: string, phone: string): CustomerIdentity {
 function context(customer: CustomerIdentity | null, conversationId = unique('conversation')): AssistantToolContext {
   return {
     db, scraper: testScraper, customer, sessionId: unique('session'), conversationId,
+    executionLane: 'active',
     messages: [{ role: 'user', text: 'J’ai besoin d’aide pour ma commande.' }],
     imageAttachments: [],
     webSearchEnabled: true,

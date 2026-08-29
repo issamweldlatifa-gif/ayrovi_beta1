@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
+import type { AiExecutionLane } from '../ai-core/contracts';
+import { isCanonicalExecutionLane } from '../ai-core/execution';
 import type { QatafoDatabase } from '../db/database';
 
 /**
@@ -20,16 +22,19 @@ export function ownerHashOf(customerId: string | null, sessionId: string): strin
 
 export function recordLearningEvent(
   db: QatafoDatabase,
-  event: { type: LearningEventType; conversationId?: string; ownerHash?: string; tools?: string[]; success?: boolean; confidence?: number; meta?: Record<string, any> },
-): void {
+  event: { executionLane: AiExecutionLane; type: LearningEventType; conversationId?: string; ownerHash?: string; tools?: string[]; success?: boolean; confidence?: number; meta?: Record<string, any> },
+): boolean {
+  if (!isCanonicalExecutionLane(event.executionLane)) return false;
   try {
     db.run(`INSERT INTO ai_learning_events (id,conversation_id,owner_hash,event_type,tool_names,success,confidence,meta_json,created_at)
       VALUES (?,?,?,?,?,?,?,?,?)`,
       `learn_${randomUUID()}`, event.conversationId || '', event.ownerHash || '', event.type,
       (event.tools || []).join(','), event.success ? 1 : 0, event.confidence || 0,
       JSON.stringify(event.meta || {}).slice(0, 4000), new Date().toISOString());
+    return true;
   } catch (error: any) {
     console.warn('[Learning]', error?.message || 'event write failed');
+    return false;
   }
 }
 
@@ -57,15 +62,18 @@ export function classifyPriceError(expected: number, detected: number | null, ex
 
 export function recordLensEvaluation(
   db: QatafoDatabase,
-  evaluation: { imageHash?: string; expected: Record<string, any>; actual: Record<string, any>; errorType: string; note?: string; source: 'lab' | 'chat' },
-): void {
+  evaluation: { executionLane: AiExecutionLane; imageHash?: string; expected: Record<string, any>; actual: Record<string, any>; errorType: string; note?: string; source: 'lab' | 'chat' },
+): boolean {
+  if (!isCanonicalExecutionLane(evaluation.executionLane)) return false;
   try {
     db.run(`INSERT INTO lens_evaluations (id,image_hash,expected_json,actual_json,error_type,note,source,created_at) VALUES (?,?,?,?,?,?,?,?)`,
       `lens_eval_${randomUUID()}`, evaluation.imageHash || '', JSON.stringify(evaluation.expected).slice(0, 4000),
       JSON.stringify(evaluation.actual).slice(0, 4000), evaluation.errorType, (evaluation.note || '').slice(0, 500),
       evaluation.source, new Date().toISOString());
+    return true;
   } catch (error: any) {
     console.warn('[Learning eval]', error?.message || 'write failed');
+    return false;
   }
 }
 

@@ -7,7 +7,10 @@ import { scanCodeFromImage, type AyrovixScannedCode } from './codeScanner';
 import { serpApiVisualSearch } from './visualSearch';
 import { ocrRecognize } from '../../services/vision';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
+import type { AiExecutionLane } from '../../ai-core/contracts';
+import { AiLaneBoundResult } from '../../ai-core/execution';
 import { getAyroviAiCore } from '../../ai-core/core';
+import { readCanonicalLensCache, writeCanonicalLensCache } from './lensCache';
 
 /**
  * AYROVI Lens pipeline — SEE → READ → UNDERSTAND → EXTRACT → VERIFY.
@@ -44,8 +47,6 @@ export interface LensStandardResult {
     visual_matches: number;
   };
 }
-
-const CACHE_TTL_MS = 24 * 3600_000;
 
 export function hashImage(image: Buffer): string {
   return createHash('sha256').update(image).digest('hex');
@@ -135,15 +136,21 @@ export async function runLensPipeline(
   db: QatafoDatabase,
   image: Buffer,
   mime: string,
-): Promise<LensStandardResult> {
+  options: { executionLane: AiExecutionLane },
+): Promise<AiLaneBoundResult<LensStandardResult>> {
   const imageHash = hashImage(image);
 
-  const cached = db.get<any>('SELECT result_json, created_at FROM lens_analysis_cache WHERE image_hash=?', imageHash);
-  if (cached && Date.now() - new Date(cached.created_at).getTime() < CACHE_TTL_MS) {
-    try {
-      const parsed = JSON.parse(cached.result_json) as LensStandardResult;
-      return { ...parsed, visual_matches: parsed.visual_matches || [], cache_hit: true };
-    } catch { /* recompute */ }
+  const cached = readCanonicalLensCache<LensStandardResult>(
+    db,
+    imageHash,
+    options.executionLane,
+  );
+  if (cached) {
+    return new AiLaneBoundResult(options.executionLane, {
+      ...cached,
+      visual_matches: cached.visual_matches || [],
+      cache_hit: true,
+    });
   }
 
   const started = Date.now();
@@ -201,11 +208,15 @@ export async function runLensPipeline(
 
   try {
     const visionModel = getAyroviAiCore().responses().resolveModel('vision', 'fast');
-    db.run('INSERT OR REPLACE INTO lens_analysis_cache (image_hash,result_json,model,created_at) VALUES (?,?,?,?)',
-      imageHash, JSON.stringify(result), visionModel, new Date(started).toISOString());
-    db.run('DELETE FROM lens_analysis_cache WHERE created_at < ?', new Date(Date.now() - CACHE_TTL_MS).toISOString());
+    writeCanonicalLensCache(db, {
+      imageHash,
+      result,
+      model: visionModel,
+      createdAt: new Date(started).toISOString(),
+      lane: options.executionLane,
+    });
   } catch (error: any) {
     console.warn('[Lens pipeline cache]', error?.message || 'write failed');
   }
-  return result;
+  return new AiLaneBoundResult(options.executionLane, result);
 }

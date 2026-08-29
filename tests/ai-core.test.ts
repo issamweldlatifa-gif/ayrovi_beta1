@@ -87,6 +87,7 @@ describe('AYROVI AI Core Phase 1 contracts and routing', () => {
       occurredAt: '2026-08-29T12:00:00.000Z',
       context: {
         requestId: 'request_1',
+        executionLane: 'active',
         conversationId: 'conversation_1',
         turnId: 'turn_1',
         sessionId: 'session_1',

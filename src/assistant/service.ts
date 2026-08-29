@@ -357,6 +357,7 @@ export async function runAssistantChat(
     customer: input.customer,
     sessionId: input.sessionId,
     conversationId: input.conversationId,
+    executionLane: 'active',
     messages,
     imageAttachments,
     webSearchEnabled,
@@ -387,8 +388,9 @@ export async function runAssistantChat(
   const correction = detectPriceCorrection(latestUser?.text || '');
   const previousPrice = Number((previousAssistant.match(/(\d{1,6}(?:[.,]\d{1,3})?)\s*(?:€|EUR|DT|TND)/i) || [])[1]?.replace(',', '.'));
   if (correction && Number.isFinite(previousPrice) && previousPrice > 0) {
-    recordLearningEvent(db, { type: 'CUSTOMER_CORRECTION', conversationId: input.conversationId, ownerHash, success: false, meta: { expected: correction.value, detected: previousPrice } });
+    recordLearningEvent(db, { executionLane: toolContext.executionLane, type: 'CUSTOMER_CORRECTION', conversationId: input.conversationId, ownerHash, success: false, meta: { expected: correction.value, detected: previousPrice } });
     recordLensEvaluation(db, {
+      executionLane: toolContext.executionLane,
       expected: { price: correction.value, currency: correction.currency },
       actual: { price: previousPrice },
       errorType: classifyPriceError(correction.value, previousPrice, correction.currency, null),
@@ -462,14 +464,14 @@ export async function runAssistantChat(
       if (tool.name === 'lens_search') {
         const lensMeta = (execution.modelResult as any)?.lensResult;
         recordLearningEvent(db, {
-          type: 'LENS_RESULT', conversationId: input.conversationId, ownerHash,
+          executionLane: toolContext.executionLane, type: 'LENS_RESULT', conversationId: input.conversationId, ownerHash,
           success: Boolean(execution.modelResult?.success),
           confidence: Number(lensMeta?.confidence || 0),
           meta: { verified: Boolean(lensMeta?.verified), warnings: lensMeta?.warnings || [], cacheHit: Boolean(lensMeta?.cacheHit) },
         });
       }
       if (execution.modelResult?.success === false) {
-        recordLearningEvent(db, { type: 'TOOL_FAILURE', conversationId: input.conversationId, ownerHash, tools: [tool.name], success: false, meta: { code: (execution.modelResult as any)?.code || '' } });
+        recordLearningEvent(db, { executionLane: toolContext.executionLane, type: 'TOOL_FAILURE', conversationId: input.conversationId, ownerHash, tools: [tool.name], success: false, meta: { code: (execution.modelResult as any)?.code || '' } });
       }
       results.push({ type: 'tool_result', callId: tool.id, result: execution.modelResult });
     }
@@ -477,7 +479,7 @@ export async function runAssistantChat(
   }
   if (!emittedText) emit({ type: 'delta', text: 'La demande nécessite une vérification supplémentaire par l’équipe AYROVI.' });
   recordLearningEvent(db, {
-    type: 'CHAT_TURN', conversationId: input.conversationId, ownerHash,
+    executionLane: toolContext.executionLane, type: 'CHAT_TURN', conversationId: input.conversationId, ownerHash,
     tools: usedTools, success: emittedText,
     meta: { question: (latestUser?.text || '').slice(0, 200), model },
   });

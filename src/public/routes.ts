@@ -478,6 +478,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         response_excerpt=excluded.response_excerpt,updated_at=excluded.updated_at`,
     id, customer?.id || null, guestSessionHash, conversationId, messageId, rating, comment, responseExcerpt, now, now);
     recordLearningEvent(db, {
+    executionLane: 'active',
     type: rating === 'up' ? 'FEEDBACK_UP' : 'FEEDBACK_DOWN',
     conversationId, ownerHash: ownerHashOf(customer?.id || null, String(req.headers['x-session-id'] || '')),
     success: rating === 'up', meta: { hasComment: Boolean(comment) },

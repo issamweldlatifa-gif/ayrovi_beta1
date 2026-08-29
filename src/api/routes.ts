@@ -471,7 +471,7 @@ export function createApiRouter(
         locale: checkoutLocale,
       }, customer.id);
       try {
-        recordLearningEvent(db, { type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
+        recordLearningEvent(db, { executionLane: 'active', type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
       } catch (learningError) {
         console.warn('[Checkout Learning Event]', learningError);
       }
