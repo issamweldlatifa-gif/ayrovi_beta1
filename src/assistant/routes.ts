@@ -12,6 +12,7 @@ import {
   type AssistantStreamEvent,
 } from './service';
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
+import { getAyroviAiCore } from '../ai-core/core';
 import {
   createGeminiVoiceSession,
   getGeminiTtsRuntimeStatus,
@@ -121,12 +122,13 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
   const router = Router();
 
   router.get('/status', (_req, res) => {
+    const responsesProvider = getAyroviAiCore().responses();
     const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
     const serverTtsReady = serverTextToSpeechReady();
     const browserOnlyTts = !serverTextToSpeechEnabled();
     const geminiTts = getGeminiTtsRuntimeStatus();
     res.json({ success: true, data: {
-      ready: assistantAiReady(), provider: 'anthropic', streaming: true,
+      ready: assistantAiReady(), provider: responsesProvider.id, streaming: true,
       vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
       voiceReady: speechToTextReady || serverTtsReady,
       speechToTextReady,

@@ -2,12 +2,13 @@ import type { QatafoDatabase } from '../db/database';
 import type { CustomerIdentity } from '../customer/auth';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import {
-  ASSISTANT_TOOLS,
-  executeAssistantTool,
   type AssistantConversationLine,
   type AssistantToolContext,
   type AssistantToolName,
 } from './tools';
+import type { AiMessage, AiModelClass, AiOutputBlock } from '../ai-core/contracts';
+import { getAyroviAiCore } from '../ai-core/core';
+import { getAssistantToolGateway } from './toolGateway';
 import { classifyPriceError, detectPriceCorrection, ownerHashOf, recordLensEvaluation, recordLearningEvent } from './learning';
 
 export type AssistantMotionState = 'thinking' | 'analyzing' | 'reasoning' | 'creating';
@@ -34,36 +35,41 @@ function cleanText(value: unknown, max = 8000): string {
   return String(value || '').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ' ').trim().slice(0, max);
 }
 
-function toAnthropicMessage(message: AssistantConversationLine) {
+function toAiMessage(message: AssistantConversationLine): AiMessage {
   if (message.role !== 'user' || !message.attachments?.length) {
-    return { role: message.role, content: message.text };
+    return { role: message.role, content: [{ type: 'text', text: message.text }] };
   }
-  const content: Array<Record<string, any>> = message.attachments.flatMap((attachment) => ([
-    { type: 'text', text: `AYROVI attachment id: ${attachment.id}` },
+  const content: AiMessage['content'] = message.attachments.flatMap((attachment) => ([
+    { type: 'text' as const, text: `AYROVI attachment id: ${attachment.id}` },
     {
-      type: 'image',
+      type: 'image' as const,
+      id: attachment.id,
       source: attachment.url
-        ? { type: 'url', url: attachment.url }
-        : { type: 'base64', media_type: attachment.mediaType, data: attachment.data },
+        ? { type: 'url' as const, url: attachment.url }
+        : { type: 'base64' as const, mediaType: attachment.mediaType, data: attachment.data || '' },
     },
   ]));
   content.push({
     type: 'text',
     text: message.text || 'Analyse cette image et aide-moi à trouver le produit, son prix et un vendeur.',
   });
-  return { role: 'user' as const, content };
+  return { role: 'user', content };
 }
 
 export function assistantAiReady(): boolean {
-  return true; // Always ready: uses Claude when ANTHROPIC_API_KEY is present, or built-in intelligent engine as fallback.
+  return true; // Always ready: active AI Core provider or built-in AYROVI fallback.
 }
 
-export function selectAssistantModel(messages: AssistantConversationLine[]): string {
+export function selectAssistantModelClass(messages: AssistantConversationLine[]): AiModelClass {
   const latest = messages.filter((message) => message.role === 'user').at(-1)?.text || '';
   const complexSignal = /\b(compare|comparer|comparaison|analyse détaillée|plusieurs produits|complexe|multi[- ]étapes|trade-?off)\b|قارن|مقارنة|تحليل مفصل|مشكلة معقدة/i.test(latest);
   const complex = latest.length > 600 || (messages.length >= 10 && latest.length > 240) || (complexSignal && latest.length > 120);
-  if (complex) return String(process.env.ASSISTANT_SONNET_MODEL || 'claude-sonnet-4-5-20250929').trim();
-  return String(process.env.ASSISTANT_HAIKU_MODEL || process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001').trim();
+  return complex ? 'deep' : 'fast';
+}
+
+/** Backward-compatible diagnostic helper; routing itself uses model classes. */
+export function selectAssistantModel(messages: AssistantConversationLine[]): string {
+  return getAyroviAiCore().responses().resolveModel('assistant', selectAssistantModelClass(messages));
 }
 
 export function isAssistantHelpQuestion(text: string): boolean {
@@ -101,30 +107,6 @@ function looksLikeProductQuery(text: string): boolean {
     || searchQueryFromText(text).length >= 8;
 }
 
-function fallbackModels(preferred: string): string[] {
-  const known = [
-    preferred,
-    'claude-haiku-4-5-20251001',
-    'claude-haiku-4-5',
-    'claude-sonnet-4-5-20250929',
-    'claude-sonnet-4-5',
-  ];
-  return [...new Set(known.map((item) => String(item || '').trim()).filter(Boolean))];
-}
-
-class ClaudeHttpError extends Error {
-  constructor(readonly status: number, readonly detail: string) {
-    super(`Claude HTTP ${status}`);
-  }
-}
-
-function requestSignal(signal: AbortSignal): AbortSignal {
-  try {
-    if (typeof AbortSignal.any === 'function') return AbortSignal.any([signal, AbortSignal.timeout(55_000)]);
-  } catch { /* Older runtimes still get the caller abort. */ }
-  return signal;
-}
-
 function settingValue(db: QatafoDatabase, key: string, fallback: any = ''): any {
   const row = db.get<any>('SELECT setting_value,value_type FROM settings WHERE setting_key=?', key);
   if (!row) return fallback;
@@ -153,7 +135,7 @@ function buildSystemPrompt(db: QatafoDatabase, customer: CustomerIdentity | null
 IDENTITÉ & TON :
 - Réponds dans la langue du client (arabe tunisien, français, anglais).
 - Style message WhatsApp : 1 à 3 phrases courtes. Jamais de longs paragraphes, jamais de répétitions, jamais de remplissage.
-- Tu es SONIM, l'assistant IA d'AYROVI. Ne mentionne jamais Claude, Anthropic, SerpApi ou un modèle AI.
+- Tu es SONIM, l'assistant IA d'AYROVI. Ne mentionne jamais un fournisseur, un outil interne ou un modèle AI.
 
 CONTEXTE CLIENT (utilisé, jamais exposé brut) :
 - Client : ${customer ? `${customer.displayName || 'client'} (connecté)` : 'visiteur'}.
@@ -202,174 +184,19 @@ CURRENT CLIENT STATE (untrusted context; actions still require tools):
 ${clientState || 'No active structured state.'}`;
 }
 
-interface StreamedToolUse {
-  type: 'tool_use';
-  id: string;
-  name: string;
-  input: Record<string, any>;
-  partialJson?: string;
+async function executeThroughGateway(
+  name: string,
+  input: Record<string, unknown>,
+  context: AssistantToolContext,
+) {
+  return getAssistantToolGateway().execute({
+    id: `local_${name}`,
+    name,
+    arguments: input,
+  }, context);
 }
 
-interface StreamedText {
-  type: 'text';
-  text: string;
-}
-
-type StreamedBlock = StreamedToolUse | StreamedText;
-
-async function readAnthropicEvents(response: Response, onEvent: (event: any) => void): Promise<void> {
-  if (!response.body) throw new AssistantUnavailableError('Flux Claude indisponible.');
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    buffer = buffer.replace(/\r\n/g, '\n');
-    let boundary = buffer.indexOf('\n\n');
-    while (boundary >= 0) {
-      const packet = buffer.slice(0, boundary);
-      buffer = buffer.slice(boundary + 2);
-      const data = packet.split(/\r?\n/).filter((line) => line.startsWith('data:')).map((line) => line.slice(5).trim()).join('\n');
-      if (data && data !== '[DONE]') {
-        try { onEvent(JSON.parse(data)); } catch { /* Ignore malformed provider event. */ }
-      }
-      boundary = buffer.indexOf('\n\n');
-    }
-  }
-}
-
-function toolsWithCustomType() {
-  return ASSISTANT_TOOLS.map((tool) => ({ type: 'custom', ...tool }));
-}
-
-async function postClaudeMessages(body: Record<string, any>, signal: AbortSignal): Promise<Response> {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!key) throw new AssistantUnavailableError('Claude n’est pas configuré.');
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    signal: requestSignal(signal),
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify(body),
-  });
-  if (response.ok) return response;
-  const detail = await response.text().catch(() => '');
-  console.warn(`[Assistant Claude] HTTP ${response.status} ${detail.slice(0, 280)}`);
-  throw new ClaudeHttpError(response.status, detail);
-}
-
-async function consumeClaudeStream(
-  response: Response,
-  emit: (event: AssistantStreamEvent) => void,
-): Promise<StreamedBlock[]> {
-  const blocks: StreamedBlock[] = [];
-  await readAnthropicEvents(response, (event) => {
-    if (event?.type === 'content_block_start') {
-      const block = event.content_block;
-      if (block?.type === 'tool_use') {
-        blocks[event.index] = { type: 'tool_use', id: String(block.id || ''), name: String(block.name || ''), input: {}, partialJson: '' };
-      } else if (block?.type === 'text') {
-        const text = cleanText(block.text || '');
-        blocks[event.index] = { type: 'text', text };
-        if (text) { emit({ type: 'state', state: 'creating' }); emit({ type: 'delta', text }); }
-      }
-    } else if (event?.type === 'content_block_delta') {
-      const block = blocks[event.index];
-      if (!block) return;
-      if (event.delta?.type === 'text_delta' && block.type === 'text') {
-        const text = String(event.delta.text || '');
-        block.text += text;
-        if (text) { emit({ type: 'state', state: 'creating' }); emit({ type: 'delta', text }); }
-      } else if (event.delta?.type === 'input_json_delta' && block.type === 'tool_use') {
-        block.partialJson = `${block.partialJson || ''}${String(event.delta.partial_json || '')}`;
-      }
-    } else if (event?.type === 'content_block_stop') {
-      const block = blocks[event.index];
-      if (block?.type === 'tool_use' && block.partialJson) {
-        try { block.input = JSON.parse(block.partialJson); } catch { block.input = {}; }
-        delete block.partialJson;
-      }
-    }
-  });
-  return blocks.filter(Boolean);
-}
-
-async function callClaudeVariant(
-  apiMessages: any[],
-  system: string,
-  model: string,
-  signal: AbortSignal,
-  emit: (event: AssistantStreamEvent) => void,
-  extra: { tools?: any; tool_choice?: any } = {},
-): Promise<StreamedBlock[]> {
-  const response = await postClaudeMessages({
-    model,
-    max_tokens: 1100,
-    temperature: 0.2,
-    stream: true,
-    system,
-    messages: apiMessages,
-    ...extra,
-  }, signal);
-  return consumeClaudeStream(response, emit);
-}
-
-async function streamClaudeRound(
-  apiMessages: any[],
-  system: string,
-  model: string,
-  signal: AbortSignal,
-  emit: (event: AssistantStreamEvent) => void,
-  forcedTool?: AssistantToolName,
-): Promise<StreamedBlock[]> {
-  const models = fallbackModels(model);
-  let lastError: unknown;
-  let schemaRejected = false;
-
-  for (const candidate of models) {
-    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
-    const variants: Array<{ tools?: any; tool_choice?: any }> = schemaRejected
-      ? [{}]
-      : [
-        ...(forcedTool ? [{ tools: ASSISTANT_TOOLS, tool_choice: { type: 'tool', name: forcedTool } }] : []),
-        { tools: ASSISTANT_TOOLS, tool_choice: { type: 'auto' as const } },
-        { tools: toolsWithCustomType(), tool_choice: { type: 'auto' as const } },
-        {},
-      ];
-
-    for (const extra of variants) {
-      try {
-        return await callClaudeVariant(apiMessages, system, candidate, signal, emit, extra);
-      } catch (error) {
-        lastError = error;
-        if (signal.aborted || (error as any)?.name === 'AbortError') throw error;
-        if (error instanceof AssistantUnavailableError) throw error;
-        if (error instanceof ClaudeHttpError) {
-          if (error.status === 401 || error.status === 403) throw new AssistantUnavailableError('Claude n’est pas configuré.');
-          if (error.status === 400) {
-            schemaRejected = true;
-            if (!extra.tools) {
-              throw new AssistantUnavailableError('Claude ne répond pas pour le moment.');
-            }
-            continue;
-          }
-          if (error.status === 404) break;
-          if (error.status === 429 || error.status >= 500) continue;
-        }
-      }
-    }
-  }
-  throw lastError instanceof AssistantUnavailableError
-    ? lastError
-    : new AssistantUnavailableError('Claude ne répond pas pour le moment.');
-}
-
-async function recoverWithoutClaude(
+async function recoverWithoutProvider(
   emit: (event: AssistantStreamEvent) => void,
   toolContext: AssistantToolContext,
   latestText: string,
@@ -400,7 +227,7 @@ async function recoverWithoutClaude(
 
     // 2. Order Tracking
     if (/(?:suivi|commande|colis|où est ma commande|suivre ma commande|وين وصل طلبي|طلبيتي|تتبع الطلب|وين طلبي)/i.test(latestText)) {
-      const execution = await executeAssistantTool('get_order_status', {}, toolContext);
+      const execution = await executeThroughGateway('get_order_status', {}, toolContext);
       if (execution.presentation) emit({ type: 'tool', name: 'get_order_status', data: execution.presentation });
       emit({
         type: 'delta',
@@ -416,7 +243,7 @@ async function recoverWithoutClaude(
     if (/(?:calcul|combien|prix|livraison|frais|douane|احسب|قداش|سوم|سعر|تكلفة|شحن|ديوانة)/i.test(latestText)) {
       const priceMatch = latestText.match(/(\d+(?:[.,]\d+)?)/);
       const amount = priceMatch ? parseFloat(priceMatch[1].replace(',', '.')) : 50;
-      const execution = await executeAssistantTool('calculate_price', {
+      const execution = await executeThroughGateway('calculate_price', {
         item_price: amount,
         currency: /(?:euro|eur|€)/i.test(latestText) ? 'EUR' : /(?:dollar|usd|\$)/i.test(latestText) ? 'USD' : 'EUR',
         category: 'clothing',
@@ -437,7 +264,7 @@ async function recoverWithoutClaude(
     if (options.forceLensTool) {
       const urlMatch = latestText.match(/https?:\/\/[^\s"'<>]+/i)?.[0]?.replace(/[).,;!?]+$/, '');
       const codeMatch = latestText.match(/\b\d{6,14}\b/)?.[0];
-      const execution = await executeAssistantTool('lens_search', {
+      const execution = await executeThroughGateway('lens_search', {
         product_url: options.latestHasUrl ? urlMatch : undefined,
         code_value: options.latestHasCode ? codeMatch : undefined,
         image_attachment_id: options.attachmentId,
@@ -460,7 +287,7 @@ async function recoverWithoutClaude(
     // 5. Product Catalog Search
     if (options.explicitProductSearch || looksLikeProductQuery(latestText)) {
       const query = searchQueryFromText(latestText) || latestText;
-      const execution = await executeAssistantTool('search_products', { query }, toolContext);
+      const execution = await executeThroughGateway('search_products', { query }, toolContext);
       if (execution.presentation) emit({ type: 'tool', name: 'search_products', data: execution.presentation });
       const found = Boolean(execution.presentation?.products?.length);
       emit({
@@ -499,9 +326,12 @@ export async function runAssistantChat(
     } as AssistantConversationLine))
     .filter((message) => Boolean(message.text || message.attachments?.length));
   if (!messages.length || messages.at(-1)?.role !== 'user') throw new Error('INVALID_ASSISTANT_MESSAGES');
-  const model = selectAssistantModel(messages);
+  const provider = getAyroviAiCore().responses();
+  const modelClass = selectAssistantModelClass(messages);
+  const model = provider.resolveModel('assistant', modelClass);
   const system = buildSystemPrompt(db, input.customer, input.conversationId, cleanText(input.clientState, 6000));
-  const apiMessages: any[] = messages.map(toAnthropicMessage);
+  const apiMessages: AiMessage[] = messages.map(toAiMessage);
+  const toolGateway = getAssistantToolGateway();
   const imageAttachments = messages.flatMap((message) => message.attachments || []);
   let clientState: Record<string, any> = {};
   try { clientState = JSON.parse(input.clientState || '{}') || {}; } catch { /* Keep the safe default. */ }
@@ -539,9 +369,9 @@ export async function runAssistantChat(
     emit(event);
   };
 
-  // If Anthropic API key is not configured, execute native intelligent tool-enabled agent
-  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
-    await recoverWithoutClaude(forward, toolContext, latestUser?.text || '', {
+  // If the active Phase 1 provider is unavailable, preserve the native AYROVI fallback.
+  if (!provider.isConfigured()) {
+    await recoverWithoutProvider(forward, toolContext, latestUser?.text || '', {
       forceLensTool,
       explicitProductSearch,
       latestHasImage,
@@ -576,12 +406,31 @@ export async function runAssistantChat(
   }
   for (let round = 0; round < 3; round += 1) {
     emit({ type: 'state', state: round === 0 ? 'analyzing' : 'reasoning' });
-    let blocks: StreamedBlock[];
+    let blocks: AiOutputBlock[];
     try {
-      blocks = await streamClaudeRound(apiMessages, system, model, signal, forward, round === 0 ? forcedFirstTool : undefined);
+      const result = await provider.stream({
+        workload: 'assistant',
+        modelClass,
+        instructions: system,
+        messages: apiMessages,
+        maxOutputTokens: 1100,
+        temperature: 0.2,
+        tools: [...toolGateway.definitions],
+        toolChoice: round === 0 && forcedFirstTool
+          ? { type: 'tool', name: forcedFirstTool }
+          : 'auto',
+      }, {
+        onTextDelta(text) {
+          if (text) {
+            forward({ type: 'state', state: 'creating' });
+            forward({ type: 'delta', text });
+          }
+        },
+      }, signal);
+      blocks = result.output;
     } catch (error) {
       if (signal.aborted || (error as any)?.name === 'AbortError') throw error;
-      await recoverWithoutClaude(forward, toolContext, latestUser?.text || '', {
+      await recoverWithoutProvider(forward, toolContext, latestUser?.text || '', {
         forceLensTool,
         explicitProductSearch,
         latestHasImage,
@@ -591,21 +440,23 @@ export async function runAssistantChat(
       });
       return;
     }
-    const toolUses = blocks.filter((block): block is StreamedToolUse => block.type === 'tool_use');
+    const toolUses = blocks.filter((block): block is Extract<AiOutputBlock, { type: 'tool_call' }> => block.type === 'tool_call');
     if (!toolUses.length) {
       if (!emittedText) emit({ type: 'delta', text: 'Je n’ai pas pu générer une réponse complète. Merci de reformuler votre demande.' });
       emit({ type: 'done', model });
       return;
     }
 
-    apiMessages.push({ role: 'assistant', content: blocks.map((block) => block.type === 'text'
-      ? { type: 'text', text: block.text }
-      : { type: 'tool_use', id: block.id, name: block.name, input: block.input }) });
-    const results: any[] = [];
+    apiMessages.push({ role: 'assistant', content: blocks });
+    const results: AiMessage['content'] = [];
     for (const tool of toolUses) {
       if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
       emit({ type: 'state', state: 'reasoning' });
-      const execution = await executeAssistantTool(tool.name, tool.input, toolContext);
+      const execution = await toolGateway.execute({
+        id: tool.id,
+        name: tool.name,
+        arguments: tool.arguments,
+      }, toolContext);
       if (execution.presentation) emit({ type: 'tool', name: tool.name, data: execution.presentation });
       usedTools.push(tool.name);
       if (tool.name === 'lens_search') {
@@ -620,9 +471,9 @@ export async function runAssistantChat(
       if (execution.modelResult?.success === false) {
         recordLearningEvent(db, { type: 'TOOL_FAILURE', conversationId: input.conversationId, ownerHash, tools: [tool.name], success: false, meta: { code: (execution.modelResult as any)?.code || '' } });
       }
-      results.push({ type: 'tool_result', tool_use_id: tool.id, content: JSON.stringify(execution.modelResult) });
+      results.push({ type: 'tool_result', callId: tool.id, result: execution.modelResult });
     }
-    apiMessages.push({ role: 'user', content: results });
+    apiMessages.push({ role: 'tool', content: results });
   }
   if (!emittedText) emit({ type: 'delta', text: 'La demande nécessite une vérification supplémentaire par l’équipe AYROVI.' });
   recordLearningEvent(db, {
