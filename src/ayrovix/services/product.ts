@@ -3,14 +3,14 @@ import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyrovixCandidate, AyrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
-import { catalogSearch, scoreCandidate, anthropicExternalSearch } from './search';
+import { catalogSearch, scoreCandidate, externalProductSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates } from './candidatePolicy';
 
 /**
  * AYROVIX product-link layer.
- * URL/QR links use SSRF-safe metadata extraction first, then Claude Web Search
- * through the same paid Anthropic key when merchant metadata is incomplete.
+ * URL/QR links use SSRF-safe metadata extraction first, then AI Core web
+ * search when merchant metadata is incomplete.
  */
 
 export class ExtractionFailedError extends Error { readonly code = 'EXTRACTION_FAILED'; }
@@ -138,7 +138,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     const scraped = await scraper.scrapeProduct(url);
     if (scraped?.title) {
       const catalog = catalogSearch(db, null, scraped.title, 4);
-      const external = scraped.sourcePrice > 0 ? [] : await anthropicExternalSearch(scraped.title, 6).catch(() => []);
+      const external = scraped.sourcePrice > 0 ? [] : await externalProductSearch(scraped.title, 6).catch(() => []);
       const alternates = filterDisplayableCandidates(
         [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) })),
         8,
@@ -154,7 +154,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     console.warn(`[AYROVIX scraper] Fallback for ${url} — ${e}`);
   }
 
-  console.log(`[AYROVIX] Using catalog + Claude fallback for URL: ${url}`);
+  console.log(`[AYROVIX] Using catalog + provider search fallback for URL: ${url}`);
   const fallbackProduct = toFallbackProductFromUrl(url);
   let query = '';
   try {
@@ -164,7 +164,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
   } catch { query = url; }
 
   const catalog = catalogSearch(db, null, query, 4);
-  const external = await anthropicExternalSearch(query, 6).catch(() => []);
+  const external = await externalProductSearch(query, 6).catch(() => []);
   const all = filterDisplayableCandidates(
     [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
     8,

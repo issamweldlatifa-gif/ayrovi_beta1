@@ -2,11 +2,11 @@ import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
 import { filterDisplayableCandidates } from './candidatePolicy';
+import { getAyroviAiCore } from '../../ai-core/core';
 
 /**
- * AYROVIX text discovery. Claude Web Search is used for links, QR/barcodes and
- * as the image-search fallback when Google Lens returns no visual products.
- * Results are cached and coalesced.
+ * AYROVIX owns text discovery for links, QR/barcodes and Lens fallback.
+ * Provider web-search wire details stay behind AYROVI AI Core.
  */
 
 const STOPWORDS = new Set(['the', 'and', 'pour', 'avec', 'les', 'des', 'une', 'femme', 'homme', 'femmes', 'hommes', 'new', 'style', 'mode', 'de', 'du', 'en', 'au', 'aux']);
@@ -19,9 +19,11 @@ function searchBudgetMs(): number {
   return Number.isFinite(configured) ? Math.min(12_000, Math.max(1_500, configured)) : 7_000;
 }
 
-function anthropicWebSearchEnabled(): boolean {
+function externalWebSearchEnabled(): boolean {
+  // Keep the legacy feature flag during migration; provider selection belongs
+  // exclusively to AI Core and cannot be changed by this service.
   return process.env.AYROVIX_ANTHROPIC_WEB_SEARCH !== 'false'
-    && Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+    && getAyroviAiCore().responses().isConfigured();
 }
 
 function remainingSearchMs(deadline: number, perRequestMax: number): number {
@@ -123,57 +125,36 @@ function merchantLabel(sourceUrl: string): string {
   }
 }
 
-/** Official Anthropic server-side Web Search: one search at most per query. */
-export async function anthropicWebSearch(
+/** Provider-neutral server-side Web Search: one search at most per query. */
+export async function providerWebSearch(
   query: string,
   limit = 6,
   deadline = Date.now() + searchBudgetMs(),
 ): Promise<AyrovixCandidate[]> {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!key || !anthropicWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
-  const model = process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001';
+  const provider = getAyroviAiCore().responses();
+  if (!externalWebSearchEnabled() || !searchHasTime(deadline, 500)) return [];
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: AbortSignal.timeout(remainingSearchMs(deadline, 7_500)),
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: 384,
-        temperature: 0,
-        system: 'You are AYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
-        messages: [{ role: 'user', content: `Find direct product pages selling this exact item or code: ${query.slice(0, 200)}` }],
-        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 1 }],
-      }),
-    });
-    if (!response.ok) {
-      console.warn(`[AYROVIX anthropic-search] HTTP ${response.status}`);
-      return [];
-    }
-    const payload: any = await response.json();
-    const rawResults: any[] = [];
-    for (const block of Array.isArray(payload?.content) ? payload.content : []) {
-      if (block?.type !== 'web_search_tool_result') continue;
-      if (!Array.isArray(block.content)) {
-        if (block?.content?.error_code) console.warn(`[AYROVIX anthropic-search] tool error ${block.content.error_code}`);
-        continue;
-      }
-      rawResults.push(...block.content.filter((item: any) => item?.type === 'web_search_result'));
-    }
-    const seen = new Set<string>();
+    const result = await provider.complete({
+      workload: 'research',
+      modelClass: 'fast',
+      instructions: 'You are AYROVI shopping search. Always run exactly one web search. Prefer direct merchant product pages. Exclude news, reviews and generic search pages. Keep the final answer very short.',
+      messages: [{
+        role: 'user',
+        content: [{ type: 'text', text: `Find direct product pages selling this exact item or code: ${query.slice(0, 200)}` }],
+      }],
+      maxOutputTokens: 384,
+      temperature: 0,
+      webSearch: { enabled: true, maxUses: 1 },
+    }, AbortSignal.timeout(remainingSearchMs(deadline, 7_500)));
+
     const candidates: AyrovixCandidate[] = [];
-    for (const item of rawResults) {
-      const sourceUrl = String(item?.url || '').trim();
-      const title = String(item?.title || '').replace(/\s+/g, ' ').trim();
-      if (!/^https?:\/\//i.test(sourceUrl) || title.length < 5 || seen.has(sourceUrl)) continue;
-      seen.add(sourceUrl);
+    for (const item of result.webResults) {
+      const sourceUrl = String(item.url || '').trim();
+      const title = String(item.title || '').replace(/\s+/g, ' ').trim();
+      if (!/^https?:\/\//i.test(sourceUrl) || title.length < 5) continue;
       const index = candidates.length;
       candidates.push({
-        id: `anthropic_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
+        id: `web_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
         kind: 'external',
         title: title.slice(0, 160),
         brand: null,
@@ -190,17 +171,19 @@ export async function anthropicWebSearch(
       });
       if (candidates.length >= limit) break;
     }
-    const searches = Number(payload?.usage?.server_tool_use?.web_search_requests || 0);
-    console.log(`[AYROVIX anthropic-search] ${candidates.length} candidates, searches=${searches}`);
+    console.log(`[AYROVIX provider-search] ${candidates.length} candidates, searches=${result.usage?.webSearchCalls || 0}`);
     return candidates;
   } catch (error: any) {
-    console.warn(`[AYROVIX anthropic-search] ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
+    console.warn(`[AYROVIX provider-search] ${error?.code === 'PROVIDER_TIMEOUT' || error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
     return [];
   }
 }
 
-/** Kept as the public service name used by URL, image, QR and barcode flows. */
-export async function anthropicExternalSearch(
+/** Backward-compatible Phase 1 alias; new business code uses providerWebSearch. */
+export const anthropicWebSearch = providerWebSearch;
+
+/** Public AYROVIX service used by URL, image, QR and barcode flows. */
+export async function externalProductSearch(
   query: string,
   limit = 6,
   deadline = Date.now() + searchBudgetMs(),
@@ -213,8 +196,8 @@ export async function anthropicExternalSearch(
   const existing = externalSearchInFlight.get(cacheKey);
   if (existing) return (await existing).map((item) => ({ ...item }));
 
-  const task = anthropicWebSearchEnabled()
-    ? anthropicWebSearch(query, limit, deadline)
+  const task = externalWebSearchEnabled()
+    ? providerWebSearch(query, limit, deadline)
     : Promise.resolve([]);
   externalSearchInFlight.set(cacheKey, task);
   try {
@@ -229,6 +212,9 @@ export async function anthropicExternalSearch(
   }
 }
 
+/** Backward-compatible Phase 1 alias. */
+export const anthropicExternalSearch = externalProductSearch;
+
 export async function searchCandidates(
   db: QatafoDatabase,
   identification: AyrovixIdentification,
@@ -237,11 +223,10 @@ export async function searchCandidates(
 ): Promise<AyrovixCandidate[]> {
   const catalog = catalogSearch(db, identification, query);
   const deadline = Date.now() + searchBudgetMs();
-  // A real visual match is more useful than another text-only web search. Use
-  // Claude Web Search only when Google Lens found no usable product page.
+  // A real visual match is more useful than another text-only web search.
   const external = visualCandidates.length
     ? visualCandidates
-    : await anthropicExternalSearch(query, 6, deadline);
+    : await externalProductSearch(query, 6, deadline);
   const rules = db.getPricingRules();
   const rescored = external.map((candidate) => {
     const estimated = estimateTnd(rules, candidate.price, candidate.currency || 'EUR');
@@ -257,18 +242,23 @@ export async function searchCandidates(
   );
 }
 
-export interface AnthropicSearchHealth {
+export interface ProviderSearchHealth {
   configured: boolean;
   model: string;
   maxUsesPerQuery: number;
   timeoutMs: number;
 }
 
-export function checkAnthropicSearchHealth(): AnthropicSearchHealth {
+export function checkProviderSearchHealth(): ProviderSearchHealth {
+  const provider = getAyroviAiCore().responses();
   return {
-    configured: anthropicWebSearchEnabled(),
-    model: process.env.ANTHROPIC_MODEL?.trim() || 'claude-haiku-4-5-20251001',
+    configured: externalWebSearchEnabled(),
+    model: provider.resolveModel('research', 'fast'),
     maxUsesPerQuery: 1,
     timeoutMs: searchBudgetMs(),
   };
 }
+
+/** Backward-compatible admin exports for Phase 1. */
+export type AnthropicSearchHealth = ProviderSearchHealth;
+export const checkAnthropicSearchHealth = checkProviderSearchHealth;

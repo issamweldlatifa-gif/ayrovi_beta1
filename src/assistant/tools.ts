@@ -5,7 +5,7 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice } from '../services/pricing';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from '../ayrovix/priceQuote';
 import { extractProductFromUrl, sanitizeProductUrl } from '../ayrovix/services/product';
-import { anthropicExternalSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
+import { externalProductSearch, catalogSearch, scoreCandidate } from '../ayrovix/services/search';
 import { serpApiVisualSearch, serpApiVisualSearchUrl } from '../ayrovix/services/visualSearch';
 import { identifyProduct } from '../ayrovix/services/ai';
 import { runLensPipeline, type LensStandardResult } from '../ayrovix/services/lensPipeline';
@@ -344,7 +344,7 @@ function productUrlFromText(raw: unknown): string {
 async function searchByCode(value: string, context: AssistantToolContext): Promise<AyrovixCandidate[]> {
   const local = catalogSearch(context.db, null, value, 5)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
-  const external = context.webSearchEnabled ? await anthropicExternalSearch(value, 8).catch(() => []) : [];
+  const external = context.webSearchEnabled ? await externalProductSearch(value, 8).catch(() => []) : [];
   return filterDisplayableCandidates(
     [...local, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) })),
     8,
@@ -356,7 +356,7 @@ async function searchRealProducts(input: any, context: AssistantToolContext): Pr
   if (query.length < 2) return { modelResult: { success: false, code: 'SEARCH_QUERY_REQUIRED', message: 'Demandez une description plus précise du produit.' } };
   const local = catalogSearch(context.db, null, query, 5)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) }));
-  const external = context.webSearchEnabled ? await anthropicExternalSearch(query, 6).catch(() => []) : [];
+  const external = context.webSearchEnabled ? await externalProductSearch(query, 6).catch(() => []) : [];
   const candidates = filterDisplayableCandidates(
     [...local, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
     8,
@@ -461,7 +461,7 @@ async function lensSearch(input: any, context: AssistantToolContext): Promise<As
     : [];
   // Text web search remains a fallback after Lens/catalogue, never the visual matcher.
   const external = context.webSearchEnabled && query.length >= 2 && visual.length === 0 && !local.some((candidate) => candidate.match >= 55)
-    ? await anthropicExternalSearch(query, 6).catch(() => [])
+    ? await externalProductSearch(query, 6).catch(() => [])
     : [];
 
   const visiblePrice = Number(input?.visible_price);
@@ -737,7 +737,7 @@ async function searchSimilarProductsSkill(input: any, context: AssistantToolCont
   const maxPrice = Number(input?.max_price_tnd);
   if (query.length < 2) return { modelResult: { success: false, code: 'QUERY_REQUIRED', message: 'Précisez le produit recherché.' } };
   const local = catalogSearch(context.db, null, query, 8).map((c) => ({ ...c, match: scoreCandidate(null, query, c) }));
-  const external = context.webSearchEnabled && local.length < 3 ? await anthropicExternalSearch(query, 6).catch(() => []) : [];
+  const external = context.webSearchEnabled && local.length < 3 ? await externalProductSearch(query, 6).catch(() => []) : [];
   let candidates = filterDisplayableCandidates([...local, ...external.map((c) => ({ ...c, match: scoreCandidate(null, query, c) }))], 8)
     .map((c) => quoteCandidate(withCalculatedTnd(c, context.db)));
   if (Number.isFinite(maxPrice) && maxPrice > 0) {

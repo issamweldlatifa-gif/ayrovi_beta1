@@ -4,7 +4,7 @@ import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
-import { catalogSearch, anthropicExternalSearch, scoreCandidate, searchCandidates } from './services/search';
+import { catalogSearch, externalProductSearch, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -18,7 +18,7 @@ import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } fr
 import { filterDisplayableCandidates, withDisplayRating } from './services/candidatePolicy';
 
 /**
- * AYROVIX public API — Claude powers visual understanding, visible-price
+ * AYROVIX public API — AI Core provides visual understanding, visible-price
  * reading and text Web Search; SerpApi Google Lens adds reverse-image product
  * matches. QR/barcode decoding remains local on-device and product URLs are
  * fetched directly through the SSRF-safe metadata extractor.
@@ -132,7 +132,7 @@ function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate
 async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {
   const local = catalogSearch(db, null, value, 4)
     .map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) }));
-  const external = await anthropicExternalSearch(value, 8).catch(() => []);
+  const external = await externalProductSearch(value, 8).catch(() => []);
   return mergeCandidates([
     ...local,
     ...external.map((candidate) => ({ ...candidate, match: scoreCandidate(null, value, candidate) })),
@@ -178,7 +178,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
 
-      // Vision and reverse-image must not take each other down. A Claude
+      // Vision and reverse-image must not take each other down. A provider
       // timeout/schema error used to abort the whole Lens request even when
       // Google Lens had already found priced matches.
       const [visionResult, visualResult] = await Promise.allSettled([
@@ -326,14 +326,14 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       if (error instanceof ExtractionFailedError || error?.code === 'EXTRACTION_FAILED') {
         try {
           const fallbackQuery = String(url || '').slice(0, 160);
-          const candidates = await anthropicExternalSearch(fallbackQuery, 6);
+          const candidates = await externalProductSearch(fallbackQuery, 6);
           const eventId = recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length });
           const securedAlternates = tokenizedCandidates(candidates);
           const fallbackProduct: AyrovixProduct = {
             title: `Produit ${fallbackQuery.slice(0, 60)}`,
             brand: null,
             model: null,
-            description: 'Lien partagé — résultats Claude Web Search à confirmer.',
+            description: 'Lien partagé — résultats de recherche web à confirmer.',
             image: '', images: [], source: 'Web', sourceUrl: String(url || ''),
             price: null, currency: null, priceTnd: null, exchangeRate: null,
             colors: [], sizes: [], availability: 'unknown', priceVerified: false,

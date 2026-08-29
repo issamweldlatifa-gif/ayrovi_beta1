@@ -1,7 +1,7 @@
 /**
  * AYROVIX — contrats partagés côté serveur.
- * Claude Vision identifie le produit et lit uniquement un prix réellement visible;
- * Claude Web Search découvre des pages, sans devenir la source du prix marchand.
+ * AI Core fournit l'analyse visuelle et découvre des pages; AYROVIX reste
+ * propriétaire de la validation et de la vérité marchande.
  */
 
 export interface AyrovixDetectedProductItem {
@@ -18,7 +18,7 @@ export interface AyrovixDetectedProductItem {
   material?: string | null;
 }
 
-/** Données structurées extraites de l'image par Claude Vision. */
+/** Données structurées extraites de l'image puis validées par AYROVIX. */
 export interface AyrovixIdentification {
   input_kind: 'product_photo' | 'product_screenshot' | 'cart_screenshot' | 'barcode' | 'other';
   category: string;

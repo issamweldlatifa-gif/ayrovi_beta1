@@ -1,14 +1,15 @@
 import type { AyrovixIdentification } from '../types';
+import type { AiCompletionRequest } from '../../ai-core/contracts';
+import { getAyroviAiCore } from '../../ai-core/core';
+import { AiProviderError } from '../../ai-core/errors';
 
 /**
- * AYROVIX Vision — Anthropic-only production path.
- * One Claude Haiku request identifies the product and reads a visible price.
- * Live product discovery is handled separately by Anthropic Web Search.
+ * AYROVIX Vision keeps ownership of identification and validation. Provider
+ * image/message/schema wire details are isolated behind AYROVI AI Core.
  */
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
 
 export class AyrovixUnavailableError extends Error {
   readonly code = 'AYROVIX_UNAVAILABLE';
@@ -22,16 +23,13 @@ function boundedEnvMs(name: string, fallback: number, min: number, max: number):
   return Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
 }
 
-function anthropicKey(): string | null {
-  return (process.env.ANTHROPIC_API_KEY || '').trim() || null;
-}
-
 export function ayrovixAiReady(): boolean {
-  return Boolean(anthropicKey());
+  return getAyroviAiCore().responses().isConfigured();
 }
 
 export function getActiveProviders(): string[] {
-  return anthropicKey() ? ['anthropic'] : [];
+  const provider = getAyroviAiCore().responses();
+  return provider.isConfigured() ? [provider.id] : [];
 }
 
 export function fallbackIdentification(description = 'Produit détecté visuellement'): AyrovixIdentification {
@@ -99,8 +97,8 @@ const IDENTIFICATION_SCHEMA = {
     category: { type: 'string' },
     brand: { type: ['string', 'null'] },
     model: { type: ['string', 'null'] },
-    // Anthropic Structured Outputs rejects validation keywords such as
-    // maxItems/minimum/maximum. Bounds are enforced in parseIdentification().
+    // Runtime bounds are enforced again in parseIdentification() so provider
+    // output can never bypass AYROVIX validation.
     color: { type: 'array', items: { type: 'string' } },
     visible_text: { type: 'array', items: { type: 'string' } },
     possible_model_codes: { type: 'array', items: { type: 'string' } },
@@ -177,12 +175,12 @@ export function normalizeBox(raw: unknown): [number, number, number, number] | n
 function parseIdentification(raw: string): AyrovixIdentification {
   const cleaned = raw.replace(/```(?:json)?/gi, '').trim();
   const match = cleaned.match(/\{[\s\S]*\}/);
-  if (!match) throw new AyrovixIdentificationError('Réponse Claude inexploitable.');
+  if (!match) throw new AyrovixIdentificationError('Réponse visuelle inexploitable.');
   let parsed: any;
   try {
     parsed = JSON.parse(match[0]);
   } catch {
-    throw new AyrovixIdentificationError('JSON Claude invalide.');
+    throw new AyrovixIdentificationError('JSON visuel invalide.');
   }
   const list = (value: unknown, max: number): string[] => Array.isArray(value)
     ? value.filter((item) => typeof item === 'string' && item.trim())
@@ -273,89 +271,80 @@ export function buildSearchQuery(identification: AyrovixIdentification): string 
   return fallback.replace(/\s+/g, ' ').trim().slice(0, 200) || identification.category || 'produit';
 }
 
-function extractClaudeText(payload: any): string {
-  return (Array.isArray(payload?.content) ? payload.content : [])
-    .map((block: any) => {
-      if (block?.type === 'text') return String(block.text || '');
-      if (block?.type === 'json' && block.json) return JSON.stringify(block.json);
-      if (block?.type === 'output_json' && block.json) return JSON.stringify(block.json);
-      return '';
-    })
-    .join('');
-}
-
 async function requestIdentification(
-  key: string,
-  model: string,
   image: Buffer,
   mime: string,
   timeoutMs: number,
   structured: boolean,
 ): Promise<AyrovixIdentification> {
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    signal: AbortSignal.timeout(timeoutMs),
-    headers: {
-      'content-type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: structured ? 700 : 900,
-      temperature: 0,
-      system: structured
-        ? SYSTEM_PROMPT
-        : `${SYSTEM_PROMPT}\nRéponds uniquement par un objet JSON valide, sans markdown ni texte autour.`,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: mime, data: image.toString('base64') } },
-          { type: 'text', text: 'Identifie le produit principal et lis uniquement son prix réellement visible.' },
-        ],
-      }],
-      ...(structured ? { output_config: { format: { type: 'json_schema', schema: IDENTIFICATION_SCHEMA } } } : {}),
-    }),
-  });
-  if (!response.ok) {
-    const body = await response.text().catch(() => '');
-    if (response.status === 401 || response.status === 403) throw new AyrovixUnavailableError('Anthropic authentication failed');
-    if (response.status === 429) throw new AyrovixIdentificationError('Anthropic quota exceeded');
-    const error = new AyrovixIdentificationError(`Anthropic HTTP ${response.status}: ${body.slice(0, 160)}`);
-    (error as any).httpStatus = response.status;
-    throw error;
+  const provider = getAyroviAiCore().responses();
+  const request: AiCompletionRequest = {
+    workload: 'vision',
+    modelClass: 'fast',
+    instructions: structured
+      ? SYSTEM_PROMPT
+      : `${SYSTEM_PROMPT}\nRéponds uniquement par un objet JSON valide, sans markdown ni texte autour.`,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image', source: { type: 'base64', mediaType: mime, data: image.toString('base64') } },
+        { type: 'text', text: 'Identifie le produit principal et lis uniquement son prix réellement visible.' },
+      ],
+    }],
+    maxOutputTokens: structured ? 700 : 900,
+    temperature: 0,
+    ...(structured ? {
+      outputSchema: { name: 'ayrovix_identification', schema: IDENTIFICATION_SCHEMA },
+    } : {}),
+  };
+  try {
+    const result = await provider.complete(request, AbortSignal.timeout(timeoutMs));
+    return parseIdentification(result.textBlocks.join(''));
+  } catch (error) {
+    if (!(error instanceof AiProviderError)) throw error;
+    if (error.code === 'PROVIDER_AUTHENTICATION_FAILED') {
+      throw new AyrovixUnavailableError('Vision provider authentication failed');
+    }
+    if (error.code === 'PROVIDER_RATE_LIMITED') {
+      throw new AyrovixIdentificationError('Vision provider quota exceeded');
+    }
+    if (error.code === 'PROVIDER_TIMEOUT') throw error;
+    const mapped = new AyrovixIdentificationError(`Vision provider HTTP ${error.status || 0}`);
+    (mapped as any).httpStatus = error.status;
+    throw mapped;
   }
-  const payload: any = await response.json();
-  return parseIdentification(extractClaudeText(payload));
 }
 
 export async function identifyProduct(image: Buffer, mime: string): Promise<AyrovixIdentification> {
   if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format d'image non supporté");
   if (!image.length || image.length > MAX_IMAGE_BYTES) throw new AyrovixIdentificationError('Image trop lourde');
-  const key = anthropicKey();
-  if (!key) throw new AyrovixUnavailableError('Anthropic key missing');
+  const provider = getAyroviAiCore().responses();
+  if (!provider.isConfigured()) throw new AyrovixUnavailableError('Vision provider is not configured');
 
-  const model = process.env.ANTHROPIC_MODEL?.trim() || DEFAULT_MODEL;
+  const model = provider.resolveModel('vision', 'fast');
   const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 12_000, 8_000, 20_000);
   try {
-    console.log(`[AYROVIX] Trying Claude ${model}`);
+    console.log(`[AYROVIX] Trying ${provider.id} ${model}`);
     try {
-      const result = await requestIdentification(key, model, image, mime, timeoutMs, true);
-      console.log(`[AYROVIX] Claude SUCCESS ${model}`);
+      const result = await requestIdentification(image, mime, timeoutMs, true);
+      console.log(`[AYROVIX] Provider SUCCESS ${model}`);
       return result;
     } catch (error: any) {
       if (error instanceof AyrovixUnavailableError) throw error;
       if (error instanceof AyrovixIdentificationError && error.message.includes('quota exceeded')) throw error;
-      if (error?.name === 'TimeoutError') throw new AyrovixIdentificationError('Anthropic timeout');
-      // Structured Outputs can be rejected (schema compile) or truncated. A
-      // plain JSON turn is the production fallback that kept Lens online.
+      if (error instanceof AiProviderError && error.code === 'PROVIDER_TIMEOUT') {
+        throw new AyrovixIdentificationError('Vision provider timeout');
+      }
+      // Structured output can be rejected or truncated. A plain JSON turn is
+      // the behavior-preserving production fallback.
       console.warn(`[AYROVIX] structured output failed (${error?.message || 'unknown'}) — retrying JSON`);
-      const result = await requestIdentification(key, model, image, mime, timeoutMs, false);
-      console.log(`[AYROVIX] Claude SUCCESS ${model} (json fallback)`);
+      const result = await requestIdentification(image, mime, timeoutMs, false);
+      console.log(`[AYROVIX] Provider SUCCESS ${model} (json fallback)`);
       return result;
     }
   } catch (error: any) {
     if (error instanceof AyrovixUnavailableError || error instanceof AyrovixIdentificationError) throw error;
-    throw new AyrovixIdentificationError(error?.name === 'TimeoutError' ? 'Anthropic timeout' : 'Anthropic request failed');
+    const timeout = error instanceof AiProviderError && error.code === 'PROVIDER_TIMEOUT';
+    throw new AyrovixIdentificationError(timeout ? 'Vision provider timeout' : 'Vision provider request failed');
   }
 }

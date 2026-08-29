@@ -7,10 +7,11 @@ import { scanCodeFromImage, type AyrovixScannedCode } from './codeScanner';
 import { serpApiVisualSearch } from './visualSearch';
 import { ocrRecognize } from '../../services/vision';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
+import { getAyroviAiCore } from '../../ai-core/core';
 
 /**
  * AYROVI Lens pipeline — SEE → READ → UNDERSTAND → EXTRACT → VERIFY.
- * Orchestre Vision (Claude) + OCR (Tesseract, image entière/améliorée/segments)
+ * Orchestre Vision via AI Core + OCR (Tesseract, image entière/améliorée/segments)
  * + codes (ZXing) + correspondances visuelles (Google Lens), puis fusionne en
  * un résultat standard avec confiance et avertissements. Aucune valeur inventée.
  */
@@ -199,8 +200,9 @@ export async function runLensPipeline(
   };
 
   try {
+    const visionModel = getAyroviAiCore().responses().resolveModel('vision', 'fast');
     db.run('INSERT OR REPLACE INTO lens_analysis_cache (image_hash,result_json,model,created_at) VALUES (?,?,?,?)',
-      imageHash, JSON.stringify(result), process.env.ANTHROPIC_MODEL || 'claude', new Date(started).toISOString());
+      imageHash, JSON.stringify(result), visionModel, new Date(started).toISOString());
     db.run('DELETE FROM lens_analysis_cache WHERE created_at < ?', new Date(Date.now() - CACHE_TTL_MS).toISOString());
   } catch (error: any) {
     console.warn('[Lens pipeline cache]', error?.message || 'write failed');
