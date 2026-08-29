@@ -1,7 +1,7 @@
 /**
  * AYROVIX client image preparation.
  * Product photos are compact JPEGs; screenshots stay PNG so visible prices and
- * product codes remain sharp for Claude Vision. No colour-changing filters.
+ * product codes remain sharp for provider-neutral Vision. No colour-changing filters.
  */
 
 export interface PreparedImage {

@@ -404,7 +404,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           setProduct(result.product);
           setVerifiedPriceUrl(result.product.priceVerificationStatus === 'VERIFIED');
         } else {
-          // A Lens/Claude quote remains the order price. Auto-verification only confirms it and enriches real options.
+          // An AYROVIX Lens quote remains the order price. Auto-verification only confirms it and enriches real options.
           setProduct({
             ...lensProduct,
             description: result.product.description || lensProduct.description,

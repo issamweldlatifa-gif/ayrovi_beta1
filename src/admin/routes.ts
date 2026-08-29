@@ -37,7 +37,7 @@ import {
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
-import { checkAnthropicSearchHealth } from '../ayrovix/services/search';
+import { checkProviderSearchHealth } from '../ayrovix/services/search';
 import { checkSerpApiVisualHealth } from '../ayrovix/services/visualSearch';
 import { sanitizeProductUrl } from '../ayrovix/services/product';
 import {
@@ -1089,7 +1089,7 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: stats });
   });
 
-  /* ===== وكيل مجلتي — محرر Claude داخل الأدمين فقط ===== */
+  /* ===== وكيل مجلتي — محرر AI Core داخل الأدمين فقط ===== */
   router.get('/magazine-agent/status', requireAdmin(db, 'content:read'), (_req, res) => {
     const counts = db.get<any>(`SELECT COUNT(*) total,
       SUM(CASE WHEN status='draft' THEN 1 ELSE 0 END) drafts,
@@ -1546,16 +1546,16 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const to = datePattern.test(String(req.query.to || '')) ? String(req.query.to) : undefined;
     res.json({ success: true, data: db.listExpenses(from, to) });
   });
-  // AYROVIX Lens — Claude understanding/search + SerpApi Google Lens matches.
+  // AYROVIX Lens — AI Core understanding/search + SerpApi Google Lens matches.
   router.get('/ayrovix/stats', requireAdmin(db, 'reports:read'), async (_req, res) => {
     res.json({
       success: true,
       data: {
         ...getAyrovixStats(db),
         providers: {
-          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'Claude Vision — compréhension et prix visible' },
+          vision: { configured: ayrovixAiReady(), activeProviders: getActiveProviders(), label: 'AI Core Vision — compréhension et prix visible' },
           visualSearch: checkSerpApiVisualHealth(),
-          search: checkAnthropicSearchHealth(),
+          search: checkProviderSearchHealth(),
         },
       },
     });

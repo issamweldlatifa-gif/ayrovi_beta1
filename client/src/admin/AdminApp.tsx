@@ -537,7 +537,7 @@ const AssistantSupportPage: React.FC<{ canWrite: boolean; requestedId?: string }
     finally { setBusy(false); }
   };
   return <>
-    <PageHeader title="Support IA" description="Demandes transférées par Claude à l’équipe AYROVI, avec identité vérifiée ou contact visiteur." />
+    <PageHeader title="Support IA" description="Demandes transférées par l’assistant à l’équipe AYROVI, avec identité vérifiée ou contact visiteur." />
     <section className="admin-list-card">
       <div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client, contact ou motif…"/><Select value={status} onChange={event=>setStatus(event.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['PENDING','IN_PROGRESS','RESOLVED','CLOSED'])]}/></div>
       <DataTable rows={rows} loading={loading} emptyText="Aucun ticket support." onRowClick={open} columns={[
@@ -647,9 +647,9 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
       <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
       {ayx&&<section className="admin-card"><CardTitle title="AYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
-          <span className={`admin-badge ${ayx.providers.vision?.configured?'is-success':'is-warning'}`}>{ayx.providers.vision?.configured?'✅':'⚠️'} Claude Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Clé manquante — ANTHROPIC_API_KEY'}</span>
+          <span className={`admin-badge ${ayx.providers.vision?.configured?'is-success':'is-warning'}`}>{ayx.providers.vision?.configured?'✅':'⚠️'} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</span>
           <span className={`admin-badge ${ayx.providers.visualSearch?.configured?'is-success':'is-warning'}`}>{ayx.providers.visualSearch?.configured?'✅':'⚠️'} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</span>
-          <span className={`admin-badge ${ayx.providers.search?.configured?'is-success':'is-warning'}`}>{ayx.providers.search?.configured?'✅':'⚠️'} Claude Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Clé Anthropic manquante'}</span>
+          <span className={`admin-badge ${ayx.providers.search?.configured?'is-success':'is-warning'}`}>{ayx.providers.search?.configured?'✅':'⚠️'} AI Core Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Fournisseur non configuré'}</span>
         </div>}
         <div className="admin-kpi-grid" style={{marginBottom:12}}>
           <section className="admin-kpi"><span>Analyses</span><strong>{ayx.last7d.total}</strong><small className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1"><Camera size={12} />{ayx.last7d.image}</span><span className="inline-flex items-center gap-1"><Link2 size={12} />{ayx.last7d.url}</span><span className="inline-flex items-center gap-1"><Grid size={12} />{ayx.last7d.qr}</span></small></section>

@@ -20,6 +20,7 @@ import { mailerReady } from './services/mailer';
 import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
 import { cardGatewayAvailable } from './services/paymentGateway';
+import { getAyroviAiCore } from './ai-core/core';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -189,14 +190,15 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/ready', (_req, res) => {
   try {
     db.get('SELECT 1 AS ready');
+    const responsesProviderReady = getAyroviAiCore().responses().isConfigured();
     res.json({
       status: 'ready',
       database: 'ok',
       capabilities: {
-        assistant: Boolean(process.env.ANTHROPIC_API_KEY),
-        magazineAgent: Boolean(process.env.ANTHROPIC_API_KEY),
+        assistant: responsesProviderReady,
+        magazineAgent: responsesProviderReady,
         magazineImageSearch: Boolean(process.env.SERPAPI_KEY),
-        magazineStockVideo: Boolean(process.env.PEXELS_API_KEY || process.env.PIXABAY_API_KEY || process.env.ANTHROPIC_API_KEY),
+        magazineStockVideo: Boolean(process.env.PEXELS_API_KEY || process.env.PIXABAY_API_KEY || responsesProviderReady),
         visualSearch: Boolean(process.env.SERPAPI_KEY),
         voice: Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
         voiceInput: Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY),

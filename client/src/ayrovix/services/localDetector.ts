@@ -6,7 +6,7 @@
  * فيبقى الـ detection/tracking شغّالًا حتى لو تأجّلت مطابقة الـ cloud.
  *
  * إذا تعذّر التحميل (offline / متصفح غير داعم) → يرجع خطأ ويستعمل الـ runtime
- * مسار الـ fallback (توقيع الإطار + Claude identification) بدون أي تزييف.
+ * مسار الـ fallback (توقيع الإطار + AI Core identification) بدون أي تزييف.
  *
  * ملاحظة: COCO يغطي فئات عامة (person/handbag/backpack/bottle/cell phone…)؛
  * توسيعه لأصناف fashion مخصوصة يحتاج نموذجًا مخصصًا لاحقًا (نقطة ربط جاهزة).

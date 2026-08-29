@@ -25,7 +25,7 @@ export interface NormalizedImage {
 /**
  * Decode untrusted input with libvips, strip metadata and re-encode it to a
  * server-selected format. PNG screenshots stay lossless for visible prices;
- * product photos remain compact. Claude never receives the original bytes.
+ * product photos remain compact. The AI provider never receives the original bytes.
  */
 export async function normalizeUploadedImage(
   input: Buffer,

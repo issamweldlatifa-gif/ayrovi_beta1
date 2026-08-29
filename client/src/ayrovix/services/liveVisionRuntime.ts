@@ -328,7 +328,7 @@ export class LiveVisionRuntime {
     }];
   }
 
-  /** مطابقة مستقلة لكل منتج: قصّ صندوقه وإرساله للـ Claude (بحد تزامن + بدون تكرار). */
+  /** مطابقة مستقلة لكل منتج: قصّ صندوقه وإرساله إلى AI Core Vision (بحد تزامن + بدون تكرار). */
   private matchPending(canvas: HTMLCanvasElement): void {
     for (const obj of this.objects) {
       if (!obj.box || obj.candidates.length || this.matchingIds.has(obj.trackingId) || this.matchingIds.size >= 3) continue;
@@ -370,7 +370,7 @@ export class LiveVisionRuntime {
         this.matchPending(canvas);
         this.emit(); this.schedule(); return;
       }
-      // كشف محلي خفيف (on-device) عند توفّره: boxes/classes محليًا + Claude انتقائيًا للمطابقة
+      // كشف محلي خفيف (on-device) عند توفّره: boxes/classes محليًا + AI Core Vision انتقائيًا للمطابقة
       if (!this.inflight && this.detector) {
         this.inflight = true;
         try {
