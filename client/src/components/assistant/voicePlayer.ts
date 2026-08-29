@@ -1,21 +1,24 @@
 /**
  * AssistantVoicePlayer — High-performance Multi-lingual TTS & Real-time Audio Playback.
  * Features:
- * - Server TTS streaming with Web Audio Buffer playback when available.
- * - Robust client Web Speech Synthesis with asynchronous voice warming, volume maximize, and keep-alive.
+ * - Direct Gemini Live / Server Audio Streaming with low-latency Web Audio decoding.
+ * - Hardware AudioBufferSourceNode playback directly to device Speaker.
+ * - Real-time output level tracking for Voice Orb dynamics.
+ * - Client Web Speech Synthesis fallback with keepalive and volume maximize.
  * - Instant Barge-In cancellation.
- * - Real-time output level tracking for Voice Orb animations.
  */
 
 export class AssistantVoicePlayer {
   private activeUtterance: SpeechSynthesisUtterance | null = null;
   private audioContext: AudioContext | null = null;
   private currentAudioSource: AudioBufferSourceNode | null = null;
+  private analyser: AnalyserNode | null = null;
   private isSpeaking = false;
   private queue: string[] = [];
   private locale = 'fr';
   private rate = 1.05;
   private pitch = 1.0;
+  private voiceId = 'Aoede';
   private voiceGender: 'female' | 'male' = 'female';
   private onStartCb?: () => void;
   private onEndCb?: () => void;
@@ -59,6 +62,10 @@ export class AssistantVoicePlayer {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioCtx && !this.audioContext) {
         this.audioContext = new AudioCtx();
+        const analyser = this.audioContext.createAnalyser();
+        analyser.fftSize = 128;
+        analyser.smoothingTimeConstant = 0.3;
+        this.analyser = analyser;
       }
       if (this.audioContext?.state === 'suspended') {
         void this.audioContext.resume();
@@ -85,10 +92,16 @@ export class AssistantVoicePlayer {
       .trim();
   }
 
-  public setVoiceSettings(settings: { rate?: number; pitch?: number; gender?: 'female' | 'male' }): void {
+  public setVoiceSettings(settings: { rate?: number; pitch?: number; gender?: 'female' | 'male'; voiceId?: string }): void {
     if (settings.rate != null) this.rate = Math.max(0.7, Math.min(1.5, settings.rate));
     if (settings.pitch != null) this.pitch = Math.max(0.7, Math.min(1.3, settings.pitch));
-    if (settings.gender) this.voiceGender = settings.gender;
+    if (settings.gender) {
+      this.voiceGender = settings.gender;
+      this.voiceId = settings.gender === 'female' ? 'Aoede' : 'Puck';
+    }
+    if (settings.voiceId) {
+      this.voiceId = settings.voiceId;
+    }
   }
 
   public setLevelCallback(cb?: (level: number) => void): void {
@@ -111,7 +124,7 @@ export class AssistantVoicePlayer {
     this.onStartCb = onStart;
     this.onEndCb = onEnd;
     this.queue = [clean];
-    this.playNext();
+    void this.playNext();
   }
 
   public queueSentence(
@@ -127,7 +140,7 @@ export class AssistantVoicePlayer {
     if (onEnd) this.onEndCb = onEnd;
     this.queue.push(clean);
     if (!this.isSpeaking) {
-      this.playNext();
+      void this.playNext();
     }
   }
 
@@ -139,11 +152,23 @@ export class AssistantVoicePlayer {
         this.onLevelCb?.(0);
         return;
       }
-      step += 0.18;
-      // Speech cadence envelope simulation
-      const base = 0.28 + Math.sin(step) * 0.18 + Math.cos(step * 1.7) * 0.12;
-      const level = Math.max(0.08, Math.min(0.85, base));
-      this.onLevelCb?.(level);
+
+      // If Web Audio analyser is attached to real audio stream, read real frequency data
+      if (this.analyser && this.currentAudioSource) {
+        const data = new Uint8Array(this.analyser.frequencyBinCount);
+        this.analyser.getByteFrequencyData(data);
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) sum += data[i];
+        const avg = sum / data.length;
+        const normalized = Math.min(1, avg / 90);
+        this.onLevelCb?.(normalized);
+      } else {
+        step += 0.18;
+        const base = 0.28 + Math.sin(step) * 0.18 + Math.cos(step * 1.7) * 0.12;
+        const level = Math.max(0.08, Math.min(0.85, base));
+        this.onLevelCb?.(level);
+      }
+
       this.levelAnimFrame = requestAnimationFrame(animate);
     };
     this.levelAnimFrame = requestAnimationFrame(animate);
@@ -166,30 +191,82 @@ export class AssistantVoicePlayer {
 
     const langPrefix = isArabic ? 'ar' : 'fr';
 
-    // 1. First priority: match exact language prefix + requested gender
     const genderMatch = voices.find((v) => {
       const matchLang = v.lang.toLowerCase().startsWith(langPrefix);
       if (!matchLang) return false;
       const name = v.name.toLowerCase();
       if (this.voiceGender === 'female') {
-        return /female|femme|zira|siri|google|audrey|amira|meryem|salma|leila/i.test(name);
+        return /female|femme|zira|siri|google|audrey|amira|meryem|salma|leila|aoede|kore/i.test(name);
       }
-      return /male|homme|david|thomas|nicolas|mehdi|youssef|tariq|ali/i.test(name);
+      return /male|homme|david|thomas|nicolas|mehdi|youssef|tariq|ali|puck|fenrir|charon/i.test(name);
     });
     if (genderMatch) return genderMatch;
 
-    // 2. Second priority: any voice matching language prefix
     const langMatch = voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix));
     if (langMatch) return langMatch;
 
-    // 3. Fallback to default
     return voices.find((v) => v.default) || voices[0] || null;
   }
 
-  private playNext(): void {
+  private async tryPlayServerAudio(text: string): Promise<boolean> {
+    try {
+      const res = await fetch('/api/voice/live-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          voice: this.voiceId,
+          speed: this.rate,
+        }),
+      });
+
+      const contentType = res.headers.get('content-type') || '';
+      if (res.ok && (contentType.includes('audio') || contentType.includes('octet-stream'))) {
+        const arrayBuf = await res.arrayBuffer();
+        if (arrayBuf.byteLength > 100) {
+          if (!this.audioContext) {
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            this.audioContext = new AudioCtx();
+          }
+          if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+          }
+
+          const decoded = await this.audioContext.decodeAudioData(arrayBuf);
+          const source = this.audioContext.createBufferSource();
+          source.buffer = decoded;
+
+          if (!this.analyser) {
+            this.analyser = this.audioContext.createAnalyser();
+          }
+          source.connect(this.analyser);
+          this.analyser.connect(this.audioContext.destination);
+
+          this.currentAudioSource = source;
+          this.isSpeaking = true;
+          this.startLevelAnimation();
+          this.onStartCb?.();
+
+          source.onended = () => {
+            this.currentAudioSource = null;
+            void this.playNext();
+          };
+
+          source.start(0);
+          return true;
+        }
+      }
+    } catch {
+      /* Fallback to client speech synthesis */
+    }
+    return false;
+  }
+
+  private async playNext(): Promise<void> {
     if (this.queue.length === 0) {
       this.isSpeaking = false;
       this.activeUtterance = null;
+      this.currentAudioSource = null;
       this.stopLevelAnimation();
       if (this.keepAliveTimer) {
         clearInterval(this.keepAliveTimer);
@@ -199,6 +276,15 @@ export class AssistantVoicePlayer {
       return;
     }
 
+    const currentText = this.queue.shift()!;
+
+    // 1. First priority: Server-rendered Gemini Live Realtime Audio buffer
+    const serverPlayed = await this.tryPlayServerAudio(currentText);
+    if (serverPlayed) {
+      return;
+    }
+
+    // 2. Second priority: Client Speech Synthesis engine
     if (typeof window === 'undefined' || !window.speechSynthesis) {
       this.queue = [];
       this.stopLevelAnimation();
@@ -206,7 +292,6 @@ export class AssistantVoicePlayer {
       return;
     }
 
-    const currentText = this.queue.shift()!;
     const isArabic = /[\u0600-\u06FF]/.test(currentText) || this.locale.startsWith('ar');
     const lang = isArabic ? 'ar-SA' : 'fr-FR';
 
@@ -229,7 +314,7 @@ export class AssistantVoicePlayer {
         clearTimeout(this.safetyTimer);
         this.safetyTimer = null;
       }
-      this.playNext();
+      void this.playNext();
     };
 
     utterance.onstart = () => {
@@ -264,7 +349,6 @@ export class AssistantVoicePlayer {
         window.speechSynthesis.resume();
       }
 
-      // Keepalive interval: tickles speech synthesis every 250ms to prevent Chromium pause bugs
       if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
       this.keepAliveTimer = setInterval(() => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {

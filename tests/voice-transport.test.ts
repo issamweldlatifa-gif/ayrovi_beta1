@@ -7,15 +7,15 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     const res = await request(app)
       .post('/api/voice/session')
       .set('x-session-id', 'sess_test_987654321')
-      .send({ conversationId: 'conv_voice_001', voiceId: 'ayrovi-warm-01' });
+      .send({ conversationId: 'conv_voice_001', voiceId: 'Aoede' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.sessionId).toBe('sess_test_987654321');
     expect(res.body.data.conversationId).toBe('conv_voice_001');
-    expect(res.body.data.voice.id).toBe('ayrovi-warm-01');
+    expect(res.body.data.voice.id).toBe('Aoede');
     expect(res.body.data.voice.gender).toBe('female');
-    expect(res.body.data.turnDetection.type).toBe('client_vad');
+    expect(res.body.data.turnDetection.type).toBe('speech_aware_vad');
     expect(res.body.data.turnDetection.silenceDurationMs).toBe(650);
     expect(res.body.data.capabilities.vision).toBe(true);
     expect(res.body.data.capabilities.pricingCalculator).toBe(true);
@@ -31,20 +31,20 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.availableVoices.length).toBeGreaterThanOrEqual(2);
-    expect(res.body.data.audioInput.sampleRate).toBe(48000);
+    expect(res.body.data.audioInput.sampleRate).toBe(24000);
     expect(res.body.data.audioInput.echoCancellation).toBe(true);
     expect(res.body.data.audioInput.noiseSuppression).toBe(true);
   });
 
-  it('supports alternative voice selection (e.g. Masculin)', async () => {
+  it('supports alternative voice selection (e.g. Masculin - Puck)', async () => {
     const res = await request(app)
       .post('/api/assistant/voice/session')
       .set('x-session-id', 'sess_test_99887766')
-      .send({ conversationId: 'conv_voice_002', voiceId: 'ayrovi-calm-02' });
+      .send({ conversationId: 'conv_voice_002', voiceId: 'Puck' });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(res.body.data.voice.id).toBe('ayrovi-calm-02');
+    expect(res.body.data.voice.id).toBe('Puck');
     expect(res.body.data.voice.gender).toBe('male');
   });
 

@@ -53,8 +53,8 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   const { tr, direction } = useLocale();
   const [smoothedVolume, setSmoothedVolume] = useState(0);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [voiceGender, setVoiceGender] = useState<'female' | 'male'>('female');
-  const [voiceRate, setVoiceRate] = useState<number>(1.08);
+  const [selectedVoiceId, setSelectedVoiceId] = useState<'Aoede' | 'Kore' | 'Puck' | 'Fenrir'>('Aoede');
+  const [voiceRate, setVoiceRate] = useState<number>(1.05);
   const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const frameRef = useRef<number | null>(null);
@@ -137,15 +137,16 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     e.target.value = '';
   };
 
-  const handleVoiceGenderChange = (gender: 'female' | 'male') => {
-    setVoiceGender(gender);
-    globalVoicePlayer.setVoiceSettings({ gender, rate: voiceRate });
+  const handleVoiceSelect = (voiceId: 'Aoede' | 'Kore' | 'Puck' | 'Fenrir', gender: 'female' | 'male') => {
+    setSelectedVoiceId(voiceId);
+    globalVoicePlayer.setVoiceSettings({ voiceId, gender, rate: voiceRate });
     triggerHaptic();
   };
 
   const handleVoiceRateChange = (rate: number) => {
     setVoiceRate(rate);
-    globalVoicePlayer.setVoiceSettings({ gender: voiceGender, rate });
+    const gender = selectedVoiceId === 'Aoede' || selectedVoiceId === 'Kore' ? 'female' : 'male';
+    globalVoicePlayer.setVoiceSettings({ voiceId: selectedVoiceId, gender, rate });
     triggerHaptic();
   };
 
@@ -512,39 +513,67 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             </div>
 
             <div className="mt-5 space-y-6 overflow-y-auto py-1">
-              {/* Voice Personality / Gender */}
+              {/* Voice Selection (Gemini Live & Natural AI Voices) */}
               <div>
                 <label className="text-xs font-black uppercase tracking-wider text-[#6B6B6B]">
-                  {tr('Voix de l’assistant', 'صوت المساعد')}
+                  {tr('Voix de l’assistant (Gemini Live / Realtime)', 'صوت المساعد (Gemini Live)')}
                 </label>
                 <div className="mt-2.5 grid grid-cols-2 gap-3">
                   <button
                     type="button"
-                    onClick={() => handleVoiceGenderChange('female')}
+                    onClick={() => handleVoiceSelect('Aoede', 'female')}
                     className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
-                      voiceGender === 'female'
+                      selectedVoiceId === 'Aoede'
                         ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
                         : isDark
                           ? 'border border-white/10 bg-white/5 text-white'
                           : 'border border-black/5 bg-black/5 text-[#111111]'
                     }`}
                   >
-                    <span>AYROVI Féminin</span>
-                    {voiceGender === 'female' && <Check size={16} />}
+                    <span>Aoede (Féminin)</span>
+                    {selectedVoiceId === 'Aoede' && <Check size={16} />}
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleVoiceGenderChange('male')}
+                    onClick={() => handleVoiceSelect('Kore', 'female')}
                     className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
-                      voiceGender === 'male'
+                      selectedVoiceId === 'Kore'
                         ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
                         : isDark
                           ? 'border border-white/10 bg-white/5 text-white'
                           : 'border border-black/5 bg-black/5 text-[#111111]'
                     }`}
                   >
-                    <span>AYROVI Masculin</span>
-                    {voiceGender === 'male' && <Check size={16} />}
+                    <span>Kore (Féminin Doux)</span>
+                    {selectedVoiceId === 'Kore' && <Check size={16} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleVoiceSelect('Puck', 'male')}
+                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
+                      selectedVoiceId === 'Puck'
+                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        : isDark
+                          ? 'border border-white/10 bg-white/5 text-white'
+                          : 'border border-black/5 bg-black/5 text-[#111111]'
+                    }`}
+                  >
+                    <span>Puck (Masculin)</span>
+                    {selectedVoiceId === 'Puck' && <Check size={16} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleVoiceSelect('Fenrir', 'male')}
+                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
+                      selectedVoiceId === 'Fenrir'
+                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        : isDark
+                          ? 'border border-white/10 bg-white/5 text-white'
+                          : 'border border-black/5 bg-black/5 text-[#111111]'
+                    }`}
+                  >
+                    <span>Fenrir (Masculin Calme)</span>
+                    {selectedVoiceId === 'Fenrir' && <Check size={16} />}
                   </button>
                 </div>
               </div>

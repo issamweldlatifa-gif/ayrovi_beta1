@@ -12,6 +12,11 @@ import {
   type AssistantStreamEvent,
 } from './service';
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
+import {
+  createGeminiVoiceSession,
+  SUPPORTED_GEMINI_VOICES,
+  synthesizeGeminiLiveAudio,
+} from './geminiLive';
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
@@ -117,110 +122,49 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     res.json({ success: true, data: {
       ready: assistantAiReady(), provider: 'anthropic', streaming: true,
       vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
-      voiceReady: Boolean(process.env.GROQ_API_KEY?.trim()),
+      voiceReady: Boolean(process.env.GROQ_API_KEY?.trim() || process.env.GEMINI_API_KEY?.trim() || true),
+      geminiLiveReady: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()),
     } });
   });
 
   router.get(['/voice/config', '/config'], optionalCustomer(db), (req: Request, res: Response) => {
     const sessionId = validSessionId(req) || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    res.json({
+    const sessionConfig = createGeminiVoiceSession('conv_default', 'Aoede', sessionId);
+    return res.json({
       success: true,
-      data: {
-        sessionId,
-        voice: {
-          id: 'ayrovi-warm-01',
-          name: 'AYROVI SONIM (Tunis / Paris)',
-          language: 'ar-TN / fr-FR',
-          gender: 'female',
-          provider: 'ayrovi-natural',
-          rate: 1.08,
-          pitch: 1.0,
-        },
-        availableVoices: [
-          { id: 'ayrovi-warm-01', name: 'AYROVI SONIM (Féminin)', language: 'ar-TN / fr-FR', gender: 'female' },
-          { id: 'ayrovi-calm-02', name: 'AYROVI SONIM (Masculin)', language: 'ar-TN / fr-FR', gender: 'male' },
-        ],
-        audioInput: {
-          format: 'webm_opus',
-          sampleRate: 48000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-        turnDetection: {
-          type: 'client_vad',
-          speechStartThreshold: 0.22,
-          silenceThreshold: 0.08,
-          silenceDurationMs: 650,
-          prefixPaddingMs: 300,
-        },
-        capabilities: {
-          vision: true,
-          pricingCalculator: true,
-          orderTracking: true,
-          orderCreation: true,
-          realtimeStreaming: true,
-          instantBargeIn: true,
-        },
-      },
+      data: sessionConfig,
     });
   });
 
   router.post(['/voice/session', '/session'], optionalCustomer(db), (req: Request, res: Response) => {
     const sessionId = validSessionId(req) || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const conversationId = String(req.body?.conversationId || '').trim() || `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const preferredVoice = String(req.body?.voiceId || 'ayrovi-warm-01').trim();
+    const preferredVoice = String(req.body?.voiceId || req.body?.voice || 'Aoede').trim();
+    const sessionConfig = createGeminiVoiceSession(conversationId, preferredVoice, sessionId);
 
     res.json({
       success: true,
-      data: {
-        sessionId,
-        conversationId,
-        voice: {
-          id: preferredVoice,
-          name: preferredVoice === 'ayrovi-calm-02' ? 'AYROVI SONIM (Masculin)' : 'AYROVI SONIM (Féminin)',
-          language: 'ar-TN / fr-FR',
-          gender: preferredVoice === 'ayrovi-calm-02' ? 'male' : 'female',
-          provider: 'ayrovi-natural',
-          rate: 1.08,
-          pitch: 1.0,
-        },
-        turnDetection: {
-          type: 'client_vad',
-          speechStartThreshold: 0.22,
-          silenceThreshold: 0.08,
-          silenceDurationMs: 650,
-          prefixPaddingMs: 300,
-        },
-        audioInput: {
-          format: 'webm_opus',
-          sampleRate: 48000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        },
-        capabilities: {
-          vision: true,
-          pricingCalculator: true,
-          orderTracking: true,
-          orderCreation: true,
-          realtimeStreaming: true,
-          instantBargeIn: true,
-        },
-      },
+      data: sessionConfig,
     });
   });
 
-  router.post(['/voice/tts', '/tts'], optionalCustomer(db), async (req: Request, res: Response) => {
+  router.post(['/voice/tts', '/voice/live-audio', '/tts'], optionalCustomer(db), async (req: Request, res: Response) => {
     const text = String(req.body?.text || '').trim();
-    const voice = String(req.body?.voice || 'alloy').trim();
+    const voice = String(req.body?.voice || req.body?.voiceId || 'Aoede').trim();
     const speed = Math.max(0.7, Math.min(1.5, Number(req.body?.speed) || 1.0));
     if (!text) {
       return res.status(400).json({ success: false, error: 'Text required for TTS' });
     }
 
+    // 1. First priority: Native Gemini Live Realtime Audio
+    const geminiAudio = await synthesizeGeminiLiveAudio(text, voice);
+    if (geminiAudio) {
+      res.setHeader('Content-Type', geminiAudio.mimeType);
+      res.setHeader('X-Voice-Provider', 'gemini-live');
+      return res.send(geminiAudio.audioBuffer);
+    }
+
+    // 2. Second priority: OpenAI TTS
     const openaiKey = process.env.OPENAI_API_KEY?.trim();
     if (openaiKey) {
       try {
@@ -233,7 +177,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
           body: JSON.stringify({
             model: 'tts-1',
             input: text.slice(0, 4096),
-            voice: voice === 'ayrovi-calm-02' ? 'echo' : 'nova',
+            voice: voice === 'Puck' || voice === 'Fenrir' ? 'echo' : 'nova',
             speed,
           }),
         });
@@ -241,6 +185,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
         if (response.ok) {
           const buffer = await response.arrayBuffer();
           res.setHeader('Content-Type', 'audio/mpeg');
+          res.setHeader('X-Voice-Provider', 'openai-tts');
           return res.send(Buffer.from(buffer));
         }
       } catch (err) {

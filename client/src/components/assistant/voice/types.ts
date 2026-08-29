@@ -15,15 +15,23 @@ export type VoiceState =
 export interface VoiceSessionConfig {
   sessionId: string;
   conversationId: string;
+  provider?: string;
+  model?: string;
   voice: {
     id: string;
     name: string;
     language: string;
     gender: 'female' | 'male';
-    provider: string;
-    rate: number;
-    pitch: number;
+    provider?: string;
+    rate?: number;
+    pitch?: number;
   };
+  availableVoices?: Array<{
+    id: string;
+    name: string;
+    gender: 'female' | 'male';
+    description?: string;
+  }>;
   audioInput: {
     format: string;
     sampleRate: number;
@@ -44,7 +52,8 @@ export interface VoiceSessionConfig {
     pricingCalculator: boolean;
     orderTracking: boolean;
     orderCreation: boolean;
-    realtimeStreaming: boolean;
+    realtimeStreaming?: boolean;
+    realtimeAudioStreaming?: boolean;
     instantBargeIn: boolean;
   };
 }
