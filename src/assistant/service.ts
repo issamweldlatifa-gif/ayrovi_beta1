@@ -55,7 +55,7 @@ function toAnthropicMessage(message: AssistantConversationLine) {
 }
 
 export function assistantAiReady(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY?.trim());
+  return true; // Always ready: uses Claude when ANTHROPIC_API_KEY is present, or built-in intelligent engine as fallback.
 }
 
 export function selectAssistantModel(messages: AssistantConversationLine[]): string {
@@ -383,7 +383,57 @@ async function recoverWithoutClaude(
   },
 ): Promise<void> {
   emit({ type: 'state', state: 'creating' });
+  const isArabic = /[\u0600-\u06FF]/.test(latestText);
+
   try {
+    // 1. Greetings
+    if (/^(?:salut|bonjour|coucou|hello|hi|hey|salam|مرحبا|سلام|أهلا|أهلاً|صباح الخير|مساء الخير|شنحوالك|عسلامة)[\s.!؟]*$/i.test(latestText.trim())) {
+      emit({
+        type: 'delta',
+        text: isArabic
+          ? 'مرحباً بك في AYROVI! كيف يمكنني مساعدتك اليوم؟ يمكنك إرسال صورة أو رابط أو سؤالي عن أي منتج أو تتبع طلبك.'
+          : 'Bonjour ! Comment puis-je vous aider aujourd’hui ? Vous pouvez m’envoyer une photo, un lien produit ou me poser une question.',
+      });
+      emit({ type: 'done', model: 'ayrovi-guide' });
+      return;
+    }
+
+    // 2. Order Tracking
+    if (/(?:suivi|commande|colis|où est ma commande|suivre ma commande|وين وصل طلبي|طلبيتي|تتبع الطلب|وين طلبي)/i.test(latestText)) {
+      const execution = await executeAssistantTool('get_order_status', {}, toolContext);
+      if (execution.presentation) emit({ type: 'tool', name: 'get_order_status', data: execution.presentation });
+      emit({
+        type: 'delta',
+        text: isArabic
+          ? 'لقيت معلومات طلبك في النظام. يمكنك مراجعة الحالة الحالية وتاريخ الشحن.'
+          : 'Voici l’état actuel de vos commandes et le suivi de livraison.',
+      });
+      emit({ type: 'done', model: 'ayrovi-guide' });
+      return;
+    }
+
+    // 3. Price / Shipping calculation
+    if (/(?:calcul|combien|prix|livraison|frais|douane|احسب|قداش|سوم|سعر|تكلفة|شحن|ديوانة)/i.test(latestText)) {
+      const priceMatch = latestText.match(/(\d+(?:[.,]\d+)?)/);
+      const amount = priceMatch ? parseFloat(priceMatch[1].replace(',', '.')) : 50;
+      const execution = await executeAssistantTool('calculate_price', {
+        item_price: amount,
+        currency: /(?:euro|eur|€)/i.test(latestText) ? 'EUR' : /(?:dollar|usd|\$)/i.test(latestText) ? 'USD' : 'EUR',
+        category: 'clothing',
+        weight_kg: 0.8,
+      }, toolContext);
+      if (execution.presentation) emit({ type: 'tool', name: 'calculate_price', data: execution.presentation });
+      emit({
+        type: 'delta',
+        text: isArabic
+          ? `حسبتلك التكلفة التقديرية بالدينار التونسي مع الشحن والديوانة.`
+          : `Voici le calcul estimatif du prix total en Dinars Tunisiens (TND) avec livraison et douane.`,
+      });
+      emit({ type: 'done', model: 'ayrovi-guide' });
+      return;
+    }
+
+    // 4. Lens search & visual matches
     if (options.forceLensTool) {
       const urlMatch = latestText.match(/https?:\/\/[^\s"'<>]+/i)?.[0]?.replace(/[).,;!?]+$/, '');
       const codeMatch = latestText.match(/\b\d{6,14}\b/)?.[0];
@@ -398,7 +448,7 @@ async function recoverWithoutClaude(
       emit({
         type: 'delta',
         text: found
-          ? (/[\u0600-\u06FF]/.test(latestText)
+          ? (isArabic
             ? 'لقيت نتيجة من الصورة أو الرابط. ثبّت المنتج ثم نكمّل الطلب.'
             : 'J’ai une piste à partir de la photo ou du lien. Confirme le produit pour commander.')
           : assistantFallbackReply(latestText),
@@ -406,6 +456,8 @@ async function recoverWithoutClaude(
       emit({ type: 'done', model: 'ayrovi-guide' });
       return;
     }
+
+    // 5. Product Catalog Search
     if (options.explicitProductSearch || looksLikeProductQuery(latestText)) {
       const query = searchQueryFromText(latestText) || latestText;
       const execution = await executeAssistantTool('search_products', { query }, toolContext);
@@ -414,7 +466,7 @@ async function recoverWithoutClaude(
       emit({
         type: 'delta',
         text: found
-          ? (/[\u0600-\u06FF]/.test(latestText)
+          ? (isArabic
             ? 'هاو اللي لقيت. اختار قطعة أو أرسل رابط أدق.'
             : 'Voici ce que j’ai trouvé. Choisis un article ou envoie un lien plus précis.')
           : assistantFallbackReply(latestText),
@@ -425,6 +477,7 @@ async function recoverWithoutClaude(
   } catch (error: any) {
     console.warn('[Assistant fallback]', error?.message || 'local recovery failed');
   }
+
   emit({ type: 'delta', text: isAssistantHelpQuestion(latestText) ? assistantHelpReply(latestText) : assistantFallbackReply(latestText) });
   emit({ type: 'done', model: 'ayrovi-guide' });
 }
@@ -436,7 +489,6 @@ export async function runAssistantChat(
   emit: (event: AssistantStreamEvent) => void,
   signal: AbortSignal,
 ): Promise<void> {
-  if (!assistantAiReady()) throw new AssistantUnavailableError('Claude n’est pas encore activé.');
   const messages = input.messages
     .filter((message) => message && ['user', 'assistant'].includes(message.role))
     .slice(-30)
@@ -486,6 +538,19 @@ export async function runAssistantChat(
     if (event.type === 'delta' && event.text) emittedText = true;
     emit(event);
   };
+
+  // If Anthropic API key is not configured, execute native intelligent tool-enabled agent
+  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
+    await recoverWithoutClaude(forward, toolContext, latestUser?.text || '', {
+      forceLensTool,
+      explicitProductSearch,
+      latestHasImage,
+      latestHasUrl,
+      latestHasCode,
+      attachmentId: latestUser?.attachments?.[0]?.id,
+    });
+    return;
+  }
 
   // Learning : correction client d'un prix annoncé (signal fort, §4).
   const previousAssistant = messages.filter((message) => message.role === 'assistant').at(-1)?.text || '';

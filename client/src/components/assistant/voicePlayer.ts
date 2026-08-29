@@ -2,7 +2,7 @@
  * AssistantVoicePlayer — High-performance Multi-lingual TTS & Real-time Audio Playback.
  * Features:
  * - Server TTS streaming with Web Audio Buffer playback when available.
- * - Robust client Web Speech Synthesis fallback with asynchronous voice warming and keep-alive.
+ * - Robust client Web Speech Synthesis with asynchronous voice warming, volume maximize, and keep-alive.
  * - Instant Barge-In cancellation.
  * - Real-time output level tracking for Voice Orb animations.
  */
@@ -14,7 +14,7 @@ export class AssistantVoicePlayer {
   private isSpeaking = false;
   private queue: string[] = [];
   private locale = 'fr';
-  private rate = 1.08;
+  private rate = 1.05;
   private pitch = 1.0;
   private voiceGender: 'female' | 'male' = 'female';
   private onStartCb?: () => void;
@@ -36,7 +36,7 @@ export class AssistantVoicePlayer {
     const loadVoices = () => {
       try {
         const voices = window.speechSynthesis.getVoices();
-        if (voices.length > 0) {
+        if (voices && voices.length > 0) {
           this.cachedVoices = voices;
           this.voicesLoaded = true;
         }
@@ -67,7 +67,9 @@ export class AssistantVoicePlayer {
 
     try {
       if (window.speechSynthesis) {
-        window.speechSynthesis.resume();
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+        }
         this.initVoices();
       }
     } catch {}
@@ -160,7 +162,7 @@ export class AssistantVoicePlayer {
       ? this.cachedVoices
       : (typeof window !== 'undefined' && window.speechSynthesis?.getVoices()) || [];
 
-    if (!voices.length) return null;
+    if (!voices || !voices.length) return null;
 
     const langPrefix = isArabic ? 'ar' : 'fr';
 
@@ -210,6 +212,7 @@ export class AssistantVoicePlayer {
 
     const utterance = new SpeechSynthesisUtterance(currentText);
     utterance.lang = lang;
+    utterance.volume = 1.0;
     utterance.rate = this.rate;
     utterance.pitch = this.pitch;
 
@@ -247,7 +250,7 @@ export class AssistantVoicePlayer {
       safeEnd();
     };
 
-    const estimatedMs = Math.max(3000, Math.min(30000, (currentText.length / 10) * 1000));
+    const estimatedMs = Math.max(3000, Math.min(30000, (currentText.length / 8) * 1000));
     this.safetyTimer = setTimeout(() => {
       if (this.isSpeaking) {
         safeEnd();
