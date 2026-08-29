@@ -73,6 +73,7 @@ GROQ_STT_MODEL=whisper-large-v3-turbo
 GEMINI_API_KEY=...
 GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview
 GEMINI_TTS_TIMEOUT_MS=20000
+GEMINI_TTS_QUOTA_COOLDOWN_MS=3600000
 ```
 
 الفحص:
@@ -93,7 +94,9 @@ curl https://YOUR-DOMAIN/api/assistant/status
 }
 ```
 
-بعد عودة حصة Gemini، تغيير `ASSISTANT_TTS_MODE` إلى `auto` يعيد TTS الخادمي من دون تغيير المفاتيح.
+بعد عودة حصة Gemini، تغيير `ASSISTANT_TTS_MODE` إلى `auto` يعيد TTS الخادمي من دون تغيير المفاتيح. إذا أعاد Gemini HTTP 429، يفتح الخادم circuit لمدة `Retry-After` أو ساعة افتراضيًا، ويصدر `TTS_QUOTA_EXCEEDED` للمراقبة فقط من دون عرضه في واجهة المستخدم أو تكرار الطلب في كل دور.
+
+قرار الانتقال إلى realtime موثق في `docs/REALTIME_VOICE_ARCHITECTURE_AR_2026-08-29.md`.
 
 ## التحقق
 
@@ -107,4 +110,4 @@ curl https://YOUR-DOMAIN/api/assistant/status
 - اختبارات PCM/WAV ومسارات STT/TTS الخادمية.
 - TypeScript للخادم والواجهة.
 - Production build.
-- المجموعة الكاملة: **224/224 اختبارًا ناجحًا**.
+- المجموعة الكاملة: **226/226 اختبارًا ناجحًا**.

@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
-import { normalizeGeminiAudio, pcm16leToWav } from '../src/assistant/geminiLive';
+import {
+  normalizeGeminiAudio,
+  pcm16leToWav,
+  resetGeminiTtsRuntimeState,
+} from '../src/assistant/geminiLive';
 
 afterEach(() => {
+  resetGeminiTtsRuntimeState();
   vi.unstubAllGlobals();
 });
 
@@ -138,6 +143,75 @@ describe('AYROVI voice transport and session subsystem', () => {
       else process.env.ASSISTANT_TTS_MODE = previousMode;
       if (previousGemini === undefined) delete process.env.GEMINI_API_KEY;
       else process.env.GEMINI_API_KEY = previousGemini;
+    }
+  });
+
+  it('opens one quota circuit on Gemini HTTP 429 and does not retry subsequent TTS requests', async () => {
+    const previous = {
+      mode: process.env.ASSISTANT_TTS_MODE,
+      gemini: process.env.GEMINI_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+      cooldown: process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS,
+    };
+    process.env.ASSISTANT_TTS_MODE = 'auto';
+    process.env.GEMINI_API_KEY = 'quota-test-key';
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS = '3600000';
+    resetGeminiTtsRuntimeState();
+
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
+      error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'quota exceeded' },
+    }), {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      for (const text of ['الطلب الأول', 'الطلب الثاني']) {
+        const response = await request(app)
+          .post('/api/assistant/voice/tts')
+          .set('x-session-id', 'sess_tts_quota_guard_001')
+          .send({ text, voice: 'Aoede' });
+        expect(response.status).toBe(200);
+        expect(response.body).toMatchObject({
+          success: false,
+          code: 'SERVER_TTS_UNAVAILABLE',
+          fallbackToClient: true,
+          debugCode: 'TTS_QUOTA_EXCEEDED',
+        });
+        expect(response.body).not.toHaveProperty('error');
+        expect(response.body.retryAt).toEqual(expect.any(String));
+      }
+
+      expect(fetchMock).toHaveBeenCalledOnce();
+      const status = await request(app).get('/api/assistant/status');
+      expect(status.body.data).toMatchObject({
+        ttsMode: 'auto',
+        serverTextToSpeechReady: false,
+        geminiTtsReady: false,
+        ttsRuntime: {
+          provider: 'gemini',
+          model: 'gemini-3.1-flash-tts-preview',
+          endpoint: 'generativelanguage.googleapis.com/v1beta/models/:generateContent',
+          state: 'quota_exceeded',
+          debugCode: 'TTS_QUOTA_EXCEEDED',
+        },
+      });
+    } finally {
+      resetGeminiTtsRuntimeState();
+      if (previous.mode === undefined) delete process.env.ASSISTANT_TTS_MODE;
+      else process.env.ASSISTANT_TTS_MODE = previous.mode;
+      if (previous.gemini === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous.gemini;
+      if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
+      else process.env.GOOGLE_API_KEY = previous.google;
+      if (previous.openai === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = previous.openai;
+      if (previous.cooldown === undefined) delete process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS;
+      else process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS = previous.cooldown;
     }
   });
 

@@ -14,6 +14,7 @@ import {
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
 import {
   createGeminiVoiceSession,
+  getGeminiTtsRuntimeStatus,
   serverTextToSpeechEnabled,
   serverTextToSpeechReady,
   synthesizeGeminiLiveAudio,
@@ -123,6 +124,7 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
     const serverTtsReady = serverTextToSpeechReady();
     const browserOnlyTts = !serverTextToSpeechEnabled();
+    const geminiTts = getGeminiTtsRuntimeStatus();
     res.json({ success: true, data: {
       ready: assistantAiReady(), provider: 'anthropic', streaming: true,
       vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
@@ -131,7 +133,8 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
       serverTextToSpeechReady: serverTtsReady,
       clientSpeechFallback: true,
       ttsMode: browserOnlyTts ? 'browser' : 'auto',
-      geminiTtsReady: !browserOnlyTts && Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()),
+      geminiTtsReady: geminiTts.state === 'ready',
+      ttsRuntime: geminiTts,
     } });
   });
 
@@ -212,8 +215,16 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
       }
     }
 
-    // The browser player will use SpeechSynthesis only when no server TTS is configured.
-    return res.status(200).json({ success: false, code: 'SERVER_TTS_UNAVAILABLE', fallbackToClient: true });
+    // Keep the assistant response intact and let the client perform one local
+    // SpeechSynthesis playback. Debug state is machine-readable but never shown
+    // as raw quota/provider text in the Voice UI.
+    const runtime = getGeminiTtsRuntimeStatus();
+    return res.status(200).json({
+      success: false,
+      code: 'SERVER_TTS_UNAVAILABLE',
+      fallbackToClient: true,
+      ...(runtime.debugCode ? { debugCode: runtime.debugCode, retryAt: runtime.retryAt } : {}),
+    });
   });
 
   router.post(['/transcribe', '/voice/transcribe'], optionalCustomer(db), voiceUpload.single('audio'), async (req: Request, res: Response) => {

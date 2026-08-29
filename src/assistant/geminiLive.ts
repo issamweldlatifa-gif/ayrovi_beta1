@@ -61,6 +61,23 @@ const DEFAULT_GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
 const DEFAULT_PCM_SAMPLE_RATE = 24_000;
 const MAX_TTS_TEXT_LENGTH = 4_096;
 const MAX_GENERATED_AUDIO_BYTES = 24 * 1024 * 1024;
+const DEFAULT_QUOTA_COOLDOWN_MS = 60 * 60 * 1_000;
+const MIN_QUOTA_COOLDOWN_MS = 60_000;
+const MAX_QUOTA_COOLDOWN_MS = 24 * 60 * 60 * 1_000;
+const GEMINI_TTS_ENDPOINT = 'generativelanguage.googleapis.com/v1beta/models/:generateContent';
+
+export interface GeminiTtsRuntimeStatus {
+  provider: 'gemini';
+  model: string;
+  endpoint: string;
+  state: 'disabled' | 'unconfigured' | 'ready' | 'quota_exceeded';
+  debugCode?: 'TTS_QUOTA_EXCEEDED';
+  lastFailureAt?: string;
+  retryAt?: string;
+}
+
+let quotaBlockedUntil = 0;
+let quotaLastFailureAt = 0;
 
 function geminiTtsModel(): string {
   return process.env.GEMINI_TTS_MODEL?.trim()
@@ -75,12 +92,70 @@ export function serverTextToSpeechEnabled(): boolean {
   return (process.env.ASSISTANT_TTS_MODE?.trim().toLowerCase() || 'browser') === 'auto';
 }
 
-export function serverTextToSpeechReady(): boolean {
-  return serverTextToSpeechEnabled() && Boolean(
-    process.env.GEMINI_API_KEY?.trim()
-    || process.env.GOOGLE_API_KEY?.trim()
-    || process.env.OPENAI_API_KEY?.trim(),
+function geminiTtsKeyConfigured(): boolean {
+  return Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim());
+}
+
+function geminiQuotaCircuitOpen(now = Date.now()): boolean {
+  return quotaBlockedUntil > now;
+}
+
+function configuredQuotaCooldownMs(): number {
+  const configured = Number(process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS || DEFAULT_QUOTA_COOLDOWN_MS);
+  if (!Number.isFinite(configured)) return DEFAULT_QUOTA_COOLDOWN_MS;
+  return Math.max(MIN_QUOTA_COOLDOWN_MS, Math.min(MAX_QUOTA_COOLDOWN_MS, Math.trunc(configured)));
+}
+
+function retryAfterMs(response: Response): number {
+  const raw = response.headers.get('retry-after')?.trim();
+  if (!raw) return configuredQuotaCooldownMs();
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) {
+    return Math.max(MIN_QUOTA_COOLDOWN_MS, Math.min(MAX_QUOTA_COOLDOWN_MS, Math.ceil(seconds * 1_000)));
+  }
+  const retryAt = Date.parse(raw);
+  if (!Number.isFinite(retryAt)) return configuredQuotaCooldownMs();
+  return Math.max(MIN_QUOTA_COOLDOWN_MS, Math.min(MAX_QUOTA_COOLDOWN_MS, retryAt - Date.now()));
+}
+
+function openGeminiQuotaCircuit(response: Response, model: string): void {
+  const now = Date.now();
+  quotaLastFailureAt = now;
+  quotaBlockedUntil = Math.max(quotaBlockedUntil, now + retryAfterMs(response));
+  console.warn(
+    `[Gemini TTS] TTS_QUOTA_EXCEEDED status=429 model=${model} retryAt=${new Date(quotaBlockedUntil).toISOString()}`,
   );
+}
+
+export function getGeminiTtsRuntimeStatus(now = Date.now()): GeminiTtsRuntimeStatus {
+  const base = {
+    provider: 'gemini' as const,
+    model: geminiTtsModel(),
+    endpoint: GEMINI_TTS_ENDPOINT,
+  };
+  if (!serverTextToSpeechEnabled()) return { ...base, state: 'disabled' };
+  if (!geminiTtsKeyConfigured()) return { ...base, state: 'unconfigured' };
+  if (geminiQuotaCircuitOpen(now)) {
+    return {
+      ...base,
+      state: 'quota_exceeded',
+      debugCode: 'TTS_QUOTA_EXCEEDED',
+      lastFailureAt: new Date(quotaLastFailureAt).toISOString(),
+      retryAt: new Date(quotaBlockedUntil).toISOString(),
+    };
+  }
+  return { ...base, state: 'ready' };
+}
+
+export function resetGeminiTtsRuntimeState(): void {
+  quotaBlockedUntil = 0;
+  quotaLastFailureAt = 0;
+}
+
+export function serverTextToSpeechReady(): boolean {
+  if (!serverTextToSpeechEnabled()) return false;
+  const geminiReady = getGeminiTtsRuntimeStatus().state === 'ready';
+  return geminiReady || Boolean(process.env.OPENAI_API_KEY?.trim());
 }
 
 export function createGeminiVoiceSession(
@@ -216,7 +291,7 @@ export async function synthesizeGeminiLiveAudio(
 ): Promise<{ audioBuffer: Buffer; mimeType: string } | null> {
   const apiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
   const cleanText = text.trim().slice(0, MAX_TTS_TEXT_LENGTH);
-  if (!apiKey || !cleanText) return null;
+  if (!apiKey || !cleanText || !serverTextToSpeechEnabled() || geminiQuotaCircuitOpen()) return null;
 
   const chosenVoice = SUPPORTED_GEMINI_VOICES.find((voice) => voice.id.toLowerCase() === voiceName.toLowerCase())
     || SUPPORTED_GEMINI_VOICES[0];
@@ -256,6 +331,11 @@ export async function synthesizeGeminiLiveAudio(
     });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        openGeminiQuotaCircuit(response, model);
+        await response.text().catch(() => '');
+        return null;
+      }
       const detail = await response.text().catch(() => '');
       console.warn(`[Gemini TTS] API HTTP ${response.status}${detail ? `: ${detail.slice(0, 240)}` : ''}`);
       return null;
@@ -269,7 +349,9 @@ export async function synthesizeGeminiLiveAudio(
     if (!inlineData?.data || typeof inlineData.data !== 'string') return null;
 
     const audioBuffer = Buffer.from(inlineData.data, 'base64');
-    return normalizeGeminiAudio(audioBuffer, String(inlineData.mimeType || 'audio/pcm;rate=24000'));
+    const normalized = normalizeGeminiAudio(audioBuffer, String(inlineData.mimeType || 'audio/pcm;rate=24000'));
+    if (normalized) resetGeminiTtsRuntimeState();
+    return normalized;
   } catch (error: any) {
     console.warn('[Gemini TTS] Audio synthesis failed:', error?.message || error);
     return null;
