@@ -8,7 +8,7 @@ All notable AYROVI changes are recorded in this file.
 - Removed the legacy `RealtimeVoiceTransport`, global queued `voicePlayer`, synthetic voice earcons, recursive interruption events and browser SpeechRecognition branch.
 - Rebuilt Voice Chat around one owned `VoiceChatController`: microphone → VAD with pre-roll → MediaRecorder → server STT → one assistant response → one `VoiceOutput` operation.
 - Voice Chat is hands-free between turns but strictly half-duplex: microphone recording is stopped and the input track is disabled for the whole TTS loading/playback interval.
-- A complete assistant answer is spoken once. Server TTS is preferred; one matching browser utterance is the fallback.
+- A complete assistant answer is spoken once. Server TTS remains available in `auto` mode; Render is temporarily set to `ASSISTANT_TTS_MODE=browser` while Gemini quota is unavailable.
 
 ### Fixed
 - The first word is retained before VAD opens the turn, while the original WebM/Ogg initialization header is preserved so Firefox/Android recordings remain decodable by STT.
@@ -19,8 +19,9 @@ All notable AYROVI changes are recorded in this file.
 - Gemini raw 24 kHz PCM remains normalized to a valid WAV response, and the legacy TTS route remains compatible.
 
 ### Validation
-- Replaced the old voice regressions with clean controller/output lifecycle, pre-roll, half-duplex, cancellation, browser-language fallback, server WAV and route tests.
-- 224 automated tests, TypeScript checks and the production build pass.
+- Replaced the old voice regressions with clean controller/output lifecycle, container-header preservation, half-duplex, cancellation, browser-language fallback, server WAV and route tests.
+- Added coverage proving browser-only mode bypasses configured Gemini TTS without deleting its key.
+- 225 automated tests, TypeScript checks and the production build pass.
 
 ## [3.10.4] - 2026-08-21
 

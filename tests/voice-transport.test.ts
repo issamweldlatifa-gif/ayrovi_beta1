@@ -94,9 +94,54 @@ describe('AYROVI voice transport and session subsystem', () => {
     }
   });
 
+  it('honors browser-only output mode even while a Gemini key remains configured', async () => {
+    const previousMode = process.env.ASSISTANT_TTS_MODE;
+    const previousGemini = process.env.GEMINI_API_KEY;
+    process.env.ASSISTANT_TTS_MODE = 'browser';
+    process.env.GEMINI_API_KEY = 'configured-but-paused';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      const status = await request(app).get('/api/assistant/status');
+      expect(status.status).toBe(200);
+      expect(status.body.data).toMatchObject({
+        speechToTextReady: expect.any(Boolean),
+        serverTextToSpeechReady: false,
+        clientSpeechFallback: true,
+        ttsMode: 'browser',
+        geminiTtsReady: false,
+      });
+
+      const session = await request(app)
+        .get('/api/voice/config')
+        .set('x-session-id', 'sess_browser_tts_mode_001');
+      expect(session.body.data.capabilities.serverTextToSpeech).toBe(false);
+
+      const tts = await request(app)
+        .post('/api/assistant/voice/tts')
+        .set('x-session-id', 'sess_browser_tts_mode_001')
+        .send({ text: 'مرحبا', voice: 'Aoede' });
+      expect(tts.status).toBe(200);
+      expect(tts.body).toMatchObject({
+        success: false,
+        code: 'SERVER_TTS_DISABLED',
+        fallbackToClient: true,
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      if (previousMode === undefined) delete process.env.ASSISTANT_TTS_MODE;
+      else process.env.ASSISTANT_TTS_MODE = previousMode;
+      if (previousGemini === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previousGemini;
+    }
+  });
+
   it('wraps Gemini raw 24 kHz PCM in a valid WAV response before browser playback', async () => {
+    const previousMode = process.env.ASSISTANT_TTS_MODE;
     const previousKey = process.env.GEMINI_API_KEY;
     const previousModel = process.env.GEMINI_TTS_MODEL;
+    process.env.ASSISTANT_TTS_MODE = 'auto';
     process.env.GEMINI_API_KEY = 'gemini-test-key';
     process.env.GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
     const rawPcm = Buffer.alloc(960);
@@ -133,6 +178,8 @@ describe('AYROVI voice transport and session subsystem', () => {
       expect(String(fetchMock.mock.calls[0][0])).toContain('gemini-3.1-flash-tts-preview:generateContent');
       expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ 'x-goog-api-key': 'gemini-test-key' });
     } finally {
+      if (previousMode === undefined) delete process.env.ASSISTANT_TTS_MODE;
+      else process.env.ASSISTANT_TTS_MODE = previousMode;
       if (previousKey === undefined) delete process.env.GEMINI_API_KEY;
       else process.env.GEMINI_API_KEY = previousKey;
       if (previousModel === undefined) delete process.env.GEMINI_TTS_MODEL;

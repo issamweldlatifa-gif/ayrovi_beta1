@@ -58,14 +58,16 @@ Microphone
 ## المزودات
 
 - STT: `GROQ_API_KEY` مع `whisper-large-v3-turbo`.
-- TTS الأساسي: `GEMINI_API_KEY` مع `gemini-3.1-flash-tts-preview`.
-- TTS الاحتياطي: صوت النظام في المتصفح، utterance واحدة بلغة النص.
+- TTS الخادمي في وضع `auto`: `GEMINI_API_KEY` مع `gemini-3.1-flash-tts-preview`.
+- TTS الحالي مؤقتًا في Render: `ASSISTANT_TTS_MODE=browser` لتجاوز Gemini بالكامل أثناء تعطل الحصة.
+- TTS في المتصفح: صوت النظام، utterance واحدة كاملة بلغة النص.
 
-إذا لم يجد المتصفح صوتًا يطابق العربية، يترك اختيار الصوت للنظام ولا يفرض صوتًا فرنسيًا على النص العربي.
+لا يلزم حذف مفتاح Gemini عند اختيار وضع المتصفح. وإذا لم يجد المتصفح صوتًا يطابق العربية، يترك اختيار الصوت للنظام ولا يفرض صوتًا فرنسيًا على النص العربي.
 
 ## إعداد Render
 
 ```env
+ASSISTANT_TTS_MODE=browser
 GROQ_API_KEY=...
 GROQ_STT_MODEL=whisper-large-v3-turbo
 GEMINI_API_KEY=...
@@ -79,15 +81,19 @@ GEMINI_TTS_TIMEOUT_MS=20000
 curl https://YOUR-DOMAIN/api/assistant/status
 ```
 
-لصوت خادمي طبيعي يجب أن تكون:
+في الوضع المؤقت الحالي يجب أن تكون:
 
 ```json
 {
   "speechToTextReady": true,
-  "serverTextToSpeechReady": true,
-  "geminiTtsReady": true
+  "serverTextToSpeechReady": false,
+  "clientSpeechFallback": true,
+  "ttsMode": "browser",
+  "geminiTtsReady": false
 }
 ```
+
+بعد عودة حصة Gemini، تغيير `ASSISTANT_TTS_MODE` إلى `auto` يعيد TTS الخادمي من دون تغيير المفاتيح.
 
 ## التحقق
 

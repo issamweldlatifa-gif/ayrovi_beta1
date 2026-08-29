@@ -68,6 +68,19 @@ function geminiTtsModel(): string {
     || DEFAULT_GEMINI_TTS_MODEL;
 }
 
+/** Allow operations to select browser SpeechSynthesis without removing provider keys. */
+export function serverTextToSpeechEnabled(): boolean {
+  return (process.env.ASSISTANT_TTS_MODE?.trim().toLowerCase() || 'auto') !== 'browser';
+}
+
+export function serverTextToSpeechReady(): boolean {
+  return serverTextToSpeechEnabled() && Boolean(
+    process.env.GEMINI_API_KEY?.trim()
+    || process.env.GOOGLE_API_KEY?.trim()
+    || process.env.OPENAI_API_KEY?.trim(),
+  );
+}
+
 export function createGeminiVoiceSession(
   conversationId: string,
   preferredVoiceId = 'Aoede',
@@ -110,13 +123,9 @@ export function createGeminiVoiceSession(
       pricingCalculator: true,
       orderTracking: true,
       orderCreation: true,
-      // The chat text is streamed, while TTS clips are queued serially.
+      // The chat text is streamed, while output is one complete playback.
       realtimeAudioStreaming: false,
-      serverTextToSpeech: Boolean(
-        process.env.GEMINI_API_KEY?.trim()
-        || process.env.GOOGLE_API_KEY?.trim()
-        || process.env.OPENAI_API_KEY?.trim(),
-      ),
+      serverTextToSpeech: serverTextToSpeechReady(),
       instantBargeIn: true,
     },
   };

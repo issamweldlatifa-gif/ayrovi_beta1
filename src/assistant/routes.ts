@@ -14,6 +14,8 @@ import {
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
 import {
   createGeminiVoiceSession,
+  serverTextToSpeechEnabled,
+  serverTextToSpeechReady,
   synthesizeGeminiLiveAudio,
 } from './geminiLive';
 
@@ -119,19 +121,17 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
 
   router.get('/status', (_req, res) => {
     const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
-    const serverTextToSpeechReady = Boolean(
-      process.env.GEMINI_API_KEY?.trim()
-      || process.env.GOOGLE_API_KEY?.trim()
-      || process.env.OPENAI_API_KEY?.trim(),
-    );
+    const serverTtsReady = serverTextToSpeechReady();
+    const browserOnlyTts = !serverTextToSpeechEnabled();
     res.json({ success: true, data: {
       ready: assistantAiReady(), provider: 'anthropic', streaming: true,
       vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
-      voiceReady: speechToTextReady || serverTextToSpeechReady,
+      voiceReady: speechToTextReady || serverTtsReady,
       speechToTextReady,
-      serverTextToSpeechReady,
+      serverTextToSpeechReady: serverTtsReady,
       clientSpeechFallback: true,
-      geminiTtsReady: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()),
+      ttsMode: browserOnlyTts ? 'browser' : 'auto',
+      geminiTtsReady: !browserOnlyTts && Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()),
     } });
   });
 
@@ -165,6 +165,9 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     const speed = Math.max(0.7, Math.min(1.5, Number(req.body?.speed) || 1.0));
     if (!text) {
       return res.status(400).json({ success: false, code: 'TTS_TEXT_REQUIRED', error: 'Text required for TTS' });
+    }
+    if (!serverTextToSpeechEnabled()) {
+      return res.status(200).json({ success: false, code: 'SERVER_TTS_DISABLED', fallbackToClient: true });
     }
 
     // 1. Gemini TTS. Raw PCM is normalized to WAV by the adapter.

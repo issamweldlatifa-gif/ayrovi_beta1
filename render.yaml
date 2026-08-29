@@ -102,6 +102,9 @@ services:
       - key: PIXABAY_API_KEY
         sync: false
       # Voice input (STT) and output (TTS), server-side only.
+      # Temporary browser-only output keeps Gemini credentials intact while its quota is unavailable.
+      - key: ASSISTANT_TTS_MODE
+        value: browser
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_STT_MODEL
