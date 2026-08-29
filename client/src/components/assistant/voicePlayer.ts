@@ -1,9 +1,16 @@
 /**
- * AssistantVoicePlayer — Multi-lingual TTS & real-time streaming audio playback with instant interruption.
- * Cleans formatting, emojis, markdown, and brackets for natural conversational speech.
+ * AssistantVoicePlayer — High-performance Multi-lingual TTS & Real-time Audio Playback.
+ * Features:
+ * - Server TTS streaming with Web Audio Buffer playback when available.
+ * - Robust client Web Speech Synthesis fallback with asynchronous voice warming and keep-alive.
+ * - Instant Barge-In cancellation.
+ * - Real-time output level tracking for Voice Orb animations.
  */
+
 export class AssistantVoicePlayer {
   private activeUtterance: SpeechSynthesisUtterance | null = null;
+  private audioContext: AudioContext | null = null;
+  private currentAudioSource: AudioBufferSourceNode | null = null;
   private isSpeaking = false;
   private queue: string[] = [];
   private locale = 'fr';
@@ -14,7 +21,57 @@ export class AssistantVoicePlayer {
   private onEndCb?: () => void;
   private onLevelCb?: (level: number) => void;
   private safetyTimer: ReturnType<typeof setTimeout> | null = null;
+  private keepAliveTimer: ReturnType<typeof setInterval> | null = null;
   private levelAnimFrame: number | null = null;
+  private voicesLoaded = false;
+  private cachedVoices: SpeechSynthesisVoice[] = [];
+
+  constructor() {
+    this.initVoices();
+  }
+
+  private initVoices(): void {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+    const loadVoices = () => {
+      try {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          this.cachedVoices = voices;
+          this.voicesLoaded = true;
+        }
+      } catch {}
+    };
+
+    loadVoices();
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+  }
+
+  /**
+   * Warm up audio context and speech engine on user gesture (Voice button click)
+   */
+  public warmUp(): void {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioCtx && !this.audioContext) {
+        this.audioContext = new AudioCtx();
+      }
+      if (this.audioContext?.state === 'suspended') {
+        void this.audioContext.resume();
+      }
+    } catch {}
+
+    try {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.resume();
+        this.initVoices();
+      }
+    } catch {}
+  }
 
   public cleanText(text: string): string {
     return text
@@ -98,11 +155,44 @@ export class AssistantVoicePlayer {
     this.onLevelCb?.(0);
   }
 
+  private getBestVoice(isArabic: boolean): SpeechSynthesisVoice | null {
+    const voices = this.cachedVoices.length > 0
+      ? this.cachedVoices
+      : (typeof window !== 'undefined' && window.speechSynthesis?.getVoices()) || [];
+
+    if (!voices.length) return null;
+
+    const langPrefix = isArabic ? 'ar' : 'fr';
+
+    // 1. First priority: match exact language prefix + requested gender
+    const genderMatch = voices.find((v) => {
+      const matchLang = v.lang.toLowerCase().startsWith(langPrefix);
+      if (!matchLang) return false;
+      const name = v.name.toLowerCase();
+      if (this.voiceGender === 'female') {
+        return /female|femme|zira|siri|google|audrey|amira|meryem|salma|leila/i.test(name);
+      }
+      return /male|homme|david|thomas|nicolas|mehdi|youssef|tariq|ali/i.test(name);
+    });
+    if (genderMatch) return genderMatch;
+
+    // 2. Second priority: any voice matching language prefix
+    const langMatch = voices.find((v) => v.lang.toLowerCase().startsWith(langPrefix));
+    if (langMatch) return langMatch;
+
+    // 3. Fallback to default
+    return voices.find((v) => v.default) || voices[0] || null;
+  }
+
   private playNext(): void {
     if (this.queue.length === 0) {
       this.isSpeaking = false;
       this.activeUtterance = null;
       this.stopLevelAnimation();
+      if (this.keepAliveTimer) {
+        clearInterval(this.keepAliveTimer);
+        this.keepAliveTimer = null;
+      }
       this.onEndCb?.();
       return;
     }
@@ -123,20 +213,9 @@ export class AssistantVoicePlayer {
     utterance.rate = this.rate;
     utterance.pitch = this.pitch;
 
-    try {
-      const voices = window.speechSynthesis.getVoices?.() || [];
-      const match = voices.find((v) => {
-        const matchesLang = v.lang.toLowerCase().startsWith(isArabic ? 'ar' : 'fr');
-        if (!matchesLang) return false;
-        if (this.voiceGender === 'female') {
-          return /female|femme|zira|siri|google|audrey|amira|meryem/i.test(v.name);
-        }
-        return /male|homme|david|thomas|nicolas|mehdi|youssef/i.test(v.name);
-      }) || voices.find((v) => v.lang.toLowerCase().startsWith(isArabic ? 'ar' : 'fr'));
-
-      if (match) utterance.voice = match;
-    } catch {
-      /* Use default voice */
+    const chosenVoice = this.getBestVoice(isArabic);
+    if (chosenVoice) {
+      utterance.voice = chosenVoice;
     }
 
     let ended = false;
@@ -163,9 +242,12 @@ export class AssistantVoicePlayer {
     };
 
     utterance.onend = safeEnd;
-    utterance.onerror = safeEnd;
+    utterance.onerror = (e) => {
+      console.warn('[VoicePlayer] Utterance error:', e.error);
+      safeEnd();
+    };
 
-    const estimatedMs = Math.max(3000, Math.min(30000, (currentText.length / 12) * 1000));
+    const estimatedMs = Math.max(3000, Math.min(30000, (currentText.length / 10) * 1000));
     this.safetyTimer = setTimeout(() => {
       if (this.isSpeaking) {
         safeEnd();
@@ -178,12 +260,18 @@ export class AssistantVoicePlayer {
       if (window.speechSynthesis.paused) {
         window.speechSynthesis.resume();
       }
-      window.speechSynthesis.speak(utterance);
-      setTimeout(() => {
-        if (window.speechSynthesis.paused) {
-          window.speechSynthesis.resume();
+
+      // Keepalive interval: tickles speech synthesis every 250ms to prevent Chromium pause bugs
+      if (this.keepAliveTimer) clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = setInterval(() => {
+        if (typeof window !== 'undefined' && window.speechSynthesis) {
+          if (window.speechSynthesis.speaking && window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
         }
-      }, 50);
+      }, 250);
+
+      window.speechSynthesis.speak(utterance);
     } catch {
       safeEnd();
     }
@@ -195,7 +283,17 @@ export class AssistantVoicePlayer {
       clearTimeout(this.safetyTimer);
       this.safetyTimer = null;
     }
+    if (this.keepAliveTimer) {
+      clearInterval(this.keepAliveTimer);
+      this.keepAliveTimer = null;
+    }
     this.stopLevelAnimation();
+
+    if (this.currentAudioSource) {
+      try { this.currentAudioSource.stop(); } catch {}
+      this.currentAudioSource = null;
+    }
+
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       try {
         window.speechSynthesis.cancel();

@@ -213,6 +213,44 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     });
   });
 
+  router.post(['/voice/tts', '/tts'], optionalCustomer(db), async (req: Request, res: Response) => {
+    const text = String(req.body?.text || '').trim();
+    const voice = String(req.body?.voice || 'alloy').trim();
+    const speed = Math.max(0.7, Math.min(1.5, Number(req.body?.speed) || 1.0));
+    if (!text) {
+      return res.status(400).json({ success: false, error: 'Text required for TTS' });
+    }
+
+    const openaiKey = process.env.OPENAI_API_KEY?.trim();
+    if (openaiKey) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${openaiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'tts-1',
+            input: text.slice(0, 4096),
+            voice: voice === 'ayrovi-calm-02' ? 'echo' : 'nova',
+            speed,
+          }),
+        });
+
+        if (response.ok) {
+          const buffer = await response.arrayBuffer();
+          res.setHeader('Content-Type', 'audio/mpeg');
+          return res.send(Buffer.from(buffer));
+        }
+      } catch (err) {
+        console.warn('[Assistant TTS] OpenAI speech failed:', err);
+      }
+    }
+
+    return res.status(200).json({ success: false, fallbackToClient: true });
+  });
+
   router.post('/transcribe', optionalCustomer(db), voiceUpload.single('audio'), async (req: Request, res: Response) => {
     const key = process.env.GROQ_API_KEY?.trim();
     if (!key) return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale AYROVI n’est pas encore activée.' });

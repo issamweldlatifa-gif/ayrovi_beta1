@@ -324,6 +324,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (voiceMode) {
       stopVoiceMode();
     } else {
+      globalVoicePlayer.warmUp();
       setVoiceMode(true);
       voiceModeRef.current = true;
       setIsMuted(false);
