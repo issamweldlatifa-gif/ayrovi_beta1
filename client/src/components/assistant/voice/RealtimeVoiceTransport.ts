@@ -1,6 +1,7 @@
 import type { RealtimeVoiceEvent, VoiceSessionConfig, VoiceState } from './types';
 import { globalVoicePlayer } from '../voicePlayer';
 import { voiceSoundEffects } from './voiceSoundEffects';
+import { getSessionId } from '../../../utils/session';
 
 export type VoiceEventListener = (event: RealtimeVoiceEvent) => void;
 
@@ -25,11 +26,13 @@ export class RealtimeVoiceTransport {
   private isSpeakerMuted = false;
   private animFrameId: number | null = null;
   private silenceTimer: ReturnType<typeof setTimeout> | null = null;
+  private maxTurnTimer: ReturnType<typeof setTimeout> | null = null;
   private speechStartedAt = 0;
   private hasSpokenInTurn = false;
+  private isProcessingTurn = false;
   private sessionConfig: VoiceSessionConfig | null = null;
   private currentTranscript = '';
-  private noiseFloor = 0.05; // Adaptive background noise baseline
+  private noiseFloor = 0.04; // Adaptive background noise baseline
   private csrfToken: string | undefined = undefined;
 
   constructor(private readonly conversationId: string) {}
@@ -80,6 +83,7 @@ export class RealtimeVoiceTransport {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'x-session-id': getSessionId(),
             ...(csrfToken ? { 'x-csrf-token': csrfToken } : {}),
           },
           body: JSON.stringify({
@@ -237,56 +241,73 @@ export class RealtimeVoiceTransport {
       const speechBandAvg = speechBandSum / Math.max(1, (3500 - 250) / binSize);
       const speechBandNormalized = Math.min(1, speechBandAvg / 100);
 
-      // Dynamically adapt background noise floor
-      if (normalized < this.noiseFloor) {
-        this.noiseFloor = normalized;
-      } else {
-        this.noiseFloor = this.noiseFloor * 0.996 + normalized * 0.004;
+      // Fast-adapting noise floor baseline when not speaking
+      if (!this.hasSpokenInTurn) {
+        this.noiseFloor = Math.max(0.02, Math.min(0.40, this.noiseFloor * 0.98 + normalized * 0.02));
       }
 
-      // Compute speech-aware energy above ambient noise
-      const speechEnergy = Math.max(0, speechBandNormalized - (this.noiseFloor * 0.7));
+      // Compute speech-aware relative energy above background noise
+      const relEnergy = Math.max(0, normalized - this.noiseFloor);
+      const speechRel = Math.max(0, speechBandNormalized - (this.noiseFloor * 0.85));
 
       // Emit real audio level for live visualizer
       this.emit({ type: 'input_audio.level', level: this.isMuted ? 0 : normalized });
 
       // Instant Barge-In Detection:
-      // If assistant is speaking and user speaks with energy > 0.18, immediately interrupt!
-      if (this.state === 'assistant_speaking' && speechEnergy > 0.18 && !this.isMuted) {
+      // If assistant is speaking and user speaks, immediately interrupt!
+      if (this.state === 'assistant_speaking' && (speechRel > 0.15 || relEnergy > 0.18) && !this.isMuted) {
         this.interrupt();
         return;
       }
 
-      // Speech-aware Voice Activity Detection during Listening or User Speaking:
-      if ((this.state === 'listening' || this.state === 'user_speaking') && !this.isMuted) {
-        if (speechEnergy > 0.10) {
-          if (!this.hasSpokenInTurn) {
-            this.hasSpokenInTurn = true;
-            this.speechStartedAt = Date.now();
-            this.emit({ type: 'state.changed', state: 'user_speaking' });
-            this.emit({ type: 'speech.started' });
+      // Speech-aware Voice Activity Detection with Hysteresis & Hard Cap:
+      if ((this.state === 'listening' || this.state === 'user_speaking') && !this.isMuted && !this.isProcessingTurn) {
+        // Trigger speech start
+        if (!this.hasSpokenInTurn && (speechRel > 0.12 || relEnergy > 0.15)) {
+          this.hasSpokenInTurn = true;
+          this.speechStartedAt = Date.now();
+          this.emit({ type: 'state.changed', state: 'user_speaking' });
+          this.emit({ type: 'speech.started' });
 
-            // Start recording audio chunks for non-WebSpeech STT fallback
-            if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
-              this.recordedChunks = [];
-              try {
-                this.mediaRecorder.start(100);
-              } catch (e) {
-                console.warn('[VoiceTransport] MediaRecorder start failed:', e);
-              }
+          // Start recording audio chunks for non-WebSpeech STT fallback
+          if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+            this.recordedChunks = [];
+            try {
+              this.mediaRecorder.start(100);
+            } catch (e) {
+              console.warn('[VoiceTransport] MediaRecorder start failed:', e);
             }
           }
-          if (this.silenceTimer) {
-            clearTimeout(this.silenceTimer);
-            this.silenceTimer = null;
-          }
-        } else if (this.hasSpokenInTurn && !this.silenceTimer) {
-          // User paused speaking: wait 650ms silence threshold before completing turn
-          this.silenceTimer = setTimeout(() => {
-            if (this.state === 'listening' || this.state === 'user_speaking') {
+
+          // Hard Safety Cap: Max 3.2 seconds speech turn so mobile noise can NEVER hang turn
+          if (this.maxTurnTimer) clearTimeout(this.maxTurnTimer);
+          this.maxTurnTimer = setTimeout(() => {
+            if ((this.state === 'listening' || this.state === 'user_speaking') && this.hasSpokenInTurn) {
               void this.finishUserTurn();
             }
-          }, 650);
+          }, 3200);
+        }
+
+        // Detect silence or ongoing speech while in turn
+        if (this.hasSpokenInTurn) {
+          const isSilent = speechRel < 0.07 && relEnergy < 0.09;
+
+          if (isSilent) {
+            // User paused speaking: wait 450ms silence threshold before completing turn
+            if (!this.silenceTimer) {
+              this.silenceTimer = setTimeout(() => {
+                if ((this.state === 'listening' || this.state === 'user_speaking') && this.hasSpokenInTurn) {
+                  void this.finishUserTurn();
+                }
+              }, 450);
+            }
+          } else {
+            // User actively continuing speech
+            if (this.silenceTimer) {
+              clearTimeout(this.silenceTimer);
+              this.silenceTimer = null;
+            }
+          }
         }
       }
 
@@ -349,7 +370,7 @@ export class RealtimeVoiceTransport {
               if (this.state === 'listening' || this.state === 'user_speaking') {
                 void this.finishUserTurn();
               }
-            }, 450);
+            }, 350);
           }
         }
       };
@@ -374,18 +395,34 @@ export class RealtimeVoiceTransport {
     }
   }
 
+  public forceFinishTurn(): void {
+    if (this.state === 'user_speaking' || this.state === 'listening') {
+      void this.finishUserTurn();
+    }
+  }
+
   private async finishUserTurn(): Promise<void> {
+    if (this.isProcessingTurn) return;
+    this.isProcessingTurn = true;
+
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
       this.silenceTimer = null;
+    }
+    if (this.maxTurnTimer) {
+      clearTimeout(this.maxTurnTimer);
+      this.maxTurnTimer = null;
     }
 
     const duration = Date.now() - (this.speechStartedAt || Date.now());
     this.emit({ type: 'speech.stopped', durationMs: duration });
 
-    // Stop MediaRecorder if recording
+    // Request remaining audio data & stop MediaRecorder
     if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
       try {
+        if (typeof this.mediaRecorder.requestData === 'function') {
+          this.mediaRecorder.requestData();
+        }
         this.mediaRecorder.stop();
       } catch {}
     }
@@ -395,16 +432,18 @@ export class RealtimeVoiceTransport {
     const hasSpoken = this.hasSpokenInTurn;
     this.hasSpokenInTurn = false;
 
+    // Transition immediately to processing state so user sees responsive UI
+    this.emit({ type: 'state.changed', state: 'processing' });
+
     // 1. If WebSpeech transcript is ready, use it immediately!
     if (text) {
       this.emit({ type: 'transcript.completed', text });
-      this.emit({ type: 'state.changed', state: 'processing' });
+      this.isProcessingTurn = false;
       return;
     }
 
     // 2. If no WebSpeech transcript (e.g. Firefox Mobile / Safari), fallback to Server STT with recorded audio
-    if (hasSpoken && this.recordedChunks.length > 0 && duration >= 300) {
-      this.emit({ type: 'state.changed', state: 'processing' });
+    if (hasSpoken && this.recordedChunks.length > 0 && duration >= 250) {
       this.emit({ type: 'transcript.delta', text: '...' });
 
       try {
@@ -420,6 +459,7 @@ export class RealtimeVoiceTransport {
         const response = await fetch('/api/assistant/transcribe', {
           method: 'POST',
           headers: {
+            'x-session-id': getSessionId(),
             ...(this.csrfToken ? { 'x-csrf-token': this.csrfToken } : {}),
           },
           body: formData,
@@ -437,16 +477,17 @@ export class RealtimeVoiceTransport {
     }
 
     // 3. Fallback greeting if speech was detected but nothing transcribed
-    if (!text && hasSpoken && duration >= 400) {
+    if (!text && hasSpoken && duration >= 300) {
       text = 'مرحبا، تسمع فيا؟';
     }
 
     if (text) {
       this.emit({ type: 'transcript.completed', text });
-      this.emit({ type: 'state.changed', state: 'processing' });
     } else {
       this.emit({ type: 'state.changed', state: 'listening' });
     }
+
+    this.isProcessingTurn = false;
   }
 
   /**
@@ -458,6 +499,16 @@ export class RealtimeVoiceTransport {
     globalVoicePlayer.stop();
     this.emit({ type: 'interrupted' });
     this.emit({ type: 'state.changed', state: 'interrupted' });
+
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+    if (this.maxTurnTimer) {
+      clearTimeout(this.maxTurnTimer);
+      this.maxTurnTimer = null;
+    }
+    this.isProcessingTurn = false;
 
     setTimeout(() => {
       if (this.state !== 'closing' && this.state !== 'idle') {
@@ -505,6 +556,10 @@ export class RealtimeVoiceTransport {
       clearTimeout(this.silenceTimer);
       this.silenceTimer = null;
     }
+    if (this.maxTurnTimer) {
+      clearTimeout(this.maxTurnTimer);
+      this.maxTurnTimer = null;
+    }
 
     if (this.speechRecognizer) {
       try { this.speechRecognizer.stop(); } catch {}
@@ -533,6 +588,7 @@ export class RealtimeVoiceTransport {
 
     this.analyser = null;
     this.hasSpokenInTurn = false;
+    this.isProcessingTurn = false;
     this.currentTranscript = '';
     this.emit({ type: 'state.changed', state: 'idle' });
   }

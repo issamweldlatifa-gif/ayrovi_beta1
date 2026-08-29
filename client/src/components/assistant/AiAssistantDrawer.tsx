@@ -1107,6 +1107,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onToggleMute={handleToggleMute}
             onToggleSpeaker={handleToggleSpeaker}
             onExit={stopVoiceMode}
+            onTapOrb={() => voiceTransportRef.current?.forceFinishTurn()}
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}

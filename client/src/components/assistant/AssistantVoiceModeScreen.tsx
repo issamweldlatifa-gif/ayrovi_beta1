@@ -25,6 +25,7 @@ interface AssistantVoiceModeScreenProps {
   onToggleMute: () => void;
   onToggleSpeaker: () => void;
   onExit: () => void;
+  onTapOrb?: () => void;
   onOpenAttachments?: () => void;
   onOpenLens?: () => void;
   onAddAttachment?: (file: File) => void;
@@ -44,6 +45,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   onToggleMute,
   onToggleSpeaker,
   onExit,
+  onTapOrb,
   onOpenAttachments,
   onOpenLens,
   onAddAttachment,
@@ -298,14 +300,20 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           />
 
           {/* Core Central Glowing Orb */}
-          <div
-            className={`relative flex h-44 w-44 items-center justify-center rounded-full bg-gradient-to-tr ${orbGradient} shadow-2xl transition-transform duration-100 sm:h-52 sm:w-52`}
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic();
+              if (onTapOrb) onTapOrb();
+            }}
+            className={`relative flex h-44 w-44 cursor-pointer items-center justify-center rounded-full bg-gradient-to-tr ${orbGradient} shadow-2xl transition-transform duration-100 active:scale-95 sm:h-52 sm:w-52`}
             style={{
               transform: `scale(${scale})`,
               boxShadow: isDark
                 ? `0 0 ${glow * 1.5}px rgba(255, 122, 0, 0.45)`
                 : `0 0 ${glow * 1.8}px rgba(255, 122, 0, 0.55)`,
             }}
+            aria-label={tr('Appuyer pour envoyer ou parler', 'اضغط للإرسال أو التحدث')}
           >
             {/* Waveform texture overlay inside orb */}
             <div className="pointer-events-none absolute inset-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-[2px]" />
@@ -322,7 +330,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                 className="transition-all duration-75"
               />
             </svg>
-          </div>
+          </button>
         </div>
 
         {/* Real State Label */}
