@@ -229,10 +229,14 @@ export interface CanonicalToolCall {
 }
 
 export interface CanonicalToolAudit {
+  canonicalCallId: string;
+  classification: 'read' | 'compute' | 'external-read' | 'write' | 'unknown';
+  executionLane: AiExecutionLane;
   authenticated: boolean;
   authorized: boolean;
   schemaValid: boolean;
   approval: 'not-required' | 'required' | 'approved' | 'denied';
+  outcome: 'authorized' | 'denied' | 'succeeded' | 'business-rejected' | 'failed' | 'replayed';
   idempotencyKey?: string;
   auditId?: string;
 }

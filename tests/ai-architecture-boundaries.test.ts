@@ -85,6 +85,15 @@ describe('AI architecture boundaries', () => {
     expect(violationsFor(concreteAdapterImport, insideAiCore)).toEqual([]);
   });
 
+  test('prevents application code from bypassing the AYROVI Tool Gateway', () => {
+    const domainDispatch = /\bexecuteAssistant(?:Write)?ToolDomain\b/g;
+    const allowed = (file: string) => [
+      'src/assistant/tools.ts',
+      'src/assistant/toolGateway.ts',
+    ].includes(file);
+    expect(violationsFor(domainDispatch, allowed)).toEqual([]);
+  });
+
   test('keeps provider session/response identities out of canonical persistence contracts', () => {
     const canonicalFiles = [
       'src/db/database.ts',

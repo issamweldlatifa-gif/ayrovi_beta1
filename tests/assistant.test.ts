@@ -4,7 +4,11 @@ import sharp from 'sharp';
 import { BarcodeFormat, QRCodeWriter } from '@zxing/library';
 import request from 'supertest';
 import { app, db } from '../src/server';
-import { ASSISTANT_TOOLS, executeAssistantTool, type AssistantToolContext } from '../src/assistant/tools';
+import {
+  ASSISTANT_TOOLS,
+  executeAssistantToolDomain as executeAssistantTool,
+  type AssistantToolContext,
+} from '../src/assistant/tools';
 import { isAssistantHelpQuestion, selectAssistantModel } from '../src/assistant/service';
 import type { CustomerIdentity } from '../src/customer/auth';
 import { SmartLinkScraper } from '../src/scraper/scraper';
@@ -26,7 +30,7 @@ function customerIdentity(id: string, phone: string): CustomerIdentity {
 function context(customer: CustomerIdentity | null, conversationId = unique('conversation')): AssistantToolContext {
   return {
     db, scraper: testScraper, customer, sessionId: unique('session'), conversationId,
-    executionLane: 'active',
+    requestId: unique('request'), turnId: unique('turn'), executionLane: 'active',
     messages: [{ role: 'user', text: 'J’ai besoin d’aide pour ma commande.' }],
     imageAttachments: [],
     webSearchEnabled: true,

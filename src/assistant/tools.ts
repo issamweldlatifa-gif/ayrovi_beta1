@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
-import type { AiExecutionLane } from '../ai-core/contracts';
+import type { AiExecutionLane, CanonicalToolAudit } from '../ai-core/contracts';
 import type { CustomerIdentity } from '../customer/auth';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { calculatePrice } from '../services/pricing';
@@ -47,7 +47,16 @@ export interface AssistantToolContext {
   customer: CustomerIdentity | null;
   sessionId: string;
   conversationId: string;
+  requestId: string;
+  turnId: string;
   executionLane: AiExecutionLane;
+  toolApproval?: {
+    toolName: AssistantToolName;
+    canonicalCallId: string;
+    approvalId: string;
+    approvedBy: string;
+    expiresAt: string;
+  };
   messages: AssistantConversationLine[];
   imageAttachments: AssistantImageAttachment[];
   webSearchEnabled: boolean;
@@ -56,6 +65,7 @@ export interface AssistantToolContext {
 export interface AssistantToolExecution {
   modelResult: Record<string, any>;
   presentation?: Record<string, any>;
+  audit?: CanonicalToolAudit;
 }
 
 export const ASSISTANT_TOOLS = [
@@ -762,7 +772,24 @@ async function searchSimilarProductsSkill(input: any, context: AssistantToolCont
   };
 }
 
-export async function executeAssistantTool(
+export const ASSISTANT_SYNCHRONOUS_WRITE_TOOLS = ['escalate_to_human'] as const;
+
+/**
+ * Synchronous mutating dispatch used only inside the Gateway's SQLite
+ * transaction. New write tools must be added explicitly here as well as to the
+ * security policy; asynchronous/background writes are deliberately rejected.
+ */
+export function executeAssistantWriteToolDomain(
+  name: AssistantToolName,
+  input: any,
+  context: AssistantToolContext,
+): AssistantToolExecution {
+  if (name === 'escalate_to_human') return escalateToHuman(input, context);
+  throw new Error('WRITE_TOOL_NOT_DECLARED');
+}
+
+/** Internal domain dispatch. Application/model callers must use AssistantToolGateway. */
+export async function executeAssistantToolDomain(
   name: string,
   input: any,
   context: AssistantToolContext,

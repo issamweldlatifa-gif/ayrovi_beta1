@@ -329,7 +329,14 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     res.on('close', () => { if (!res.writableEnded) controller.abort(); });
 
     try {
-      await runAssistantChat(db, scraper, { conversationId, sessionId, customer, messages, clientState }, emit, controller.signal);
+      await runAssistantChat(db, scraper, {
+        requestId: String((req as any).requestId || ''),
+        conversationId,
+        sessionId,
+        customer,
+        messages,
+        clientState,
+      }, emit, controller.signal);
     } catch (error: any) {
       if (controller.signal.aborted || error?.name === 'AbortError') return;
       console.warn('[Assistant chat]', error?.message || 'stream failed');

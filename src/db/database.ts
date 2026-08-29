@@ -659,6 +659,46 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_assistant_support_account ON assistant_support_tickets(account_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assistant_support_conversation ON assistant_support_tickets(conversation_id, created_at DESC);
 
+      -- Canonical AYROVI tool security audit: no model arguments or provider
+      -- payloads are stored here. Every proposal is classified before dispatch.
+      CREATE TABLE IF NOT EXISTS assistant_tool_audit (
+        id TEXT PRIMARY KEY,
+        request_id TEXT NOT NULL DEFAULT '',
+        conversation_id TEXT NOT NULL DEFAULT '',
+        turn_id TEXT NOT NULL DEFAULT '',
+        canonical_call_id TEXT NOT NULL DEFAULT '',
+        proposal_call_hash TEXT NOT NULL DEFAULT '',
+        tool_name TEXT NOT NULL,
+        effect TEXT NOT NULL CHECK(effect IN ('read','compute','external-read','write','unknown')),
+        execution_lane TEXT NOT NULL CHECK(execution_lane IN ('active','shadow','probe')),
+        principal_type TEXT NOT NULL CHECK(principal_type IN ('customer','guest-session','invalid')),
+        principal_hash TEXT NOT NULL DEFAULT '',
+        authenticated INTEGER NOT NULL DEFAULT 0,
+        authorized INTEGER NOT NULL DEFAULT 0,
+        schema_valid INTEGER NOT NULL DEFAULT 0,
+        approval_status TEXT NOT NULL CHECK(approval_status IN ('not-required','required','approved','denied')),
+        idempotency_key TEXT NOT NULL DEFAULT '',
+        outcome TEXT NOT NULL CHECK(outcome IN ('authorized','denied','succeeded','business-rejected','failed','replayed')),
+        error_code TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_assistant_tool_audit_call ON assistant_tool_audit(canonical_call_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_assistant_tool_audit_turn ON assistant_tool_audit(turn_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_assistant_tool_audit_tool ON assistant_tool_audit(tool_name, created_at DESC);
+
+      CREATE TABLE IF NOT EXISTS assistant_tool_idempotency (
+        idempotency_key TEXT PRIMARY KEY,
+        canonical_call_id TEXT NOT NULL UNIQUE,
+        conversation_id TEXT NOT NULL,
+        turn_id TEXT NOT NULL,
+        tool_name TEXT NOT NULL,
+        status TEXT NOT NULL CHECK(status IN ('pending','completed','failed')),
+        result_json TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_assistant_tool_idempotency_turn ON assistant_tool_idempotency(turn_id, tool_name);
+
       CREATE TABLE IF NOT EXISTS story_publishers (
         id TEXT PRIMARY KEY,
         slug TEXT NOT NULL UNIQUE,

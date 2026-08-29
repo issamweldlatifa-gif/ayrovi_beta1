@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import type { CustomerIdentity } from '../customer/auth';
 import type { SmartLinkScraper } from '../scraper/scraper';
@@ -20,6 +21,7 @@ export type AssistantStreamEvent =
   | { type: 'error'; code: string; message: string };
 
 export interface AssistantChatInput {
+  requestId: string;
   conversationId: string;
   sessionId: string;
   customer: CustomerIdentity | null;
@@ -244,7 +246,7 @@ async function recoverWithoutProvider(
       const priceMatch = latestText.match(/(\d+(?:[.,]\d+)?)/);
       const amount = priceMatch ? parseFloat(priceMatch[1].replace(',', '.')) : 50;
       const execution = await executeThroughGateway('calculate_price', {
-        item_price: amount,
+        product_price: amount,
         currency: /(?:euro|eur|€)/i.test(latestText) ? 'EUR' : /(?:dollar|usd|\$)/i.test(latestText) ? 'USD' : 'EUR',
         category: 'clothing',
         weight_kg: 0.8,
@@ -357,6 +359,8 @@ export async function runAssistantChat(
     customer: input.customer,
     sessionId: input.sessionId,
     conversationId: input.conversationId,
+    requestId: input.requestId,
+    turnId: `turn_${randomUUID()}`,
     executionLane: 'active',
     messages,
     imageAttachments,
