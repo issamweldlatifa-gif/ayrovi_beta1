@@ -72,9 +72,9 @@ const AgentHeader: React.FC<{ status: any; onRefresh: () => void }> = ({ status,
   const capabilities = status?.capabilities || {};
   return (
     <header className="mag-agent-head">
-      <div className="mag-agent-title"><span><Sparkles /></span><div><p>AYROVI EDITORIAL AI</p><h1>وكيل مجلتي</h1><small>محرر داخلي عبر Claude — لا يظهر لزوار الموقع</small></div></div>
+      <div className="mag-agent-title"><span><Sparkles /></span><div><p>AYROVI EDITORIAL AI</p><h1>وكيل مجلتي</h1><small>محرر داخلي عبر AYROVI AI Core — لا يظهر لزوار الموقع</small></div></div>
       <div className="mag-agent-health" aria-label="حالة ربط الوكيل">
-        <span className={capabilities.anthropic ? 'is-on' : 'is-off'}>Claude {capabilities.anthropic ? 'متصل' : 'غير مضبوط'}</span>
+        <span className={capabilities.providerReady ? 'is-on' : 'is-off'}>AI Core {capabilities.providerReady ? 'متصل' : 'غير مضبوط'}</span>
         <span className={capabilities.imageSearch ? 'is-on' : 'is-warning'}>صور {capabilities.imageSearch ? 'متصلة' : 'بدون API'}</span>
         <span className={capabilities.stockSearch ? 'is-on' : 'is-warning'}>Stock {capabilities.pexels || capabilities.pixabay ? 'API مباشر' : capabilities.stockSearch ? 'Web Search' : 'روابط بحث'}</span>
         <button type="button" onClick={onRefresh} aria-label="تحديث"><RefreshCw /></button>

@@ -196,6 +196,44 @@ describe('Magazine Agent persistence and product policy', () => {
     }
   });
 
+  test('keeps Web Search while applying the structured-output compatibility fallback', async () => {
+    const fallbackDb = new QatafoDatabase(':memory:');
+    const oldKey = process.env.ANTHROPIC_API_KEY;
+    const oldSerp = process.env.SERPAPI_KEY;
+    const oldPexels = process.env.PEXELS_API_KEY;
+    const oldPixabay = process.env.PIXABAY_API_KEY;
+    process.env.ANTHROPIC_API_KEY = 'test-anthropic-key';
+    delete process.env.SERPAPI_KEY;
+    delete process.env.PEXELS_API_KEY;
+    delete process.env.PIXABAY_API_KEY;
+    const fetchMock = vi.fn(async (_url: string, options: any) => {
+      const body = JSON.parse(String(options.body));
+      if (body.tools?.[0]?.max_uses === 3 && body.output_config) {
+        return new Response('{"error":"output_config cannot be combined with web_search tool"}', { status: 400 });
+      }
+      if (body.tools?.[0]?.max_uses === 3) {
+        expect(body.output_config).toBeUndefined();
+        expect(body.system).toContain('كائن JSON صالح');
+        return new Response(JSON.stringify({ content: [{ type: 'text', text: JSON.stringify(output) }] }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ content: [] }), { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const result = await generateMagazineContent(fallbackDb, { ...input, batchId: 'compatibility_batch' });
+      expect(result.needsClarification).toBe(false);
+      expect(result.drafts).toHaveLength(4);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+    } finally {
+      fallbackDb.close();
+      vi.unstubAllGlobals();
+      if (oldKey === undefined) delete process.env.ANTHROPIC_API_KEY; else process.env.ANTHROPIC_API_KEY = oldKey;
+      if (oldSerp === undefined) delete process.env.SERPAPI_KEY; else process.env.SERPAPI_KEY = oldSerp;
+      if (oldPexels === undefined) delete process.env.PEXELS_API_KEY; else process.env.PEXELS_API_KEY = oldPexels;
+      if (oldPixabay === undefined) delete process.env.PIXABAY_API_KEY; else process.env.PIXABAY_API_KEY = oldPixabay;
+    }
+  });
+
   test('repairs a malformed successful Claude response before saving any draft', async () => {
     const repairDb = new QatafoDatabase(':memory:');
     const oldKey = process.env.ANTHROPIC_API_KEY;

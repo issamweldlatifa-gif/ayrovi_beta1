@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
+import type { AiCompletionResult, AiMessage } from '../ai-core/contracts';
+import { getAyroviAiCore } from '../ai-core/core';
+import { AiProviderError } from '../ai-core/errors';
 import { MAGAZINE_AGENT_SYSTEM_PROMPT } from './prompt';
 
 export type MagazineContentType = 'editorial' | 'publication' | 'story' | 'reel';
@@ -316,23 +319,18 @@ export function findMagazineProductContext(db: QatafoDatabase, command: string):
   return { requested, matched: !requested || unambiguous, products };
 }
 
-function extractWebReferences(payload: any): ReferenceMedia[] {
-  const output: ReferenceMedia[] = [];
-  const visit = (node: any) => {
-    if (!node || typeof node !== 'object') return;
-    if (node.type === 'web_search_result') {
-      const url = publicUrl(node.url);
-      if (url) output.push({
-        title: cleanText(node.title || 'مصدر مرجعي', 220), url, thumbnailUrl: '',
-        source: (() => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'Web Search'; } })(),
-        license: 'reference',
-      });
-    }
-    if (Array.isArray(node)) node.forEach(visit);
-    else Object.values(node).forEach(visit);
-  };
-  visit(payload?.content);
-  return dedupeByUrl(output).slice(0, 6);
+function extractWebReferences(result: AiCompletionResult): ReferenceMedia[] {
+  return dedupeByUrl(result.webResults.flatMap((item) => {
+    const url = publicUrl(item.url);
+    if (!url) return [];
+    return [{
+      title: cleanText(item.title || 'مصدر مرجعي', 220),
+      url,
+      thumbnailUrl: '',
+      source: item.source || (() => { try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return 'Web Search'; } })(),
+      license: 'reference' as const,
+    }];
+  })).slice(0, 6);
 }
 
 function dedupeByUrl<T extends { url: string }>(items: T[]): T[] {
@@ -340,11 +338,8 @@ function dedupeByUrl<T extends { url: string }>(items: T[]): T[] {
   return items.filter((item) => item.url && !seen.has(item.url) && Boolean(seen.add(item.url)));
 }
 
-function agentTextBlocks(payload: any): string[] {
-  return (Array.isArray(payload?.content) ? payload.content : [])
-    .filter((block: any) => block?.type === 'text')
-    .map((block: any) => String(block.text || '').trim())
-    .filter(Boolean);
+function agentTextBlocks(result: AiCompletionResult): string[] {
+  return result.textBlocks.map((text) => String(text || '').trim()).filter(Boolean);
 }
 
 function balancedJsonObjects(text: string): string[] {
@@ -376,8 +371,8 @@ function balancedJsonObjects(text: string): string[] {
   return objects;
 }
 
-function parseAgentText(payload: any): MagazineAgentOutput {
-  const blocks = agentTextBlocks(payload);
+function parseAgentText(result: AiCompletionResult): MagazineAgentOutput {
+  const blocks = agentTextBlocks(result);
   if (!blocks.length) throw new MagazineAgentProviderError('لم يُرجع محرك التحرير محتوى صالحًا.');
   // Web Search قد ينتج فقرة تمهيدية في text block مستقل قبل كائن JSON.
   // نجرب آخر block أولًا، ثم النص المجمّع، ثم كل كائن متوازن داخلهما.
@@ -398,34 +393,30 @@ function parseAgentText(payload: any): MagazineAgentOutput {
 }
 
 async function repairMagazineOutput(
-  key: string,
-  model: string,
   requestContext: Record<string, any>,
-  malformedPayload: any,
-): Promise<any> {
-  const rawText = agentTextBlocks(malformedPayload).join('\n').slice(0, 24_000);
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    signal: AbortSignal.timeout(58_000),
-    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({
-      model,
-      max_tokens: 5200,
+  malformedResult: AiCompletionResult,
+): Promise<AiCompletionResult> {
+  const rawText = agentTextBlocks(malformedResult).join('\n').slice(0, 24_000);
+  try {
+    return await getAyroviAiCore().responses().complete({
+      workload: 'magazine',
+      modelClass: 'deep',
+      maxOutputTokens: 5200,
       temperature: 0.2,
-      system: `${MAGAZINE_AGENT_SYSTEM_PROMPT}\nهذه جولة إصلاح بنيوي. أعد النتيجة كاملة ككائن JSON مطابق للمخطط فقط، دون مقدمة أو Markdown.`,
+      instructions: `${MAGAZINE_AGENT_SYSTEM_PROMPT}\nهذه جولة إصلاح بنيوي. أعد النتيجة كاملة ككائن JSON مطابق للمخطط فقط، دون مقدمة أو Markdown.`,
       messages: [{
         role: 'user',
-        content: `سياق أمر المحرر:\n${JSON.stringify(requestContext)}\n\nالرد غير الصالح المراد إصلاحه:\n${rawText || '(لا يوجد نص مكتمل؛ أعد التوليد من السياق)'}`,
+        content: [{
+          type: 'text',
+          text: `سياق أمر المحرر:\n${JSON.stringify(requestContext)}\n\nالرد غير الصالح المراد إصلاحه:\n${rawText || '(لا يوجد نص مكتمل؛ أعد التوليد من السياق)'}`,
+        }],
       }],
-      output_config: { format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
-    }),
-  });
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '');
-    console.warn(`[Magazine Agent] repair HTTP ${response.status} ${detail.slice(0, 180)}`);
+      outputSchema: { name: 'magazine_agent_output', schema: OUTPUT_SCHEMA as unknown as Record<string, unknown> },
+    }, AbortSignal.timeout(58_000));
+  } catch (error) {
+    console.warn(`[Magazine Agent] repair failed ${(error as any)?.code || 'provider error'}`);
     throw new MagazineAgentProviderError('تعذر إصلاح بنية المحتوى المولّد تلقائيًا.');
   }
-  return response.json();
 }
 
 function normalizeOutput(raw: MagazineAgentOutput, products: MagazineProductContext['products']): MagazineAgentOutput {
@@ -463,16 +454,33 @@ function normalizeOutput(raw: MagazineAgentOutput, products: MagazineProductCont
   };
 }
 
-function anthropicModel(): string {
-  return cleanText(process.env.MAGAZINE_AGENT_MODEL || process.env.ASSISTANT_SONNET_MODEL || process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5-20250929', 120);
+function magazineModel(): string {
+  return getAyroviAiCore().responses().resolveModel('magazine', 'deep');
 }
 
-async function generateWithAnthropic(input: GenerateMagazineInput, products: MagazineProductContext): Promise<{ output: MagazineAgentOutput; model: string; webReferences: ReferenceMedia[] }> {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!key) throw new MagazineAgentUnavailableError('مفتاح Anthropic غير مضبوط على الخادم.');
-  const model = anthropicModel();
-  const safeHistory = (input.history || []).filter((line) => line && ['user','assistant'].includes(line.role))
-    .slice(-8).map((line) => ({ role: line.role, content: cleanText(line.text, 1000) }));
+function mapMagazineProviderError(error: unknown): never {
+  if (error instanceof MagazineAgentUnavailableError || error instanceof MagazineAgentProviderError) throw error;
+  if (error instanceof AiProviderError) {
+    if (error.code === 'PROVIDER_NOT_CONFIGURED' || error.code === 'PROVIDER_AUTHENTICATION_FAILED') {
+      throw new MagazineAgentUnavailableError('محرك التحرير غير مضبوط أو أن مصادقته غير صالحة.');
+    }
+    if (error.code === 'PROVIDER_RATE_LIMITED' || error.code === 'PROVIDER_CIRCUIT_OPEN') {
+      throw new MagazineAgentProviderError('تم بلوغ حد محرك التحرير مؤقتًا. أعد المحاولة لاحقًا.');
+    }
+    if (error.code === 'PROVIDER_TIMEOUT') {
+      throw new MagazineAgentProviderError('انتهت مهلة توليد المحتوى.');
+    }
+    throw new MagazineAgentProviderError(`تعذر التوليد عبر محرك التحرير (HTTP ${error.status || 0}).`);
+  }
+  throw new MagazineAgentProviderError('تعذر الاتصال بمحرك التحرير.');
+}
+
+async function generateWithProvider(input: GenerateMagazineInput, products: MagazineProductContext): Promise<{ output: MagazineAgentOutput; model: string; webReferences: ReferenceMedia[] }> {
+  const provider = getAyroviAiCore().responses();
+  if (!provider.isConfigured()) throw new MagazineAgentUnavailableError('محرك التحرير غير مضبوط على الخادم.');
+  const model = magazineModel();
+  const safeHistory: AiMessage[] = (input.history || []).filter((line) => line && ['user','assistant'].includes(line.role))
+    .slice(-8).map((line) => ({ role: line.role, content: [{ type: 'text', text: cleanText(line.text, 1000) }] }));
   const batchTotal = Math.max(1, Math.min(10, Number(input.batchTotal) || 1));
   const batchIndex = Math.max(1, Math.min(batchTotal, Number(input.batchIndex) || 1));
   const previousTopics = (input.previousTopics || []).map((topic) => cleanText(topic, 180)).filter(Boolean).slice(-20);
@@ -483,67 +491,57 @@ async function generateWithAnthropic(input: GenerateMagazineInput, products: Mag
     readonly_catalog_matches: products.products,
     product_was_explicitly_requested: products.requested,
   };
-  const messages: any[] = [
+  const commandText = `نفّذ أمر المحرر وفق النظام وأعد قطعة رقم ${batchIndex} من ${batchTotal}. استخدم Web Search للتحقق من اتجاه حديث ومصادر مرجعية.\n${JSON.stringify(requestContext)}`;
+  const messages: AiMessage[] = [
     ...safeHistory,
-    { role: 'user', content: `نفّذ أمر المحرر وفق النظام وأعد قطعة رقم ${batchIndex} من ${batchTotal}. استخدم Web Search للتحقق من اتجاه حديث ومصادر مرجعية.\n${JSON.stringify(requestContext)}` },
+    { role: 'user', content: [{ type: 'text', text: commandText }] },
   ];
-  let payload: any = null;
+  let result: AiCompletionResult;
   try {
-    const headers = { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' };
-    const requestBody: Record<string, any> = {
-      model,
-      max_tokens: 5200,
-      temperature: 0.45,
-      system: MAGAZINE_AGENT_SYSTEM_PROMPT,
-      messages,
-      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
-      output_config: { format: { type: 'json_schema', schema: OUTPUT_SCHEMA } },
-    };
-    let response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal: AbortSignal.timeout(58_000), headers, body: JSON.stringify(requestBody),
-    });
-    // بعض إصدارات Anthropic قد ترفض الجمع بين Structured Outputs وأداة
-    // Web Search. نعيد المحاولة مرة واحدة مع إلزام JSON داخل الـprompt، مع
-    // إبقاء Tool Use فعّالًا بدل تعطيل البحث أو حفظ نتيجة ناقصة.
-    if (response.status === 400) {
-      const firstDetail = await response.text().catch(() => '');
-      if (/output_config|json_schema|structured|tool|web.search/i.test(firstDetail)) {
-        console.warn(`[Magazine Agent] structured-web fallback: ${firstDetail.slice(0, 180)}`);
-        const fallbackBody = { ...requestBody };
-        delete fallbackBody.output_config;
-        fallbackBody.system = `${MAGAZINE_AGENT_SYSTEM_PROMPT}\nأعد كائن JSON صالحًا مطابقًا حرفيًا للبنية المطلوبة في الطلب، من دون fences أو شرح خارجي.`;
-        fallbackBody.messages = [...messages.slice(0, -1), {
-          role: 'user',
-          content: `${messages.at(-1)?.content}\nJSON Schema المطلوب:\n${JSON.stringify(OUTPUT_SCHEMA)}`,
-        }];
-        response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST', signal: AbortSignal.timeout(58_000), headers, body: JSON.stringify(fallbackBody),
-        });
-      } else {
-        console.warn(`[Magazine Agent] Anthropic HTTP 400 ${firstDetail.slice(0, 240)}`);
-        throw new MagazineAgentProviderError('رفض محرك التحرير صيغة الطلب.');
+    try {
+      result = await provider.complete({
+        workload: 'magazine',
+        modelClass: 'deep',
+        maxOutputTokens: 5200,
+        temperature: 0.45,
+        instructions: MAGAZINE_AGENT_SYSTEM_PROMPT,
+        messages,
+        webSearch: { enabled: true, maxUses: 3 },
+        outputSchema: { name: 'magazine_agent_output', schema: OUTPUT_SCHEMA as unknown as Record<string, unknown> },
+      }, AbortSignal.timeout(58_000));
+    } catch (error) {
+      // Some provider versions reject structured output combined with native
+      // web search. Retry once with the same search tool and a JSON contract
+      // in the prompt. Rate limits are never retried.
+      if (!(error instanceof AiProviderError) || error.code !== 'PROVIDER_CAPABILITY_UNSUPPORTED') {
+        mapMagazineProviderError(error);
       }
+      console.warn('[Magazine Agent] structured-web compatibility fallback');
+      result = await provider.complete({
+        workload: 'magazine',
+        modelClass: 'deep',
+        maxOutputTokens: 5200,
+        temperature: 0.45,
+        instructions: `${MAGAZINE_AGENT_SYSTEM_PROMPT}\nأعد كائن JSON صالحًا مطابقًا حرفيًا للبنية المطلوبة في الطلب، من دون fences أو شرح خارجي.`,
+        messages: [
+          ...safeHistory,
+          { role: 'user', content: [{ type: 'text', text: `${commandText}\nJSON Schema المطلوب:\n${JSON.stringify(OUTPUT_SCHEMA)}` }] },
+        ],
+        webSearch: { enabled: true, maxUses: 3 },
+      }, AbortSignal.timeout(58_000));
     }
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      console.warn(`[Magazine Agent] Anthropic HTTP ${response.status} ${detail.slice(0, 240)}`);
-      if ([401, 403].includes(response.status)) throw new MagazineAgentUnavailableError('مصادقة Anthropic غير صالحة.');
-      if (response.status === 429) throw new MagazineAgentProviderError('تم بلوغ حد Anthropic مؤقتًا. أعد المحاولة لاحقًا.');
-      throw new MagazineAgentProviderError(`تعذر التوليد عبر Anthropic (HTTP ${response.status}).`);
-    }
-    payload = await response.json();
-  } catch (error: any) {
-    if (error instanceof MagazineAgentUnavailableError || error instanceof MagazineAgentProviderError) throw error;
-    throw new MagazineAgentProviderError(error?.name === 'TimeoutError' ? 'انتهت مهلة توليد المحتوى.' : 'تعذر الاتصال بمحرك التحرير.');
+  } catch (error) {
+    mapMagazineProviderError(error);
   }
-  const webReferences = extractWebReferences(payload);
+
+  const webReferences = extractWebReferences(result!);
   let output: MagazineAgentOutput;
   try {
-    output = normalizeOutput(parseAgentText(payload), products.products);
+    output = normalizeOutput(parseAgentText(result!), products.products);
   } catch (error) {
     if (!(error instanceof MagazineAgentProviderError)) throw error;
-    console.warn(`[Magazine Agent] invalid structured response; stop=${String(payload?.stop_reason || 'unknown')} blocks=${(payload?.content || []).map((block: any) => block?.type).join(',')}`);
-    const repaired = await repairMagazineOutput(key, model, requestContext, payload);
+    console.warn(`[Magazine Agent] invalid structured response; blocks=${result!.output.map((block) => block.type).join(',')}`);
+    const repaired = await repairMagazineOutput(requestContext, result!);
     output = normalizeOutput(parseAgentText(repaired), products.products);
   }
   return { output, model, webReferences };
@@ -631,43 +629,32 @@ async function searchPixabayVideos(query: string, scene: string): Promise<StockM
   } catch { return []; }
 }
 
-async function searchStockLibrariesWithAnthropic(scenes: ReelOutput['scenes']): Promise<StockMedia[]> {
-  const key = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!key || !scenes.length) return [];
+async function searchStockLibrariesWithProvider(scenes: ReelOutput['scenes']): Promise<StockMedia[]> {
+  const providerAdapter = getAyroviAiCore().responses();
+  if (!providerAdapter.isConfigured() || !scenes.length) return [];
   try {
     const queryList = scenes.slice(0, 3).map((scene, index) => `${index + 1}. ${scene.stock_query || scene.text}`).join('\n');
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal: AbortSignal.timeout(12_000),
-      headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: cleanText(process.env.ASSISTANT_HAIKU_MODEL || process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001', 120),
-        max_tokens: 280,
-        temperature: 0,
-        system: 'Search only for real stock-video pages on pexels.com/video or pixabay.com/videos. Run web search and keep the answer concise. Never invent a URL.',
-        messages: [{ role: 'user', content: `Find portrait stock-video pages matching these scenes:\n${queryList}` }],
-        tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 2 }],
-      }),
-    });
-    if (!response.ok) return [];
-    const payload: any = await response.json();
+    const response = await providerAdapter.complete({
+      workload: 'stock-search',
+      modelClass: 'fast',
+      maxOutputTokens: 280,
+      temperature: 0,
+      instructions: 'Search only for real stock-video pages on pexels.com/video or pixabay.com/videos. Run web search and keep the answer concise. Never invent a URL.',
+      messages: [{ role: 'user', content: [{ type: 'text', text: `Find portrait stock-video pages matching these scenes:\n${queryList}` }] }],
+      webSearch: { enabled: true, maxUses: 2 },
+    }, AbortSignal.timeout(12_000));
     const results: StockMedia[] = [];
-    const visit = (node: any) => {
-      if (!node || typeof node !== 'object') return;
-      if (node.type === 'web_search_result') {
-        const url = publicUrl(node.url, ['pexels.com', 'pixabay.com']);
-        if (url) {
-          const host = new URL(url).hostname.toLowerCase();
-          const provider = host.endsWith('pexels.com') ? 'Pexels' as const : 'Pixabay' as const;
-          results.push({
-            title: cleanText(node.title || `${provider} stock video`, 220), url, previewUrl: '', videoUrl: '', provider,
-            license: 'licensed-source', publicationReady: false,
-            scene: scenes[Math.min(results.length, scenes.length - 1)]?.text || scenes[0]?.text || '',
-          });
-        }
-      }
-      if (Array.isArray(node)) node.forEach(visit); else Object.values(node).forEach(visit);
-    };
-    visit(payload.content);
+    for (const item of response.webResults) {
+      const url = publicUrl(item.url, ['pexels.com', 'pixabay.com']);
+      if (!url) continue;
+      const host = new URL(url).hostname.toLowerCase();
+      const provider = host.endsWith('pexels.com') ? 'Pexels' as const : 'Pixabay' as const;
+      results.push({
+        title: cleanText(item.title || `${provider} stock video`, 220), url, previewUrl: '', videoUrl: '', provider,
+        license: 'licensed-source', publicationReady: false,
+        scene: scenes[Math.min(results.length, scenes.length - 1)]?.text || scenes[0]?.text || '',
+      });
+    }
     return dedupeByUrl(results).slice(0, 6);
   } catch { return []; }
 }
@@ -681,7 +668,7 @@ async function searchStockVideos(scenes: ReelOutput['scenes']): Promise<StockMed
   }));
   const direct = dedupeByUrl(directGroups.flat());
   if (direct.length) return direct.slice(0, 6);
-  const searched = await searchStockLibrariesWithAnthropic(targets);
+  const searched = await searchStockLibrariesWithProvider(targets);
   if (searched.length) return searched;
   return targets.flatMap((scene) => {
     const query = scene.stock_query || scene.text;
@@ -761,12 +748,12 @@ export async function generateMagazineContent(db: QatafoDatabase, input: Generat
   const batchId = cleanText(input.batchId, 160) || `mag_batch_${randomUUID()}`;
   if (productContext.requested && !productContext.matched) {
     return {
-      model: anthropicModel(), batchId, drafts: [], needsClarification: true,
+      model: magazineModel(), batchId, drafts: [], needsClarification: true,
       clarification: 'لم أجد تطابقًا مؤكدًا لهذا المنتج في قاعدة منتجات AYROVI. اختر منتجًا من القائمة أو أرسل اسمه الدقيق كما يظهر في الأدمين.',
       suggestions: productContext.products,
     };
   }
-  const generated = await generateWithAnthropic({ ...input, command }, productContext);
+  const generated = await generateWithProvider({ ...input, command }, productContext);
   const imageQuery = generated.output.visual_query || `${generated.output.topic} ${generated.output.angle}`;
   const [searchedImages, stock] = await Promise.all([
     searchReferenceImages(imageQuery),
@@ -908,13 +895,18 @@ export function prepareMagazineDraft(
 }
 
 export function magazineAgentCapabilities() {
+  const provider = getAyroviAiCore().responses();
+  const providerConfigured = provider.isConfigured();
   return {
-    anthropic: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
-    webSearch: Boolean(process.env.ANTHROPIC_API_KEY?.trim()),
+    provider: provider.id,
+    providerReady: providerConfigured,
+    // Compatibility field retained for the existing admin response contract.
+    anthropic: provider.id === 'anthropic' && providerConfigured,
+    webSearch: providerConfigured,
     imageSearch: Boolean(process.env.SERPAPI_KEY?.trim()),
     pexels: Boolean(process.env.PEXELS_API_KEY?.trim()),
     pixabay: Boolean(process.env.PIXABAY_API_KEY?.trim()),
-    stockSearch: Boolean(process.env.PEXELS_API_KEY?.trim() || process.env.PIXABAY_API_KEY?.trim() || process.env.ANTHROPIC_API_KEY?.trim()),
+    stockSearch: Boolean(process.env.PEXELS_API_KEY?.trim() || process.env.PIXABAY_API_KEY?.trim() || providerConfigured),
     productCatalog: true,
   };
 }
