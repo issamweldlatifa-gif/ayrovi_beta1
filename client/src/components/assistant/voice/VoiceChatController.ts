@@ -13,7 +13,6 @@ export interface VoiceChatControllerOptions {
   onError: (message: string) => void;
 }
 
-const PRE_ROLL_CHUNKS = 5;
 const SPEECH_START_HOLD_MS = 140;
 const SILENCE_TO_END_MS = 750;
 const MIN_SPEECH_MS = 280;
@@ -395,8 +394,12 @@ export class VoiceChatController {
       this.chunks = [];
       recorder.ondataavailable = (event) => {
         if (!event.data?.size) return;
+        // MediaRecorder chunks are fragments of one WebM/Ogg container. The
+        // first chunk carries its initialization header, so pruning old chunks
+        // makes Firefox/Android uploads undecodable. Keep the complete container
+        // from the start of this listening turn; a fresh recorder starts after
+        // every assistant response.
         this.chunks.push(event.data);
-        if (this.state === 'listening' && this.chunks.length > PRE_ROLL_CHUNKS) this.chunks.shift();
       };
       recorder.onerror = () => {
         if (this.active) this.failInput('حدث خطأ أثناء تسجيل الصوت.');

@@ -73,8 +73,10 @@ class FakeRecorder {
   removeEventListener(type: string, listener: EventListenerOrEventListenerObject) {
     if (type === 'stop' && typeof listener === 'function') this.stopListeners.delete(listener as () => void);
   }
-  emitChunk(size = 180) {
-    this.ondataavailable?.({ data: new Blob([new Uint8Array(size)], { type: this.mimeType }) });
+  emitChunk(size = 180, marker = 0) {
+    const bytes = new Uint8Array(size);
+    bytes.fill(marker);
+    this.ondataavailable?.({ data: new Blob([bytes], { type: this.mimeType }) });
   }
 }
 
@@ -191,7 +193,11 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
       updateVoiceActivity: (rms: number, now: number) => void;
     };
     const base = internal.listeningSince;
-    FakeRecorder.instances[0].emitChunk();
+    // Wait beyond the former rolling-chunk window. The first fragment carries
+    // the real WebM/Ogg initialization header and must remain in the upload.
+    for (let marker = 1; marker <= 8; marker += 1) {
+      FakeRecorder.instances[0].emitChunk(180, marker);
+    }
     internal.updateVoiceActivity(0.12, base + 600);
     internal.updateVoiceActivity(0.12, base + 760);
     expect(voice.getState()).toBe('user_speaking');
@@ -204,7 +210,9 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
 
     expect(transcribeMock).toHaveBeenCalledOnce();
     const submittedAudio = transcribeMock.mock.calls[0][0].audio as Blob;
-    expect(submittedAudio.size).toBeGreaterThanOrEqual(360);
+    expect(submittedAudio.size).toBeGreaterThanOrEqual(1_800);
+    const submittedBytes = new Uint8Array(await submittedAudio.arrayBuffer());
+    expect(submittedBytes[0]).toBe(1);
     expect(turns).toEqual(['مرحبا أيروفي']);
     expect(voice.getState()).toBe('thinking');
     expect(states).toEqual(expect.arrayContaining(['starting', 'listening', 'user_speaking', 'transcribing', 'thinking']));

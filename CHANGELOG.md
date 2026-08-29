@@ -11,7 +11,7 @@ All notable AYROVI changes are recorded in this file.
 - A complete assistant answer is spoken once. Server TTS is preferred; one matching browser utterance is the fallback.
 
 ### Fixed
-- The first word is retained in a rolling pre-buffer instead of being lost when VAD opens the turn.
+- The first word is retained before VAD opens the turn, while the original WebM/Ogg initialization header is preserved so Firefox/Android recordings remain decodable by STT.
 - Assistant output can no longer be transcribed as new input or create a `speak → pop → listen` loop.
 - Starting a new response cancels the previous request/playback by operation id, preventing stale completion callbacks and ghost audio.
 - Browser fallback never forces a French/default voice onto Arabic text, never truncates long turns at the server limit, and transition beeps were removed entirely.

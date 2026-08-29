@@ -252,6 +252,8 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
           const text = String(payload.text).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 8000);
           return res.json({ success: true, data: { text, provider: 'groq-whisper' } });
         }
+        const detail = String(payload?.error?.message || payload?.error || payload?.message || 'empty transcription').slice(0, 240);
+        console.warn(`[Assistant STT] Groq HTTP ${response.status}: ${detail}`);
       } catch (err) {
         console.warn('[Assistant STT] Groq transcription error:', err);
       }
@@ -274,6 +276,8 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
           const text = String(payload.text).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 8000);
           return res.json({ success: true, data: { text, provider: 'openai-whisper' } });
         }
+        const detail = String(payload?.error?.message || payload?.error || payload?.message || 'empty transcription').slice(0, 240);
+        console.warn(`[Assistant STT] OpenAI HTTP ${response.status}: ${detail}`);
       } catch (err) {
         console.warn('[Assistant STT] OpenAI transcription error:', err);
       }
