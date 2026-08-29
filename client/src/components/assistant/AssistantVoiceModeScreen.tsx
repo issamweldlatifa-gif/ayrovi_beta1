@@ -1,13 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Image as ImageIcon, Mic, MicOff, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
+import { Camera, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AssistantAttachment } from './types';
-
-export type VoiceModeState = 'idle' | 'listening' | 'transcribing' | 'processing' | 'tool_call' | 'speaking' | 'muted' | 'error';
+import type { VoiceState } from './voice/types';
 
 interface AssistantVoiceModeScreenProps {
-  state: VoiceModeState;
-  volumeLevel: number; // 0.0 to 1.0
+  state: VoiceState;
+  volumeLevel: number; // 0.0 to 1.0 (real audio level)
   isDark: boolean;
   isMuted: boolean;
   isSpeakerMuted: boolean;
@@ -27,6 +26,7 @@ interface AssistantVoiceModeScreenProps {
   onOpenSettings?: () => void;
   onOpenAttachments?: () => void;
   onOpenLens?: () => void;
+  onAddAttachment?: (file: File) => void;
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
@@ -44,21 +44,23 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   onOpenSettings,
   onOpenAttachments,
   onOpenLens,
+  onAddAttachment,
 }) => {
   const { tr, direction } = useLocale();
   const [smoothedVolume, setSmoothedVolume] = useState(0);
   const frameRef = useRef<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Handle escape key to exit voice mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onExit();
-      }
+      if (e.key === 'Escape') onExit();
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onExit]);
 
+  // Smooth real-time volume animation
   useEffect(() => {
     let current = smoothedVolume;
     const update = () => {
@@ -72,34 +74,46 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     };
   }, [volumeLevel]);
 
-  const scale = 1 + Math.min(0.38, smoothedVolume * 0.7);
-  const glow = Math.min(36, 12 + smoothedVolume * 45);
+  const scale = 1 + Math.min(0.4, smoothedVolume * 0.75);
+  const glow = Math.min(40, 12 + smoothedVolume * 50);
 
+  // Dynamic status text matching real states
   const stateLabel = isMuted
     ? tr('Microphone coupé', 'تم كتم الميكروفون...')
     : state === 'listening'
       ? tr('Écoute en cours…', 'استمع...')
-      : state === 'transcribing'
-        ? tr('Transcription…', 'تحويل الصوت إلى نص...')
-        : state === 'tool_call'
-          ? tr('Recherche & Calcul en cours…', 'جاري البحث والحساب...')
-          : state === 'processing'
-            ? tr('Réflexion en cours…', 'يفكر...')
-            : state === 'speaking'
-              ? tr('AYROVI vous répond…', 'يتحدث...')
+      : state === 'user_speaking'
+        ? tr('Vous parlez…', 'أنت تتحدث...')
+        : state === 'processing'
+          ? tr('Je réfléchis…', 'يفكر...')
+          : state === 'tool_execution'
+            ? tr('Recherche et calcul en cours…', 'جاري البحث والحساب...')
+            : state === 'assistant_speaking'
+              ? tr('Je vous réponds…', 'يتحدث...')
               : state === 'interrupted'
                 ? tr('Interrompu', 'تمت المقاطعة...')
-                : tr('Prêt', 'جاهز');
+                : state === 'error'
+                  ? tr('Erreur microphone', 'خطأ في الميكروفون')
+                  : tr('Prêt', 'جاهز');
 
+  // Dynamic gradient reflecting exact state
   const orbGradient = state === 'interrupted'
     ? 'from-[#f97316] via-[#fb923c] to-[#ea580c]'
-    : state === 'processing' || state === 'tool_call'
+    : state === 'processing' || state === 'tool_execution'
       ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
-      : state === 'speaking'
+      : state === 'assistant_speaking'
         ? 'from-[#FF7A00] via-[#ffa34d] to-[#e06600]'
-        : state === 'transcribing'
-          ? 'from-[#f59e0b] via-[#fbbf24] to-[#d97706]'
+        : state === 'error'
+          ? 'from-[#ef4444] via-[#f87171] to-[#dc2626]'
           : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onAddAttachment) {
+      onAddAttachment(file);
+    }
+    e.target.value = '';
+  };
 
   return (
     <div
@@ -111,7 +125,16 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
       aria-modal="true"
       aria-label={tr('Mode Vocal AYROVI', 'الوضع الصوتي AYROVI')}
     >
-      {/* 1. Header: Exit (X), Attachments / Lens & Settings */}
+      {/* Hidden file input for camera/gallery attachments */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileInputChange}
+      />
+
+      {/* 1. Top Header: Exit (X), Center Brand & Settings */}
       <header className="relative z-10 flex items-center justify-between px-6 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))]">
         <button
           type="button"
@@ -127,69 +150,43 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           <X size={20} />
         </button>
 
-        {/* Quick Lens / Multimodal attachment actions */}
-        <div className="flex items-center gap-2">
-          {onOpenLens && (
-            <button
-              type="button"
-              onClick={onOpenLens}
-              className={`flex h-11 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold transition active:scale-90 ${
-                isDark
-                  ? 'bg-white/10 text-white hover:bg-white/15'
-                  : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
-              }`}
-              title={tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}
-            >
-              <Camera size={16} />
-              <span>Lens</span>
-            </button>
-          )}
-
-          {onOpenAttachments && (
-            <button
-              type="button"
-              onClick={onOpenAttachments}
-              className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
-                attachments && attachments.length > 0
-                  ? 'bg-[#FF7A00] text-white shadow-md'
-                  : isDark
-                    ? 'bg-white/10 text-white hover:bg-white/15'
-                    : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
-              }`}
-              title={tr('Ajouter une photo', 'إضافة صورة')}
-            >
-              <ImageIcon size={18} />
-            </button>
-          )}
-
-          {onOpenSettings && (
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
-                isDark
-                  ? 'bg-white/10 text-white hover:bg-white/15'
-                  : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
-              }`}
-              aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-              title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-            >
-              <SlidersHorizontal size={20} />
-            </button>
-          )}
+        {/* Center Live Mode Indicator */}
+        <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white/70 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/30">
+          <span className="h-2 w-2 rounded-full bg-[#FF7A00] animate-pulse" />
+          <span className="text-xs font-black tracking-wide">
+            AYROVI VOICE
+          </span>
         </div>
+
+        {onOpenSettings ? (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
+              isDark
+                ? 'bg-white/10 text-white hover:bg-white/15'
+                : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+            }`}
+            aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
+            title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
+          >
+            <SlidersHorizontal size={20} />
+          </button>
+        ) : (
+          <div className="w-11" />
+        )}
       </header>
 
       {/* 2. Center Stage: Large Reactive Voice Orb & Visualizer */}
       <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-4 text-center">
         {/* Active Product or Image context pill if present */}
         {(activeProduct || (attachments && attachments.length > 0)) && (
-          <div className="mb-4 flex max-w-xs items-center gap-2 rounded-full border border-black/5 bg-white/80 px-3 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/40">
+          <div className="mb-4 flex max-w-xs items-center gap-2 rounded-full border border-black/5 bg-white/80 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/40">
             {activeProduct?.image || attachments?.[0]?.preview ? (
               <img
                 src={activeProduct?.image || attachments?.[0]?.preview}
                 alt=""
-                className="h-7 w-7 rounded-full object-cover"
+                className="h-7 w-7 rounded-full object-cover shadow-sm"
               />
             ) : (
               <Camera size={16} className="text-[#FF7A00]" />
@@ -197,13 +194,18 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             <span className="truncate text-xs font-bold">
               {activeProduct?.title || tr('Photo attachée pour analyse', 'صورة مرفقة للتحليل')}
             </span>
+            {activeProduct?.priceTnd != null && (
+              <span className="rounded bg-[#FF7A00]/10 px-1.5 py-0.5 text-[11px] font-black text-[#FF7A00]">
+                {activeProduct.priceTnd} TND
+              </span>
+            )}
           </div>
         )}
 
         {/* Ambient background glow */}
         <div
           className="pointer-events-none absolute h-72 w-72 rounded-full bg-[#FF7A00]/15 blur-3xl transition-all duration-300"
-          style={{ transform: `scale(${scale * 1.3})` }}
+          style={{ transform: `scale(${scale * 1.35})` }}
         />
 
         {/* Outer Orb Rings */}
@@ -266,7 +268,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           </div>
         </div>
 
-        {/* State Label */}
+        {/* Real State Label */}
         <p className={`mt-8 text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-[#111111]'}`}>
           {stateLabel}
         </p>
@@ -282,22 +284,24 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           </p>
         )}
 
-        {/* Bottom Audio Waveform Bars (as shown in reference image) */}
+        {/* Real-time Audio Waveform Bars (reacting strictly to real volume) */}
         <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
           {[
             0.2, 0.35, 0.5, 0.7, 0.45, 0.85, 0.6, 1.0, 0.75, 0.9, 0.55, 0.8, 0.4, 0.65, 0.3, 0.2,
           ].map((factor, idx) => {
             const barH = Math.max(
               3,
-              Math.min(26, isMuted ? 3 : smoothedVolume * 45 * factor + 3),
+              Math.min(28, isMuted ? 3 : smoothedVolume * 45 * factor + 3),
             );
             return (
               <span
                 key={idx}
                 className={`w-1 rounded-full transition-[height] duration-75 ${
-                  state === 'processing' || state === 'tool_call'
+                  state === 'processing' || state === 'tool_execution'
                     ? 'bg-blue-500'
-                    : 'bg-[#FF7A00]'
+                    : state === 'error'
+                      ? 'bg-red-500'
+                      : 'bg-[#FF7A00]'
                 }`}
                 style={{ height: `${barH}px` }}
               />
@@ -306,15 +310,67 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
         </div>
       </main>
 
-      {/* 3. Bottom Control Bar (Mute | Exit [X] | Speaker) */}
+      {/* 3. Bottom Composer & Voice Controls */}
       <footer className="relative z-10 px-6 pb-[max(1.75rem,calc(env(safe-area-inset-bottom)+1.25rem))] pt-4">
-        <div className="mx-auto flex max-w-xs items-center justify-center gap-5 sm:gap-6">
-          {/* Mute / Unmute Button */}
-          <div className="flex flex-col items-center gap-1.5">
+        <div className="mx-auto flex max-w-md items-center justify-between gap-3 sm:gap-5">
+          {/* Left Side: Multimodal Image & Lens Actions */}
+          <div className="flex items-center gap-2">
+            {onOpenAttachments ? (
+              <button
+                type="button"
+                onClick={onOpenAttachments}
+                className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
+                  attachments && attachments.length > 0
+                    ? 'bg-[#FF7A00] text-white shadow-md'
+                    : isDark
+                      ? 'bg-white/10 text-white hover:bg-white/15'
+                      : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+                }`}
+                title={tr('Ajouter une photo', 'إضافة صورة')}
+                aria-label={tr('Ajouter une photo', 'إضافة صورة')}
+              >
+                <Plus size={20} />
+              </button>
+            ) : null}
+
+            {onOpenLens ? (
+              <button
+                type="button"
+                onClick={onOpenLens}
+                className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
+                  isDark
+                    ? 'bg-white/10 text-white hover:bg-white/15'
+                    : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+                }`}
+                title={tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}
+                aria-label={tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}
+              >
+                <Camera size={20} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
+                  isDark
+                    ? 'bg-white/10 text-white hover:bg-white/15'
+                    : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+                }`}
+                title={tr('Choisir une photo', 'اختيار صورة')}
+                aria-label={tr('Choisir une photo', 'اختيار صورة')}
+              >
+                <ImageIcon size={20} />
+              </button>
+            )}
+          </div>
+
+          {/* Right Side: Mute | Central Exit [X] | Speaker Controls */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Mute / Unmute Button */}
             <button
               type="button"
               onClick={onToggleMute}
-              className={`grid h-16 w-16 place-items-center rounded-full transition active:scale-95 ${
+              className={`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${
                 isMuted
                   ? 'bg-danger/15 text-danger ring-2 ring-danger/30'
                   : isDark
@@ -324,34 +380,24 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
               aria-label={isMuted ? tr('Activer le microphone', 'إلغاء كتم الصوت') : tr('Couper le microphone', 'كتم الصوت')}
               aria-pressed={isMuted}
             >
-              {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+              {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
             </button>
-            <span className="text-[11px] font-bold text-[#6B6B6B]">
-              {isMuted ? tr('Activé', 'إلغاء الكتم') : tr('Muet', 'كتم')}
-            </span>
-          </div>
 
-          {/* Central Exit Button (X) */}
-          <div className="flex flex-col items-center gap-1.5">
+            {/* Central Exit Button (X) */}
             <button
               type="button"
               onClick={onExit}
-              className="grid h-16 w-16 place-items-center rounded-full bg-[#FF7A00] text-white shadow-lg shadow-[#FF7A00]/30 transition hover:bg-[#e05f00] active:scale-95"
+              className="grid h-14 w-14 place-items-center rounded-full bg-[#FF7A00] text-white shadow-lg shadow-[#FF7A00]/30 transition hover:bg-[#e05f00] active:scale-95"
               aria-label={tr('Quitter le mode vocal', 'إيقاف والخروج من الوضع الصوتي')}
             >
-              <X size={28} strokeWidth={2.5} />
+              <X size={26} strokeWidth={2.5} />
             </button>
-            <span className="text-[11px] font-bold text-[#6B6B6B]">
-              {tr('Quitter', 'خروج')}
-            </span>
-          </div>
 
-          {/* Speaker / Voice Sound Output Toggle */}
-          <div className="flex flex-col items-center gap-1.5">
+            {/* Speaker / Voice Sound Output Toggle */}
             <button
               type="button"
               onClick={onToggleSpeaker}
-              className={`grid h-16 w-16 place-items-center rounded-full transition active:scale-95 ${
+              className={`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${
                 isSpeakerMuted
                   ? 'bg-white/5 text-[#6B6B6B]'
                   : isDark
@@ -361,11 +407,8 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
               aria-label={isSpeakerMuted ? tr('Activer le haut-parleur', 'تشغيل الصوت') : tr('Couper le haut-parleur', 'إيقاف الصوت')}
               aria-pressed={!isSpeakerMuted}
             >
-              {isSpeakerMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+              {isSpeakerMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
             </button>
-            <span className="text-[11px] font-bold text-[#6B6B6B]">
-              {isSpeakerMuted ? tr('Silence', 'صامت') : tr('Son', 'صوت')}
-            </span>
           </div>
         </div>
       </footer>

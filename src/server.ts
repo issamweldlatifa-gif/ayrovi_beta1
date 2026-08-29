@@ -172,6 +172,7 @@ app.use('/api/admin', createAdminRouter(db));
 app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
 app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/assistant', createAssistantRouter(db, scraper));
+app.use('/api/voice', createAssistantRouter(db, scraper));
 app.use('/api/public', createPublicRouter(db));
 app.use('/api', createApiRouter(db, scraper, visionExtractor));
 

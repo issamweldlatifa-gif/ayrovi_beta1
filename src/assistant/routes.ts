@@ -121,6 +121,98 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     } });
   });
 
+  router.get(['/voice/config', '/config'], optionalCustomer(db), (req: Request, res: Response) => {
+    const sessionId = validSessionId(req) || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    res.json({
+      success: true,
+      data: {
+        sessionId,
+        voice: {
+          id: 'ayrovi-warm-01',
+          name: 'AYROVI SONIM (Tunis / Paris)',
+          language: 'ar-TN / fr-FR',
+          gender: 'female',
+          provider: 'ayrovi-natural',
+          rate: 1.08,
+          pitch: 1.0,
+        },
+        availableVoices: [
+          { id: 'ayrovi-warm-01', name: 'AYROVI SONIM (Féminin)', language: 'ar-TN / fr-FR', gender: 'female' },
+          { id: 'ayrovi-calm-02', name: 'AYROVI SONIM (Masculin)', language: 'ar-TN / fr-FR', gender: 'male' },
+        ],
+        audioInput: {
+          format: 'webm_opus',
+          sampleRate: 48000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        turnDetection: {
+          type: 'client_vad',
+          speechStartThreshold: 0.22,
+          silenceThreshold: 0.08,
+          silenceDurationMs: 650,
+          prefixPaddingMs: 300,
+        },
+        capabilities: {
+          vision: true,
+          pricingCalculator: true,
+          orderTracking: true,
+          orderCreation: true,
+          realtimeStreaming: true,
+          instantBargeIn: true,
+        },
+      },
+    });
+  });
+
+  router.post(['/voice/session', '/session'], optionalCustomer(db), (req: Request, res: Response) => {
+    const sessionId = validSessionId(req) || `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const conversationId = String(req.body?.conversationId || '').trim() || `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const preferredVoice = String(req.body?.voiceId || 'ayrovi-warm-01').trim();
+
+    res.json({
+      success: true,
+      data: {
+        sessionId,
+        conversationId,
+        voice: {
+          id: preferredVoice,
+          name: preferredVoice === 'ayrovi-calm-02' ? 'AYROVI SONIM (Masculin)' : 'AYROVI SONIM (Féminin)',
+          language: 'ar-TN / fr-FR',
+          gender: preferredVoice === 'ayrovi-calm-02' ? 'male' : 'female',
+          provider: 'ayrovi-natural',
+          rate: 1.08,
+          pitch: 1.0,
+        },
+        turnDetection: {
+          type: 'client_vad',
+          speechStartThreshold: 0.22,
+          silenceThreshold: 0.08,
+          silenceDurationMs: 650,
+          prefixPaddingMs: 300,
+        },
+        audioInput: {
+          format: 'webm_opus',
+          sampleRate: 48000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        capabilities: {
+          vision: true,
+          pricingCalculator: true,
+          orderTracking: true,
+          orderCreation: true,
+          realtimeStreaming: true,
+          instantBargeIn: true,
+        },
+      },
+    });
+  });
+
   router.post('/transcribe', optionalCustomer(db), voiceUpload.single('audio'), async (req: Request, res: Response) => {
     const key = process.env.GROQ_API_KEY?.trim();
     if (!key) return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale AYROVI n’est pas encore activée.' });

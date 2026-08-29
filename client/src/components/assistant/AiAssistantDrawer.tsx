@@ -6,7 +6,9 @@ import { AssistantHeader } from './AssistantHeader';
 import { AssistantMessages } from './AssistantMessages';
 import { AssistantSideMenu } from './AssistantSideMenu';
 import { AssistantVoiceModeScreen } from './AssistantVoiceModeScreen';
-import { AssistantVoiceOrb, VoiceState } from './AssistantVoiceOrb';
+import { AssistantVoiceOrb } from './AssistantVoiceOrb';
+import { RealtimeVoiceTransport } from './voice/RealtimeVoiceTransport';
+import type { VoiceState } from './voice/types';
 import { globalVoicePlayer } from './voicePlayer';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getSessionId } from '../../utils/session';
@@ -258,6 +260,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setConversations(next);
   }, [messages, selectedProduct, conversationId, historyScope, isOpen, isGenerating]);
 
+  const voiceTransportRef = useRef<RealtimeVoiceTransport | null>(null);
+
   const showToast = (message: string) => {
     setToast(message);
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -275,321 +279,48 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     voiceModeRef.current = false;
     setVoiceMode(false);
     setVoiceState('idle');
+    voiceStateRef.current = 'idle';
     setVolumeLevel(0);
     setLiveTranscript('');
     setIsMuted(false);
     isMutedRef.current = false;
-    globalVoicePlayer.stop();
 
-    if (volumeAnimRef.current !== null) {
-      cancelAnimationFrame(volumeAnimRef.current);
-      volumeAnimRef.current = null;
+    if (voiceTransportRef.current) {
+      voiceTransportRef.current.disconnect();
+      voiceTransportRef.current = null;
     }
-    if (speechSilenceTimerRef.current) {
-      clearTimeout(speechSilenceTimerRef.current);
-      speechSilenceTimerRef.current = null;
-    }
-    try {
-      if (speechRecognizerRef.current) {
-        speechRecognizerRef.current.onresult = null;
-        speechRecognizerRef.current.onerror = null;
-        speechRecognizerRef.current.onend = null;
-        speechRecognizerRef.current.stop();
-        speechRecognizerRef.current = null;
-      }
-    } catch {}
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state && recorder.state !== 'inactive') {
-      discardRecordingRef.current = true;
-      recorder.stop();
-    }
-    mediaRecorderRef.current = null;
-    if (audioSourceRef.current) {
-      try { audioSourceRef.current.disconnect(); } catch {}
-      audioSourceRef.current = null;
-    }
-    if (analyserRef.current) {
-      try { analyserRef.current.disconnect(); } catch {}
-      analyserRef.current = null;
-    }
-    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-      try { void audioContextRef.current.close(); } catch {}
-      audioContextRef.current = null;
-    }
-    releaseMediaStream();
+    globalVoicePlayer.stop();
   };
 
   const handleToggleMute = () => {
     const next = !isMuted;
     setIsMuted(next);
     isMutedRef.current = next;
-    if (next) {
-      if (speechRecognizerRef.current) {
-        try { speechRecognizerRef.current.stop(); } catch {}
-      }
-      const recorder = mediaRecorderRef.current;
-      if (recorder?.state && recorder.state !== 'inactive') {
-        discardRecordingRef.current = true;
-        recorder.stop();
-      }
-      setVoiceState('muted');
-    } else {
-      setVoiceState('listening');
-      void startVoiceListeningTurn();
-    }
+    voiceTransportRef.current?.setMuted(next);
   };
 
   const handleToggleSpeaker = () => {
     const next = !isSpeakerMuted;
     setIsSpeakerMuted(next);
     isSpeakerMutedRef.current = next;
+    voiceTransportRef.current?.setSpeakerMuted(next);
     if (next) {
       globalVoicePlayer.stop();
     }
   };
 
   const interruptVoiceSpeech = () => {
-    if (globalVoicePlayer.speaking || voiceStateRef.current === 'speaking' || isGenerating) {
-      globalVoicePlayer.stop();
-      if (generationAbortRef.current) {
-        generationAbortRef.current.abort();
-        generationAbortRef.current = null;
-        setIsGenerating(false);
-        setMotionState('idle');
-      }
-      setVoiceState('interrupted');
-      setTimeout(() => {
-        if (voiceModeRef.current && !isMutedRef.current) {
-          setVoiceState('listening');
-          void startVoiceListeningTurn();
-        }
-      }, 220);
+    globalVoicePlayer.stop();
+    if (generationAbortRef.current) {
+      generationAbortRef.current.abort();
+      generationAbortRef.current = null;
+      setIsGenerating(false);
+      setMotionState('idle');
     }
+    voiceTransportRef.current?.interrupt();
   };
 
-  const finishVoiceTurn = () => {
-    if (speechSilenceTimerRef.current) {
-      clearTimeout(speechSilenceTimerRef.current);
-      speechSilenceTimerRef.current = null;
-    }
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state && recorder.state !== 'inactive') {
-      recorder.stop();
-    }
-  };
-
-  const processVoiceInput = async (audio: Blob, duration: number) => {
-    if (duration < 0.4 || audio.size < 120) {
-      if (voiceModeRef.current && !isMutedRef.current) void startVoiceListeningTurn();
-      return;
-    }
-    setVoiceState('processing');
-    const controller = new AbortController();
-    transcriptionAbortRef.current = controller;
-    setIsTranscribing(true);
-    let recognizedText = liveTranscript.trim();
-
-    try {
-      const result = await transcribeAssistantAudio({
-        audio,
-        csrfToken: customerCsrfToken,
-        signal: controller.signal,
-      });
-      if (result?.text?.trim()) {
-        recognizedText = result.text.trim();
-      }
-    } catch {
-      // Fallback: If server transcription is unavailable, use client speech recognition transcript
-      console.warn('[Assistant Voice] Server transcription fallback to client transcript');
-    } finally {
-      if (transcriptionAbortRef.current === controller) {
-        transcriptionAbortRef.current = null;
-        setIsTranscribing(false);
-      }
-    }
-
-    if (recognizedText) {
-      setLiveTranscript('');
-      sendMessage(recognizedText, true);
-    } else {
-      if (voiceModeRef.current) {
-        showToast(tr('Parlez plus fort ou tapez votre message', 'تحدث بصوت أوضح أو اكتب رسالتك'));
-        void startVoiceListeningTurn();
-      }
-    }
-  };
-
-  const startVoiceListeningTurn = async () => {
-    if (!voiceModeRef.current || isGenerating || isTranscribing) return;
-    setVoiceState('listening');
-    setLiveTranscript('');
-    spokenInTurnRef.current = false;
-
-    try {
-      let stream = mediaStreamRef.current;
-      if (!stream || !stream.active || stream.getAudioTracks().every((t) => t.readyState === 'ended')) {
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            channelCount: 1,
-            sampleRate: 48000,
-          },
-        });
-        mediaStreamRef.current = stream;
-      }
-
-      // Web Audio API Pipeline with Noise Filtering & Compressor
-      if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          if (ctx.state === 'suspended') {
-            void ctx.resume();
-          }
-          audioContextRef.current = ctx;
-
-          // High-pass filter to eliminate rumble/background hum
-          const filter = ctx.createBiquadFilter();
-          filter.type = 'highpass';
-          filter.frequency.value = 85;
-
-          // Dynamics compressor to level out user speech vs speaker bleed
-          const compressor = ctx.createDynamicsCompressor();
-          compressor.threshold.value = -30;
-          compressor.knee.value = 30;
-          compressor.ratio.value = 12;
-          compressor.attack.value = 0.003;
-          compressor.release.value = 0.25;
-
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-          analyser.smoothingTimeConstant = 0.35;
-          analyserRef.current = analyser;
-
-          const source = ctx.createMediaStreamSource(stream);
-          source.connect(filter);
-          filter.connect(compressor);
-          compressor.connect(analyser);
-          audioSourceRef.current = source;
-        }
-      } else if (audioContextRef.current.state === 'suspended') {
-        void audioContextRef.current.resume();
-      }
-
-      // Volume monitoring loop
-      const checkVolume = () => {
-        if (!voiceModeRef.current || !analyserRef.current) return;
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-        const average = sum / dataArray.length;
-        const norm = Math.min(1, average / 110);
-        setVolumeLevel(norm);
-
-        // Instant Barge-in check: if currently speaking and user speaks
-        if ((voiceStateRef.current === 'speaking' || globalVoicePlayer.speaking) && norm > 0.28) {
-          interruptVoiceSpeech();
-          return;
-        }
-
-        // Silence detection while listening (fast response)
-        if (voiceStateRef.current === 'listening') {
-          if (norm > 0.08) {
-            spokenInTurnRef.current = true;
-            if (speechSilenceTimerRef.current) {
-              clearTimeout(speechSilenceTimerRef.current);
-              speechSilenceTimerRef.current = null;
-            }
-          } else if (spokenInTurnRef.current && !speechSilenceTimerRef.current) {
-            speechSilenceTimerRef.current = setTimeout(() => {
-              if (voiceModeRef.current && voiceStateRef.current === 'listening' && spokenInTurnRef.current) {
-                finishVoiceTurn();
-              }
-            }, 750);
-          }
-        }
-
-        volumeAnimRef.current = requestAnimationFrame(checkVolume);
-      };
-      if (volumeAnimRef.current !== null) cancelAnimationFrame(volumeAnimRef.current);
-      volumeAnimRef.current = requestAnimationFrame(checkVolume);
-
-      // Web Speech API for instant interim subtitles & client STT fallback
-      const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRec) {
-        try {
-          if (speechRecognizerRef.current) {
-            try { speechRecognizerRef.current.stop(); } catch {}
-          }
-          const recognizer = new SpeechRec();
-          recognizer.continuous = true;
-          recognizer.interimResults = true;
-          recognizer.lang = isArabic ? 'ar-TN' : 'fr-FR';
-          recognizer.onresult = (event: any) => {
-            let current = '';
-            let hasFinal = false;
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-              current += event.results[i][0].transcript;
-              if (event.results[i].isFinal) hasFinal = true;
-            }
-            if (current.trim()) {
-              if (voiceStateRef.current === 'speaking' || globalVoicePlayer.speaking) {
-                interruptVoiceSpeech();
-              }
-              setLiveTranscript(current.trim());
-              spokenInTurnRef.current = true;
-              if (speechSilenceTimerRef.current) {
-                clearTimeout(speechSilenceTimerRef.current);
-                speechSilenceTimerRef.current = null;
-              }
-              if (hasFinal) {
-                speechSilenceTimerRef.current = setTimeout(() => {
-                  if (voiceModeRef.current && voiceStateRef.current === 'listening') {
-                    finishVoiceTurn();
-                  }
-                }, 450);
-              }
-            }
-          };
-          recognizer.onerror = () => {};
-          recognizer.start();
-          speechRecognizerRef.current = recognizer;
-        } catch {}
-      }
-
-      // Start MediaRecorder for audio capture
-      const mimeType = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm'].find((t) => MediaRecorder.isTypeSupported(t));
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-      discardRecordingRef.current = false;
-      recordingStartedAtRef.current = Date.now();
-      recorder.ondataavailable = (event) => {
-        if (event.data.size) audioChunksRef.current.push(event.data);
-      };
-      recorder.onstop = () => {
-        const discarded = discardRecordingRef.current;
-        const duration = (Date.now() - recordingStartedAtRef.current) / 1000;
-        const chunks = audioChunksRef.current;
-        audioChunksRef.current = [];
-        mediaRecorderRef.current = null;
-        if (discarded || !voiceModeRef.current) return;
-        const audio = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
-        void processVoiceInput(audio, duration);
-      };
-      recorder.start(250);
-    } catch (error: any) {
-      stopVoiceMode();
-      showToast(error?.name === 'NotAllowedError'
-        ? tr('Autorisez le microphone pour activer le mode vocal', 'يرجى تفعيل صلاحية الميكروفون لاستخدام الوضع الصوتي')
-        : tr('Microphone indisponible', 'الميكروفون غير متاح'));
-    }
-  };
-
-  const handleToggleVoiceMode = () => {
+  const handleToggleVoiceMode = async () => {
     if (voiceMode) {
       stopVoiceMode();
     } else {
@@ -597,31 +328,87 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       voiceModeRef.current = true;
       setIsMuted(false);
       isMutedRef.current = false;
+      setVoiceState('initializing');
+
+      const transport = new RealtimeVoiceTransport(conversationId);
+      voiceTransportRef.current = transport;
+
+      transport.addEventListener((event) => {
+        if (event.type === 'state.changed') {
+          setVoiceState(event.state);
+          voiceStateRef.current = event.state;
+        } else if (event.type === 'input_audio.level') {
+          setVolumeLevel(event.level);
+        } else if (event.type === 'transcript.delta') {
+          setLiveTranscript(event.text);
+        } else if (event.type === 'transcript.completed') {
+          setLiveTranscript('');
+          sendMessage(event.text, true);
+        } else if (event.type === 'interrupted') {
+          interruptVoiceSpeech();
+        } else if (event.type === 'error') {
+          showToast(event.message);
+        }
+      });
+
+      const connected = await transport.connect('ayrovi-warm-01', customerCsrfToken);
+      if (!connected) {
+        stopVoiceMode();
+        return;
+      }
 
       const greeting = isArabic
         ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
         : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
 
-      setVoiceState('speaking');
       if (!isSpeakerMutedRef.current) {
+        transport.setProcessingState('assistant_speaking');
         globalVoicePlayer.speak(
           greeting,
           isArabic ? 'ar' : 'fr',
-          () => setVoiceState('speaking'),
+          () => transport.setProcessingState('assistant_speaking'),
           () => {
             if (voiceModeRef.current && !isMutedRef.current) {
-              setVoiceState('listening');
-              void startVoiceListeningTurn();
+              transport.setProcessingState('listening');
             } else if (voiceModeRef.current && isMutedRef.current) {
-              setVoiceState('muted');
+              transport.setProcessingState('muted');
             }
           },
         );
       } else {
-        setVoiceState('listening');
-        void startVoiceListeningTurn();
+        transport.setProcessingState('listening');
       }
     }
+  };
+
+  const handleAddVoiceAttachment = async (file: File) => {
+    if (attachments.length >= MAX_ATTACHMENTS) {
+      showToast(tr('Limite de 2 images atteinte', 'تم بلوغ الحد الأقصى (صورتان)'));
+      return;
+    }
+    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
+      showToast(tr('Format d’image non supporté', 'صيغة الصورة غير مدعومة'));
+      return;
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      showToast(tr('Image trop volumineuse (max 5 Mo)', 'حجم الصورة كبير جدًا (أقصى حد 5 ميغابايت)'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const preview = reader.result as string;
+      const newAttachment: AssistantAttachment = {
+        id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        preview,
+        dataUrl: preview,
+      };
+      setAttachments((current) => [...current, newAttachment]);
+      showToast(tr('Photo ajoutée pour analyse', 'تمت إضافة الصورة للتحليل'));
+    };
+    reader.readAsDataURL(file);
   };
 
   const startAssistantReply = async (sourceMessages: AssistantMessage[], responseId: string) => {
@@ -1280,15 +1067,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       aria-label={tr('SONIM', 'SONIM')}
     >
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
-        <AssistantHeader
-          isDark={isDark}
-          onOpenMenu={() => navigation.pushLayer({ id: 'assistant:menu' })}
-          onClose={handleCloseAssistant}
-        />
-
         {voiceMode ? (
           <AssistantVoiceModeScreen
-            state={isMuted ? 'muted' : (voiceState as any)}
+            state={isMuted ? 'muted' : voiceState}
             volumeLevel={isMuted ? 0 : volumeLevel}
             isDark={isDark}
             isMuted={isMuted}
@@ -1309,9 +1090,15 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onOpenSettings={() => setIsMenuOpen(true)}
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
+            onAddAttachment={handleAddVoiceAttachment}
           />
         ) : (
           <>
+            <AssistantHeader
+              isDark={isDark}
+              onOpenMenu={() => navigation.pushLayer({ id: 'assistant:menu' })}
+              onClose={handleCloseAssistant}
+            />
             {isBooting ? (
               <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden px-5 pb-8 pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))]" aria-busy="true" aria-label={tr('Chargement de SONIM', 'جارٍ تحميل SONIM')}>
                 <div className="mx-auto h-5 w-44 animate-pulse rounded-control bg-line" />
