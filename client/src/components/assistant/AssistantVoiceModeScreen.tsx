@@ -1,8 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
+import { Camera, Check, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AssistantAttachment } from './types';
 import type { VoiceState } from './voice/types';
+import { globalVoicePlayer } from './voicePlayer';
 
 interface AssistantVoiceModeScreenProps {
   state: VoiceState;
@@ -23,10 +24,10 @@ interface AssistantVoiceModeScreenProps {
   onToggleMute: () => void;
   onToggleSpeaker: () => void;
   onExit: () => void;
-  onOpenSettings?: () => void;
   onOpenAttachments?: () => void;
   onOpenLens?: () => void;
   onAddAttachment?: (file: File) => void;
+  onRemoveAttachment?: (id: string) => void;
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
@@ -41,24 +42,40 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   onToggleMute,
   onToggleSpeaker,
   onExit,
-  onOpenSettings,
   onOpenAttachments,
   onOpenLens,
   onAddAttachment,
+  onRemoveAttachment,
 }) => {
   const { tr, direction } = useLocale();
   const [smoothedVolume, setSmoothedVolume] = useState(0);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [voiceGender, setVoiceGender] = useState<'female' | 'male'>('female');
+  const [voiceRate, setVoiceRate] = useState<number>(1.08);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const frameRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Handle escape key to exit voice mode
+  const triggerHaptic = () => {
+    if (hapticsEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
+      try { navigator.vibrate(12); } catch {}
+    }
+  };
+
+  // Handle escape key to exit voice mode or close modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onExit();
+      if (e.key === 'Escape') {
+        if (showSettingsModal) {
+          setShowSettingsModal(false);
+        } else {
+          onExit();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onExit]);
+  }, [onExit, showSettingsModal]);
 
   // Smooth real-time volume animation
   useEffect(() => {
@@ -110,9 +127,22 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && onAddAttachment) {
+      triggerHaptic();
       onAddAttachment(file);
     }
     e.target.value = '';
+  };
+
+  const handleVoiceGenderChange = (gender: 'female' | 'male') => {
+    setVoiceGender(gender);
+    globalVoicePlayer.setVoiceSettings({ gender, rate: voiceRate });
+    triggerHaptic();
+  };
+
+  const handleVoiceRateChange = (rate: number) => {
+    setVoiceRate(rate);
+    globalVoicePlayer.setVoiceSettings({ gender: voiceGender, rate });
+    triggerHaptic();
   };
 
   return (
@@ -138,7 +168,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
       <header className="relative z-10 flex items-center justify-between px-6 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))]">
         <button
           type="button"
-          onClick={onExit}
+          onClick={() => { triggerHaptic(); onExit(); }}
           className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
             isDark
               ? 'bg-white/10 text-white hover:bg-white/15'
@@ -158,30 +188,28 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           </span>
         </div>
 
-        {onOpenSettings ? (
-          <button
-            type="button"
-            onClick={onOpenSettings}
-            className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
-              isDark
+        <button
+          type="button"
+          onClick={() => { triggerHaptic(); setShowSettingsModal(true); }}
+          className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
+            showSettingsModal
+              ? 'bg-[#FF7A00] text-white'
+              : isDark
                 ? 'bg-white/10 text-white hover:bg-white/15'
                 : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
-            }`}
-            aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-            title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-          >
-            <SlidersHorizontal size={20} />
-          </button>
-        ) : (
-          <div className="w-11" />
-        )}
+          }`}
+          aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
+          title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
+        >
+          <SlidersHorizontal size={20} />
+        </button>
       </header>
 
       {/* 2. Center Stage: Large Reactive Voice Orb & Visualizer */}
       <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-4 text-center">
         {/* Active Product or Image context pill if present */}
         {(activeProduct || (attachments && attachments.length > 0)) && (
-          <div className="mb-4 flex max-w-xs items-center gap-2 rounded-full border border-black/5 bg-white/80 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/40">
+          <div className="mb-4 flex max-w-xs items-center gap-2 rounded-full border border-black/5 bg-white/85 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/45">
             {activeProduct?.image || attachments?.[0]?.preview ? (
               <img
                 src={activeProduct?.image || attachments?.[0]?.preview}
@@ -198,6 +226,16 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
               <span className="rounded bg-[#FF7A00]/10 px-1.5 py-0.5 text-[11px] font-black text-[#FF7A00]">
                 {activeProduct.priceTnd} TND
               </span>
+            )}
+            {attachments?.[0]?.id && onRemoveAttachment && (
+              <button
+                type="button"
+                onClick={() => onRemoveAttachment(attachments[0].id)}
+                className="grid h-4 w-4 place-items-center rounded-full bg-black/10 text-black hover:bg-black/20 dark:bg-white/20 dark:text-white"
+                title={tr('Supprimer la photo', 'حذف الصورة')}
+              >
+                <X size={10} />
+              </button>
             )}
           </div>
         )}
@@ -284,7 +322,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           </p>
         )}
 
-        {/* Real-time Audio Waveform Bars (reacting strictly to real volume) */}
+        {/* Real-time Audio Waveform Bars */}
         <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
           {[
             0.2, 0.35, 0.5, 0.7, 0.45, 0.85, 0.6, 1.0, 0.75, 0.9, 0.55, 0.8, 0.4, 0.65, 0.3, 0.2,
@@ -318,7 +356,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             {onOpenAttachments ? (
               <button
                 type="button"
-                onClick={onOpenAttachments}
+                onClick={() => { triggerHaptic(); onOpenAttachments(); }}
                 className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
                   attachments && attachments.length > 0
                     ? 'bg-[#FF7A00] text-white shadow-md'
@@ -336,7 +374,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             {onOpenLens ? (
               <button
                 type="button"
-                onClick={onOpenLens}
+                onClick={() => { triggerHaptic(); onOpenLens(); }}
                 className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
                   isDark
                     ? 'bg-white/10 text-white hover:bg-white/15'
@@ -350,7 +388,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             ) : (
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => { triggerHaptic(); fileInputRef.current?.click(); }}
                 className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
                   isDark
                     ? 'bg-white/10 text-white hover:bg-white/15'
@@ -369,7 +407,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             {/* Mute / Unmute Button */}
             <button
               type="button"
-              onClick={onToggleMute}
+              onClick={() => { triggerHaptic(); onToggleMute(); }}
               className={`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${
                 isMuted
                   ? 'bg-danger/15 text-danger ring-2 ring-danger/30'
@@ -386,7 +424,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             {/* Central Exit Button (X) */}
             <button
               type="button"
-              onClick={onExit}
+              onClick={() => { triggerHaptic(); onExit(); }}
               className="grid h-14 w-14 place-items-center rounded-full bg-[#FF7A00] text-white shadow-lg shadow-[#FF7A00]/30 transition hover:bg-[#e05f00] active:scale-95"
               aria-label={tr('Quitter le mode vocal', 'إيقاف والخروج من الوضع الصوتي')}
             >
@@ -396,7 +434,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             {/* Speaker / Voice Sound Output Toggle */}
             <button
               type="button"
-              onClick={onToggleSpeaker}
+              onClick={() => { triggerHaptic(); onToggleSpeaker(); }}
               className={`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${
                 isSpeakerMuted
                   ? 'bg-white/5 text-[#6B6B6B]'
@@ -412,6 +450,136 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           </div>
         </div>
       </footer>
+
+      {/* 4. Voice Settings Bottom Sheet Modal */}
+      {showSettingsModal && (
+        <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm">
+          <div
+            className={`flex max-h-[85vh] flex-col rounded-t-3xl p-6 shadow-2xl transition-all ${
+              isDark ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#111111]'
+            }`}
+          >
+            <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/10">
+              <h3 className="text-base font-black">
+                {tr('Paramètres du mode vocal', 'إعدادات الوضع الصوتي')}
+              </h3>
+              <button
+                type="button"
+                onClick={() => { triggerHaptic(); setShowSettingsModal(false); }}
+                className="grid h-8 w-8 place-items-center rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-6 overflow-y-auto py-1">
+              {/* Voice Personality / Gender */}
+              <div>
+                <label className="text-xs font-black uppercase tracking-wider text-[#6B6B6B]">
+                  {tr('Voix de l’assistant', 'صوت المساعد')}
+                </label>
+                <div className="mt-2.5 grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleVoiceGenderChange('female')}
+                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
+                      voiceGender === 'female'
+                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        : isDark
+                          ? 'border border-white/10 bg-white/5 text-white'
+                          : 'border border-black/5 bg-black/5 text-[#111111]'
+                    }`}
+                  >
+                    <span>AYROVI Féminin</span>
+                    {voiceGender === 'female' && <Check size={16} />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleVoiceGenderChange('male')}
+                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
+                      voiceGender === 'male'
+                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        : isDark
+                          ? 'border border-white/10 bg-white/5 text-white'
+                          : 'border border-black/5 bg-black/5 text-[#111111]'
+                    }`}
+                  >
+                    <span>AYROVI Masculin</span>
+                    {voiceGender === 'male' && <Check size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Voice Speed / Rate */}
+              <div>
+                <label className="text-xs font-black uppercase tracking-wider text-[#6B6B6B]">
+                  {tr('Vitesse de diction', 'سرعة الكلام')}
+                </label>
+                <div className="mt-2.5 grid grid-cols-4 gap-2">
+                  {[
+                    { label: '0.9x', val: 0.9 },
+                    { label: '1.0x', val: 1.0 },
+                    { label: '1.1x', val: 1.08 },
+                    { label: '1.25x', val: 1.25 },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => handleVoiceRateChange(item.val)}
+                      className={`rounded-xl py-2.5 text-xs font-bold transition ${
+                        Math.abs(voiceRate - item.val) < 0.04
+                          ? 'bg-[#FF7A00] text-white shadow-md'
+                          : isDark
+                            ? 'bg-white/5 text-white hover:bg-white/10'
+                            : 'bg-black/5 text-[#111111] hover:bg-black/10'
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Haptics & Feedback */}
+              <div className="flex items-center justify-between rounded-2xl border border-black/5 p-3.5 dark:border-white/10">
+                <div>
+                  <p className="text-xs font-bold">
+                    {tr('Retours haptiques / Vibrations', 'الاهتزاز والتفاعل اللمسي')}
+                  </p>
+                  <p className="text-[11px] text-[#6B6B6B]">
+                    {tr('Micro-vibration lors des interactions', 'اهتزاز خفيف عند التحدث والمقاطعة')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !hapticsEnabled;
+                    setHapticsEnabled(next);
+                    if (next) triggerHaptic();
+                  }}
+                  className={`relative h-6 w-11 rounded-full transition-colors ${
+                    hapticsEnabled ? 'bg-[#FF7A00]' : 'bg-gray-400/40'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                      hapticsEnabled ? 'right-0.5' : 'left-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => { triggerHaptic(); setShowSettingsModal(false); }}
+              className="mt-6 w-full rounded-2xl bg-[#FF7A00] py-3.5 text-center text-xs font-black text-white shadow-lg shadow-[#FF7A00]/25 active:scale-95"
+            >
+              {tr('Appliquer', 'تطبيق الإعدادات')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

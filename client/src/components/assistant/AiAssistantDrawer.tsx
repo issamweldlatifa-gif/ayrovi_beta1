@@ -1091,6 +1091,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}
+            onRemoveAttachment={(id) => setAttachments((current) => current.filter((att) => att.id !== id))}
           />
         ) : (
           <>
