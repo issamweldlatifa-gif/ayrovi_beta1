@@ -190,7 +190,9 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/ready', (_req, res) => {
   try {
     db.get('SELECT 1 AS ready');
-    const responsesProviderReady = getAyroviAiCore().responses().isConfigured();
+    const aiCore = getAyroviAiCore();
+    const responsesProviderReady = aiCore.responses().isConfigured();
+    const legacyVoice = aiCore.legacyVoiceReadiness();
     res.json({
       status: 'ready',
       database: 'ok',
@@ -200,9 +202,9 @@ app.get('/api/ready', (_req, res) => {
         magazineImageSearch: Boolean(process.env.SERPAPI_KEY),
         magazineStockVideo: Boolean(process.env.PEXELS_API_KEY || process.env.PIXABAY_API_KEY || responsesProviderReady),
         visualSearch: Boolean(process.env.SERPAPI_KEY),
-        voice: Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
-        voiceInput: Boolean(process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY),
-        voiceOutput: Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.OPENAI_API_KEY),
+        voice: legacyVoice.available,
+        voiceInput: legacyVoice.input,
+        voiceOutput: legacyVoice.output,
         googleLogin: customerAuthReady() && googleOAuthAvailable(),
         facebookLogin: customerAuthReady() && facebookOAuthAvailable(),
         sms: phoneOtpAvailable(),

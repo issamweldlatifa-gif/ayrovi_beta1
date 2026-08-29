@@ -22,7 +22,7 @@ export default defineConfig({
       GEMINI_API_KEY: '',
       GOOGLE_API_KEY: '',
       OPENAI_API_KEY: '',
-      AYROVIX_ANTHROPIC_WEB_SEARCH: 'false',
+      AYROVIX_AI_WEB_SEARCH: 'false',
     },
   },
 });

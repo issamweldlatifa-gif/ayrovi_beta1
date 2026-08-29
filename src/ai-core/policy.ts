@@ -3,6 +3,7 @@ import type {
   AiCompletionResult,
   AiResponsesProviderAdapter,
   AiStreamCallbacks,
+  AiWorkload,
 } from './contracts';
 import { AiProviderError } from './errors';
 
@@ -12,9 +13,20 @@ interface CircuitState {
   reason: 'rate-limit' | 'failures' | null;
 }
 
+export interface AiCircuitSnapshot {
+  provider: string;
+  capability: AiWorkload;
+  open: boolean;
+  consecutiveFailures: number;
+  reason: 'rate-limit' | 'failures' | null;
+  retryAt?: string;
+}
+
 /**
- * AYROVI-owned provider circuit breaker. A 429 opens immediately and is never
- * retried in the same request. Repeated transient failures also fail fast.
+ * AYROVI-owned, capability-isolated circuit breaker. State is keyed by the
+ * provider AND canonical AYROVI workload: quota or transient failures in one
+ * capability cannot disable unrelated capabilities on the same provider.
+ * A 429 opens its scoped circuit immediately and is never retried here.
  */
 export class AiProviderCircuitBreaker {
   private readonly states = new Map<string, CircuitState>();
@@ -25,16 +37,22 @@ export class AiProviderCircuitBreaker {
     private readonly failureThreshold = 3,
   ) {}
 
-  private state(provider: string): CircuitState {
-    const existing = this.states.get(provider);
+  private key(provider: string, capability: AiWorkload): string {
+    // JSON encoding avoids delimiter collisions in provider/workload names.
+    return JSON.stringify([provider, capability]);
+  }
+
+  private state(provider: string, capability: AiWorkload): CircuitState {
+    const key = this.key(provider, capability);
+    const existing = this.states.get(key);
     if (existing) return existing;
     const created: CircuitState = { consecutiveFailures: 0, openUntil: 0, reason: null };
-    this.states.set(provider, created);
+    this.states.set(key, created);
     return created;
   }
 
-  beforeRequest(provider: string): void {
-    const state = this.state(provider);
+  beforeRequest(provider: string, capability: AiWorkload): void {
+    const state = this.state(provider, capability);
     if (state.openUntil <= Date.now()) {
       if (state.openUntil) {
         state.openUntil = 0;
@@ -50,8 +68,8 @@ export class AiProviderCircuitBreaker {
     });
   }
 
-  recordSuccess(provider: string): void {
-    const state = this.state(provider);
+  recordSuccess(provider: string, capability: AiWorkload): void {
+    const state = this.state(provider, capability);
     state.consecutiveFailures = 0;
     if (state.openUntil <= Date.now()) {
       state.openUntil = 0;
@@ -59,9 +77,9 @@ export class AiProviderCircuitBreaker {
     }
   }
 
-  recordFailure(provider: string, error: unknown): void {
+  recordFailure(provider: string, capability: AiWorkload, error: unknown): void {
     if (!(error instanceof AiProviderError)) return;
-    const state = this.state(provider);
+    const state = this.state(provider, capability);
     if (error.code === 'PROVIDER_RATE_LIMITED' || error.status === 429) {
       const retryAt = Date.parse(error.retryAt || '');
       state.openUntil = Number.isFinite(retryAt) && retryAt > Date.now()
@@ -82,9 +100,32 @@ export class AiProviderCircuitBreaker {
     }
   }
 
-  reset(provider?: string): void {
-    if (provider) this.states.delete(provider);
-    else this.states.clear();
+  snapshot(provider: string, capability: AiWorkload): AiCircuitSnapshot {
+    const state = this.state(provider, capability);
+    const open = state.openUntil > Date.now();
+    return {
+      provider,
+      capability,
+      open,
+      consecutiveFailures: state.consecutiveFailures,
+      reason: open ? state.reason : null,
+      ...(open ? { retryAt: new Date(state.openUntil).toISOString() } : {}),
+    };
+  }
+
+  reset(provider?: string, capability?: AiWorkload): void {
+    if (!provider) {
+      this.states.clear();
+      return;
+    }
+    if (capability) {
+      this.states.delete(this.key(provider, capability));
+      return;
+    }
+    for (const key of this.states.keys()) {
+      const parsed = JSON.parse(key) as [string, AiWorkload];
+      if (parsed[0] === provider) this.states.delete(key);
+    }
   }
 }
 
@@ -108,25 +149,27 @@ export class PolicyResponsesAdapter implements AiResponsesProviderAdapter {
   }
 
   async complete(request: AiCompletionRequest, signal?: AbortSignal): Promise<AiCompletionResult> {
-    this.breaker.beforeRequest(this.id);
+    const capability = request.workload;
+    this.breaker.beforeRequest(this.id, capability);
     try {
       const result = await this.delegate.complete(request, signal);
-      this.breaker.recordSuccess(this.id);
+      this.breaker.recordSuccess(this.id, capability);
       return result;
     } catch (error) {
-      this.breaker.recordFailure(this.id, error);
+      this.breaker.recordFailure(this.id, capability, error);
       throw error;
     }
   }
 
   async stream(request: AiCompletionRequest, callbacks: AiStreamCallbacks, signal: AbortSignal): Promise<AiCompletionResult> {
-    this.breaker.beforeRequest(this.id);
+    const capability = request.workload;
+    this.breaker.beforeRequest(this.id, capability);
     try {
       const result = await this.delegate.stream(request, callbacks, signal);
-      this.breaker.recordSuccess(this.id);
+      this.breaker.recordSuccess(this.id, capability);
       return result;
     } catch (error) {
-      this.breaker.recordFailure(this.id, error);
+      this.breaker.recordFailure(this.id, capability, error);
       throw error;
     }
   }

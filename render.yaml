@@ -129,7 +129,7 @@ services:
         value: 10000
       - key: AYROVIX_LENS_COUNTRY
         value: fr
-      - key: AYROVIX_ANTHROPIC_WEB_SEARCH
+      - key: AYROVIX_AI_WEB_SEARCH
         value: true
       - key: AYROVIX_PROVIDER_TIMEOUT_MS
         value: 12000

@@ -374,7 +374,7 @@ describe('AI Core errors and circuit policy', () => {
     });
   });
 
-  test('opens on the first 429 and does not retry the delegate', async () => {
+  test('opens on the first 429 and does not retry the same capability', async () => {
     const complete = vi.fn(async () => {
       throw new AiProviderError('PROVIDER_RATE_LIMITED', 'fake-provider', 'Rate limited.', {
         status: 429,
@@ -396,5 +396,54 @@ describe('AI Core errors and circuit policy', () => {
     await expect(policy.complete(request())).rejects.toMatchObject({ code: 'PROVIDER_RATE_LIMITED', status: 429 });
     await expect(policy.complete(request())).rejects.toMatchObject({ code: 'PROVIDER_CIRCUIT_OPEN', status: 429 });
     expect(complete).toHaveBeenCalledTimes(1);
+  });
+
+  test('isolates rate-limit circuits by provider and AYROVI workload', async () => {
+    const complete = vi.fn(async (input: AiCompletionRequest) => {
+      if (input.workload === 'assistant') {
+        throw new AiProviderError('PROVIDER_RATE_LIMITED', 'fake-provider', 'Rate limited.', {
+          status: 429,
+          retryable: true,
+        });
+      }
+      return {
+        provider: 'fake-provider',
+        model: 'fake-model',
+        output: [{ type: 'text' as const, text: 'ok' }],
+        textBlocks: ['ok'],
+        webResults: [],
+      };
+    });
+    const delegate: AiResponsesProviderAdapter = {
+      id: 'fake-provider', kind: 'responses', targetRole: 'fallback',
+      isConfigured: () => true, resolveModel: () => 'fake-model', complete,
+      stream: async () => { throw new Error('not used'); },
+    };
+    const breaker = new AiProviderCircuitBreaker(60_000);
+    const policy = new PolicyResponsesAdapter(delegate, breaker);
+
+    await expect(policy.complete(request({ workload: 'assistant' }))).rejects.toMatchObject({ code: 'PROVIDER_RATE_LIMITED' });
+    await expect(policy.complete(request({ workload: 'assistant' }))).rejects.toMatchObject({ code: 'PROVIDER_CIRCUIT_OPEN' });
+    await expect(policy.complete(request({ workload: 'vision' }))).resolves.toMatchObject({ textBlocks: ['ok'] });
+
+    expect(complete).toHaveBeenCalledTimes(2);
+    expect(breaker.snapshot('fake-provider', 'assistant')).toMatchObject({ open: true, reason: 'rate-limit' });
+    expect(breaker.snapshot('fake-provider', 'vision')).toMatchObject({ open: false, reason: null });
+    expect(breaker.snapshot('other-provider', 'assistant')).toMatchObject({ open: false, reason: null });
+  });
+
+  test('opens only the scoped capability after repeated transient failures', () => {
+    const breaker = new AiProviderCircuitBreaker(60_000, 30_000, 2);
+    const transient = new AiProviderError('PROVIDER_UNAVAILABLE', 'fake-provider', 'Unavailable.', {
+      status: 503,
+      retryable: true,
+    });
+
+    breaker.recordFailure('fake-provider', 'magazine', transient);
+    expect(breaker.snapshot('fake-provider', 'magazine').open).toBe(false);
+    breaker.recordFailure('fake-provider', 'magazine', transient);
+
+    expect(() => breaker.beforeRequest('fake-provider', 'magazine')).toThrowError(AiProviderError);
+    expect(() => breaker.beforeRequest('fake-provider', 'assistant')).not.toThrow();
   });
 });

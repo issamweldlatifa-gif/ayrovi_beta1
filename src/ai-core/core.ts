@@ -10,49 +10,60 @@ import { OpenAIResponsesAdapter } from './adapters/openai/OpenAIResponsesAdapter
 import { AiProviderCircuitBreaker, PolicyResponsesAdapter } from './policy';
 
 /**
- * AYROVI owns routing. Phase 1 intentionally keeps Anthropic active so
- * contract extraction is behavior-preserving. Environment variables cannot
- * silently promote OpenAI before the reviewed Shadow/Canary phases.
+ * AYROVI owns routing. Phase 1 intentionally keeps the production-compatible
+ * adapter active so contract extraction is behavior-preserving. Environment
+ * variables cannot silently promote the candidate before reviewed gates.
  */
 export class AyroviAiCore {
-  readonly anthropic: AiResponsesProviderAdapter;
-  readonly openAiResponses: AiResponsesProviderAdapter;
-  readonly openAiRealtime: AiRealtimeProviderAdapter;
-  readonly legacyVoice: AiRealtimeProviderAdapter;
+  private readonly activeResponsesAdapter: AiResponsesProviderAdapter;
+  private readonly candidateResponsesAdapter: AiResponsesProviderAdapter;
+  private readonly candidateRealtimeAdapter: AiRealtimeProviderAdapter;
+  private readonly legacyRealtimeAdapter: AiRealtimeProviderAdapter;
   readonly circuitBreaker: AiProviderCircuitBreaker;
 
   constructor(adapters: {
-    anthropic?: AiResponsesProviderAdapter;
-    openAiResponses?: AiResponsesProviderAdapter;
-    openAiRealtime?: AiRealtimeProviderAdapter;
-    legacyVoice?: AiRealtimeProviderAdapter;
+    activeResponses?: AiResponsesProviderAdapter;
+    candidateResponses?: AiResponsesProviderAdapter;
+    candidateRealtime?: AiRealtimeProviderAdapter;
+    legacyRealtime?: AiRealtimeProviderAdapter;
   } = {}) {
     this.circuitBreaker = new AiProviderCircuitBreaker();
-    this.anthropic = new PolicyResponsesAdapter(
-      adapters.anthropic || new AnthropicAdapter(),
+    this.activeResponsesAdapter = new PolicyResponsesAdapter(
+      adapters.activeResponses || new AnthropicAdapter(),
       this.circuitBreaker,
     );
-    this.openAiResponses = new PolicyResponsesAdapter(
-      adapters.openAiResponses || new OpenAIResponsesAdapter(),
+    this.candidateResponsesAdapter = new PolicyResponsesAdapter(
+      adapters.candidateResponses || new OpenAIResponsesAdapter(),
       this.circuitBreaker,
     );
-    this.openAiRealtime = adapters.openAiRealtime || new OpenAIRealtimeAdapter();
-    this.legacyVoice = adapters.legacyVoice || new LegacyVoiceAdapter();
+    this.candidateRealtimeAdapter = adapters.candidateRealtime || new OpenAIRealtimeAdapter();
+    this.legacyRealtimeAdapter = adapters.legacyRealtime || new LegacyVoiceAdapter();
   }
 
   /** Current production-compatible route for Phase 1. */
   responses(): AiResponsesProviderAdapter {
-    return this.anthropic;
+    return this.activeResponsesAdapter;
   }
 
-  /** Target adapter available for contract tests; not routed to live traffic. */
+  /** Candidate adapter available to gates/tests; never routed to active traffic. */
   targetResponses(): AiResponsesProviderAdapter {
-    return this.openAiResponses;
+    return this.candidateResponsesAdapter;
   }
 
-  /** Target Voice adapter; session creation remains disabled until Phase 6. */
+  /** Candidate Voice adapter; session creation remains disabled until a later phase. */
   targetRealtime(): AiRealtimeProviderAdapter {
-    return this.openAiRealtime;
+    return this.candidateRealtimeAdapter;
+  }
+
+  /** Provider-neutral status for the frozen legacy Voice transport. */
+  legacyVoiceReadiness(): { available: boolean; input: boolean; output: boolean } {
+    const sharedFallback = Boolean(process.env.OPENAI_API_KEY?.trim());
+    const input = Boolean(process.env.GROQ_API_KEY?.trim()) || sharedFallback;
+    const output = Boolean(
+      process.env.GEMINI_API_KEY?.trim()
+      || process.env.GOOGLE_API_KEY?.trim(),
+    ) || sharedFallback;
+    return { available: input || output, input, output };
   }
 
   registrySnapshot(): AiProviderRegistrySnapshot {
@@ -61,12 +72,12 @@ export class AyroviAiCore {
       activeResponses: this.responses().id,
       targetResponses: this.targetResponses().id,
       targetRealtime: this.targetRealtime().id,
-      legacyRealtime: this.legacyVoice.id,
+      legacyRealtime: this.legacyRealtimeAdapter.id,
       entries: [
-        { id: this.anthropic.id, kind: 'responses', role: this.anthropic.targetRole, configured: this.anthropic.isConfigured(), active: true },
-        { id: this.openAiResponses.id, kind: 'responses', role: this.openAiResponses.targetRole, configured: this.openAiResponses.isConfigured(), active: false },
-        { id: this.openAiRealtime.id, kind: 'realtime', role: this.openAiRealtime.targetRole, configured: this.openAiRealtime.isConfigured(), active: false },
-        { id: this.legacyVoice.id, kind: 'realtime', role: this.legacyVoice.targetRole, configured: this.legacyVoice.isConfigured(), active: true },
+        { id: this.activeResponsesAdapter.id, kind: 'responses', role: this.activeResponsesAdapter.targetRole, configured: this.activeResponsesAdapter.isConfigured(), active: true },
+        { id: this.candidateResponsesAdapter.id, kind: 'responses', role: this.candidateResponsesAdapter.targetRole, configured: this.candidateResponsesAdapter.isConfigured(), active: false },
+        { id: this.candidateRealtimeAdapter.id, kind: 'realtime', role: this.candidateRealtimeAdapter.targetRole, configured: this.candidateRealtimeAdapter.isConfigured(), active: false },
+        { id: this.legacyRealtimeAdapter.id, kind: 'realtime', role: this.legacyRealtimeAdapter.targetRole, configured: this.legacyRealtimeAdapter.isConfigured(), active: true },
       ],
     };
   }

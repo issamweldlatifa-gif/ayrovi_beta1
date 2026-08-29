@@ -900,8 +900,6 @@ export function magazineAgentCapabilities() {
   return {
     provider: provider.id,
     providerReady: providerConfigured,
-    // Compatibility field retained for the existing admin response contract.
-    anthropic: provider.id === 'anthropic' && providerConfigured,
     webSearch: providerConfigured,
     imageSearch: Boolean(process.env.SERPAPI_KEY?.trim()),
     pexels: Boolean(process.env.PEXELS_API_KEY?.trim()),

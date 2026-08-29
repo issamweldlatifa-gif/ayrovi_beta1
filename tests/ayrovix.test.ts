@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
-import { anthropicWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
+import { providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
@@ -505,10 +505,10 @@ describe('AYROVIX Lens', () => {
   test('Claude Web Search transforme les résultats officiels Anthropic en candidats', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
     const previousModel = process.env.ANTHROPIC_MODEL;
-    const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-web-search';
     process.env.ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
-    process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
+    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit = {}) => new Response(JSON.stringify({
       model: 'claude-haiku-4-5-20251001',
       content: [{
@@ -522,7 +522,7 @@ describe('AYROVIX Lens', () => {
     }), { status: 200, headers: { 'content-type': 'application/json' } }));
     vi.stubGlobal('fetch', fetchMock);
     try {
-      const results = await anthropicWebSearch('Nike Air Max 95 navy grey', 6, Date.now() + 2_000);
+      const results = await providerWebSearch('Nike Air Max 95 navy grey', 6, Date.now() + 2_000);
       expect(results).toHaveLength(2);
       expect(results[0]).toMatchObject({ source: 'StockX', kind: 'external' });
       expect(results[1].source).toBe('eBay');
@@ -532,15 +532,15 @@ describe('AYROVIX Lens', () => {
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
       restoreEnv('ANTHROPIC_MODEL', previousModel);
-      restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
     }
   });
 
   test('QR texte exclut toute page Web Search sans prix et lien marchand exploitables', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
-    const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-qr-search';
-    process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
+    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
     vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({
       content: [{ type: 'web_search_tool_result', content: [
         { type: 'web_search_result', title: 'Produit QR AYR-REF-2026', url: 'https://www.amazon.fr/dp/B000000001' },
@@ -561,26 +561,26 @@ describe('AYROVIX Lens', () => {
       }
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
-      restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
     }
   });
 
   test('Claude Web Search respecte une deadline globale déjà presque épuisée', async () => {
     const previousKey = process.env.ANTHROPIC_API_KEY;
-    const previousSearch = process.env.AYROVIX_ANTHROPIC_WEB_SEARCH;
+    const previousSearch = process.env.AYROVIX_AI_WEB_SEARCH;
     process.env.ANTHROPIC_API_KEY = 'test-anthropic-deadline';
-    process.env.AYROVIX_ANTHROPIC_WEB_SEARCH = 'true';
+    process.env.AYROVIX_AI_WEB_SEARCH = 'true';
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     try {
       const startedAt = Date.now();
-      const result = await anthropicWebSearch('deadline-test', 6, Date.now() + 150);
+      const result = await providerWebSearch('deadline-test', 6, Date.now() + 150);
       expect(result).toEqual([]);
       expect(fetchMock).not.toHaveBeenCalled();
       expect(Date.now() - startedAt).toBeLessThan(300);
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
-      restoreEnv('AYROVIX_ANTHROPIC_WEB_SEARCH', previousSearch);
+      restoreEnv('AYROVIX_AI_WEB_SEARCH', previousSearch);
     }
   });
 

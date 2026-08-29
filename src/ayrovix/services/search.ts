@@ -3,6 +3,7 @@ import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
 import { filterDisplayableCandidates } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
+import { isAiFeatureEnabled } from '../../ai-core/config';
 
 /**
  * AYROVIX owns text discovery for links, QR/barcodes and Lens fallback.
@@ -20,9 +21,9 @@ function searchBudgetMs(): number {
 }
 
 function externalWebSearchEnabled(): boolean {
-  // Keep the legacy feature flag during migration; provider selection belongs
-  // exclusively to AI Core and cannot be changed by this service.
-  return process.env.AYROVIX_ANTHROPIC_WEB_SEARCH !== 'false'
+  // This service owns only a provider-neutral capability flag. Adapter choice
+  // and credentials remain exclusively inside AYROVI AI Core.
+  return isAiFeatureEnabled('web-search')
     && getAyroviAiCore().responses().isConfigured();
 }
 
@@ -180,8 +181,6 @@ export async function providerWebSearch(
 }
 
 /** Backward-compatible Phase 1 alias; new business code uses providerWebSearch. */
-export const anthropicWebSearch = providerWebSearch;
-
 /** Public AYROVIX service used by URL, image, QR and barcode flows. */
 export async function externalProductSearch(
   query: string,
@@ -213,8 +212,6 @@ export async function externalProductSearch(
 }
 
 /** Backward-compatible Phase 1 alias. */
-export const anthropicExternalSearch = externalProductSearch;
-
 export async function searchCandidates(
   db: QatafoDatabase,
   identification: AyrovixIdentification,
