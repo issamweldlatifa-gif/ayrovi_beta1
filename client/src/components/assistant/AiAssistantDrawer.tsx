@@ -309,7 +309,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     }
   };
 
-  const interruptVoiceSpeech = () => {
+  const stopActiveVoiceResponse = () => {
     globalVoicePlayer.stop();
     if (generationAbortRef.current) {
       generationAbortRef.current.abort();
@@ -317,6 +317,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       setIsGenerating(false);
       setMotionState('idle');
     }
+  };
+
+  const interruptVoiceSpeech = () => {
+    stopActiveVoiceResponse();
     voiceTransportRef.current?.interrupt();
   };
 
@@ -331,7 +335,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       isMutedRef.current = false;
       setVoiceState('initializing');
 
-      const transport = new RealtimeVoiceTransport(conversationId);
+      const transport = new RealtimeVoiceTransport(conversationId, direction === 'rtl' ? 'ar-TN' : 'fr-FR');
       voiceTransportRef.current = transport;
 
       transport.addEventListener((event) => {
@@ -346,13 +350,16 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           setLiveTranscript('');
           sendMessage(event.text, true);
         } else if (event.type === 'interrupted') {
-          interruptVoiceSpeech();
+          // The transport already performed the interruption. Calling interrupt()
+          // again here used to recursively emit "interrupted" until the stack
+          // overflowed, producing repeated clicks/static instead of speech.
+          stopActiveVoiceResponse();
         } else if (event.type === 'error') {
           showToast(event.message);
         }
       });
 
-      const connected = await transport.connect('ayrovi-warm-01', customerCsrfToken);
+      const connected = await transport.connect('Aoede', customerCsrfToken);
       if (!connected) {
         stopVoiceMode();
         return;
@@ -1107,7 +1114,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onToggleMute={handleToggleMute}
             onToggleSpeaker={handleToggleSpeaker}
             onExit={stopVoiceMode}
-            onTapOrb={() => voiceTransportRef.current?.forceFinishTurn()}
+            onTapOrb={() => {
+              if (voiceStateRef.current === 'assistant_speaking') interruptVoiceSpeech();
+              else voiceTransportRef.current?.forceFinishTurn();
+            }}
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}

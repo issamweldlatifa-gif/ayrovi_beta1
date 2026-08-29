@@ -101,10 +101,22 @@ services:
         sync: false
       - key: PIXABAY_API_KEY
         sync: false
+      # Voice input (STT) and output (TTS), server-side only.
       - key: GROQ_API_KEY
         sync: false
       - key: GROQ_STT_MODEL
         value: whisper-large-v3-turbo
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_TTS_MODEL
+        value: gemini-3.1-flash-tts-preview
+      - key: GEMINI_TTS_TIMEOUT_MS
+        value: 20000
+      # Optional shared fallback for voice transcription and synthesis.
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_TTS_MODEL
+        value: tts-1
       - key: SERPAPI_KEY
         sync: false
       - key: AYROVIX_VISUAL_SEARCH_TIMEOUT_MS

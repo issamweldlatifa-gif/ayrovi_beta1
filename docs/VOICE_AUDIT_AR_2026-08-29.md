@@ -1,0 +1,193 @@
+# تقرير فحص وإصلاح AYROVI Voice
+
+التاريخ: 2026-08-29
+
+## الخلاصة
+
+العطل لم يكن من مكبّر الصوت وحده. كان المسار الصوتي يحتوي على عدة أخطاء متراكبة تؤدي إلى بدء الصوت لوقت قصير ثم قطعه، وتشغيل نقرات متكررة تُسمع كخشخشة، أو الرجوع إلى صوت المتصفح بصمت.
+
+كما أن التنفيذ كان موصوفًا داخل الكود بأنه **Gemini Live Realtime**، بينما الواقع هو: Web Speech/Whisper للإدخال، Claude للنص والأدوات، ثم طلبات Gemini TTS منفصلة لكل جملة. تم تصحيح الوصف والعقد البرمجي ليطابقا التنفيذ الحقيقي.
+
+## الأسباب الجذرية المؤكدة
+
+### 1. حلقة مقاطعة لا نهائية
+
+كان التسلسل كالتالي:
+
+1. `RealtimeVoiceTransport.interrupt()` يرسل حدث `interrupted`.
+2. `AiAssistantDrawer` يستقبل الحدث ويستدعي `interruptVoiceSpeech()`.
+3. الدالة تستدعي `transport.interrupt()` من جديد.
+4. تتكرر العملية حتى امتلاء مكدس JavaScript.
+
+كل دورة كانت تشغّل مؤثر المقاطعة، لذلك تتحول النقرات المتكررة إلى خشخشة ثم ينقطع الصوت.
+
+### 2. مسار TTS الذي يطلبه المتصفح كان 404
+
+المشغل كان يطلب:
+
+```text
+POST /api/voice/live-audio
+```
+
+لكن المسارات داخل Router لم تكن تطابق هذا العنوان بعد تركيبه تحت `/api/voice`. تم إثبات ذلك قبل الإصلاح:
+
+```text
+/api/voice/live-audio => 404 API_NOT_FOUND
+```
+
+وبذلك لم يكن صوت الخادم يصل أصلًا، وكان النظام يعتمد على `speechSynthesis` المحلي غير المضمون على الهواتف.
+
+### 3. نموذج Gemini قديم ومتوقف
+
+القيمة الافتراضية كانت:
+
+```text
+gemini-2.0-flash-exp
+```
+
+وهذا ليس نموذج TTS الحالي، كما أن عائلة Gemini 2.0 أُوقفت في 1 يونيو 2026. تم اعتماد:
+
+```text
+gemini-3.1-flash-tts-preview
+```
+
+مرجع Google الرسمي:
+
+- https://ai.google.dev/gemini-api/docs/generate-content/speech-generation
+- https://ai.google.dev/gemini-api/docs/models/gemini-2.0-flash
+
+### 4. PCM خام كان يُعامل كأنه WAV
+
+Gemini TTS يعيد افتراضيًا صوت PCM خامًا: mono، 16-bit little-endian، بمعدل 24 kHz. البيانات الخام ليست ملف WAV، ولا يمكن الاعتماد على `decodeAudioData()` لفكها مباشرة.
+
+تمت إضافة محوّل يكتب RIFF/WAVE header صحيحًا قبل إرسال الصوت إلى المتصفح، مع التحقق من معدل العينة والحجم.
+
+مرجع Google الرسمي:
+
+- https://ai.google.dev/gemini-api/docs/generate-content/speech-generation
+- https://ai.google.dev/gemini-api/docs/live-api/capabilities
+
+### 5. تشغيل جمل فوق بعضها
+
+أثناء انتظار أول طلب TTS بقيت `isSpeaking=false`. وصول جملة ثانية كان يبدأ طلبًا ثانيًا بالتوازي. عند رجوع الطلبين كان من الممكن تشغيل مصدرين صوتيين في الوقت نفسه، ما يسبب تشويهًا وتقطيعًا.
+
+تم تحويل المشغل إلى queue تسلسلية لا تسمح إلا بطلب/مقطع واحد في كل لحظة.
+
+### 6. صوت يعود بعد الضغط على إيقاف
+
+طلبات TTS الجارية لم تكن تُلغى عند المقاطعة. كان بإمكان استجابة قديمة أن تصل بعد `stop()` وتبدأ التشغيل مجددًا.
+
+تمت إضافة `AbortController` ورقم generation لإبطال كل استجابة قديمة ومنع ghost playback.
+
+### 7. الميكروفون كان يسمع رد المساعد ويقاطعه
+
+`SpeechRecognition` وVAD ظلا يعملان أثناء خروج صوت المساعد. على الهاتف قد يسمع الميكروفون السماعة ويعتبرها كلام المستخدم، فيقطع الرد فورًا.
+
+تم تنفيذ الآتي:
+
+- إيقاف SpeechRecognition أثناء `processing` و`assistant_speaking`.
+- إعادة تشغيله فقط عند العودة إلى `listening`.
+- مهلة 900ms في بداية صوت المساعد.
+- اشتراط طاقة صوت قوية ومستمرة 180ms للمقاطعة التلقائية.
+- مهلة قصيرة تمنع نغمة الاستعداد من فتح دور صوتي وهمي.
+- الضغط على الكرة أثناء كلام المساعد يظل يوقف الصوت يدويًا وفورًا.
+
+### 8. تسجيل STT كان يُقرأ قبل اكتمال آخر chunk
+
+`MediaRecorder.stop()` غير متزامن، لكن الكود كان يقرأ `recordedChunks` مباشرة بعده. النتيجة قد تكون ملفًا فارغًا أو ناقصًا.
+
+الآن ينتظر الكود حدث `stop` وآخر `dataavailable` قبل رفع الملف إلى Whisper.
+
+### 9. رسالة مستخدم مختلقة عند فشل النسخ
+
+عند سماع ضجيج دون نجاح STT، كان الكود يرسل تلقائيًا:
+
+```text
+مرحبا، تسمع فيا؟
+```
+
+وكأن المستخدم قالها. تمت إزالة هذا السلوك؛ يعرض النظام الآن خطأ واضحًا ويعود للاستماع.
+
+## الملفات الأساسية التي تم إصلاحها
+
+- `client/src/components/assistant/AiAssistantDrawer.tsx`
+- `client/src/components/assistant/voice/RealtimeVoiceTransport.ts`
+- `client/src/components/assistant/voicePlayer.ts`
+- `src/assistant/geminiLive.ts`
+- `src/assistant/routes.ts`
+- `src/server.ts`
+- `.env.example`
+- `render.yaml`
+- `docs/RENDER_DEPLOY.md`
+
+## إعداد Render المطلوب
+
+يلزم ضبط القيم التالية كـSecrets في Render، دون وضع المفاتيح في الواجهة أو Git:
+
+```env
+# إدخال الصوت وتحويله إلى نص
+GROQ_API_KEY=...
+GROQ_STT_MODEL=whisper-large-v3-turbo
+
+# إخراج الرد بصوت ثابت من الخادم
+GEMINI_API_KEY=...
+GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview
+GEMINI_TTS_TIMEOUT_MS=20000
+```
+
+`OPENAI_API_KEY` اختياري كبديل احتياطي. من دون `GEMINI_API_KEY` أو `OPENAI_API_KEY` سيحاول التطبيق استعمال صوت النظام داخل المتصفح؛ هذا الصوت قد يكون غير موجود للعربية على بعض أجهزة Android/iOS، لذلك لا يُنصح بالاعتماد عليه في الإنتاج.
+
+## التحقق بعد النشر
+
+### فحص حالة المزوّدين
+
+```bash
+curl https://YOUR-DOMAIN/api/assistant/status
+```
+
+ينبغي أن يظهر:
+
+```json
+{
+  "speechToTextReady": true,
+  "serverTextToSpeechReady": true,
+  "geminiTtsReady": true
+}
+```
+
+### فحص TTS مباشرة
+
+```bash
+curl \
+  -D voice-headers.txt \
+  -H 'Content-Type: application/json' \
+  -H 'x-session-id: voice-check-12345678' \
+  -d '{"text":"مرحبا بك في أيروفي","voice":"Aoede"}' \
+  https://YOUR-DOMAIN/api/assistant/voice/tts \
+  --output voice-response.wav
+```
+
+رؤوس الاستجابة الصحيحة:
+
+```text
+Content-Type: audio/wav
+X-Voice-Provider: gemini-tts
+```
+
+ثم يجب أن يبدأ الملف بـ`RIFF` ويعمل كصوت WAV عادي.
+
+## الاختبارات المنفذة
+
+- اختبار توافق المسار القديم ومنع 404.
+- اختبار تحويل PCM 24 kHz إلى WAV صحيح.
+- اختبار منع تداخل طلبات ومقاطع TTS.
+- اختبار إلغاء الطلب الجاري ومنع ghost playback.
+- اختبار fallback إلى صوت المتصفح دون التوازي.
+- اختبار أن حدث المقاطعة لا يمكن أن يعيد استدعاء نفسه.
+- فحص TypeScript للخادم والواجهة.
+- Production build كامل.
+- نتيجة المجموعة الكاملة: **218/218 اختبارًا ناجحًا**.
+
+## ملاحظة معمارية
+
+الإصلاح الحالي يجعل الوضع الهجين مستقرًا: إدخال صوتي، رد Claude المتدفق نصيًا، ثم TTS متسلسل. إذا كان المطلوب لاحقًا صوتًا ثنائي الاتجاه عبر WebSocket بزمن منخفض فعلًا، فيجب إنشاء تنفيذ مستقل لـGemini Live باستخدام PCM 16 kHz للإدخال وPCM 24 kHz للإخراج، بدل تسمية طلبات REST الحالية بأنها Live.

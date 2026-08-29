@@ -1,9 +1,14 @@
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
+import { normalizeGeminiAudio, pcm16leToWav } from '../src/assistant/geminiLive';
 
-describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
-  it('initializes real-time voice session with verified voice configs and VAD parameters', async () => {
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe('AYROVI voice transport and session subsystem', () => {
+  it('initializes a hybrid voice session with verified voice configs and client VAD parameters', async () => {
     const res = await request(app)
       .post('/api/voice/session')
       .set('x-session-id', 'sess_test_987654321')
@@ -13,9 +18,10 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data.sessionId).toBe('sess_test_987654321');
     expect(res.body.data.conversationId).toBe('conv_voice_001');
+    expect(res.body.data.provider).toBe('gemini-tts');
     expect(res.body.data.voice.id).toBe('Aoede');
     expect(res.body.data.voice.gender).toBe('female');
-    expect(res.body.data.turnDetection.type).toBe('speech_aware_vad');
+    expect(res.body.data.turnDetection.type).toBe('client_vad');
     expect(res.body.data.turnDetection.silenceDurationMs).toBe(650);
     expect(res.body.data.capabilities.vision).toBe(true);
     expect(res.body.data.capabilities.pricingCalculator).toBe(true);
@@ -23,7 +29,7 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(res.body.data.capabilities.instantBargeIn).toBe(true);
   });
 
-  it('provides available voices list and audio input specifications', async () => {
+  it('reports the MediaRecorder input format actually used by the browser', async () => {
     const res = await request(app)
       .get('/api/voice/config')
       .set('x-session-id', 'sess_test_11223344');
@@ -31,7 +37,8 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.data.availableVoices.length).toBeGreaterThanOrEqual(2);
-    expect(res.body.data.audioInput.sampleRate).toBe(24000);
+    expect(res.body.data.audioInput.format).toBe('webm_opus');
+    expect(res.body.data.audioInput.sampleRate).toBe(48000);
     expect(res.body.data.audioInput.echoCancellation).toBe(true);
     expect(res.body.data.audioInput.noiseSuppression).toBe(true);
   });
@@ -48,19 +55,100 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(res.body.data.voice.gender).toBe('male');
   });
 
-  it('recognizes voice stop and interruption commands in Arabic, Tunisian, and French', () => {
+  it('keeps the legacy /api/voice/live-audio route reachable instead of returning 404', async () => {
+    const previous = {
+      gemini: process.env.GEMINI_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+    };
+    delete process.env.GEMINI_API_KEY;
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+
+    try {
+      const res = await request(app)
+        .post('/api/voice/live-audio')
+        .set('x-session-id', 'sess_voice_route_001')
+        .send({ text: 'مرحبا' });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject({
+        success: false,
+        code: 'SERVER_TTS_UNAVAILABLE',
+        fallbackToClient: true,
+      });
+    } finally {
+      if (previous.gemini === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous.gemini;
+      if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
+      else process.env.GOOGLE_API_KEY = previous.google;
+      if (previous.openai === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = previous.openai;
+    }
+  });
+
+  it('wraps Gemini raw 24 kHz PCM in a valid WAV response before browser playback', async () => {
+    const previousKey = process.env.GEMINI_API_KEY;
+    const previousModel = process.env.GEMINI_TTS_MODEL;
+    process.env.GEMINI_API_KEY = 'gemini-test-key';
+    process.env.GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
+    const rawPcm = Buffer.alloc(960);
+    for (let offset = 0; offset < rawPcm.length; offset += 2) rawPcm.writeInt16LE((offset * 31) % 32767, offset);
+
+    const fetchMock = vi.fn(async (_url: string | URL | Request, _init?: RequestInit) => new Response(JSON.stringify({
+      candidates: [{
+        content: {
+          parts: [{
+            inlineData: {
+              data: rawPcm.toString('base64'),
+              mimeType: 'audio/L16;codec=pcm;rate=24000',
+            },
+          }],
+        },
+      }],
+    }), { status: 200, headers: { 'content-type': 'application/json' } }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      const res = await request(app)
+        .post('/api/assistant/voice/tts')
+        .set('x-session-id', 'sess_voice_tts_001')
+        .send({ text: 'أهلاً بك في أيروفي', voice: 'Aoede' });
+
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toContain('audio/wav');
+      expect(res.headers['x-voice-provider']).toBe('gemini-tts');
+      expect(Buffer.isBuffer(res.body)).toBe(true);
+      expect(res.body.toString('ascii', 0, 4)).toBe('RIFF');
+      expect(res.body.toString('ascii', 8, 12)).toBe('WAVE');
+      expect(res.body.readUInt32LE(24)).toBe(24000);
+      expect(res.body.subarray(44)).toEqual(rawPcm);
+      expect(String(fetchMock.mock.calls[0][0])).toContain('gemini-3.1-flash-tts-preview:generateContent');
+      expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({ 'x-goog-api-key': 'gemini-test-key' });
+    } finally {
+      if (previousKey === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previousKey;
+      if (previousModel === undefined) delete process.env.GEMINI_TTS_MODEL;
+      else process.env.GEMINI_TTS_MODEL = previousModel;
+    }
+  });
+
+  it('normalizes headerless PCM and preserves an existing WAV container', () => {
+    const pcm = Buffer.from([0, 0, 1, 0, 255, 127, 0, 128]);
+    const normalized = normalizeGeminiAudio(pcm, 'audio/pcm;rate=24000');
+    expect(normalized?.mimeType).toBe('audio/wav');
+    expect(normalized?.audioBuffer.toString('ascii', 0, 4)).toBe('RIFF');
+    expect(normalized?.audioBuffer.readUInt32LE(24)).toBe(24000);
+
+    const wav = pcm16leToWav(pcm, 16000, 1);
+    expect(normalizeGeminiAudio(wav, 'audio/wav')?.audioBuffer).toEqual(wav);
+  });
+
+  it('recognizes voice stop commands without matching normal questions', () => {
     const stopRegex = /^(?:توقف|استنى|اسكت|وقف|بس|يزي|كافي|stop|attends|pause|tais-toi|arrete|arrête|shut up)[\s.!؟]*$/i;
-
-    expect(stopRegex.test('توقف')).toBe(true);
-    expect(stopRegex.test('اسكت !')).toBe(true);
-    expect(stopRegex.test('استنى')).toBe(true);
-    expect(stopRegex.test('وقف')).toBe(true);
-    expect(stopRegex.test('يزي')).toBe(true);
-    expect(stopRegex.test('stop')).toBe(true);
-    expect(stopRegex.test('attends')).toBe(true);
-    expect(stopRegex.test('arrête !')).toBe(true);
-
-    // Regular queries should NOT trigger stop
+    for (const command of ['توقف', 'اسكت !', 'استنى', 'وقف', 'يزي', 'stop', 'attends', 'arrête !']) {
+      expect(stopRegex.test(command)).toBe(true);
+    }
     expect(stopRegex.test('احسبلي سوم هذا')).toBe(false);
     expect(stopRegex.test('combien coûte la livraison')).toBe(false);
   });

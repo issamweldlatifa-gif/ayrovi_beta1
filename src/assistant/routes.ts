@@ -14,7 +14,6 @@ import {
 import type { AssistantConversationLine, AssistantImageAttachment } from './tools';
 import {
   createGeminiVoiceSession,
-  SUPPORTED_GEMINI_VOICES,
   synthesizeGeminiLiveAudio,
 } from './geminiLive';
 
@@ -119,11 +118,20 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
   const router = Router();
 
   router.get('/status', (_req, res) => {
+    const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
+    const serverTextToSpeechReady = Boolean(
+      process.env.GEMINI_API_KEY?.trim()
+      || process.env.GOOGLE_API_KEY?.trim()
+      || process.env.OPENAI_API_KEY?.trim(),
+    );
     res.json({ success: true, data: {
       ready: assistantAiReady(), provider: 'anthropic', streaming: true,
       vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
-      voiceReady: Boolean(process.env.GROQ_API_KEY?.trim() || process.env.GEMINI_API_KEY?.trim() || true),
-      geminiLiveReady: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()),
+      voiceReady: speechToTextReady || serverTextToSpeechReady,
+      speechToTextReady,
+      serverTextToSpeechReady,
+      clientSpeechFallback: true,
+      geminiTtsReady: Boolean(process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim()),
     } });
   });
 
@@ -148,23 +156,26 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     });
   });
 
-  router.post(['/voice/tts', '/voice/live-audio', '/tts'], optionalCustomer(db), async (req: Request, res: Response) => {
-    const text = String(req.body?.text || '').trim();
+  // Include mount-relative aliases because this router is mounted at both
+  // /api/assistant and /api/voice. The old client called /api/voice/live-audio,
+  // which previously fell through to API_NOT_FOUND.
+  router.post(['/voice/tts', '/voice/live-audio', '/tts', '/live-audio'], optionalCustomer(db), async (req: Request, res: Response) => {
+    const text = String(req.body?.text || '').trim().slice(0, 4096);
     const voice = String(req.body?.voice || req.body?.voiceId || 'Aoede').trim();
     const speed = Math.max(0.7, Math.min(1.5, Number(req.body?.speed) || 1.0));
     if (!text) {
-      return res.status(400).json({ success: false, error: 'Text required for TTS' });
+      return res.status(400).json({ success: false, code: 'TTS_TEXT_REQUIRED', error: 'Text required for TTS' });
     }
 
-    // 1. First priority: Native Gemini Live Realtime Audio
+    // 1. Gemini TTS. Raw PCM is normalized to WAV by the adapter.
     const geminiAudio = await synthesizeGeminiLiveAudio(text, voice);
     if (geminiAudio) {
       res.setHeader('Content-Type', geminiAudio.mimeType);
-      res.setHeader('X-Voice-Provider', 'gemini-live');
+      res.setHeader('X-Voice-Provider', 'gemini-tts');
       return res.send(geminiAudio.audioBuffer);
     }
 
-    // 2. Second priority: OpenAI TTS
+    // 2. Optional OpenAI TTS fallback.
     const openaiKey = process.env.OPENAI_API_KEY?.trim();
     if (openaiKey) {
       try {
@@ -175,25 +186,31 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'tts-1',
-            input: text.slice(0, 4096),
-            voice: voice === 'Puck' || voice === 'Fenrir' ? 'echo' : 'nova',
+            model: process.env.OPENAI_TTS_MODEL?.trim() || 'tts-1',
+            input: text,
+            voice: voice === 'Puck' || voice === 'Fenrir' || voice === 'Charon' ? 'echo' : 'nova',
             speed,
           }),
+          signal: AbortSignal.timeout(20_000),
         });
 
         if (response.ok) {
-          const buffer = await response.arrayBuffer();
-          res.setHeader('Content-Type', 'audio/mpeg');
-          res.setHeader('X-Voice-Provider', 'openai-tts');
-          return res.send(Buffer.from(buffer));
+          const buffer = Buffer.from(await response.arrayBuffer());
+          if (buffer.length > 100) {
+            res.setHeader('Content-Type', 'audio/mpeg');
+            res.setHeader('X-Voice-Provider', 'openai-tts');
+            return res.send(buffer);
+          }
+        } else {
+          console.warn(`[Assistant TTS] OpenAI HTTP ${response.status}`);
         }
-      } catch (err) {
-        console.warn('[Assistant TTS] OpenAI speech failed:', err);
+      } catch (error: any) {
+        console.warn('[Assistant TTS] OpenAI speech failed:', error?.message || error);
       }
     }
 
-    return res.status(200).json({ success: false, fallbackToClient: true });
+    // The browser player will use SpeechSynthesis only when no server TTS is configured.
+    return res.status(200).json({ success: false, code: 'SERVER_TTS_UNAVAILABLE', fallbackToClient: true });
   });
 
   router.post(['/transcribe', '/voice/transcribe'], optionalCustomer(db), voiceUpload.single('audio'), async (req: Request, res: Response) => {

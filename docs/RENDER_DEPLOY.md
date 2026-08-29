@@ -20,7 +20,9 @@ Cette archive contient la plateforme complète : site public, interface Admin, b
    - `CUSTOMER_OTP_WEBHOOK_URL` et `CUSTOMER_OTP_WEBHOOK_TOKEN` : endpoint HTTPS et secret de l’adaptateur SMS.
    - `ANTHROPIC_API_KEY` : clé serveur Claude pour l’identification, le prix visible et le fallback Web.
    - `SERPAPI_KEY` : clé serveur SerpApi pour les correspondances produit Google Lens.
-   - `GROQ_API_KEY` : clé serveur Groq pour la transcription vocale de l’Assistant (optionnel mais recommandé).
+   - `GROQ_API_KEY` : clé serveur Groq pour la transcription vocale de l’Assistant (STT).
+   - `GEMINI_API_KEY` : clé serveur Gemini pour restituer les réponses en voix (TTS). Sans elle, le navigateur tente sa voix système locale.
+   - Conservez `GEMINI_TTS_MODEL=gemini-3.1-flash-tts-preview`; le serveur convertit le PCM 24 kHz renvoyé par Gemini en WAV avant lecture.
 5. Lancez le déploiement.
 
 Les identifiants Google/Meta, les secrets OAuth et le jeton SMS restent exclusivement dans les variables Render. Ils ne doivent jamais être préfixés par `VITE_` ni ajoutés au code frontend.

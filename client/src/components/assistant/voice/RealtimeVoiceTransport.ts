@@ -34,8 +34,15 @@ export class RealtimeVoiceTransport {
   private currentTranscript = '';
   private noiseFloor = 0.04; // Adaptive background noise baseline
   private csrfToken: string | undefined = undefined;
+  private assistantSpeechStartedAt = 0;
+  private listeningStartedAt = 0;
+  private bargeInCandidateAt = 0;
+  private recognitionRestartTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(private readonly conversationId: string) {}
+  constructor(
+    private readonly conversationId: string,
+    private readonly recognitionLanguage = 'ar-TN',
+  ) {}
 
   public addEventListener(listener: VoiceEventListener): () => void {
     this.listeners.add(listener);
@@ -46,8 +53,19 @@ export class RealtimeVoiceTransport {
     if (event.type === 'state.changed') {
       const prevState = this.state;
       this.state = event.state;
-      if (prevState === 'assistant_speaking' && event.state === 'listening') {
-        voiceSoundEffects.playReadyToListen();
+
+      if (event.state === 'assistant_speaking' && prevState !== 'assistant_speaking') {
+        this.assistantSpeechStartedAt = Date.now();
+        this.bargeInCandidateAt = 0;
+        this.currentTranscript = '';
+        this.pauseSpeechRecognition();
+      } else if (event.state === 'listening' && !this.isMuted) {
+        this.listeningStartedAt = Date.now();
+        if (prevState === 'assistant_speaking') voiceSoundEffects.playReadyToListen();
+        this.bargeInCandidateAt = 0;
+        this.startSpeechRecognition();
+      } else if (['processing', 'tool_execution', 'muted', 'interrupted', 'closing', 'idle'].includes(event.state)) {
+        this.pauseSpeechRecognition();
       }
     }
     this.listeners.forEach((listener) => {
@@ -163,10 +181,7 @@ export class RealtimeVoiceTransport {
       // 6. Start real-time audio analysis loop
       this.startAudioMonitoring();
 
-      // 7. Start continuous Web Speech recognition if supported
-      this.startSpeechRecognition();
-
-      // 8. Wire assistant output audio volume level
+      // 7. Wire assistant output audio volume level
       globalVoicePlayer.setLevelCallback((level) => {
         if (this.state === 'assistant_speaking') {
           this.emit({ type: 'output_audio.level', level });
@@ -174,8 +189,8 @@ export class RealtimeVoiceTransport {
       });
 
       voiceSoundEffects.playStartListening();
+      // Entering listening starts Web Speech recognition through emit().
       this.emit({ type: 'state.changed', state: 'listening' });
-      this.emit({ type: 'speech.started' });
       return true;
     } catch (err: any) {
       console.warn('[VoiceTransport] Connect failed:', err);
@@ -205,14 +220,37 @@ export class RealtimeVoiceTransport {
 
       const recorder = preferredMime ? new MediaRecorder(stream, { mimeType: preferredMime }) : new MediaRecorder(stream);
       recorder.ondataavailable = (event) => {
-        if (event.data && event.data.size > 0) {
-          this.recordedChunks.push(event.data);
-        }
+        if (event.data && event.data.size > 0) this.recordedChunks.push(event.data);
       };
       this.mediaRecorder = recorder;
-    } catch (err) {
-      console.warn('[VoiceTransport] MediaRecorder setup failed:', err);
+    } catch (error) {
+      console.warn('[VoiceTransport] MediaRecorder setup failed:', error);
     }
+  }
+
+  private async finishMediaRecording(): Promise<void> {
+    const recorder = this.mediaRecorder;
+    if (!recorder || recorder.state !== 'recording') return;
+
+    await new Promise<void>((resolve) => {
+      let settled = false;
+      let timeout: ReturnType<typeof setTimeout>;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        recorder.removeEventListener('stop', finish);
+        resolve();
+      };
+      timeout = setTimeout(finish, 800);
+      recorder.addEventListener('stop', finish, { once: true });
+      try {
+        if (typeof recorder.requestData === 'function') recorder.requestData();
+        recorder.stop();
+      } catch {
+        finish();
+      }
+    });
   }
 
   private startAudioMonitoring(): void {
@@ -253,15 +291,27 @@ export class RealtimeVoiceTransport {
       // Emit real audio level for live visualizer
       this.emit({ type: 'input_audio.level', level: this.isMuted ? 0 : normalized });
 
-      // Instant Barge-In Detection:
-      // If assistant is speaking and user speaks, immediately interrupt!
-      if (this.state === 'assistant_speaking' && (speechRel > 0.15 || relEnergy > 0.18) && !this.isMuted) {
-        this.interrupt();
-        return;
+      // Barge-in detection must not react to the assistant coming out of the
+      // phone speaker. Ignore the playback attack and require sustained,
+      // strong near-field speech instead of a single noisy animation frame.
+      if (this.state === 'assistant_speaking' && !this.isMuted) {
+        const outsidePlaybackGrace = Date.now() - this.assistantSpeechStartedAt > 900;
+        const strongNearFieldSpeech = speechRel > 0.30 && relEnergy > 0.24;
+        if (outsidePlaybackGrace && strongNearFieldSpeech) {
+          if (!this.bargeInCandidateAt) this.bargeInCandidateAt = Date.now();
+          if (Date.now() - this.bargeInCandidateAt >= 180) {
+            this.interrupt();
+            return;
+          }
+        } else {
+          this.bargeInCandidateAt = 0;
+        }
       }
 
-      // Speech-aware Voice Activity Detection with Hysteresis & Hard Cap:
-      if ((this.state === 'listening' || this.state === 'user_speaking') && !this.isMuted && !this.isProcessingTurn) {
+      // Speech-aware Voice Activity Detection with Hysteresis & Hard Cap.
+      // A short input grace prevents the start/ready earcon from opening a turn.
+      const outsideListeningEarconGrace = this.state === 'user_speaking' || Date.now() - this.listeningStartedAt > 350;
+      if ((this.state === 'listening' || this.state === 'user_speaking') && outsideListeningEarconGrace && !this.isMuted && !this.isProcessingTurn) {
         // Trigger speech start
         if (!this.hasSpokenInTurn && (speechRel > 0.12 || relEnergy > 0.15)) {
           this.hasSpokenInTurn = true;
@@ -319,79 +369,92 @@ export class RealtimeVoiceTransport {
   }
 
   private startSpeechRecognition(): void {
+    if (this.speechRecognizer || this.isMuted || !['listening', 'user_speaking'].includes(this.state)) return;
     const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRec) return;
 
     try {
-      if (this.speechRecognizer) {
-        try { this.speechRecognizer.stop(); } catch {}
-      }
-
       const recognizer = new SpeechRec();
       recognizer.continuous = true;
       recognizer.interimResults = true;
-      recognizer.lang = 'ar-TN'; // Tunisian Arabic default, with fallback support
+      recognizer.lang = this.recognitionLanguage;
 
       recognizer.onresult = (event: any) => {
+        // Recognition is intentionally paused during assistant playback so the
+        // assistant cannot transcribe and interrupt its own loudspeaker output.
+        if (!['listening', 'user_speaking'].includes(this.state) || this.isMuted) return;
+
         let text = '';
         let hasFinal = false;
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          text += event.results[i][0].transcript;
-          if (event.results[i].isFinal) hasFinal = true;
+        for (let index = 0; index < event.results.length; index += 1) {
+          text += `${event.results[index][0].transcript} `;
+          if (event.results[index].isFinal) hasFinal = true;
         }
 
         const trimmed = text.trim();
-        if (trimmed) {
-          // Check for explicit "Stop" / "توقف" command
-          if (STOP_COMMAND_REGEX.test(trimmed)) {
-            this.interrupt();
-            this.currentTranscript = '';
-            this.hasSpokenInTurn = false;
-            return;
-          }
+        if (!trimmed) return;
+        if (STOP_COMMAND_REGEX.test(trimmed)) {
+          this.currentTranscript = '';
+          this.hasSpokenInTurn = false;
+          this.emit({ type: 'state.changed', state: 'listening' });
+          return;
+        }
 
-          // If assistant was speaking, instant barge in!
-          if (this.state === 'assistant_speaking') {
-            this.interrupt();
-          }
+        if (!this.hasSpokenInTurn) {
+          this.speechStartedAt = Date.now();
+          this.emit({ type: 'state.changed', state: 'user_speaking' });
+        }
+        this.currentTranscript = trimmed;
+        this.hasSpokenInTurn = true;
+        this.emit({ type: 'transcript.delta', text: trimmed });
 
-          this.currentTranscript = trimmed;
-          this.hasSpokenInTurn = true;
-          this.emit({ type: 'transcript.delta', text: trimmed });
-
-          if (this.silenceTimer) {
-            clearTimeout(this.silenceTimer);
-            this.silenceTimer = null;
-          }
-
-          if (hasFinal) {
-            this.silenceTimer = setTimeout(() => {
-              if (this.state === 'listening' || this.state === 'user_speaking') {
-                void this.finishUserTurn();
-              }
-            }, 350);
-          }
+        if (this.silenceTimer) {
+          clearTimeout(this.silenceTimer);
+          this.silenceTimer = null;
+        }
+        if (hasFinal) {
+          this.silenceTimer = setTimeout(() => {
+            if (this.state === 'listening' || this.state === 'user_speaking') void this.finishUserTurn();
+          }, 450);
         }
       };
 
-      recognizer.onerror = (e: any) => {
-        if (e.error !== 'no-speech' && e.error !== 'aborted') {
-          console.warn('[VoiceTransport] Speech recognizer error:', e.error);
+      recognizer.onerror = (event: any) => {
+        if (!['no-speech', 'aborted'].includes(event.error)) {
+          console.warn('[VoiceTransport] Speech recognizer error:', event.error);
         }
       };
 
       recognizer.onend = () => {
-        // Automatically restart speech recognizer if still listening
-        if (this.state === 'listening' || this.state === 'user_speaking') {
-          try { recognizer.start(); } catch {}
+        if (this.speechRecognizer !== recognizer) return;
+        this.speechRecognizer = null;
+        if ((this.state === 'listening' || this.state === 'user_speaking') && !this.isMuted) {
+          if (this.recognitionRestartTimer) clearTimeout(this.recognitionRestartTimer);
+          this.recognitionRestartTimer = setTimeout(() => {
+            this.recognitionRestartTimer = null;
+            this.startSpeechRecognition();
+          }, 150);
         }
       };
 
-      recognizer.start();
       this.speechRecognizer = recognizer;
-    } catch (err) {
-      console.warn('[VoiceTransport] SpeechRecognition init failed:', err);
+      recognizer.start();
+    } catch (error) {
+      this.speechRecognizer = null;
+      console.warn('[VoiceTransport] SpeechRecognition init failed:', error);
+    }
+  }
+
+  private pauseSpeechRecognition(): void {
+    if (this.recognitionRestartTimer) {
+      clearTimeout(this.recognitionRestartTimer);
+      this.recognitionRestartTimer = null;
+    }
+    const recognizer = this.speechRecognizer;
+    this.speechRecognizer = null;
+    if (!recognizer) return;
+    try { recognizer.abort(); } catch {
+      try { recognizer.stop(); } catch {}
     }
   }
 
@@ -416,24 +479,18 @@ export class RealtimeVoiceTransport {
 
     const duration = Date.now() - (this.speechStartedAt || Date.now());
     this.emit({ type: 'speech.stopped', durationMs: duration });
+    // Pause recognition before collecting the final MediaRecorder chunk so no
+    // new transcript can race with this turn.
+    this.emit({ type: 'state.changed', state: 'processing' });
 
-    // Request remaining audio data & stop MediaRecorder
-    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
-      try {
-        if (typeof this.mediaRecorder.requestData === 'function') {
-          this.mediaRecorder.requestData();
-        }
-        this.mediaRecorder.stop();
-      } catch {}
-    }
+    // Wait for the final dataavailable/stop events. Reading recordedChunks
+    // immediately after stop() used to upload an empty or truncated recording.
+    await this.finishMediaRecording();
 
     let text = this.currentTranscript.trim();
     this.currentTranscript = '';
     const hasSpoken = this.hasSpokenInTurn;
     this.hasSpokenInTurn = false;
-
-    // Transition immediately to processing state so user sees responsive UI
-    this.emit({ type: 'state.changed', state: 'processing' });
 
     // 1. If WebSpeech transcript is ready, use it immediately!
     if (text) {
@@ -476,14 +533,16 @@ export class RealtimeVoiceTransport {
       }
     }
 
-    // 3. Fallback greeting if speech was detected but nothing transcribed
-    if (!text && hasSpoken && duration >= 300) {
-      text = 'مرحبا، تسمع فيا؟';
-    }
-
     if (text) {
       this.emit({ type: 'transcript.completed', text });
     } else {
+      if (hasSpoken && duration >= 300) {
+        this.emit({
+          type: 'error',
+          code: 'TRANSCRIPTION_EMPTY',
+          message: 'لم يتم التعرّف على الكلام بوضوح. حاول مرة أخرى.',
+        });
+      }
       this.emit({ type: 'state.changed', state: 'listening' });
     }
 
@@ -495,10 +554,13 @@ export class RealtimeVoiceTransport {
    * and resumes active listening for the user.
    */
   public interrupt(): void {
+    // Set the state before notifying listeners and make interruption idempotent.
+    // This prevents an "interrupted" listener from recursively interrupting again.
+    if (this.state === 'interrupted' || this.state === 'closing' || this.state === 'idle') return;
     voiceSoundEffects.playInterrupted();
     globalVoicePlayer.stop();
-    this.emit({ type: 'interrupted' });
     this.emit({ type: 'state.changed', state: 'interrupted' });
+    this.emit({ type: 'interrupted' });
 
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
@@ -520,13 +582,16 @@ export class RealtimeVoiceTransport {
 
   public setMuted(muted: boolean): void {
     this.isMuted = muted;
+    this.mediaStream?.getAudioTracks().forEach((track) => { track.enabled = !muted; });
     if (muted) {
+      this.currentTranscript = '';
+      this.hasSpokenInTurn = false;
       voiceSoundEffects.playStopListening();
       this.emit({ type: 'state.changed', state: 'muted' });
     } else {
       voiceSoundEffects.playStartListening();
-      this.emit({ type: 'state.changed', state: 'listening' });
       this.hasSpokenInTurn = false;
+      this.emit({ type: 'state.changed', state: 'listening' });
     }
   }
 
@@ -561,10 +626,7 @@ export class RealtimeVoiceTransport {
       this.maxTurnTimer = null;
     }
 
-    if (this.speechRecognizer) {
-      try { this.speechRecognizer.stop(); } catch {}
-      this.speechRecognizer = null;
-    }
+    this.pauseSpeechRecognition();
 
     if (this.mediaRecorder) {
       try {
@@ -575,6 +637,7 @@ export class RealtimeVoiceTransport {
     this.recordedChunks = [];
 
     globalVoicePlayer.stop();
+    globalVoicePlayer.setLevelCallback(undefined);
 
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach((track) => track.stop());

@@ -1,16 +1,15 @@
 /**
- * AYROVI Gemini Live Realtime Voice Transport & Audio Engine
+ * AYROVI voice session configuration and Gemini text-to-speech adapter.
  *
- * Architecture:
- * - Claude (Brain & Agent Core): Reasoning, Context, Prompt, Tools (Lens, Pricing, Order, Tracking)
- * - Gemini Live (Realtime Voice Layer): Bi-directional Realtime Audio I/O, Supported Realtime Voices, VAD
- * - Web Audio Player: Low-latency PCM / WAV streaming directly to device Speaker with Instant Barge-In
+ * The REST TTS endpoint returns raw signed 16-bit little-endian PCM by default.
+ * Browsers cannot reliably decode that byte stream with decodeAudioData(), so this
+ * module always wraps raw PCM in a standards-compliant WAV container first.
  */
 
 export interface GeminiVoiceSessionConfig {
   sessionId: string;
   conversationId: string;
-  provider: 'gemini-live-realtime';
+  provider: 'gemini-tts';
   model: string;
   voice: {
     id: string;
@@ -25,7 +24,7 @@ export interface GeminiVoiceSessionConfig {
     description: string;
   }>;
   audioInput: {
-    format: 'pcm_s16le' | 'webm_opus';
+    format: 'webm_opus';
     sampleRate: number;
     channelCount: number;
     echoCancellation: boolean;
@@ -33,7 +32,7 @@ export interface GeminiVoiceSessionConfig {
     autoGainControl: boolean;
   };
   turnDetection: {
-    type: 'speech_aware_vad';
+    type: 'client_vad';
     speechStartThreshold: number;
     silenceThreshold: number;
     silenceDurationMs: number;
@@ -57,19 +56,30 @@ export const SUPPORTED_GEMINI_VOICES = [
   { id: 'Charon', name: 'AYROVI Masculin Profond (Charon)', gender: 'male' as const, description: 'Voix masculine profonde et rassurante' },
 ];
 
+const DEFAULT_GEMINI_TTS_MODEL = 'gemini-3.1-flash-tts-preview';
+const DEFAULT_PCM_SAMPLE_RATE = 24_000;
+const MAX_TTS_TEXT_LENGTH = 4_096;
+const MAX_GENERATED_AUDIO_BYTES = 24 * 1024 * 1024;
+
+function geminiTtsModel(): string {
+  return process.env.GEMINI_TTS_MODEL?.trim()
+    || process.env.GEMINI_VOICE_MODEL?.trim()
+    || DEFAULT_GEMINI_TTS_MODEL;
+}
+
 export function createGeminiVoiceSession(
   conversationId: string,
   preferredVoiceId = 'Aoede',
   sessionId?: string,
 ): GeminiVoiceSessionConfig {
-  const chosenVoice = SUPPORTED_GEMINI_VOICES.find((v) => v.id.toLowerCase() === preferredVoiceId.toLowerCase())
+  const chosenVoice = SUPPORTED_GEMINI_VOICES.find((voice) => voice.id.toLowerCase() === preferredVoiceId.toLowerCase())
     || SUPPORTED_GEMINI_VOICES[0];
 
   return {
     sessionId: sessionId || `sess_gemini_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     conversationId,
-    provider: 'gemini-live-realtime',
-    model: process.env.GEMINI_VOICE_MODEL || 'gemini-2.0-flash-exp',
+    provider: 'gemini-tts',
+    model: geminiTtsModel(),
     voice: {
       id: chosenVoice.id,
       name: chosenVoice.name,
@@ -77,16 +87,18 @@ export function createGeminiVoiceSession(
       language: 'ar-TN,fr-FR,en-US',
     },
     availableVoices: SUPPORTED_GEMINI_VOICES,
+    // The browser records an encoded MediaRecorder stream for Whisper fallback.
+    // This is not a raw Gemini Live PCM input stream.
     audioInput: {
-      format: 'pcm_s16le',
-      sampleRate: 24000,
+      format: 'webm_opus',
+      sampleRate: 48_000,
       channelCount: 1,
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
     },
     turnDetection: {
-      type: 'speech_aware_vad',
+      type: 'client_vad',
       speechStartThreshold: 0.18,
       silenceThreshold: 0.05,
       silenceDurationMs: 650,
@@ -97,74 +109,152 @@ export function createGeminiVoiceSession(
       pricingCalculator: true,
       orderTracking: true,
       orderCreation: true,
-      realtimeAudioStreaming: true,
+      // The chat text is streamed, while TTS clips are queued serially.
+      realtimeAudioStreaming: false,
       instantBargeIn: true,
     },
   };
 }
 
-/**
- * Generate native audio speech bytes using Gemini Audio generation if key is present
- */
+/** Wrap raw mono/stereo signed PCM16 little-endian bytes in a RIFF/WAVE file. */
+export function pcm16leToWav(
+  input: Buffer,
+  sampleRate = DEFAULT_PCM_SAMPLE_RATE,
+  channelCount = 1,
+): Buffer {
+  const channels = Math.max(1, Math.min(2, Math.trunc(channelCount) || 1));
+  const rate = Math.max(8_000, Math.min(192_000, Math.trunc(sampleRate) || DEFAULT_PCM_SAMPLE_RATE));
+  const blockAlign = channels * 2;
+  const usableLength = input.length - (input.length % blockAlign);
+  const pcm = usableLength === input.length ? input : input.subarray(0, usableLength);
+  const header = Buffer.alloc(44);
+
+  header.write('RIFF', 0, 'ascii');
+  header.writeUInt32LE(36 + pcm.length, 4);
+  header.write('WAVE', 8, 'ascii');
+  header.write('fmt ', 12, 'ascii');
+  header.writeUInt32LE(16, 16); // PCM fmt chunk length
+  header.writeUInt16LE(1, 20); // Linear PCM
+  header.writeUInt16LE(channels, 22);
+  header.writeUInt32LE(rate, 24);
+  header.writeUInt32LE(rate * blockAlign, 28);
+  header.writeUInt16LE(blockAlign, 32);
+  header.writeUInt16LE(16, 34);
+  header.write('data', 36, 'ascii');
+  header.writeUInt32LE(pcm.length, 40);
+
+  return Buffer.concat([header, pcm]);
+}
+
+function looksLikeWav(buffer: Buffer): boolean {
+  return buffer.length >= 12
+    && buffer.toString('ascii', 0, 4) === 'RIFF'
+    && buffer.toString('ascii', 8, 12) === 'WAVE';
+}
+
+function pcmSampleRateFromMime(mimeType: string): number {
+  const value = /(?:rate|sample[_-]?rate)\s*=\s*(\d{4,6})/i.exec(mimeType)?.[1];
+  const parsed = Number(value || DEFAULT_PCM_SAMPLE_RATE);
+  return Number.isFinite(parsed) ? parsed : DEFAULT_PCM_SAMPLE_RATE;
+}
+
+/** Normalize Gemini output into a browser-decodable payload. */
+export function normalizeGeminiAudio(
+  audioBuffer: Buffer,
+  mimeType = '',
+): { audioBuffer: Buffer; mimeType: string } | null {
+  if (!audioBuffer.length || audioBuffer.length > MAX_GENERATED_AUDIO_BYTES) return null;
+
+  if (looksLikeWav(audioBuffer)) {
+    return { audioBuffer, mimeType: 'audio/wav' };
+  }
+
+  const normalizedMime = mimeType.toLowerCase().trim();
+  const rawPcm = !normalizedMime
+    || normalizedMime.includes('audio/pcm')
+    || normalizedMime.includes('audio/l16')
+    || normalizedMime.includes('pcm_s16le')
+    // Some responses have historically claimed WAV while returning headerless PCM.
+    || normalizedMime.includes('audio/wav');
+
+  if (rawPcm) {
+    const wav = pcm16leToWav(audioBuffer, pcmSampleRateFromMime(normalizedMime), 1);
+    return wav.length > 44 ? { audioBuffer: wav, mimeType: 'audio/wav' } : null;
+  }
+
+  if (normalizedMime.includes('mpeg') || normalizedMime.includes('mp3')) {
+    return { audioBuffer, mimeType: 'audio/mpeg' };
+  }
+  if (normalizedMime.includes('ogg')) {
+    return { audioBuffer, mimeType: 'audio/ogg' };
+  }
+
+  return null;
+}
+
+/** Generate a browser-decodable speech clip with Gemini TTS. */
 export async function synthesizeGeminiLiveAudio(
   text: string,
   voiceName = 'Aoede',
 ): Promise<{ audioBuffer: Buffer; mimeType: string } | null> {
   const apiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
-  if (!apiKey || !text.trim()) return null;
+  const cleanText = text.trim().slice(0, MAX_TTS_TEXT_LENGTH);
+  if (!apiKey || !cleanText) return null;
 
-  const model = process.env.GEMINI_VOICE_MODEL || 'gemini-2.0-flash-exp';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const chosenVoice = SUPPORTED_GEMINI_VOICES.find((voice) => voice.id.toLowerCase() === voiceName.toLowerCase())
+    || SUPPORTED_GEMINI_VOICES[0];
+  const model = geminiTtsModel();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
+  const configuredTimeout = Number(process.env.GEMINI_TTS_TIMEOUT_MS || 20_000);
+  const timeoutMs = Number.isFinite(configuredTimeout)
+    ? Math.max(3_000, Math.min(60_000, configuredTimeout))
+    : 20_000;
 
   try {
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey,
       },
       body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              {
-                text: `Lis ce texte à haute voix de manière chaleureuse, naturelle et fluide. Ne rajoute aucun mot supplémentaire, prononce uniquement ce texte :\n\n${text}`,
-              },
-            ],
-          },
-        ],
+        contents: [{
+          role: 'user',
+          parts: [{
+            text: `Read only the following text aloud. Preserve its language and wording exactly. Use a warm, natural conversational tone.\n\n${cleanText}`,
+          }],
+        }],
         generationConfig: {
           responseModalities: ['AUDIO'],
           speechConfig: {
             voiceConfig: {
               prebuiltVoiceConfig: {
-                voiceName: voiceName || 'Aoede',
+                voiceName: chosenVoice.id,
               },
             },
           },
         },
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
 
     if (!response.ok) {
-      console.warn(`[Gemini Live] API HTTP ${response.status}`);
+      const detail = await response.text().catch(() => '');
+      console.warn(`[Gemini TTS] API HTTP ${response.status}${detail ? `: ${detail.slice(0, 240)}` : ''}`);
       return null;
     }
 
-    const payload = await response.json();
-    const candidate = payload?.candidates?.[0];
-    const part = candidate?.content?.parts?.[0];
-    const inlineData = part?.inlineData;
+    const payload: any = await response.json();
+    const parts = Array.isArray(payload?.candidates?.[0]?.content?.parts)
+      ? payload.candidates[0].content.parts
+      : [];
+    const inlineData = parts.find((part: any) => part?.inlineData?.data)?.inlineData;
+    if (!inlineData?.data || typeof inlineData.data !== 'string') return null;
 
-    if (inlineData?.data) {
-      const audioBuffer = Buffer.from(inlineData.data, 'base64');
-      const mimeType = inlineData.mimeType || 'audio/wav';
-      return { audioBuffer, mimeType };
-    }
-  } catch (err: any) {
-    console.warn('[Gemini Live] Audio synthesis failed:', err?.message || err);
+    const audioBuffer = Buffer.from(inlineData.data, 'base64');
+    return normalizeGeminiAudio(audioBuffer, String(inlineData.mimeType || 'audio/pcm;rate=24000'));
+  } catch (error: any) {
+    console.warn('[Gemini TTS] Audio synthesis failed:', error?.message || error);
+    return null;
   }
-
-  return null;
 }
