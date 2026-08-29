@@ -59,7 +59,7 @@ Microphone
 
 - STT: `GROQ_API_KEY` مع `whisper-large-v3-turbo`.
 - TTS الخادمي في وضع `auto`: `GEMINI_API_KEY` مع `gemini-3.1-flash-tts-preview`.
-- TTS الحالي مؤقتًا في Render: `ASSISTANT_TTS_MODE=browser` لتجاوز Gemini بالكامل أثناء تعطل الحصة.
+- TTS الحالي مؤقتًا: وضع المتصفح هو الافتراضي الآمن، و`ASSISTANT_TTS_MODE=browser` يثبّته صراحة في Render أثناء تعطل الحصة.
 - TTS في المتصفح: صوت النظام، utterance واحدة كاملة بلغة النص.
 
 لا يلزم حذف مفتاح Gemini عند اختيار وضع المتصفح. وإذا لم يجد المتصفح صوتًا يطابق العربية، يترك اختيار الصوت للنظام ولا يفرض صوتًا فرنسيًا على النص العربي.

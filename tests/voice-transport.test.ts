@@ -57,10 +57,12 @@ describe('AYROVI voice transport and session subsystem', () => {
 
   it('keeps the legacy /api/voice/live-audio route reachable instead of returning 404', async () => {
     const previous = {
+      mode: process.env.ASSISTANT_TTS_MODE,
       gemini: process.env.GEMINI_API_KEY,
       google: process.env.GOOGLE_API_KEY,
       openai: process.env.OPENAI_API_KEY,
     };
+    process.env.ASSISTANT_TTS_MODE = 'auto';
     delete process.env.GEMINI_API_KEY;
     delete process.env.GOOGLE_API_KEY;
     delete process.env.OPENAI_API_KEY;
@@ -85,6 +87,8 @@ describe('AYROVI voice transport and session subsystem', () => {
         fallbackToClient: true,
       });
     } finally {
+      if (previous.mode === undefined) delete process.env.ASSISTANT_TTS_MODE;
+      else process.env.ASSISTANT_TTS_MODE = previous.mode;
       if (previous.gemini === undefined) delete process.env.GEMINI_API_KEY;
       else process.env.GEMINI_API_KEY = previous.gemini;
       if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
@@ -94,10 +98,10 @@ describe('AYROVI voice transport and session subsystem', () => {
     }
   });
 
-  it('honors browser-only output mode even while a Gemini key remains configured', async () => {
+  it('defaults to browser-only output even while a Gemini key remains configured', async () => {
     const previousMode = process.env.ASSISTANT_TTS_MODE;
     const previousGemini = process.env.GEMINI_API_KEY;
-    process.env.ASSISTANT_TTS_MODE = 'browser';
+    delete process.env.ASSISTANT_TTS_MODE;
     process.env.GEMINI_API_KEY = 'configured-but-paused';
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);

@@ -70,7 +70,9 @@ function geminiTtsModel(): string {
 
 /** Allow operations to select browser SpeechSynthesis without removing provider keys. */
 export function serverTextToSpeechEnabled(): boolean {
-  return (process.env.ASSISTANT_TTS_MODE?.trim().toLowerCase() || 'auto') !== 'browser';
+  // Browser output is the safe temporary default while Gemini quota is paused.
+  // Set ASSISTANT_TTS_MODE=auto to opt back into configured server providers.
+  return (process.env.ASSISTANT_TTS_MODE?.trim().toLowerCase() || 'browser') === 'auto';
 }
 
 export function serverTextToSpeechReady(): boolean {
