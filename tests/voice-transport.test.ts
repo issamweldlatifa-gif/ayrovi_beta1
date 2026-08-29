@@ -64,4 +64,20 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(stopRegex.test('احسبلي سوم هذا')).toBe(false);
     expect(stopRegex.test('combien coûte la livraison')).toBe(false);
   });
+
+  it('streams audible text response over SSE for voice queries', async () => {
+    const res = await request(app)
+      .post('/api/assistant/chat')
+      .set('x-session-id', 'sess_voice_test_77')
+      .send({
+        conversationId: 'conv_voice_stream_01',
+        messages: [{ role: 'user', text: 'احسبلي سوم هذا 50 يورو' }],
+        state: {},
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toContain('text/event-stream');
+    expect(res.text).toContain('data:');
+    expect(res.text).toContain('التكلفة التقديرية بالدينار التونسي');
+  });
 });
