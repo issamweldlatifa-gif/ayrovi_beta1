@@ -358,7 +358,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         return;
       }
 
-      const greeting = isArabic
+      const isRtl = direction === 'rtl';
+      const greeting = isRtl
         ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
         : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
 
@@ -366,13 +367,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         transport.setProcessingState('assistant_speaking');
         globalVoicePlayer.speak(
           greeting,
-          isArabic ? 'ar' : 'fr',
+          isRtl ? 'ar' : 'fr',
           () => transport.setProcessingState('assistant_speaking'),
           () => {
             if (voiceModeRef.current && !isMutedRef.current) {
               transport.setProcessingState('listening');
             } else if (voiceModeRef.current && isMutedRef.current) {
-              transport.setProcessingState('muted');
+              transport.setMuted(true);
             }
           },
         );
@@ -401,10 +402,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       const newAttachment: AssistantAttachment = {
         id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         name: file.name,
-        size: file.size,
         type: file.type,
         preview,
-        dataUrl: preview,
       };
       setAttachments((current) => [...current, newAttachment]);
       showToast(tr('Photo ajoutée pour analyse', 'تمت إضافة الصورة للتحليل'));
@@ -451,9 +450,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             setMotionState(event.state);
             if (voiceModeRef.current) {
               if (event.state === 'analyzing' || event.state === 'reasoning') {
-                setVoiceState('tool_call');
+                setVoiceState('tool_execution');
+                voiceTransportRef.current?.setProcessingState('tool_execution');
               } else if (event.state === 'thinking' || event.state === 'creating') {
-                if (!globalVoicePlayer.speaking) setVoiceState('processing');
+                if (!globalVoicePlayer.speaking) {
+                  setVoiceState('processing');
+                  voiceTransportRef.current?.setProcessingState('processing');
+                }
               }
             }
           }
@@ -469,15 +472,19 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 pendingSpeechBuffer = match[2];
                 if (sentence) {
                   hasStreamSpoken = true;
-                  setVoiceState('speaking');
+                  setVoiceState('assistant_speaking');
+                  voiceTransportRef.current?.setProcessingState('assistant_speaking');
                   globalVoicePlayer.queueSentence(
                     sentence,
-                    isArabic ? 'ar' : 'fr',
-                    () => setVoiceState('speaking'),
+                    direction === 'rtl' ? 'ar' : 'fr',
+                    () => {
+                      setVoiceState('assistant_speaking');
+                      voiceTransportRef.current?.setProcessingState('assistant_speaking');
+                    },
                     () => {
                       if (voiceModeRef.current && !isMutedRef.current && !generationAbortRef.current && !globalVoicePlayer.speaking) {
                         setVoiceState('listening');
-                        void startVoiceListeningTurn();
+                        voiceTransportRef.current?.setProcessingState('listening');
                       }
                     },
                   );
@@ -487,7 +494,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           }
           if (event.type === 'tool') {
             if (voiceModeRef.current) {
-              setVoiceState('tool_call');
+              setVoiceState('tool_execution');
+              voiceTransportRef.current?.setProcessingState('tool_execution');
             }
             if (event.name === 'lens_search') setLensActive(true);
             if (event.name === 'lens_search' && event.data.product) {
@@ -533,16 +541,22 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         if (voiceModeRef.current && !isSpeakerMutedRef.current) {
           if (pendingSpeechBuffer.trim()) {
             hasStreamSpoken = true;
+            setVoiceState('assistant_speaking');
+            voiceTransportRef.current?.setProcessingState('assistant_speaking');
             globalVoicePlayer.queueSentence(
               pendingSpeechBuffer.trim(),
-              isArabic ? 'ar' : 'fr',
-              () => setVoiceState('speaking'),
+              direction === 'rtl' ? 'ar' : 'fr',
+              () => {
+                setVoiceState('assistant_speaking');
+                voiceTransportRef.current?.setProcessingState('assistant_speaking');
+              },
               () => {
                 if (voiceModeRef.current && !isMutedRef.current) {
                   setVoiceState('listening');
-                  void startVoiceListeningTurn();
+                  voiceTransportRef.current?.setProcessingState('listening');
                 } else if (voiceModeRef.current && isMutedRef.current) {
                   setVoiceState('muted');
+                  voiceTransportRef.current?.setProcessingState('listening');
                 }
               },
             );
@@ -550,24 +564,29 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             setMessages((latest) => {
               const resp = latest.find((m) => m.id === responseId);
               if (resp && resp.text.trim()) {
-                setVoiceState('speaking');
+                setVoiceState('assistant_speaking');
+                voiceTransportRef.current?.setProcessingState('assistant_speaking');
                 globalVoicePlayer.speak(
                   resp.text,
-                  isArabic ? 'ar' : 'fr',
-                  () => setVoiceState('speaking'),
+                  direction === 'rtl' ? 'ar' : 'fr',
+                  () => {
+                    setVoiceState('assistant_speaking');
+                    voiceTransportRef.current?.setProcessingState('assistant_speaking');
+                  },
                   () => {
                     if (voiceModeRef.current && !isMutedRef.current) {
                       setVoiceState('listening');
-                      void startVoiceListeningTurn();
+                      voiceTransportRef.current?.setProcessingState('listening');
                     } else if (voiceModeRef.current && isMutedRef.current) {
                       setVoiceState('muted');
+                      voiceTransportRef.current?.setProcessingState('listening');
                     }
                   },
                 );
               } else {
                 if (voiceModeRef.current && !isMutedRef.current) {
                   setVoiceState('listening');
-                  void startVoiceListeningTurn();
+                  voiceTransportRef.current?.setProcessingState('listening');
                 }
               }
               return latest;
@@ -577,7 +596,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           setVoiceState('muted');
         } else if (voiceModeRef.current) {
           setVoiceState('listening');
-          void startVoiceListeningTurn();
+          voiceTransportRef.current?.setProcessingState('listening');
         }
       }
     }
@@ -1079,7 +1098,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             attachments={attachments}
             activeProduct={selectedProduct ? {
               title: selectedProduct.product.title,
-              brand: selectedProduct.product.brand,
+              brand: selectedProduct.product.brand || undefined,
               price: selectedProduct.product.price || undefined,
               currency: selectedProduct.product.currency || undefined,
               image: selectedProduct.product.image || undefined,
@@ -1088,7 +1107,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onToggleMute={handleToggleMute}
             onToggleSpeaker={handleToggleSpeaker}
             onExit={stopVoiceMode}
-            onOpenSettings={() => setIsMenuOpen(true)}
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}

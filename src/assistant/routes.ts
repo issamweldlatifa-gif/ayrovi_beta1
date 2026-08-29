@@ -196,36 +196,73 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
     return res.status(200).json({ success: false, fallbackToClient: true });
   });
 
-  router.post('/transcribe', optionalCustomer(db), voiceUpload.single('audio'), async (req: Request, res: Response) => {
-    const key = process.env.GROQ_API_KEY?.trim();
-    if (!key) return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale AYROVI n’est pas encore activée.' });
-    const file = req.file;
-    if (!file?.buffer?.length) return res.status(400).json({ success: false, code: 'AUDIO_REQUIRED', error: 'Enregistrement audio manquant.' });
-    const baseType = String(file.mimetype || '').split(';')[0].toLowerCase();
-    if (!AUDIO_TYPES.has(baseType)) return res.status(415).json({ success: false, code: 'AUDIO_UNSUPPORTED', error: 'Format audio non pris en charge.' });
-    try {
-      const form = new FormData();
-      const extension = baseType.includes('ogg') ? 'ogg' : baseType.includes('mpeg') ? 'mp3' : baseType.includes('wav') ? 'wav' : baseType.includes('mp4') || baseType.includes('m4a') ? 'm4a' : 'webm';
-      form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
-      form.append('model', String(process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'));
-      form.append('response_format', 'json');
-      form.append('temperature', '0');
-      form.append('prompt', 'Conversation AYROVI en arabe tunisien, français ou anglais. Transcrire fidèlement les noms de marques, prix, devises et références de commande.');
-      const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
-        method: 'POST', headers: { Authorization: `Bearer ${key}` }, body: form, signal: AbortSignal.timeout(45_000),
-      });
-      const payload: any = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        console.warn(`[Assistant STT] Groq HTTP ${response.status}`);
-        return res.status(502).json({ success: false, code: 'TRANSCRIPTION_FAILED', error: 'La transcription vocale a échoué. Réessayez.' });
-      }
-      const text = String(payload?.text || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 8000);
-      if (!text) return res.status(422).json({ success: false, code: 'EMPTY_TRANSCRIPTION', error: 'Aucune parole claire n’a été détectée.' });
-      return res.json({ success: true, data: { text, provider: 'groq-whisper' } });
-    } catch (error: any) {
-      console.warn('[Assistant STT]', error?.name || error?.message || 'failed');
-      return res.status(502).json({ success: false, code: 'TRANSCRIPTION_FAILED', error: 'La transcription vocale est temporairement indisponible.' });
+  router.post(['/transcribe', '/voice/transcribe'], optionalCustomer(db), voiceUpload.single('audio'), async (req: Request, res: Response) => {
+    const groqKey = process.env.GROQ_API_KEY?.trim();
+    const openaiKey = process.env.OPENAI_API_KEY?.trim();
+    const key = groqKey || openaiKey;
+
+    if (!key) {
+      return res.status(503).json({ success: false, code: 'VOICE_UNAVAILABLE', error: 'La transcription vocale AYROVI n’est pas encore activée.' });
     }
+
+    const file = req.file;
+    if (!file?.buffer?.length) {
+      return res.status(400).json({ success: false, code: 'AUDIO_REQUIRED', error: 'Enregistrement audio manquant.' });
+    }
+
+    const baseType = String(file.mimetype || '').split(';')[0].toLowerCase();
+    if (!AUDIO_TYPES.has(baseType)) {
+      return res.status(415).json({ success: false, code: 'AUDIO_UNSUPPORTED', error: 'Format audio non pris en charge.' });
+    }
+
+    const extension = baseType.includes('ogg') ? 'ogg' : baseType.includes('mpeg') ? 'mp3' : baseType.includes('wav') ? 'wav' : baseType.includes('mp4') || baseType.includes('m4a') ? 'm4a' : 'webm';
+
+    // 1. Try Groq Whisper STT
+    if (groqKey) {
+      try {
+        const form = new FormData();
+        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
+        form.append('model', String(process.env.GROQ_STT_MODEL || 'whisper-large-v3-turbo'));
+        form.append('response_format', 'json');
+        form.append('temperature', '0');
+        form.append('prompt', 'Conversation AYROVI en arabe tunisien, français ou anglais. Transcrire fidèlement les noms de marques, prix, devises et références de commande.');
+
+        const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+          method: 'POST', headers: { Authorization: `Bearer ${groqKey}` }, body: form, signal: AbortSignal.timeout(25_000),
+        });
+        const payload: any = await response.json().catch(() => ({}));
+        if (response.ok && payload?.text?.trim()) {
+          const text = String(payload.text).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 8000);
+          return res.json({ success: true, data: { text, provider: 'groq-whisper' } });
+        }
+      } catch (err) {
+        console.warn('[Assistant STT] Groq transcription error:', err);
+      }
+    }
+
+    // 2. Try OpenAI Whisper STT
+    if (openaiKey) {
+      try {
+        const form = new FormData();
+        form.append('file', new Blob([new Uint8Array(file.buffer)], { type: baseType }), `ayrovi-voice.${extension}`);
+        form.append('model', 'whisper-1');
+        form.append('response_format', 'json');
+        form.append('temperature', '0');
+
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST', headers: { Authorization: `Bearer ${openaiKey}` }, body: form, signal: AbortSignal.timeout(25_000),
+        });
+        const payload: any = await response.json().catch(() => ({}));
+        if (response.ok && payload?.text?.trim()) {
+          const text = String(payload.text).replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 8000);
+          return res.json({ success: true, data: { text, provider: 'openai-whisper' } });
+        }
+      } catch (err) {
+        console.warn('[Assistant STT] OpenAI transcription error:', err);
+      }
+    }
+
+    return res.status(502).json({ success: false, code: 'TRANSCRIPTION_FAILED', error: 'La transcription vocale a échoué. Réessayez.' });
   });
 
   router.post('/chat', optionalCustomer(db), async (req: Request, res: Response) => {

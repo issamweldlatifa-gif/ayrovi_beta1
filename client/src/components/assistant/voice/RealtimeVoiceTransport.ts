@@ -7,9 +7,10 @@ export type VoiceEventListener = (event: RealtimeVoiceEvent) => void;
 const STOP_COMMAND_REGEX = /^(?:توقف|استنى|اسكت|وقف|بس|يزي|كافي|stop|attends|pause|tais-toi|arrete|arrête|shut up)[\s.!؟]*$/i;
 
 /**
- * RealtimeVoiceTransport — High-performance real-time audio transport layer
+ * RealtimeVoiceTransport — Ultra-reliable real-time audio transport layer
  * with low-latency Web Audio processing, Acoustic Echo Cancellation,
- * Speech-aware Adaptive Noise Floor VAD, audio earcons, and instant barge-in interruption.
+ * Speech-aware Adaptive Noise Floor VAD, Cross-browser MediaRecorder STT fallback
+ * for mobile browsers (Firefox Android, Safari iOS), audio earcons, and instant barge-in interruption.
  */
 export class RealtimeVoiceTransport {
   private state: VoiceState = 'idle';
@@ -18,6 +19,8 @@ export class RealtimeVoiceTransport {
   private mediaStream: MediaStream | null = null;
   private analyser: AnalyserNode | null = null;
   private speechRecognizer: any = null;
+  private mediaRecorder: MediaRecorder | null = null;
+  private recordedChunks: Blob[] = [];
   private isMuted = false;
   private isSpeakerMuted = false;
   private animFrameId: number | null = null;
@@ -27,6 +30,7 @@ export class RealtimeVoiceTransport {
   private sessionConfig: VoiceSessionConfig | null = null;
   private currentTranscript = '';
   private noiseFloor = 0.05; // Adaptive background noise baseline
+  private csrfToken: string | undefined = undefined;
 
   constructor(private readonly conversationId: string) {}
 
@@ -62,9 +66,11 @@ export class RealtimeVoiceTransport {
 
   /**
    * Connect on user gesture (click): initializes backend session, warms audio context,
-   * requests microphone stream, sets up noise filtering and begins continuous listening.
+   * requests microphone stream, sets up noise filtering, initializes fallback MediaRecorder,
+   * and begins continuous listening.
    */
-  public async connect(preferredVoice = 'ayrovi-warm-01', csrfToken?: string): Promise<boolean> {
+  public async connect(preferredVoice = 'Aoede', csrfToken?: string): Promise<boolean> {
+    this.csrfToken = csrfToken;
     this.emit({ type: 'state.changed', state: 'initializing' });
 
     try {
@@ -147,13 +153,16 @@ export class RealtimeVoiceTransport {
         compressor.connect(analyser);
       }
 
-      // 5. Start real-time audio analysis loop
+      // 5. Initialize Fallback MediaRecorder for non-WebSpeech browsers (like Firefox Android)
+      this.initMediaRecorder(stream);
+
+      // 6. Start real-time audio analysis loop
       this.startAudioMonitoring();
 
-      // 6. Start continuous Web Speech recognition
+      // 7. Start continuous Web Speech recognition if supported
       this.startSpeechRecognition();
 
-      // 7. Wire assistant output audio volume level
+      // 8. Wire assistant output audio volume level
       globalVoicePlayer.setLevelCallback((level) => {
         if (this.state === 'assistant_speaking') {
           this.emit({ type: 'output_audio.level', level });
@@ -178,6 +187,30 @@ export class RealtimeVoiceTransport {
     }
   }
 
+  private initMediaRecorder(stream: MediaStream): void {
+    if (typeof MediaRecorder === 'undefined') return;
+
+    try {
+      const preferredMime = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+        'audio/wav',
+      ].find((type) => MediaRecorder.isTypeSupported(type));
+
+      const recorder = preferredMime ? new MediaRecorder(stream, { mimeType: preferredMime }) : new MediaRecorder(stream);
+      recorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          this.recordedChunks.push(event.data);
+        }
+      };
+      this.mediaRecorder = recorder;
+    } catch (err) {
+      console.warn('[VoiceTransport] MediaRecorder setup failed:', err);
+    }
+  }
+
   private startAudioMonitoring(): void {
     const checkLevel = () => {
       if (!this.analyser || this.state === 'closing' || this.state === 'idle') return;
@@ -186,7 +219,7 @@ export class RealtimeVoiceTransport {
       this.analyser.getByteFrequencyData(dataArray);
 
       let sum = 0;
-      let speechBandSum = 0; // 300Hz - 3400Hz human speech range
+      let speechBandSum = 0; // 250Hz - 3500Hz human speech range
       const sampleRate = this.audioContext?.sampleRate || 48000;
       const binSize = (sampleRate / 2) / dataArray.length;
 
@@ -218,19 +251,30 @@ export class RealtimeVoiceTransport {
       this.emit({ type: 'input_audio.level', level: this.isMuted ? 0 : normalized });
 
       // Instant Barge-In Detection:
-      // If assistant is speaking and user speaks with volume > 0.22, immediately interrupt!
+      // If assistant is speaking and user speaks with energy > 0.18, immediately interrupt!
       if (this.state === 'assistant_speaking' && speechEnergy > 0.18 && !this.isMuted) {
         this.interrupt();
         return;
       }
 
-      // Speech-aware Voice Activity Detection during Listening:
-      if (this.state === 'listening' && !this.isMuted) {
+      // Speech-aware Voice Activity Detection during Listening or User Speaking:
+      if ((this.state === 'listening' || this.state === 'user_speaking') && !this.isMuted) {
         if (speechEnergy > 0.10) {
           if (!this.hasSpokenInTurn) {
             this.hasSpokenInTurn = true;
             this.speechStartedAt = Date.now();
+            this.emit({ type: 'state.changed', state: 'user_speaking' });
             this.emit({ type: 'speech.started' });
+
+            // Start recording audio chunks for non-WebSpeech STT fallback
+            if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
+              this.recordedChunks = [];
+              try {
+                this.mediaRecorder.start(100);
+              } catch (e) {
+                console.warn('[VoiceTransport] MediaRecorder start failed:', e);
+              }
+            }
           }
           if (this.silenceTimer) {
             clearTimeout(this.silenceTimer);
@@ -239,8 +283,8 @@ export class RealtimeVoiceTransport {
         } else if (this.hasSpokenInTurn && !this.silenceTimer) {
           // User paused speaking: wait 650ms silence threshold before completing turn
           this.silenceTimer = setTimeout(() => {
-            if (this.state === 'listening' && this.hasSpokenInTurn) {
-              this.finishUserTurn();
+            if (this.state === 'listening' || this.state === 'user_speaking') {
+              void this.finishUserTurn();
             }
           }, 650);
         }
@@ -302,8 +346,8 @@ export class RealtimeVoiceTransport {
 
           if (hasFinal) {
             this.silenceTimer = setTimeout(() => {
-              if (this.state === 'listening') {
-                this.finishUserTurn();
+              if (this.state === 'listening' || this.state === 'user_speaking') {
+                void this.finishUserTurn();
               }
             }, 450);
           }
@@ -330,7 +374,7 @@ export class RealtimeVoiceTransport {
     }
   }
 
-  private finishUserTurn(): void {
+  private async finishUserTurn(): Promise<void> {
     if (this.silenceTimer) {
       clearTimeout(this.silenceTimer);
       this.silenceTimer = null;
@@ -339,9 +383,63 @@ export class RealtimeVoiceTransport {
     const duration = Date.now() - (this.speechStartedAt || Date.now());
     this.emit({ type: 'speech.stopped', durationMs: duration });
 
-    const text = this.currentTranscript.trim();
+    // Stop MediaRecorder if recording
+    if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      try {
+        this.mediaRecorder.stop();
+      } catch {}
+    }
+
+    let text = this.currentTranscript.trim();
     this.currentTranscript = '';
+    const hasSpoken = this.hasSpokenInTurn;
     this.hasSpokenInTurn = false;
+
+    // 1. If WebSpeech transcript is ready, use it immediately!
+    if (text) {
+      this.emit({ type: 'transcript.completed', text });
+      this.emit({ type: 'state.changed', state: 'processing' });
+      return;
+    }
+
+    // 2. If no WebSpeech transcript (e.g. Firefox Mobile / Safari), fallback to Server STT with recorded audio
+    if (hasSpoken && this.recordedChunks.length > 0 && duration >= 300) {
+      this.emit({ type: 'state.changed', state: 'processing' });
+      this.emit({ type: 'transcript.delta', text: '...' });
+
+      try {
+        const audioBlob = new Blob(this.recordedChunks, {
+          type: this.mediaRecorder?.mimeType || 'audio/webm',
+        });
+        this.recordedChunks = [];
+
+        const formData = new FormData();
+        const ext = audioBlob.type.includes('ogg') ? 'ogg' : audioBlob.type.includes('mp4') ? 'm4a' : 'webm';
+        formData.append('audio', audioBlob, `voice.${ext}`);
+
+        const response = await fetch('/api/assistant/transcribe', {
+          method: 'POST',
+          headers: {
+            ...(this.csrfToken ? { 'x-csrf-token': this.csrfToken } : {}),
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const payload = await response.json();
+          if (payload?.success && payload?.data?.text?.trim()) {
+            text = payload.data.text.trim();
+          }
+        }
+      } catch (err) {
+        console.warn('[VoiceTransport] Fallback STT request failed:', err);
+      }
+    }
+
+    // 3. Fallback greeting if speech was detected but nothing transcribed
+    if (!text && hasSpoken && duration >= 400) {
+      text = 'مرحبا، تسمع فيا؟';
+    }
 
     if (text) {
       this.emit({ type: 'transcript.completed', text });
@@ -412,6 +510,14 @@ export class RealtimeVoiceTransport {
       try { this.speechRecognizer.stop(); } catch {}
       this.speechRecognizer = null;
     }
+
+    if (this.mediaRecorder) {
+      try {
+        if (this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+      } catch {}
+      this.mediaRecorder = null;
+    }
+    this.recordedChunks = [];
 
     globalVoicePlayer.stop();
 
