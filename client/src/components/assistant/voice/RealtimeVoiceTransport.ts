@@ -4,10 +4,12 @@ import { voiceSoundEffects } from './voiceSoundEffects';
 
 export type VoiceEventListener = (event: RealtimeVoiceEvent) => void;
 
+const STOP_COMMAND_REGEX = /^(?:توقف|استنى|اسكت|وقف|بس|يزي|كافي|stop|attends|pause|tais-toi|arrete|arrête|shut up)[\s.!؟]*$/i;
+
 /**
  * RealtimeVoiceTransport — High-performance real-time audio transport layer
  * with low-latency Web Audio processing, Acoustic Echo Cancellation,
- * Voice Activity Detection (VAD), audio earcons, and instant barge-in interruption.
+ * Speech-aware Adaptive Noise Floor VAD, audio earcons, and instant barge-in interruption.
  */
 export class RealtimeVoiceTransport {
   private state: VoiceState = 'idle';
@@ -24,6 +26,7 @@ export class RealtimeVoiceTransport {
   private hasSpokenInTurn = false;
   private sessionConfig: VoiceSessionConfig | null = null;
   private currentTranscript = '';
+  private noiseFloor = 0.05; // Adaptive background noise baseline
 
   constructor(private readonly conversationId: string) {}
 
@@ -181,24 +184,49 @@ export class RealtimeVoiceTransport {
 
       const dataArray = new Uint8Array(this.analyser.frequencyBinCount);
       this.analyser.getByteFrequencyData(dataArray);
+
       let sum = 0;
-      for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+      let speechBandSum = 0; // 300Hz - 3400Hz human speech range
+      const sampleRate = this.audioContext?.sampleRate || 48000;
+      const binSize = (sampleRate / 2) / dataArray.length;
+
+      for (let i = 0; i < dataArray.length; i++) {
+        const val = dataArray[i];
+        sum += val;
+        const freq = i * binSize;
+        if (freq >= 250 && freq <= 3500) {
+          speechBandSum += val;
+        }
+      }
+
       const avg = sum / dataArray.length;
       const normalized = Math.min(1, avg / 110);
+      const speechBandAvg = speechBandSum / Math.max(1, (3500 - 250) / binSize);
+      const speechBandNormalized = Math.min(1, speechBandAvg / 100);
+
+      // Dynamically adapt background noise floor
+      if (normalized < this.noiseFloor) {
+        this.noiseFloor = normalized;
+      } else {
+        this.noiseFloor = this.noiseFloor * 0.996 + normalized * 0.004;
+      }
+
+      // Compute speech-aware energy above ambient noise
+      const speechEnergy = Math.max(0, speechBandNormalized - (this.noiseFloor * 0.7));
 
       // Emit real audio level for live visualizer
       this.emit({ type: 'input_audio.level', level: this.isMuted ? 0 : normalized });
 
       // Instant Barge-In Detection:
-      // If assistant is speaking and user speaks with volume > 0.25, immediately interrupt!
-      if (this.state === 'assistant_speaking' && normalized > 0.25 && !this.isMuted) {
+      // If assistant is speaking and user speaks with volume > 0.22, immediately interrupt!
+      if (this.state === 'assistant_speaking' && speechEnergy > 0.18 && !this.isMuted) {
         this.interrupt();
         return;
       }
 
-      // Voice Activity Detection during Listening:
+      // Speech-aware Voice Activity Detection during Listening:
       if (this.state === 'listening' && !this.isMuted) {
-        if (normalized > 0.12) {
+        if (speechEnergy > 0.10) {
           if (!this.hasSpokenInTurn) {
             this.hasSpokenInTurn = true;
             this.speechStartedAt = Date.now();
@@ -250,6 +278,14 @@ export class RealtimeVoiceTransport {
 
         const trimmed = text.trim();
         if (trimmed) {
+          // Check for explicit "Stop" / "توقف" command
+          if (STOP_COMMAND_REGEX.test(trimmed)) {
+            this.interrupt();
+            this.currentTranscript = '';
+            this.hasSpokenInTurn = false;
+            return;
+          }
+
           // If assistant was speaking, instant barge in!
           if (this.state === 'assistant_speaking') {
             this.interrupt();

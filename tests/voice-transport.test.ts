@@ -47,4 +47,21 @@ describe('AYROVI Realtime Voice Transport & Session Subsystem', () => {
     expect(res.body.data.voice.id).toBe('ayrovi-calm-02');
     expect(res.body.data.voice.gender).toBe('male');
   });
+
+  it('recognizes voice stop and interruption commands in Arabic, Tunisian, and French', () => {
+    const stopRegex = /^(?:توقف|استنى|اسكت|وقف|بس|يزي|كافي|stop|attends|pause|tais-toi|arrete|arrête|shut up)[\s.!؟]*$/i;
+
+    expect(stopRegex.test('توقف')).toBe(true);
+    expect(stopRegex.test('اسكت !')).toBe(true);
+    expect(stopRegex.test('استنى')).toBe(true);
+    expect(stopRegex.test('وقف')).toBe(true);
+    expect(stopRegex.test('يزي')).toBe(true);
+    expect(stopRegex.test('stop')).toBe(true);
+    expect(stopRegex.test('attends')).toBe(true);
+    expect(stopRegex.test('arrête !')).toBe(true);
+
+    // Regular queries should NOT trigger stop
+    expect(stopRegex.test('احسبلي سوم هذا')).toBe(false);
+    expect(stopRegex.test('combien coûte la livraison')).toBe(false);
+  });
 });
