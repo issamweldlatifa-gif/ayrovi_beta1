@@ -337,7 +337,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         if (event.type === 'state.changed') {
           setVoiceState(event.state);
           voiceStateRef.current = event.state;
-        } else if (event.type === 'input_audio.level') {
+        } else if (event.type === 'input_audio.level' || event.type === 'output_audio.level') {
           setVolumeLevel(event.level);
         } else if (event.type === 'transcript.delta') {
           setLiveTranscript(event.text);

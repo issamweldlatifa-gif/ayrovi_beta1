@@ -145,6 +145,13 @@ export class RealtimeVoiceTransport {
       // 6. Start continuous Web Speech recognition
       this.startSpeechRecognition();
 
+      // 7. Wire assistant output audio volume level
+      globalVoicePlayer.setLevelCallback((level) => {
+        if (this.state === 'assistant_speaking') {
+          this.emit({ type: 'output_audio.level', level });
+        }
+      });
+
       this.emit({ type: 'state.changed', state: 'listening' });
       this.emit({ type: 'speech.started' });
       return true;
