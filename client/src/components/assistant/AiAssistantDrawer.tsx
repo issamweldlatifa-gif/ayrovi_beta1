@@ -7,9 +7,8 @@ import { AssistantMessages } from './AssistantMessages';
 import { AssistantSideMenu } from './AssistantSideMenu';
 import { AssistantVoiceModeScreen } from './AssistantVoiceModeScreen';
 import { AssistantVoiceOrb } from './AssistantVoiceOrb';
-import { RealtimeVoiceTransport } from './voice/RealtimeVoiceTransport';
-import type { VoiceState } from './voice/types';
-import { globalVoicePlayer } from './voicePlayer';
+import { VoiceChatController } from './voice/VoiceChatController';
+import type { VoiceChatState } from './voice/types';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getSessionId } from '../../utils/session';
 import { AyroviMotionState } from '../AyroviMotion';
@@ -124,22 +123,15 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [productBusyId, setProductBusyId] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
-  const [voiceState, setVoiceState] = useState<VoiceState>('idle');
+  const [voiceState, setVoiceState] = useState<VoiceChatState>('idle');
   const [volumeLevel, setVolumeLevel] = useState(0);
   const [liveTranscript, setLiveTranscript] = useState('');
   const [isMuted, setIsMuted] = useState(false);
-  const isMutedRef = useRef(false);
   const [isSpeakerMuted, setIsSpeakerMuted] = useState(false);
   const isSpeakerMutedRef = useRef(false);
   const voiceModeRef = useRef(false);
-  const voiceStateRef = useRef<VoiceState>('idle');
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const audioSourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const volumeAnimRef = useRef<number | null>(null);
-  const speechRecognizerRef = useRef<any>(null);
-  const speechSilenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const spokenInTurnRef = useRef(false);
+  const voiceStateRef = useRef<VoiceChatState>('idle');
+  const voiceTurnHandlerRef = useRef<(text: string) => void>(() => {});
 
   useEffect(() => {
     voiceModeRef.current = voiceMode;
@@ -260,7 +252,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setConversations(next);
   }, [messages, selectedProduct, conversationId, historyScope, isOpen, isGenerating]);
 
-  const voiceTransportRef = useRef<RealtimeVoiceTransport | null>(null);
+  const voiceControllerRef = useRef<VoiceChatController | null>(null);
 
   const showToast = (message: string) => {
     setToast(message);
@@ -283,149 +275,79 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setVolumeLevel(0);
     setLiveTranscript('');
     setIsMuted(false);
-    isMutedRef.current = false;
-
-    if (voiceTransportRef.current) {
-      voiceTransportRef.current.disconnect();
-      voiceTransportRef.current = null;
-    }
-    globalVoicePlayer.stop();
+    voiceControllerRef.current?.stop();
+    voiceControllerRef.current = null;
   };
 
   const handleToggleMute = () => {
     const next = !isMuted;
     setIsMuted(next);
-    isMutedRef.current = next;
-    voiceTransportRef.current?.setMuted(next);
+    voiceControllerRef.current?.setMuted(next);
   };
 
   const handleToggleSpeaker = () => {
     const next = !isSpeakerMuted;
     setIsSpeakerMuted(next);
     isSpeakerMutedRef.current = next;
-    voiceTransportRef.current?.setSpeakerMuted(next);
-    if (next) {
-      globalVoicePlayer.stop();
-    }
+    voiceControllerRef.current?.setSpeakerMuted(next);
   };
 
   const stopActiveVoiceResponse = () => {
-    globalVoicePlayer.stop();
     if (generationAbortRef.current) {
       generationAbortRef.current.abort();
       generationAbortRef.current = null;
       setIsGenerating(false);
       setMotionState('idle');
     }
-  };
-
-  const interruptVoiceSpeech = () => {
-    stopActiveVoiceResponse();
-    voiceTransportRef.current?.interrupt();
-  };
-
-  const handleVoicePlaybackEnd = () => {
-    if (!voiceModeRef.current) return;
-    if (isMutedRef.current) {
-      setVoiceState('muted');
-      voiceTransportRef.current?.setMuted(true);
-    } else if (generationAbortRef.current) {
-      // The text stream is still producing the next sentence. Do not leave the
-      // transport in assistant_speaking while no audio is actually playing.
-      setVoiceState('processing');
-      voiceTransportRef.current?.setProcessingState('processing');
-    } else {
-      setVoiceState('listening');
-      voiceTransportRef.current?.setProcessingState('listening');
-    }
+    voiceControllerRef.current?.interruptOutput();
   };
 
   const handleToggleVoiceMode = async () => {
-    if (voiceMode) {
+    if (voiceModeRef.current) {
       stopVoiceMode();
-    } else {
-      globalVoicePlayer.warmUp();
-      setVoiceMode(true);
-      voiceModeRef.current = true;
-      setIsMuted(false);
-      isMutedRef.current = false;
-      setVoiceState('initializing');
-
-      const transport = new RealtimeVoiceTransport(conversationId, direction === 'rtl' ? 'ar-TN' : 'fr-FR');
-      voiceTransportRef.current = transport;
-
-      transport.addEventListener((event) => {
-        if (event.type === 'state.changed') {
-          setVoiceState(event.state);
-          voiceStateRef.current = event.state;
-        } else if (event.type === 'input_audio.level' || event.type === 'output_audio.level') {
-          setVolumeLevel(event.level);
-        } else if (event.type === 'transcript.delta') {
-          setLiveTranscript(event.text);
-        } else if (event.type === 'transcript.completed') {
-          setLiveTranscript('');
-          sendMessage(event.text, true);
-        } else if (event.type === 'speech.started') {
-          // A user may start speaking while the greeting TTS request is still
-          // loading. Cancel that pending greeting instead of treating the first
-          // word as an interruption.
-          if (voiceStateRef.current === 'user_speaking' && globalVoicePlayer.speaking) {
-            globalVoicePlayer.stop();
-          }
-        } else if (event.type === 'interrupted') {
-          // The transport already performed the interruption. Calling interrupt()
-          // again here used to recursively emit "interrupted" until the stack
-          // overflowed, producing repeated clicks/static instead of speech.
-          stopActiveVoiceResponse();
-        } else if (event.type === 'error') {
-          showToast(event.message);
-        }
-      });
-
-      const connected = await transport.connect('Aoede', customerCsrfToken);
-      if (!connected) {
-        stopVoiceMode();
-        return;
-      }
-
-      // The deployed server tells the client whether a real TTS provider is
-      // configured. When it is not, avoid one failed HTTP request per sentence
-      // and use one stable browser utterance for each complete assistant turn.
-      globalVoicePlayer.setServerTtsAvailability(
-        transport.getSessionConfig()?.capabilities.serverTextToSpeech,
-      );
-
-      const isRtl = direction === 'rtl';
-      const greeting = isRtl
-        ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
-        : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
-
-      if (!isSpeakerMutedRef.current) {
-        const playGreeting = () => {
-          if (!voiceModeRef.current || voiceTransportRef.current !== transport) return;
-          globalVoicePlayer.speak(
-            greeting,
-            isRtl ? 'ar' : 'fr',
-            () => transport.setProcessingState('assistant_speaking'),
-            handleVoicePlaybackEnd,
-          );
-        };
-
-        if (globalVoicePlayer.serverTtsAvailable === false) {
-          // Local speech can start almost synchronously. Leave a short first-word
-          // window and suppress the greeting if the user has already begun a turn.
-          window.setTimeout(() => {
-            if (transport.getState() === 'listening' && !globalVoicePlayer.speaking) playGreeting();
-          }, 650);
-        } else {
-          // Keep listening while server TTS is loading. The onStart callback is
-          // the only point that may mark the assistant as actually speaking.
-          playGreeting();
-        }
-      } else {
-        transport.setProcessingState('listening');
-      }
+      return;
     }
+    if (isRecording || isTranscribing || isGenerating) return;
+
+    setVoiceMode(true);
+    voiceModeRef.current = true;
+    setIsMuted(false);
+    setVoiceState('starting');
+    voiceStateRef.current = 'starting';
+
+    const controller = new VoiceChatController({
+      language: direction === 'rtl' ? 'ar-TN' : 'fr-FR',
+      csrfToken: customerCsrfToken,
+      onState: (state) => {
+        if (voiceControllerRef.current !== controller) return;
+        voiceStateRef.current = state;
+        setVoiceState(state);
+      },
+      onLevel: (level) => {
+        if (voiceControllerRef.current === controller) setVolumeLevel(level);
+      },
+      onTranscript: (text) => {
+        if (voiceControllerRef.current === controller) setLiveTranscript(text);
+      },
+      onTurn: (text) => {
+        if (voiceControllerRef.current !== controller) return;
+        setLiveTranscript('');
+        voiceTurnHandlerRef.current(text);
+      },
+      onError: (message) => {
+        if (voiceControllerRef.current === controller) showToast(message);
+      },
+    });
+    voiceControllerRef.current = controller;
+    controller.setSpeakerMuted(isSpeakerMutedRef.current);
+
+    const isRtl = direction === 'rtl';
+    const greeting = isRtl
+      ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
+      : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
+
+    const connected = await controller.start(greeting);
+    if (!connected && voiceControllerRef.current === controller) stopVoiceMode();
   };
 
   const handleAddVoiceAttachment = async (file: File) => {
@@ -461,10 +383,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     const controller = new AbortController();
     generationAbortRef.current = controller;
     setIsGenerating(true);
-    setMotionState('thinking'); setLensActive(false);
+    setMotionState('thinking');
+    setLensActive(false);
+    voiceControllerRef.current?.markThinking();
 
-    let pendingSpeechBuffer = '';
-    let hasStreamSpoken = false;
+    let spokenResponse = '';
 
     try {
       await streamAssistantChat({
@@ -493,55 +416,16 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         onEvent: (event) => {
           if (event.type === 'state') {
             setMotionState(event.state);
-            if (voiceModeRef.current) {
-              if (event.state === 'analyzing' || event.state === 'reasoning') {
-                setVoiceState('tool_execution');
-                voiceTransportRef.current?.setProcessingState('tool_execution');
-              } else if (event.state === 'thinking' || event.state === 'creating') {
-                if (!globalVoicePlayer.speaking) {
-                  setVoiceState('processing');
-                  voiceTransportRef.current?.setProcessingState('processing');
-                }
-              }
-            }
           }
+
           if (event.type === 'delta') {
-            setMessages((current) => current.map((message) => message.id === responseId ? { ...message, text: message.text + event.text } : message));
-
-            // Incremental sentence streaming TTS (sub-second spoken response like ChatGPT Voice)
-            if (voiceModeRef.current && !isSpeakerMutedRef.current) {
-              pendingSpeechBuffer += event.text;
-
-              // Stream short server-generated clips only when server TTS exists.
-              // Local SpeechSynthesis is substantially more reliable on mobile
-              // when it receives one complete response instead of many rapidly
-              // queued utterances.
-              if (globalVoicePlayer.serverTtsAvailable !== false) {
-                const match = pendingSpeechBuffer.match(/^([\s\S]+?[.!?؟\n]+)([\s\S]*)$/);
-                if (match) {
-                  const sentence = match[1].trim();
-                  pendingSpeechBuffer = match[2];
-                  if (sentence) {
-                    hasStreamSpoken = true;
-                    globalVoicePlayer.queueSentence(
-                      sentence,
-                      direction === 'rtl' ? 'ar' : 'fr',
-                      () => {
-                        setVoiceState('assistant_speaking');
-                        voiceTransportRef.current?.setProcessingState('assistant_speaking');
-                      },
-                      handleVoicePlaybackEnd,
-                    );
-                  }
-                }
-              }
-            }
+            spokenResponse += event.text;
+            setMessages((current) => current.map((message) => (
+              message.id === responseId ? { ...message, text: message.text + event.text } : message
+            )));
           }
+
           if (event.type === 'tool') {
-            if (voiceModeRef.current) {
-              setVoiceState('tool_execution');
-              voiceTransportRef.current?.setProcessingState('tool_execution');
-            }
             if (event.name === 'lens_search') setLensActive(true);
             if (event.name === 'lens_search' && event.data.product) {
               const product = event.data.product as AyrovixProduct;
@@ -562,7 +446,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 ...message,
                 products: (event.data.products || []) as AyrovixCandidate[],
                 suggestedActions: Array.isArray(event.data.suggestedActions) ? event.data.suggestedActions : undefined,
-                lensSummary: event.data.lens ? { confidence: Number(event.data.lens.confidence || 0), verified: Boolean(event.data.lens.verified), warnings: Array.isArray(event.data.lens.warnings) ? event.data.lens.warnings : [] } : null,
+                lensSummary: event.data.lens ? {
+                  confidence: Number(event.data.lens.confidence || 0),
+                  verified: Boolean(event.data.lens.verified),
+                  warnings: Array.isArray(event.data.lens.warnings) ? event.data.lens.warnings : [],
+                } : null,
               };
               if (event.name === 'escalate_to_human') return { ...message, supportTicket: (event.data.ticket || event.data) as any };
               return message;
@@ -572,9 +460,11 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       });
     } catch (error: any) {
       if (error?.name !== 'AbortError') {
-        setMessages((current) => current.map((message) => message.id === responseId
-          ? { ...message, text: message.text || error?.message || 'Je rencontre un problème de connexion. Réessayez dans un instant.' }
-          : message));
+        const fallback = error?.message || 'Je rencontre un problème de connexion. Réessayez dans un instant.';
+        if (!spokenResponse.trim()) spokenResponse = fallback;
+        setMessages((current) => current.map((message) => (
+          message.id === responseId ? { ...message, text: message.text || fallback } : message
+        )));
       }
     } finally {
       if (generationAbortRef.current === controller) {
@@ -582,60 +472,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         setIsGenerating(false);
         setMotionState('idle');
 
-        // Flush remainder of audio or speak full response if not yet queued
-        if (voiceModeRef.current && !isSpeakerMutedRef.current) {
-          if (pendingSpeechBuffer.trim()) {
-            const remainingSpeech = pendingSpeechBuffer.trim();
-            const onSpeechStart = () => {
-              setVoiceState('assistant_speaking');
-              voiceTransportRef.current?.setProcessingState('assistant_speaking');
-            };
-
-            if (!hasStreamSpoken && globalVoicePlayer.serverTtsAvailable === false) {
-              // Reset the local speech engine and speak the complete answer once.
-              // This avoids Android/iOS cancellation pops from sentence churn.
-              globalVoicePlayer.speak(
-                remainingSpeech,
-                direction === 'rtl' ? 'ar' : 'fr',
-                onSpeechStart,
-                handleVoicePlaybackEnd,
-              );
-            } else {
-              globalVoicePlayer.queueSentence(
-                remainingSpeech,
-                direction === 'rtl' ? 'ar' : 'fr',
-                onSpeechStart,
-                handleVoicePlaybackEnd,
-              );
-            }
-            hasStreamSpoken = true;
-          } else if (!hasStreamSpoken) {
-            setMessages((latest) => {
-              const resp = latest.find((m) => m.id === responseId);
-              if (resp && resp.text.trim()) {
-                globalVoicePlayer.speak(
-                  resp.text,
-                  direction === 'rtl' ? 'ar' : 'fr',
-                  () => {
-                    setVoiceState('assistant_speaking');
-                    voiceTransportRef.current?.setProcessingState('assistant_speaking');
-                  },
-                  handleVoicePlaybackEnd,
-                );
-              } else {
-                if (voiceModeRef.current && !isMutedRef.current) {
-                  setVoiceState('listening');
-                  voiceTransportRef.current?.setProcessingState('listening');
-                }
-              }
-              return latest;
-            });
-          }
-        } else if (voiceModeRef.current && isMutedRef.current) {
-          setVoiceState('muted');
-        } else if (voiceModeRef.current) {
-          setVoiceState('listening');
-          voiceTransportRef.current?.setProcessingState('listening');
+        if (voiceModeRef.current) {
+          const voiceController = voiceControllerRef.current;
+          const speech = spokenResponse.trim();
+          if (!voiceController) return;
+          if (isSpeakerMutedRef.current || !speech) voiceController.resumeListening();
+          else void voiceController.speak(speech, direction === 'rtl' ? 'ar-TN' : 'fr-FR');
         }
       }
     }
@@ -750,6 +592,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setAttachments([]);
     void startAssistantReply(sourceMessages, responseId);
   };
+
+  // The controller lives across renders; route completed turns through the
+  // latest message state instead of retaining the callback from the opening render.
+  voiceTurnHandlerRef.current = (text) => sendMessage(text, true);
 
   const releaseMediaStream = () => {
     mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -1147,14 +993,18 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onToggleSpeaker={handleToggleSpeaker}
             onExit={stopVoiceMode}
             onTapOrb={() => {
-              if (voiceStateRef.current === 'assistant_speaking') interruptVoiceSpeech();
-              else voiceTransportRef.current?.forceFinishTurn();
+              if (voiceStateRef.current === 'speaking' || voiceStateRef.current === 'thinking') {
+                stopActiveVoiceResponse();
+              } else {
+                voiceControllerRef.current?.forceFinishTurn();
+              }
             }}
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}
             onRemoveAttachment={(id) => setAttachments((current) => current.filter((att) => att.id !== id))}
             onSelectSuggestion={(suggestion) => sendMessage(suggestion, true)}
+            onVoiceSettingsChange={(settings) => voiceControllerRef.current?.configureVoice(settings)}
           />
         ) : (
           <>

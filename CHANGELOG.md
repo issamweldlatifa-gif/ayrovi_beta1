@@ -4,20 +4,23 @@ All notable AYROVI changes are recorded in this file.
 
 ## [Unreleased]
 
+### Changed
+- Removed the legacy `RealtimeVoiceTransport`, global queued `voicePlayer`, synthetic voice earcons, recursive interruption events and browser SpeechRecognition branch.
+- Rebuilt Voice Chat around one owned `VoiceChatController`: microphone → VAD with pre-roll → MediaRecorder → server STT → one assistant response → one `VoiceOutput` operation.
+- Voice Chat is hands-free between turns but strictly half-duplex: microphone recording is stopped and the input track is disabled for the whole TTS loading/playback interval.
+- A complete assistant answer is spoken once. Server TTS is preferred; one matching browser utterance is the fallback.
+
 ### Fixed
-- Voice replies no longer recurse through the interruption event, which caused repeated clicks/static and a stack overflow.
-- The legacy `/api/voice/live-audio` route now resolves correctly, while the client uses the canonical Assistant TTS route.
-- Gemini TTS now uses the current speech model and wraps raw 24 kHz PCM in a valid WAV container before browser playback.
-- Streamed TTS sentences are serialized; pending requests are aborted on interruption so clips cannot overlap or resume as ghost audio.
-- Speech recognition pauses during assistant playback, and VAD ignores output/earcon transients to avoid self-interruption.
-- Voice mode no longer claims the assistant is speaking while TTS is still loading; the user's first word cancels a pending greeting, and a real barge-in transitions directly to `user_speaking` instead of flashing `Interrompu` and dropping the word.
-- Browser-only TTS now speaks one complete answer, caches provider unavailability, and cannot acoustically interrupt itself in a `speak → pop → listen` loop.
-- Synthetic listening/interruption earcons are off by default, and streamed answers no longer restart listening between sentence clips.
-- MediaRecorder waits for its final chunk before STT upload; failed transcription no longer invents a user greeting.
+- The first word is retained in a rolling pre-buffer instead of being lost when VAD opens the turn.
+- Assistant output can no longer be transcribed as new input or create a `speak → pop → listen` loop.
+- Starting a new response cancels the previous request/playback by operation id, preventing stale completion callbacks and ghost audio.
+- Browser fallback never forces a French/default voice onto Arabic text, never truncates long turns at the server limit, and transition beeps were removed entirely.
+- A timed-out server TTS request now falls through to local speech instead of being mistaken for a user cancellation.
+- Gemini raw 24 kHz PCM remains normalized to a valid WAV response, and the legacy TTS route remains compatible.
 
 ### Validation
-- Added server PCM/WAV, route-compatibility, serial playback, cancellation, interruption recursion, delayed-playback, first-word barge-in, browser fallback and earcon regressions.
-- 221 automated tests, TypeScript checks and the production build pass.
+- Replaced the old voice regressions with clean controller/output lifecycle, pre-roll, half-duplex, cancellation, browser-language fallback, server WAV and route tests.
+- 224 automated tests, TypeScript checks and the production build pass.
 
 ## [3.10.4] - 2026-08-21
 

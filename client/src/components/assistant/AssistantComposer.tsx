@@ -136,7 +136,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               <button
                 type="button"
                 onClick={onToggleVoiceMode}
-                disabled={isGenerating || isTranscribing}
+                disabled={isGenerating || isTranscribing || isRecording}
                 className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-white shadow-md shadow-[#FF7A00]/25 transition hover:bg-[#e05f00] active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
                   voiceMode ? 'ring-2 ring-white animate-pulse' : ''
                 }`}

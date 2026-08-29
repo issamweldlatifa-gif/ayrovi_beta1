@@ -2,12 +2,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Camera, Check, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Sparkles, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AssistantAttachment } from './types';
-import type { VoiceState } from './voice/types';
-import { globalVoicePlayer } from './voicePlayer';
-import { voiceSoundEffects } from './voice/voiceSoundEffects';
+import type { VoiceChatState } from './voice/types';
+import type { VoiceId, VoiceOutputSettings } from './voice/VoiceOutput';
 
 interface AssistantVoiceModeScreenProps {
-  state: VoiceState;
+  state: VoiceChatState;
   volumeLevel: number; // 0.0 to 1.0 (real audio level)
   isDark: boolean;
   isMuted: boolean;
@@ -31,6 +30,7 @@ interface AssistantVoiceModeScreenProps {
   onAddAttachment?: (file: File) => void;
   onRemoveAttachment?: (id: string) => void;
   onSelectSuggestion?: (suggestion: string) => void;
+  onVoiceSettingsChange?: (settings: Partial<VoiceOutputSettings>) => void;
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
@@ -51,13 +51,13 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   onAddAttachment,
   onRemoveAttachment,
   onSelectSuggestion,
+  onVoiceSettingsChange,
 }) => {
   const { tr, direction } = useLocale();
   const [smoothedVolume, setSmoothedVolume] = useState(0);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [selectedVoiceId, setSelectedVoiceId] = useState<'Aoede' | 'Kore' | 'Puck' | 'Fenrir'>('Aoede');
+  const [selectedVoiceId, setSelectedVoiceId] = useState<VoiceId>('Aoede');
   const [voiceRate, setVoiceRate] = useState<number>(1.05);
-  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => voiceSoundEffects.isSoundEnabled());
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const frameRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -100,35 +100,29 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   const scale = 1 + Math.min(0.4, smoothedVolume * 0.75);
   const glow = Math.min(40, 12 + smoothedVolume * 50);
 
-  // Dynamic status text matching real states
   const stateLabel = isMuted
-    ? tr('Microphone coupé', 'تم كتم الميكروفون...')
-    : state === 'listening'
-      ? tr('Écoute en cours…', 'استمع...')
-      : state === 'user_speaking'
-        ? tr('Vous parlez…', 'أنت تتحدث...')
-        : state === 'processing'
-          ? tr('Je réfléchis…', 'يفكر...')
-          : state === 'tool_execution'
-            ? tr('Recherche et calcul en cours…', 'جاري البحث والحساب...')
-            : state === 'assistant_speaking'
-              ? tr('Je vous réponds…', 'يتحدث...')
-              : state === 'interrupted'
-                ? tr('Interrompu', 'تمت المقاطعة...')
+    ? tr('Microphone coupé', 'تم كتم الميكروفون')
+    : state === 'starting'
+      ? tr('Démarrage du mode vocal…', 'جاري تشغيل المحادثة الصوتية…')
+      : state === 'listening'
+        ? tr('Je vous écoute…', 'أنا أستمع إليك…')
+        : state === 'user_speaking'
+          ? tr('Vous parlez…', 'أنت تتحدث…')
+          : state === 'transcribing'
+            ? tr('Transcription en cours…', 'جاري فهم كلامك…')
+            : state === 'thinking'
+              ? tr('Je réfléchis…', 'جاري تحضير الرد…')
+              : state === 'speaking'
+                ? tr('Je vous réponds…', 'المساعد يتحدث…')
                 : state === 'error'
-                  ? tr('Erreur microphone', 'خطأ في الميكروفون')
+                  ? tr('Mode vocal indisponible', 'تعذّر تشغيل المحادثة الصوتية')
                   : tr('Prêt', 'جاهز');
 
-  // Dynamic gradient reflecting exact state
-  const orbGradient = state === 'interrupted'
-    ? 'from-[#f97316] via-[#fb923c] to-[#ea580c]'
-    : state === 'processing' || state === 'tool_execution'
-      ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
-      : state === 'assistant_speaking'
-        ? 'from-[#FF7A00] via-[#ffa34d] to-[#e06600]'
-        : state === 'error'
-          ? 'from-[#ef4444] via-[#f87171] to-[#dc2626]'
-          : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
+  const orbGradient = state === 'transcribing' || state === 'thinking'
+    ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
+    : state === 'error'
+      ? 'from-[#ef4444] via-[#f87171] to-[#dc2626]'
+      : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -139,23 +133,16 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     e.target.value = '';
   };
 
-  const handleVoiceSelect = (voiceId: 'Aoede' | 'Kore' | 'Puck' | 'Fenrir', gender: 'female' | 'male') => {
+  const handleVoiceSelect = (voiceId: VoiceId, gender: 'female' | 'male') => {
     setSelectedVoiceId(voiceId);
-    globalVoicePlayer.setVoiceSettings({ voiceId, gender, rate: voiceRate });
+    onVoiceSettingsChange?.({ voiceId, gender, rate: voiceRate });
     triggerHaptic();
   };
 
   const handleVoiceRateChange = (rate: number) => {
     setVoiceRate(rate);
     const gender = selectedVoiceId === 'Aoede' || selectedVoiceId === 'Kore' ? 'female' : 'male';
-    globalVoicePlayer.setVoiceSettings({ voiceId: selectedVoiceId, gender, rate });
-    triggerHaptic();
-  };
-
-  const handleToggleSoundEffects = () => {
-    const next = !soundEffectsEnabled;
-    setSoundEffectsEnabled(next);
-    voiceSoundEffects.setSoundEnabled(next);
+    onVoiceSettingsChange?.({ voiceId: selectedVoiceId, gender, rate });
     triggerHaptic();
   };
 
@@ -383,7 +370,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
               <span
                 key={idx}
                 className={`w-1 rounded-full transition-[height] duration-75 ${
-                  state === 'processing' || state === 'tool_execution'
+                  state === 'transcribing' || state === 'thinking'
                     ? 'bg-blue-500'
                     : state === 'error'
                       ? 'bg-red-500'
@@ -521,10 +508,10 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             </div>
 
             <div className="mt-5 space-y-6 overflow-y-auto py-1">
-              {/* Voice Selection (Gemini Live & Natural AI Voices) */}
+              {/* Voice selection for server TTS and the best matching local fallback. */}
               <div>
                 <label className="text-xs font-black uppercase tracking-wider text-[#6B6B6B]">
-                  {tr('Voix de l’assistant (Gemini Live / Realtime)', 'صوت المساعد (Gemini Live)')}
+                  {tr('Voix de l’assistant', 'صوت المساعد')}
                 </label>
                 <div className="mt-2.5 grid grid-cols-2 gap-3">
                   <button
@@ -614,31 +601,6 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Sound Effects Earcons */}
-              <div className="flex items-center justify-between rounded-2xl border border-black/5 p-3.5 dark:border-white/10">
-                <div>
-                  <p className="text-xs font-bold">
-                    {tr('Sons de notification vocale', 'نغمات التنبيه الصوتي')}
-                  </p>
-                  <p className="text-[11px] text-[#6B6B6B]">
-                    {tr('Bips d’écoute et de réponse', 'نغمات لطيفة عند بدء الاستماع والرد')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleToggleSoundEffects}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${
-                    soundEffectsEnabled ? 'bg-[#FF7A00]' : 'bg-gray-400/40'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                      soundEffectsEnabled ? 'right-0.5' : 'left-0.5'
-                    }`}
-                  />
-                </button>
               </div>
 
               {/* Haptics & Feedback */}
