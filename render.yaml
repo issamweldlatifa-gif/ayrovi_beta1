@@ -109,6 +109,14 @@ services:
         sync: false
       - key: GROQ_STT_MODEL
         value: whisper-large-v3-turbo
+      # Primary realtime STT. Any token/session/quota failure automatically falls
+      # through to the complete-container Groq upload path.
+      - key: ASSISTANT_REALTIME_TRANSCRIPTION
+        value: auto
+      - key: GEMINI_LIVE_TRANSCRIBE_MODEL
+        value: gemini-3.5-transcribe-live
+      - key: GEMINI_LIVE_QUOTA_COOLDOWN_MS
+        value: 900000
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_TTS_MODEL

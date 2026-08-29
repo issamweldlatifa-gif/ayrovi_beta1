@@ -3,6 +3,8 @@ import { getSessionId } from '../../../utils/session';
 export type VoiceId = 'Aoede' | 'Kore' | 'Puck' | 'Fenrir';
 export type VoicePlaybackResult = 'ended' | 'cancelled' | 'unavailable';
 
+const MAX_PCM_SCHEDULE_AHEAD_SECONDS = 1.5;
+
 export interface VoiceOutputSettings {
   voiceId: VoiceId;
   gender: 'female' | 'male';
@@ -26,7 +28,7 @@ export class VoiceOutput {
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private analyserConnected = false;
-  private source: AudioBufferSourceNode | null = null;
+  private readonly sources = new Set<AudioBufferSourceNode>();
   private utterance: SpeechSynthesisUtterance | null = null;
   private requestAbort: AbortController | null = null;
   private safetyTimer: ReturnType<typeof setTimeout> | null = null;
@@ -61,11 +63,11 @@ export class VoiceOutput {
   }
 
   public get busy(): boolean {
-    return Boolean(this.requestAbort || this.source || this.utterance || this.finishActive);
+    return Boolean(this.requestAbort || this.sources.size || this.utterance || this.finishActive);
   }
 
   public get playing(): boolean {
-    return Boolean(this.source || this.utterance);
+    return Boolean(this.sources.size || this.utterance);
   }
 
   public async speak(
@@ -102,12 +104,12 @@ export class VoiceOutput {
     const finish = this.finishActive;
     this.finishActive = null;
 
-    if (this.source) {
-      this.source.onended = null;
-      try { this.source.stop(); } catch {}
-      try { this.source.disconnect(); } catch {}
-      this.source = null;
+    for (const source of this.sources) {
+      source.onended = null;
+      try { source.stop(); } catch {}
+      try { source.disconnect(); } catch {}
     }
+    this.sources.clear();
 
     if (this.utterance && typeof window !== 'undefined' && window.speechSynthesis) {
       try { window.speechSynthesis.cancel(); } catch {}
@@ -178,7 +180,7 @@ export class VoiceOutput {
     const abortResult = (): VoicePlaybackResult => timedOut ? 'unavailable' : 'cancelled';
 
     try {
-      const response = await fetch('/api/assistant/voice/tts', {
+      const response = await fetch('/api/assistant/voice/tts-stream', {
         method: 'POST',
         credentials: 'same-origin',
         signal: controller.signal,
@@ -192,42 +194,53 @@ export class VoiceOutput {
           speed: this.settings.rate,
         }),
       });
+      // The server flushes PCM headers only after receiving the first provider
+      // audio block, so this timeout covers provider startup without truncating
+      // a long response that is already playing.
+      clearTimeout(timeout);
       if (generation !== this.generation) return 'cancelled';
       if (controller.signal.aborted) return abortResult();
 
-      const contentType = response.headers.get('content-type') || '';
+      const contentType = (response.headers.get('content-type') || '').toLowerCase();
       const isAudio = contentType.includes('audio') || contentType.includes('octet-stream');
       if (!response.ok || !isAudio) {
         if (response.ok && contentType.includes('json')) this.serverTtsAvailable = false;
         return 'unavailable';
       }
 
+      const context = this.ensureContext();
+      if (!context || !this.analyser) return 'unavailable';
+      if (context.state === 'suspended') await context.resume();
+      const isRawPcm = contentType.includes('audio/l16')
+        || contentType.includes('audio/pcm')
+        || response.headers.has('x-audio-sample-rate');
+      if (isRawPcm) {
+        const sampleRate = Number(response.headers.get('x-audio-sample-rate')) || 24_000;
+        return await this.playPcmStream(response, context, sampleRate, generation, controller, callbacks);
+      }
+
       const bytes = await response.arrayBuffer();
       if (generation !== this.generation) return 'cancelled';
       if (controller.signal.aborted) return abortResult();
-      const context = this.ensureContext();
-      if (!context || bytes.byteLength < 45) return 'unavailable';
-      if (context.state === 'suspended') await context.resume();
+      if (bytes.byteLength < 45) return 'unavailable';
       const decoded = await context.decodeAudioData(bytes.slice(0)).catch(() => null);
       if (generation !== this.generation) return 'cancelled';
       if (controller.signal.aborted) return abortResult();
-      if (!decoded || !this.analyser) return 'unavailable';
+      if (!decoded) return 'unavailable';
 
-      clearTimeout(timeout);
-      if (this.requestAbort === controller) this.requestAbort = null;
       this.serverTtsAvailable = true;
       return await new Promise<VoicePlaybackResult>((resolve) => {
         let settled = false;
         const source = context.createBufferSource();
         source.buffer = decoded;
         source.connect(this.analyser!);
-        this.source = source;
+        this.sources.add(source);
 
         const finish = (result: VoicePlaybackResult) => {
           if (settled) return;
           settled = true;
           if (this.finishActive === finish) this.finishActive = null;
-          if (this.source === source) this.source = null;
+          this.sources.delete(source);
           source.onended = null;
           try { source.disconnect(); } catch {}
           this.stopLevelAnimation();
@@ -237,10 +250,10 @@ export class VoiceOutput {
         this.finishActive = finish;
         source.onended = () => finish('ended');
 
-        callbacks.onStart?.();
-        this.startLevelAnimation(callbacks.onLevel, generation, true);
         try {
           source.start(0);
+          callbacks.onStart?.();
+          this.startLevelAnimation(callbacks.onLevel, generation, true);
         } catch {
           finish('unavailable');
         }
@@ -253,6 +266,126 @@ export class VoiceOutput {
       clearTimeout(timeout);
       if (this.requestAbort === controller) this.requestAbort = null;
     }
+  }
+
+  private async playPcmStream(
+    response: Response,
+    context: AudioContext,
+    requestedSampleRate: number,
+    generation: number,
+    controller: AbortController,
+    callbacks: VoicePlaybackCallbacks,
+  ): Promise<VoicePlaybackResult> {
+    const reader = response.body?.getReader();
+    if (!reader || !this.analyser) return 'unavailable';
+    const sampleRate = Math.max(8_000, Math.min(96_000, Math.trunc(requestedSampleRate) || 24_000));
+    const minimumChunkBytes = Math.max(2, Math.round(sampleRate / 10) * 2);
+    let pending = new Uint8Array(0);
+    let nextStartTime = Math.max(0, Number(context.currentTime) || 0) + 0.04;
+    let streamDone = false;
+    let started = false;
+    let settled = false;
+    let lastRecord: { source: AudioBufferSourceNode; ended: boolean } | null = null;
+    let resolvePlayback!: (result: VoicePlaybackResult) => void;
+    const playback = new Promise<VoicePlaybackResult>((resolve) => { resolvePlayback = resolve; });
+
+    const finish = (result: VoicePlaybackResult) => {
+      if (settled) return;
+      settled = true;
+      if (this.finishActive === finish) this.finishActive = null;
+      this.stopLevelAnimation();
+      callbacks.onEnd?.(result);
+      resolvePlayback(result);
+    };
+
+    const schedule = (bytes: Uint8Array): boolean => {
+      const usableBytes = bytes.length - (bytes.length % 2);
+      if (!usableBytes || generation !== this.generation || controller.signal.aborted) return false;
+      const view = new DataView(bytes.buffer, bytes.byteOffset, usableBytes);
+      const frameCount = usableBytes / 2;
+      const audioBuffer = context.createBuffer(1, frameCount, sampleRate);
+      const channel = audioBuffer.getChannelData(0);
+      for (let index = 0; index < frameCount; index += 1) channel[index] = view.getInt16(index * 2, true) / 32_768;
+
+      const source = context.createBufferSource();
+      const record = { source, ended: false };
+      source.buffer = audioBuffer;
+      source.connect(this.analyser!);
+      const currentTime = Math.max(0, Number(context.currentTime) || 0);
+      const startAt = Math.max(currentTime + 0.025, nextStartTime);
+      nextStartTime = startAt + frameCount / sampleRate;
+      source.onended = () => {
+        record.ended = true;
+        this.sources.delete(source);
+        source.onended = null;
+        try { source.disconnect(); } catch {}
+        if (streamDone && lastRecord === record) finish('ended');
+      };
+      try {
+        source.start(startAt);
+      } catch {
+        source.onended = null;
+        try { source.disconnect(); } catch {}
+        return false;
+      }
+      this.sources.add(source);
+      lastRecord = record;
+      if (!started) {
+        started = true;
+        this.serverTtsAvailable = true;
+        this.finishActive = finish;
+        callbacks.onStart?.();
+        this.startLevelAnimation(callbacks.onLevel, generation, true);
+      }
+      return true;
+    };
+
+    const append = (value: Uint8Array) => {
+      const merged = new Uint8Array(pending.length + value.length);
+      merged.set(pending);
+      merged.set(value, pending.length);
+      pending = merged;
+    };
+
+    const waitForPlaybackWindow = async () => {
+      while (generation === this.generation
+        && !controller.signal.aborted
+        && nextStartTime - (Number(context.currentTime) || 0) > MAX_PCM_SCHEDULE_AHEAD_SECONDS) {
+        await new Promise<void>((resolve) => setTimeout(resolve, 40));
+      }
+    };
+
+    try {
+      while (generation === this.generation && !controller.signal.aborted) {
+        const { done, value } = await reader.read();
+        if (value?.length) append(value);
+        while (pending.length >= minimumChunkBytes) {
+          await waitForPlaybackWindow();
+          if (generation !== this.generation || controller.signal.aborted) break;
+          const chunk = pending.slice(0, minimumChunkBytes);
+          pending = pending.slice(minimumChunkBytes);
+          if (!schedule(chunk)) break;
+        }
+        if (done) break;
+      }
+      if (pending.length >= 2 && generation === this.generation && !controller.signal.aborted) {
+        await waitForPlaybackWindow();
+        if (generation === this.generation && !controller.signal.aborted) schedule(pending);
+      }
+    } catch {
+      // If audio already started, never launch a duplicate browser utterance.
+      // The scheduled PCM drains once and the visible assistant text survives.
+      if (!started && generation === this.generation && !controller.signal.aborted) return 'unavailable';
+    } finally {
+      streamDone = true;
+      if (controller.signal.aborted || generation !== this.generation) await reader.cancel().catch(() => {});
+      else reader.releaseLock();
+    }
+
+    if (!started) return generation !== this.generation || controller.signal.aborted ? 'cancelled' : 'unavailable';
+    const finalRecord = lastRecord as { source: AudioBufferSourceNode; ended: boolean } | null;
+    if (finalRecord?.ended) finish('ended');
+    return playback;
   }
 
   private playBrowser(

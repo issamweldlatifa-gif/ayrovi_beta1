@@ -2,27 +2,36 @@
 
 **التاريخ:** 2026-08-29
 
-**الحالة:** مقبول معماريًا — تفعيل Gemini مؤجل إلى حين إثبات الـquota على المشروع الفعلي
+**الحالة:** منفّذ برمجيًا خلف بوابات fail-closed — التحقق الفعلي من quota والصوت على Firefox/mobile ما زال إلزاميًا قبل إعلان الاكتمال
 
 **القاعدة غير القابلة للتفاوض:** Claude هو عقل AYROVI الوحيد، ومزوّد الصوت لا يملك قرار الحوار أو الأدوات.
 
 ## 1. الحالة الفعلية الآن
 
-المسار المنشور الآمن هو:
+أصبح مسار الكود:
 
 ```text
 Microphone
-  → MediaRecorder + VAD
-  → Groq Whisper STT
-  → Claude AYROVI Agent + Tools
-  → Browser SpeechSynthesis
-  → Speaker
+  ├→ AudioWorklet PCM16 mono/16 kHz → Gemini 3.5 Transcribe Live
+  └→ complete MediaRecorder container → Groq Whisper (recovery only)
+             ↓ one finalized transcript only
+  Claude AYROVI Agent + Tools
+             ↓ one final answer
+  ├→ Gemini 3.1 Flash TTS SSE → PCM 24 kHz scheduler (when enabled/healthy)
+  └→ Browser SpeechSynthesis (automatic recovery/current production mode)
+             ↓
+          Speaker
 ```
 
-- STT في الإنتاج ناجح عبر `groq-whisper`.
-- وضع الإخراج الحالي هو `ASSISTANT_TTS_MODE=browser`.
-- لذلك Gemini TTS لا يُستدعى حاليًا، ولا توجد حلقة 429 في الإنتاج.
-- رد Claude يبقى ظاهرًا كنص حتى لو تعذر أي إخراج صوتي.
+- الخادم يصدر token قصير العمر، single-use، ومقيّدًا بالموديل وإخراج `TEXT` و`inputAudioTranscription` فقط.
+- المتصفح يتصل بـGoogle WSS بهذا token؛ مفتاح Gemini الدائم لا يصل إلى bundle أو browser API.
+- interim transcript للعرض فقط. الدالة الوحيدة التي تمرر finalized text إلى Claude محمية من التكرار.
+- MediaRecorder يبدأ من أول لحظة استماع ويحفظ WebM/Ogg كاملًا، لكنه لا يُرفع إلى Groq إذا نجح Live.
+- جلسة Live تتجدد قبل حد العشر دقائق أو عند `goAway`، وبين الأدوار فقط.
+- TTS يستخدم طلب `streamGenerateContent?alt=sse` واحدًا، وbinary PCM scheduler واحدًا قابلًا للإلغاء؛ لا sentence queues.
+- وضع الإخراج المنشور يبقى `ASSISTANT_TTS_MODE=browser` إلى أن تثبت quota. لذلك كود streaming جاهز لكنه يفشل مغلقًا إلى Browser SpeechSynthesis.
+- أول Gemini TTS 429 يفتح circuit ولا توجد إعادة فورية أو محاولة جديدة لكل دور.
+- رد Claude يبقى ظاهرًا كنص مهما فشل النقل أو الإخراج الصوتي.
 
 ## 2. تشخيص Gemini TTS الحالي
 
@@ -108,9 +117,9 @@ Google يعرّفه كـdedicated speech-recognition pipeline وليس conversat
 - المرحلة الآمنة الأولى تنتظر جواب Claude الكامل، ثم تبدأ طلب TTS streaming واحد وتُشغّل PCM فور وصوله.
 - إذا أصبح بدء الصوت قبل اكتمال جواب Claude شرطًا إلزاميًا، نحتاج pure streaming-TTS WebSocket يقبل incremental text، أو buffering لعبارات مستقرة داخل **عملية تشغيل واحدة**. لا نستخدم Gemini Live Agent لإخفاء هذه الفجوة.
 
-## 6. Gate إلزامي قبل تفعيل Gemini
+## 6. Gate إلزامي قبل تحويل TTS إلى `auto` وقبل إعلان Voice مكتملًا
 
-يجب فحص المشروع نفسه في Google AI Studio، دون إرسال أي API key:
+محاولة Live STT آمنة لأنها تسقط تلقائيًا إلى Groq، لكن لا يجوز رفع TTS من `browser` أو إعلان الاكتمال قبل فحص المشروع نفسه في Google AI Studio، دون إرسال أي API key:
 
 1. اسم المشروع ورقمه.
 2. الـAPI key المستخدم في Render ينتمي إلى المشروع نفسه.
@@ -138,7 +147,7 @@ https://aistudio.google.com/rate-limit?timeRange=last-28-days
 - Gemini server TTS معطل افتراضيًا.
 - لا يظهر 429 للمستخدم.
 
-### Phase 1 — Realtime STT transport
+### Phase 1 — Realtime STT transport (منجزة برمجيًا)
 
 - Backend يصدر ephemeral token قصير العمر ومقيّدًا حصريًا بـ`gemini-3.5-transcribe-live`.
 - لا يصل Gemini API key الدائم إلى المتصفح.
@@ -149,14 +158,14 @@ https://aistudio.google.com/rate-limit?timeRange=last-28-days
 - عرض interim transcript فقط للمعاينة.
 - إرسال finalized transcript واحد فقط إلى Claude لكل دور.
 
-### Phase 2 — Claude orchestration
+### Phase 2 — Claude orchestration (منجزة؛ لم تتغير ملكية العقل أو الأدوات)
 
 - لا تغيير في ملكية reasoning.
 - نفس conversation ID، session ID، history وtools.
 - لا يستدعي Gemini أي أداة AYROVI.
 - cancellation operation ID يمنع ghost responses.
 
-### Phase 3 — Streaming voice renderer
+### Phase 3 — Streaming voice renderer (منجزة برمجيًا؛ production gate ما زال `browser`)
 
 - جواب Claude النهائي يدخل طلب TTS streaming واحدًا.
 - PCM 24kHz يصل إلى Web Audio scheduler ويُشغّل كعملية واحدة.
@@ -164,7 +173,7 @@ https://aistudio.google.com/rate-limit?timeRange=last-28-days
 - interruption يلغي request ويصفّر كل queued PCM فورًا.
 - عند 429 أو decode failure: النص يبقى، ثم browser fallback واحد فقط.
 
-### Phase 4 — Resilience
+### Phase 4 — Resilience (النقل والحماية منجزان؛ القياسات والاختبار الفيزيائي باقيان)
 
 - Ephemeral token: one use، بدء session خلال دقيقة، انتهاء قصير.
 - `gemini-3.5-transcribe-live` محدود حاليًا بعشر دقائق لكل session؛ يُجدّد الاتصال قبل الحد مع الحفاظ على دورة المحادثة في AYROVI.
@@ -208,7 +217,24 @@ IDLE
 9. 429 واحد يفتح circuit ولا يولّد شبكة طلبات متكررة.
 10. فشل الصوت لا يحذف جواب Claude النصي.
 
-## 10. مراجع Google الرسمية
+## 10. نتيجة التحقق الحالية
+
+منجز آليًا:
+
+- token constraints وعدم تسريب المفتاح الدائم.
+- PCM 16 kHz، interim/final lifecycle، backpressure، `goAway` renewal، وفشل مغلق إلى batch STT.
+- finalized transcript واحد يؤدي إلى callback واحد، ونجاح Live يمنع Groq upload لنفس الدور.
+- proxy لـSSE TTS يحافظ على ترتيب PCM، وWeb Audio يلغي جميع المصادر المجدولة كعملية واحدة.
+- أول TTS 429 يؤدي إلى provider fetch واحد عبر دورين ثم Browser fallback.
+- half-duplex، إلغاء العمليات القديمة، وسلامة Firefox/Android complete-container fallback.
+
+غير منجز خارجيًا بعد:
+
+- إثبات quota الفعلية لـLive Transcribe وGemini TTS على مشروع Render.
+- سماع رد Assistant فعلي كامل من Gemini TTS.
+- مرور التدفق الفيزيائي على Firefox Android/mobile. لذلك لا تزال صفة “Voice complete” ممنوعة.
+
+## 11. مراجع Google الرسمية
 
 - Live API overview: https://ai.google.dev/gemini-api/docs/live-api
 - Live Transcription: https://ai.google.dev/gemini-api/docs/live-api/live-transcribe

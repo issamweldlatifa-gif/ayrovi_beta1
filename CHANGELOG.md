@@ -9,7 +9,10 @@ All notable AYROVI changes are recorded in this file.
 - Rebuilt Voice Chat around one owned `VoiceChatController`: microphone → VAD with pre-roll → MediaRecorder → server STT → one assistant response → one `VoiceOutput` operation.
 - Voice Chat is hands-free between turns but strictly half-duplex: microphone recording is stopped and the input track is disabled for the whole TTS loading/playback interval.
 - A complete assistant answer is spoken once. Browser speech is temporarily the safe default while Gemini quota is unavailable; setting `ASSISTANT_TTS_MODE=auto` restores configured server TTS.
-- Accepted the realtime target architecture in `docs/REALTIME_VOICE_ARCHITECTURE_AR_2026-08-29.md`: dedicated live transcription → Claude agent/tools → streaming voice renderer, without creating a second Gemini assistant.
+- Accepted and implemented the realtime architecture in `docs/REALTIME_VOICE_ARCHITECTURE_AR_2026-08-29.md`: dedicated `gemini-3.5-transcribe-live` → Claude agent/tools → deterministic streaming TTS, without creating a second Gemini assistant.
+- Added direct Gemini Live Transcribe over constrained single-use ephemeral tokens and AudioWorklet PCM16/16 kHz; the long-lived Gemini key remains server-only.
+- Kept the complete MediaRecorder container beside Live strictly as automatic Groq recovery, while one finalized transcript remains the only gateway into Claude.
+- Added one server SSE-to-PCM TTS proxy and one cancellable Web Audio scheduler for `gemini-3.1-flash-tts-preview`; production stays browser-only until quota is proven.
 
 ### Fixed
 - The first word is retained before VAD opens the turn, while the original WebM/Ogg initialization header is preserved so Firefox/Android recordings remain decodable by STT.
@@ -19,12 +22,16 @@ All notable AYROVI changes are recorded in this file.
 - A timed-out server TTS request now falls through to local speech instead of being mistaken for a user cancellation.
 - Gemini raw 24 kHz PCM remains normalized to a valid WAV response, and the legacy TTS route remains compatible.
 - Gemini HTTP 429 now opens a quota circuit, emits the sanitized developer code `TTS_QUOTA_EXCEEDED`, and suppresses repeated provider calls until `Retry-After` or the configured cooldown expires.
+- Live token 429 has an independent bounded circuit; token/session failures silently fail closed to Groq instead of breaking Voice.
+- Live sessions renew before the ten-minute limit or on `goAway`, only between turns; PCM backpressure is dropped rather than queued without bounds.
+- Streaming TTS never launches a duplicate browser utterance after PCM playback has begun, and cancellation stops every scheduled source in the one output operation.
 
 ### Validation
 - Replaced the old voice regressions with clean controller/output lifecycle, container-header preservation, half-duplex, cancellation, browser-language fallback, server WAV and route tests.
 - Added coverage proving browser-only mode bypasses configured Gemini TTS without deleting its key.
-- Added a regression proving two server TTS requests after one Gemini 429 produce only one provider call.
-- 226 automated tests, TypeScript checks and the production build pass.
+- Added regressions for ephemeral-token constraints/key isolation, Live interim/final/backpressure/renewal/fallback, duplicate-turn suppression, ordered PCM streaming, full-operation cancellation, and streaming 429 call suppression.
+- Added a regression proving both legacy and streaming TTS requests stop provider calls after the first Gemini 429.
+- Full validation passes: 240/240 automated tests, server/client TypeScript checks, and the production build.
 
 ## [3.10.4] - 2026-08-21
 

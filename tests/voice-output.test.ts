@@ -21,11 +21,16 @@ class FakeSource {
 const contexts: FakeAudioContext[] = [];
 class FakeAudioContext {
   state: AudioContextState = 'running';
+  currentTime = 0;
   destination = {} as AudioDestinationNode;
   analyser = new FakeAnalyser();
   sources: FakeSource[] = [];
   constructor() { contexts.push(this); }
   createAnalyser() { return this.analyser as unknown as AnalyserNode; }
+  createBuffer(_channels: number, frameCount: number, _sampleRate: number) {
+    const data = new Float32Array(frameCount);
+    return { getChannelData: () => data } as unknown as AudioBuffer;
+  }
   createBufferSource() {
     const source = new FakeSource();
     this.sources.push(source);
@@ -108,6 +113,63 @@ describe('VoiceOutput single-shot playback', () => {
     contexts[0].sources[0].onended?.();
     await expect(playback).resolves.toBe('ended');
     expect(onEnd).toHaveBeenCalledWith('ended');
+  });
+
+  it('schedules one cancellable ordered PCM stream without a duplicate browser utterance', async () => {
+    const pcm = new Uint8Array(9_600);
+    for (let offset = 0; offset < pcm.length; offset += 2) {
+      const value = Math.round(Math.sin(offset / 40) * 20_000);
+      new DataView(pcm.buffer).setInt16(offset, value, true);
+    }
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response(pcm, {
+      headers: {
+        'content-type': 'audio/L16;rate=24000;channels=1',
+        'x-audio-sample-rate': '24000',
+      },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+    output = new VoiceOutput();
+    const onStart = vi.fn();
+    const onEnd = vi.fn();
+
+    const playback = output.speak('رد كلود الكامل بصوت متدفق.', 'ar-TN', { onStart, onEnd });
+    await flush();
+    await flush();
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/assistant/voice/tts-stream');
+    expect(contexts).toHaveLength(1);
+    expect(contexts[0].sources).toHaveLength(2);
+    expect(contexts[0].sources[0].start).toHaveBeenCalledWith(expect.any(Number));
+    expect(contexts[0].sources[1].start).toHaveBeenCalledWith(expect.any(Number));
+    expect(onStart).toHaveBeenCalledOnce();
+    expect(speechSynthesis.speak).not.toHaveBeenCalled();
+
+    contexts[0].sources[0].onended?.();
+    contexts[0].sources[1].onended?.();
+    await expect(playback).resolves.toBe('ended');
+    expect(onEnd).toHaveBeenCalledWith('ended');
+    expect(speechSynthesis.speak).not.toHaveBeenCalled();
+  });
+
+  it('cancels every scheduled PCM source as one playback operation', async () => {
+    const pcm = new Uint8Array(9_600);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(pcm, {
+      headers: {
+        'content-type': 'audio/L16;rate=24000;channels=1',
+        'x-audio-sample-rate': '24000',
+      },
+    })));
+    output = new VoiceOutput();
+    const playback = output.speak('صوت متدفق قابل للإلغاء.', 'ar-TN');
+    await flush();
+    await flush();
+    expect(contexts[0].sources).toHaveLength(2);
+
+    output.stop();
+    await expect(playback).resolves.toBe('cancelled');
+    expect(contexts[0].sources.every((source) => source.stop.mock.calls.length === 1)).toBe(true);
+    expect(speechSynthesis.speak).not.toHaveBeenCalled();
   });
 
   it('uses exactly one browser utterance for a complete turn when server TTS is absent', async () => {

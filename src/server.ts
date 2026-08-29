@@ -38,7 +38,7 @@ app.use((req, res, next) => {
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
-    "connect-src 'self'",
+    "connect-src 'self' wss://generativelanguage.googleapis.com",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -103,6 +103,20 @@ app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
 app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
 app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+const liveTokenRateLimit = rateLimit('assistant-live-token', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
+app.use([
+  '/api/assistant/voice/live-token',
+  '/api/assistant/live-token',
+  '/api/voice/live-token',
+  '/api/voice/voice/live-token',
+], liveTokenRateLimit);
+const streamingTtsRateLimit = rateLimit('assistant-tts-stream', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000);
+app.use([
+  '/api/assistant/voice/tts-stream',
+  '/api/assistant/tts-stream',
+  '/api/voice/tts-stream',
+  '/api/voice/voice/tts-stream',
+], streamingTtsRateLimit);
 const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
 app.use('/api/ayrovix', (req, res, next) => {
   // Reading compact history is free; do not consume the paid-analysis quota.

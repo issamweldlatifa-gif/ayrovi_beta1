@@ -6,9 +6,11 @@ import {
   pcm16leToWav,
   resetGeminiTtsRuntimeState,
 } from '../src/assistant/geminiLive';
+import { resetGeminiLiveTranscriptionRuntimeState } from '../src/assistant/geminiRealtime';
 
 afterEach(() => {
   resetGeminiTtsRuntimeState();
+  resetGeminiLiveTranscriptionRuntimeState();
   vi.unstubAllGlobals();
 });
 
@@ -133,6 +135,16 @@ describe('AYROVI voice transport and session subsystem', () => {
         .send({ text: 'مرحبا', voice: 'Aoede' });
       expect(tts.status).toBe(200);
       expect(tts.body).toMatchObject({
+        success: false,
+        code: 'SERVER_TTS_DISABLED',
+        fallbackToClient: true,
+      });
+      const stream = await request(app)
+        .post('/api/assistant/voice/tts-stream')
+        .set('x-session-id', 'sess_browser_tts_mode_001')
+        .send({ text: 'مرحبا', voice: 'Aoede' });
+      expect(stream.status).toBe(200);
+      expect(stream.body).toMatchObject({
         success: false,
         code: 'SERVER_TTS_DISABLED',
         fallbackToClient: true,
@@ -262,6 +274,258 @@ describe('AYROVI voice transport and session subsystem', () => {
       else process.env.GEMINI_API_KEY = previousKey;
       if (previousModel === undefined) delete process.env.GEMINI_TTS_MODEL;
       else process.env.GEMINI_TTS_MODEL = previousModel;
+    }
+  });
+
+  it('mints only a single-use constrained Live Transcribe token and never exposes the long-lived key', async () => {
+    const previous = {
+      mode: process.env.ASSISTANT_REALTIME_TRANSCRIPTION,
+      key: process.env.GEMINI_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      model: process.env.GEMINI_LIVE_TRANSCRIBE_MODEL,
+    };
+    process.env.ASSISTANT_REALTIME_TRANSCRIPTION = 'auto';
+    process.env.GEMINI_API_KEY = 'long-lived-server-key-must-not-leak';
+    delete process.env.GOOGLE_API_KEY;
+    process.env.GEMINI_LIVE_TRANSCRIBE_MODEL = 'gemini-3.5-transcribe-live';
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response(JSON.stringify({ name: 'auth_tokens/ephemeral-one-use' }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      const response = await request(app)
+        .post('/api/assistant/voice/live-token')
+        .set('x-session-id', 'sess_live_token_security_001')
+        .send({});
+
+      expect(response.status).toBe(200);
+      expect(response.headers['cache-control']).toBe('no-store');
+      expect(response.body).toMatchObject({
+        success: true,
+        data: {
+          token: 'auth_tokens/ephemeral-one-use',
+          model: 'gemini-3.5-transcribe-live',
+          websocketUrl: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained',
+          setup: {
+            setup: {
+              model: 'models/gemini-3.5-transcribe-live',
+              generationConfig: { responseModalities: ['TEXT'] },
+            },
+          },
+        },
+      });
+      expect(JSON.stringify(response.body)).not.toContain('long-lived-server-key-must-not-leak');
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(String(fetchMock.mock.calls[0][0])).toBe('https://generativelanguage.googleapis.com/v1beta/auth_tokens');
+      expect((fetchMock.mock.calls[0][1] as RequestInit).headers).toMatchObject({
+        'x-goog-api-key': 'long-lived-server-key-must-not-leak',
+      });
+      const tokenRequest = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
+      expect(tokenRequest).toMatchObject({
+        uses: 1,
+        liveConnectConstraints: {
+          model: 'models/gemini-3.5-transcribe-live',
+          config: {
+            responseModalities: ['TEXT'],
+            inputAudioTranscription: { languageCodes: [], mode: 'VERBATIM' },
+          },
+        },
+      });
+      expect(tokenRequest.liveConnectConstraints.config).not.toHaveProperty('tools');
+      expect(tokenRequest.liveConnectConstraints.config).not.toHaveProperty('systemInstruction');
+
+      const shell = await request(app).get('/api/health');
+      expect(shell.headers['content-security-policy']).toContain(
+        "connect-src 'self' wss://generativelanguage.googleapis.com",
+      );
+    } finally {
+      if (previous.mode === undefined) delete process.env.ASSISTANT_REALTIME_TRANSCRIPTION;
+      else process.env.ASSISTANT_REALTIME_TRANSCRIPTION = previous.mode;
+      if (previous.key === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous.key;
+      if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
+      else process.env.GOOGLE_API_KEY = previous.google;
+      if (previous.model === undefined) delete process.env.GEMINI_LIVE_TRANSCRIBE_MODEL;
+      else process.env.GEMINI_LIVE_TRANSCRIBE_MODEL = previous.model;
+    }
+  });
+
+  it('rejects Live token requests without a valid browser session before calling Gemini', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const response = await request(app).post('/api/assistant/voice/live-token').send({});
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ success: false, code: 'VOICE_SESSION_REQUIRED' });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('opens a Live Transcribe quota circuit after one 429 and fails closed to batch STT', async () => {
+    const previous = {
+      mode: process.env.ASSISTANT_REALTIME_TRANSCRIPTION,
+      key: process.env.GEMINI_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      cooldown: process.env.GEMINI_LIVE_QUOTA_COOLDOWN_MS,
+    };
+    process.env.ASSISTANT_REALTIME_TRANSCRIPTION = 'auto';
+    process.env.GEMINI_API_KEY = 'live-quota-test-key';
+    delete process.env.GOOGLE_API_KEY;
+    process.env.GEMINI_LIVE_QUOTA_COOLDOWN_MS = '3600000';
+    resetGeminiLiveTranscriptionRuntimeState();
+    const fetchMock = vi.fn(async () => new Response('{}', {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      for (const suffix of ['001', '002']) {
+        const response = await request(app)
+          .post('/api/assistant/voice/live-token')
+          .set('x-session-id', `sess_live_quota_${suffix}`)
+          .send({});
+        expect(response.status).toBe(503);
+        expect(response.body).toMatchObject({
+          success: false,
+          code: 'LIVE_TRANSCRIPTION_QUOTA_EXCEEDED',
+          fallbackToBatch: true,
+          retryAt: expect.any(String),
+        });
+        expect(response.body).not.toHaveProperty('error');
+      }
+      expect(fetchMock).toHaveBeenCalledOnce();
+
+      const status = await request(app).get('/api/assistant/status');
+      expect(status.body.data).toMatchObject({
+        reasoningProvider: 'anthropic',
+        voiceProvidersAreReasoningAgents: false,
+        liveTranscriptionReady: false,
+        liveTranscriptionRuntime: {
+          provider: 'gemini',
+          purpose: 'transcription-only',
+          model: 'gemini-3.5-transcribe-live',
+          state: 'quota_exceeded',
+          debugCode: 'LIVE_TRANSCRIPTION_QUOTA_EXCEEDED',
+        },
+      });
+    } finally {
+      resetGeminiLiveTranscriptionRuntimeState();
+      if (previous.mode === undefined) delete process.env.ASSISTANT_REALTIME_TRANSCRIPTION;
+      else process.env.ASSISTANT_REALTIME_TRANSCRIPTION = previous.mode;
+      if (previous.key === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous.key;
+      if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
+      else process.env.GOOGLE_API_KEY = previous.google;
+      if (previous.cooldown === undefined) delete process.env.GEMINI_LIVE_QUOTA_COOLDOWN_MS;
+      else process.env.GEMINI_LIVE_QUOTA_COOLDOWN_MS = previous.cooldown;
+    }
+  });
+
+  it('never retries streaming Gemini TTS after the first 429 and preserves browser fallback', async () => {
+    const previous = {
+      mode: process.env.ASSISTANT_TTS_MODE,
+      key: process.env.GEMINI_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+      cooldown: process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS,
+    };
+    process.env.ASSISTANT_TTS_MODE = 'auto';
+    process.env.GEMINI_API_KEY = 'stream-quota-test-key';
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS = '3600000';
+    resetGeminiTtsRuntimeState();
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response('{}', {
+      status: 429,
+      headers: { 'content-type': 'application/json' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      for (const suffix of ['001', '002']) {
+        const response = await request(app)
+          .post('/api/assistant/voice/tts-stream')
+          .set('x-session-id', `sess_stream_quota_${suffix}`)
+          .send({ text: `رد محفوظ ${suffix}`, voice: 'Aoede' });
+        expect(response.status).toBe(200);
+        expect(response.body).toMatchObject({
+          success: false,
+          code: 'SERVER_TTS_UNAVAILABLE',
+          fallbackToClient: true,
+          debugCode: 'TTS_QUOTA_EXCEEDED',
+          retryAt: expect.any(String),
+        });
+      }
+      expect(fetchMock).toHaveBeenCalledOnce();
+    } finally {
+      resetGeminiTtsRuntimeState();
+      if (previous.mode === undefined) delete process.env.ASSISTANT_TTS_MODE;
+      else process.env.ASSISTANT_TTS_MODE = previous.mode;
+      if (previous.key === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous.key;
+      if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
+      else process.env.GOOGLE_API_KEY = previous.google;
+      if (previous.openai === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = previous.openai;
+      if (previous.cooldown === undefined) delete process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS;
+      else process.env.GEMINI_TTS_QUOTA_COOLDOWN_MS = previous.cooldown;
+    }
+  });
+
+  it('proxies Gemini streaming TTS as one ordered cancellable PCM response', async () => {
+    const previous = {
+      mode: process.env.ASSISTANT_TTS_MODE,
+      key: process.env.GEMINI_API_KEY,
+      google: process.env.GOOGLE_API_KEY,
+      openai: process.env.OPENAI_API_KEY,
+    };
+    process.env.ASSISTANT_TTS_MODE = 'auto';
+    process.env.GEMINI_API_KEY = 'streaming-tts-test-key';
+    delete process.env.GOOGLE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    resetGeminiTtsRuntimeState();
+    const first = Buffer.from([0, 0, 1, 0, 2, 0, 3, 0]);
+    const second = Buffer.from([4, 0, 5, 0, 6, 0, 7, 0]);
+    const sse = [first, second].map((chunk) => `data: ${JSON.stringify({
+      candidates: [{ content: { parts: [{ inlineData: {
+        data: chunk.toString('base64'),
+        mimeType: 'audio/L16;codec=pcm;rate=24000',
+      } }] } }],
+    })}\n\n`).join('');
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit) => new Response(sse, {
+      status: 200,
+      headers: { 'content-type': 'text/event-stream' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    try {
+      const response = await request(app)
+        .post('/api/assistant/voice/tts-stream')
+        .set('x-session-id', 'sess_streaming_tts_001')
+        .send({ text: 'هذه إجابة كلود النهائية.', voice: 'Aoede' });
+
+      expect(response.status).toBe(200);
+      expect(response.headers['content-type']).toContain('audio/L16');
+      expect(response.headers['x-voice-provider']).toBe('gemini-tts-stream');
+      expect(response.headers['x-audio-sample-rate']).toBe('24000');
+      expect(Buffer.isBuffer(response.body)).toBe(true);
+      expect(response.body).toEqual(Buffer.concat([first, second]));
+      expect(fetchMock).toHaveBeenCalledOnce();
+      expect(String(fetchMock.mock.calls[0][0])).toContain('gemini-3.1-flash-tts-preview:streamGenerateContent?alt=sse');
+      const providerBody = JSON.parse(String((fetchMock.mock.calls[0][1] as RequestInit).body));
+      expect(providerBody.contents[0].parts[0].text).toContain('هذه إجابة كلود النهائية.');
+      expect(providerBody.generationConfig.responseModalities).toEqual(['AUDIO']);
+      expect(providerBody).not.toHaveProperty('tools');
+    } finally {
+      if (previous.mode === undefined) delete process.env.ASSISTANT_TTS_MODE;
+      else process.env.ASSISTANT_TTS_MODE = previous.mode;
+      if (previous.key === undefined) delete process.env.GEMINI_API_KEY;
+      else process.env.GEMINI_API_KEY = previous.key;
+      if (previous.google === undefined) delete process.env.GOOGLE_API_KEY;
+      else process.env.GOOGLE_API_KEY = previous.google;
+      if (previous.openai === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = previous.openai;
     }
   });
 

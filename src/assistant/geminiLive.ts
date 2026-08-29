@@ -1,3 +1,5 @@
+import { getGeminiLiveTranscriptionRuntimeStatus } from './geminiRealtime';
+
 /**
  * AYROVI voice session configuration and Gemini text-to-speech adapter.
  *
@@ -65,11 +67,14 @@ const DEFAULT_QUOTA_COOLDOWN_MS = 60 * 60 * 1_000;
 const MIN_QUOTA_COOLDOWN_MS = 60_000;
 const MAX_QUOTA_COOLDOWN_MS = 24 * 60 * 60 * 1_000;
 const GEMINI_TTS_ENDPOINT = 'generativelanguage.googleapis.com/v1beta/models/:generateContent';
+const GEMINI_TTS_STREAMING_ENDPOINT = 'generativelanguage.googleapis.com/v1beta/models/:streamGenerateContent';
 
 export interface GeminiTtsRuntimeStatus {
   provider: 'gemini';
   model: string;
   endpoint: string;
+  streamingEndpoint: string;
+  transport: 'server-sse-pcm';
   state: 'disabled' | 'unconfigured' | 'ready' | 'quota_exceeded';
   debugCode?: 'TTS_QUOTA_EXCEEDED';
   lastFailureAt?: string;
@@ -132,6 +137,8 @@ export function getGeminiTtsRuntimeStatus(now = Date.now()): GeminiTtsRuntimeSta
     provider: 'gemini' as const,
     model: geminiTtsModel(),
     endpoint: GEMINI_TTS_ENDPOINT,
+    streamingEndpoint: GEMINI_TTS_STREAMING_ENDPOINT,
+    transport: 'server-sse-pcm' as const,
   };
   if (!serverTextToSpeechEnabled()) return { ...base, state: 'disabled' };
   if (!geminiTtsKeyConfigured()) return { ...base, state: 'unconfigured' };
@@ -200,8 +207,10 @@ export function createGeminiVoiceSession(
       pricingCalculator: true,
       orderTracking: true,
       orderCreation: true,
-      // The chat text is streamed, while output is one complete playback.
-      realtimeAudioStreaming: false,
+      // Dedicated Live Transcribe streams input; TTS streaming remains a
+      // deterministic rendering transport and never owns assistant reasoning.
+      realtimeAudioStreaming: getGeminiLiveTranscriptionRuntimeStatus().state === 'ready'
+        || serverTextToSpeechReady(),
       serverTextToSpeech: serverTextToSpeechReady(),
       instantBargeIn: true,
     },
@@ -284,6 +293,96 @@ export function normalizeGeminiAudio(
   return null;
 }
 
+function chosenGeminiVoice(voiceName: string) {
+  return SUPPORTED_GEMINI_VOICES.find((voice) => voice.id.toLowerCase() === voiceName.toLowerCase())
+    || SUPPORTED_GEMINI_VOICES[0];
+}
+
+function geminiTtsPayload(text: string, voiceName: string) {
+  const chosenVoice = chosenGeminiVoice(voiceName);
+  return {
+    contents: [{
+      role: 'user',
+      parts: [{
+        text: `Read only the following text aloud. Preserve its language and wording exactly. Use a warm, natural conversational tone.\n\n${text}`,
+      }],
+    }],
+    generationConfig: {
+      responseModalities: ['AUDIO'],
+      speechConfig: {
+        voiceConfig: {
+          prebuiltVoiceConfig: {
+            voiceName: chosenVoice.id,
+          },
+        },
+      },
+    },
+  };
+}
+
+function geminiTtsTimeoutMs(): number {
+  const configured = Number(process.env.GEMINI_TTS_TIMEOUT_MS || 20_000);
+  return Number.isFinite(configured)
+    ? Math.max(3_000, Math.min(60_000, configured))
+    : 20_000;
+}
+
+export interface GeminiTtsStreamResponse {
+  response: Response;
+  model: string;
+  sampleRate: number;
+}
+
+/**
+ * Open Gemini's SSE generation response. The route incrementally decodes each
+ * inline PCM block and forwards it as one cancellable binary response.
+ */
+export async function openGeminiTtsPcmStream(
+  text: string,
+  voiceName = 'Aoede',
+  externalSignal?: AbortSignal,
+): Promise<GeminiTtsStreamResponse | null> {
+  const key = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
+  const cleanText = text.trim().slice(0, MAX_TTS_TEXT_LENGTH);
+  if (!key || !cleanText || !serverTextToSpeechEnabled() || geminiQuotaCircuitOpen()) return null;
+
+  const model = geminiTtsModel();
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+  const startupAbort = new AbortController();
+  const startupTimeout = setTimeout(() => startupAbort.abort(), geminiTtsTimeoutMs());
+  const signal = externalSignal && typeof (AbortSignal as any).any === 'function'
+    ? (AbortSignal as any).any([externalSignal, startupAbort.signal]) as AbortSignal
+    : externalSignal || startupAbort.signal;
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': key,
+      },
+      body: JSON.stringify(geminiTtsPayload(cleanText, voiceName)),
+      signal,
+    });
+    clearTimeout(startupTimeout);
+    if (!response.ok) {
+      if (response.status === 429) openGeminiQuotaCircuit(response, model);
+      else console.warn(`[Gemini TTS] streaming API HTTP ${response.status} model=${model}`);
+      await response.text().catch(() => '');
+      return null;
+    }
+    // A successful provider response closes a prior elapsed circuit. Individual
+    // stream parse/playback failures are transport errors, not quota evidence.
+    resetGeminiTtsRuntimeState();
+    return { response, model, sampleRate: DEFAULT_PCM_SAMPLE_RATE };
+  } catch (error: any) {
+    if (!externalSignal?.aborted) console.warn('[Gemini TTS] streaming synthesis failed:', error?.message || error);
+    return null;
+  } finally {
+    clearTimeout(startupTimeout);
+  }
+}
+
 /** Generate a browser-decodable speech clip with Gemini TTS. */
 export async function synthesizeGeminiLiveAudio(
   text: string,
@@ -293,14 +392,8 @@ export async function synthesizeGeminiLiveAudio(
   const cleanText = text.trim().slice(0, MAX_TTS_TEXT_LENGTH);
   if (!apiKey || !cleanText || !serverTextToSpeechEnabled() || geminiQuotaCircuitOpen()) return null;
 
-  const chosenVoice = SUPPORTED_GEMINI_VOICES.find((voice) => voice.id.toLowerCase() === voiceName.toLowerCase())
-    || SUPPORTED_GEMINI_VOICES[0];
   const model = geminiTtsModel();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-  const configuredTimeout = Number(process.env.GEMINI_TTS_TIMEOUT_MS || 20_000);
-  const timeoutMs = Number.isFinite(configuredTimeout)
-    ? Math.max(3_000, Math.min(60_000, configuredTimeout))
-    : 20_000;
 
   try {
     const response = await fetch(url, {
@@ -309,25 +402,8 @@ export async function synthesizeGeminiLiveAudio(
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey,
       },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{
-            text: `Read only the following text aloud. Preserve its language and wording exactly. Use a warm, natural conversational tone.\n\n${cleanText}`,
-          }],
-        }],
-        generationConfig: {
-          responseModalities: ['AUDIO'],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: {
-                voiceName: chosenVoice.id,
-              },
-            },
-          },
-        },
-      }),
-      signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify(geminiTtsPayload(cleanText, voiceName)),
+      signal: AbortSignal.timeout(geminiTtsTimeoutMs()),
     });
 
     if (!response.ok) {

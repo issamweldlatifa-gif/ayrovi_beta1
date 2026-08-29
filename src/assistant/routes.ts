@@ -15,10 +15,15 @@ import type { AssistantConversationLine, AssistantImageAttachment } from './tool
 import {
   createGeminiVoiceSession,
   getGeminiTtsRuntimeStatus,
+  openGeminiTtsPcmStream,
   serverTextToSpeechEnabled,
   serverTextToSpeechReady,
   synthesizeGeminiLiveAudio,
 } from './geminiLive';
+import {
+  createGeminiLiveTranscriptionToken,
+  getGeminiLiveTranscriptionRuntimeStatus,
+} from './geminiRealtime';
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024;
@@ -34,6 +39,104 @@ function validSessionId(req: Request): string {
   const raw = Array.isArray(req.headers['x-session-id']) ? req.headers['x-session-id'][0] : req.headers['x-session-id'];
   const value = String(raw || '').trim();
   return /^[A-Za-z0-9._:-]{8,160}$/.test(value) ? value : '';
+}
+
+const MAX_STREAMED_TTS_BYTES = 24 * 1024 * 1024;
+
+function audioChunksFromSseEvent(event: string): Buffer[] {
+  const data = event
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice(5).trimStart())
+    .join('\n')
+    .trim();
+  if (!data || data === '[DONE]') return [];
+  try {
+    const payload: any = JSON.parse(data);
+    const parts = Array.isArray(payload?.candidates?.[0]?.content?.parts)
+      ? payload.candidates[0].content.parts
+      : [];
+    const chunks: Buffer[] = [];
+    for (const part of parts) {
+      const inline = part?.inlineData;
+      const encoded = typeof inline?.data === 'string' ? inline.data : '';
+      const mime = String(inline?.mimeType || 'audio/pcm;rate=24000').toLowerCase();
+      if (!encoded || encoded.length > Math.ceil(MAX_STREAMED_TTS_BYTES * 4 / 3) + 8) continue;
+      if (!mime.includes('audio/pcm') && !mime.includes('audio/l16') && !mime.includes('pcm_s16le')) continue;
+      if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) continue;
+      const chunk = Buffer.from(encoded, 'base64');
+      if (chunk.length >= 2) chunks.push(chunk.length % 2 ? chunk.subarray(0, chunk.length - 1) : chunk);
+    }
+    return chunks;
+  } catch {
+    return [];
+  }
+}
+
+async function proxyGeminiPcmSse(
+  upstream: globalThis.Response,
+  res: Response,
+  abort: AbortController,
+): Promise<boolean> {
+  if (!upstream.body) return false;
+  const reader = upstream.body.getReader();
+  const decoder = new TextDecoder();
+  let pending = '';
+  let started = false;
+  let total = 0;
+
+  const emit = async (event: string) => {
+    for (const chunk of audioChunksFromSseEvent(event)) {
+      if (!chunk.length || total + chunk.length > MAX_STREAMED_TTS_BYTES || res.destroyed) continue;
+      if (!started) {
+        started = true;
+        res.status(200);
+        res.setHeader('Content-Type', 'audio/L16;rate=24000;channels=1');
+        res.setHeader('X-Voice-Provider', 'gemini-tts-stream');
+        res.setHeader('X-Audio-Sample-Rate', '24000');
+        res.setHeader('Content-Encoding', 'identity');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders();
+      }
+      total += chunk.length;
+      if (!res.write(chunk)) {
+        await new Promise<void>((resolve) => {
+          const done = () => {
+            res.off('drain', done);
+            res.off('close', done);
+            resolve();
+          };
+          res.once('drain', done);
+          res.once('close', done);
+        });
+      }
+    }
+  };
+
+  try {
+    while (!res.destroyed) {
+      let idleTimer: ReturnType<typeof setTimeout>;
+      const read = reader.read();
+      const idle = new Promise<never>((_resolve, reject) => {
+        idleTimer = setTimeout(() => {
+          abort.abort();
+          reject(new Error('TTS_STREAM_IDLE_TIMEOUT'));
+        }, 15_000);
+      });
+      const result = await Promise.race([read, idle]).finally(() => clearTimeout(idleTimer));
+      const { done, value } = result;
+      pending += decoder.decode(value, { stream: !done });
+      const events = pending.split(/\r?\n\r?\n/);
+      pending = events.pop() || '';
+      for (const event of events) await emit(event);
+      if (done) break;
+    }
+    if (pending.trim()) await emit(pending);
+  } finally {
+    if (res.destroyed || abort.signal.aborted) await reader.cancel().catch(() => {});
+    else reader.releaseLock();
+  }
+  return started;
 }
 
 function matchesImageSignature(buffer: Buffer, mediaType: AssistantImageAttachment['mediaType']): boolean {
@@ -121,16 +224,25 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
   const router = Router();
 
   router.get('/status', (_req, res) => {
-    const speechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
+    const batchSpeechToTextReady = Boolean(process.env.GROQ_API_KEY?.trim() || process.env.OPENAI_API_KEY?.trim());
+    const liveTranscription = getGeminiLiveTranscriptionRuntimeStatus();
+    const liveTranscriptionReady = liveTranscription.state === 'ready';
+    const speechToTextReady = liveTranscriptionReady || batchSpeechToTextReady;
     const serverTtsReady = serverTextToSpeechReady();
     const browserOnlyTts = !serverTextToSpeechEnabled();
     const geminiTts = getGeminiTtsRuntimeStatus();
+    const streamingTtsReady = geminiTts.state === 'ready';
     res.json({ success: true, data: {
       ready: assistantAiReady(), provider: 'anthropic', streaming: true,
+      reasoningProvider: 'anthropic', voiceProvidersAreReasoningAgents: false,
       vision: true, lensTool: true, lensUrl: true, lensCodes: true, inChatOrder: true,
       voiceReady: speechToTextReady || serverTtsReady,
       speechToTextReady,
+      batchSpeechToTextReady,
+      liveTranscriptionReady,
+      liveTranscriptionRuntime: liveTranscription,
       serverTextToSpeechReady: serverTtsReady,
+      streamingTextToSpeechReady: streamingTtsReady,
       clientSpeechFallback: true,
       ttsMode: browserOnlyTts ? 'browser' : 'auto',
       geminiTtsReady: geminiTts.state === 'ready',
@@ -157,6 +269,68 @@ export function createAssistantRouter(db: QatafoDatabase, scraper: SmartLinkScra
       success: true,
       data: sessionConfig,
     });
+  });
+
+  // The browser may connect directly to Gemini Live only with this constrained,
+  // single-use bootstrap. Requiring the private per-browser session header makes
+  // cross-site token burning impractical while keeping anonymous Voice usable.
+  router.post(['/voice/live-token', '/live-token'], optionalCustomer(db), async (req: Request, res: Response) => {
+    if (!validSessionId(req)) {
+      return res.status(400).json({ success: false, code: 'VOICE_SESSION_REQUIRED' });
+    }
+    const result = await createGeminiLiveTranscriptionToken();
+    if ('code' in result) {
+      return res.status(503).json({
+        success: false,
+        code: result.code,
+        fallbackToBatch: true,
+        ...(result.retryAt ? { retryAt: result.retryAt } : {}),
+      });
+    }
+    return res.status(200).json({ success: true, data: result.bootstrap });
+  });
+
+  // Low-latency deterministic rendering of Claude's already-final text. This
+  // route has one binary PCM response and never creates another assistant turn.
+  router.post(['/voice/tts-stream', '/tts-stream'], optionalCustomer(db), async (req: Request, res: Response) => {
+    const text = String(req.body?.text || '').trim().slice(0, 4096);
+    const voice = String(req.body?.voice || req.body?.voiceId || 'Aoede').trim();
+    if (!text) return res.status(400).json({ success: false, code: 'TTS_TEXT_REQUIRED' });
+    if (!serverTextToSpeechEnabled()) {
+      return res.status(200).json({ success: false, code: 'SERVER_TTS_DISABLED', fallbackToClient: true });
+    }
+
+    const abort = new AbortController();
+    const cancelUpstream = () => {
+      if (!res.writableEnded) abort.abort();
+    };
+    res.once('close', cancelUpstream);
+    try {
+      const stream = await openGeminiTtsPcmStream(text, voice, abort.signal);
+      if (stream) {
+        const started = await proxyGeminiPcmSse(stream.response, res, abort);
+        if (started) {
+          if (!res.writableEnded && !res.destroyed) res.end();
+          return;
+        }
+      }
+      if (res.headersSent || res.destroyed) return;
+      const runtime = getGeminiTtsRuntimeStatus();
+      return res.status(200).json({
+        success: false,
+        code: 'SERVER_TTS_UNAVAILABLE',
+        fallbackToClient: true,
+        ...(runtime.debugCode ? { debugCode: runtime.debugCode, retryAt: runtime.retryAt } : {}),
+      });
+    } catch (error: any) {
+      if (!abort.signal.aborted) console.warn('[Assistant TTS] stream proxy failed:', error?.message || error);
+      if (!res.headersSent && !res.destroyed) {
+        return res.status(200).json({ success: false, code: 'SERVER_TTS_UNAVAILABLE', fallbackToClient: true });
+      }
+      if (!res.writableEnded && !res.destroyed) res.end();
+    } finally {
+      res.off('close', cancelUpstream);
+    }
   });
 
   // Include mount-relative aliases because this router is mounted at both

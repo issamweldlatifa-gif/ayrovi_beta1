@@ -46,6 +46,55 @@ class FakeAudioContext {
   close = vi.fn(async () => undefined);
 }
 
+class FakeGainNode extends FakeNode {
+  gain = { value: 1 };
+  disconnect = vi.fn();
+}
+
+class FakeLiveAudioContext extends FakeAudioContext {
+  destination = {} as AudioDestinationNode;
+  audioWorklet = { addModule: vi.fn(async () => undefined) } as unknown as AudioWorklet;
+  createGain = vi.fn(() => new FakeGainNode() as unknown as GainNode);
+}
+
+class FakeWorkletNode extends FakeNode {
+  static instances: FakeWorkletNode[] = [];
+  port = { onmessage: null as ((event: MessageEvent<ArrayBuffer>) => void) | null };
+  disconnect = vi.fn();
+  constructor(_context: AudioContext, _name: string) {
+    super();
+    FakeWorkletNode.instances.push(this);
+  }
+  emit(buffer: ArrayBuffer) {
+    this.port.onmessage?.({ data: buffer } as MessageEvent<ArrayBuffer>);
+  }
+}
+
+class FakeLiveSocket {
+  static CONNECTING = 0;
+  static OPEN = 1;
+  static CLOSING = 2;
+  static CLOSED = 3;
+  static instances: FakeLiveSocket[] = [];
+  readyState = FakeLiveSocket.CONNECTING;
+  bufferedAmount = 0;
+  sent: string[] = [];
+  onopen: ((event: Event) => void) | null = null;
+  onmessage: ((event: MessageEvent) => void) | null = null;
+  onerror: ((event: Event) => void) | null = null;
+  onclose: ((event: CloseEvent) => void) | null = null;
+  constructor(public url: string) { FakeLiveSocket.instances.push(this); }
+  send(value: string) { this.sent.push(value); }
+  close() { this.readyState = FakeLiveSocket.CLOSED; }
+  open() {
+    this.readyState = FakeLiveSocket.OPEN;
+    this.onopen?.(new Event('open'));
+  }
+  message(value: object) {
+    this.onmessage?.({ data: JSON.stringify(value) } as MessageEvent);
+  }
+}
+
 class FakeRecorder {
   static instances: FakeRecorder[] = [];
   static isTypeSupported = vi.fn(() => true);
@@ -106,6 +155,8 @@ let speechSynthesis: {
 
 beforeEach(() => {
   FakeRecorder.instances.length = 0;
+  FakeWorkletNode.instances.length = 0;
+  FakeLiveSocket.instances.length = 0;
   states = [];
   turns = [];
   stream = new FakeStream();
@@ -216,6 +267,90 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
     expect(turns).toEqual(['مرحبا أيروفي']);
     expect(voice.getState()).toBe('thinking');
     expect(states).toEqual(expect.arrayContaining(['starting', 'listening', 'user_speaking', 'transcribing', 'thinking']));
+  });
+
+  it('commits one Live final transcript to Claude and never uploads the same turn to Groq', async () => {
+    const liveBootstrap = {
+      token: 'auth_tokens/controller-one-use',
+      model: 'gemini-3.5-transcribe-live',
+      websocketUrl: 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained',
+      expiresAt: '2026-08-29T13:30:00.000Z',
+      setup: {
+        setup: {
+          model: 'models/gemini-3.5-transcribe-live',
+          generationConfig: { responseModalities: ['TEXT'] },
+          inputAudioTranscription: { languageCodes: [], customVocabulary: ['AYROVI'], mode: 'VERBATIM' },
+        },
+      },
+    };
+    vi.stubGlobal('window', {
+      AudioContext: FakeLiveAudioContext,
+      speechSynthesis,
+      localStorage: {
+        getItem: vi.fn(() => 'voice-controller-live-session'),
+        setItem: vi.fn(),
+      },
+    });
+    vi.stubGlobal('AudioWorkletNode', FakeWorkletNode);
+    vi.stubGlobal('WebSocket', FakeLiveSocket);
+    vi.stubGlobal('btoa', (value: string) => Buffer.from(value, 'binary').toString('base64'));
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.endsWith('/api/assistant/status')) {
+        return new Response(JSON.stringify({
+          success: true,
+          data: { serverTextToSpeechReady: false, liveTranscriptionReady: true },
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.endsWith('/api/assistant/voice/live-token')) {
+        return new Response(JSON.stringify({ success: true, data: liveBootstrap }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    }));
+
+    const voice = makeController();
+    const startup = voice.start('');
+    await vi.waitFor(() => expect(FakeLiveSocket.instances).toHaveLength(1));
+    const socket = FakeLiveSocket.instances[0];
+    socket.open();
+    await flush();
+    socket.message({ setupComplete: {} });
+    await expect(startup).resolves.toBe(true);
+    expect(FakeWorkletNode.instances).toHaveLength(1);
+    expect(FakeRecorder.instances).toHaveLength(1);
+
+    FakeWorkletNode.instances[0].emit(new Int16Array(1_600).buffer);
+    const internal = voice as unknown as {
+      listeningSince: number;
+      speechStartedAt: number;
+      updateVoiceActivity: (rms: number, now: number) => void;
+    };
+    const base = internal.listeningSince;
+    internal.updateVoiceActivity(0.12, base + 600);
+    internal.updateVoiceActivity(0.12, base + 760);
+    internal.speechStartedAt = performance.now() - 500;
+
+    voice.forceFinishTurn();
+    voice.forceFinishTurn();
+    await flush();
+    socket.message({
+      serverContent: {
+        inputTranscription: { text: 'احسبلي السعر بالدينار' },
+        turnComplete: true,
+      },
+    });
+    await vi.waitFor(() => expect(turns).toEqual(['احسبلي السعر بالدينار']));
+
+    expect(transcribeMock).not.toHaveBeenCalled();
+    expect(stream.track.enabled).toBe(false);
+    expect(voice.getState()).toBe('thinking');
+    const endSignals = socket.sent
+      .map((value) => JSON.parse(value))
+      .filter((value) => value?.realtimeInput?.audioStreamEnd === true);
+    expect(endSignals).toHaveLength(1);
+    expect(socket.sent.some((value) => value.includes('clientContent'))).toBe(false);
   });
 
   it('stops microphone recording for the entire output and resumes hands-free listening afterward', async () => {

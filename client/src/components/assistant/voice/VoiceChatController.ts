@@ -1,6 +1,7 @@
 import { transcribeAssistantAudio } from '../assistantApi';
 import { getSessionId } from '../../../utils/session';
 import { VoiceOutput, type VoiceOutputSettings } from './VoiceOutput';
+import { LiveTranscriptionTransport } from './LiveTranscriptionTransport';
 import type { VoiceChatState } from './types';
 
 export interface VoiceChatControllerOptions {
@@ -22,9 +23,11 @@ const OUTPUT_ECHO_GUARD_MS = 100;
 /**
  * A fresh, half-duplex hands-free voice controller.
  *
- * Input has exactly one path: microphone -> VAD -> MediaRecorder -> server STT.
- * Output has exactly one path: one complete assistant turn -> VoiceOutput.
- * The microphone recorder is never active while output is loading or playing.
+ * Input prefers microphone -> mono PCM -> Gemini Live Transcribe. A complete
+ * MediaRecorder container is captured beside it solely as automatic Groq STT
+ * recovery. Exactly one finalized transcript enters the Claude turn pipeline.
+ * Output has one operation per complete assistant turn, and the microphone is
+ * never active while output is loading or playing.
  */
 export class VoiceChatController {
   private readonly output = new VoiceOutput();
@@ -37,6 +40,9 @@ export class VoiceChatController {
   private stream: MediaStream | null = null;
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
+  private pcmWorklet: AudioWorkletNode | null = null;
+  private pcmSink: GainNode | null = null;
+  private liveTranscription: LiveTranscriptionTransport | null = null;
   private monitorFrame: number | null = null;
   private recorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
@@ -73,7 +79,7 @@ export class VoiceChatController {
         throw new Error('VOICE_CAPTURE_UNSUPPORTED');
       }
 
-      const [stream, serverTtsReady] = await Promise.all([
+      const [stream, readiness] = await Promise.all([
         navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
@@ -87,7 +93,7 @@ export class VoiceChatController {
           inputStream.getAudioTracks().forEach((track) => { track.enabled = false; });
           return inputStream;
         }),
-        this.readServerTtsReadiness(),
+        this.readVoiceReadiness(),
       ]);
 
       if (!this.active || lifecycle !== this.lifecycle) {
@@ -96,7 +102,28 @@ export class VoiceChatController {
       }
 
       this.stream = stream;
-      this.output.setServerTtsAvailable(serverTtsReady);
+      this.output.setServerTtsAvailable(readiness.serverTtsReady);
+      if (readiness.liveTranscriptionReady && LiveTranscriptionTransport.supported()) {
+        const live = new LiveTranscriptionTransport({
+          onInterim: (text) => {
+            if (!this.active || lifecycle !== this.lifecycle || this.finalizingTurn && this.state !== 'transcribing') return;
+            if (['listening', 'user_speaking', 'transcribing'].includes(this.state)) this.options.onTranscript(text);
+          },
+          // Losing Live never tears down Voice. The complete MediaRecorder
+          // container for the active/next turn remains the Groq recovery path.
+          onUnavailable: () => {},
+        });
+        this.liveTranscription = live;
+        const connected = await live.connect();
+        if (!connected && this.liveTranscription === live) {
+          live.dispose();
+          this.liveTranscription = null;
+        }
+      }
+      if (!this.active || lifecycle !== this.lifecycle) {
+        this.releaseInput();
+        return false;
+      }
       await this.setupInputGraph(stream);
       if (!this.active || lifecycle !== this.lifecycle) {
         this.releaseInput();
@@ -116,6 +143,9 @@ export class VoiceChatController {
       this.options.onError(denied
         ? 'يرجى السماح باستعمال الميكروفون لتشغيل المحادثة الصوتية.'
         : 'تعذّر تشغيل المحادثة الصوتية على هذا الجهاز.');
+      this.active = false;
+      this.liveTranscription?.dispose();
+      this.liveTranscription = null;
       this.setState('error');
       this.releaseInput();
       return false;
@@ -247,6 +277,8 @@ export class VoiceChatController {
     this.waitingForReply = false;
     this.transcriptionAbort?.abort();
     this.transcriptionAbort = null;
+    this.liveTranscription?.dispose();
+    this.liveTranscription = null;
     this.output.dispose();
     this.stopRecorderImmediately();
     this.releaseInput();
@@ -262,7 +294,10 @@ export class VoiceChatController {
     this.options.onState(state);
   }
 
-  private async readServerTtsReadiness(): Promise<boolean | null> {
+  private async readVoiceReadiness(): Promise<{
+    serverTtsReady: boolean | null;
+    liveTranscriptionReady: boolean;
+  }> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4_000);
     try {
@@ -271,11 +306,17 @@ export class VoiceChatController {
         signal: controller.signal,
         headers: { 'x-session-id': getSessionId() },
       });
-      if (!response.ok) return null;
+      if (!response.ok) return { serverTtsReady: null, liveTranscriptionReady: false };
       const payload = await response.json();
-      return payload?.data?.serverTextToSpeechReady === true;
+      const streamingReady = typeof payload?.data?.streamingTextToSpeechReady === 'boolean'
+        ? payload.data.streamingTextToSpeechReady
+        : payload?.data?.serverTextToSpeechReady === true;
+      return {
+        serverTtsReady: streamingReady,
+        liveTranscriptionReady: payload?.data?.liveTranscriptionReady === true,
+      };
     } catch {
-      return null;
+      return { serverTtsReady: null, liveTranscriptionReady: false };
     } finally {
       clearTimeout(timeout);
     }
@@ -298,6 +339,34 @@ export class VoiceChatController {
     analyser.smoothingTimeConstant = 0.12;
     source.connect(highPass);
     highPass.connect(analyser);
+
+    const live = this.liveTranscription;
+    if (live?.ready && context.audioWorklet && typeof AudioWorkletNode !== 'undefined') {
+      try {
+        await context.audioWorklet.addModule('/voice-pcm-worklet.js?v=20260829-1');
+        if (live === this.liveTranscription && live.ready) {
+          const worklet = new AudioWorkletNode(context, 'ayrovi-pcm-capture');
+          const sink = context.createGain();
+          sink.gain.value = 0;
+          worklet.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
+            if (event.data instanceof ArrayBuffer) live.sendPcm16(event.data);
+          };
+          highPass.connect(worklet);
+          worklet.connect(sink);
+          sink.connect(context.destination);
+          this.pcmWorklet = worklet;
+          this.pcmSink = sink;
+        }
+      } catch {
+        // AudioWorklet is a transport requirement for raw Live PCM. The
+        // MediaRecorder + Groq path remains operational on older browsers.
+        live.dispose();
+        if (this.liveTranscription === live) this.liveTranscription = null;
+      }
+    } else if (live?.ready) {
+      live.dispose();
+      if (this.liveTranscription === live) this.liveTranscription = null;
+    }
 
     this.analyser = analyser;
   }
@@ -366,6 +435,7 @@ export class VoiceChatController {
     }
 
     this.waitingForReply = false;
+    this.liveTranscription?.beginTurn();
     this.setInputEnabled(true);
     this.listeningSince = performance.now();
     this.speechCandidateSince = 0;
@@ -415,6 +485,8 @@ export class VoiceChatController {
     this.options.onError(message);
     this.active = false;
     this.setInputEnabled(false);
+    this.liveTranscription?.dispose();
+    this.liveTranscription = null;
     this.stopRecorderImmediately();
     this.releaseInput();
     this.options.onLevel(0);
@@ -429,10 +501,30 @@ export class VoiceChatController {
     this.setState('transcribing');
     this.options.onLevel(0);
 
-    const audio = await this.stopCapture(false);
+    if (duration < MIN_SPEECH_MS) {
+      this.liveTranscription?.cancelTurn();
+      await this.stopCapture(true);
+      this.setInputEnabled(false);
+      if (this.active && lifecycle === this.lifecycle) this.beginListening();
+      return;
+    }
+
+    // Close both representations of this one microphone turn together. Live is
+    // authoritative when it returns a final transcript; the complete encoded
+    // container is uploaded only if Live is absent, unavailable, or times out.
+    const liveTranscriptPromise = this.liveTranscription?.finishTurn() ?? Promise.resolve(null);
+    const audioPromise = this.stopCapture(false);
     this.setInputEnabled(false);
+    const [liveTranscript, audio] = await Promise.all([liveTranscriptPromise, audioPromise]);
     if (!this.active || lifecycle !== this.lifecycle) return;
-    if (!audio || audio.size < 120 || duration < MIN_SPEECH_MS) {
+
+    const liveText = String(liveTranscript || '').trim();
+    if (liveText) {
+      this.commitTranscript(liveText);
+      return;
+    }
+
+    if (!audio || audio.size < 120) {
       this.options.onTranscript('');
       this.beginListening();
       return;
@@ -454,11 +546,7 @@ export class VoiceChatController {
         this.beginListening();
         return;
       }
-      this.options.onTranscript(text);
-      this.waitingForReply = true;
-      this.setState('thinking');
-      this.finalizingTurn = false;
-      this.options.onTurn(text);
+      this.commitTranscript(text);
     } catch (error: unknown) {
       if (!this.active || lifecycle !== this.lifecycle || controller.signal.aborted) return;
       this.options.onError(error instanceof Error ? error.message : 'تعذّر تحويل الصوت إلى نص.');
@@ -468,7 +556,20 @@ export class VoiceChatController {
     }
   }
 
+  private commitTranscript(text: string): void {
+    if (!this.active || this.waitingForReply) return;
+    const finalText = text.trim();
+    if (!finalText) return;
+    this.options.onTranscript(finalText);
+    this.waitingForReply = true;
+    this.setState('thinking');
+    this.finalizingTurn = false;
+    // This is the only gateway from Voice transcription into Claude/AYROVI.
+    this.options.onTurn(finalText);
+  }
+
   private stopCapture(discard: boolean): Promise<Blob | null> {
+    if (discard) this.liveTranscription?.cancelTurn();
     const recorder = this.recorder;
     if (!recorder) {
       if (discard) this.chunks = [];
@@ -528,6 +629,15 @@ export class VoiceChatController {
     }
     this.stream?.getTracks().forEach((track) => track.stop());
     this.stream = null;
+    if (this.pcmWorklet) {
+      this.pcmWorklet.port.onmessage = null;
+      try { this.pcmWorklet.disconnect(); } catch {}
+    }
+    if (this.pcmSink) {
+      try { this.pcmSink.disconnect(); } catch {}
+    }
+    this.pcmWorklet = null;
+    this.pcmSink = null;
     if (this.context && this.context.state !== 'closed') {
       try { void this.context.close().catch(() => {}); } catch {}
     }
