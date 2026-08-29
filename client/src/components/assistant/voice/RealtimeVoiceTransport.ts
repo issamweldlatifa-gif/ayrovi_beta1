@@ -253,6 +253,48 @@ export class RealtimeVoiceTransport {
     });
   }
 
+  private startTurnCapture(): void {
+    this.hasSpokenInTurn = true;
+    this.speechStartedAt = Date.now();
+    if (this.silenceTimer) {
+      clearTimeout(this.silenceTimer);
+      this.silenceTimer = null;
+    }
+
+    if (this.mediaRecorder?.state === 'inactive') {
+      this.recordedChunks = [];
+      try {
+        this.mediaRecorder.start(100);
+      } catch (error) {
+        console.warn('[VoiceTransport] MediaRecorder start failed:', error);
+      }
+    }
+
+    if (this.maxTurnTimer) clearTimeout(this.maxTurnTimer);
+    this.maxTurnTimer = setTimeout(() => {
+      if ((this.state === 'listening' || this.state === 'user_speaking') && this.hasSpokenInTurn) {
+        void this.finishUserTurn();
+      }
+    }, 3_200);
+  }
+
+  private beginBargeIn(): void {
+    if (this.state !== 'assistant_speaking' || this.isMuted) return;
+
+    // Stop output and notify the drawer so an in-flight text response is also
+    // cancelled, but transition directly into user_speaking. The old path
+    // displayed "Interrompu" and discarded the first word.
+    globalVoicePlayer.stop();
+    this.currentTranscript = '';
+    this.isProcessingTurn = false;
+    this.bargeInCandidateAt = 0;
+    this.emit({ type: 'interrupted' });
+    this.startTurnCapture();
+    this.emit({ type: 'state.changed', state: 'user_speaking' });
+    this.startSpeechRecognition();
+    this.emit({ type: 'speech.started' });
+  }
+
   private startAudioMonitoring(): void {
     const checkLevel = () => {
       if (!this.analyser || this.state === 'closing' || this.state === 'idle') return;
@@ -300,7 +342,7 @@ export class RealtimeVoiceTransport {
         if (outsidePlaybackGrace && strongNearFieldSpeech) {
           if (!this.bargeInCandidateAt) this.bargeInCandidateAt = Date.now();
           if (Date.now() - this.bargeInCandidateAt >= 180) {
-            this.interrupt();
+            this.beginBargeIn();
             return;
           }
         } else {
@@ -314,28 +356,9 @@ export class RealtimeVoiceTransport {
       if ((this.state === 'listening' || this.state === 'user_speaking') && outsideListeningEarconGrace && !this.isMuted && !this.isProcessingTurn) {
         // Trigger speech start
         if (!this.hasSpokenInTurn && (speechRel > 0.12 || relEnergy > 0.15)) {
-          this.hasSpokenInTurn = true;
-          this.speechStartedAt = Date.now();
+          this.startTurnCapture();
           this.emit({ type: 'state.changed', state: 'user_speaking' });
           this.emit({ type: 'speech.started' });
-
-          // Start recording audio chunks for non-WebSpeech STT fallback
-          if (this.mediaRecorder && this.mediaRecorder.state === 'inactive') {
-            this.recordedChunks = [];
-            try {
-              this.mediaRecorder.start(100);
-            } catch (e) {
-              console.warn('[VoiceTransport] MediaRecorder start failed:', e);
-            }
-          }
-
-          // Hard Safety Cap: Max 3.2 seconds speech turn so mobile noise can NEVER hang turn
-          if (this.maxTurnTimer) clearTimeout(this.maxTurnTimer);
-          this.maxTurnTimer = setTimeout(() => {
-            if ((this.state === 'listening' || this.state === 'user_speaking') && this.hasSpokenInTurn) {
-              void this.finishUserTurn();
-            }
-          }, 3200);
         }
 
         // Detect silence or ongoing speech while in turn
@@ -403,6 +426,7 @@ export class RealtimeVoiceTransport {
         if (!this.hasSpokenInTurn) {
           this.speechStartedAt = Date.now();
           this.emit({ type: 'state.changed', state: 'user_speaking' });
+          this.emit({ type: 'speech.started' });
         }
         this.currentTranscript = trimmed;
         this.hasSpokenInTurn = true;

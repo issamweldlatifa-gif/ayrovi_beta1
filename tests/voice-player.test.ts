@@ -100,22 +100,28 @@ describe('AssistantVoicePlayer', () => {
     const player = new AssistantVoicePlayer();
     activePlayer = player;
     player.warmUp();
+    const onStart = vi.fn();
+    const onEnd = vi.fn();
 
-    player.queueSentence('Première phrase.', 'fr');
-    player.queueSentence('Deuxième phrase.', 'fr');
+    player.queueSentence('Première phrase.', 'fr', onStart, onEnd);
+    player.queueSentence('Deuxième phrase.', 'fr', onStart, onEnd);
     await flush();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(onStart).not.toHaveBeenCalled();
     pending.shift()?.(new Response(new Uint8Array(128), { headers: { 'content-type': 'audio/wav' } }));
     await flush();
     await flush();
 
     expect(contexts[0].sources).toHaveLength(1);
     expect(contexts[0].sources[0].start).toHaveBeenCalledOnce();
+    expect(onStart).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     contexts[0].sources[0].onended?.();
     await flush();
+    expect(onEnd).toHaveBeenCalledOnce();
+    expect(onStart).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

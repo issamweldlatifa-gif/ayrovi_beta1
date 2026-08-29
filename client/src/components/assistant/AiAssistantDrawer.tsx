@@ -324,6 +324,22 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     voiceTransportRef.current?.interrupt();
   };
 
+  const handleVoicePlaybackEnd = () => {
+    if (!voiceModeRef.current) return;
+    if (isMutedRef.current) {
+      setVoiceState('muted');
+      voiceTransportRef.current?.setMuted(true);
+    } else if (generationAbortRef.current) {
+      // The text stream is still producing the next sentence. Do not leave the
+      // transport in assistant_speaking while no audio is actually playing.
+      setVoiceState('processing');
+      voiceTransportRef.current?.setProcessingState('processing');
+    } else {
+      setVoiceState('listening');
+      voiceTransportRef.current?.setProcessingState('listening');
+    }
+  };
+
   const handleToggleVoiceMode = async () => {
     if (voiceMode) {
       stopVoiceMode();
@@ -349,6 +365,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         } else if (event.type === 'transcript.completed') {
           setLiveTranscript('');
           sendMessage(event.text, true);
+        } else if (event.type === 'speech.started') {
+          // A user may start speaking while the greeting TTS request is still
+          // loading. Cancel that pending greeting instead of treating the first
+          // word as an interruption.
+          if (voiceStateRef.current === 'user_speaking' && globalVoicePlayer.speaking) {
+            globalVoicePlayer.stop();
+          }
         } else if (event.type === 'interrupted') {
           // The transport already performed the interruption. Calling interrupt()
           // again here used to recursively emit "interrupted" until the stack
@@ -371,18 +394,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
 
       if (!isSpeakerMutedRef.current) {
-        transport.setProcessingState('assistant_speaking');
+        // Keep listening while server TTS is loading. The onStart callback is
+        // the only point that may mark the assistant as actually speaking.
         globalVoicePlayer.speak(
           greeting,
           isRtl ? 'ar' : 'fr',
           () => transport.setProcessingState('assistant_speaking'),
-          () => {
-            if (voiceModeRef.current && !isMutedRef.current) {
-              transport.setProcessingState('listening');
-            } else if (voiceModeRef.current && isMutedRef.current) {
-              transport.setMuted(true);
-            }
-          },
+          handleVoicePlaybackEnd,
         );
       } else {
         transport.setProcessingState('listening');
@@ -479,8 +497,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 pendingSpeechBuffer = match[2];
                 if (sentence) {
                   hasStreamSpoken = true;
-                  setVoiceState('assistant_speaking');
-                  voiceTransportRef.current?.setProcessingState('assistant_speaking');
                   globalVoicePlayer.queueSentence(
                     sentence,
                     direction === 'rtl' ? 'ar' : 'fr',
@@ -488,12 +504,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                       setVoiceState('assistant_speaking');
                       voiceTransportRef.current?.setProcessingState('assistant_speaking');
                     },
-                    () => {
-                      if (voiceModeRef.current && !isMutedRef.current && !generationAbortRef.current && !globalVoicePlayer.speaking) {
-                        setVoiceState('listening');
-                        voiceTransportRef.current?.setProcessingState('listening');
-                      }
-                    },
+                    handleVoicePlaybackEnd,
                   );
                 }
               }
@@ -548,8 +559,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         if (voiceModeRef.current && !isSpeakerMutedRef.current) {
           if (pendingSpeechBuffer.trim()) {
             hasStreamSpoken = true;
-            setVoiceState('assistant_speaking');
-            voiceTransportRef.current?.setProcessingState('assistant_speaking');
             globalVoicePlayer.queueSentence(
               pendingSpeechBuffer.trim(),
               direction === 'rtl' ? 'ar' : 'fr',
@@ -557,22 +566,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 setVoiceState('assistant_speaking');
                 voiceTransportRef.current?.setProcessingState('assistant_speaking');
               },
-              () => {
-                if (voiceModeRef.current && !isMutedRef.current) {
-                  setVoiceState('listening');
-                  voiceTransportRef.current?.setProcessingState('listening');
-                } else if (voiceModeRef.current && isMutedRef.current) {
-                  setVoiceState('muted');
-                  voiceTransportRef.current?.setProcessingState('listening');
-                }
-              },
+              handleVoicePlaybackEnd,
             );
           } else if (!hasStreamSpoken) {
             setMessages((latest) => {
               const resp = latest.find((m) => m.id === responseId);
               if (resp && resp.text.trim()) {
-                setVoiceState('assistant_speaking');
-                voiceTransportRef.current?.setProcessingState('assistant_speaking');
                 globalVoicePlayer.speak(
                   resp.text,
                   direction === 'rtl' ? 'ar' : 'fr',
@@ -580,15 +579,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                     setVoiceState('assistant_speaking');
                     voiceTransportRef.current?.setProcessingState('assistant_speaking');
                   },
-                  () => {
-                    if (voiceModeRef.current && !isMutedRef.current) {
-                      setVoiceState('listening');
-                      voiceTransportRef.current?.setProcessingState('listening');
-                    } else if (voiceModeRef.current && isMutedRef.current) {
-                      setVoiceState('muted');
-                      voiceTransportRef.current?.setProcessingState('listening');
-                    }
-                  },
+                  handleVoicePlaybackEnd,
                 );
               } else {
                 if (voiceModeRef.current && !isMutedRef.current) {

@@ -10,11 +10,12 @@ All notable AYROVI changes are recorded in this file.
 - Gemini TTS now uses the current speech model and wraps raw 24 kHz PCM in a valid WAV container before browser playback.
 - Streamed TTS sentences are serialized; pending requests are aborted on interruption so clips cannot overlap or resume as ghost audio.
 - Speech recognition pauses during assistant playback, and VAD ignores output/earcon transients to avoid self-interruption.
+- Voice mode no longer claims the assistant is speaking while TTS is still loading; the user's first word cancels a pending greeting, and a real barge-in transitions directly to `user_speaking` instead of flashing `Interrompu` and dropping the word.
 - MediaRecorder waits for its final chunk before STT upload; failed transcription no longer invents a user greeting.
 
 ### Validation
-- Added server PCM/WAV, route-compatibility, serial playback, cancellation and interruption recursion regressions.
-- 218 automated tests, TypeScript checks and the production build pass.
+- Added server PCM/WAV, route-compatibility, serial playback, cancellation, interruption recursion, delayed-playback and first-word barge-in regressions.
+- 219 automated tests, TypeScript checks and the production build pass.
 
 ## [3.10.4] - 2026-08-21
 

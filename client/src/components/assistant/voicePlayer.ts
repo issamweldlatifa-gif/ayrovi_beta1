@@ -266,6 +266,11 @@ export class AssistantVoicePlayer {
         if (generation !== this.playbackGeneration || this.currentAudioSource !== source) return;
         this.currentAudioSource = null;
         this.isSpeaking = false;
+        // Each streamed sentence owns a real playback interval. Notify its end
+        // before the next network request so the UI does not claim the assistant
+        // is speaking through a silent TTS-loading gap.
+        this.onEndCb?.();
+        if (this.queue.length === 0) this.endNotified = true;
         void this.playNext();
       };
       source.start(0);
@@ -319,15 +324,20 @@ export class AssistantVoicePlayer {
       if (generation !== this.playbackGeneration || this.activeUtterance !== utterance) return;
       this.activeUtterance = null;
       this.isSpeaking = false;
+      this.onEndCb?.();
+      if (this.queue.length === 0) this.endNotified = true;
       void this.playNext();
     };
 
-    utterance.onstart = () => {
-      if (generation !== this.playbackGeneration) return;
+    let startNotified = false;
+    const notifyStart = () => {
+      if (startNotified || generation !== this.playbackGeneration) return;
+      startNotified = true;
       this.isSpeaking = true;
       this.startLevelAnimation();
       this.onStartCb?.();
     };
+    utterance.onstart = notifyStart;
     utterance.onboundary = () => {
       if (this.isSpeaking) this.onLevelCb?.(0.45 + Math.random() * 0.35);
     };
@@ -349,6 +359,9 @@ export class AssistantVoicePlayer {
       this.keepAliveTimer = setInterval(() => {
         if (window.speechSynthesis?.speaking && window.speechSynthesis.paused) window.speechSynthesis.resume();
       }, 1_000);
+      // The server request has completed; mark assistant_speaking immediately
+      // before handing audio to the browser engine, not while TTS was loading.
+      notifyStart();
       window.speechSynthesis.speak(utterance);
       return true;
     } catch {
