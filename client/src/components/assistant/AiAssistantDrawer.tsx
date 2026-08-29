@@ -388,20 +388,40 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         return;
       }
 
+      // The deployed server tells the client whether a real TTS provider is
+      // configured. When it is not, avoid one failed HTTP request per sentence
+      // and use one stable browser utterance for each complete assistant turn.
+      globalVoicePlayer.setServerTtsAvailability(
+        transport.getSessionConfig()?.capabilities.serverTextToSpeech,
+      );
+
       const isRtl = direction === 'rtl';
       const greeting = isRtl
         ? (customerFirstName ? `مرحباً ${customerFirstName}، كيف يمكنني مساعدتك اليوم؟` : 'مرحباً بك في AYROVI، كيف يمكنني مساعدتك اليوم؟')
         : (customerFirstName ? `Bonjour ${customerFirstName} ! Comment puis-je vous aider aujourd’hui ?` : 'Bonjour ! Comment puis-je vous aider aujourd’hui ?');
 
       if (!isSpeakerMutedRef.current) {
-        // Keep listening while server TTS is loading. The onStart callback is
-        // the only point that may mark the assistant as actually speaking.
-        globalVoicePlayer.speak(
-          greeting,
-          isRtl ? 'ar' : 'fr',
-          () => transport.setProcessingState('assistant_speaking'),
-          handleVoicePlaybackEnd,
-        );
+        const playGreeting = () => {
+          if (!voiceModeRef.current || voiceTransportRef.current !== transport) return;
+          globalVoicePlayer.speak(
+            greeting,
+            isRtl ? 'ar' : 'fr',
+            () => transport.setProcessingState('assistant_speaking'),
+            handleVoicePlaybackEnd,
+          );
+        };
+
+        if (globalVoicePlayer.serverTtsAvailable === false) {
+          // Local speech can start almost synchronously. Leave a short first-word
+          // window and suppress the greeting if the user has already begun a turn.
+          window.setTimeout(() => {
+            if (transport.getState() === 'listening' && !globalVoicePlayer.speaking) playGreeting();
+          }, 650);
+        } else {
+          // Keep listening while server TTS is loading. The onStart callback is
+          // the only point that may mark the assistant as actually speaking.
+          playGreeting();
+        }
       } else {
         transport.setProcessingState('listening');
       }
@@ -491,21 +511,28 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             // Incremental sentence streaming TTS (sub-second spoken response like ChatGPT Voice)
             if (voiceModeRef.current && !isSpeakerMutedRef.current) {
               pendingSpeechBuffer += event.text;
-              const match = pendingSpeechBuffer.match(/^([\s\S]+?[.!?؟\n]+)([\s\S]*)$/);
-              if (match) {
-                const sentence = match[1].trim();
-                pendingSpeechBuffer = match[2];
-                if (sentence) {
-                  hasStreamSpoken = true;
-                  globalVoicePlayer.queueSentence(
-                    sentence,
-                    direction === 'rtl' ? 'ar' : 'fr',
-                    () => {
-                      setVoiceState('assistant_speaking');
-                      voiceTransportRef.current?.setProcessingState('assistant_speaking');
-                    },
-                    handleVoicePlaybackEnd,
-                  );
+
+              // Stream short server-generated clips only when server TTS exists.
+              // Local SpeechSynthesis is substantially more reliable on mobile
+              // when it receives one complete response instead of many rapidly
+              // queued utterances.
+              if (globalVoicePlayer.serverTtsAvailable !== false) {
+                const match = pendingSpeechBuffer.match(/^([\s\S]+?[.!?؟\n]+)([\s\S]*)$/);
+                if (match) {
+                  const sentence = match[1].trim();
+                  pendingSpeechBuffer = match[2];
+                  if (sentence) {
+                    hasStreamSpoken = true;
+                    globalVoicePlayer.queueSentence(
+                      sentence,
+                      direction === 'rtl' ? 'ar' : 'fr',
+                      () => {
+                        setVoiceState('assistant_speaking');
+                        voiceTransportRef.current?.setProcessingState('assistant_speaking');
+                      },
+                      handleVoicePlaybackEnd,
+                    );
+                  }
                 }
               }
             }
@@ -558,16 +585,30 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         // Flush remainder of audio or speak full response if not yet queued
         if (voiceModeRef.current && !isSpeakerMutedRef.current) {
           if (pendingSpeechBuffer.trim()) {
+            const remainingSpeech = pendingSpeechBuffer.trim();
+            const onSpeechStart = () => {
+              setVoiceState('assistant_speaking');
+              voiceTransportRef.current?.setProcessingState('assistant_speaking');
+            };
+
+            if (!hasStreamSpoken && globalVoicePlayer.serverTtsAvailable === false) {
+              // Reset the local speech engine and speak the complete answer once.
+              // This avoids Android/iOS cancellation pops from sentence churn.
+              globalVoicePlayer.speak(
+                remainingSpeech,
+                direction === 'rtl' ? 'ar' : 'fr',
+                onSpeechStart,
+                handleVoicePlaybackEnd,
+              );
+            } else {
+              globalVoicePlayer.queueSentence(
+                remainingSpeech,
+                direction === 'rtl' ? 'ar' : 'fr',
+                onSpeechStart,
+                handleVoicePlaybackEnd,
+              );
+            }
             hasStreamSpoken = true;
-            globalVoicePlayer.queueSentence(
-              pendingSpeechBuffer.trim(),
-              direction === 'rtl' ? 'ar' : 'fr',
-              () => {
-                setVoiceState('assistant_speaking');
-                voiceTransportRef.current?.setProcessingState('assistant_speaking');
-              },
-              handleVoicePlaybackEnd,
-            );
           } else if (!hasStreamSpoken) {
             setMessages((latest) => {
               const resp = latest.find((m) => m.id === responseId);

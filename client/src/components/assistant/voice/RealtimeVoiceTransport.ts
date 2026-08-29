@@ -54,7 +54,9 @@ export class RealtimeVoiceTransport {
       const prevState = this.state;
       this.state = event.state;
 
-      if (event.state === 'assistant_speaking' && prevState !== 'assistant_speaking') {
+      if (event.state === 'assistant_speaking') {
+        // Every clip start gets its own echo/VAD grace window, even when the
+        // overall streamed answer remains in assistant_speaking.
         this.assistantSpeechStartedAt = Date.now();
         this.bargeInCandidateAt = 0;
         this.currentTranscript = '';
@@ -339,7 +341,15 @@ export class RealtimeVoiceTransport {
       if (this.state === 'assistant_speaking' && !this.isMuted) {
         const outsidePlaybackGrace = Date.now() - this.assistantSpeechStartedAt > 900;
         const strongNearFieldSpeech = speechRel > 0.30 && relEnergy > 0.24;
-        if (outsidePlaybackGrace && strongNearFieldSpeech) {
+        const acousticBargeInIsSafe = globalVoicePlayer.activelyPlaying
+          && !globalVoicePlayer.browserFallbackActive;
+
+        // Local SpeechSynthesis output is not connected to our WebAudio graph,
+        // so its loudspeaker signal cannot be reliably distinguished from the
+        // user on many phones. Automatic VAD interruption there created a
+        // speak -> pop/cancel -> listen loop. The orb still provides immediate
+        // manual interruption; server audio keeps guarded acoustic barge-in.
+        if (acousticBargeInIsSafe && outsidePlaybackGrace && strongNearFieldSpeech) {
           if (!this.bargeInCandidateAt) this.bargeInCandidateAt = Date.now();
           if (Date.now() - this.bargeInCandidateAt >= 180) {
             this.beginBargeIn();

@@ -5,7 +5,9 @@
 
 class VoiceSoundEffects {
   private ctx: AudioContext | null = null;
-  private soundEnabled: boolean = true;
+  // Spoken output should be clean by default. Synthetic transition tones can
+  // sound like clicks/pops on small mobile speakers and can leak into VAD.
+  private soundEnabled: boolean = false;
 
   public setSoundEnabled(enabled: boolean) {
     this.soundEnabled = enabled;

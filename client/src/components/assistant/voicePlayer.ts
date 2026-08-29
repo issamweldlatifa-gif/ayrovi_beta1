@@ -1,5 +1,8 @@
 import { getSessionId } from '../../utils/session';
 
+type ServerTtsAvailability = 'unknown' | 'available' | 'unavailable';
+type PlaybackMode = 'server' | 'browser' | null;
+
 /**
  * Serial TTS queue with server audio and browser SpeechSynthesis fallback.
  *
@@ -31,6 +34,8 @@ export class AssistantVoicePlayer {
   private cachedVoices: SpeechSynthesisVoice[] = [];
   private playbackGeneration = 0;
   private serverAudioAbort: AbortController | null = null;
+  private serverTtsAvailability: ServerTtsAvailability = 'unknown';
+  private playbackMode: PlaybackMode = null;
   private endNotified = true;
 
   constructor() {
@@ -114,6 +119,30 @@ export class AssistantVoicePlayer {
     this.onLevelCb = callback;
   }
 
+  /** Seed provider readiness from the voice-session response. */
+  public setServerTtsAvailability(available?: boolean): void {
+    this.serverTtsAvailability = available === true
+      ? 'available'
+      : available === false
+        ? 'unavailable'
+        : 'unknown';
+  }
+
+  public get serverTtsAvailable(): boolean | null {
+    if (this.serverTtsAvailability === 'unknown') return null;
+    return this.serverTtsAvailability === 'available';
+  }
+
+  /** True only while decoded speech is actually audible, not while a request is pending. */
+  public get activelyPlaying(): boolean {
+    return this.isSpeaking;
+  }
+
+  /** Browser speech cannot be reliably separated from microphone input on mobile speakers. */
+  public get browserFallbackActive(): boolean {
+    return this.isSpeaking && this.playbackMode === 'browser';
+  }
+
   public speak(text: string, locale: string, onStart?: () => void, onEnd?: () => void): void {
     this.stop();
     const clean = this.cleanText(text);
@@ -183,18 +212,21 @@ export class AssistantVoicePlayer {
     if (!voices.length) return null;
 
     const langPrefix = isArabic ? 'ar' : 'fr';
-    const genderMatch = voices.find((voice) => {
-      if (!voice.lang.toLowerCase().startsWith(langPrefix)) return false;
+    const languageVoices = voices.filter((voice) => voice.lang.toLowerCase().startsWith(langPrefix));
+    if (!languageVoices.length) {
+      // Do not force (for example) a French default voice onto Arabic text.
+      // Leaving utterance.voice unset lets the browser resolve utterance.lang
+      // itself or report that the language pack is unavailable.
+      return null;
+    }
+
+    const genderMatch = languageVoices.find((voice) => {
       const name = voice.name.toLowerCase();
       return this.voiceGender === 'female'
         ? /female|femme|zira|siri|google|audrey|amira|meryem|salma|leila|aoede|kore/i.test(name)
         : /male|homme|david|thomas|nicolas|mehdi|youssef|tariq|ali|puck|fenrir|charon/i.test(name);
     });
-    return genderMatch
-      || voices.find((voice) => voice.lang.toLowerCase().startsWith(langPrefix))
-      || voices.find((voice) => voice.default)
-      || voices[0]
-      || null;
+    return genderMatch || languageVoices[0] || null;
   }
 
   private async decodeServerAudio(arrayBuffer: ArrayBuffer, contentType: string): Promise<AudioBuffer | null> {
@@ -226,6 +258,8 @@ export class AssistantVoicePlayer {
   }
 
   private async tryPlayServerAudio(text: string, generation: number): Promise<boolean> {
+    if (this.serverTtsAvailability === 'unavailable') return false;
+
     const controller = new AbortController();
     this.serverAudioAbort?.abort();
     this.serverAudioAbort = controller;
@@ -245,7 +279,14 @@ export class AssistantVoicePlayer {
       if (generation !== this.playbackGeneration || controller.signal.aborted) return false;
 
       const contentType = response.headers.get('content-type') || '';
-      if (!response.ok || (!contentType.includes('audio') && !contentType.includes('octet-stream'))) return false;
+      const isAudioResponse = contentType.includes('audio') || contentType.includes('octet-stream');
+      if (!response.ok || !isAudioResponse) {
+        // The endpoint returns a structured JSON fallback when no server TTS key
+        // is configured. Cache that fact so every sentence does not make another
+        // doomed round trip before using the browser voice.
+        if (response.ok && contentType.includes('json')) this.serverTtsAvailability = 'unavailable';
+        return false;
+      }
 
       const bytes = await response.arrayBuffer();
       if (generation !== this.playbackGeneration || controller.signal.aborted || bytes.byteLength <= 44) return false;
@@ -257,6 +298,8 @@ export class AssistantVoicePlayer {
       const source = context.createBufferSource();
       source.buffer = decoded;
       source.connect(this.analyser);
+      this.serverTtsAvailability = 'available';
+      this.playbackMode = 'server';
       this.currentAudioSource = source;
       this.isSpeaking = true;
       this.startLevelAnimation();
@@ -265,12 +308,11 @@ export class AssistantVoicePlayer {
       source.onended = () => {
         if (generation !== this.playbackGeneration || this.currentAudioSource !== source) return;
         this.currentAudioSource = null;
+        this.playbackMode = null;
         this.isSpeaking = false;
-        // Each streamed sentence owns a real playback interval. Notify its end
-        // before the next network request so the UI does not claim the assistant
-        // is speaking through a silent TTS-loading gap.
-        this.onEndCb?.();
-        if (this.queue.length === 0) this.endNotified = true;
+        // Keep a streamed answer as one playback turn. onEnd fires only after
+        // the entire sentence queue drains, preventing listen earcons and VAD
+        // restarts between clips.
         void this.playNext();
       };
       source.start(0);
@@ -290,6 +332,7 @@ export class AssistantVoicePlayer {
     if (generation !== this.playbackGeneration || this.queue.length || this.isStarting || this.isSpeaking) return;
     this.activeUtterance = null;
     this.currentAudioSource = null;
+    this.playbackMode = null;
     this.stopLevelAnimation();
     if (this.keepAliveTimer) {
       clearInterval(this.keepAliveTimer);
@@ -323,9 +366,8 @@ export class AssistantVoicePlayer {
       }
       if (generation !== this.playbackGeneration || this.activeUtterance !== utterance) return;
       this.activeUtterance = null;
+      this.playbackMode = null;
       this.isSpeaking = false;
-      this.onEndCb?.();
-      if (this.queue.length === 0) this.endNotified = true;
       void this.playNext();
     };
 
@@ -348,6 +390,7 @@ export class AssistantVoicePlayer {
     };
 
     this.activeUtterance = utterance;
+    this.playbackMode = 'browser';
     // Mark busy before speak(); some engines dispatch onstart asynchronously.
     this.isSpeaking = true;
     const estimatedMs = Math.max(4_000, Math.min(45_000, (text.length / 7) * 1_000));
@@ -420,6 +463,7 @@ export class AssistantVoicePlayer {
       try { window.speechSynthesis.cancel(); } catch {}
     }
     this.isSpeaking = false;
+    this.playbackMode = null;
     this.activeUtterance = null;
     this.onStartCb = undefined;
     this.onEndCb = undefined;

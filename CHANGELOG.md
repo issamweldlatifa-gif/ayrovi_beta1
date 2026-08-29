@@ -11,11 +11,13 @@ All notable AYROVI changes are recorded in this file.
 - Streamed TTS sentences are serialized; pending requests are aborted on interruption so clips cannot overlap or resume as ghost audio.
 - Speech recognition pauses during assistant playback, and VAD ignores output/earcon transients to avoid self-interruption.
 - Voice mode no longer claims the assistant is speaking while TTS is still loading; the user's first word cancels a pending greeting, and a real barge-in transitions directly to `user_speaking` instead of flashing `Interrompu` and dropping the word.
+- Browser-only TTS now speaks one complete answer, caches provider unavailability, and cannot acoustically interrupt itself in a `speak → pop → listen` loop.
+- Synthetic listening/interruption earcons are off by default, and streamed answers no longer restart listening between sentence clips.
 - MediaRecorder waits for its final chunk before STT upload; failed transcription no longer invents a user greeting.
 
 ### Validation
-- Added server PCM/WAV, route-compatibility, serial playback, cancellation, interruption recursion, delayed-playback and first-word barge-in regressions.
-- 219 automated tests, TypeScript checks and the production build pass.
+- Added server PCM/WAV, route-compatibility, serial playback, cancellation, interruption recursion, delayed-playback, first-word barge-in, browser fallback and earcon regressions.
+- 221 automated tests, TypeScript checks and the production build pass.
 
 ## [3.10.4] - 2026-08-21
 

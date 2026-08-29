@@ -66,6 +66,13 @@ describe('AYROVI voice transport and session subsystem', () => {
     delete process.env.OPENAI_API_KEY;
 
     try {
+      const session = await request(app)
+        .post('/api/voice/session')
+        .set('x-session-id', 'sess_voice_capability_001')
+        .send({ conversationId: 'conv_voice_capability_001', voiceId: 'Aoede' });
+      expect(session.status).toBe(200);
+      expect(session.body.data.capabilities.serverTextToSpeech).toBe(false);
+
       const res = await request(app)
         .post('/api/voice/live-audio')
         .set('x-session-id', 'sess_voice_route_001')

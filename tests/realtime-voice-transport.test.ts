@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RealtimeVoiceTransport } from '../client/src/components/assistant/voice/RealtimeVoiceTransport';
+import { voiceSoundEffects } from '../client/src/components/assistant/voice/voiceSoundEffects';
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe('RealtimeVoiceTransport interruption safety', () => {
+  it('keeps synthetic transition earcons disabled by default', () => {
+    expect(voiceSoundEffects.isSoundEnabled()).toBe(false);
+  });
+
   it('emits a single interruption even if a listener calls interrupt again', () => {
     const transport = new RealtimeVoiceTransport('conversation_interrupt_test');
     (transport as unknown as { state: string }).state = 'assistant_speaking';

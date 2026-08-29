@@ -57,7 +57,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [selectedVoiceId, setSelectedVoiceId] = useState<'Aoede' | 'Kore' | 'Puck' | 'Fenrir'>('Aoede');
   const [voiceRate, setVoiceRate] = useState<number>(1.05);
-  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(() => voiceSoundEffects.isSoundEnabled());
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const frameRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);

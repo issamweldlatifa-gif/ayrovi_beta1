@@ -54,6 +54,7 @@ export interface VoiceSessionConfig {
     orderCreation: boolean;
     realtimeStreaming?: boolean;
     realtimeAudioStreaming?: boolean;
+    serverTextToSpeech?: boolean;
     instantBargeIn: boolean;
   };
 }

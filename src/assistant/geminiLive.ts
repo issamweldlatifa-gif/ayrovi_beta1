@@ -44,6 +44,7 @@ export interface GeminiVoiceSessionConfig {
     orderTracking: boolean;
     orderCreation: boolean;
     realtimeAudioStreaming: boolean;
+    serverTextToSpeech: boolean;
     instantBargeIn: boolean;
   };
 }
@@ -111,6 +112,11 @@ export function createGeminiVoiceSession(
       orderCreation: true,
       // The chat text is streamed, while TTS clips are queued serially.
       realtimeAudioStreaming: false,
+      serverTextToSpeech: Boolean(
+        process.env.GEMINI_API_KEY?.trim()
+        || process.env.GOOGLE_API_KEY?.trim()
+        || process.env.OPENAI_API_KEY?.trim(),
+      ),
       instantBargeIn: true,
     },
   };

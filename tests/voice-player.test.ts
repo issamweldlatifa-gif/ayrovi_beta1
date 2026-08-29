@@ -120,9 +120,17 @@ describe('AssistantVoicePlayer', () => {
 
     contexts[0].sources[0].onended?.();
     await flush();
-    expect(onEnd).toHaveBeenCalledOnce();
+    expect(onEnd).not.toHaveBeenCalled();
     expect(onStart).toHaveBeenCalledOnce();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    pending.shift()?.(new Response(new Uint8Array(128), { headers: { 'content-type': 'audio/wav' } }));
+    await flush();
+    await flush();
+    expect(contexts[0].sources).toHaveLength(2);
+    contexts[0].sources[1].onended?.();
+    await flush();
+    expect(onEnd).toHaveBeenCalledOnce();
   });
 
   it('aborts a pending server TTS request and prevents ghost playback after stop', async () => {
@@ -145,11 +153,30 @@ describe('AssistantVoicePlayer', () => {
     expect(contexts[0].sources).toHaveLength(0);
   });
 
+  it('skips server round trips when the voice session reports no TTS provider', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const player = new AssistantVoicePlayer();
+    activePlayer = player;
+    player.warmUp();
+    player.setServerTtsAvailability(false);
+
+    player.speak('Réponse locale complète.', 'fr');
+    await flush();
+
+    const synth = (window as any).speechSynthesis;
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(synth.speak).toHaveBeenCalledOnce();
+    expect(player.serverTtsAvailable).toBe(false);
+    expect(player.browserFallbackActive).toBe(true);
+  });
+
   it('falls back to one browser utterance when server TTS is unavailable', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ fallbackToClient: true }), {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ fallbackToClient: true }), {
       status: 200,
       headers: { 'content-type': 'application/json' },
-    })));
+    }));
+    vi.stubGlobal('fetch', fetchMock);
     const player = new AssistantVoicePlayer();
     activePlayer = player;
     player.warmUp();
@@ -161,11 +188,15 @@ describe('AssistantVoicePlayer', () => {
 
     const synth = (window as any).speechSynthesis;
     expect(synth.speak).toHaveBeenCalledTimes(1);
+    expect(player.serverTtsAvailable).toBe(false);
+    expect(player.browserFallbackActive).toBe(true);
     const firstUtterance = synth.speak.mock.calls[0][0] as FakeUtterance;
     firstUtterance.onstart?.();
     firstUtterance.onend?.();
     await flush();
     await flush();
+    // The structured fallback is cached; the second sentence skips HTTP.
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(synth.speak).toHaveBeenCalledTimes(2);
   });
 });
