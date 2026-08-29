@@ -1,12 +1,13 @@
 import type { RealtimeVoiceEvent, VoiceSessionConfig, VoiceState } from './types';
 import { globalVoicePlayer } from '../voicePlayer';
+import { voiceSoundEffects } from './voiceSoundEffects';
 
 export type VoiceEventListener = (event: RealtimeVoiceEvent) => void;
 
 /**
  * RealtimeVoiceTransport — High-performance real-time audio transport layer
  * with low-latency Web Audio processing, Acoustic Echo Cancellation,
- * Voice Activity Detection (VAD), and instant barge-in interruption.
+ * Voice Activity Detection (VAD), audio earcons, and instant barge-in interruption.
  */
 export class RealtimeVoiceTransport {
   private state: VoiceState = 'idle';
@@ -33,7 +34,11 @@ export class RealtimeVoiceTransport {
 
   private emit(event: RealtimeVoiceEvent): void {
     if (event.type === 'state.changed') {
+      const prevState = this.state;
       this.state = event.state;
+      if (prevState === 'assistant_speaking' && event.state === 'listening') {
+        voiceSoundEffects.playReadyToListen();
+      }
     }
     this.listeners.forEach((listener) => {
       try {
@@ -152,6 +157,7 @@ export class RealtimeVoiceTransport {
         }
       });
 
+      voiceSoundEffects.playStartListening();
       this.emit({ type: 'state.changed', state: 'listening' });
       this.emit({ type: 'speech.started' });
       return true;
@@ -314,6 +320,7 @@ export class RealtimeVoiceTransport {
    * and resumes active listening for the user.
    */
   public interrupt(): void {
+    voiceSoundEffects.playInterrupted();
     globalVoicePlayer.stop();
     this.emit({ type: 'interrupted' });
     this.emit({ type: 'state.changed', state: 'interrupted' });
@@ -329,8 +336,10 @@ export class RealtimeVoiceTransport {
   public setMuted(muted: boolean): void {
     this.isMuted = muted;
     if (muted) {
+      voiceSoundEffects.playStopListening();
       this.emit({ type: 'state.changed', state: 'muted' });
     } else {
+      voiceSoundEffects.playStartListening();
       this.emit({ type: 'state.changed', state: 'listening' });
       this.hasSpokenInTurn = false;
     }
@@ -351,6 +360,7 @@ export class RealtimeVoiceTransport {
    * Disconnect and release all media resources cleanly
    */
   public disconnect(): void {
+    voiceSoundEffects.playStopListening();
     this.emit({ type: 'state.changed', state: 'closing' });
 
     if (this.animFrameId !== null) {

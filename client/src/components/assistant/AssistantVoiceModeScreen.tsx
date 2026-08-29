@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Check, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Volume2, VolumeX, X } from '../QatafoIcons';
+import { Camera, Check, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Sparkles, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AssistantAttachment } from './types';
 import type { VoiceState } from './voice/types';
 import { globalVoicePlayer } from './voicePlayer';
+import { voiceSoundEffects } from './voice/voiceSoundEffects';
 
 interface AssistantVoiceModeScreenProps {
   state: VoiceState;
@@ -28,6 +29,7 @@ interface AssistantVoiceModeScreenProps {
   onOpenLens?: () => void;
   onAddAttachment?: (file: File) => void;
   onRemoveAttachment?: (id: string) => void;
+  onSelectSuggestion?: (suggestion: string) => void;
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
@@ -46,12 +48,14 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
   onOpenLens,
   onAddAttachment,
   onRemoveAttachment,
+  onSelectSuggestion,
 }) => {
   const { tr, direction } = useLocale();
   const [smoothedVolume, setSmoothedVolume] = useState(0);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [voiceGender, setVoiceGender] = useState<'female' | 'male'>('female');
   const [voiceRate, setVoiceRate] = useState<number>(1.08);
+  const [soundEffectsEnabled, setSoundEffectsEnabled] = useState(true);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const frameRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -144,6 +148,20 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     globalVoicePlayer.setVoiceSettings({ gender: voiceGender, rate });
     triggerHaptic();
   };
+
+  const handleToggleSoundEffects = () => {
+    const next = !soundEffectsEnabled;
+    setSoundEffectsEnabled(next);
+    voiceSoundEffects.setSoundEnabled(next);
+    triggerHaptic();
+  };
+
+  const sampleSuggestions = [
+    { ar: 'احسبلي سوم هذا 🧮', fr: 'Calculer le prix total 🧮' },
+    { ar: 'تبعلي طلبيتي 📦', fr: 'Suivre ma commande 📦' },
+    { ar: 'عطيني أفضل العروض ✨', fr: 'Meilleures offres du moment ✨' },
+    { ar: 'قداش التوصيل لتونس؟ 🚚', fr: 'Prix de livraison en Tunisie 🚚' },
+  ];
 
   return (
     <div
@@ -312,7 +330,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
         </p>
 
         {/* Live Subtitle Transcript */}
-        {liveTranscript && (
+        {liveTranscript ? (
           <p
             className={`mt-3 max-w-sm rounded-2xl px-4 py-2 text-sm font-bold italic transition-all ${
               isDark ? 'bg-white/10 text-white/90' : 'bg-white text-[#111111] shadow-sm'
@@ -320,7 +338,28 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           >
             « {liveTranscript} »
           </p>
-        )}
+        ) : (state === 'listening' || state === 'idle') && onSelectSuggestion ? (
+          <div className="mt-4 flex flex-wrap justify-center gap-1.5 max-w-xs sm:max-w-md">
+            {sampleSuggestions.map((sug, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  triggerHaptic();
+                  onSelectSuggestion(tr(sug.fr, sug.ar));
+                }}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition active:scale-95 ${
+                  isDark
+                    ? 'bg-white/10 text-white/90 hover:bg-white/15'
+                    : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
+                }`}
+              >
+                <Sparkles size={12} className="text-[#FF7A00]" />
+                <span>{tr(sug.fr, sug.ar)}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {/* Real-time Audio Waveform Bars */}
         <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
@@ -538,6 +577,31 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Sound Effects Earcons */}
+              <div className="flex items-center justify-between rounded-2xl border border-black/5 p-3.5 dark:border-white/10">
+                <div>
+                  <p className="text-xs font-bold">
+                    {tr('Sons de notification vocale', 'نغمات التنبيه الصوتي')}
+                  </p>
+                  <p className="text-[11px] text-[#6B6B6B]">
+                    {tr('Bips d’écoute et de réponse', 'نغمات لطيفة عند بدء الاستماع والرد')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleToggleSoundEffects}
+                  className={`relative h-6 w-11 rounded-full transition-colors ${
+                    soundEffectsEnabled ? 'bg-[#FF7A00]' : 'bg-gray-400/40'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                      soundEffectsEnabled ? 'right-0.5' : 'left-0.5'
+                    }`}
+                  />
+                </button>
               </div>
 
               {/* Haptics & Feedback */}

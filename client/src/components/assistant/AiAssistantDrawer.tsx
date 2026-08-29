@@ -1092,6 +1092,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}
             onRemoveAttachment={(id) => setAttachments((current) => current.filter((att) => att.id !== id))}
+            onSelectSuggestion={(suggestion) => sendMessage(suggestion, true)}
           />
         ) : (
           <>
