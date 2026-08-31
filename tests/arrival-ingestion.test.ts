@@ -33,42 +33,43 @@ class DeterministicIngestionAdapter implements AiResponsesProviderAdapter {
   private payload(request: AiCompletionRequest) {
     const system = request.instructions;
     for (const store of this.failStores) if (system.includes(`Store profile: ${store}`)) throw new Error('fixture failure');
-    const evidence = (values: Partial<Record<'productName' | 'sku' | 'reference' | 'variant' | 'color' | 'quantity', string>>) => ({
-      productName: values.productName || null,
-      sku: values.sku || null,
-      reference: values.reference || null,
-      variant: values.variant || null,
-      color: values.color || null,
-      quantity: values.quantity || null,
-    });
+    const orderMeta = {
+      customerName: '', customerEmail: '', customerPhone: '',
+      supplier: '', store: '', orderId: '', trackingNumber: '',
+      orderDate: '', shipmentStatus: '', currency: '',
+    };
+    // New fixed schema: text unknowns are "" (not null), numeric unknowns 0,
+    // array unknowns []; evidence is the list of evidenced canonical fields.
     if (system.includes('Store profile: TEMU')) {
       return {
+        orderMeta: { ...orderMeta, supplier: 'TEMU', store: 'TEMU', orderId: 'TEMU-ORD-1', trackingNumber: 'TRK-TEMU-1', currency: 'USD' },
         products: [{
-          productName: 'TEMU storage basket', sku: 'TM-100', reference: null, variant: 'Large', color: 'Black', quantity: 1,
+          productName: 'TEMU storage basket', sku: 'TM-100', reference: '', variant: 'Large', color: 'Black', size: '',
+          quantity: 1, unitPrice: 0, currency: 'USD', productUrl: '',
           productImageRef: 'pdf-page-1', productImageRegion: [0.08, 0.08, 0.35, 0.35], confidence: 0.94,
-          fieldEvidence: evidence({ productName: 'Visible product row: TEMU storage basket', sku: 'Visible SKU TM-100', variant: 'Visible option Large', color: 'Visible colour Black', quantity: 'Visible Qty 1' }),
+          evidenceFieldNames: ['productName', 'sku', 'variant', 'color', 'quantity'],
           sourceSpecific: [{ key: 'orderLine', value: '1', evidence: 'First visible invoice line' }],
         }],
         unresolvedEntries: [], expectedProductCount: 1, warnings: [],
       };
     }
     return {
+      orderMeta: { ...orderMeta, supplier: 'SHEIN', store: 'SHEIN', orderId: 'SHEIN-ORD-9', trackingNumber: 'TRK-SHEIN-9', currency: 'EUR' },
       products: [
         {
-          productName: 'Grande boîte à bijoux', sku: 'sb25092090066487374', reference: null,
-          variant: 'Multicolore-Blanc-Autocollant lettre A', color: 'Blanc', quantity: 1,
-          productImageRef: null, productImageRegion: null, confidence: 0.97,
-          fieldEvidence: evidence({
-            productName: 'Visible title: Grande boîte à bijoux', sku: 'Visible SKU sb25092090066487374',
-            variant: 'Visible variant Multicolore-Blanc-Autocollant lettre A', color: 'Visible colour Blanc', quantity: 'Visible quantity 1',
-          }),
+          productName: 'Grande boîte à bijoux', sku: 'sb25092090066487374', reference: '',
+          variant: 'Multicolore-Blanc-Autocollant lettre A', color: 'Blanc', size: '',
+          quantity: 1, unitPrice: 12.9, currency: 'EUR', productUrl: '',
+          productImageRef: '', productImageRegion: [], confidence: 0.97,
+          evidenceFieldNames: ['productName', 'sku', 'variant', 'color', 'quantity'],
           sourceSpecific: [{ key: 'storeLine', value: 'A-1', evidence: 'First product block' }],
         },
         {
-          productName: 'Bracelet mode', sku: 'sj2406136606014547', reference: null,
-          variant: null, color: null, quantity: null,
-          productImageRef: null, productImageRegion: null, confidence: 0.82,
-          fieldEvidence: evidence({ productName: 'Visible title Bracelet mode', sku: 'Visible SKU sj2406136606014547' }),
+          productName: 'Bracelet mode', sku: 'sj2406136606014547', reference: '',
+          variant: '', color: '', size: '',
+          quantity: 0, unitPrice: 0, currency: '', productUrl: '',
+          productImageRef: '', productImageRegion: [], confidence: 0.82,
+          evidenceFieldNames: ['productName', 'sku'],
           sourceSpecific: [],
         },
       ],
@@ -643,24 +644,22 @@ describe('Administration CRM Arrival AI ingestion', () => {
     const products = Array.from({ length: 50 }, (_, index) => ({
       productName: `SHEIN product ${index + 1}`,
       sku: `shein-sku-${index + 1}`,
-      reference: null,
+      reference: '',
       variant: `Size ${index + 1}`,
-      color: null,
+      color: '',
+      size: '',
       quantity: 1,
-      productImageRef: null,
-      productImageRegion: null,
+      unitPrice: 0,
+      currency: '',
+      productUrl: '',
+      productImageRef: '',
+      productImageRegion: [],
       confidence: 0.9,
-      fieldEvidence: {
-        productName: `Visible title SHEIN product ${index + 1}`,
-        sku: `Visible SKU shein-sku-${index + 1}`,
-        reference: null,
-        variant: `Visible variant Size ${index + 1}`,
-        color: null,
-        quantity: 'Visible quantity 1',
-      },
+      evidenceFieldNames: ['productName', 'sku', 'variant', 'quantity'],
       sourceSpecific: [],
     }));
     const normalized = new ProductExtractionNormalizer().parse(JSON.stringify({
+      orderMeta: { customerName: '', customerEmail: '', customerPhone: '', supplier: 'SHEIN', store: 'SHEIN', orderId: '', trackingNumber: '', orderDate: '', shipmentStatus: '', currency: '' },
       products, unresolvedEntries: [], expectedProductCount: 50, warnings: [],
     }), new Set());
     expect(normalized.products).toHaveLength(50);
@@ -670,10 +669,12 @@ describe('Administration CRM Arrival AI ingestion', () => {
 
   test('normalizer removes unsupported guessed values and preserves uncertainty', () => {
     const normalized = new ProductExtractionNormalizer().parse(JSON.stringify({
+      orderMeta: { customerName: '', customerEmail: '', customerPhone: '', supplier: '', store: '', orderId: '', trackingNumber: '', orderDate: '', shipmentStatus: '', currency: '' },
       products: [{
-        productName: 'Guessed product', sku: 'MADE-UP', reference: null, variant: null, color: null, quantity: 2,
+        productName: 'Guessed product', sku: 'MADE-UP', reference: '', variant: '', color: '', size: '', quantity: 2,
+        unitPrice: 0, currency: '', productUrl: '',
         productImageRef: 'unknown-image', productImageRegion: [0, 0, 1, 1], confidence: 0.99,
-        fieldEvidence: { productName: null, sku: null, reference: null, variant: null, color: null, quantity: 'Visible Qty 2' },
+        evidenceFieldNames: ['quantity'],
         sourceSpecific: [],
       }],
       unresolvedEntries: [], expectedProductCount: 2, warnings: [],
@@ -684,10 +685,12 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(normalized.warningCodes).toContain('EXPECTED_COUNT_NOT_FULLY_ACCOUNTED_FOR');
 
     const contradicted = new ProductExtractionNormalizer().parse(JSON.stringify({
+      orderMeta: { customerName: '', customerEmail: '', customerPhone: '', supplier: '', store: '', orderId: '', trackingNumber: '', orderDate: '', shipmentStatus: '', currency: '' },
       products: [{
-        productName: 'Invented title', sku: 'FAKE-99', reference: null, variant: null, color: null, quantity: 1,
-        productImageRef: null, productImageRegion: null, confidence: 0.98,
-        fieldEvidence: { productName: 'claimed', sku: 'claimed', reference: null, variant: null, color: null, quantity: 'claimed' },
+        productName: 'Invented title', sku: 'FAKE-99', reference: '', variant: '', color: '', size: '', quantity: 1,
+        unitPrice: 0, currency: '', productUrl: '',
+        productImageRef: '', productImageRegion: [], confidence: 0.98,
+        evidenceFieldNames: ['productName', 'sku', 'quantity'],
         sourceSpecific: [],
       }],
       unresolvedEntries: [], expectedProductCount: 1, warnings: [],

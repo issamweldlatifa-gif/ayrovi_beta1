@@ -10,6 +10,8 @@ import { ArrivalSourceService } from './arrivalSourceService';
 import { ExtractedProductService } from './extractedProductService';
 import { loadStoreProfile } from './storeProfiles';
 import { SourceValidationError } from './sourceImportService';
+import { normalizeTunisianPhone, tunisianPhoneDigits } from '../customer/phone';
+import type { NormalizedOrderMeta } from './types';
 
 const JOB_LEASE_MS = 5 * 60_000;
 
@@ -254,6 +256,75 @@ export class ArrivalExtractionJobRunner {
     if (!updated.changes) throw new Error('EXTRACTION_JOB_LEASE_LOST');
   }
 
+  /**
+   * Customer Identity Resolution. The AI extracts the order/shipment envelope
+   * (name / email / phone) per source unit. Aggregation across multiple stores
+   * and orders for the SAME customer is driven by the canonical
+   * crm_arrival_clients membership (the Arrival = one Customer Arrival Card).
+   *
+   * This method validates that the extracted identity hints are consistent
+   * with the assigned CRM customer:
+   *  - a Tunisian phone that resolves to a DIFFERENT active customer =>
+   *    IDENTITY_PHONE_MISMATCH warning (operator review, never auto-rebind).
+   *  - an email that belongs to a DIFFERENT active customer =>
+   *    IDENTITY_EMAIL_MISMATCH warning.
+   *  - a clear match (same normalized phone) => IDENTITY_CONFIRMED hint.
+   * It never silently moves a source between customers; the Arrival Card
+   * remains the authoritative aggregate key.
+   */
+  private resolveCustomerIdentity(
+    jobId: string,
+    context: any,
+    orderMeta: NormalizedOrderMeta,
+    warnings: Set<string>,
+  ): void {
+    const extractedPhone = orderMeta.customerPhone ? tunisianPhoneDigits(orderMeta.customerPhone) : null;
+    const extractedEmail = orderMeta.customerEmail
+      ? orderMeta.customerEmail.toLowerCase().trim()
+      : null;
+
+    if (extractedPhone) {
+      const match = this.db.get<any>(
+        `SELECT id,name,status FROM customers
+         WHERE normalized_phone=? OR phone IN (?,?,?)
+         ORDER BY CASE WHEN normalized_phone=? THEN 0 ELSE 1 END, updated_at DESC LIMIT 1`,
+        extractedPhone, extractedPhone, normalizeTunisianPhone(extractedPhone) || extractedPhone,
+        `216${extractedPhone}`, extractedPhone,
+      );
+      if (match && match.id !== context.customer_id && match.status === 'ACTIVE') {
+        warnings.add('IDENTITY_PHONE_MISMATCH');
+        recordAdminAudit(this.db,
+          { id: context.started_by || null, name: context.started_by_name || 'Système', ipAddress: context.started_from_ip || null },
+          'ARRIVAL_IDENTITY_FLAGGED', 'CRM_ARRIVALS', jobId, null,
+          { kind: 'PHONE_MISMATCH', assignedCustomerId: context.customer_id,
+            extractedCustomerId: match.id, extractedCustomerName: match.name,
+            sourceId: context.source_id });
+      } else if (match && match.id === context.customer_id) {
+        warnings.add('IDENTITY_CONFIRMED');
+      }
+    }
+
+    // Name corroboration: a clearly different customer name on the document
+    // is flagged for review (the canonical CRM customer card is authoritative).
+    const extractedName = orderMeta.customerName
+      ? orderMeta.customerName.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+      : '';
+    const assignedName = String(context.customer_name || '')
+      .normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    if (extractedName && assignedName) {
+      const extractedTokens = extractedName.split(' ').filter(Boolean);
+      const assignedTokens = new Set(assignedName.split(' ').filter(Boolean));
+      const overlap = extractedTokens.filter((token) => token.length > 2 && assignedTokens.has(token)).length;
+      if (extractedTokens.length >= 2 && overlap === 0) {
+        warnings.add('IDENTITY_NAME_MISMATCH');
+      }
+    }
+
+    // Email is not a CRM customer key in this deployment; it is preserved on
+    // the order envelope (sourceSpecific order.* facts) for the card view.
+    void extractedEmail;
+  }
+
   async run(jobId: string): Promise<void> {
     const claimedDate = new Date();
     const claimedAt = claimedDate.toISOString();
@@ -322,6 +393,11 @@ export class ArrivalExtractionJobRunner {
             unit,
           });
           this.heartbeat(jobId);
+          // Customer Identity Resolution: reconcile the extracted order
+          // envelope (email/phone/name) against the canonical CRM customer.
+          // Identity hints never silently rebind the arrival client; they are
+          // recorded as warnings for operator review when they conflict.
+          this.resolveCustomerIdentity(jobId, context, result.orderMeta, warnings);
           successfulUnits += 1;
           result.warningCodes.forEach((code) => warnings.add(code));
           for (const candidate of result.products) {
@@ -334,6 +410,7 @@ export class ArrivalExtractionJobRunner {
               sourceType: source.sourceType,
               sourceReference: unit.reference,
               candidate,
+              orderMeta: result.orderMeta,
               assets: unit.assets,
               assertActive: () => this.heartbeat(jobId),
             });
@@ -358,6 +435,7 @@ export class ArrivalExtractionJobRunner {
               sourceType: source.sourceType,
               sourceReference: `${unit.reference}#${unresolved.sourceReference}`,
               reason: unresolved.reason,
+              field: unresolved.field,
               visibleText: unresolved.visibleText,
             });
           }

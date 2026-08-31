@@ -10,27 +10,33 @@ import type {
 import { AiProviderError } from '../src/ai-core/errors';
 import { AnthropicAdapter } from '../src/ai-core/adapters/anthropic/AnthropicAdapter';
 import { AyroviAIExtractionService } from '../src/arrival-ingestion/aiExtractionService';
+import { inspectAnthropicSchema, ANTHROPIC_MAX_UNION_PARAMETERS } from '../src/ai-core/adapters/anthropic/schemaLimits';
+import { ARRIVAL_EXTRACTION_SCHEMA } from '../src/arrival-ingestion/arrivalExtractionSchema';
 import type { ExtractionRequestContext } from '../src/arrival-ingestion/types';
 
+const emptyOrderMeta = {
+  customerName: '', customerEmail: '', customerPhone: '',
+  supplier: '', store: '', orderId: '', trackingNumber: '',
+  orderDate: '', shipmentStatus: '', currency: '',
+};
+
 const validPayload = {
+  orderMeta: { ...emptyOrderMeta, supplier: 'TEST', store: 'TEST', orderId: 'ORD-1' },
   products: [{
     productName: 'Sample product',
     sku: 'ABC-1',
-    reference: null,
-    variant: null,
-    color: null,
+    reference: '',
+    variant: '',
+    color: '',
+    size: '',
     quantity: 1,
-    productImageRef: null,
-    productImageRegion: null,
+    unitPrice: 0,
+    currency: '',
+    productUrl: '',
+    productImageRef: '',
+    productImageRegion: [],
     confidence: 0.95,
-    fieldEvidence: {
-      productName: 'Visible Sample product',
-      sku: 'Visible ABC-1',
-      reference: null,
-      variant: null,
-      color: null,
-      quantity: 'Visible Qty 1',
-    },
+    evidenceFieldNames: ['productName', 'sku', 'quantity'],
     sourceSpecific: [],
   }],
   unresolvedEntries: [],
@@ -162,5 +168,42 @@ describe('Arrival AI structured-output compatibility policy', () => {
       outputSchema: { name: 'fixture', schema: { type: 'object' } },
     })).rejects.toMatchObject({ code: 'PROVIDER_CAPABILITY_UNSUPPORTED', status: 400 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  test('arrival extraction schema is union-free and within the provider limit', () => {
+    const report = inspectAnthropicSchema(ARRIVAL_EXTRACTION_SCHEMA);
+    expect(report.maximumAllowed).toBe(ANTHROPIC_MAX_UNION_PARAMETERS);
+    expect(report.unionParameters).toBe(0);
+    expect(report.exceeded).toBe(false);
+  });
+
+  test('preflight rejects an over-limit union schema locally without calling Anthropic', async () => {
+    process.env.ANTHROPIC_API_KEY = 'synthetic-test-key';
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    // A schema with 17 nullable string parameters reproduces the deployment
+    // HTTP 400 ("too many parameters with union types", limit 16).
+    const tooManyUnions = {
+      type: 'object',
+      properties: Object.fromEntries(
+        Array.from({ length: 17 }, (_, i) => [`field${i}`, { type: ['string', 'null'] }]),
+      ),
+    };
+    const adapter = new AnthropicAdapter();
+    await expect(adapter.complete({
+      workload: 'arrival-ingestion',
+      modelClass: 'default',
+      context: { requestId: 'preflight-limit', executionLane: 'active', promptVersion: 'v1', policyVersion: 'v1' },
+      instructions: 'fixture',
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'fixture' }] }],
+      maxOutputTokens: 100,
+      outputSchema: { name: 'too-many-unions', schema: tooManyUnions },
+    })).rejects.toMatchObject({
+      code: 'PROVIDER_INVALID_REQUEST',
+      status: 400,
+      retryable: false,
+    });
+    // The request must never leave the process.
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

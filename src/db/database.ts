@@ -1153,10 +1153,23 @@ export class QatafoDatabase {
     this.ensureColumn('crm_extraction_jobs', 'lease_expires_at', 'TEXT');
     this.ensureColumn('crm_extraction_jobs', 'retry_at', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
+    // Operational line-item fields produced by the AI Extraction Schema and
+    // carried through Normalization. Nullable at the DB level (application
+    // model) — the AI schema itself stays union-free.
+    this.ensureColumn('crm_extracted_products', 'size', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'unit_price', 'REAL');
+    this.ensureColumn('crm_extracted_products', 'currency', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'product_url', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'order_id', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'tracking_number', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'order_date', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'shipment_status', 'TEXT');
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_crm_sources_client_store ON crm_arrival_sources(arrival_client_store_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_crm_jobs_client_store ON crm_extraction_jobs(arrival_client_store_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_crm_products_client_store ON crm_extracted_products(arrival_client_store_id, is_current, created_at);
+      CREATE INDEX IF NOT EXISTS idx_crm_products_order ON crm_extracted_products(order_id);
+      CREATE INDEX IF NOT EXISTS idx_crm_products_tracking ON crm_extracted_products(tracking_number);
     `);
     this.migrateLegacyArrivalClientStores();
     this.recordArrivalMultistoreMigration();

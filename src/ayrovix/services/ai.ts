@@ -64,6 +64,7 @@ Analyse l'image avec une intelligence multi-produits en temps réel.
 Identifie le produit principal ainsi que TOUS les produits distincts visibles dans la scène (ex. tenue complète : t-shirt, pantalon, chaussures, sac, montre, lunettes, ou plusieurs articles sur une table / un rayon). Ne t'arrête pas au premier produit.
 
 Règles obligatoires :
+- Le schéma de sortie n'autorise PAS null. Valeur absente/inconnue : texte = "" (chaîne vide), nombre = 0, tableau (dont box) = [] (tableau vide). N'émets jamais null.
 - N'invente jamais une marque, un modèle, un code article, un prix ou une devise.
 - Un code modèle n'est accepté que s'il est lisible dans l'image.
 - Pour une photo de produit sans prix visible, detected_price.label doit être "none" et amount/confidence à 0.
@@ -87,6 +88,17 @@ Règles obligatoires :
 - Si aucun produit n'est identifiable, confidence vaut 0 et description vaut "PRODUIT_NON_IDENTIFIE".
 - La description doit être une phrase factuelle courte en français.`;
 
+/**
+ * Provider-facing identification schema. UNION-FREE (no anyOf/oneOf/nullable,
+ * no `type: [...]` arrays) to stay within Anthropic's union-parameter limit.
+ *
+ * Missing-value convention:
+ *  - text unknowns  -> "" (empty string)
+ *  - numeric unknowns -> 0
+ *  - array unknowns (incl. a product `box`) -> [] (empty array)
+ * The parser (parseIdentification) converts sentinels back to the application
+ * model's nulls, so the wire schema never needs a union.
+ */
 const IDENTIFICATION_SCHEMA = {
   type: 'object',
   properties: {
@@ -95,8 +107,8 @@ const IDENTIFICATION_SCHEMA = {
       enum: ['product_photo', 'product_screenshot', 'cart_screenshot', 'barcode', 'other'],
     },
     category: { type: 'string' },
-    brand: { type: ['string', 'null'] },
-    model: { type: ['string', 'null'] },
+    brand: { type: 'string' },
+    model: { type: 'string' },
     // Runtime bounds are enforced again in parseIdentification() so provider
     // output can never bypass AYROVIX validation.
     color: { type: 'array', items: { type: 'string' } },
@@ -118,12 +130,12 @@ const IDENTIFICATION_SCHEMA = {
     pricing: {
       type: 'object',
       properties: {
-        sale_price: { type: ['number', 'null'] },
-        original_price: { type: ['number', 'null'] },
-        shipping_price: { type: ['number', 'null'] },
-        total_price: { type: ['number', 'null'] },
-        currency: { type: ['string', 'null'] },
-        discount_percent: { type: ['number', 'null'] },
+        sale_price: { type: 'number' },
+        original_price: { type: 'number' },
+        shipping_price: { type: 'number' },
+        total_price: { type: 'number' },
+        currency: { type: 'string' },
+        discount_percent: { type: 'number' },
       },
       required: ['sale_price', 'original_price', 'shipping_price', 'total_price', 'currency', 'discount_percent'],
       additionalProperties: false,
@@ -134,22 +146,23 @@ const IDENTIFICATION_SCHEMA = {
         type: 'object',
         properties: {
           name: { type: 'string' },
-          brand: { type: ['string', 'null'] },
+          brand: { type: 'string' },
           category: { type: 'string' },
-          subcategory: { type: ['string', 'null'] },
-          price: { type: ['number', 'null'] },
-          currency: { type: ['string', 'null'] },
-          box: { type: ['array', 'null'], items: { type: 'number' } },
+          subcategory: { type: 'string' },
+          price: { type: 'number' },
+          currency: { type: 'string' },
+          // Normalized [x,y,w,h] in 0..1; empty array => no reliable box.
+          box: { type: 'array', items: { type: 'number' } },
           color: { type: 'array', items: { type: 'string' } },
-          motif: { type: ['string', 'null'] },
-          material: { type: ['string', 'null'] },
+          motif: { type: 'string' },
+          material: { type: 'string' },
         },
-        required: ['name', 'brand', 'category', 'subcategory', 'price', 'currency'],
+        required: ['name', 'brand', 'category', 'subcategory', 'price', 'currency', 'box', 'color', 'motif', 'material'],
         additionalProperties: false,
       },
     },
-    url: { type: ['string', 'null'] },
-    seller: { type: ['string', 'null'] },
+    url: { type: 'string' },
+    seller: { type: 'string' },
   },
   required: [
     'input_kind', 'category', 'brand', 'model', 'color', 'visible_text',

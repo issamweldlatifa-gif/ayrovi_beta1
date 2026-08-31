@@ -4,6 +4,14 @@ All notable AYROVI changes are recorded in this file.
 
 ## [Unreleased]
 
+### Fixed
+- **Arrival CRM / Anthropic schema union-type limit (HTTP 400 `too many parameters with union types`):** the Arrival extraction tool schema sent 17 nullable/union parameters (provider limit 16). The provider-facing schema is now a dedicated, fixed AI Extraction Schema (`src/arrival-ingestion/arrivalExtractionSchema.ts`) with **zero** union/anyOf/oneOf/nullable parameters — missing values use stable sentinels (`""`/`0`/`[]`) and the normalization layer converts them to the application model's nulls, preserving the "absent vs present" distinction via `unresolvedEntries`/review reasons. No extraction field was removed; the operational envelope (customer + identifiers, supplier/store, order id, tracking number, order date, shipment status) was added as `orderMeta`, plus product `size`, `unitPrice`, `currency` and `productUrl`, persisted through new `crm_extracted_products` columns.
+- Added **preflight schema validation** in the Anthropic adapter (`src/ai-core/adapters/anthropic/schemaLimits.ts`): every output schema and tool input schema is counted for union parameters and, when over the provider limit, rejected locally with `ANTHROPIC_SCHEMA_LIMIT_EXCEEDED` (`union_parameters`, `maximum_allowed`, `offenders`) **before** any network call — no retry, no fallback that hides the error.
+- AYROVIX Lens identification schema (18 union parameters on the same Anthropic structured-output path) was converted to the same union-free, sentinel-based shape.
+- Arrival customer identity resolution now reconciles the extracted order envelope (Tunisian phone/name) against the canonical CRM customer and flags conflicts (`IDENTITY_PHONE_MISMATCH`, `IDENTITY_NAME_MISMATCH`) without silently rebinding; multiple stores/orders for one customer still aggregate onto a single Customer Arrival Card and flow into the warehouse batch (approve-all → confirm).
+### Added
+- Integration coverage for the preflight limit, a union-free provider schema, fixed-schema sentinel normalization, and the EMAIL + IMAGE(screenshot) multi-store → one Customer Arrival Card → warehouse batch flow.
+
 ### Changed
 - Removed the legacy `RealtimeVoiceTransport`, global queued `voicePlayer`, synthetic voice earcons, recursive interruption events and browser SpeechRecognition branch.
 - Rebuilt Voice Chat around one owned `VoiceChatController`: microphone → VAD with pre-roll → MediaRecorder → server STT → one assistant response → one `VoiceOutput` operation.

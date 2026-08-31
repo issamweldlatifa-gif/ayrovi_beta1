@@ -1,91 +1,44 @@
 import type {
   FieldEvidence,
+  NormalizedOrderMeta,
   NormalizedProductCandidate,
   NormalizedUnitExtraction,
   ProductExtractionStatus,
   RawExtractedProduct,
 } from './types';
 
-const PRODUCT_FIELDS = ['productName', 'sku', 'reference', 'variant', 'color', 'quantity'] as const;
-type ProductField = typeof PRODUCT_FIELDS[number];
+// Re-export the provider-facing schema so existing imports keep working.
+export { ARRIVAL_EXTRACTION_SCHEMA, PRODUCT_EVIDENCE_FIELDS } from './arrivalExtractionSchema';
+
+/**
+ * Canonical text fields that (a) appear on the product record and (b) must be
+ * evidence-backed. Numeric fields (quantity/unitPrice) are handled separately.
+ */
+const TEXT_PRODUCT_FIELDS = ['productName', 'sku', 'reference', 'variant', 'color', 'size'] as const;
+type TextProductField = typeof TEXT_PRODUCT_FIELDS[number];
+/** Fields the anti-guessing guard nulls when the model did not cite evidence. */
+const EVIDENCE_FIELDS = [
+  'productName', 'sku', 'reference', 'variant', 'color', 'size', 'quantity',
+  'unitPrice', 'currency', 'productUrl',
+] as const;
+type EvidenceField = typeof EVIDENCE_FIELDS[number];
 
 const NULL_MARKERS = new Set([
   '', 'null', 'none', 'unknown', 'n/a', 'na', 'not available', 'unreadable',
   'needs_review', 'needs review', 'inconnu', 'illisible', 'غير معروف',
 ]);
 
-export const ARRIVAL_EXTRACTION_SCHEMA: Record<string, unknown> = {
-  type: 'object',
-  properties: {
-    products: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          productName: { type: ['string', 'null'] },
-          sku: { type: ['string', 'null'] },
-          reference: { type: ['string', 'null'] },
-          variant: { type: ['string', 'null'] },
-          color: { type: ['string', 'null'] },
-          quantity: { type: ['integer', 'null'] },
-          productImageRef: { type: ['string', 'null'] },
-          productImageRegion: {
-            type: ['array', 'null'],
-            items: { type: 'number' },
-          },
-          confidence: { type: 'number' },
-          fieldEvidence: {
-            type: 'object',
-            properties: Object.fromEntries(PRODUCT_FIELDS.map((field) => [field, { type: ['string', 'null'] }])),
-            required: [...PRODUCT_FIELDS],
-            additionalProperties: false,
-          },
-          sourceSpecific: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                key: { type: 'string' },
-                value: { type: 'string' },
-                evidence: { type: ['string', 'null'] },
-              },
-              required: ['key', 'value', 'evidence'],
-              additionalProperties: false,
-            },
-          },
-        },
-        required: [
-          'productName', 'sku', 'reference', 'variant', 'color', 'quantity',
-          'productImageRef', 'productImageRegion', 'confidence', 'fieldEvidence', 'sourceSpecific',
-        ],
-        additionalProperties: false,
-      },
-    },
-    unresolvedEntries: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          sourceReference: { type: 'string' },
-          reason: { type: 'string' },
-          visibleText: { type: ['string', 'null'] },
-        },
-        required: ['sourceReference', 'reason', 'visibleText'],
-        additionalProperties: false,
-      },
-    },
-    expectedProductCount: { type: ['integer', 'null'] },
-    warnings: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['products', 'unresolvedEntries', 'expectedProductCount', 'warnings'],
-  additionalProperties: false,
-};
-
+/**
+ * Normalize an AI-provided string. The provider schema only allows plain
+ * `string`; the model expresses "unknown" with an empty string or a textual
+ * marker (e.g. "unknown"). Both are collapsed to `null` here so the
+ * application model keeps the null/value distinction without needing a union.
+ */
 function cleanNullable(value: unknown, max: number): string | null {
   if (typeof value !== 'string') return null;
   const cleaned = value.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
   const marker = cleaned.toLowerCase();
-  const compoundUnknown = /^(?:unknown|needs[_ ]review|inconnu|illisible|غير معروف)(?:\s*[\/-]\s*(?:unknown|needs[_ ]review|inconnu|illisible|غير معروف))*$/i.test(marker);
+  const compoundUnknown = /^(?:unknown|needs[_ ]review|inconnu|illisible|غير معروف)(?:\s*[/-]\s*(?:unknown|needs[_ ]review|inconnu|illisible|غير معروف))*$/i.test(marker);
   return NULL_MARKERS.has(marker) || compoundUnknown ? null : cleaned || null;
 }
 
@@ -93,9 +46,24 @@ function cleanEvidence(value: unknown): string | null {
   return cleanNullable(value, 500);
 }
 
+function cleanText(value: unknown, max: number): string {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, max);
+}
+
 function confidence(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.round(Math.min(1, Math.max(0, parsed)) * 1000) / 1000 : 0;
+}
+
+/** Price sentinel: schema uses `number`; 0 (or non-finite) means "not known". */
+function price(value: unknown): number | null {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.round(parsed * 100) / 100;
 }
 
 function imageRegion(value: unknown): [number, number, number, number] | null {
@@ -110,16 +78,50 @@ function imageRegion(value: unknown): [number, number, number, number] | null {
   return width >= 0.02 && height >= 0.02 ? [x, y, width, height] : null;
 }
 
-function evidenceOf(raw: unknown): FieldEvidence {
+function normalizeOrderMeta(raw: unknown): NormalizedOrderMeta {
   const value = raw && typeof raw === 'object' ? raw as Record<string, unknown> : {};
   return {
-    productName: cleanEvidence(value.productName),
-    sku: cleanEvidence(value.sku),
-    reference: cleanEvidence(value.reference),
-    variant: cleanEvidence(value.variant),
-    color: cleanEvidence(value.color),
-    quantity: cleanEvidence(value.quantity),
+    customerName: cleanNullable(value.customerName, 160),
+    customerEmail: cleanNullable(value.customerEmail, 200),
+    customerPhone: cleanNullable(value.customerPhone, 40),
+    supplier: cleanNullable(value.supplier, 160),
+    store: cleanNullable(value.store, 160),
+    orderId: cleanNullable(value.orderId, 160),
+    trackingNumber: cleanNullable(value.trackingNumber, 160),
+    orderDate: cleanNullable(value.orderDate, 60),
+    shipmentStatus: cleanNullable(value.shipmentStatus, 80),
+    currency: cleanNullable(value.currency, 8) ? cleanText(value.currency, 8).toUpperCase() : null,
   };
+}
+
+/**
+ * Derive the per-field evidence record from the model's `evidenceFieldNames`
+ * array. The union-free schema cannot attach evidence per field as nullable
+ * strings, so the model lists the fields it actually saw; we expand that into
+ * the existing FieldEvidence shape (value = the canonical value, used by the
+ * anti-guessing guard and surfaced for review).
+ */
+function evidenceOf(raw: unknown, values: Partial<Record<EvidenceField, unknown>>): FieldEvidence {
+  const list = Array.isArray(raw) ? raw.map((item) => String(item)) : [];
+  const evidenced = new Set(list.map((item) => item.trim()).filter(Boolean));
+  const record: FieldEvidence = {
+    productName: null,
+    sku: null,
+    reference: null,
+    variant: null,
+    color: null,
+    size: null,
+    quantity: null,
+  };
+  // The FieldEvidence record covers the editable canonical fields; other
+  // evidenced facts (unitPrice/currency/productUrl) are validated in the loop
+  // over EVIDENCE_FIELDS but do not need a per-field evidence string.
+  for (const field of ['productName', 'sku', 'reference', 'variant', 'color', 'size', 'quantity'] as const) {
+    if (evidenced.has(field) && values[field] != null) {
+      record[field] = cleanEvidence(String(values[field]));
+    }
+  }
+  return record;
 }
 
 function statusFor(
@@ -141,37 +143,71 @@ function foldForEvidence(value: unknown): string {
     .trim();
 }
 
-function normalizeProduct(rawValue: unknown, validAssetIds: ReadonlySet<string>, sourceText: string): NormalizedProductCandidate {
+function normalizeProduct(
+  rawValue: unknown,
+  validAssetIds: ReadonlySet<string>,
+  sourceText: string,
+  orderCurrency: string | null,
+): NormalizedProductCandidate {
   const raw = rawValue && typeof rawValue === 'object' ? rawValue as Record<string, unknown> : {};
-  const fieldEvidence = evidenceOf(raw.fieldEvidence);
-  const reasons: string[] = [];
-  const values: Record<ProductField, string | number | null> = {
+
+  const values: Record<EvidenceField, string | number | null> = {
     productName: cleanNullable(raw.productName, 300),
     sku: cleanNullable(raw.sku, 160),
     reference: cleanNullable(raw.reference, 160),
     variant: cleanNullable(raw.variant, 300),
     color: cleanNullable(raw.color, 160),
+    size: cleanNullable(raw.size, 80),
     quantity: (() => {
       const value = Number(raw.quantity);
       return Number.isInteger(value) && value > 0 && value <= 10_000 ? value : null;
     })(),
+    unitPrice: price(raw.unitPrice),
+    currency: cleanNullable(raw.currency, 8) ? cleanText(raw.currency, 8).toUpperCase() : orderCurrency,
+    productUrl: (() => {
+      const url = cleanNullable(raw.productUrl, 500);
+      return url && /^https?:\/\//i.test(url) ? url : null;
+    })(),
   };
 
-  // A non-null canonical value without source evidence is treated as unknown.
-  // This is the server-side anti-guessing guard; prompts alone are insufficient.
-  for (const field of PRODUCT_FIELDS) {
+  const fieldEvidence = evidenceOf(raw.evidenceFieldNames, values);
+  const reasons: string[] = [];
+
+  // Server-side anti-guessing guard: a canonical value without source evidence
+  // is treated as unknown. Prompts alone are insufficient. For the editable
+  // fields we consult the FieldEvidence record; unitPrice/currency/productUrl
+  // are accepted when the model lists them in evidenceFieldNames.
+  const evidencedNames = new Set(
+    (Array.isArray(raw.evidenceFieldNames) ? raw.evidenceFieldNames : []).map((item) => String(item).trim()),
+  );
+  for (const field of TEXT_PRODUCT_FIELDS) {
     if (values[field] != null && !fieldEvidence[field]) {
-      values[field] = null;
+      (values as Record<string, unknown>)[field] = null;
       reasons.push(`MISSING_EVIDENCE_${field.toUpperCase()}`);
     }
   }
+  if (values.quantity != null && !fieldEvidence.quantity) {
+    values.quantity = null;
+    reasons.push('MISSING_EVIDENCE_QUANTITY');
+  }
+  for (const extra of ['unitPrice', 'productUrl'] as const) {
+    if (values[extra] != null && !evidencedNames.has(extra)) {
+      values[extra] = null;
+    }
+  }
+  // Currency is a controlled enumeration, not a guessed fact: when the model
+  // emits a product-level currency it must be evidence-backed, but the
+  // order-level currency inherited from orderMeta is authoritative and kept.
+  if (values.currency != null && !evidencedNames.has('currency') && values.currency !== orderCurrency) {
+    values.currency = null;
+  }
   const foldedSource = foldForEvidence(sourceText);
   if (foldedSource) {
-    for (const field of PRODUCT_FIELDS) {
-      const value = values[field];
+    for (const field of TEXT_PRODUCT_FIELDS) {
+      const value = values[field] as string | null;
       const foldedValue = foldForEvidence(value);
       if (value != null && foldedValue && !foldedSource.includes(foldedValue)) {
-        values[field] = null;
+        (values as Record<string, unknown>)[field] = null;
         reasons.push(`VALUE_NOT_FOUND_IN_SOURCE_${field.toUpperCase()}`);
       }
     }
@@ -183,7 +219,11 @@ function normalizeProduct(rawValue: unknown, validAssetIds: ReadonlySet<string>,
     reference: values.reference as string | null,
     variant: values.variant as string | null,
     color: values.color as string | null,
+    size: values.size as string | null,
     quantity: values.quantity as number | null,
+    unitPrice: values.unitPrice as number | null,
+    currency: values.currency as string | null,
+    productUrl: values.productUrl as string | null,
     extractionConfidence: confidence(raw.confidence),
     extractionStatus: 'NEEDS_REVIEW',
     productImageRef: (() => {
@@ -207,10 +247,15 @@ function normalizeProduct(rawValue: unknown, validAssetIds: ReadonlySet<string>,
       reference: raw.reference ?? null,
       variant: raw.variant ?? null,
       color: raw.color ?? null,
+      size: raw.size ?? null,
       quantity: raw.quantity ?? null,
+      unitPrice: raw.unitPrice ?? null,
+      currency: raw.currency ?? null,
+      productUrl: raw.productUrl ?? null,
       productImageRef: raw.productImageRef ?? null,
       productImageRegion: raw.productImageRegion ?? null,
       confidence: raw.confidence ?? null,
+      evidenceFieldNames: raw.evidenceFieldNames ?? null,
       fieldEvidence: raw.fieldEvidence ?? null,
       sourceSpecific: raw.sourceSpecific ?? null,
     } as RawExtractedProduct,
@@ -238,9 +283,10 @@ function parseJson(rawText: string): Record<string, unknown> {
 export class ProductExtractionNormalizer {
   parse(rawText: string, validAssetIds: ReadonlySet<string>, sourceText = ''): NormalizedUnitExtraction {
     const parsed = parseJson(rawText);
+    const orderMeta = normalizeOrderMeta(parsed.orderMeta);
     const products = (Array.isArray(parsed.products) ? parsed.products : [])
       .slice(0, 500)
-      .map((item) => normalizeProduct(item, validAssetIds, sourceText));
+      .map((item) => normalizeProduct(item, validAssetIds, sourceText, orderMeta.currency));
     const unresolvedEntries = (Array.isArray(parsed.unresolvedEntries) ? parsed.unresolvedEntries : [])
       .flatMap((item: unknown) => {
         if (!item || typeof item !== 'object') return [];
@@ -249,6 +295,7 @@ export class ProductExtractionNormalizer {
         if (!reason) return [];
         return [{
           sourceReference: cleanNullable(entry.sourceReference, 300) || 'unresolved-entry',
+          field: cleanNullable(entry.field, 80),
           reason,
           visibleText: cleanNullable(entry.visibleText, 1_000),
         }];
@@ -265,11 +312,12 @@ export class ProductExtractionNormalizer {
       for (let index = 0; index < missing; index += 1) {
         unresolvedEntries.push({
           sourceReference: `unaccounted-${index + 1}`,
+          field: null,
           reason: 'The source indicates an additional product but no evidence-backed record was returned.',
           visibleText: null,
         });
       }
     }
-    return { products, unresolvedEntries, expectedProductCount, warningCodes: [...new Set(warningCodes)] };
+    return { orderMeta, products, unresolvedEntries, expectedProductCount, warningCodes: [...new Set(warningCodes)] };
   }
 }

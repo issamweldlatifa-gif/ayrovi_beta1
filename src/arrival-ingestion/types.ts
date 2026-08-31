@@ -64,7 +64,27 @@ export interface FieldEvidence {
   reference: string | null;
   variant: string | null;
   color: string | null;
+  size: string | null;
   quantity: string | null;
+}
+
+/**
+ * Order / shipment envelope extracted from the source unit. All fields are
+ * normalized: `null` means "not present / not legible in this unit". This is
+ * the operational header used by Customer Identity Resolution and aggregation;
+ * it is separate from the per-product line items.
+ */
+export interface NormalizedOrderMeta {
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  supplier: string | null;
+  store: string | null;
+  orderId: string | null;
+  trackingNumber: string | null;
+  orderDate: string | null;
+  shipmentStatus: string | null;
+  currency: string | null;
 }
 
 export interface RawExtractedProduct {
@@ -73,10 +93,15 @@ export interface RawExtractedProduct {
   reference: unknown;
   variant: unknown;
   color: unknown;
+  size: unknown;
   quantity: unknown;
+  unitPrice: unknown;
+  currency: unknown;
+  productUrl: unknown;
   productImageRef: unknown;
   productImageRegion: unknown;
   confidence: unknown;
+  evidenceFieldNames: unknown;
   fieldEvidence: unknown;
   sourceSpecific: unknown;
 }
@@ -87,7 +112,11 @@ export interface NormalizedProductCandidate {
   reference: string | null;
   variant: string | null;
   color: string | null;
+  size: string | null;
   quantity: number | null;
+  unitPrice: number | null;
+  currency: string | null;
+  productUrl: string | null;
   extractionConfidence: number;
   extractionStatus: ProductExtractionStatus;
   productImageRef: string | null;
@@ -100,11 +129,13 @@ export interface NormalizedProductCandidate {
 
 export interface UnresolvedExtractionEntry {
   sourceReference: string;
+  field: string | null;
   reason: string;
   visibleText: string | null;
 }
 
 export interface NormalizedUnitExtraction {
+  orderMeta: NormalizedOrderMeta;
   products: NormalizedProductCandidate[];
   unresolvedEntries: UnresolvedExtractionEntry[];
   expectedProductCount: number | null;

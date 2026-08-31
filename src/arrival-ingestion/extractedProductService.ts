@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { recordAdminAudit, type AdminAuditActor } from '../admin/audit';
 import { ArrivalIngestionError } from './errors';
-import type { NormalizedProductCandidate, SourceAsset } from './types';
+import type { NormalizedOrderMeta, NormalizedProductCandidate, SourceAsset } from './types';
 import { ArrivalClientService } from './arrivalClientService';
 import { SourceImportService } from './sourceImportService';
 
@@ -54,7 +54,15 @@ export function mapExtractedProduct(row: any) {
     reference: row.reference || null,
     variant: row.variant || null,
     color: row.color || null,
+    size: row.size || null,
     quantity: row.quantity == null ? null : Number(row.quantity),
+    unitPrice: row.unit_price == null ? null : Number(row.unit_price),
+    currency: row.currency || null,
+    productUrl: row.product_url || null,
+    orderId: row.order_id || null,
+    trackingNumber: row.tracking_number || null,
+    orderDate: row.order_date || null,
+    shipmentStatus: row.shipment_status || null,
     productImage: row.product_image_storage_key ? `/api/admin/arrival-ingestion/products/${row.id}/image` : null,
     sourceType: row.source_type,
     sourceReference: row.source_reference,
@@ -118,10 +126,12 @@ export class ExtractedProductService {
     sourceType: string;
     sourceReference: string;
     candidate: NormalizedProductCandidate;
+    orderMeta?: NormalizedOrderMeta | null;
     assets: SourceAsset[];
     assertActive?: () => void;
   }): Promise<string> {
     const id = `crm_extracted_product_${randomUUID()}`;
+    const orderMeta = input.orderMeta || null;
     const asset = input.candidate.productImageRef
       ? input.assets.find((item) => item.id === input.candidate.productImageRef)
       : undefined;
@@ -141,18 +151,37 @@ export class ExtractedProductService {
       throw error;
     }
     const now = new Date().toISOString();
+    // Persist the order/shipment envelope on every line item (denormalized so
+    // per-line review/approval keeps its operational context), and also expose
+    // it as read-only order.* facts in sourceSpecific for the card view.
+    const orderFacts = orderMeta ? [
+      ['order.customerName', orderMeta.customerName],
+      ['order.customerEmail', orderMeta.customerEmail],
+      ['order.customerPhone', orderMeta.customerPhone],
+      ['order.supplier', orderMeta.supplier],
+      ['order.store', orderMeta.store],
+      ['order.orderId', orderMeta.orderId],
+      ['order.trackingNumber', orderMeta.trackingNumber],
+      ['order.orderDate', orderMeta.orderDate],
+      ['order.shipmentStatus', orderMeta.shipmentStatus],
+    ].filter(([, value]) => value).map(([key, value]) => ({ key: String(key), value: String(value), evidence: null })) : [];
+    const sourceSpecific = [...orderFacts, ...input.candidate.sourceSpecific];
     this.db.run(`INSERT INTO crm_extracted_products
       (id,job_id,source_id,arrival_client_id,arrival_client_store_id,arrival_id,customer_id,store_id,
-       product_name,sku,reference,variant,color,quantity,product_image_storage_key,
+       product_name,sku,reference,variant,color,size,quantity,unit_price,currency,product_url,
+       order_id,tracking_number,order_date,shipment_status,product_image_storage_key,
        source_type,source_reference,extraction_confidence,extraction_status,
        field_evidence,source_specific,raw_extracted,review_reasons,is_current,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
     id, input.jobId, input.sourceId, input.client.id, input.clientStore.id, input.client.arrival_id,
     input.client.customer_id, input.clientStore.storeId,
     input.candidate.productName, input.candidate.sku, input.candidate.reference, input.candidate.variant,
-    input.candidate.color, input.candidate.quantity, imageStorageKey, input.sourceType, input.sourceReference,
+    input.candidate.color, input.candidate.size, input.candidate.quantity, input.candidate.unitPrice,
+    input.candidate.currency, input.candidate.productUrl,
+    orderMeta?.orderId || null, orderMeta?.trackingNumber || null, orderMeta?.orderDate || null, orderMeta?.shipmentStatus || null,
+    imageStorageKey, input.sourceType, input.sourceReference,
     input.candidate.extractionConfidence, input.candidate.extractionStatus,
-    JSON.stringify(input.candidate.fieldEvidence), JSON.stringify(input.candidate.sourceSpecific),
+    JSON.stringify(input.candidate.fieldEvidence), JSON.stringify(sourceSpecific),
     JSON.stringify(input.candidate.raw), JSON.stringify(input.candidate.reviewReasons), now, now);
     return id;
   }
@@ -165,6 +194,7 @@ export class ExtractedProductService {
     sourceType: string;
     sourceReference: string;
     reason: string;
+    field?: string | null;
     visibleText?: string | null;
     failed?: boolean;
   }): string {
@@ -183,7 +213,7 @@ export class ExtractedProductService {
       VALUES (?,?,?,?,?,?,?,?,?,?,0,?,'{}','[]',?,?,0,?,?)`,
     id, input.jobId, input.sourceId, input.client.id, clientStore.id, input.client.arrival_id, input.client.customer_id,
     clientStore.storeId, input.sourceType, input.sourceReference, status,
-    JSON.stringify({ visibleText: input.visibleText || null }), JSON.stringify([String(input.reason).slice(0, 500)]), now, now);
+      JSON.stringify({ visibleText: input.visibleText || null, field: input.field || null }), JSON.stringify([String(input.reason).slice(0, 500)]), now, now);
     return id;
   }
 

@@ -14,6 +14,7 @@ import type {
 } from '../../contracts';
 import { AiProviderError, providerErrorFromHttp, retryAtFromHeader } from '../../errors';
 import { dedupeWebResults, emptyUsage } from '../shared';
+import { assertAnthropicSchemaWithinLimit } from './schemaLimits';
 
 const ANTHROPIC_MESSAGES_URL = 'https://api.anthropic.com/v1/messages';
 const DEFAULT_HAIKU_MODEL = 'claude-haiku-4-5-20251001';
@@ -66,6 +67,21 @@ export function toAnthropicMessages(messages: AiMessage[]): Array<Record<string,
     }
     return { role, content: parts };
   });
+}
+
+/**
+ * Preflight schema-constraint validation. Runs BEFORE any network call so a
+ * request that would exceed Anthropic's union-type limit is rejected locally
+ * (ANTHROPIC_SCHEMA_LIMIT_EXCEEDED) instead of burning a request on HTTP 400.
+ * Every structured-output schema and every tool input schema is checked.
+ */
+function preflightSchemas(request: AiCompletionRequest): void {
+  if (request.outputSchema?.schema) {
+    assertAnthropicSchemaWithinLimit(request.outputSchema.schema, `output_schema:${request.outputSchema.name}`);
+  }
+  for (const tool of request.tools || []) {
+    if (tool.parameters) assertAnthropicSchemaWithinLimit(tool.parameters, `tool:${tool.name}`);
+  }
 }
 
 function toAnthropicTools(tools: AiToolDefinition[], custom = false): Array<Record<string, unknown>> {
@@ -371,6 +387,8 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
   }
 
   async complete(request: AiCompletionRequest, signal?: AbortSignal): Promise<AiCompletionResult> {
+    // Validate schema complexity locally before touching the network.
+    preflightSchemas(request);
     const model = this.resolveModel(request.workload, request.modelClass);
     const response = await this.post(
       baseBody(request, model),
@@ -384,6 +402,8 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
   }
 
   async stream(request: AiCompletionRequest, callbacks: AiStreamCallbacks, signal: AbortSignal): Promise<AiCompletionResult> {
+    // Validate schema complexity locally before touching the network.
+    preflightSchemas(request);
     const preferred = this.resolveModel(request.workload, request.modelClass);
     const models = fallbackModels(preferred);
     let lastError: unknown;
