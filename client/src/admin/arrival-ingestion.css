@@ -79,7 +79,10 @@
 .arrival-progress i { display: block; height: 4px; overflow: hidden; background: #bfdbfe; }
 .arrival-progress em { display: block; height: 100%; min-width: 8%; background: #2563eb; transition: width .25s ease; }
 
-.arrival-customer-choices { display: flex; flex-direction: column; gap: 7px; margin-top: 14px; }
+.arrival-customer-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 15px; padding: 4px; background: #f1f1f3; }
+.arrival-customer-modes button { min-height: 38px; border: 0; background: transparent; color: var(--admin-muted); cursor: pointer; font-size: 11px; font-weight: 850; }
+.arrival-customer-modes button.is-active { background: #fff; color: var(--admin-ink); box-shadow: 0 1px 4px rgba(20, 18, 28, .1); }
+.arrival-customer-choices { display: flex; max-height: min(46vh, 430px); overflow: auto; flex-direction: column; gap: 7px; margin-top: 14px; }
 .arrival-customer-choices > button { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 11px; width: 100%; padding: 11px; border: 1px solid var(--admin-line); background: #fff; color: var(--admin-ink); cursor: pointer; text-align: left; }
 .arrival-customer-choices > button:hover:not(:disabled) { border-color: #fe7003; background: #fffaf5; }
 .arrival-customer-choices > button:disabled { opacity: .55; cursor: not-allowed; }
@@ -88,6 +91,16 @@
 .arrival-customer-choices div strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .arrival-customer-choices small { color: var(--admin-muted); }
 .arrival-customer-choices svg { width: 17px; }
+.arrival-customer-empty { display: flex; align-items: center; flex-direction: column; gap: 7px; padding: 28px 16px 8px; color: var(--admin-muted); text-align: center; }
+.arrival-customer-empty > svg { width: 28px; color: #a5a2ad; }
+.arrival-customer-empty strong { color: var(--admin-ink); font-size: 13px; }
+.arrival-customer-empty span { max-width: 340px; font-size: 10px; line-height: 1.5; }
+.arrival-customer-empty .admin-button { margin-top: 4px; }
+.arrival-new-customer > p { margin: 0 0 16px; padding: 11px 13px; border-left: 3px solid #fe7003; background: #fff7ed; color: #7c2d12; font-size: 10px; line-height: 1.55; }
+.arrival-new-customer .admin-field + .admin-field { margin-top: 13px; }
+.arrival-new-customer-actions { display: flex; justify-content: flex-end; gap: 7px; margin-top: 19px; padding-top: 14px; border-top: 1px solid var(--admin-line); }
+.arrival-new-customer + .arrival-error,
+.arrival-customer-choices + .arrival-error { margin-top: 12px; }
 
 .arrival-source-profile { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 13px 15px; background: #17151f; color: #fff; }
 .arrival-source-profile > span { color: #a1a1aa; font-size: 9px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }

@@ -7,6 +7,7 @@ import { QatafoDatabase } from '../db/database';
 import { uploadsDir, invoiceAbsolutePath } from '../services/invoice';
 import { sendMail } from '../services/mailer';
 import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
+import { normalizeTunisianPhone } from './phone';
 import {
   cleanupCustomerAuth,
   clearCustomerCookie,
@@ -58,13 +59,7 @@ function facebookOauthCookie(value: string, maxAgeSeconds: number): string {
   return oauthCookie(FACEBOOK_OAUTH_COOKIE, '/api/customer/auth/facebook', value, maxAgeSeconds);
 }
 
-export function normalizeTunisianPhone(value: unknown): string | null {
-  let digits = String(value || '').replace(/\D/g, '');
-  if (digits.startsWith('00216')) digits = digits.slice(5);
-  else if (digits.startsWith('216') && digits.length === 11) digits = digits.slice(3);
-  if (!/^[24579]\d{7}$/.test(digits)) return null;
-  return `+216${digits}`;
-}
+export { normalizeTunisianPhone } from './phone';
 
 function validCartSession(value: unknown): string {
   const session = String(value || '').trim();

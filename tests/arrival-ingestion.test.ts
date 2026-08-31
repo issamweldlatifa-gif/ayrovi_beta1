@@ -180,6 +180,69 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(harness.db.get<any>("SELECT id FROM crm_arrivals WHERE name='Atomic rollback check'")).toBeUndefined();
   });
 
+  test('creates a canonical CRM customer inline, normalizes and reuses a duplicate phone, then links the Arrival atomically', async () => {
+    const harness = createHarness();
+    const firstArrival = await mutation(harness, 'post', '/api/admin/arrival-ingestion/arrivals').send({ name: 'Inline customer A' });
+    const firstArrivalId = firstArrival.body.data.id as string;
+
+    const invalid = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${firstArrivalId}/clients`)
+      .send({ customer: { name: 'Nouveau Client', phone: '12 345 678' } });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe('CUSTOMER_PHONE_INVALID');
+
+    const created = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${firstArrivalId}/clients`)
+      .send({ customer: { name: '  Nouveau   Client  ', phone: '+216 22 345 678' } });
+    expect(created.status).toBe(201);
+    expect(created.body.meta).toEqual({ customerCreated: true });
+    expect(created.body.data.clients).toHaveLength(1);
+    expect(created.body.data.clients[0].customer).toMatchObject({ name: 'Nouveau Client', phone: '+21622345678', status: 'ACTIVE' });
+    const customerId = created.body.data.clients[0].customer.id as string;
+    expect(harness.db.get<any>('SELECT * FROM customers WHERE id=?', customerId)).toMatchObject({
+      name: 'Nouveau Client', phone: '+21622345678', normalized_phone: '22345678', governorate: '', address: '', status: 'ACTIVE',
+    });
+    expect(harness.db.get<any>("SELECT COUNT(*) count FROM audit_logs WHERE action='CUSTOMER_CREATED' AND entity_id=?", customerId).count).toBe(1);
+    const searchedByFormattedPhone = await read(harness, '/api/admin/arrival-ingestion/customers?search=%2B216%2022%20345%20678');
+    expect(searchedByFormattedPhone.body.data).toEqual([expect.objectContaining({ id: customerId })]);
+
+    const duplicateInArrival = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${firstArrivalId}/clients`)
+      .send({ customer: { name: 'Nom différent', phone: '00216 22 345 678' } });
+    expect(duplicateInArrival.status).toBe(409);
+    expect(duplicateInArrival.body.code).toBe('ARRIVAL_CLIENT_DUPLICATE');
+
+    const secondArrival = await mutation(harness, 'post', '/api/admin/arrival-ingestion/arrivals').send({ name: 'Inline customer B' });
+    const reused = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${secondArrival.body.data.id}/clients`)
+      .send({ customer: { name: 'Ne pas remplacer', phone: '22345678' } });
+    expect(reused.status).toBe(201);
+    expect(reused.body.meta).toEqual({ customerCreated: false });
+    expect(reused.body.data.clients[0].customer).toMatchObject({ id: customerId, name: 'Nouveau Client', phone: '+21622345678' });
+    expect(harness.db.get<any>("SELECT COUNT(*) count FROM customers WHERE normalized_phone='22345678'").count).toBe(1);
+    expect(harness.db.get<any>("SELECT COUNT(*) count FROM audit_logs WHERE action='CUSTOMER_CREATED' AND entity_id=?", customerId).count).toBe(1);
+
+    const blockedArrival = await mutation(harness, 'post', '/api/admin/arrival-ingestion/arrivals').send({ name: 'Blocked customer reuse' });
+    harness.db.run("UPDATE customers SET status='BLOCKED' WHERE id=?", customerId);
+    const blocked = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${blockedArrival.body.data.id}/clients`)
+      .send({ customer: { name: 'Blocked Customer', phone: '22 345 678' } });
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.code).toBe('CUSTOMER_INVALID');
+    expect(harness.db.get<any>('SELECT id FROM crm_arrival_clients WHERE arrival_id=?', blockedArrival.body.data.id)).toBeUndefined();
+    harness.db.run("UPDATE customers SET status='ACTIVE' WHERE id=?", customerId);
+
+    harness.db.run("UPDATE crm_arrivals SET status='CONFIRMED' WHERE id=?", firstArrivalId);
+    const locked = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${firstArrivalId}/clients`)
+      .send({ customer: { name: 'Locked Customer', phone: '22 765 432' } });
+    expect(locked.status).toBe(409);
+    expect(locked.body.code).toBe('ARRIVAL_CONFIRMED');
+    expect(harness.db.get<any>("SELECT id FROM customers WHERE normalized_phone='22765432'")).toBeUndefined();
+
+    const thirdArrival = await mutation(harness, 'post', '/api/admin/arrival-ingestion/arrivals').send({ name: 'Atomic inline failure' });
+    harness.db.run("CREATE TRIGGER reject_inline_customer_audit BEFORE INSERT ON audit_logs WHEN NEW.action='CUSTOMER_CREATED' BEGIN SELECT RAISE(ABORT, 'audit unavailable'); END;");
+    const failed = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${thirdArrival.body.data.id}/clients`)
+      .send({ customer: { name: 'Must Roll Back', phone: '22 987 654' } });
+    expect(failed.status).toBe(500);
+    expect(harness.db.get<any>("SELECT id FROM customers WHERE normalized_phone='22987654'")).toBeUndefined();
+    expect(harness.db.get<any>('SELECT id FROM crm_arrival_clients WHERE arrival_id=?', thirdArrival.body.data.id)).toBeUndefined();
+  });
+
   test('runs the full SHEIN email + TEMU PDF workflow, review, idempotency, summary and confirmation', async () => {
     const harness = createHarness();
     const ahmed = addCustomer(harness.db, '1', 'Ahmed Ben Ali');

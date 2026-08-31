@@ -372,9 +372,12 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
   const [arrivalName, setArrivalName] = useState('');
   const [createBusy, setCreateBusy] = useState(false);
   const [clientOpen, setClientOpen] = useState(false);
+  const [clientMode, setClientMode] = useState<'search' | 'create'>('search');
   const [clientSearch, setClientSearch] = useState('');
+  const [newCustomer, setNewCustomer] = useState({ name: '', phone: '' });
   const [customers, setCustomers] = useState<CustomerChoice[]>([]);
   const [clientBusy, setClientBusy] = useState('');
+  const [clientError, setClientError] = useState('');
   const [sourceClientId, setSourceClientId] = useState('');
   const [reviewClientId, setReviewClientId] = useState('');
   const [confirmBusy, setConfirmBusy] = useState(false);
@@ -417,16 +420,22 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
     return () => window.clearInterval(timer);
   }, [arrivalId, hasActiveJob, loadDetail]);
   useEffect(() => {
-    if (!clientOpen) return;
+    if (!clientOpen || clientMode !== 'search') return;
     const timer = window.setTimeout(() => {
       const query = new URLSearchParams({ search: clientSearch, limit: '30' });
-      void adminApi<{ data: CustomerChoice[] }>(`/arrival-ingestion/customers?${query}`).then((result) => setCustomers(result.data)).catch(() => setCustomers([]));
+      void adminApi<{ data: CustomerChoice[] }>(`/arrival-ingestion/customers?${query}`)
+        .then((result) => { setCustomers(result.data); setClientError(''); })
+        .catch((reason) => { setCustomers([]); setClientError(reason instanceof Error ? reason.message : 'Recherche impossible.'); });
     }, 180);
     return () => window.clearTimeout(timer);
-  }, [clientOpen, clientSearch]);
+  }, [clientOpen, clientMode, clientSearch]);
 
   const openDetail = (id: string) => { setArrivalUrl(id); setArrivalId(id); setDetail(null); };
   const back = () => { setArrivalUrl(); setArrivalId(''); setDetail(null); };
+  const openClientModal = () => {
+    setClientMode('search'); setClientSearch(''); setNewCustomer({ name: '', phone: '' }); setClientError(''); setClientOpen(true);
+  };
+  const closeClientModal = () => { if (!clientBusy) setClientOpen(false); };
   const createArrival = async () => {
     setCreateBusy(true); setError('');
     try {
@@ -437,11 +446,28 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
   };
   const addClient = async (customerId: string) => {
     if (!detail) return;
-    setClientBusy(customerId); setError('');
+    setClientBusy(customerId); setClientError('');
     try {
       const result = await adminApi<{ data: ArrivalDetail }>(`/arrival-ingestion/arrivals/${detail.id}/clients`, { method: 'POST', body: JSON.stringify({ customerId }) });
       setDetail(result.data); setClientOpen(false); setClientSearch(''); setToast({ message: 'Client CRM ajouté à l’Arrival.' });
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Ajout impossible.'); }
+    } catch (reason) { setClientError(reason instanceof Error ? reason.message : 'Ajout impossible.'); }
+    finally { setClientBusy(''); }
+  };
+  const createAndAddClient = async () => {
+    if (!detail) return;
+    setClientBusy('create'); setClientError('');
+    try {
+      const result = await adminApi<{ data: ArrivalDetail; meta: { customerCreated: boolean } }>(`/arrival-ingestion/arrivals/${detail.id}/clients`, {
+        method: 'POST', body: JSON.stringify({ customer: newCustomer }),
+      });
+      setDetail(result.data); setClientOpen(false); setNewCustomer({ name: '', phone: '' });
+      setToast({
+        message: result.meta.customerCreated
+          ? 'Nouveau client créé dans le CRM et ajouté à l’Arrival.'
+          : 'Ce téléphone existe déjà : le client CRM existant a été ajouté à l’Arrival.',
+        tone: 'success',
+      });
+    } catch (reason) { setClientError(reason instanceof Error ? reason.message : 'Création impossible.'); }
     finally { setClientBusy(''); }
   };
   const selectStore = async (clientId: string, storeId: string) => {
@@ -483,19 +509,35 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
   if (!detail) return <LoadingState error={error} />;
   return <>
     <button type="button" className="arrival-back" onClick={back}><ArrowLeft />Tous les Arrivals</button>
-    <header className="arrival-detail-header"><div><span>ARRIVAL</span><h1>{detail.name}</h1><div><StatusBadge status={detail.status} /><small>Créé le {formatDate(detail.createdAt)}</small>{detail.confirmedAt && <small>Confirmé le {formatDate(detail.confirmedAt, true)}</small>}</div></div><div>{canWrite && detail.status !== 'CONFIRMED' && <><Button variant="secondary" onClick={() => setClientOpen(true)}><User /><Plus />Add Client</Button><Button variant="secondary" onClick={() => { void loadDetail(); setToast({ message: 'Données enregistrées. Vous pouvez continuer.' }); }}><Save />Save / Continue</Button><Button busy={confirmBusy} onClick={() => setConfirmOpen(true)}><CheckCircle2 />Confirm Arrival</Button></>}</div></header>
+    <header className="arrival-detail-header"><div><span>ARRIVAL</span><h1>{detail.name}</h1><div><StatusBadge status={detail.status} /><small>Créé le {formatDate(detail.createdAt)}</small>{detail.confirmedAt && <small>Confirmé le {formatDate(detail.confirmedAt, true)}</small>}</div></div><div>{canWrite && detail.status !== 'CONFIRMED' && <><Button variant="secondary" onClick={openClientModal}><User /><Plus />Add Client</Button><Button variant="secondary" onClick={() => { void loadDetail(); setToast({ message: 'Données enregistrées. Vous pouvez continuer.' }); }}><Save />Save / Continue</Button><Button busy={confirmBusy} onClick={() => setConfirmOpen(true)}><CheckCircle2 />Confirm Arrival</Button></>}</div></header>
     <section className="arrival-summary" aria-label="Résumé opérationnel"><article><span>Customers</span><strong>{detail.summary.customers}</strong></article><article><span>Products</span><strong>{detail.summary.products}</strong></article><article className="complete"><span>Completed</span><strong>{detail.summary.completed}</strong></article><article className="review"><span>Needs Review</span><strong>{detail.summary.needsReview}</strong></article><article className="processing"><span>Processing</span><strong>{detail.summary.processing}</strong></article></section>
     {error && <div className="arrival-error" role="alert"><AlertCircle />{error}</div>}
     <div className="sr-only" aria-live="polite">{hasActiveJob ? 'Extraction en cours.' : 'Aucune extraction en cours.'}</div>
     <section className="arrival-clients"><div className="arrival-section-title"><div><span>CLIENTS / CUSTOMER IMPORTS</span><h2>{detail.clients.length} client{detail.clients.length === 1 ? '' : 's'}</h2></div></div>
-      {detail.clients.length === 0 ? <div className="arrival-empty-inline">Ajoutez un client existant du CRM pour commencer.</div> : <div className="arrival-client-grid">{detail.clients.map((client) => <article key={client.id} className="arrival-client-card"><header><div className="arrival-avatar">{client.customer.name.slice(0, 2).toUpperCase()}</div><div><h3>{client.customer.name}</h3><span>{client.customer.phone}</span></div><StatusBadge status={client.extractionStatus} /></header>
+      {detail.clients.length === 0 ? <div className="arrival-empty-inline">Recherchez un client CRM ou créez-en un nouveau pour commencer.</div> : <div className="arrival-client-grid">{detail.clients.map((client) => <article key={client.id} className="arrival-client-card"><header><div className="arrival-avatar">{client.customer.name.slice(0, 2).toUpperCase()}</div><div><h3>{client.customer.name}</h3><span>{client.customer.phone}</span></div><StatusBadge status={client.extractionStatus} /></header>
         <label className="arrival-store-select"><span>Store</span><select value={client.store?.id || ''} disabled={!canWrite || detail.status === 'CONFIRMED' || clientBusy === client.id} onChange={(event) => void selectStore(client.id, event.target.value)}><option value="">Select Store…</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
         <div className="arrival-client-metrics"><div><span>Products</span><strong>{client.products.total}</strong></div><div><span>Approved</span><strong>{client.products.approved}</strong></div><div><span>Review</span><strong>{client.products.needsReview + client.products.failed}</strong></div></div>
         {client.sources.some((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')) && <div className="arrival-progress">{client.sources.filter((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')).map((source) => <div key={source.id}><span><Loader2 className="admin-spin" />Extracting {source.originalFilename}</span><strong>{source.latestJob?.progressCurrent || 0} / {source.latestJob?.progressTotal || '…'}</strong><i><em style={{ width: source.latestJob?.progressTotal ? `${Math.min(100, (source.latestJob.progressCurrent / source.latestJob.progressTotal) * 100)}%` : '8%' }} /></i></div>)}</div>}
         <footer><Button variant="secondary" disabled={!client.store} onClick={() => setSourceClientId(client.id)}><FileText />{client.sources.length ? 'Extract / Re-extract' : 'Add Source'}</Button><Button variant="secondary" disabled={!client.products.total} onClick={() => setReviewClientId(client.id)}><Eye />View Products</Button><Button disabled={!client.products.total} onClick={() => setReviewClientId(client.id)}><Check />Review</Button></footer>
       </article>)}</div>}
     </section>
-    <Modal open={clientOpen} eyebrow="AYROVI CRM" title="Add existing CRM client" onClose={() => setClientOpen(false)}><Search value={clientSearch} onChange={setClientSearch} placeholder="Nom ou téléphone…" /><div className="arrival-customer-choices">{customers.map((customer) => <button key={customer.id} type="button" disabled={clientBusy === customer.id || detail.clients.some((client) => client.customer.id === customer.id)} onClick={() => void addClient(customer.id)}><span>{customer.name.slice(0, 2).toUpperCase()}</span><div><strong>{customer.name}</strong><small>{customer.phone}</small></div>{detail.clients.some((client) => client.customer.id === customer.id) ? <small>Déjà ajouté</small> : clientBusy === customer.id ? <Loader2 className="admin-spin" /> : <Plus />}</button>)}</div></Modal>
+    <Modal open={clientOpen} eyebrow="AYROVI CRM" title="Ajouter un client à l’Arrival" onClose={closeClientModal}>
+      <div className="arrival-customer-modes" role="tablist" aria-label="Mode d’ajout du client">
+        <button type="button" role="tab" aria-selected={clientMode === 'search'} className={clientMode === 'search' ? 'is-active' : ''} onClick={() => { setClientMode('search'); setClientError(''); }}>Rechercher un client</button>
+        <button type="button" role="tab" aria-selected={clientMode === 'create'} className={clientMode === 'create' ? 'is-active' : ''} onClick={() => { setClientMode('create'); setClientError(''); setNewCustomer((value) => ({ ...value, name: value.name || clientSearch.trim() })); }}>Nouveau client</button>
+      </div>
+      {clientMode === 'search' ? <>
+        <Search value={clientSearch} onChange={setClientSearch} placeholder="Nom ou téléphone…" />
+        <div className="arrival-customer-choices">{customers.map((customer) => <button key={customer.id} type="button" disabled={clientBusy === customer.id || detail.clients.some((client) => client.customer.id === customer.id)} onClick={() => void addClient(customer.id)}><span>{customer.name.slice(0, 2).toUpperCase()}</span><div><strong>{customer.name}</strong><small>{customer.phone}</small></div>{detail.clients.some((client) => client.customer.id === customer.id) ? <small>Déjà ajouté</small> : clientBusy === customer.id ? <Loader2 className="admin-spin" /> : <Plus />}</button>)}</div>
+        {customers.length === 0 && !clientError && <div className="arrival-customer-empty"><User /><strong>Aucun client trouvé</strong><span>Vous pouvez créer « {clientSearch.trim() || 'un nouveau client'} » dans la même base CRM.</span><Button variant="secondary" onClick={() => { setNewCustomer({ name: clientSearch.trim(), phone: '' }); setClientMode('create'); }}>Créer un client</Button></div>}
+      </> : <section className="arrival-new-customer" aria-label="Créer un nouveau client CRM">
+        <p>Le client sera enregistré dans la base CRM existante puis lié automatiquement à cet Arrival.</p>
+        <Field label="Nom du client" required full><input autoFocus value={newCustomer.name} maxLength={160} onChange={(event) => setNewCustomer({ ...newCustomer, name: event.target.value })} placeholder="Nom et prénom" /></Field>
+        <Field label="Téléphone tunisien" required hint="8 chiffres — les formats +216 et 00216 sont acceptés." full><input type="tel" inputMode="tel" value={newCustomer.phone} onChange={(event) => setNewCustomer({ ...newCustomer, phone: event.target.value })} placeholder="22 123 456" /></Field>
+        <div className="arrival-new-customer-actions"><Button variant="secondary" disabled={Boolean(clientBusy)} onClick={() => setClientMode('search')}>Retour à la recherche</Button><Button busy={clientBusy === 'create'} disabled={newCustomer.name.trim().length < 2 || newCustomer.phone.replace(/\D/g, '').length < 8} onClick={() => void createAndAddClient()}><User /><Plus />Créer et ajouter</Button></div>
+      </section>}
+      {clientError && <div className="arrival-error" role="alert"><AlertCircle />{clientError}</div>}
+    </Modal>
     <Modal open={confirmOpen} eyebrow="AYROVI CRM" title="Confirm Arrival" onClose={() => !confirmBusy && setConfirmOpen(false)} footer={<><Button variant="secondary" disabled={confirmBusy} onClick={() => setConfirmOpen(false)}>Annuler</Button><Button busy={confirmBusy} onClick={() => void confirm()}><CheckCircle2 />Confirmer définitivement</Button></>}><div className="arrival-confirm-copy"><AlertCircle /><div><strong>Valider {detail.name} ?</strong><p>Le serveur vérifiera les clients, Stores, jobs, champs requis et approbations. Après confirmation, cet Arrival sera verrouillé. Aucune opération Warehouse ne sera déclenchée.</p></div></div></Modal>
     <SourceModal client={sourceClient} stores={stores} open={Boolean(sourceClientId)} canWrite={canWrite && detail.status !== 'CONFIRMED'} onClose={() => setSourceClientId('')} onChanged={() => loadDetail(true)} />
     <ProductReviewModal client={reviewClient} open={Boolean(reviewClientId)} canWrite={canWrite && detail.status !== 'CONFIRMED'} onClose={() => setReviewClientId('')} onChanged={() => { void loadDetail(true); }} />

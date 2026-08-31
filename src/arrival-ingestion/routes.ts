@@ -68,7 +68,13 @@ export function createArrivalIngestionModule(
   });
 
   router.post('/arrivals/:id/clients', requireAdmin(db, 'orders:write'), (req, res) => {
-    res.status(201).json({ success: true, data: clients.add(req.params.id, req.body?.customerId, auditActorFromRequest(req)) });
+    const actor = auditActorFromRequest(req);
+    if (req.body?.customer && typeof req.body.customer === 'object') {
+      const result = clients.createAndAdd(req.params.id, req.body.customer, actor);
+      res.status(201).json({ success: true, data: result.detail, meta: { customerCreated: result.customerCreated } });
+      return;
+    }
+    res.status(201).json({ success: true, data: clients.add(req.params.id, req.body?.customerId, actor) });
   });
 
   router.post('/arrivals/:id/confirm', requireAdmin(db, 'orders:write'), (req, res) => {
