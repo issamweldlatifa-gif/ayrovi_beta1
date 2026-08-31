@@ -13,6 +13,7 @@ export type AiWorkload =
   | 'research'
   | 'stock-search'
   | 'magazine'
+  | 'arrival-ingestion'
   | 'voice-delegation';
 
 /**

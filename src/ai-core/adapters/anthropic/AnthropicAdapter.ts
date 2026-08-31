@@ -293,6 +293,15 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
         160,
       );
     }
+    if (workload === 'arrival-ingestion') {
+      return cleanText(
+        process.env.ARRIVAL_INGESTION_MODEL
+        || process.env.ASSISTANT_SONNET_MODEL
+        || process.env.ANTHROPIC_MODEL
+        || DEFAULT_SONNET_MODEL,
+        160,
+      );
+    }
     if (workload === 'vision' || workload === 'research') {
       return cleanText(process.env.ANTHROPIC_MODEL || DEFAULT_HAIKU_MODEL, 160);
     }
@@ -364,7 +373,11 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
 
   async complete(request: AiCompletionRequest, signal?: AbortSignal): Promise<AiCompletionResult> {
     const model = this.resolveModel(request.workload, request.modelClass);
-    const response = await this.post(baseBody(request, model), signal, request.workload === 'magazine' ? 58_000 : 20_000);
+    const response = await this.post(
+      baseBody(request, model),
+      signal,
+      request.workload === 'magazine' || request.workload === 'arrival-ingestion' ? 58_000 : 20_000,
+    );
     const payload = await response.json().catch(() => {
       throw new AiProviderError('PROVIDER_INVALID_RESPONSE', this.id, 'Anthropic returned invalid JSON.');
     });

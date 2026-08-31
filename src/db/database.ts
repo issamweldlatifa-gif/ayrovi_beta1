@@ -4,6 +4,7 @@ import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, PricingRules } from '../services/pricing';
+import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -317,6 +318,127 @@ export class QatafoDatabase {
         updated_at TEXT NOT NULL
       );
       CREATE INDEX IF NOT EXISTS idx_arrivals_status_date ON arrivals(status, expected_arrival_at);
+
+      -- Administration CRM Arrivals/Ingestion. This domain is intentionally
+      -- separate from the public CMS arrivals table above.
+      CREATE TABLE IF NOT EXISTS crm_stores (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS crm_store_source_profiles (
+        id TEXT PRIMARY KEY,
+        store_id TEXT NOT NULL REFERENCES crm_stores(id) ON DELETE CASCADE,
+        source_type TEXT NOT NULL CHECK(source_type IN ('PDF','EMAIL','IMAGE','INVOICE')),
+        strategy_key TEXT NOT NULL,
+        extraction_hints TEXT NOT NULL DEFAULT '[]',
+        enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0,1)),
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(store_id, source_type)
+      );
+      CREATE TABLE IF NOT EXISTS crm_arrivals (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','PROCESSING','REVIEW','CONFIRMED')),
+        confirmed_at TEXT,
+        confirmed_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_arrivals_status_date ON crm_arrivals(status, created_at DESC);
+      CREATE TABLE IF NOT EXISTS crm_arrival_clients (
+        id TEXT PRIMARY KEY,
+        arrival_id TEXT NOT NULL REFERENCES crm_arrivals(id) ON DELETE CASCADE,
+        customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+        store_id TEXT REFERENCES crm_stores(id) ON DELETE RESTRICT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(arrival_id, customer_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_arrival_clients_arrival ON crm_arrival_clients(arrival_id, created_at);
+      CREATE TABLE IF NOT EXISTS crm_arrival_sources (
+        id TEXT PRIMARY KEY,
+        arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        source_type TEXT NOT NULL CHECK(source_type IN ('PDF','EMAIL','IMAGE','INVOICE')),
+        original_filename TEXT NOT NULL,
+        mime_type TEXT NOT NULL,
+        byte_size INTEGER NOT NULL,
+        source_hash TEXT NOT NULL,
+        storage_key TEXT NOT NULL,
+        last_job_id TEXT REFERENCES crm_extraction_jobs(id) ON DELETE SET NULL,
+        uploaded_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(arrival_client_id, source_hash)
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_sources_client_date ON crm_arrival_sources(arrival_client_id, created_at DESC);
+      CREATE TABLE IF NOT EXISTS crm_extraction_jobs (
+        id TEXT PRIMARY KEY,
+        source_id TEXT NOT NULL REFERENCES crm_arrival_sources(id) ON DELETE CASCADE,
+        arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        strategy_key TEXT NOT NULL,
+        state TEXT NOT NULL CHECK(state IN ('QUEUED','PROCESSING','COMPLETED','PARTIAL','FAILED')),
+        progress_current INTEGER NOT NULL DEFAULT 0,
+        progress_total INTEGER NOT NULL DEFAULT 0,
+        products_extracted INTEGER NOT NULL DEFAULT 0,
+        records_needing_review INTEGER NOT NULL DEFAULT 0,
+        warning_codes TEXT NOT NULL DEFAULT '[]',
+        error_code TEXT,
+        error_message TEXT,
+        attempt INTEGER NOT NULL DEFAULT 1,
+        started_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+        started_by_name TEXT NOT NULL DEFAULT 'Système',
+        started_from_ip TEXT,
+        started_at TEXT,
+        worker_id TEXT,
+        heartbeat_at TEXT,
+        lease_expires_at TEXT,
+        completed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_jobs_source_date ON crm_extraction_jobs(source_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_crm_jobs_client_state ON crm_extraction_jobs(arrival_client_id, state);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_crm_jobs_one_active_source
+        ON crm_extraction_jobs(source_id) WHERE state IN ('QUEUED','PROCESSING');
+      CREATE TABLE IF NOT EXISTS crm_extracted_products (
+        id TEXT PRIMARY KEY,
+        job_id TEXT REFERENCES crm_extraction_jobs(id) ON DELETE SET NULL,
+        source_id TEXT NOT NULL REFERENCES crm_arrival_sources(id) ON DELETE CASCADE,
+        arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        arrival_id TEXT NOT NULL REFERENCES crm_arrivals(id) ON DELETE CASCADE,
+        customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+        store_id TEXT NOT NULL REFERENCES crm_stores(id) ON DELETE RESTRICT,
+        product_name TEXT,
+        sku TEXT,
+        reference TEXT,
+        variant TEXT,
+        color TEXT,
+        quantity INTEGER,
+        product_image_storage_key TEXT,
+        source_type TEXT NOT NULL CHECK(source_type IN ('PDF','EMAIL','IMAGE','INVOICE')),
+        source_reference TEXT NOT NULL,
+        extraction_confidence REAL NOT NULL DEFAULT 0,
+        extraction_status TEXT NOT NULL CHECK(extraction_status IN ('EXTRACTED','NEEDS_REVIEW','FAILED')),
+        field_evidence TEXT NOT NULL DEFAULT '{}',
+        source_specific TEXT NOT NULL DEFAULT '[]',
+        raw_extracted TEXT NOT NULL DEFAULT '{}',
+        review_reasons TEXT NOT NULL DEFAULT '[]',
+        manual_edits TEXT NOT NULL DEFAULT '{}',
+        approved_at TEXT,
+        approved_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
+        is_current INTEGER NOT NULL DEFAULT 0 CHECK(is_current IN (0,1)),
+        superseded_at TEXT,
+        superseded_by_job_id TEXT REFERENCES crm_extraction_jobs(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_products_client_current ON crm_extracted_products(arrival_client_id, is_current, created_at);
+      CREATE INDEX IF NOT EXISTS idx_crm_products_arrival_status ON crm_extracted_products(arrival_id, is_current, extraction_status);
+      CREATE INDEX IF NOT EXISTS idx_crm_products_job ON crm_extracted_products(job_id);
 
       CREATE TABLE IF NOT EXISTS products (
         id TEXT PRIMARY KEY,
@@ -877,6 +999,11 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_audit_module ON audit_logs(module, entity_id);
     `);
+
+    this.ensureColumn('crm_extraction_jobs', 'worker_id', 'TEXT');
+    this.ensureColumn('crm_extraction_jobs', 'heartbeat_at', 'TEXT');
+    this.ensureColumn('crm_extraction_jobs', 'lease_expires_at', 'TEXT');
+    seedArrivalStores(this);
 
     // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
     this.db.exec(ANNOUNCEMENT_MESSAGES_TABLE_SQL);

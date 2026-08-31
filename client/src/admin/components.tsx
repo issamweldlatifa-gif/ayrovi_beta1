@@ -23,13 +23,15 @@ const statusLabels: Record<string, string> = {
   STANDARD: 'Standard', EXPRESS: 'Express', SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',
   // حالات العربون (dépôt)
   NONE: '—', SUBMITTED: 'Preuve reçue', VERIFIED: 'Prix confirmé', PENDING_MANUAL: 'À vérifier manuellement',
+  PROCESSING: 'Extraction en cours', REVIEW: 'En révision', QUEUED: 'En file', PARTIAL: 'Partiel',
+  EXTRACTED: 'Extrait', NEEDS_REVIEW: 'À vérifier', NOT_STARTED: 'Non démarré',
 };
 
 export const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   const normalized = String(status || '').toUpperCase();
-  const tone = ['ACTIVE','PAID','DELIVERED','PUBLISHED','AVAILABLE','COMPLETED','QUOTED','VERIFIED'].includes(normalized) ? 'success'
+  const tone = ['ACTIVE','PAID','DELIVERED','PUBLISHED','AVAILABLE','COMPLETED','QUOTED','VERIFIED','EXTRACTED','CONFIRMED'].includes(normalized) ? 'success'
     : ['CANCELLED','FAILED','OUT_OF_STOCK','ARCHIVED','EXPIRED','BLOCKED','REJECTED'].includes(normalized) ? 'danger'
-      : ['SCHEDULED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','PENDING','PENDING_VERIFICATION','PENDING_MANUAL','LIMITED','EXPRESS'].includes(normalized) ? 'warning' : 'neutral';
+      : ['SCHEDULED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','PENDING','PENDING_VERIFICATION','PENDING_MANUAL','LIMITED','EXPRESS','QUEUED','PROCESSING','PARTIAL','REVIEW','NEEDS_REVIEW'].includes(normalized) ? 'warning' : 'neutral';
   return <span className={`status-badge status-badge--${tone}`}>{statusLabels[normalized] || status}</span>;
 };
 
@@ -81,8 +83,8 @@ export function DataTable<T extends { id?: string }>({ columns, rows, loading, e
   );
 }
 
-export const Modal: React.FC<{ open: boolean; title: string; children: React.ReactNode; onClose: () => void; wide?: boolean; footer?: React.ReactNode }> = ({
-  open, title, children, onClose, wide, footer,
+export const Modal: React.FC<{ open: boolean; title: string; children: React.ReactNode; onClose: () => void; wide?: boolean; footer?: React.ReactNode; eyebrow?: string }> = ({
+  open, title, children, onClose, wide, footer, eyebrow = 'AYROVI CMS',
 }) => {
   useEffect(() => {
     if (!open) return;
@@ -95,7 +97,7 @@ export const Modal: React.FC<{ open: boolean; title: string; children: React.Rea
   return (
     <div className="admin-modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className={`admin-modal ${wide ? 'admin-modal--wide' : ''}`} role="dialog" aria-modal="true" aria-label={title}>
-        <header><div><span>AYROVI CMS</span><h2>{title}</h2></div><button type="button" onClick={onClose} aria-label="Fermer"><X /></button></header>
+        <header><div><span>{eyebrow}</span><h2>{title}</h2></div><button type="button" onClick={onClose} aria-label="Fermer"><X /></button></header>
         <div className="admin-modal-body">{children}</div>
         {footer && <footer>{footer}</footer>}
       </section>

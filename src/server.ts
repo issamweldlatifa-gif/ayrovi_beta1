@@ -90,6 +90,12 @@ function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: 
 // Authentification & endpoints coûteux — plafonds volontairement généreux pour l'usage réel
 app.use('/api/admin/auth/login', rateLimit('admin-login', 10, 5 * 60_000));
 app.use('/api/admin/magazine-agent/generate', rateLimit('magazine-agent', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/admin/arrival-ingestion/sources', (req, res, next) => {
+  if (req.method === 'POST' && req.path.endsWith('/extractions')) {
+    return rateLimit('arrival-ingestion-extraction', process.env.NODE_ENV === 'test' ? 1_000 : 30, 10 * 60_000)(req, res, next);
+  }
+  return next();
+});
 app.use('/api/customer/auth/otp/request', rateLimit('otp-request', 5, 60_000, (req) => `${req.ip}:${String(req.body?.phone || '').slice(0, 24)}`));
 app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));

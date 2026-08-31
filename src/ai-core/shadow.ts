@@ -122,7 +122,7 @@ export function assertSanitizedShadowRunRecord(record: AiShadowRunRecord): void 
   }
   if (!['request', 'result', 'error', 'blocked'].includes(record.phase)) throw new Error('Invalid shadow phase.');
   if (!['shadow', 'probe'].includes(record.executionLane)) throw new Error('Invalid audit execution lane.');
-  if (!['assistant', 'vision', 'research', 'stock-search', 'magazine', 'voice-delegation'].includes(record.workload)) {
+  if (!['assistant', 'vision', 'research', 'stock-search', 'magazine', 'arrival-ingestion', 'voice-delegation'].includes(record.workload)) {
     throw new Error('Invalid shadow workload.');
   }
   if (!Number.isFinite(Date.parse(record.occurredAt))) throw new Error('Invalid occurredAt.');

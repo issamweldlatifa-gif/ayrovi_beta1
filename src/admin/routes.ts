@@ -35,6 +35,8 @@ import {
   verifyPassword,
 } from './auth';
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
+import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
+import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
 import { getAyrovixStats } from '../ayrovix/events';
 import { ayrovixAiReady, getActiveProviders } from '../ayrovix/services/ai';
 import { checkProviderSearchHealth } from '../ayrovix/services/search';
@@ -326,7 +328,10 @@ function csvCell(value: any) {
   return `"${string.replace(/"/g, '""')}"`;
 }
 
-export function createAdminRouter(db: QatafoDatabase): Router {
+export function createAdminRouter(
+  db: QatafoDatabase,
+  arrivalIngestionDependencies: ArrivalIngestionDependencies = {},
+): Router {
   const router = Router();
   ensureBootstrapAdmin(db);
   cleanupExpiredSessions(db);
@@ -375,6 +380,8 @@ export function createAdminRouter(db: QatafoDatabase): Router {
     const csrfToken = rotateCsrfToken(db, req);
     res.json({ success: true, data: { user: { id: identity.id, email: identity.email, name: identity.name, role: identity.role, permissions: identity.permissions }, csrfToken } });
   });
+
+  router.use('/arrival-ingestion', createArrivalIngestionRouter(db, arrivalIngestionDependencies));
 
 
   /* ==================== TRUST BAR — إدارة كاملة للمحتوى، التصميم محكوم بالهوية ==================== */

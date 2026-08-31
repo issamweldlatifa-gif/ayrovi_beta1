@@ -3,9 +3,13 @@ export const ADMIN_SESSION_EXPIRED_EVENT = 'ayrovi:admin-session-expired';
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  code?: string;
+  details?: Record<string, unknown>;
+  constructor(message: string, status: number, payload?: { code?: string; details?: Record<string, unknown> }) {
     super(message);
     this.status = status;
+    this.code = payload?.code;
+    this.details = payload?.details;
   }
 }
 
@@ -27,7 +31,11 @@ export async function adminApi<T = any>(endpoint: string, options: RequestInit =
       setCsrfToken(null);
       window.dispatchEvent(new Event(ADMIN_SESSION_EXPIRED_EVENT));
     }
-    throw new ApiError(payload?.error || `Erreur HTTP ${response.status}`, response.status);
+    throw new ApiError(
+      payload?.error || `Erreur HTTP ${response.status}`,
+      response.status,
+      payload && typeof payload === 'object' ? payload : undefined,
+    );
   }
   return payload as T;
 }

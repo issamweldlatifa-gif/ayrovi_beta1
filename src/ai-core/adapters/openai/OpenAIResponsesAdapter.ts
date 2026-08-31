@@ -214,7 +214,10 @@ export class OpenAIResponsesAdapter implements AiResponsesProviderAdapter {
     return Boolean(process.env.OPENAI_API_KEY?.trim());
   }
 
-  resolveModel(_workload: AiWorkload, modelClass: AiModelClass): string {
+  resolveModel(workload: AiWorkload, modelClass: AiModelClass): string {
+    if (workload === 'arrival-ingestion' && process.env.OPENAI_ARRIVAL_INGESTION_MODEL) {
+      return cleanModel(process.env.OPENAI_ARRIVAL_INGESTION_MODEL, 'gpt-5.6-terra');
+    }
     if (modelClass === 'deep') return cleanModel(process.env.OPENAI_DEEP_MODEL, 'gpt-5.6-sol');
     if (modelClass === 'fast') return cleanModel(process.env.OPENAI_FAST_MODEL, 'gpt-5.6-luna');
     return cleanModel(process.env.OPENAI_DEFAULT_MODEL, 'gpt-5.6-terra');
