@@ -12,7 +12,7 @@ import { SourceImportService } from './sourceImportService';
 import { AyroviAIExtractionService } from './aiExtractionService';
 import { ExtractedProductService } from './extractedProductService';
 import { ArrivalExtractionJobRunner, ExtractionJobService } from './extractionJobService';
-import { listStoreProfiles } from './storeProfiles';
+import { ArrivalStoreService } from './arrivalStoreService';
 import type { ArrivalIngestionDependencies } from './types';
 
 const sourceUpload = multer({
@@ -24,6 +24,7 @@ export interface ArrivalIngestionModule {
   router: Router;
   arrivals: ArrivalService;
   clients: ArrivalClientService;
+  stores: ArrivalStoreService;
   sources: ArrivalSourceService;
   products: ExtractedProductService;
   jobs: ExtractionJobService;
@@ -37,8 +38,11 @@ export function createArrivalIngestionModule(
   const files = new SourceImportService(dependencies.sourceRoot);
   const arrivals = new ArrivalService(db);
   const clients = new ArrivalClientService(db, arrivals);
+  const stores = new ArrivalStoreService(db);
   const sources = new ArrivalSourceService(db, clients, files);
-  const ai = new AyroviAIExtractionService(dependencies.aiAdapter || getAyroviAiCore().responses());
+  const aiCore = getAyroviAiCore();
+  const aiAdapter = dependencies.aiAdapter || aiCore.responses();
+  const ai = new AyroviAIExtractionService(aiAdapter);
   const products = new ExtractedProductService(db, clients, files);
   const jobs = new ExtractionJobService(db, arrivals, clients, sources);
   const runner = new ArrivalExtractionJobRunner(db, ai, arrivals, clients, sources, products, dependencies.autoRunJobs !== false);
@@ -46,8 +50,48 @@ export function createArrivalIngestionModule(
 
   const router = Router();
 
+  router.get('/ai/status', requireAdmin(db, 'commerce:read'), (_req, res) => {
+    const coreReadiness = aiCore.responsesReadiness('arrival-ingestion', aiAdapter);
+    const lastFailure = db.get<any>(`SELECT error_code,error_message,retry_at,updated_at
+      FROM crm_extraction_jobs WHERE state='FAILED' ORDER BY updated_at DESC LIMIT 1`);
+    const persistedRatePause = lastFailure?.error_code === 'AI_RATE_LIMITED'
+      && Date.parse(String(lastFailure.retry_at || '')) > Date.now();
+    const circuitOpen = coreReadiness.circuitOpen || persistedRatePause;
+    const retryAt = persistedRatePause ? String(lastFailure.retry_at) : coreReadiness.retryAt;
+    const state = persistedRatePause ? 'PAUSED_RATE_LIMIT' : coreReadiness.state;
+    res.json({
+      success: true,
+      data: {
+        capability: 'arrival-ingestion',
+        configured: coreReadiness.configured,
+        state,
+        circuitOpen,
+        retryAllowed: coreReadiness.configured && !circuitOpen,
+        retryAt,
+        message: state === 'READY' ? 'La capacité AI d’extraction est prête.'
+          : state === 'NOT_CONFIGURED' ? 'La capacité AI d’extraction n’est pas configurée.'
+            : state === 'PAUSED_RATE_LIMIT' ? 'La capacité AI est en pause après une limitation. Aucun retry immédiat.'
+              : 'La capacité AI est temporairement en pause après plusieurs échecs.',
+        lastFailure: lastFailure ? {
+          errorCode: lastFailure.error_code,
+          errorMessage: lastFailure.error_message,
+          retryAt: lastFailure.retry_at || null,
+          occurredAt: lastFailure.updated_at,
+        } : null,
+      },
+    });
+  });
+
   router.get('/stores', requireAdmin(db, 'commerce:read'), (_req, res) => {
-    res.json({ success: true, data: listStoreProfiles(db) });
+    res.json({ success: true, data: stores.list() });
+  });
+
+  router.post('/stores', requireAdmin(db, 'settings:write'), (req, res) => {
+    res.status(201).json({ success: true, data: stores.create(req.body || {}, auditActorFromRequest(req)) });
+  });
+
+  router.patch('/stores/:id', requireAdmin(db, 'settings:write'), (req, res) => {
+    res.json({ success: true, data: stores.update(req.params.id, req.body || {}, auditActorFromRequest(req)) });
   });
 
   router.get('/customers', requireAdmin(db, 'commerce:read'), (req, res) => {
@@ -81,17 +125,55 @@ export function createArrivalIngestionModule(
     res.json({ success: true, data: arrivals.confirm(req.params.id, auditActorFromRequest(req)) });
   });
 
+  // Compatibility endpoint: storeId still adds the first/another Store. New
+  // callers use /clients/:id/stores and displayAlias for Arrival-only naming.
   router.patch('/clients/:id', requireAdmin(db, 'orders:write'), (req, res) => {
-    res.json({ success: true, data: clients.selectStore(req.params.id, req.body?.storeId, auditActorFromRequest(req)) });
+    const actor = auditActorFromRequest(req);
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'displayAlias')) {
+      const item = clients.setAlias(req.params.id, req.body?.displayAlias, actor);
+      res.json({ success: true, data: arrivals.detail(item.arrivalId) });
+      return;
+    }
+    res.json({ success: true, data: clients.selectStore(req.params.id, req.body?.storeId, actor) });
   });
 
-  router.post('/clients/:id/sources', requireAdmin(db, 'orders:write'), sourceUpload.single('source'), (req, res, next) => {
+  router.delete('/clients/:id', requireAdmin(db, 'orders:write'), (req, res) => {
+    const result = clients.unlink(req.params.id, auditActorFromRequest(req));
+    for (const sourceId of result.sourceIds) {
+      try { files.removeSourceDirectory(sourceId); } catch (error) {
+        console.error('[Arrival ingestion cleanup]', sourceId, error instanceof Error ? error.message : 'cleanup failed');
+      }
+    }
+    res.json({ success: true, data: arrivals.detail(result.arrivalId), meta: {
+      customerPreserved: true,
+      customerId: result.customerId,
+      removedOperationalCounts: result.removedOperationalCounts,
+    } });
+  });
+
+  router.post('/clients/:id/stores', requireAdmin(db, 'orders:write'), (req, res) => {
+    const assignment = clients.addStore(req.params.id, String(req.body?.storeId || ''), auditActorFromRequest(req));
+    const client = clients.get(req.params.id);
+    res.status(assignment.duplicate ? 200 : 201).json({
+      success: true,
+      data: arrivals.detail(client.arrivalId),
+      meta: { duplicate: assignment.duplicate, assignmentId: assignment.item.id },
+    });
+  });
+
+  router.delete('/clients/:id/stores/:assignmentId', requireAdmin(db, 'orders:write'), (req, res) => {
+    const client = clients.removeStore(req.params.id, req.params.assignmentId, auditActorFromRequest(req));
+    res.json({ success: true, data: arrivals.detail(client.arrivalId) });
+  });
+
+  const importSource = (req: Request, res: Response, next: NextFunction) => {
     try {
       const emailContent = typeof req.body?.emailContent === 'string' ? req.body.emailContent : '';
       const file = req.file;
       const buffer = file?.buffer || Buffer.from(emailContent, 'utf8');
       const result = sources.create({
         arrivalClientId: req.params.id,
+        arrivalClientStoreId: req.params.assignmentId || req.body?.arrivalClientStoreId,
         sourceType: req.body?.sourceType,
         buffer,
         originalFilename: file?.originalname || 'email-content.txt',
@@ -101,7 +183,10 @@ export function createArrivalIngestionModule(
     } catch (error) {
       next(error);
     }
-  });
+  };
+
+  router.post('/clients/:id/sources', requireAdmin(db, 'orders:write'), sourceUpload.single('source'), importSource);
+  router.post('/clients/:id/stores/:assignmentId/sources', requireAdmin(db, 'orders:write'), sourceUpload.single('source'), importSource);
 
   router.get('/sources/:id/content', requireAdmin(db, 'commerce:read'), (req, res) => {
     const source = sources.content(req.params.id);
@@ -121,7 +206,12 @@ export function createArrivalIngestionModule(
   });
 
   router.get('/clients/:id/products', requireAdmin(db, 'commerce:read'), (req, res) => {
-    res.json({ success: true, data: products.list(req.params.id) });
+    const assignmentId = String(req.query.arrivalClientStoreId || '');
+    res.json({ success: true, data: assignmentId ? products.listByStore(req.params.id, assignmentId) : products.list(req.params.id) });
+  });
+
+  router.get('/clients/:id/stores/:assignmentId/products', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.json({ success: true, data: products.listByStore(req.params.id, req.params.assignmentId) });
   });
 
   router.post('/clients/:id/products', requireAdmin(db, 'orders:write'), (req, res) => {
@@ -129,7 +219,14 @@ export function createArrivalIngestionModule(
   });
 
   router.post('/clients/:id/products/approve-all', requireAdmin(db, 'orders:write'), (req, res) => {
-    res.json({ success: true, data: products.approveAll(req.params.id, auditActorFromRequest(req)) });
+    const assignmentId = String(req.body?.arrivalClientStoreId || '');
+    res.json({ success: true, data: assignmentId
+      ? products.approveAllByStore(req.params.id, assignmentId, auditActorFromRequest(req))
+      : products.approveAll(req.params.id, auditActorFromRequest(req)) });
+  });
+
+  router.post('/clients/:id/stores/:assignmentId/products/approve-all', requireAdmin(db, 'orders:write'), (req, res) => {
+    res.json({ success: true, data: products.approveAllByStore(req.params.id, req.params.assignmentId, auditActorFromRequest(req)) });
   });
 
   router.patch('/products/:id', requireAdmin(db, 'orders:write'), (req, res) => {
@@ -165,7 +262,7 @@ export function createArrivalIngestionModule(
     });
   });
 
-  return { router, arrivals, clients, sources, products, jobs, runner };
+  return { router, arrivals, clients, stores, sources, products, jobs, runner };
 }
 
 export function createArrivalIngestionRouter(db: QatafoDatabase, dependencies: ArrivalIngestionDependencies = {}): Router {

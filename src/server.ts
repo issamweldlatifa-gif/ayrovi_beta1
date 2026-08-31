@@ -196,12 +196,17 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/ready', (_req, res) => {
   try {
     db.get('SELECT 1 AS ready');
+    const arrivalMultistoreMigration = db.arrivalMultistoreMigrationReadiness();
+    if (!arrivalMultistoreMigration.ready) throw new Error('Arrival multi-store migration is incomplete.');
     const aiCore = getAyroviAiCore();
     const responsesProviderReady = aiCore.responses().isConfigured();
     const legacyVoice = aiCore.legacyVoiceReadiness();
     res.json({
       status: 'ready',
       database: 'ok',
+      migrations: {
+        arrivalMultistore: arrivalMultistoreMigration,
+      },
       capabilities: {
         assistant: responsesProviderReady,
         magazineAgent: responsesProviderReady,

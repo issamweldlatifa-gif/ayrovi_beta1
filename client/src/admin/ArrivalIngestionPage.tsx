@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AlertCircle, ArrowLeft, Check, CheckCircle2, Eye, FileText, Image, Loader2,
-  Package, Pencil, Plus, RefreshCw, Save, Sparkles, User,
+  Package, Pencil, Plus, RefreshCw, Save, Sparkles, Trash2, User,
 } from '../components/QatafoIcons';
 import { adminApi, ApiError } from './api';
 import { Button, Field, Modal, Pagination, Search, Select, StatusBadge, Toast } from './components';
@@ -31,6 +31,8 @@ interface ExtractionJob {
   warningCodes: string[];
   errorCode: string | null;
   errorMessage: string | null;
+  retryAt: string | null;
+  attempt: number;
 }
 interface ArrivalSource {
   id: string;
@@ -42,13 +44,35 @@ interface ArrivalSource {
   createdAt: string;
   latestJob: ExtractionJob | null;
 }
+interface ProductSummary {
+  total: number;
+  extracted: number;
+  needsReview: number;
+  failed: number;
+  approved: number;
+  pending?: number;
+}
+interface ArrivalClientStore {
+  id: string;
+  arrivalClientId: string;
+  storeId: string;
+  store: { id: string; code: string; name: string; active: boolean };
+  extractionStatus: string;
+  products: ProductSummary;
+  sources: ArrivalSource[];
+}
 interface ArrivalClient {
   id: string;
   arrivalId: string;
+  displayAlias: string | null;
+  displayName: string;
   customer: { id: string; name: string; phone: string; status: string };
+  stores: ArrivalClientStore[];
+  // Compatibility projection used by the existing review/import modal.
+  activeStoreAssignmentId?: string;
   store: { id: string; code: string; name: string; active: boolean } | null;
   extractionStatus: string;
-  products: { total: number; extracted: number; needsReview: number; failed: number; approved: number };
+  products: ProductSummary;
   sources: ArrivalSource[];
 }
 interface ArrivalSummary {
@@ -79,6 +103,16 @@ interface ArrivalListItem {
   summary: { customers: number; products: number };
 }
 interface CustomerChoice { id: string; name: string; phone: string; status: string }
+interface ArrivalAiStatus {
+  capability: 'arrival-ingestion';
+  configured: boolean;
+  state: 'READY' | 'NOT_CONFIGURED' | 'PAUSED_RATE_LIMIT' | 'PAUSED_FAILURES';
+  circuitOpen: boolean;
+  retryAllowed: boolean;
+  retryAt: string | null;
+  message: string;
+  lastFailure: { errorCode: string; errorMessage: string; retryAt: string | null; occurredAt: string } | null;
+}
 interface ExtractedProduct {
   id: string;
   sourceId: string;
@@ -155,12 +189,14 @@ function ProductReviewModal({
     if (!client) return;
     setLoading(true); setError('');
     try {
-      const result = await adminApi<{ data: ExtractedProduct[] }>(`/arrival-ingestion/clients/${client.id}/products`);
+      const storeQuery = client.activeStoreAssignmentId
+        ? `?arrivalClientStoreId=${encodeURIComponent(client.activeStoreAssignmentId)}` : '';
+      const result = await adminApi<{ data: ExtractedProduct[] }>(`/arrival-ingestion/clients/${client.id}/products${storeQuery}`);
       setProducts(result.data);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Chargement impossible.');
     } finally { setLoading(false); }
-  }, [client?.id]);
+  }, [client?.id, client?.activeStoreAssignmentId]);
 
   useEffect(() => { if (open) void load(); }, [open, load]);
   useEffect(() => {
@@ -198,7 +234,9 @@ function ProductReviewModal({
     if (!client) return;
     setBusyId('all'); setError('');
     try {
-      await adminApi(`/arrival-ingestion/clients/${client.id}/products/approve-all`, { method: 'POST', body: '{}' });
+      await adminApi(`/arrival-ingestion/clients/${client.id}/products/approve-all`, {
+        method: 'POST', body: JSON.stringify({ arrivalClientStoreId: client.activeStoreAssignmentId || undefined }),
+      });
       await load(); onChanged();
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Approbation impossible.'); }
     finally { setBusyId(''); }
@@ -271,6 +309,7 @@ function ProductReviewModal({
 function SourceModal({
   client,
   stores,
+  aiStatus,
   open,
   canWrite,
   onClose,
@@ -278,6 +317,7 @@ function SourceModal({
 }: {
   client: ArrivalClient | null;
   stores: StoreProfile[];
+  aiStatus: ArrivalAiStatus | null;
   open: boolean;
   canWrite: boolean;
   onClose: () => void;
@@ -305,6 +345,7 @@ function SourceModal({
     setBusy('upload'); setError('');
     try {
       const body = new FormData(); body.set('sourceType', sourceType);
+      if (client.activeStoreAssignmentId) body.set('arrivalClientStoreId', client.activeStoreAssignmentId);
       if (file) body.set('source', file); else body.set('emailContent', emailContent);
       const result = await adminApi<{ data: { duplicate: boolean; source: ArrivalSource } }>(`/arrival-ingestion/clients/${client.id}/sources`, { method: 'POST', body });
       setUploaded(result.data.source); setDuplicate(result.data.duplicate); await onChanged();
@@ -337,32 +378,34 @@ function SourceModal({
     <Modal open={open} wide eyebrow="AYROVI CRM · INGESTION" title={client ? `Source · ${client.customer.name}` : 'Source'} onClose={onClose}>
       {!client?.store ? <div className="arrival-error"><AlertCircle />Sélectionnez d’abord le magasin.</div> : <>
         <div className="arrival-source-profile"><span>Store</span><strong>{client.store.code}</strong><i />{supported.map((profile) => <small key={profile.sourceType}>{sourceLabels[profile.sourceType]}</small>)}</div>
+        {aiStatus && !aiStatus.retryAllowed && <div className="arrival-error"><AlertCircle /><span>{aiStatus.message}{aiStatus.retryAt ? ` Réessayez après ${formatDate(aiStatus.retryAt, true)}.` : ''}</span></div>}
         {canWrite && <section className="arrival-upload-panel">
           <h3>Nouvelle source</h3>
           <div className="arrival-source-type" role="radiogroup" aria-label="Type de source">{supported.map((profile) => <button type="button" role="radio" aria-checked={sourceType === profile.sourceType} className={sourceType === profile.sourceType ? 'is-active' : ''} key={profile.sourceType} onClick={() => { setSourceType(profile.sourceType); setFile(null); }}>{sourceLabels[profile.sourceType]}</button>)}</div>
           {sourceType === 'EMAIL' && !file && <Field label="Contenu de l’email" hint="Collez le contenu complet, ou choisissez un fichier .eml ci-dessous." full><textarea rows={7} value={emailContent} onChange={(event) => setEmailContent(event.target.value)} /></Field>}
           <label className="arrival-file-input"><input type="file" accept={fileAccept} onChange={(event) => setFile(event.target.files?.[0] || null)} /><FileText /><strong>{file ? file.name : sourceType === 'EMAIL' ? 'Choisir un .eml (optionnel)' : 'Choisir la source'}</strong><span>20 Mo maximum · original conservé dans l’espace privé</span></label>
           <Button busy={busy === 'upload'} disabled={!file && !(sourceType === 'EMAIL' && emailContent.trim())} onClick={upload}><Package />Importer la source</Button>
-          {selected && <div className={`arrival-upload-result ${duplicate ? 'is-duplicate' : ''}`} role="status"><div><strong>{duplicate ? 'Source déjà connue — aucun doublon créé' : 'Source importée'}</strong><span>{selected.originalFilename} · {formatBytes(selected.byteSize)}</span></div><Button busy={busy === selected.id} onClick={() => requestExtraction(selected)}><Sparkles />{selected.latestJob || duplicate ? 'RE-EXTRACT' : 'EXTRACT'}</Button></div>}
+          {selected && <div className={`arrival-upload-result ${duplicate ? 'is-duplicate' : ''}`} role="status"><div><strong>{duplicate ? 'Source déjà connue — aucun doublon créé' : 'Source importée'}</strong><span>{selected.originalFilename} · {formatBytes(selected.byteSize)}</span></div><Button busy={busy === selected.id} disabled={Boolean(aiStatus && !aiStatus.retryAllowed)} onClick={() => requestExtraction(selected)}><Sparkles />{selected.latestJob || duplicate ? 'RE-EXTRACT' : 'EXTRACT'}</Button></div>}
         </section>}
-        <section className="arrival-source-list"><h3>Sources du client</h3>{client.sources.length === 0 ? <p>Aucune source importée.</p> : client.sources.map((source) => <article key={source.id}>
+        <section className="arrival-source-list"><h3>Sources de ce Store</h3>{client.sources.length === 0 ? <p>Aucune source importée.</p> : client.sources.map((source) => <article key={source.id}>
           <div className="arrival-source-icon">{source.mimeType.startsWith('image/') ? <Image /> : <FileText />}</div>
-          <div><strong>{source.originalFilename}</strong><span>{sourceLabels[source.sourceType]} · {formatBytes(source.byteSize)} · {formatDate(source.createdAt, true)}</span>{source.latestJob?.errorMessage && <small className="arrival-job-error">{source.latestJob.errorMessage}</small>}</div>
+          <div><strong>{source.originalFilename}</strong><span>{sourceLabels[source.sourceType]} · {formatBytes(source.byteSize)} · {formatDate(source.createdAt, true)}</span>{source.latestJob?.errorMessage && <div className="arrival-job-diagnostic"><strong>{source.latestJob.errorCode || 'EXTRACTION_FAILED'}</strong><small>{source.latestJob.errorMessage}</small>{source.latestJob.retryAt && <small>Nouvel essai possible après {formatDate(source.latestJob.retryAt, true)}</small>}</div>}{Boolean(source.latestJob?.warningCodes.length) && <div className="arrival-warning-codes" aria-label="Avertissements extraction">{source.latestJob!.warningCodes.map((code) => <code key={code}>{code}</code>)}</div>}</div>
           <div className="arrival-source-job">{source.latestJob ? <><StatusBadge status={source.latestJob.state} />{['QUEUED','PROCESSING'].includes(source.latestJob.state) && <small>{source.latestJob.progressCurrent} / {source.latestJob.progressTotal || '…'} unités · {source.latestJob.productsExtracted} extraits</small>}{source.latestJob.state === 'PARTIAL' && <small>{source.latestJob.productsExtracted} extraits · {source.latestJob.recordsNeedingReview} à vérifier</small>}</> : <StatusBadge status="NOT_STARTED" />}</div>
-          <div className="arrival-source-actions"><a className="admin-button admin-button--ghost" href={`/api/admin/arrival-ingestion/sources/${source.id}/content`}><Eye />Original</a>{canWrite && <Button variant="secondary" busy={busy === source.id} disabled={source.latestJob?.state === 'QUEUED' || source.latestJob?.state === 'PROCESSING'} onClick={() => requestExtraction(source)}><RefreshCw />{source.latestJob ? 'Re-extraire' : 'Extraire'}</Button>}</div>
+          <div className="arrival-source-actions"><a className="admin-button admin-button--ghost" href={`/api/admin/arrival-ingestion/sources/${source.id}/content`}><Eye />Original</a>{canWrite && <Button variant="secondary" busy={busy === source.id} disabled={source.latestJob?.state === 'QUEUED' || source.latestJob?.state === 'PROCESSING' || Boolean(aiStatus && !aiStatus.retryAllowed)} onClick={() => requestExtraction(source)}><RefreshCw />{source.latestJob ? 'Re-extraire' : 'Extraire'}</Button>}</div>
         </article>)}</section>
       </>}
-      {reprocessSource && <div className="arrival-reprocess-confirm" role="alert" aria-label="Confirmer le retraitement"><AlertCircle /><div><strong>Retraiter cette source ?</strong><p>Le même fichier ne sera pas dupliqué. Un nouveau job sera créé et, uniquement s’il aboutit, ses lignes remplaceront les lignes courantes tout en conservant l’historique précédent.</p><span>{reprocessSource.originalFilename}</span></div><div><Button variant="secondary" onClick={() => setReprocessSource(null)}>Annuler</Button><Button busy={busy === reprocessSource.id} onClick={() => void runExtraction(reprocessSource, true)}><RefreshCw />Confirmer RE-EXTRACT</Button></div></div>}
+      {reprocessSource && <div className="arrival-reprocess-confirm" role="alert" aria-label="Confirmer le retraitement"><AlertCircle /><div><strong>Retraiter cette source ?</strong><p>Le même fichier ne sera pas dupliqué. Un nouveau job sera créé et, uniquement s’il aboutit, ses lignes remplaceront les lignes courantes tout en conservant l’historique précédent.</p><span>{reprocessSource.originalFilename}</span></div><div><Button variant="secondary" onClick={() => setReprocessSource(null)}>Annuler</Button><Button busy={busy === reprocessSource.id} disabled={Boolean(aiStatus && !aiStatus.retryAllowed)} onClick={() => void runExtraction(reprocessSource, true)}><RefreshCw />Confirmer RE-EXTRACT</Button></div></div>}
       {error && <div className="arrival-error" role="alert"><AlertCircle />{error}</div>}
     </Modal>
   );
 }
 
-export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
+export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { canWrite: boolean; canManageStores?: boolean }) {
   const [arrivalId, setArrivalId] = useState(currentArrivalParam());
   const [arrivals, setArrivals] = useState<ArrivalListItem[]>([]);
   const [detail, setDetail] = useState<ArrivalDetail | null>(null);
   const [stores, setStores] = useState<StoreProfile[]>([]);
+  const [aiStatus, setAiStatus] = useState<ArrivalAiStatus | null>(null);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
@@ -378,8 +421,18 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
   const [customers, setCustomers] = useState<CustomerChoice[]>([]);
   const [clientBusy, setClientBusy] = useState('');
   const [clientError, setClientError] = useState('');
+  // These IDs point to nested Arrival Client Store assignments.
   const [sourceClientId, setSourceClientId] = useState('');
   const [reviewClientId, setReviewClientId] = useState('');
+  const [storeClientId, setStoreClientId] = useState('');
+  const [storeChoice, setStoreChoice] = useState('');
+  const [aliasClientId, setAliasClientId] = useState('');
+  const [aliasDraft, setAliasDraft] = useState('');
+  const [unlinkClientId, setUnlinkClientId] = useState('');
+  const [actionBusy, setActionBusy] = useState('');
+  const [storeManagerOpen, setStoreManagerOpen] = useState(false);
+  const [editingStoreId, setEditingStoreId] = useState('');
+  const [newStore, setNewStore] = useState({ code: '', name: '', active: true, sourceTypes: ['PDF', 'EMAIL', 'IMAGE', 'INVOICE'] as SourceType[] });
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
@@ -387,6 +440,10 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
   const loadStores = useCallback(async () => {
     const result = await adminApi<{ data: StoreProfile[] }>('/arrival-ingestion/stores');
     setStores(result.data);
+  }, []);
+  const loadAiStatus = useCallback(async () => {
+    const result = await adminApi<{ data: ArrivalAiStatus }>('/arrival-ingestion/ai/status');
+    setAiStatus(result.data);
   }, []);
   const loadList = useCallback(async () => {
     setLoading(true); setError('');
@@ -407,18 +464,22 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
     finally { if (!quiet) setLoading(false); }
   }, [arrivalId]);
 
-  useEffect(() => { void loadStores().catch(() => setError('Les profils Store ne peuvent pas être chargés.')); }, [loadStores]);
+  useEffect(() => {
+    void loadStores().catch(() => setError('Les profils Store ne peuvent pas être chargés.'));
+    void loadAiStatus().catch(() => setAiStatus(null));
+  }, [loadStores, loadAiStatus]);
   useEffect(() => { if (!arrivalId) void loadList(); else void loadDetail(); }, [arrivalId, loadList, loadDetail]);
   useEffect(() => {
     const onPop = () => setArrivalId(currentArrivalParam());
     window.addEventListener('popstate', onPop); return () => window.removeEventListener('popstate', onPop);
   }, []);
-  const hasActiveJob = detail?.clients.some((client) => client.sources.some((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || ''))) || false;
+  const hasActiveJob = detail?.clients.some((client) => client.stores.some((assignment) =>
+    assignment.sources.some((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')))) || false;
   useEffect(() => {
     if (!arrivalId || !hasActiveJob) return;
-    const timer = window.setInterval(() => void loadDetail(true), 1_500);
+    const timer = window.setInterval(() => { void loadDetail(true); void loadAiStatus(); }, 1_500);
     return () => window.clearInterval(timer);
-  }, [arrivalId, hasActiveJob, loadDetail]);
+  }, [arrivalId, hasActiveJob, loadDetail, loadAiStatus]);
   useEffect(() => {
     if (!clientOpen || clientMode !== 'search') return;
     const timer = window.setTimeout(() => {
@@ -470,13 +531,58 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
     } catch (reason) { setClientError(reason instanceof Error ? reason.message : 'Création impossible.'); }
     finally { setClientBusy(''); }
   };
-  const selectStore = async (clientId: string, storeId: string) => {
-    setClientBusy(clientId); setError('');
+  const assignStore = async () => {
+    if (!storeClientId || !storeChoice) return;
+    setActionBusy('assign-store'); setError('');
     try {
-      const result = await adminApi<{ data: ArrivalDetail }>(`/arrival-ingestion/clients/${clientId}`, { method: 'PATCH', body: JSON.stringify({ storeId }) });
-      setDetail(result.data); setToast({ message: 'Store enregistré.' });
+      const result = await adminApi<{ data: ArrivalDetail }>(`/arrival-ingestion/clients/${storeClientId}/stores`, {
+        method: 'POST', body: JSON.stringify({ storeId: storeChoice }),
+      });
+      setDetail(result.data); setStoreClientId(''); setStoreChoice(''); setToast({ message: 'Store ajouté au client.' });
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Store non ajouté.'); }
+    finally { setActionBusy(''); }
+  };
+  const removeStore = async (clientId: string, assignment: ArrivalClientStore) => {
+    if (!window.confirm(`Retirer ${assignment.store.name} de ce client ? Cette action est possible uniquement si aucune source n’y est rattachée.`)) return;
+    setActionBusy(assignment.id); setError('');
+    try {
+      const result = await adminApi<{ data: ArrivalDetail }>(`/arrival-ingestion/clients/${clientId}/stores/${assignment.id}`, { method: 'DELETE' });
+      setDetail(result.data); setToast({ message: 'Store retiré de ce client.' });
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Store non retiré.'); }
+    finally { setActionBusy(''); }
+  };
+  const saveAlias = async () => {
+    if (!aliasClientId) return;
+    setActionBusy('alias'); setError('');
+    try {
+      const result = await adminApi<{ data: ArrivalDetail }>(`/arrival-ingestion/clients/${aliasClientId}`, {
+        method: 'PATCH', body: JSON.stringify({ displayAlias: aliasDraft }),
+      });
+      setDetail(result.data); setAliasClientId(''); setToast({ message: aliasDraft.trim() ? 'Alias Arrival enregistré.' : 'Alias Arrival supprimé.' });
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Alias non enregistré.'); }
+    finally { setActionBusy(''); }
+  };
+  const unlinkClient = async () => {
+    if (!unlinkClientId) return;
+    setActionBusy('unlink'); setError('');
+    try {
+      const result = await adminApi<{ data: ArrivalDetail; meta: { customerPreserved: boolean } }>(`/arrival-ingestion/clients/${unlinkClientId}`, { method: 'DELETE' });
+      setDetail(result.data); setUnlinkClientId('');
+      setToast({ message: result.meta.customerPreserved ? 'Client dissocié de cet Arrival. Le client CRM, ses commandes et ses données site sont conservés.' : 'Client dissocié.' });
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Dissociation impossible.'); }
+    finally { setActionBusy(''); }
+  };
+  const createStore = async () => {
+    setActionBusy('create-store'); setError('');
+    try {
+      await adminApi(editingStoreId ? `/arrival-ingestion/stores/${editingStoreId}` : '/arrival-ingestion/stores', {
+        method: editingStoreId ? 'PATCH' : 'POST', body: JSON.stringify(newStore),
+      });
+      await loadStores(); setStoreManagerOpen(false); setEditingStoreId('');
+      setNewStore({ code: '', name: '', active: true, sourceTypes: ['PDF', 'EMAIL', 'IMAGE', 'INVOICE'] });
+      setToast({ message: editingStoreId ? 'Store global mis à jour.' : 'Store global créé et disponible pour les Arrivals.' });
     } catch (reason) { setError(reason instanceof Error ? reason.message : 'Store non enregistré.'); }
-    finally { setClientBusy(''); }
+    finally { setActionBusy(''); }
   };
   const confirm = async () => {
     if (!detail) return;
@@ -492,33 +598,71 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
     } finally { setConfirmBusy(false); }
   };
 
-  const sourceClient = detail?.clients.find((client) => client.id === sourceClientId) || null;
-  const reviewClient = detail?.clients.find((client) => client.id === reviewClientId) || null;
+  const scopedClient = (assignmentId: string): ArrivalClient | null => {
+    for (const client of detail?.clients || []) {
+      const assignment = client.stores.find((item) => item.id === assignmentId);
+      if (assignment) return {
+        ...client,
+        activeStoreAssignmentId: assignment.id,
+        store: assignment.store,
+        extractionStatus: assignment.extractionStatus,
+        products: assignment.products,
+        sources: assignment.sources,
+      };
+    }
+    return null;
+  };
+  const sourceClient = scopedClient(sourceClientId);
+  const reviewClient = scopedClient(reviewClientId);
+  const aliasClient = detail?.clients.find((client) => client.id === aliasClientId) || null;
+  const unlinkClientChoice = detail?.clients.find((client) => client.id === unlinkClientId) || null;
+  const storeClient = detail?.clients.find((client) => client.id === storeClientId) || null;
+  const resetStoreDraft = () => {
+    setEditingStoreId('');
+    setNewStore({ code: '', name: '', active: true, sourceTypes: ['PDF', 'EMAIL', 'IMAGE', 'INVOICE'] });
+  };
+  const storeManagerModal = <Modal open={storeManagerOpen} wide eyebrow="AYROVI CRM" title={editingStoreId ? 'Modifier un Store global' : 'Gérer les Stores globaux'} onClose={() => { if (!actionBusy) { setStoreManagerOpen(false); resetStoreDraft(); } }} footer={<><Button variant="secondary" disabled={Boolean(actionBusy)} onClick={() => { setStoreManagerOpen(false); resetStoreDraft(); }}>Annuler</Button><Button busy={actionBusy === 'create-store'} disabled={newStore.code.trim().length < 2 || newStore.name.trim().length < 2 || !newStore.sourceTypes.length} onClick={() => void createStore()}><Save />{editingStoreId ? 'Mettre à jour' : 'Créer le Store'}</Button></>}>
+    <p className="arrival-modal-copy">Les Stores sont globaux et réutilisables. Chaque client d’un Arrival peut recevoir plusieurs Stores.</p>
+    <div className="arrival-store-manager-list">{stores.map((store) => <button type="button" key={store.id} className={editingStoreId === store.id ? 'is-active' : ''} onClick={() => { setEditingStoreId(store.id); setNewStore({ code: store.code, name: store.name, active: store.active, sourceTypes: store.supportedSources.map((profile) => profile.sourceType) }); }}><div><strong>{store.name}</strong><span>{store.code} · {store.active ? 'Actif' : 'Inactif'}</span></div><small>{store.supportedSources.map((profile) => sourceLabels[profile.sourceType]).join(' · ') || 'Aucun profil actif'}</small><Pencil /></button>)}</div>
+    <div className="arrival-store-manager-form"><div className="arrival-inline-fields"><Field label="Code" required><input value={newStore.code} disabled={Boolean(editingStoreId)} maxLength={32} placeholder="Ex. AMAZON" onChange={(event) => setNewStore({ ...newStore, code: event.target.value.toUpperCase() })} /></Field><Field label="Nom" required><input value={newStore.name} maxLength={120} placeholder="Nom affiché" onChange={(event) => setNewStore({ ...newStore, name: event.target.value })} /></Field></div>
+    {editingStoreId && <label className="arrival-store-active"><input type="checkbox" checked={newStore.active} onChange={(event) => setNewStore({ ...newStore, active: event.target.checked })} />Store actif</label>}
+    <fieldset className="arrival-store-source-types"><legend>Types de source actifs</legend>{(['PDF', 'EMAIL', 'IMAGE', 'INVOICE'] as SourceType[]).map((sourceType) => <label key={sourceType}><input type="checkbox" checked={newStore.sourceTypes.includes(sourceType)} onChange={(event) => setNewStore({ ...newStore, sourceTypes: event.target.checked ? [...newStore.sourceTypes, sourceType] : newStore.sourceTypes.filter((item) => item !== sourceType) })} />{sourceLabels[sourceType]}</label>)}</fieldset>
+    {editingStoreId && <Button variant="ghost" onClick={resetStoreDraft}><Plus />Créer un autre Store</Button>}</div>
+  </Modal>;
 
   if (loading && (arrivalId ? !detail : !arrivals.length)) return <LoadingState error={error} />;
   if (!arrivalId) return <>
-    <header className="arrival-page-header"><div><span>AYROVI ADMIN · CRM</span><h1>Arrivals</h1><p>Transformez les sources Store en produits normalisés, traçables et révisables.</p></div>{canWrite && <Button onClick={() => setCreateOpen(true)}><Plus />Create Arrival</Button>}</header>
+    <header className="arrival-page-header"><div><span>AYROVI ADMIN · CRM</span><h1>Arrivals</h1><p>Un client Arrival peut regrouper plusieurs Stores, chacun avec ses propres Sources et extractions.</p></div><div className="arrival-header-actions">{canManageStores && <Button variant="secondary" onClick={() => setStoreManagerOpen(true)}><Package />Gérer les Stores</Button>}{canWrite && <Button onClick={() => setCreateOpen(true)}><Plus />Create Arrival</Button>}</div></header>
+    {aiStatus && <div className={`arrival-ai-readiness is-${aiStatus.state.toLowerCase()}`}><Sparkles /><div><strong>AI Extraction · {aiStatus.state}</strong><span>{aiStatus.message}{aiStatus.retryAt ? ` Réessai après ${formatDate(aiStatus.retryAt, true)}.` : ''}</span></div></div>}
     <div className="arrival-list-toolbar"><Search value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Rechercher un Arrival…" /></div>
     {error && <div className="arrival-error" role="alert"><AlertCircle />{error}</div>}
     {arrivals.length === 0 ? <section className="arrival-empty"><Package /><h2>Aucun Arrival opérationnel</h2><p>Créez le premier lot CRM. Les Arrivages publics existants restent séparés.</p>{canWrite && <Button onClick={() => setCreateOpen(true)}><Plus />Create Arrival</Button>}</section> : <div className="arrival-list-grid">{arrivals.map((arrival) => <button key={arrival.id} type="button" className="arrival-list-card" onClick={() => openDetail(arrival.id)}><div><span>{formatDate(arrival.createdAt)}</span><StatusBadge status={arrival.status} /></div><h2>{arrival.name}</h2><dl><div><dt>Clients</dt><dd>{arrival.summary.customers}</dd></div><div><dt>Produits</dt><dd>{arrival.summary.products}</dd></div></dl><strong>Ouvrir l’Arrival →</strong></button>)}</div>}
     <Pagination page={pagination.page} totalPages={pagination.totalPages} total={pagination.total} onChange={setPage} />
     <Modal open={createOpen} eyebrow="AYROVI CRM" title="Create Arrival" onClose={() => setCreateOpen(false)} footer={<><Button variant="secondary" onClick={() => setCreateOpen(false)}>Annuler</Button><Button busy={createBusy} disabled={arrivalName.trim().length < 2} onClick={createArrival}>Créer</Button></>}><Field label="Nom" required hint="Exemple : January 2026" full><input autoFocus value={arrivalName} onChange={(event) => setArrivalName(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && arrivalName.trim().length >= 2) void createArrival(); }} /></Field></Modal>
+    {storeManagerModal}
     {toast && <Toast {...toast} />}
   </>;
 
   if (!detail) return <LoadingState error={error} />;
   return <>
     <button type="button" className="arrival-back" onClick={back}><ArrowLeft />Tous les Arrivals</button>
-    <header className="arrival-detail-header"><div><span>ARRIVAL</span><h1>{detail.name}</h1><div><StatusBadge status={detail.status} /><small>Créé le {formatDate(detail.createdAt)}</small>{detail.confirmedAt && <small>Confirmé le {formatDate(detail.confirmedAt, true)}</small>}</div></div><div>{canWrite && detail.status !== 'CONFIRMED' && <><Button variant="secondary" onClick={openClientModal}><User /><Plus />Add Client</Button><Button variant="secondary" onClick={() => { void loadDetail(); setToast({ message: 'Données enregistrées. Vous pouvez continuer.' }); }}><Save />Save / Continue</Button><Button busy={confirmBusy} onClick={() => setConfirmOpen(true)}><CheckCircle2 />Confirm Arrival</Button></>}</div></header>
+    <header className="arrival-detail-header"><div><span>ARRIVAL</span><h1>{detail.name}</h1><div><StatusBadge status={detail.status} /><small>Créé le {formatDate(detail.createdAt)}</small>{detail.confirmedAt && <small>Confirmé le {formatDate(detail.confirmedAt, true)}</small>}</div></div><div>{canManageStores && <Button variant="secondary" onClick={() => setStoreManagerOpen(true)}><Package />Gérer les Stores</Button>}{canWrite && detail.status !== 'CONFIRMED' && <><Button variant="secondary" onClick={openClientModal}><User /><Plus />Add Client</Button><Button variant="secondary" onClick={() => { void loadDetail(); void loadAiStatus(); setToast({ message: 'Données enregistrées. Vous pouvez continuer.' }); }}><Save />Save / Continue</Button><Button busy={confirmBusy} onClick={() => setConfirmOpen(true)}><CheckCircle2 />Confirm Arrival</Button></>}</div></header>
+    {aiStatus && <div className={`arrival-ai-readiness is-${aiStatus.state.toLowerCase()}`}><Sparkles /><div><strong>AI Extraction · {aiStatus.state}</strong><span>{aiStatus.message}{aiStatus.retryAt ? ` Réessai après ${formatDate(aiStatus.retryAt, true)}.` : ''}</span>{aiStatus.lastFailure && <small>Dernier échec sécurisé : {aiStatus.lastFailure.errorCode}</small>}</div></div>}
     <section className="arrival-summary" aria-label="Résumé opérationnel"><article><span>Customers</span><strong>{detail.summary.customers}</strong></article><article><span>Products</span><strong>{detail.summary.products}</strong></article><article className="complete"><span>Completed</span><strong>{detail.summary.completed}</strong></article><article className="review"><span>Needs Review</span><strong>{detail.summary.needsReview}</strong></article><article className="processing"><span>Processing</span><strong>{detail.summary.processing}</strong></article></section>
     {error && <div className="arrival-error" role="alert"><AlertCircle />{error}</div>}
     <div className="sr-only" aria-live="polite">{hasActiveJob ? 'Extraction en cours.' : 'Aucune extraction en cours.'}</div>
-    <section className="arrival-clients"><div className="arrival-section-title"><div><span>CLIENTS / CUSTOMER IMPORTS</span><h2>{detail.clients.length} client{detail.clients.length === 1 ? '' : 's'}</h2></div></div>
-      {detail.clients.length === 0 ? <div className="arrival-empty-inline">Recherchez un client CRM ou créez-en un nouveau pour commencer.</div> : <div className="arrival-client-grid">{detail.clients.map((client) => <article key={client.id} className="arrival-client-card"><header><div className="arrival-avatar">{client.customer.name.slice(0, 2).toUpperCase()}</div><div><h3>{client.customer.name}</h3><span>{client.customer.phone}</span></div><StatusBadge status={client.extractionStatus} /></header>
-        <label className="arrival-store-select"><span>Store</span><select value={client.store?.id || ''} disabled={!canWrite || detail.status === 'CONFIRMED' || clientBusy === client.id} onChange={(event) => void selectStore(client.id, event.target.value)}><option value="">Select Store…</option>{stores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}</select></label>
-        <div className="arrival-client-metrics"><div><span>Products</span><strong>{client.products.total}</strong></div><div><span>Approved</span><strong>{client.products.approved}</strong></div><div><span>Review</span><strong>{client.products.needsReview + client.products.failed}</strong></div></div>
-        {client.sources.some((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')) && <div className="arrival-progress">{client.sources.filter((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')).map((source) => <div key={source.id}><span><Loader2 className="admin-spin" />Extracting {source.originalFilename}</span><strong>{source.latestJob?.progressCurrent || 0} / {source.latestJob?.progressTotal || '…'}</strong><i><em style={{ width: source.latestJob?.progressTotal ? `${Math.min(100, (source.latestJob.progressCurrent / source.latestJob.progressTotal) * 100)}%` : '8%' }} /></i></div>)}</div>}
-        <footer><Button variant="secondary" disabled={!client.store} onClick={() => setSourceClientId(client.id)}><FileText />{client.sources.length ? 'Extract / Re-extract' : 'Add Source'}</Button><Button variant="secondary" disabled={!client.products.total} onClick={() => setReviewClientId(client.id)}><Eye />View Products</Button><Button disabled={!client.products.total} onClick={() => setReviewClientId(client.id)}><Check />Review</Button></footer>
+    <section className="arrival-clients"><div className="arrival-section-title"><div><span>ARRIVAL → CLIENTS → STORES → SOURCES</span><h2>{detail.clients.length} client{detail.clients.length === 1 ? '' : 's'}</h2></div></div>
+      {detail.clients.length === 0 ? <div className="arrival-empty-inline">Recherchez un client CRM ou créez-en un nouveau pour commencer.</div> : <div className="arrival-client-grid">{detail.clients.map((client) => <article key={client.id} className="arrival-client-card arrival-client-card--nested">
+        <header><div className="arrival-avatar">{client.displayName.slice(0, 2).toUpperCase()}</div><div className="arrival-client-identity"><h3>{client.displayName}</h3>{client.displayAlias ? <span>Client CRM : {client.customer.name} · {client.customer.phone}</span> : <span>{client.customer.phone}</span>}</div><StatusBadge status={client.extractionStatus} />{canWrite && detail.status !== 'CONFIRMED' && <div className="arrival-client-head-actions"><Button variant="ghost" onClick={() => { setAliasDraft(client.displayAlias || ''); setAliasClientId(client.id); }}><Pencil />Alias</Button><Button variant="ghost" onClick={() => setUnlinkClientId(client.id)}><Trash2 />Dissocier</Button></div>}</header>
+        <div className="arrival-client-metrics"><div><span>Stores</span><strong>{client.stores.length}</strong></div><div><span>Products</span><strong>{client.products.total}</strong></div><div><span>Approved</span><strong>{client.products.approved}</strong></div><div><span>Review</span><strong>{client.products.needsReview + client.products.failed}</strong></div></div>
+        <div className="arrival-store-stack">{client.stores.length === 0 ? <div className="arrival-store-empty"><Package /><div><strong>Aucun Store affecté</strong><span>Ajoutez SHEIN, TEMU, ZALANDO ou un Store configuré.</span></div></div> : client.stores.map((assignment) => <section key={assignment.id} className="arrival-store-card">
+          <header><div className="arrival-store-mark"><Package /></div><div><span>STORE</span><strong>{assignment.store.name}</strong><small>{assignment.store.code} · {assignment.sources.length} source{assignment.sources.length === 1 ? '' : 's'}</small></div><StatusBadge status={assignment.extractionStatus} />{canWrite && detail.status !== 'CONFIRMED' && assignment.sources.length === 0 && <Button variant="ghost" busy={actionBusy === assignment.id} onClick={() => void removeStore(client.id, assignment)}><Trash2 />Retirer</Button>}</header>
+          <div className="arrival-store-metrics"><div><span>Produits</span><strong>{assignment.products.total}</strong></div><div><span>Approuvés</span><strong>{assignment.products.approved}</strong></div><div><span>À revoir</span><strong>{assignment.products.needsReview + assignment.products.failed}</strong></div></div>
+          {assignment.sources.some((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')) && <div className="arrival-progress">{assignment.sources.filter((source) => ['QUEUED','PROCESSING'].includes(source.latestJob?.state || '')).map((source) => <div key={source.id}><span><Loader2 className="admin-spin" />Extracting {source.originalFilename}</span><strong>{source.latestJob?.progressCurrent || 0} / {source.latestJob?.progressTotal || '…'}</strong><i><em style={{ width: source.latestJob?.progressTotal ? `${Math.min(100, (source.latestJob.progressCurrent / source.latestJob.progressTotal) * 100)}%` : '8%' }} /></i></div>)}</div>}
+          {assignment.sources.some((source) => source.latestJob?.errorCode) && <div className="arrival-store-failures">{assignment.sources.filter((source) => source.latestJob?.errorCode).map((source) => <span key={source.id}><AlertCircle />{source.latestJob?.errorCode}{source.latestJob?.retryAt ? ` · retry ${formatDate(source.latestJob.retryAt, true)}` : ''}</span>)}</div>}
+          <footer><Button variant="secondary" onClick={() => setSourceClientId(assignment.id)}><FileText />{assignment.sources.length ? 'Extract / Re-extract' : 'Add Source'}</Button><Button variant="secondary" disabled={!assignment.products.total} onClick={() => setReviewClientId(assignment.id)}><Eye />View Products</Button><Button disabled={!assignment.products.total} onClick={() => setReviewClientId(assignment.id)}><Check />Review</Button></footer>
+        </section>)}</div>
+        {canWrite && detail.status !== 'CONFIRMED' && <footer className="arrival-client-footer"><Button variant="secondary" onClick={() => { setStoreChoice(''); setStoreClientId(client.id); }}><Plus />Add Store</Button><span>Une seule fiche client, plusieurs Stores imbriqués.</span></footer>}
       </article>)}</div>}
     </section>
     <Modal open={clientOpen} eyebrow="AYROVI CRM" title="Ajouter un client à l’Arrival" onClose={closeClientModal}>
@@ -538,8 +682,21 @@ export function ArrivalIngestionPage({ canWrite }: { canWrite: boolean }) {
       </section>}
       {clientError && <div className="arrival-error" role="alert"><AlertCircle />{clientError}</div>}
     </Modal>
+    <Modal open={Boolean(storeClientId)} eyebrow="AYROVI CRM" title={storeClient ? `Add Store · ${storeClient.displayName}` : 'Add Store'} onClose={() => !actionBusy && setStoreClientId('')} footer={<><Button variant="secondary" disabled={Boolean(actionBusy)} onClick={() => setStoreClientId('')}>Annuler</Button><Button busy={actionBusy === 'assign-store'} disabled={!storeChoice} onClick={() => void assignStore()}><Plus />Ajouter ce Store</Button></>}>
+      <p className="arrival-modal-copy">Le Store sera imbriqué dans cette fiche client. Ses Sources, jobs et produits resteront isolés des autres Stores.</p>
+      <Field label="Store" required full><select value={storeChoice} onChange={(event) => setStoreChoice(event.target.value)}><option value="">Sélectionner…</option>{stores.filter((store) => store.active && !storeClient?.stores.some((assignment) => assignment.storeId === store.id)).map((store) => <option key={store.id} value={store.id}>{store.name} · {store.supportedSources.map((profile) => profile.sourceType).join(', ')}</option>)}</select></Field>
+      {canManageStores && <Button variant="ghost" onClick={() => { setStoreClientId(''); setStoreManagerOpen(true); }}><Plus />Créer un nouveau Store global</Button>}
+    </Modal>
+    <Modal open={Boolean(aliasClientId)} eyebrow="AYROVI CRM · ARRIVAL ONLY" title="Alias du client dans cet Arrival" onClose={() => !actionBusy && setAliasClientId('')} footer={<><Button variant="secondary" disabled={Boolean(actionBusy)} onClick={() => setAliasClientId('')}>Annuler</Button><Button busy={actionBusy === 'alias'} onClick={() => void saveAlias()}><Save />Enregistrer l’alias</Button></>}>
+      <p className="arrival-modal-copy">L’alias modifie uniquement l’affichage de ce client dans « {detail.name} ». Le nom CRM canonique « {aliasClient?.customer.name || ''} », les commandes et le site ne seront pas modifiés.</p>
+      <Field label="Alias Arrival" hint="Laissez vide pour réutiliser le nom CRM canonique." full><input autoFocus value={aliasDraft} maxLength={160} onChange={(event) => setAliasDraft(event.target.value)} placeholder={aliasClient?.customer.name || ''} /></Field>
+    </Modal>
+    <Modal open={Boolean(unlinkClientId)} eyebrow="AYROVI CRM · SAFE UNLINK" title="Dissocier ce client de l’Arrival" onClose={() => !actionBusy && setUnlinkClientId('')} footer={<><Button variant="secondary" disabled={Boolean(actionBusy)} onClick={() => setUnlinkClientId('')}>Annuler</Button><Button busy={actionBusy === 'unlink'} onClick={() => void unlinkClient()}><Trash2 />Dissocier uniquement de cet Arrival</Button></>}>
+      <div className="arrival-confirm-copy"><AlertCircle /><div><strong>{unlinkClientChoice?.displayName}</strong><p>Cette action supprime le lien avec « {detail.name} » et les Stores, Sources, jobs et produits opérationnels propres à cet Arrival. Le client CRM canonique, ses commandes, factures, comptes et données du site restent intacts.</p></div></div>
+    </Modal>
     <Modal open={confirmOpen} eyebrow="AYROVI CRM" title="Confirm Arrival" onClose={() => !confirmBusy && setConfirmOpen(false)} footer={<><Button variant="secondary" disabled={confirmBusy} onClick={() => setConfirmOpen(false)}>Annuler</Button><Button busy={confirmBusy} onClick={() => void confirm()}><CheckCircle2 />Confirmer définitivement</Button></>}><div className="arrival-confirm-copy"><AlertCircle /><div><strong>Valider {detail.name} ?</strong><p>Le serveur vérifiera les clients, Stores, jobs, champs requis et approbations. Après confirmation, cet Arrival sera verrouillé. Aucune opération Warehouse ne sera déclenchée.</p></div></div></Modal>
-    <SourceModal client={sourceClient} stores={stores} open={Boolean(sourceClientId)} canWrite={canWrite && detail.status !== 'CONFIRMED'} onClose={() => setSourceClientId('')} onChanged={() => loadDetail(true)} />
+    {storeManagerModal}
+    <SourceModal client={sourceClient} stores={stores} aiStatus={aiStatus} open={Boolean(sourceClientId)} canWrite={canWrite && detail.status !== 'CONFIRMED'} onClose={() => setSourceClientId('')} onChanged={() => { void loadAiStatus(); return loadDetail(true); }} />
     <ProductReviewModal client={reviewClient} open={Boolean(reviewClientId)} canWrite={canWrite && detail.status !== 'CONFIRMED'} onClose={() => setReviewClientId('')} onChanged={() => { void loadDetail(true); }} />
     {toast && <Toast {...toast} />}
   </>;

@@ -211,3 +211,86 @@
   .arrival-list-card,
   .arrival-progress em { transition: none; }
 }
+
+/* Nested multi-Store Arrival client model. */
+.arrival-client-grid { grid-template-columns: 1fr; }
+.arrival-client-card--nested > header { grid-template-columns: auto minmax(160px, 1fr) auto auto; }
+.arrival-client-identity { min-width: 0; }
+.arrival-client-head-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.arrival-client-head-actions .admin-button { min-height: 30px; padding: 0 8px; }
+.arrival-client-card--nested > .arrival-client-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: 14px; }
+.arrival-store-stack { display: grid; gap: 10px; padding: 0 17px 16px; }
+.arrival-store-card { overflow: hidden; border: 1px solid #d9d6dc; background: #fbfbfc; }
+.arrival-store-card > header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 12px; border-bottom: 1px solid #e3e0e5; background: #fff; }
+.arrival-store-card > header > div:nth-child(2) > span,
+.arrival-store-card > header > div:nth-child(2) > strong,
+.arrival-store-card > header > div:nth-child(2) > small { display: block; }
+.arrival-store-card > header > div:nth-child(2) > span { color: #fe7003; font-size: 8px; font-weight: 950; letter-spacing: .12em; }
+.arrival-store-card > header > div:nth-child(2) > small { margin-top: 2px; color: var(--admin-muted); font-size: 9px; }
+.arrival-store-mark { display: grid; place-items: center; width: 34px; height: 34px; background: #fff3e9; color: #c05621; }
+.arrival-store-mark svg { width: 17px; }
+.arrival-store-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 440px; margin: 11px 12px; border: 1px solid #e2dfe4; background: #fff; }
+.arrival-store-metrics > div { padding: 8px 10px; border-right: 1px solid #e2dfe4; }
+.arrival-store-metrics > div:last-child { border-right: 0; }
+.arrival-store-metrics span,
+.arrival-store-metrics strong { display: block; }
+.arrival-store-metrics span { color: var(--admin-muted); font-size: 8px; font-weight: 850; text-transform: uppercase; }
+.arrival-store-metrics strong { margin-top: 2px; font-size: 16px; }
+.arrival-store-card > footer { display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 12px; border-top: 1px solid #e3e0e5; }
+.arrival-store-empty { display: flex; align-items: center; gap: 10px; padding: 18px; border: 1px dashed #c9c6cc; color: var(--admin-muted); }
+.arrival-store-empty > svg { width: 23px; }
+.arrival-store-empty strong,
+.arrival-store-empty span { display: block; }
+.arrival-store-empty strong { color: var(--admin-text); }
+.arrival-store-empty span { margin-top: 2px; font-size: 10px; }
+.arrival-client-footer { align-items: center; }
+.arrival-client-footer > span { align-self: center; color: var(--admin-muted); font-size: 9px; }
+.arrival-store-failures { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 12px 10px; }
+.arrival-store-failures span { display: inline-flex; align-items: center; gap: 4px; padding: 5px 7px; background: #fff1f2; color: #9f1239; font-size: 8px; font-weight: 850; }
+.arrival-store-failures svg { width: 12px; }
+
+.arrival-ai-readiness { display: flex; align-items: center; gap: 10px; margin: -6px 0 16px; padding: 10px 12px; border: 1px solid #bbf7d0; background: #f0fdf4; color: #166534; }
+.arrival-ai-readiness > svg { width: 19px; flex: 0 0 auto; }
+.arrival-ai-readiness strong,
+.arrival-ai-readiness span,
+.arrival-ai-readiness small { display: block; }
+.arrival-ai-readiness span,
+.arrival-ai-readiness small { margin-top: 2px; font-size: 9px; }
+.arrival-ai-readiness.is-not_configured,
+.arrival-ai-readiness.is-paused_rate_limit,
+.arrival-ai-readiness.is-paused_failures { border-color: #fed7aa; background: #fff7ed; color: #9a3412; }
+.arrival-job-diagnostic { display: grid; gap: 2px; margin-top: 6px; padding: 7px; border-left: 3px solid #dc2626; background: #fff1f2; color: #991b1b; }
+.arrival-job-diagnostic strong { font-size: 9px; letter-spacing: .04em; }
+.arrival-job-diagnostic small { font-size: 9px; line-height: 1.4; }
+.arrival-warning-codes { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+.arrival-warning-codes code { padding: 3px 5px; background: #fff7ed; color: #9a3412; font: 700 8px/1.2 ui-monospace, monospace; }
+
+.arrival-modal-copy { margin: 0 0 13px; color: var(--admin-muted); font-size: 11px; line-height: 1.55; }
+.arrival-store-source-types { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; padding: 12px; border: 1px solid var(--admin-line); }
+.arrival-store-source-types legend { padding: 0 5px; color: var(--admin-muted); font-size: 9px; font-weight: 900; text-transform: uppercase; }
+.arrival-store-source-types label,
+.arrival-store-active { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 750; }
+.arrival-store-manager-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; max-height: 220px; margin-bottom: 14px; overflow: auto; }
+.arrival-store-manager-list > button { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 9px; border: 1px solid var(--admin-line); background: #fff; color: inherit; cursor: pointer; text-align: left; }
+.arrival-store-manager-list > button.is-active { border-color: #fb923c; background: #fff7ed; }
+.arrival-store-manager-list strong,
+.arrival-store-manager-list span { display: block; }
+.arrival-store-manager-list span,
+.arrival-store-manager-list small { color: var(--admin-muted); font-size: 8px; }
+.arrival-store-manager-list svg { width: 14px; }
+.arrival-store-manager-form { padding: 12px; border: 1px solid var(--admin-line); background: #fafafa; }
+
+/* Multi-Store additions layered after the existing responsive contract. */
+.arrival-header-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+@media (max-width: 700px) {
+  .arrival-header-actions { justify-content: stretch; }
+  .arrival-header-actions .admin-button { flex: 1 1 100%; }
+  .arrival-client-card--nested > header,
+  .arrival-store-card > header { grid-template-columns: auto minmax(0, 1fr); }
+  .arrival-client-head-actions,
+  .arrival-store-card > header > .admin-button { grid-column: 1 / -1; justify-self: stretch; }
+  .arrival-client-head-actions .admin-button { flex: 1; }
+  .arrival-client-card--nested > .arrival-client-metrics { grid-template-columns: repeat(2, 1fr); }
+  .arrival-store-manager-list { grid-template-columns: 1fr; }
+  .arrival-store-card > footer .admin-button { flex: 1 1 100%; }
+}

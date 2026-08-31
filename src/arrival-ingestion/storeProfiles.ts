@@ -106,7 +106,7 @@ export function listStoreProfiles(db: QatafoDatabase): Array<{
   active: boolean;
   supportedSources: Array<{ sourceType: ArrivalSourceType; strategyKey: string }>;
 }> {
-  const stores = db.all<any>('SELECT id,code,name,active FROM crm_stores WHERE active=1 ORDER BY name');
+  const stores = db.all<any>('SELECT id,code,name,active FROM crm_stores ORDER BY active DESC,name');
   return stores.map((store) => ({
     id: store.id,
     code: store.code,

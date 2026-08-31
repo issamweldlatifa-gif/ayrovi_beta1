@@ -25,6 +25,21 @@ describe('Arrival inline CRM customer UI contract', () => {
     expect(pageCss).toContain('.arrival-new-customer-actions');
   });
 
+  it('renders one client with nested Stores and makes alias/unlink safety explicit', () => {
+    expect(pageSource).toContain('ARRIVAL → CLIENTS → STORES → SOURCES');
+    expect(pageSource).toContain('Une seule fiche client, plusieurs Stores imbriqués.');
+    expect(pageSource).toContain('Add Store');
+    expect(pageSource).toContain('Alias du client dans cet Arrival');
+    expect(pageSource).toContain('Le nom CRM canonique');
+    expect(pageSource).toContain('Le client CRM canonique, ses commandes, factures, comptes et données du site restent intacts.');
+    expect(pageSource).toContain('arrivalClientStoreId');
+    expect(pageSource).toContain('AI Extraction ·');
+    expect(pageSource).toContain('warningCodes.map');
+    expect(pageCss).toContain('.arrival-store-stack');
+    expect(pageCss).toContain('.arrival-ai-readiness');
+    expect(pageCss).toContain('.arrival-job-diagnostic');
+  });
+
   it('normalizes accepted Tunisian variants to one canonical representation', () => {
     for (const value of ['22 345 678', '+216 22 345 678', '00216 22 345 678', '21622345678']) {
       expect(normalizeTunisianPhone(value)).toBe('+21622345678');

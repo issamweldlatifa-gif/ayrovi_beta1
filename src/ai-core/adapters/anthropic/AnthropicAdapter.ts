@@ -353,8 +353,7 @@ export class AnthropicAdapter implements AiResponsesProviderAdapter {
     if (
       response.status === 400
       && 'output_config' in body
-      && 'tools' in body
-      && /output_config|json_schema|structured|tool|web.search/i.test(detail)
+      && /output[_ -]?config|json[_ -]?schema|structured[_ -]?output|response[_ -]?format[^\n]{0,80}schema/i.test(detail)
     ) {
       throw new AiProviderError(
         'PROVIDER_CAPABILITY_UNSUPPORTED',

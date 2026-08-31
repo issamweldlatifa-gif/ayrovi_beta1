@@ -15,9 +15,18 @@ export interface StoreProfile {
   extractionHints: string[];
 }
 
+export interface ArrivalClientStoreRecord {
+  id: string;
+  arrivalClientId: string;
+  storeId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ArrivalSourceRecord {
   id: string;
   arrivalClientId: string;
+  arrivalClientStoreId: string;
   sourceType: ArrivalSourceType;
   originalFilename: string;
   mimeType: string;
@@ -108,6 +117,7 @@ export interface ExtractionRequestContext {
   arrivalId: string;
   arrivalName: string;
   arrivalClientId: string;
+  arrivalClientStoreId: string;
   customerId: string;
   customerName: string;
   store: StoreProfile;

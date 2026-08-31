@@ -45,6 +45,7 @@ export function mapExtractedProduct(row: any) {
     jobId: row.job_id || null,
     sourceId: row.source_id,
     arrivalClientId: row.arrival_client_id,
+    arrivalClientStoreId: row.arrival_client_store_id,
     arrivalId: row.arrival_id,
     customerId: row.customer_id,
     storeId: row.store_id,
@@ -95,6 +96,14 @@ export class ExtractedProductService {
       WHERE arrival_client_id=? AND is_current=1 ORDER BY created_at,id`, clientId).map(mapExtractedProduct);
   }
 
+  listByStore(clientId: string, clientStoreId: string) {
+    const assignment = this.clients.getStore(clientStoreId);
+    if (assignment.arrivalClientId !== clientId) throw new ArrivalIngestionError('ARRIVAL_CLIENT_STORE_MISMATCH', 'Le Store ne correspond pas à ce client Arrival.', 409);
+    return this.db.all<any>(`SELECT * FROM crm_extracted_products
+      WHERE arrival_client_id=? AND arrival_client_store_id=? AND is_current=1 ORDER BY created_at,id`,
+    clientId, clientStoreId).map(mapExtractedProduct);
+  }
+
   getInternal(id: string): any {
     const row = this.db.get<any>('SELECT * FROM crm_extracted_products WHERE id=? AND is_current=1', id);
     if (!row) throw new ArrivalIngestionError('PRODUCT_NOT_FOUND', 'Produit extrait introuvable.', 404);
@@ -105,6 +114,7 @@ export class ExtractedProductService {
     jobId: string;
     sourceId: string;
     client: any;
+    clientStore: any;
     sourceType: string;
     sourceReference: string;
     candidate: NormalizedProductCandidate;
@@ -132,12 +142,13 @@ export class ExtractedProductService {
     }
     const now = new Date().toISOString();
     this.db.run(`INSERT INTO crm_extracted_products
-      (id,job_id,source_id,arrival_client_id,arrival_id,customer_id,store_id,
+      (id,job_id,source_id,arrival_client_id,arrival_client_store_id,arrival_id,customer_id,store_id,
        product_name,sku,reference,variant,color,quantity,product_image_storage_key,
        source_type,source_reference,extraction_confidence,extraction_status,
        field_evidence,source_specific,raw_extracted,review_reasons,is_current,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
-    id, input.jobId, input.sourceId, input.client.id, input.client.arrival_id, input.client.customer_id, input.client.store_id,
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
+    id, input.jobId, input.sourceId, input.client.id, input.clientStore.id, input.client.arrival_id,
+    input.client.customer_id, input.clientStore.storeId,
     input.candidate.productName, input.candidate.sku, input.candidate.reference, input.candidate.variant,
     input.candidate.color, input.candidate.quantity, imageStorageKey, input.sourceType, input.sourceReference,
     input.candidate.extractionConfidence, input.candidate.extractionStatus,
@@ -150,6 +161,7 @@ export class ExtractedProductService {
     jobId: string;
     sourceId: string;
     client: any;
+    clientStore?: any;
     sourceType: string;
     sourceReference: string;
     reason: string;
@@ -159,13 +171,18 @@ export class ExtractedProductService {
     const id = `crm_extracted_product_${randomUUID()}`;
     const now = new Date().toISOString();
     const status = input.failed ? 'FAILED' : 'NEEDS_REVIEW';
+    const clientStore = input.clientStore || (() => {
+      const source = this.db.get<any>('SELECT arrival_client_store_id FROM crm_arrival_sources WHERE id=?', input.sourceId);
+      if (!source?.arrival_client_store_id) throw new ArrivalIngestionError('SOURCE_STORE_ASSIGNMENT_MISSING', 'Cette source doit être rattachée à un Store.', 409);
+      return this.clients.getStore(source.arrival_client_store_id);
+    })();
     this.db.run(`INSERT INTO crm_extracted_products
-      (id,job_id,source_id,arrival_client_id,arrival_id,customer_id,store_id,
+      (id,job_id,source_id,arrival_client_id,arrival_client_store_id,arrival_id,customer_id,store_id,
        source_type,source_reference,extraction_confidence,extraction_status,
        field_evidence,source_specific,raw_extracted,review_reasons,is_current,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,0,?,'{}','[]',?,?,0,?,?)`,
-    id, input.jobId, input.sourceId, input.client.id, input.client.arrival_id, input.client.customer_id,
-    input.client.store_id, input.sourceType, input.sourceReference, status,
+      VALUES (?,?,?,?,?,?,?,?,?,?,0,?,'{}','[]',?,?,0,?,?)`,
+    id, input.jobId, input.sourceId, input.client.id, clientStore.id, input.client.arrival_id, input.client.customer_id,
+    clientStore.storeId, input.sourceType, input.sourceReference, status,
     JSON.stringify({ visibleText: input.visibleText || null }), JSON.stringify([String(input.reason).slice(0, 500)]), now, now);
     return id;
   }
@@ -189,18 +206,20 @@ export class ExtractedProductService {
     const sourceId = String(input.sourceId || '').trim();
     const source = this.db.get<any>('SELECT * FROM crm_arrival_sources WHERE id=? AND arrival_client_id=?', sourceId, clientId);
     if (!source) throw new ArrivalIngestionError('SOURCE_NOT_FOUND', 'Sélectionnez la source du produit manquant.', 404);
+    if (!source.arrival_client_store_id) throw new ArrivalIngestionError('SOURCE_STORE_ASSIGNMENT_MISSING', 'Cette source doit être rattachée à un Store.', 409);
+    const clientStore = this.clients.getStore(source.arrival_client_store_id);
     const values = editableValues(input);
     const id = `crm_extracted_product_${randomUUID()}`;
     const now = new Date().toISOString();
     const evidence = Object.fromEntries(EDITABLE_FIELDS.map((field) => [field, values[field] == null ? null : 'Saisie manuelle par un administrateur après consultation de la source.']));
     this.db.transaction(() => {
       this.db.run(`INSERT INTO crm_extracted_products
-        (id,job_id,source_id,arrival_client_id,arrival_id,customer_id,store_id,
+        (id,job_id,source_id,arrival_client_id,arrival_client_store_id,arrival_id,customer_id,store_id,
          product_name,sku,reference,variant,color,quantity,source_type,source_reference,
          extraction_confidence,extraction_status,field_evidence,source_specific,raw_extracted,
          review_reasons,manual_edits,is_current,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? ,?,'[]','{}',? ,?,1,?,?)`,
-      id, source.last_job_id || null, source.id, clientId, client.arrival_id, client.customer_id, client.store_id,
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? ,?,'[]','{}',? ,?,1,?,?)`,
+      id, source.last_job_id || null, source.id, clientId, clientStore.id, client.arrival_id, client.customer_id, clientStore.storeId,
       values.productName, values.sku, values.reference, values.variant, values.color, values.quantity,
       source.source_type, `${source.id}#manual`, 1, 'NEEDS_REVIEW', JSON.stringify(evidence),
       JSON.stringify(['MANUAL_RECORD_REQUIRES_APPROVAL']), JSON.stringify(values), now, now);
@@ -279,6 +298,30 @@ export class ExtractedProductService {
       for (const jobId of jobIds) this.refreshJobCounts(jobId);
     });
     return { approved: toApprove.length, unresolved: rows.length - valid.length, products: this.list(clientId) };
+  }
+
+  approveAllByStore(clientId: string, clientStoreId: string, actor: AdminAuditActor) {
+    const client = this.clients.get(clientId);
+    if (client.arrival_status === 'CONFIRMED') throw new ArrivalIngestionError('ARRIVAL_CONFIRMED', 'Cet Arrival est déjà confirmé.', 409);
+    const assignment = this.clients.getStore(clientStoreId);
+    if (assignment.arrivalClientId !== clientId) throw new ArrivalIngestionError('ARRIVAL_CLIENT_STORE_MISMATCH', 'Le Store ne correspond pas à ce client Arrival.', 409);
+    const rows = this.db.all<any>(`SELECT * FROM crm_extracted_products
+      WHERE arrival_client_id=? AND arrival_client_store_id=? AND is_current=1`, clientId, clientStoreId);
+    const valid = rows.filter(isValidProduct);
+    const toApprove = valid.filter((row) => row.extraction_status !== 'EXTRACTED' || !row.approved_at);
+    const jobIds = new Set(toApprove.map((row) => String(row.job_id || '')).filter(Boolean));
+    const now = new Date().toISOString();
+    this.db.transaction(() => {
+      for (const row of toApprove) {
+        this.db.run(`UPDATE crm_extracted_products SET extraction_status='EXTRACTED',review_reasons='[]',
+          approved_at=?,approved_by=?,updated_at=? WHERE id=?`, now, actor.id, now, row.id);
+        recordAdminAudit(this.db, actor, 'PRODUCT_UPDATED', 'CRM_ARRIVALS', row.id,
+          { extractionStatus: row.extraction_status, approved: Boolean(row.approved_at) },
+          { extractionStatus: 'EXTRACTED', approved: true, operation: 'STORE_BATCH_APPROVAL', arrivalClientStoreId: clientStoreId });
+      }
+      for (const jobId of jobIds) this.refreshJobCounts(jobId);
+    });
+    return { approved: toApprove.length, unresolved: rows.length - valid.length, products: this.listByStore(clientId, clientStoreId) };
   }
 
   image(id: string): Buffer {

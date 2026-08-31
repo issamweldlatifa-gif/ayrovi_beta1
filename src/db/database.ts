@@ -185,18 +185,59 @@ const CUSTOMER_OAUTH_STATES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_oau
 
 export class QatafoDatabase {
   private db: Database.Database;
+  private arrivalMultistoreMigrationRequired = false;
+  private arrivalMultistoreBackupFile: string | null = null;
 
   constructor(dbPath?: string) {
     const dataDir = path.resolve(process.cwd(), 'data');
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
     const resolvedPath = dbPath || path.join(dataDir, 'qatafo.sqlite');
+    const existingDatabase = resolvedPath !== ':memory:' && fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).size > 0;
     this.db = new Database(resolvedPath);
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('busy_timeout = 5000');
+    this.backupBeforeArrivalMultistoreMigration(resolvedPath, existingDatabase);
     this.initSchema();
     this.seedCoreData();
+  }
+
+  /**
+   * The multi-store migration is additive, but production rollback still needs
+   * a byte-independent SQLite snapshot. VACUUM INTO runs synchronously before
+   * any DDL and includes committed WAL content. If the snapshot cannot be
+   * created or verified, startup fails closed and the migration is not run.
+   */
+  private backupBeforeArrivalMultistoreMigration(resolvedPath: string, existingDatabase: boolean): void {
+    if (!existingDatabase || resolvedPath === ':memory:') return;
+    const hasArrivalClients = this.db.prepare(
+      "SELECT 1 present FROM sqlite_master WHERE type='table' AND name='crm_arrival_clients'",
+    ).get();
+    const hasClientStores = this.db.prepare(
+      "SELECT 1 present FROM sqlite_master WHERE type='table' AND name='crm_arrival_client_stores'",
+    ).get();
+    if (!hasArrivalClients || hasClientStores) return;
+    this.arrivalMultistoreMigrationRequired = true;
+
+    const backupDirectory = path.join(path.dirname(path.resolve(resolvedPath)), 'backups');
+    fs.mkdirSync(backupDirectory, { recursive: true, mode: 0o700 });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const destination = path.join(backupDirectory, `pre-arrival-multistore-${timestamp}.sqlite`);
+    const sqlPath = destination.replace(/'/g, "''");
+    this.db.pragma('wal_checkpoint(TRUNCATE)');
+    this.db.exec(`VACUUM INTO '${sqlPath}'`);
+
+    const verification = new Database(destination, { readonly: true, fileMustExist: true });
+    try {
+      const integrity = String(verification.pragma('integrity_check', { simple: true }) || '');
+      if (integrity.toLowerCase() !== 'ok') throw new Error(`PRE_MIGRATION_BACKUP_INVALID:${integrity}`);
+    } finally {
+      verification.close();
+    }
+    fs.chmodSync(destination, 0o600);
+    this.arrivalMultistoreBackupFile = path.basename(destination);
+    console.info(`[database] verified pre-migration backup created: ${this.arrivalMultistoreBackupFile}`);
   }
 
   private initSchema() {
@@ -321,6 +362,12 @@ export class QatafoDatabase {
 
       -- Administration CRM Arrivals/Ingestion. This domain is intentionally
       -- separate from the public CMS arrivals table above.
+      CREATE TABLE IF NOT EXISTS crm_schema_migrations (
+        migration_key TEXT PRIMARY KEY,
+        applied_at TEXT NOT NULL,
+        backup_status TEXT NOT NULL CHECK(backup_status IN ('VERIFIED','NOT_REQUIRED')),
+        backup_file TEXT
+      );
       CREATE TABLE IF NOT EXISTS crm_stores (
         id TEXT PRIMARY KEY,
         code TEXT NOT NULL UNIQUE,
@@ -355,14 +402,26 @@ export class QatafoDatabase {
         arrival_id TEXT NOT NULL REFERENCES crm_arrivals(id) ON DELETE CASCADE,
         customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
         store_id TEXT REFERENCES crm_stores(id) ON DELETE RESTRICT,
+        display_alias TEXT,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         UNIQUE(arrival_id, customer_id)
       );
       CREATE INDEX IF NOT EXISTS idx_crm_arrival_clients_arrival ON crm_arrival_clients(arrival_id, created_at);
+      CREATE TABLE IF NOT EXISTS crm_arrival_client_stores (
+        id TEXT PRIMARY KEY,
+        arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        store_id TEXT NOT NULL REFERENCES crm_stores(id) ON DELETE RESTRICT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        UNIQUE(arrival_client_id, store_id)
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_client_stores_client ON crm_arrival_client_stores(arrival_client_id, created_at);
+      CREATE INDEX IF NOT EXISTS idx_crm_client_stores_store ON crm_arrival_client_stores(store_id, created_at);
       CREATE TABLE IF NOT EXISTS crm_arrival_sources (
         id TEXT PRIMARY KEY,
         arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        arrival_client_store_id TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE,
         source_type TEXT NOT NULL CHECK(source_type IN ('PDF','EMAIL','IMAGE','INVOICE')),
         original_filename TEXT NOT NULL,
         mime_type TEXT NOT NULL,
@@ -379,6 +438,7 @@ export class QatafoDatabase {
         id TEXT PRIMARY KEY,
         source_id TEXT NOT NULL REFERENCES crm_arrival_sources(id) ON DELETE CASCADE,
         arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        arrival_client_store_id TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE,
         strategy_key TEXT NOT NULL,
         state TEXT NOT NULL CHECK(state IN ('QUEUED','PROCESSING','COMPLETED','PARTIAL','FAILED')),
         progress_current INTEGER NOT NULL DEFAULT 0,
@@ -388,6 +448,7 @@ export class QatafoDatabase {
         warning_codes TEXT NOT NULL DEFAULT '[]',
         error_code TEXT,
         error_message TEXT,
+        retry_at TEXT,
         attempt INTEGER NOT NULL DEFAULT 1,
         started_by TEXT REFERENCES admin_users(id) ON DELETE SET NULL,
         started_by_name TEXT NOT NULL DEFAULT 'Système',
@@ -409,6 +470,7 @@ export class QatafoDatabase {
         job_id TEXT REFERENCES crm_extraction_jobs(id) ON DELETE SET NULL,
         source_id TEXT NOT NULL REFERENCES crm_arrival_sources(id) ON DELETE CASCADE,
         arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        arrival_client_store_id TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE,
         arrival_id TEXT NOT NULL REFERENCES crm_arrivals(id) ON DELETE CASCADE,
         customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
         store_id TEXT NOT NULL REFERENCES crm_stores(id) ON DELETE RESTRICT,
@@ -1000,9 +1062,21 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_audit_module ON audit_logs(module, entity_id);
     `);
 
+    this.ensureColumn('crm_arrival_clients', 'display_alias', 'TEXT');
+    this.ensureColumn('crm_arrival_sources', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
+    this.ensureColumn('crm_extraction_jobs', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
     this.ensureColumn('crm_extraction_jobs', 'worker_id', 'TEXT');
     this.ensureColumn('crm_extraction_jobs', 'heartbeat_at', 'TEXT');
     this.ensureColumn('crm_extraction_jobs', 'lease_expires_at', 'TEXT');
+    this.ensureColumn('crm_extraction_jobs', 'retry_at', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'arrival_client_store_id', 'TEXT REFERENCES crm_arrival_client_stores(id) ON DELETE CASCADE');
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_crm_sources_client_store ON crm_arrival_sources(arrival_client_store_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_crm_jobs_client_store ON crm_extraction_jobs(arrival_client_store_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_crm_products_client_store ON crm_extracted_products(arrival_client_store_id, is_current, created_at);
+    `);
+    this.migrateLegacyArrivalClientStores();
+    this.recordArrivalMultistoreMigration();
     seedArrivalStores(this);
 
     // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
@@ -1526,6 +1600,76 @@ export class QatafoDatabase {
       this.db.pragma('foreign_keys = ON');
     }
     console.info(`[DB] تمت ترقية جدول ${table} إلى المخطط الحالي.`);
+  }
+
+  private migrateLegacyArrivalClientStores(): void {
+    const legacyClients = this.all<any>(`SELECT ac.id,ac.store_id,ac.created_at,ac.updated_at
+      FROM crm_arrival_clients ac
+      WHERE ac.store_id IS NOT NULL AND NOT EXISTS (
+        SELECT 1 FROM crm_arrival_client_stores acs WHERE acs.arrival_client_id=ac.id AND acs.store_id=ac.store_id
+      )`);
+    this.transaction(() => {
+      for (const client of legacyClients) {
+        this.run(`INSERT INTO crm_arrival_client_stores (id,arrival_client_id,store_id,created_at,updated_at)
+          VALUES (?,?,?,?,?)`, `crm_client_store_${randomUUID()}`, client.id, client.store_id,
+        client.created_at || new Date().toISOString(), client.updated_at || client.created_at || new Date().toISOString());
+      }
+      this.run(`UPDATE crm_arrival_sources SET arrival_client_store_id=(
+        SELECT acs.id FROM crm_arrival_client_stores acs
+        JOIN crm_arrival_clients ac ON ac.id=acs.arrival_client_id
+        WHERE acs.arrival_client_id=crm_arrival_sources.arrival_client_id AND acs.store_id=ac.store_id
+        ORDER BY acs.created_at LIMIT 1
+      ) WHERE arrival_client_store_id IS NULL`);
+      this.run(`UPDATE crm_extraction_jobs SET arrival_client_store_id=(
+        SELECT src.arrival_client_store_id FROM crm_arrival_sources src WHERE src.id=crm_extraction_jobs.source_id
+      ) WHERE arrival_client_store_id IS NULL`);
+      this.run(`UPDATE crm_extracted_products SET arrival_client_store_id=(
+        SELECT acs.id FROM crm_arrival_client_stores acs
+        WHERE acs.arrival_client_id=crm_extracted_products.arrival_client_id
+          AND acs.store_id=crm_extracted_products.store_id
+        ORDER BY acs.created_at LIMIT 1
+      ) WHERE arrival_client_store_id IS NULL`);
+    });
+    const unresolved = {
+      sources: Number(this.get<any>('SELECT COUNT(*) count FROM crm_arrival_sources WHERE arrival_client_store_id IS NULL')?.count || 0),
+      jobs: Number(this.get<any>('SELECT COUNT(*) count FROM crm_extraction_jobs WHERE arrival_client_store_id IS NULL')?.count || 0),
+      products: Number(this.get<any>('SELECT COUNT(*) count FROM crm_extracted_products WHERE arrival_client_store_id IS NULL')?.count || 0),
+    };
+    if (unresolved.sources || unresolved.jobs || unresolved.products) {
+      throw new Error(`ARRIVAL_MULTISTORE_MIGRATION_INCOMPLETE:${JSON.stringify(unresolved)}`);
+    }
+  }
+
+  private recordArrivalMultistoreMigration(): void {
+    const migrationKey = 'crm_arrival_multistore_v1';
+    if (this.get('SELECT migration_key FROM crm_schema_migrations WHERE migration_key=?', migrationKey)) return;
+    if (this.arrivalMultistoreMigrationRequired && !this.arrivalMultistoreBackupFile) {
+      throw new Error('ARRIVAL_MULTISTORE_PRE_MIGRATION_BACKUP_REQUIRED');
+    }
+    this.run(`INSERT INTO crm_schema_migrations (migration_key,applied_at,backup_status,backup_file)
+      VALUES (?,?,?,?)`, migrationKey, new Date().toISOString(),
+    this.arrivalMultistoreBackupFile ? 'VERIFIED' : 'NOT_REQUIRED', this.arrivalMultistoreBackupFile);
+  }
+
+  arrivalMultistoreMigrationReadiness(): {
+    ready: boolean;
+    backupStatus: 'VERIFIED' | 'NOT_REQUIRED' | 'MISSING';
+    backupId: string | null;
+    appliedAt: string | null;
+  } {
+    const migration = this.get<any>(`SELECT applied_at,backup_status,backup_file FROM crm_schema_migrations
+      WHERE migration_key='crm_arrival_multistore_v1'`);
+    const unresolved = Number(this.get<any>(`SELECT
+      (SELECT COUNT(*) FROM crm_arrival_sources WHERE arrival_client_store_id IS NULL)
+      +(SELECT COUNT(*) FROM crm_extraction_jobs WHERE arrival_client_store_id IS NULL)
+      +(SELECT COUNT(*) FROM crm_extracted_products WHERE arrival_client_store_id IS NULL) count`)?.count || 0);
+    return {
+      ready: Boolean(migration) && unresolved === 0,
+      backupStatus: migration?.backup_status === 'VERIFIED' ? 'VERIFIED'
+        : migration?.backup_status === 'NOT_REQUIRED' ? 'NOT_REQUIRED' : 'MISSING',
+      backupId: migration?.backup_file || null,
+      appliedAt: migration?.applied_at || null,
+    };
   }
 
   private ensureColumn(table: string, column: string, definition: string) {

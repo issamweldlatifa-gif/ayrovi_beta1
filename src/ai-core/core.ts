@@ -2,12 +2,22 @@ import type {
   AiProviderRegistrySnapshot,
   AiRealtimeProviderAdapter,
   AiResponsesProviderAdapter,
+  AiWorkload,
 } from './contracts';
 import { AnthropicAdapter } from './adapters/anthropic/AnthropicAdapter';
 import { LegacyVoiceAdapter } from './adapters/legacy/LegacyVoiceAdapter';
 import { OpenAIRealtimeAdapter } from './adapters/openai/OpenAIRealtimeAdapter';
 import { OpenAIResponsesAdapter } from './adapters/openai/OpenAIResponsesAdapter';
 import { AiProviderCircuitBreaker, PolicyResponsesAdapter } from './policy';
+
+export interface AiCapabilityReadiness {
+  capability: AiWorkload;
+  configured: boolean;
+  state: 'READY' | 'NOT_CONFIGURED' | 'PAUSED_RATE_LIMIT' | 'PAUSED_FAILURES';
+  circuitOpen: boolean;
+  retryAllowed: boolean;
+  retryAt: string | null;
+}
 
 /**
  * AYROVI owns routing. Phase 1 intentionally keeps the production-compatible
@@ -43,6 +53,29 @@ export class AyroviAiCore {
   /** Current production-compatible route for Phase 1. */
   responses(): AiResponsesProviderAdapter {
     return this.activeResponsesAdapter;
+  }
+
+  /**
+   * Provider-neutral readiness contract. Provider identity and breaker internals
+   * stay inside AI Core and never cross into Business Core or Administration UI.
+   */
+  responsesReadiness(
+    capability: AiWorkload,
+    adapter: AiResponsesProviderAdapter = this.activeResponsesAdapter,
+  ): AiCapabilityReadiness {
+    const configured = adapter.isConfigured();
+    const circuit = this.circuitBreaker.snapshot(adapter.id, capability);
+    const state = !configured ? 'NOT_CONFIGURED'
+      : circuit.open && circuit.reason === 'rate-limit' ? 'PAUSED_RATE_LIMIT'
+        : circuit.open ? 'PAUSED_FAILURES' : 'READY';
+    return {
+      capability,
+      configured,
+      state,
+      circuitOpen: circuit.open,
+      retryAllowed: configured && !circuit.open,
+      retryAt: circuit.retryAt || null,
+    };
   }
 
   /** Candidate adapter available to gates/tests; never routed to active traffic. */

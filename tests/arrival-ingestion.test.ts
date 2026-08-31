@@ -126,7 +126,7 @@ function createHarness(autoRunJobs = true): Harness {
   harnesses.push(harness);
   return harness;
 }
-function mutation(harness: Harness, method: 'post' | 'patch', url: string) {
+function mutation(harness: Harness, method: 'post' | 'patch' | 'delete', url: string) {
   return request(harness.app)[method](url).set('Cookie', harness.auth.cookie).set('x-csrf-token', harness.auth.csrf);
 }
 function read(harness: Harness, url: string) {
@@ -169,6 +169,7 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(harness.db.get<any>("SELECT name FROM sqlite_master WHERE type='table' AND name='arrivals'")).toBeTruthy();
     expect(harness.db.get<any>("SELECT name FROM sqlite_master WHERE type='table' AND name='crm_arrivals'")).toBeTruthy();
     expect(harness.db.get<any>("SELECT name FROM sqlite_master WHERE type='table' AND name='crm_extraction_jobs'")).toBeTruthy();
+    expect(harness.db.arrivalMultistoreMigrationReadiness()).toMatchObject({ ready: true, backupStatus: 'NOT_REQUIRED', backupId: null });
     expect(harness.db.all<any>('SELECT code FROM crm_stores ORDER BY code').map((row) => row.code)).toEqual(['ADIDAS', 'NIKE', 'SHEIN', 'TEMU', 'ZALANDO']);
     const now = new Date().toISOString();
     harness.db.run("INSERT INTO crm_stores (id,code,name,active,created_at,updated_at) VALUES ('crm_store_future','FUTURE','Future Store',1,?,?)", now, now);
@@ -456,7 +457,171 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(job.body.data.progressTotal).toBeGreaterThan(1);
     expect(job.body.data.progressCurrent).toBe(1);
     expect(job.body.data.warningCodes).toEqual(expect.arrayContaining(['AI_RATE_LIMITED','REMAINING_UNITS_SKIPPED_BY_RATE_LIMIT_CIRCUIT']));
+    expect(job.body.data.retryAt).toEqual(expect.any(String));
+    const readiness = await read(harness, '/api/admin/arrival-ingestion/ai/status');
+    expect(readiness.body.data).toMatchObject({
+      capability: 'arrival-ingestion', state: 'PAUSED_RATE_LIMIT', circuitOpen: true, retryAllowed: false,
+      lastFailure: { errorCode: 'AI_RATE_LIMITED' },
+    });
+    expect(readiness.body.data).not.toHaveProperty('provider');
+    expect(readiness.body.data).not.toHaveProperty('model');
+    expect(JSON.stringify(readiness.body.data)).not.toContain(harness.adapter.id);
+    const immediateRetry = await mutation(harness, 'post', `/api/admin/arrival-ingestion/sources/${uploaded.body.data.source.id}/extractions`).send({ reprocess: true });
+    expect(immediateRetry.status).toBe(429);
+    expect(immediateRetry.body).toMatchObject({ code: 'AI_RATE_LIMITED', details: { retryAt: job.body.data.retryAt } });
     expect(harness.adapter.requests).toHaveLength(1);
+  });
+
+  test('persists and exposes sanitized actionable authentication diagnostics without leaking provider details', async () => {
+    const harness = createHarness();
+    harness.adapter.complete = async (aiRequest: AiCompletionRequest) => {
+      harness.adapter.requests.push(aiRequest);
+      throw new AiProviderError(
+        'PROVIDER_AUTHENTICATION_FAILED',
+        harness.adapter.id,
+        'raw-provider-secret-key-should-never-leak',
+        { status: 401, retryable: false, diagnostic: 'credential=super-secret-value' },
+      );
+    };
+    const customerId = addCustomer(harness.db, '710003', 'AI Diagnostics Customer');
+    const flow = await createArrivalWithClient(harness, 'AI diagnostics Arrival', customerId, 'SHEIN');
+    const uploaded = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${flow.clientId}/sources`)
+      .field('sourceType', 'EMAIL').field('emailContent', 'Subject: SHEIN order\n\nProduct SKU AUTH-1 Qty 1');
+    const started = await mutation(harness, 'post', `/api/admin/arrival-ingestion/sources/${uploaded.body.data.source.id}/extractions`).send({ reprocess: false });
+    await harness.module.runner.waitForIdle();
+    const job = await read(harness, `/api/admin/arrival-ingestion/jobs/${started.body.data.id}`);
+    expect(job.body.data).toMatchObject({
+      state: 'FAILED',
+      errorCode: 'AI_AUTHENTICATION_FAILED',
+      errorMessage: expect.stringContaining('authentification'),
+    });
+    expect(job.body.data.warningCodes).toContain('AI_AUTHENTICATION_FAILED');
+    expect(JSON.stringify(job.body.data)).not.toContain('super-secret');
+    expect(JSON.stringify(job.body.data)).not.toContain(harness.adapter.id);
+    expect(harness.adapter.requests).toHaveLength(1);
+    const detail = await read(harness, `/api/admin/arrival-ingestion/arrivals/${flow.arrivalId}`);
+    const latestJob = detail.body.data.clients[0].stores[0].sources[0].latestJob;
+    expect(latestJob).toMatchObject({ errorCode: 'AI_AUTHENTICATION_FAILED', attempt: 1 });
+    expect(JSON.stringify(latestJob)).not.toContain('raw-provider');
+  });
+
+  test('keeps multiple nested Stores on one Arrival client, scopes sources/products, supports an Arrival alias, and unlinks without deleting canonical CRM data', async () => {
+    const harness = createHarness();
+    const customerId = addCustomer(harness.db, '710001', 'Canonical Customer Name');
+    const first = await createArrivalWithClient(harness, 'Nested multi-store Arrival', customerId, 'SHEIN');
+    const detailBefore = await read(harness, `/api/admin/arrival-ingestion/arrivals/${first.arrivalId}`);
+    const sheinAssignment = detailBefore.body.data.clients[0].stores[0];
+    expect(sheinAssignment.store.code).toBe('SHEIN');
+
+    const stores = await read(harness, '/api/admin/arrival-ingestion/stores');
+    const temu = stores.body.data.find((store: any) => store.code === 'TEMU');
+    const assigned = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${first.clientId}/stores`)
+      .send({ storeId: temu.id });
+    expect(assigned.status).toBe(201);
+    expect(assigned.body.data.clients).toHaveLength(1);
+    expect(assigned.body.data.clients[0].stores.map((item: any) => item.store.code)).toEqual(['SHEIN', 'TEMU']);
+    const duplicateAssignment = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${first.clientId}/stores`)
+      .send({ storeId: temu.id });
+    expect(duplicateAssignment.status).toBe(200);
+    expect(duplicateAssignment.body.meta.duplicate).toBe(true);
+    expect(duplicateAssignment.body.data.clients[0].stores).toHaveLength(2);
+    const temuAssignment = assigned.body.data.clients[0].stores.find((item: any) => item.store.code === 'TEMU');
+
+    const aliased = await mutation(harness, 'patch', `/api/admin/arrival-ingestion/clients/${first.clientId}`)
+      .send({ displayAlias: 'Alias limité à cet Arrival' });
+    expect(aliased.status).toBe(200);
+    expect(aliased.body.data.clients[0]).toMatchObject({
+      displayAlias: 'Alias limité à cet Arrival',
+      displayName: 'Alias limité à cet Arrival',
+      customer: { name: 'Canonical Customer Name' },
+    });
+    expect(harness.db.get<any>('SELECT name FROM customers WHERE id=?', customerId).name).toBe('Canonical Customer Name');
+
+    const email = 'Subject: SHEIN order\n\nGrande boîte à bijoux SKU sb25092090066487374 Qty 1';
+    const emailUpload = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${first.clientId}/stores/${sheinAssignment.id}/sources`)
+      .field('sourceType', 'EMAIL').field('emailContent', email);
+    expect(emailUpload.status).toBe(201);
+    expect(emailUpload.body.data.source.arrivalClientStoreId).toBe(sheinAssignment.id);
+
+    const pdfPath = path.join(harness.root, 'same-client-temu.pdf');
+    writeSimplePdf([
+      { text: 'TEMU INVOICE', size: 18, bold: true },
+      { text: 'Product: TEMU storage basket' },
+      { text: 'SKU: TM-100' },
+      { text: 'Quantity: 1' },
+    ], pdfPath);
+    const pdfUpload = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${first.clientId}/stores/${temuAssignment.id}/sources`)
+      .field('sourceType', 'PDF').attach('source', pdfPath, { contentType: 'application/pdf' });
+    expect(pdfUpload.status).toBe(201);
+    expect(pdfUpload.body.data.source.arrivalClientStoreId).toBe(temuAssignment.id);
+
+    await mutation(harness, 'post', `/api/admin/arrival-ingestion/sources/${emailUpload.body.data.source.id}/extractions`).send({ reprocess: false });
+    await mutation(harness, 'post', `/api/admin/arrival-ingestion/sources/${pdfUpload.body.data.source.id}/extractions`).send({ reprocess: false });
+    await harness.module.runner.waitForIdle();
+    const sheinProducts = await read(harness, `/api/admin/arrival-ingestion/clients/${first.clientId}/stores/${sheinAssignment.id}/products`);
+    const temuProducts = await read(harness, `/api/admin/arrival-ingestion/clients/${first.clientId}/stores/${temuAssignment.id}/products`);
+    expect(sheinProducts.body.data).toHaveLength(2);
+    expect(temuProducts.body.data).toHaveLength(1);
+    expect(sheinProducts.body.data.every((product: any) => product.arrivalClientStoreId === sheinAssignment.id)).toBe(true);
+    expect(temuProducts.body.data[0]).toMatchObject({ arrivalClientStoreId: temuAssignment.id, storeId: temu.id, sku: 'TM-100' });
+
+    const blockedStoreRemoval = await mutation(harness, 'delete', `/api/admin/arrival-ingestion/clients/${first.clientId}/stores/${temuAssignment.id}`);
+    expect(blockedStoreRemoval.status).toBe(409);
+    expect(blockedStoreRemoval.body.code).toBe('ARRIVAL_CLIENT_STORE_IN_USE');
+
+    const now = new Date().toISOString();
+    harness.db.run(`INSERT INTO orders
+      (id,order_number,customer_id,status,subtotal_tnd,total_tnd,pricing_snapshot,governorate,address,phone,created_at,updated_at)
+      VALUES ('order_preserved_by_arrival_unlink','AYR-PRESERVE-1',?,'CREATED',10,10,'{}','Tunis','Order address','22710001',?,?)`,
+    customerId, now, now);
+    const sourceIds = [emailUpload.body.data.source.id, pdfUpload.body.data.source.id];
+    expect(sourceIds.every((sourceId) => fs.existsSync(path.join(harness.root, sourceId)))).toBe(true);
+    const unlinked = await mutation(harness, 'delete', `/api/admin/arrival-ingestion/clients/${first.clientId}`);
+    expect(unlinked.status).toBe(200);
+    expect(unlinked.body.meta).toMatchObject({ customerPreserved: true, customerId });
+    expect(unlinked.body.data.clients).toHaveLength(0);
+    expect(harness.db.get<any>('SELECT id,name FROM customers WHERE id=?', customerId)).toMatchObject({ id: customerId, name: 'Canonical Customer Name' });
+    expect(harness.db.get<any>("SELECT id FROM orders WHERE id='order_preserved_by_arrival_unlink'")).toBeTruthy();
+    expect(harness.db.get<any>('SELECT id FROM crm_arrival_clients WHERE id=?', first.clientId)).toBeUndefined();
+    expect(harness.db.get<any>('SELECT COUNT(*) count FROM crm_arrival_sources WHERE arrival_client_id=?', first.clientId).count).toBe(0);
+    expect(harness.db.get<any>('SELECT COUNT(*) count FROM crm_extraction_jobs WHERE arrival_client_id=?', first.clientId).count).toBe(0);
+    expect(harness.db.get<any>('SELECT COUNT(*) count FROM crm_extracted_products WHERE arrival_client_id=?', first.clientId).count).toBe(0);
+    expect(sourceIds.every((sourceId) => !fs.existsSync(path.join(harness.root, sourceId)))).toBe(true);
+    expect(harness.db.get<any>("SELECT COUNT(*) count FROM audit_logs WHERE action='ARRIVAL_CLIENT_UNLINKED' AND entity_id=?", first.clientId).count).toBe(1);
+  }, 30_000);
+
+  test('creates and manages global Store profiles with audited validation and assignment protection', async () => {
+    const harness = createHarness();
+    const created = await mutation(harness, 'post', '/api/admin/arrival-ingestion/stores').send({
+      code: 'SHOP_X', name: 'Shop X', sourceTypes: ['EMAIL', 'IMAGE'],
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({ code: 'SHOP_X', name: 'Shop X', active: true });
+    expect(created.body.data.supportedSources.map((profile: any) => profile.sourceType).sort()).toEqual(['EMAIL', 'IMAGE']);
+    const duplicate = await mutation(harness, 'post', '/api/admin/arrival-ingestion/stores').send({
+      code: 'SHOP_X', name: 'Duplicate', sourceTypes: ['PDF'],
+    });
+    expect(duplicate.status).toBe(409);
+    expect(duplicate.body.code).toBe('STORE_CODE_DUPLICATE');
+
+    const updated = await mutation(harness, 'patch', `/api/admin/arrival-ingestion/stores/${created.body.data.id}`).send({
+      name: 'Shop X Tunisie', sourceTypes: ['EMAIL'], active: true,
+    });
+    expect(updated.status).toBe(200);
+    expect(updated.body.data).toMatchObject({ code: 'SHOP_X', name: 'Shop X Tunisie' });
+    expect(updated.body.data.supportedSources.map((profile: any) => profile.sourceType)).toEqual(['EMAIL']);
+
+    const customerId = addCustomer(harness.db, '710002', 'Store Manager Customer');
+    const arrival = await mutation(harness, 'post', '/api/admin/arrival-ingestion/arrivals').send({ name: 'Custom Store Arrival' });
+    const linked = await mutation(harness, 'post', `/api/admin/arrival-ingestion/arrivals/${arrival.body.data.id}/clients`).send({ customerId });
+    const clientId = linked.body.data.clients[0].id;
+    const assigned = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${clientId}/stores`).send({ storeId: created.body.data.id });
+    expect(assigned.status).toBe(201);
+    const blocked = await mutation(harness, 'patch', `/api/admin/arrival-ingestion/stores/${created.body.data.id}`).send({ active: false });
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.code).toBe('STORE_IN_USE');
+    expect(harness.db.get<any>("SELECT COUNT(*) count FROM audit_logs WHERE action='ARRIVAL_STORE_CREATED' AND entity_id=?", created.body.data.id).count).toBe(1);
+    expect(harness.db.get<any>("SELECT COUNT(*) count FROM audit_logs WHERE action='ARRIVAL_STORE_UPDATED' AND entity_id=?", created.body.data.id).count).toBe(1);
   });
 
   test('enforces admin authentication, write permission and CSRF protection', async () => {
