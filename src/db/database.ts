@@ -185,6 +185,7 @@ const CUSTOMER_OAUTH_STATES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS customer_oau
 
 export class QatafoDatabase {
   private db: Database.Database;
+  private readonly databasePath: string;
   private arrivalMultistoreMigrationRequired = false;
   private arrivalMultistoreBackupFile: string | null = null;
 
@@ -193,6 +194,7 @@ export class QatafoDatabase {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
     const resolvedPath = dbPath || path.join(dataDir, 'qatafo.sqlite');
+    this.databasePath = resolvedPath;
     const existingDatabase = resolvedPath !== ':memory:' && fs.existsSync(resolvedPath) && fs.statSync(resolvedPath).size > 0;
     this.db = new Database(resolvedPath);
     this.db.pragma('journal_mode = WAL');
@@ -238,6 +240,87 @@ export class QatafoDatabase {
     fs.chmodSync(destination, 0o600);
     this.arrivalMultistoreBackupFile = path.basename(destination);
     console.info(`[database] verified pre-migration backup created: ${this.arrivalMultistoreBackupFile}`);
+  }
+
+  /**
+   * A Render restart can occur after the additive table DDL is committed but
+   * before the migration marker is persisted. Recover only our own pre-DDL
+   * snapshots, and re-verify both integrity and legacy schema before trusting
+   * one. This also makes concurrent startup converge on VERIFIED rather than
+   * incorrectly recording NOT_REQUIRED.
+   */
+  private findVerifiedArrivalMultistoreBackup(appliedAt?: string): string | null {
+    if (this.databasePath === ':memory:') return null;
+    const backupDirectory = path.join(path.dirname(path.resolve(this.databasePath)), 'backups');
+    if (!fs.existsSync(backupDirectory)) return null;
+    const appliedAtMs = Date.parse(String(appliedAt || ''));
+    const candidates = fs.readdirSync(backupDirectory, { withFileTypes: true })
+      .filter((entry) => entry.isFile() && /^pre-arrival-multistore-.*\.sqlite$/.test(entry.name))
+      .map((entry) => ({ name: entry.name, path: path.join(backupDirectory, entry.name) }))
+      .sort((left, right) => fs.statSync(right.path).mtimeMs - fs.statSync(left.path).mtimeMs);
+
+    const legacyClients = appliedAt
+      ? this.all<any>(`SELECT id,arrival_id,customer_id,store_id,created_at FROM crm_arrival_clients
+          WHERE created_at<=?`, appliedAt)
+      : [];
+    const legacyIdsByTable = appliedAt
+      ? ['crm_arrival_sources', 'crm_extraction_jobs', 'crm_extracted_products'].map((table) => ({
+        table,
+        ids: this.all<any>(`SELECT id FROM ${table} WHERE created_at<=?`, appliedAt).map((row) => String(row.id)),
+      }))
+      : [];
+
+    for (const candidate of candidates) {
+      const stats = fs.statSync(candidate.path);
+      // The snapshot is created synchronously before the marker. Allow a small
+      // filesystem timestamp tolerance, but never adopt a later artifact.
+      if (Number.isFinite(appliedAtMs) && stats.mtimeMs > appliedAtMs + 60_000) continue;
+      let verification: Database.Database | null = null;
+      try {
+        verification = new Database(candidate.path, { readonly: true, fileMustExist: true });
+        const integrity = String(verification.pragma('integrity_check', { simple: true }) || '');
+        if (integrity.toLowerCase() !== 'ok') continue;
+        const hasLegacyClients = verification.prepare(
+          "SELECT 1 present FROM sqlite_master WHERE type='table' AND name='crm_arrival_clients'",
+        ).get();
+        const hasClientStores = verification.prepare(
+          "SELECT 1 present FROM sqlite_master WHERE type='table' AND name='crm_arrival_client_stores'",
+        ).get();
+        if (!hasLegacyClients || hasClientStores) continue;
+
+        const legacyClient = verification.prepare(
+          'SELECT id,arrival_id,customer_id,store_id,created_at FROM crm_arrival_clients WHERE id=?',
+        );
+        const clientsMatch = legacyClients.every((current) => {
+          const snapshot = legacyClient.get(current.id) as Record<string, unknown> | undefined;
+          return snapshot
+            && String(snapshot.arrival_id) === String(current.arrival_id)
+            && String(snapshot.customer_id) === String(current.customer_id)
+            && String(snapshot.store_id || '') === String(current.store_id || '')
+            && String(snapshot.created_at) === String(current.created_at);
+        });
+        if (!clientsMatch) continue;
+
+        const idsMatch = legacyIdsByTable.every(({ table, ids }) => {
+          const tableExists = verification!.prepare(
+            'SELECT 1 present FROM sqlite_master WHERE type=\'table\' AND name=?',
+          ).get(table);
+          if (!tableExists) return ids.length === 0;
+          const findId = verification!.prepare(`SELECT 1 present FROM ${table} WHERE id=?`);
+          return ids.every((id) => Boolean(findId.get(id)));
+        });
+        if (!idsMatch) continue;
+
+        fs.chmodSync(candidate.path, 0o600);
+        return candidate.name;
+      } catch {
+        // Ignore malformed/unrelated files; readiness remains unchanged unless
+        // a snapshot passes every verification above.
+      } finally {
+        verification?.close();
+      }
+    }
+    return null;
   }
 
   private initSchema() {
@@ -1642,13 +1725,29 @@ export class QatafoDatabase {
 
   private recordArrivalMultistoreMigration(): void {
     const migrationKey = 'crm_arrival_multistore_v1';
-    if (this.get('SELECT migration_key FROM crm_schema_migrations WHERE migration_key=?', migrationKey)) return;
-    if (this.arrivalMultistoreMigrationRequired && !this.arrivalMultistoreBackupFile) {
+    const existing = this.get<any>(`SELECT applied_at,backup_status,backup_file FROM crm_schema_migrations
+      WHERE migration_key=?`, migrationKey);
+    if (existing) {
+      if (existing.backup_status === 'NOT_REQUIRED' && !existing.backup_file) {
+        const recovered = this.findVerifiedArrivalMultistoreBackup(existing.applied_at);
+        if (recovered) {
+          this.run(`UPDATE crm_schema_migrations SET backup_status='VERIFIED',backup_file=?
+            WHERE migration_key=? AND backup_status='NOT_REQUIRED' AND backup_file IS NULL`, recovered, migrationKey);
+          console.info(`[database] reconciled verified pre-migration backup: ${recovered}`);
+        }
+      }
+      return;
+    }
+
+    const appliedAt = new Date().toISOString();
+    const verifiedBackup = this.arrivalMultistoreBackupFile
+      || this.findVerifiedArrivalMultistoreBackup(appliedAt);
+    if (this.arrivalMultistoreMigrationRequired && !verifiedBackup) {
       throw new Error('ARRIVAL_MULTISTORE_PRE_MIGRATION_BACKUP_REQUIRED');
     }
     this.run(`INSERT INTO crm_schema_migrations (migration_key,applied_at,backup_status,backup_file)
-      VALUES (?,?,?,?)`, migrationKey, new Date().toISOString(),
-    this.arrivalMultistoreBackupFile ? 'VERIFIED' : 'NOT_REQUIRED', this.arrivalMultistoreBackupFile);
+      VALUES (?,?,?,?)`, migrationKey, appliedAt,
+    verifiedBackup ? 'VERIFIED' : 'NOT_REQUIRED', verifiedBackup);
   }
 
   arrivalMultistoreMigrationReadiness(): {

@@ -105,5 +105,42 @@ describe('Arrival multi-store database migration', () => {
     expect(backup.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='crm_arrival_client_stores'").get()).toBeUndefined();
     expect(backup.prepare("SELECT store_id FROM crm_arrival_clients WHERE id='legacy_client'").get()).toEqual({ store_id: 'legacy_store' });
     backup.close();
+
+    // Simulate a concurrent/restarted process having persisted the weaker
+    // marker after DDL. Startup must rediscover and fully verify the pre-DDL
+    // snapshot rather than leaving production at NOT_REQUIRED.
+    const weakened = new Database(databasePath);
+    weakened.prepare(`UPDATE crm_schema_migrations SET backup_status='NOT_REQUIRED',backup_file=NULL
+      WHERE migration_key='crm_arrival_multistore_v1'`).run();
+    weakened.close();
+    const reconciled = new QatafoDatabase(databasePath);
+    expect(reconciled.arrivalMultistoreMigrationReadiness()).toMatchObject({
+      ready: true,
+      backupStatus: 'VERIFIED',
+      backupId: backups[0],
+    });
+    reconciled.close();
+  });
+
+  test('does not treat a post-migration database copy as a pre-DDL backup', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-arrival-fresh-'));
+    roots.push(root);
+    const databasePath = path.join(root, 'fresh.sqlite');
+    const fresh = new QatafoDatabase(databasePath);
+    expect(fresh.arrivalMultistoreMigrationReadiness()).toMatchObject({ ready: true, backupStatus: 'NOT_REQUIRED' });
+    fresh.close();
+
+    const backupDirectory = path.join(root, 'backups');
+    fs.mkdirSync(backupDirectory);
+    const postMigrationCopy = path.join(backupDirectory, 'pre-arrival-multistore-invalid.sqlite');
+    fs.copyFileSync(databasePath, postMigrationCopy);
+
+    const restarted = new QatafoDatabase(databasePath);
+    expect(restarted.arrivalMultistoreMigrationReadiness()).toMatchObject({
+      ready: true,
+      backupStatus: 'NOT_REQUIRED',
+      backupId: null,
+    });
+    restarted.close();
   });
 });
