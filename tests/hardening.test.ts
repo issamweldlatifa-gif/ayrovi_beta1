@@ -5,11 +5,13 @@ import { createCustomerSession } from '../src/customer/auth';
 
 describe('AYROVI production hardening', () => {
   test('security headers are unified and unknown API routes stay JSON 404', async () => {
-    const page = await request(app).get('/');
-    expect(page.status).toBe(200);
-    expect(page.headers['x-request-id']).toMatch(/^[A-Za-z0-9._:-]{8,100}$/);
-    expect(page.headers['content-security-policy']).toContain("media-src 'self' blob: https:");
-    expect(page.headers['content-security-policy']).toContain("object-src 'none'");
+    // Keep this assertion independent from the generated public/ build so a
+    // clean CI checkout can verify the global middleware before `npm run build`.
+    const health = await request(app).get('/api/health');
+    expect(health.status).toBe(200);
+    expect(health.headers['x-request-id']).toMatch(/^[A-Za-z0-9._:-]{8,100}$/);
+    expect(health.headers['content-security-policy']).toContain("media-src 'self' blob: https:");
+    expect(health.headers['content-security-policy']).toContain("object-src 'none'");
 
     const missing = await request(app).get('/api/does-not-exist');
     expect(missing.status).toBe(404);
