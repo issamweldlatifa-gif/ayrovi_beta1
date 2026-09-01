@@ -179,7 +179,9 @@ describe('Arrival CRM -> Warehouse dispatch', () => {
     databases.push(db);
     const h = seed(db);
 
-    await expect(h.module.warehouseDispatch.send(h.arrivalId, h.clientId, actor)).rejects.toMatchObject({ code: 'WAREHOUSE_REJECTED' });
+    await expect(h.module.warehouseDispatch.send(h.arrivalId, h.clientId, actor)).rejects.toMatchObject({ code: 'WAREHOUSE_REJECTED', status: 502, httpStatus: 401 });
+    // Upstream 401 must be surfaced to the admin UI as 502 so the frontend's
+    // global "401 => session expired => logout" handler does NOT sign the admin out.
     let row = db.get<any>('SELECT * FROM crm_warehouse_dispatches');
     expect(row.status).toBe('SEND_FAILED');
     expect(row.http_status).toBe(401);

@@ -27,7 +27,12 @@ export class WarehouseDispatchError extends ArrivalIngestionError {
     message: string,
     public httpStatus?: number,
   ) {
-    super(code, message, httpStatus === 401 || httpStatus === 403 ? 401 : 502);
+    // The upstream Warehouse rejecting a card is an EXTERNAL/upstream failure,
+    // never an admin-session failure. We always surface HTTP 502 (Bad Gateway)
+    // to the CRM admin UI so the global "401 => session expired => logout"
+    // handler does NOT sign the admin out. The real upstream status (401/503/…)
+    // is preserved separately in `httpStatus` / the dispatch record for audit.
+    super(code, message, 502);
     this.name = 'WarehouseDispatchError';
   }
 }
