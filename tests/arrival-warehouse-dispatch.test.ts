@@ -293,12 +293,10 @@ describe('Arrival CRM -> Warehouse dispatch', () => {
     db.run(`DELETE FROM crm_extracted_products WHERE arrival_client_id='client_1'`);
     const now = new Date().toISOString();
     const cols = `id,job_id,source_id,arrival_client_id,arrival_client_store_id,arrival_id,customer_id,store_id,product_name,sku,reference,variant,color,size,quantity,unit_price,currency,product_url,source_type,source_reference,extraction_confidence,extraction_status,approved_at,field_evidence,source_specific,raw_extracted,review_reasons,is_current,created_at,updated_at`;
-    const stmt = db.prepare ? null : null;
     for (let i = 0; i < 120; i++) {
       const vals = [`pb${i}`, null, 'src_1', 'client_1', 'acs_1', 'arr_1', 'cus_wh', 'store_whx', `Bulk ${i}`, `BK-${i}`, `BK-${i}`, null, null, null, 2, null, null, null, 'EMAIL', 'ref', 1, 'EXTRACTED', now, '{}', '[]', '{}', '[]', 1, now, now];
       db.run(`INSERT INTO crm_extracted_products (${cols}) VALUES (${vals.map(() => '?').join(',')})`, ...vals);
     }
-    void stmt;
     const res = await h.module.warehouseDispatch.send(h.arrivalId, h.clientId, actor);
     expect(res.status).toBe('SENT');
     const card = wh.received[0].body.customer_arrival_card;

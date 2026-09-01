@@ -1189,6 +1189,72 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_crm_dispatch_arrival ON crm_warehouse_dispatches(arrival_id);
       CREATE INDEX IF NOT EXISTS idx_crm_dispatch_client ON crm_warehouse_dispatches(arrival_client_id);
       CREATE INDEX IF NOT EXISTS idx_crm_dispatch_status ON crm_warehouse_dispatches(status);
+
+      -- ---- Shipment Cards (physical shipping info) sent to the Warehouse ----
+      -- Distinct from Customer Arrival Cards: a shipment holds carrier/tracking/
+      -- sender/carton data; product lines stay on the customer cards.
+      CREATE TABLE IF NOT EXISTS crm_shipments (
+        id TEXT PRIMARY KEY,
+        shipment_code TEXT NOT NULL UNIQUE,        -- SHP-2026-000145 (generated)
+        arrival_id TEXT NOT NULL REFERENCES crm_arrivals(id) ON DELETE CASCADE,
+        status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','CONFIRMED')),
+        reference TEXT,                            -- human shipment reference
+        source_type TEXT NOT NULL DEFAULT 'MANUAL' CHECK(source_type IN ('MANUAL','CARRIER_API','IMPORT','OTHER')),
+        source_reference TEXT,
+        carrier_name TEXT, carrier_code TEXT, carrier_id TEXT, service_name TEXT,
+        tracking_number TEXT, tracking_url TEXT, tracking_status TEXT,
+        sender_name TEXT, sender_company TEXT, sender_country TEXT, sender_city TEXT,
+        destination_country TEXT, destination_city TEXT, destination_code TEXT,
+        shipped_at TEXT, estimated_arrival_at TEXT, actual_arrival_at TEXT,
+        total_cartons INTEGER NOT NULL DEFAULT 0,
+        total_products INTEGER NOT NULL DEFAULT 0,
+        total_units INTEGER NOT NULL DEFAULT 0,
+        total_weight REAL, weight_unit TEXT,
+        created_by TEXT, confirmed_by TEXT, confirmed_at TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_shipments_arrival ON crm_shipments(arrival_id);
+      CREATE INDEX IF NOT EXISTS idx_crm_shipments_tracking ON crm_shipments(tracking_number);
+
+      CREATE TABLE IF NOT EXISTS crm_shipment_cartons (
+        id TEXT PRIMARY KEY,
+        shipment_id TEXT NOT NULL REFERENCES crm_shipments(id) ON DELETE CASCADE,
+        carton_code TEXT NOT NULL UNIQUE,          -- CTN-2026-000001 (generated, QR value)
+        carton_reference TEXT,
+        qr_code_value TEXT,
+        barcode_value TEXT,
+        carton_number INTEGER NOT NULL,
+        total_cartons INTEGER NOT NULL,
+        weight REAL, weight_unit TEXT,
+        length REAL, width REAL, height REAL, dimension_unit TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_cartons_shipment ON crm_shipment_cartons(shipment_id);
+      CREATE INDEX IF NOT EXISTS idx_crm_cartons_qr ON crm_shipment_cartons(qr_code_value);
+      CREATE INDEX IF NOT EXISTS idx_crm_cartons_barcode ON crm_shipment_cartons(barcode_value);
+
+      -- Transmission state for each Shipment Card sent to the Warehouse.
+      CREATE TABLE IF NOT EXISTS crm_shipment_dispatches (
+        id TEXT PRIMARY KEY,
+        shipment_id TEXT NOT NULL REFERENCES crm_shipments(id) ON DELETE CASCADE,
+        card_id TEXT NOT NULL UNIQUE,              -- == shipment id; idempotency anchor
+        status TEXT NOT NULL CHECK(status IN ('READY_TO_SEND','SENDING','SENT','SEND_FAILED')),
+        warehouse_shipment_id TEXT,                -- WSHP-...
+        http_status INTEGER,
+        error_code TEXT,
+        error_message TEXT,
+        idempotency_key TEXT,
+        sent_at TEXT,
+        sent_by TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        payload_summary TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_shipment ON crm_shipment_dispatches(shipment_id);
+      CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_status ON crm_shipment_dispatches(status);
     `);
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_crm_sources_client_store ON crm_arrival_sources(arrival_client_store_id, created_at DESC);

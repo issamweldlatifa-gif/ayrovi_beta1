@@ -4,6 +4,7 @@ import {
   Package, Pencil, Plus, RefreshCw, Save, Sparkles, Trash2, User,
 } from '../components/QatafoIcons';
 import { adminApi, ApiError } from './api';
+import ArrivalShipments from './ArrivalShipments';
 import { Button, Field, Modal, Pagination, Search, Select, StatusBadge, Toast } from './components';
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
 import './arrival-ingestion.css';
@@ -737,6 +738,7 @@ export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { ca
     <section className="arrival-summary" aria-label="Résumé opérationnel"><article><span>Customers</span><strong>{detail.summary.customers}</strong></article><article><span>Products</span><strong>{detail.summary.products}</strong></article><article className="complete"><span>Completed</span><strong>{detail.summary.completed}</strong></article><article className="review"><span>Needs Review</span><strong>{detail.summary.needsReview}</strong></article><article className="processing"><span>Processing</span><strong>{detail.summary.processing}</strong></article></section>
     {error && <div className="arrival-error" role="alert"><AlertCircle />{error}</div>}
     <div className="sr-only" aria-live="polite">{hasActiveJob ? 'Extraction en cours.' : 'Aucune extraction en cours.'}</div>
+    <ArrivalShipments arrivalId={detail.id} canWrite={canWrite} arrivalConfirmed={detail.status === 'CONFIRMED'} />
     <section className="arrival-clients"><div className="arrival-section-title"><div><span>ARRIVAL → CLIENTS → STORES → SOURCES</span><h2>{detail.clients.length} client{detail.clients.length === 1 ? '' : 's'}</h2></div></div>
       {detail.clients.length === 0 ? <div className="arrival-empty-inline">Recherchez un client CRM ou créez-en un nouveau pour commencer.</div> : <div className="arrival-client-grid">{detail.clients.map((client) => <article key={client.id} className="arrival-client-card arrival-client-card--nested">
         <header><div className="arrival-avatar">{client.displayName.slice(0, 2).toUpperCase()}</div><div className="arrival-client-identity"><h3>{client.displayName}</h3>{client.displayAlias ? <span>Client CRM : {client.customer.name} · {client.customer.phone}</span> : <span>{client.customer.phone}</span>}</div><StatusBadge status={client.extractionStatus} />{canWrite && detail.status !== 'CONFIRMED' && <div className="arrival-client-head-actions"><Button variant="ghost" onClick={() => { setAliasDraft(client.displayAlias || ''); setAliasClientId(client.id); }}><Pencil />Alias</Button><Button variant="ghost" onClick={() => setUnlinkClientId(client.id)}><Trash2 />Dissocier</Button></div>}{canWrite && detail.status === 'CONFIRMED' && <div className="arrival-client-head-actions arrival-warehouse-actions"><WarehouseSendButton dispatch={dispatches[client.id] ?? null} configured={warehouseConfigured} busy={dispatchBusy === client.id} onSend={() => void sendToWarehouse(client.id)} /></div>}</header>

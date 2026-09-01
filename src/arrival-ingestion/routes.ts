@@ -14,6 +14,8 @@ import { ExtractedProductService } from './extractedProductService';
 import { ArrivalExtractionJobRunner, ExtractionJobService } from './extractionJobService';
 import { ArrivalStoreService } from './arrivalStoreService';
 import { WarehouseDispatchService } from './warehouseDispatchService';
+import { ShipmentService } from './shipmentService';
+import { ShipmentDispatchService } from './shipmentDispatchService';
 import type { ArrivalIngestionDependencies } from './types';
 
 const sourceUpload = multer({
@@ -31,6 +33,8 @@ export interface ArrivalIngestionModule {
   jobs: ExtractionJobService;
   runner: ArrivalExtractionJobRunner;
   warehouseDispatch: WarehouseDispatchService;
+  shipments: ShipmentService;
+  shipmentDispatch: ShipmentDispatchService;
 }
 
 export function createArrivalIngestionModule(
@@ -42,6 +46,8 @@ export function createArrivalIngestionModule(
   const clients = new ArrivalClientService(db, arrivals);
   const stores = new ArrivalStoreService(db);
   const warehouseDispatch = new WarehouseDispatchService(db);
+  const shipments = new ShipmentService(db);
+  const shipmentDispatch = new ShipmentDispatchService(db);
   const sources = new ArrivalSourceService(db, clients, files);
   const aiCore = getAyroviAiCore();
   const aiAdapter = dependencies.aiAdapter || aiCore.responses();
@@ -169,6 +175,60 @@ export function createArrivalIngestionModule(
         data: {
           status: dispatch.status,
           warehouseArrivalId: dispatch.warehouse_arrival_id,
+          cardId: dispatch.card_id,
+          httpStatus: dispatch.http_status,
+          sentAt: dispatch.sent_at,
+          attempts: dispatch.attempts,
+          errorCode: dispatch.error_code,
+          errorMessage: dispatch.error_message,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // ---- Shipment Cards (physical shipping info) -> Warehouse ----
+  router.get('/arrivals/:id/shipments', requireAdmin(db, 'commerce:read'), (req, res) => {
+    // ensures arrival exists
+    arrivals.get(req.params.id);
+    res.json({ success: true, data: { configured: shipmentDispatch.isConfigured(), shipments: shipments.list(req.params.id) } });
+  });
+
+  router.post('/arrivals/:id/shipments', requireAdmin(db, 'orders:write'), (req, res, next) => {
+    try {
+      const created = shipments.create(req.params.id, req.body || {}, auditActorFromRequest(req));
+      res.json({ success: true, data: created });
+    } catch (error) { next(error); }
+  });
+
+  router.get('/shipments/:id', requireAdmin(db, 'commerce:read'), (req, res, next) => {
+    try { res.json({ success: true, data: shipments.get(req.params.id) }); }
+    catch (error) { next(error); }
+  });
+
+  router.patch('/shipments/:id', requireAdmin(db, 'orders:write'), (req, res, next) => {
+    try { res.json({ success: true, data: shipments.update(req.params.id, req.body || {}, auditActorFromRequest(req)) }); }
+    catch (error) { next(error); }
+  });
+
+  router.post('/shipments/:id/confirm', requireAdmin(db, 'orders:write'), (req, res, next) => {
+    try { res.json({ success: true, data: shipments.confirm(req.params.id, auditActorFromRequest(req)) }); }
+    catch (error) { next(error); }
+  });
+
+  router.get('/shipments/:id/dispatch', requireAdmin(db, 'commerce:read'), (req, res) => {
+    res.json({ success: true, data: shipmentDispatch.status(req.params.id) });
+  });
+
+  router.post('/shipments/:id/send-to-warehouse', requireAdmin(db, 'orders:write'), async (req, res, next) => {
+    try {
+      const dispatch = await shipmentDispatch.send(req.params.id, auditActorFromRequest(req));
+      res.json({
+        success: true,
+        data: {
+          status: dispatch.status,
+          warehouseShipmentId: dispatch.warehouse_shipment_id,
           cardId: dispatch.card_id,
           httpStatus: dispatch.http_status,
           sentAt: dispatch.sent_at,
@@ -319,7 +379,7 @@ export function createArrivalIngestionModule(
     });
   });
 
-  return { router, arrivals, clients, stores, sources, products, jobs, runner, warehouseDispatch };
+  return { router, arrivals, clients, stores, sources, products, jobs, runner, warehouseDispatch, shipments, shipmentDispatch };
 }
 
 export function createArrivalIngestionRouter(db: QatafoDatabase, dependencies: ArrivalIngestionDependencies = {}): Router {
