@@ -294,3 +294,11 @@
   .arrival-store-manager-list { grid-template-columns: 1fr; }
   .arrival-store-card > footer .admin-button { flex: 1 1 100%; }
 }
+
+/* ---- Warehouse dispatch (Send to Warehouse) ---- */
+.arrival-warehouse-actions { display: flex; align-items: center; gap: 8px; }
+.arrival-wh-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.arrival-wh-sent { background: rgba(34,197,94,.14); color: #15803d; border: 1px solid rgba(34,197,94,.4); }
+.arrival-wh-failed { background: rgba(239,68,68,.12); color: #b91c1c; border: 1px solid rgba(239,68,68,.4); }
+.arrival-wh-disabled { background: rgba(148,163,184,.15); color: #64748b; border: 1px solid rgba(148,163,184,.4); }
+.arrival-wh-fail-wrap { display: inline-flex; align-items: center; gap: 8px; }

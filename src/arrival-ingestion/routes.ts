@@ -13,6 +13,7 @@ import { AyroviAIExtractionService } from './aiExtractionService';
 import { ExtractedProductService } from './extractedProductService';
 import { ArrivalExtractionJobRunner, ExtractionJobService } from './extractionJobService';
 import { ArrivalStoreService } from './arrivalStoreService';
+import { WarehouseDispatchService } from './warehouseDispatchService';
 import type { ArrivalIngestionDependencies } from './types';
 
 const sourceUpload = multer({
@@ -29,6 +30,7 @@ export interface ArrivalIngestionModule {
   products: ExtractedProductService;
   jobs: ExtractionJobService;
   runner: ArrivalExtractionJobRunner;
+  warehouseDispatch: WarehouseDispatchService;
 }
 
 export function createArrivalIngestionModule(
@@ -39,6 +41,7 @@ export function createArrivalIngestionModule(
   const arrivals = new ArrivalService(db);
   const clients = new ArrivalClientService(db, arrivals);
   const stores = new ArrivalStoreService(db);
+  const warehouseDispatch = new WarehouseDispatchService(db);
   const sources = new ArrivalSourceService(db, clients, files);
   const aiCore = getAyroviAiCore();
   const aiAdapter = dependencies.aiAdapter || aiCore.responses();
@@ -123,6 +126,60 @@ export function createArrivalIngestionModule(
 
   router.post('/arrivals/:id/confirm', requireAdmin(db, 'orders:write'), (req, res) => {
     res.json({ success: true, data: arrivals.confirm(req.params.id, auditActorFromRequest(req)) });
+  });
+
+  // ---- Warehouse integration: send a Customer Arrival Card to the Warehouse ----
+  // Real server-to-server POST to the Warehouse Core API (WAREHOUSE_API_URL /
+  // WAREHOUSE_API_KEY). Idempotent on the card id; failures record SEND_FAILED
+  // and can be retried.
+  router.get('/arrivals/:id/warehouse-config', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const arrival = arrivals.get(req.params.id);
+    res.json({
+      success: true,
+      data: {
+        warehouseConfigured: warehouseDispatch.isConfigured(),
+        clients: db.all<any>(`SELECT ac.id, c.name customer_name, ac.display_alias,
+            (SELECT COUNT(*) FROM crm_extracted_products p WHERE p.arrival_client_id=ac.id AND p.is_current=1 AND p.extraction_status='EXTRACTED') product_count
+          FROM crm_arrival_clients ac JOIN customers c ON c.id=ac.customer_id
+          WHERE ac.arrival_id=? ORDER BY ac.created_at`, arrival.id).map((row) => ({
+          id: row.id,
+          customerName: row.display_alias || row.customer_name,
+          productCount: Number(row.product_count || 0),
+          dispatch: warehouseDispatch.status(row.id),
+        })),
+      },
+    });
+  });
+
+  router.get('/clients/:id/warehouse-dispatch', requireAdmin(db, 'commerce:read'), (req, res) => {
+    clients.get(req.params.id);
+    res.json({ success: true, data: { configured: warehouseDispatch.isConfigured(), dispatch: warehouseDispatch.status(req.params.id) } });
+  });
+
+  router.post('/clients/:id/send-to-warehouse', requireAdmin(db, 'orders:write'), async (req, res, next) => {
+    try {
+      const client = clients.get(req.params.id);
+      const dispatch = await warehouseDispatch.send(
+        client.arrivalId,
+        req.params.id,
+        auditActorFromRequest(req),
+      );
+      res.json({
+        success: true,
+        data: {
+          status: dispatch.status,
+          warehouseArrivalId: dispatch.warehouse_arrival_id,
+          cardId: dispatch.card_id,
+          httpStatus: dispatch.http_status,
+          sentAt: dispatch.sent_at,
+          attempts: dispatch.attempts,
+          errorCode: dispatch.error_code,
+          errorMessage: dispatch.error_message,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
   });
 
   // Compatibility endpoint: storeId still adds the first/another Store. New
@@ -262,7 +319,7 @@ export function createArrivalIngestionModule(
     });
   });
 
-  return { router, arrivals, clients, stores, sources, products, jobs, runner };
+  return { router, arrivals, clients, stores, sources, products, jobs, runner, warehouseDispatch };
 }
 
 export function createArrivalIngestionRouter(db: QatafoDatabase, dependencies: ArrivalIngestionDependencies = {}): Router {

@@ -1164,6 +1164,32 @@ export class QatafoDatabase {
     this.ensureColumn('crm_extracted_products', 'tracking_number', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'order_date', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'shipment_status', 'TEXT');
+    // Warehouse dispatch tracking: one Customer Arrival Card -> one Expected
+    // Arrival in the Warehouse Core via the integration API. Idempotent on the
+    // arrival client (card) id; status drives READY_TO_SEND -> SENT / SEND_FAILED.
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS crm_warehouse_dispatches (
+        id TEXT PRIMARY KEY,
+        arrival_id TEXT NOT NULL REFERENCES crm_arrivals(id) ON DELETE CASCADE,
+        arrival_client_id TEXT NOT NULL REFERENCES crm_arrival_clients(id) ON DELETE CASCADE,
+        card_id TEXT NOT NULL UNIQUE,
+        status TEXT NOT NULL CHECK(status IN ('READY_TO_SEND','SENDING','SENT','SEND_FAILED')),
+        warehouse_arrival_id TEXT,
+        http_status INTEGER,
+        error_code TEXT,
+        error_message TEXT,
+        idempotency_key TEXT,
+        sent_at TEXT,
+        sent_by TEXT,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        payload_summary TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_dispatch_arrival ON crm_warehouse_dispatches(arrival_id);
+      CREATE INDEX IF NOT EXISTS idx_crm_dispatch_client ON crm_warehouse_dispatches(arrival_client_id);
+      CREATE INDEX IF NOT EXISTS idx_crm_dispatch_status ON crm_warehouse_dispatches(status);
+    `);
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_crm_sources_client_store ON crm_arrival_sources(arrival_client_store_id, created_at DESC);
       CREATE INDEX IF NOT EXISTS idx_crm_jobs_client_store ON crm_extraction_jobs(arrival_client_store_id, created_at DESC);

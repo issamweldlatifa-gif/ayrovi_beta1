@@ -9,6 +9,18 @@ import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
 import './arrival-ingestion.css';
 
 type ArrivalStatus = 'DRAFT' | 'PROCESSING' | 'REVIEW' | 'CONFIRMED';
+
+interface WarehouseDispatch {
+  configured?: boolean;
+  status?: 'READY_TO_SEND' | 'SENDING' | 'SENT' | 'SEND_FAILED';
+  warehouseArrivalId?: string | null;
+  cardId?: string | null;
+  httpStatus?: number | null;
+  sentAt?: string | null;
+  attempts?: number;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+}
 type SourceType = 'PDF' | 'EMAIL' | 'IMAGE' | 'INVOICE';
 type JobState = 'QUEUED' | 'PROCESSING' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
 type ProductStatus = 'EXTRACTED' | 'NEEDS_REVIEW' | 'FAILED';
@@ -147,6 +159,40 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
   return `${(bytes / 1024 / 1024).toFixed(1)} Mo`;
 }
+function WarehouseSendButton({
+  dispatch, configured, busy, onSend,
+}: {
+  dispatch: WarehouseDispatch | null;
+  configured: boolean;
+  busy: boolean;
+  onSend: () => void;
+}) {
+  const status = dispatch?.status;
+  if (!configured) {
+    return <span className="arrival-wh-tag arrival-wh-disabled" title="WAREHOUSE_API_URL non configuré">Entrepôt non configuré</span>;
+  }
+  if (status === 'SENT') {
+    return (
+      <span className="arrival-wh-tag arrival-wh-sent" title={dispatch?.sentAt ? `Envoyé le ${formatDate(dispatch.sentAt, true)}` : ''}>
+        ✓ Envoyé · {dispatch?.warehouseArrivalId || 'Expected Arrival'}
+      </span>
+    );
+  }
+  if (status === 'SENDING' || busy) {
+    return <Button variant="secondary" busy disabled>Envoi…</Button>;
+  }
+  if (status === 'SEND_FAILED') {
+    return (
+      <span className="arrival-wh-fail-wrap">
+        <span className="arrival-wh-tag arrival-wh-failed" title={dispatch?.errorMessage || ''}>Échec</span>
+        <Button variant="secondary" busy={busy} onClick={onSend}>Réessayer</Button>
+      </span>
+    );
+  }
+  // READY_TO_SEND / never attempted.
+  return <Button variant="secondary" busy={busy} onClick={onSend}>Send to Warehouse</Button>;
+}
+
 function currentArrivalParam(): string {
   return new URLSearchParams(window.location.search).get('arrival') || '';
 }
@@ -436,6 +482,46 @@ export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { ca
   const [confirmBusy, setConfirmBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone?: 'success' | 'error' } | null>(null);
+  // Warehouse integration dispatch state (per arrival client card).
+  const [warehouseConfigured, setWarehouseConfigured] = useState(false);
+  const [dispatches, setDispatches] = useState<Record<string, WarehouseDispatch | null>>({});
+  const [dispatchBusy, setDispatchBusy] = useState('');
+
+  const loadWarehouseState = useCallback(async () => {
+    if (!arrivalId) return;
+    try {
+      const result = await adminApi<{ data: { warehouseConfigured: boolean; clients: Array<{ id: string; dispatch: WarehouseDispatch | null }> } }>(
+        `/arrival-ingestion/arrivals/${arrivalId}/warehouse-config`,
+      );
+      setWarehouseConfigured(result.data.warehouseConfigured);
+      const map: Record<string, WarehouseDispatch | null> = {};
+      for (const c of result.data.clients) map[c.id] = c.dispatch;
+      setDispatches(map);
+    } catch {
+      /* warehouse state is non-blocking */
+    }
+  }, [arrivalId]);
+
+  const sendToWarehouse = useCallback(async (clientId: string) => {
+    setDispatchBusy(clientId);
+    try {
+      const result = await adminApi<{ data: WarehouseDispatch }>(
+        `/arrival-ingestion/clients/${clientId}/send-to-warehouse`,
+        { method: 'POST', body: '{}' },
+      );
+      setDispatches((prev) => ({ ...prev, [clientId]: result.data }));
+      setToast({ message: `Carte envoyée à l’entrepôt — Expected Arrival ${result.data.warehouseArrivalId || ''}`.trim(), tone: 'success' });
+    } catch (reason) {
+      const message = reason instanceof Error ? reason.message : 'Échec de l’envoi.';
+      setDispatches((prev) => ({
+        ...prev,
+        [clientId]: { configured: true, status: 'SEND_FAILED', errorMessage: message } as WarehouseDispatch,
+      }));
+      setToast({ message: `Envoi échoué : ${message}`, tone: 'error' });
+    } finally {
+      setDispatchBusy('');
+    }
+  }, []);
 
   const loadStores = useCallback(async () => {
     const result = await adminApi<{ data: StoreProfile[] }>('/arrival-ingestion/stores');
@@ -468,7 +554,7 @@ export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { ca
     void loadStores().catch(() => setError('Les profils Store ne peuvent pas être chargés.'));
     void loadAiStatus().catch(() => setAiStatus(null));
   }, [loadStores, loadAiStatus]);
-  useEffect(() => { if (!arrivalId) void loadList(); else void loadDetail(); }, [arrivalId, loadList, loadDetail]);
+  useEffect(() => { if (!arrivalId) { void loadList(); } else { void loadDetail(); void loadWarehouseState(); } }, [arrivalId, loadList, loadDetail, loadWarehouseState]);
   useEffect(() => {
     const onPop = () => setArrivalId(currentArrivalParam());
     window.addEventListener('popstate', onPop); return () => window.removeEventListener('popstate', onPop);
@@ -653,7 +739,7 @@ export function ArrivalIngestionPage({ canWrite, canManageStores = false }: { ca
     <div className="sr-only" aria-live="polite">{hasActiveJob ? 'Extraction en cours.' : 'Aucune extraction en cours.'}</div>
     <section className="arrival-clients"><div className="arrival-section-title"><div><span>ARRIVAL → CLIENTS → STORES → SOURCES</span><h2>{detail.clients.length} client{detail.clients.length === 1 ? '' : 's'}</h2></div></div>
       {detail.clients.length === 0 ? <div className="arrival-empty-inline">Recherchez un client CRM ou créez-en un nouveau pour commencer.</div> : <div className="arrival-client-grid">{detail.clients.map((client) => <article key={client.id} className="arrival-client-card arrival-client-card--nested">
-        <header><div className="arrival-avatar">{client.displayName.slice(0, 2).toUpperCase()}</div><div className="arrival-client-identity"><h3>{client.displayName}</h3>{client.displayAlias ? <span>Client CRM : {client.customer.name} · {client.customer.phone}</span> : <span>{client.customer.phone}</span>}</div><StatusBadge status={client.extractionStatus} />{canWrite && detail.status !== 'CONFIRMED' && <div className="arrival-client-head-actions"><Button variant="ghost" onClick={() => { setAliasDraft(client.displayAlias || ''); setAliasClientId(client.id); }}><Pencil />Alias</Button><Button variant="ghost" onClick={() => setUnlinkClientId(client.id)}><Trash2 />Dissocier</Button></div>}</header>
+        <header><div className="arrival-avatar">{client.displayName.slice(0, 2).toUpperCase()}</div><div className="arrival-client-identity"><h3>{client.displayName}</h3>{client.displayAlias ? <span>Client CRM : {client.customer.name} · {client.customer.phone}</span> : <span>{client.customer.phone}</span>}</div><StatusBadge status={client.extractionStatus} />{canWrite && detail.status !== 'CONFIRMED' && <div className="arrival-client-head-actions"><Button variant="ghost" onClick={() => { setAliasDraft(client.displayAlias || ''); setAliasClientId(client.id); }}><Pencil />Alias</Button><Button variant="ghost" onClick={() => setUnlinkClientId(client.id)}><Trash2 />Dissocier</Button></div>}{canWrite && detail.status === 'CONFIRMED' && <div className="arrival-client-head-actions arrival-warehouse-actions"><WarehouseSendButton dispatch={dispatches[client.id] ?? null} configured={warehouseConfigured} busy={dispatchBusy === client.id} onSend={() => void sendToWarehouse(client.id)} /></div>}</header>
         <div className="arrival-client-metrics"><div><span>Stores</span><strong>{client.stores.length}</strong></div><div><span>Products</span><strong>{client.products.total}</strong></div><div><span>Approved</span><strong>{client.products.approved}</strong></div><div><span>Review</span><strong>{client.products.needsReview + client.products.failed}</strong></div></div>
         <div className="arrival-store-stack">{client.stores.length === 0 ? <div className="arrival-store-empty"><Package /><div><strong>Aucun Store affecté</strong><span>Ajoutez SHEIN, TEMU, ZALANDO ou un Store configuré.</span></div></div> : client.stores.map((assignment) => <section key={assignment.id} className="arrival-store-card">
           <header><div className="arrival-store-mark"><Package /></div><div><span>STORE</span><strong>{assignment.store.name}</strong><small>{assignment.store.code} · {assignment.sources.length} source{assignment.sources.length === 1 ? '' : 's'}</small></div><StatusBadge status={assignment.extractionStatus} />{canWrite && detail.status !== 'CONFIRMED' && assignment.sources.length === 0 && <Button variant="ghost" busy={actionBusy === assignment.id} onClick={() => void removeStore(client.id, assignment)}><Trash2 />Retirer</Button>}</header>
