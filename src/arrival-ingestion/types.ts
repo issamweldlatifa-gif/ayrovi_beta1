@@ -176,3 +176,72 @@ export interface ArrivalActor {
   name: string;
   ipAddress: string | null;
 }
+
+/**
+ * Product Category classification (Arrival CRM).
+ *
+ * `UNCLASSIFIED` = not yet classified (default for a freshly extracted line).
+ * `CLASSIFIED`   = a valid, ACTIVE Category Master code is attached.
+ * `NEEDS_REVIEW` = the AI could not decide reliably; a human must pick from the
+ *                  official master (free text is never accepted).
+ *
+ * `classificationSource` preserves provenance so we can always tell whether the
+ * category came from the AI or from an administrator's manual selection.
+ */
+export type ClassificationSource = 'AI' | 'MANUAL';
+export type ClassificationStatus = 'UNCLASSIFIED' | 'CLASSIFIED' | 'NEEDS_REVIEW';
+
+export type CategoryMasterSource = 'MANUAL' | 'IMPORT' | 'WAREHOUSE_CORE';
+
+export interface CategoryMasterEntry {
+  id: string;
+  code: string;
+  /** `null` for a top-level category. */
+  parentCode: string | null;
+  name: string;
+  active: boolean;
+  source: CategoryMasterSource;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CategoryValidationReason =
+  | 'CATEGORY_REQUIRED'
+  | 'CATEGORY_UNKNOWN'
+  | 'CATEGORY_INACTIVE'
+  | 'SUBCATEGORY_UNKNOWN'
+  | 'SUBCATEGORY_INACTIVE'
+  | 'SUBCATEGORY_PARENT_MISMATCH'
+  | 'SUBCATEGORY_PARENT_INACTIVE';
+
+export interface CategoryValidation {
+  valid: boolean;
+  /** Canonical master code, or `null` when the selection cannot be honoured. */
+  categoryCode: string | null;
+  subcategoryCode: string | null;
+  reasons: CategoryValidationReason[];
+}
+
+export interface CategoryClassificationLineResult {
+  productId: string;
+  status: ClassificationStatus;
+  source: ClassificationSource | null;
+  categoryCode: string | null;
+  subcategoryCode: string | null;
+  confidence: number | null;
+  reasons: string[];
+  note: string | null;
+}
+
+export interface CategoryClassificationSummary {
+  /** Nothing happened because the official Category Master has no active entry. */
+  skipped: boolean;
+  skipReason: 'CATEGORY_MASTER_EMPTY' | null;
+  total: number;
+  classified: number;
+  needsReview: number;
+  aiConfigured: boolean;
+  errorCode: string | null;
+  results: CategoryClassificationLineResult[];
+}

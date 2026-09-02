@@ -11,6 +11,8 @@ import { ArrivalSourceService } from './arrivalSourceService';
 import { SourceImportService } from './sourceImportService';
 import { AyroviAIExtractionService } from './aiExtractionService';
 import { ExtractedProductService } from './extractedProductService';
+import { CategoryMasterService } from './categoryMasterService';
+import { CategoryClassificationService } from './categoryClassificationService';
 import { ArrivalExtractionJobRunner, ExtractionJobService } from './extractionJobService';
 import { ArrivalStoreService } from './arrivalStoreService';
 import { WarehouseDispatchService } from './warehouseDispatchService';
@@ -35,6 +37,8 @@ export interface ArrivalIngestionModule {
   warehouseDispatch: WarehouseDispatchService;
   shipments: ShipmentService;
   shipmentDispatch: ShipmentDispatchService;
+  categories: CategoryMasterService;
+  classification: CategoryClassificationService;
 }
 
 export function createArrivalIngestionModule(
@@ -42,19 +46,27 @@ export function createArrivalIngestionModule(
   dependencies: ArrivalIngestionDependencies = {},
 ): ArrivalIngestionModule {
   const files = new SourceImportService(dependencies.sourceRoot);
-  const arrivals = new ArrivalService(db);
-  const clients = new ArrivalClientService(db, arrivals);
-  const stores = new ArrivalStoreService(db);
-  const warehouseDispatch = new WarehouseDispatchService(db);
-  const shipments = new ShipmentService(db);
-  const shipmentDispatch = new ShipmentDispatchService(db);
-  const sources = new ArrivalSourceService(db, clients, files);
+  // Official Category Master (DB-backed, never hardcoded) + the AI classifier
+  // that may only choose from it. Both share the extraction adapter. They are
+  // built first because ArrivalService/ProductService/WarehouseDispatch enforce
+  // the category gate through the same instance.
+  const categories = new CategoryMasterService(db);
   const aiCore = getAyroviAiCore();
   const aiAdapter = dependencies.aiAdapter || aiCore.responses();
+  const classification = new CategoryClassificationService(db, categories, aiAdapter);
+  const arrivals = new ArrivalService(db, classification);
+  const clients = new ArrivalClientService(db, arrivals);
+  const stores = new ArrivalStoreService(db);
+  const sources = new ArrivalSourceService(db, clients, files);
   const ai = new AyroviAIExtractionService(aiAdapter);
-  const products = new ExtractedProductService(db, clients, files);
+  const warehouseDispatch = new WarehouseDispatchService(db, classification);
+  const shipments = new ShipmentService(db);
+  const shipmentDispatch = new ShipmentDispatchService(db);
+  const products = new ExtractedProductService(db, clients, files, classification);
   const jobs = new ExtractionJobService(db, arrivals, clients, sources);
-  const runner = new ArrivalExtractionJobRunner(db, ai, arrivals, clients, sources, products, dependencies.autoRunJobs !== false);
+  const runner = new ArrivalExtractionJobRunner(
+    db, ai, arrivals, clients, sources, products, dependencies.autoRunJobs !== false, classification,
+  );
   jobs.attachRunner(runner);
 
   const router = Router();
@@ -101,6 +113,44 @@ export function createArrivalIngestionModule(
 
   router.patch('/stores/:id', requireAdmin(db, 'settings:write'), (req, res) => {
     res.json({ success: true, data: stores.update(req.params.id, req.body || {}, auditActorFromRequest(req)) });
+  });
+
+  // ---- Category Master (official AYROVI product taxonomy) ----
+  // The taxonomy is DATA, never code: Administration imports/edits the official
+  // AYROVI Warehouse Core list. The AI classifier may only pick from the ACTIVE
+  // entries returned here; an empty master means nothing can be classified.
+  router.get('/categories', requireAdmin(db, 'commerce:read'), (req, res) => {
+    const includeInactive = String(req.query.includeInactive ?? 'true') !== 'false';
+    res.json({
+      success: true,
+      data: {
+        available: categories.isAvailable(),
+        aiConfigured: classification.aiConfigured(),
+        confidenceThreshold: classification.confidenceThreshold(),
+        gateEnabled: classification.gateEnabled(),
+        categories: categories.list(includeInactive),
+      },
+    });
+  });
+
+  router.post('/categories', requireAdmin(db, 'settings:write'), (req, res, next) => {
+    try {
+      res.status(201).json({ success: true, data: categories.create(req.body || {}, auditActorFromRequest(req)) });
+    } catch (error) { next(error); }
+  });
+
+  /** Bulk upsert of the official master (idempotent on `code`). */
+  router.post('/categories/import', requireAdmin(db, 'settings:write'), (req, res, next) => {
+    try {
+      const entries = Array.isArray(req.body?.categories) ? req.body.categories : req.body;
+      res.json({ success: true, data: categories.importMaster(entries, auditActorFromRequest(req)) });
+    } catch (error) { next(error); }
+  });
+
+  router.patch('/categories/:code', requireAdmin(db, 'settings:write'), (req, res, next) => {
+    try {
+      res.json({ success: true, data: categories.update(req.params.code, req.body || {}, auditActorFromRequest(req)) });
+    } catch (error) { next(error); }
   });
 
   router.get('/customers', requireAdmin(db, 'commerce:read'), (req, res) => {
@@ -354,6 +404,49 @@ export function createArrivalIngestionModule(
     res.json({ success: true, data: products.approve(req.params.id, auditActorFromRequest(req)) });
   });
 
+  // ---- AI Category classification (SKU/reference + product name -> master) ----
+  // On-demand counterpart of the automatic post-extraction pass. Every result is
+  // validated against the official master server-side; nothing is trusted.
+  router.post('/clients/:id/classify', requireAdmin(db, 'orders:write'), async (req, res, next) => {
+    try {
+      clients.get(req.params.id);
+      const outcome = await classification.classifyCard(
+        req.params.id,
+        auditActorFromRequest(req),
+        { force: req.body?.force === true },
+      );
+      res.json({ success: true, data: outcome });
+    } catch (error) { next(error); }
+  });
+
+  router.post('/products/:id/classify', requireAdmin(db, 'orders:write'), async (req, res, next) => {
+    try {
+      const outcome = await classification.classifyProduct(
+        req.params.id,
+        auditActorFromRequest(req),
+        { force: req.body?.force === true },
+      );
+      res.json({ success: true, data: outcome });
+    } catch (error) { next(error); }
+  });
+
+  /** Manual review step: only an official, ACTIVE master code is accepted. */
+  router.patch('/products/:id/category', requireAdmin(db, 'orders:write'), (req, res, next) => {
+    try {
+      const data = classification.setManualCategory(req.params.id, {
+        categoryCode: req.body?.categoryCode,
+        subcategoryCode: req.body?.subcategoryCode,
+      }, auditActorFromRequest(req));
+      res.json({ success: true, data });
+    } catch (error) { next(error); }
+  });
+
+  router.delete('/products/:id/category', requireAdmin(db, 'orders:write'), (req, res, next) => {
+    try {
+      res.json({ success: true, data: classification.clearCategory(req.params.id, auditActorFromRequest(req)) });
+    } catch (error) { next(error); }
+  });
+
   router.get('/products/:id/image', requireAdmin(db, 'commerce:read'), (req, res) => {
     res.setHeader('Content-Type', 'image/webp');
     res.setHeader('Cache-Control', 'private, max-age=300');
@@ -379,7 +472,10 @@ export function createArrivalIngestionModule(
     });
   });
 
-  return { router, arrivals, clients, stores, sources, products, jobs, runner, warehouseDispatch, shipments, shipmentDispatch };
+  return {
+    router, arrivals, clients, stores, sources, products, jobs, runner,
+    warehouseDispatch, shipments, shipmentDispatch, categories, classification,
+  };
 }
 
 export function createArrivalIngestionRouter(db: QatafoDatabase, dependencies: ArrivalIngestionDependencies = {}): Router {

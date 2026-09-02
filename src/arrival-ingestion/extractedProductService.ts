@@ -5,6 +5,7 @@ import { ArrivalIngestionError } from './errors';
 import type { NormalizedOrderMeta, NormalizedProductCandidate, SourceAsset } from './types';
 import { ArrivalClientService } from './arrivalClientService';
 import { SourceImportService } from './sourceImportService';
+import type { CategoryClassificationService } from './categoryClassificationService';
 
 const EDITABLE_FIELDS = ['productName', 'sku', 'reference', 'variant', 'color', 'quantity'] as const;
 type EditableField = typeof EDITABLE_FIELDS[number];
@@ -74,6 +75,19 @@ export function mapExtractedProduct(row: any) {
     // crosses the AYROVI contract into the Administration frontend.
     reviewReasons: parseJson(row.review_reasons, []),
     manualEdits: parseJson(row.manual_edits, {}),
+    // ---- Category classification (Category Code + Subcategory + provenance) ----
+    categoryCode: row.category_code || null,
+    subcategoryCode: row.subcategory_code || null,
+    /** 'AI' when the classifier decided, 'MANUAL' when an administrator picked. */
+    classificationSource: row.classification_source || null,
+    classificationConfidence: row.classification_confidence == null ? null : Number(row.classification_confidence),
+    classificationStatus: row.classification_status || 'UNCLASSIFIED',
+    classificationReasons: parseJson(row.classification_reasons, []),
+    classificationNote: row.classification_note || null,
+    /** Legacy rows (created before classification existed) keep this at false. */
+    classificationRequired: Number(row.classification_required || 0) === 1,
+    classifiedAt: row.classified_at || null,
+    classifiedBy: row.classified_by || null,
     approvedAt: row.approved_at || null,
     approvedBy: row.approved_by || null,
     createdAt: row.created_at,
@@ -86,6 +100,8 @@ export class ExtractedProductService {
     private readonly db: QatafoDatabase,
     private readonly clients: ArrivalClientService,
     private readonly files: SourceImportService,
+    /** Optional: enforces "no approval without an official category" on new rows. */
+    private readonly classifier?: CategoryClassificationService,
   ) {}
 
   private refreshJobCounts(jobId: string | null | undefined): void {
@@ -171,8 +187,9 @@ export class ExtractedProductService {
        product_name,sku,reference,variant,color,size,quantity,unit_price,currency,product_url,
        order_id,tracking_number,order_date,shipment_status,product_image_storage_key,
        source_type,source_reference,extraction_confidence,extraction_status,
-       field_evidence,source_specific,raw_extracted,review_reasons,is_current,created_at,updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
+       field_evidence,source_specific,raw_extracted,review_reasons,
+       classification_required,classification_status,is_current,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,'UNCLASSIFIED',0,?,?)`,
     id, input.jobId, input.sourceId, input.client.id, input.clientStore.id, input.client.arrival_id,
     input.client.customer_id, input.clientStore.storeId,
     input.candidate.productName, input.candidate.sku, input.candidate.reference, input.candidate.variant,
@@ -182,7 +199,10 @@ export class ExtractedProductService {
     imageStorageKey, input.sourceType, input.sourceReference,
     input.candidate.extractionConfidence, input.candidate.extractionStatus,
     JSON.stringify(input.candidate.fieldEvidence), JSON.stringify(sourceSpecific),
-    JSON.stringify(input.candidate.raw), JSON.stringify(input.candidate.reviewReasons), now, now);
+    JSON.stringify(input.candidate.raw), JSON.stringify(input.candidate.reviewReasons),
+    // classification_required=1 / classification_status='UNCLASSIFIED' are set
+    // inline above: every newly extracted line requires a Category Master code.
+    now, now);
     return id;
   }
 
@@ -247,8 +267,8 @@ export class ExtractedProductService {
         (id,job_id,source_id,arrival_client_id,arrival_client_store_id,arrival_id,customer_id,store_id,
          product_name,sku,reference,variant,color,quantity,source_type,source_reference,
          extraction_confidence,extraction_status,field_evidence,source_specific,raw_extracted,
-         review_reasons,manual_edits,is_current,created_at,updated_at)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? ,?,'[]','{}',? ,?,1,?,?)`,
+         review_reasons,manual_edits,classification_required,classification_status,is_current,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? ,?,'[]','{}',? ,?,1,'UNCLASSIFIED',1,?,?)`,
       id, source.last_job_id || null, source.id, clientId, clientStore.id, client.arrival_id, client.customer_id, clientStore.storeId,
       values.productName, values.sku, values.reference, values.variant, values.color, values.quantity,
       source.source_type, `${source.id}#manual`, 1, 'NEEDS_REVIEW', JSON.stringify(evidence),
@@ -297,6 +317,10 @@ export class ExtractedProductService {
     if (!isValidProduct(existing)) {
       throw new ArrivalIngestionError('PRODUCT_INVALID', 'Ajoutez une identité produit et une quantité valide avant approbation.', 409);
     }
+    // Category gate: a line created after the Category Master feature must hold
+    // a valid, ACTIVE official category (AI or manual) before it is approved.
+    // Legacy lines (classification_required=0) are unaffected.
+    this.classifier?.assertSatisfied(existing);
     const now = new Date().toISOString();
     this.db.transaction(() => {
       this.db.run(`UPDATE crm_extracted_products SET extraction_status='EXTRACTED',review_reasons='[]',
@@ -314,7 +338,10 @@ export class ExtractedProductService {
     if (client.arrival_status === 'CONFIRMED') throw new ArrivalIngestionError('ARRIVAL_CONFIRMED', 'Cet Arrival est déjà confirmé.', 409);
     const rows = this.db.all<any>('SELECT * FROM crm_extracted_products WHERE arrival_client_id=? AND is_current=1', clientId);
     const valid = rows.filter(isValidProduct);
-    const toApprove = valid.filter((row) => row.extraction_status !== 'EXTRACTED' || !row.approved_at);
+    // Lines still waiting for a Category Master decision are held back for
+    // manual review instead of being silently batch-approved.
+    const classifiable = valid.filter((row) => (this.classifier ? this.classifier.isSatisfied(row) : true));
+    const toApprove = classifiable.filter((row) => row.extraction_status !== 'EXTRACTED' || !row.approved_at);
     const jobIds = new Set(toApprove.map((row) => String(row.job_id || '')).filter(Boolean));
     const now = new Date().toISOString();
     this.db.transaction(() => {
@@ -327,7 +354,12 @@ export class ExtractedProductService {
       }
       for (const jobId of jobIds) this.refreshJobCounts(jobId);
     });
-    return { approved: toApprove.length, unresolved: rows.length - valid.length, products: this.list(clientId) };
+    return {
+      approved: toApprove.length,
+      unresolved: rows.length - classifiable.length,
+      needsCategory: valid.length - classifiable.length,
+      products: this.list(clientId),
+    };
   }
 
   approveAllByStore(clientId: string, clientStoreId: string, actor: AdminAuditActor) {
@@ -338,7 +370,8 @@ export class ExtractedProductService {
     const rows = this.db.all<any>(`SELECT * FROM crm_extracted_products
       WHERE arrival_client_id=? AND arrival_client_store_id=? AND is_current=1`, clientId, clientStoreId);
     const valid = rows.filter(isValidProduct);
-    const toApprove = valid.filter((row) => row.extraction_status !== 'EXTRACTED' || !row.approved_at);
+    const classifiable = valid.filter((row) => (this.classifier ? this.classifier.isSatisfied(row) : true));
+    const toApprove = classifiable.filter((row) => row.extraction_status !== 'EXTRACTED' || !row.approved_at);
     const jobIds = new Set(toApprove.map((row) => String(row.job_id || '')).filter(Boolean));
     const now = new Date().toISOString();
     this.db.transaction(() => {
@@ -351,7 +384,12 @@ export class ExtractedProductService {
       }
       for (const jobId of jobIds) this.refreshJobCounts(jobId);
     });
-    return { approved: toApprove.length, unresolved: rows.length - valid.length, products: this.listByStore(clientId, clientStoreId) };
+    return {
+      approved: toApprove.length,
+      unresolved: rows.length - classifiable.length,
+      needsCategory: valid.length - classifiable.length,
+      products: this.listByStore(clientId, clientStoreId),
+    };
   }
 
   image(id: string): Buffer {

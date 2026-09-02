@@ -1164,6 +1164,20 @@ export class QatafoDatabase {
     this.ensureColumn('crm_extracted_products', 'tracking_number', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'order_date', 'TEXT');
     this.ensureColumn('crm_extracted_products', 'shipment_status', 'TEXT');
+    // ---- AI / manual product Category classification (Arrival CRM) ----
+    // Additive only. Legacy rows keep classification_required=0, so Cards
+    // created before this feature are never reopened by the new approval gate.
+    // classification_source keeps the provenance: 'AI' or 'MANUAL'.
+    this.ensureColumn('crm_extracted_products', 'category_code', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'subcategory_code', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'classification_source', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'classification_confidence', 'REAL');
+    this.ensureColumn('crm_extracted_products', 'classification_status', "TEXT NOT NULL DEFAULT 'UNCLASSIFIED'");
+    this.ensureColumn('crm_extracted_products', 'classification_reasons', "TEXT NOT NULL DEFAULT '[]'");
+    this.ensureColumn('crm_extracted_products', 'classification_note', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'classification_required', 'INTEGER NOT NULL DEFAULT 0');
+    this.ensureColumn('crm_extracted_products', 'classified_at', 'TEXT');
+    this.ensureColumn('crm_extracted_products', 'classified_by', 'TEXT');
     // Warehouse dispatch tracking: one Customer Arrival Card -> one Expected
     // Arrival in the Warehouse Core via the integration API. Idempotent on the
     // arrival client (card) id; status drives READY_TO_SEND -> SENT / SEND_FAILED.
@@ -1255,6 +1269,27 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_shipment ON crm_shipment_dispatches(shipment_id);
       CREATE INDEX IF NOT EXISTS idx_crm_ship_dispatch_status ON crm_shipment_dispatches(status);
+
+      -- ---- Category Master (official AYROVI product taxonomy) ----
+      -- The single authoritative list of product categories used by the Arrival
+      -- CRM AI classifier. It is NEVER hardcoded in application code: rows are
+      -- imported/managed by Administration from the official AYROVI Warehouse
+      -- Core taxonomy. An empty master means nothing can be classified, so
+      -- lines stay in review instead of being assigned an invented category.
+      CREATE TABLE IF NOT EXISTS crm_categories (
+        id TEXT PRIMARY KEY,
+        code TEXT NOT NULL UNIQUE,             -- e.g. SHOES, CLOTHING, SHOES/SPORTS
+        parent_code TEXT,                      -- NULL => top-level category
+        name TEXT NOT NULL,
+        active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+        source TEXT NOT NULL DEFAULT 'MANUAL' CHECK(source IN ('MANUAL','IMPORT','WAREHOUSE_CORE')),
+        display_order INTEGER NOT NULL DEFAULT 0,
+        created_by TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_crm_categories_parent ON crm_categories(parent_code);
+      CREATE INDEX IF NOT EXISTS idx_crm_categories_active ON crm_categories(active, display_order);
     `);
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_crm_sources_client_store ON crm_arrival_sources(arrival_client_store_id, created_at DESC);

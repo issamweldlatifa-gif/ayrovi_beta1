@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { QatafoDatabase } from '../db/database';
 import { recordAdminAudit, type AdminAuditActor } from '../admin/audit';
 import { ArrivalIngestionError } from './errors';
+import type { CategoryClassificationService } from './categoryClassificationService';
 
 function parseStringArray(value: unknown): string[] {
   try {
@@ -22,7 +23,11 @@ function aggregateExtractionStatus(stores: Array<{ extractionStatus: string }>):
 }
 
 export class ArrivalService {
-  constructor(private readonly db: QatafoDatabase) {}
+  constructor(
+    private readonly db: QatafoDatabase,
+    /** Optional: surfaces the Category Master review requirement on the Card. */
+    private readonly classifier?: CategoryClassificationService,
+  ) {}
 
   list(input: { search?: string; page?: number; pageSize?: number } = {}) {
     const page = Math.max(1, Math.floor(Number(input.page) || 1));
@@ -260,6 +265,22 @@ export class ArrivalService {
         quantity IS NULL OR quantity<=0 OR (product_name IS NULL AND sku IS NULL AND reference IS NULL)
       )`, id)?.count || 0);
     if (invalidProducts) issues.push({ code: 'PRODUCT_DATA_INVALID', count: invalidProducts, message: `${invalidProducts} ligne(s) produit sont incomplètes ou non revues.` });
+
+    // Category Master gate: a Card cannot be confirmed while lines created after
+    // the feature still lack a valid, ACTIVE official category. Inert while no
+    // official master exists, and never applied to legacy lines.
+    if (this.classifier?.gateEnabled()) {
+      const unclassified = Number(this.db.get<any>(`SELECT COUNT(*) count FROM crm_extracted_products
+        WHERE arrival_id=? AND is_current=1 AND classification_required=1
+          AND classification_status!='CLASSIFIED'`, id)?.count || 0);
+      if (unclassified) {
+        issues.push({
+          code: 'CATEGORY_REVIEW_REQUIRED',
+          count: unclassified,
+          message: `${unclassified} ligne(s) n’ont pas encore de catégorie officielle valide (revue manuelle requise).`,
+        });
+      }
+    }
 
     const allStores = clients.flatMap((client) => client.stores);
     return {

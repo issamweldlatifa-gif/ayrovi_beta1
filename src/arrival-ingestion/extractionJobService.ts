@@ -8,6 +8,7 @@ import { ArrivalService } from './arrivalService';
 import { ArrivalClientService } from './arrivalClientService';
 import { ArrivalSourceService } from './arrivalSourceService';
 import { ExtractedProductService } from './extractedProductService';
+import type { CategoryClassificationService } from './categoryClassificationService';
 import { loadStoreProfile } from './storeProfiles';
 import { SourceValidationError } from './sourceImportService';
 import { normalizeTunisianPhone, tunisianPhoneDigits } from '../customer/phone';
@@ -190,6 +191,8 @@ export class ArrivalExtractionJobRunner {
     private readonly sources: ArrivalSourceService,
     private readonly products: ExtractedProductService,
     private readonly enabled = true,
+    /** Optional: AI Category Master classification, run after extraction commits. */
+    private readonly classifier?: CategoryClassificationService,
   ) {}
 
   enqueue(jobId: string, forceAfterCurrent = false): void {
@@ -527,6 +530,30 @@ export class ArrivalExtractionJobRunner {
           warningCodes: [...warnings],
         });
       });
+
+      // ---- AI Category classification (runs only AFTER the extraction is
+      // committed, so a classifier problem can never lose extracted rows and can
+      // never fail an extraction job). Skipped entirely while the official
+      // Category Master has no active entry or the AI capability is absent.
+      if (this.classifier && this.classifier.categories.isAvailable() && this.classifier.aiConfigured()) {
+        try {
+          const outcome = await this.classifier.classifyJob(jobId, actor);
+          if (outcome.results.length) {
+            this.db.run('UPDATE crm_extraction_jobs SET updated_at=? WHERE id=?', new Date().toISOString(), jobId);
+            recordAdminAudit(this.db, actor, 'CATEGORY_CLASSIFICATION_COMPLETED', 'CRM_ARRIVALS', jobId, null, {
+              arrivalId: context.arrival_id,
+              arrivalClientId: context.arrival_client_id,
+              classified: outcome.classified,
+              needsReview: outcome.needsReview,
+              confidenceThreshold: this.classifier.confidenceThreshold(),
+            });
+          }
+        } catch (error) {
+          console.error('[Arrival ingestion classification]',
+            error instanceof Error ? error.message : 'classification failure');
+        }
+      }
+
       this.scheduleNextLeaseRecovery();
     } catch (error) {
       if (error instanceof Error && error.message === 'EXTRACTION_JOB_LEASE_LOST') return;
