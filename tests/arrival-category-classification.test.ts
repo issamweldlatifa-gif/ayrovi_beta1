@@ -75,7 +75,15 @@ class ScriptedCategoryAdapter implements AiResponsesProviderAdapter {
   }
 }
 
-/** Minimal real Warehouse Core stand-in (real HTTP, real fetch from the CRM). */
+/**
+ * Real Warehouse Core stand-in (real HTTP, real fetch from the CRM).
+ *
+ * It enforces the SAME strict contract as the production Warehouse: each product
+ * object is validated with additionalProperties:false, so ANY extra field
+ * (e.g. a classification column leaking into the card) is rejected with a 400
+ * listing "<path> should not exist" — exactly the failure seen in production.
+ */
+const ALLOWED_PRODUCT_KEYS = new Set(['product_id', 'sku', 'reference', 'product_name', 'quantity', 'variant', 'color', 'size']);
 function startWarehouseServer() {
   const received: any[] = [];
   const server = http.createServer((req, res) => {
@@ -88,6 +96,18 @@ function startWarehouseServer() {
       if (!card?.id || !Array.isArray(card?.products) || !card.products.length) {
         res.writeHead(400, { 'content-type': 'application/json' });
         return res.end(JSON.stringify({ code: 'BAD_PAYLOAD', message: 'invalid card' }));
+      }
+      const schemaErrors: string[] = [];
+      card.products.forEach((product: any, index: number) => {
+        for (const key of Object.keys(product || {})) {
+          if (!ALLOWED_PRODUCT_KEYS.has(key)) {
+            schemaErrors.push(`customer_arrival_card.products.${index}.property ${key} should not exist`);
+          }
+        }
+      });
+      if (schemaErrors.length) {
+        res.writeHead(400, { 'content-type': 'application/json' });
+        return res.end(JSON.stringify({ code: 'BAD_PAYLOAD', message: schemaErrors.join(',') }));
       }
       res.writeHead(201, { 'content-type': 'application/json' });
       res.end(JSON.stringify({
@@ -507,10 +527,14 @@ describe('Card approval gate and Warehouse dispatch', () => {
     const dispatch = await harness.module.warehouseDispatch.send(card.arrivalId, card.clientId, harness.actor);
     expect(dispatch.status).toBe('SENT');
     const sent = wh.received[0].customer_arrival_card.products[0];
-    expect(sent).toMatchObject({
-      sku: 'SB-1', product_name: 'Running Shoes', quantity: 1,
-      category_code: 'SHOES', subcategory_code: null, classification_source: 'MANUAL',
-    });
+    // The Warehouse only ever receives the canonical product shape — no
+    // classification field may leak (it validates additionalProperties:false).
+    expect(sent).toMatchObject({ sku: 'SB-1', product_name: 'Running Shoes', quantity: 1 });
+    for (const key of ['category_code', 'subcategory_code', 'classification_source', 'classification_confidence', 'classification_status']) {
+      expect(sent).not.toHaveProperty(key);
+    }
+    // The provenance stays in the CRM, not in the card.
+    expect(row(harness, 'p1')).toMatchObject({ classification_source: 'MANUAL', category_code: 'SHOES' });
   });
 
   test('9. re-classifying and re-sending the same Card never duplicates anything', async () => {
@@ -563,10 +587,10 @@ describe('Card approval gate and Warehouse dispatch', () => {
     const dispatch = await harness.module.warehouseDispatch.send(card.arrivalId, card.clientId, harness.actor);
     expect(dispatch.status).toBe('SENT');
     const sent = wh.received[0].customer_arrival_card.products[0];
-    expect(sent).toMatchObject({
-      sku: 'LEG-1', product_name: 'Legacy product', quantity: 2,
-      category_code: null, subcategory_code: null, classification_source: null,
-    });
+    expect(sent).toMatchObject({ sku: 'LEG-1', product_name: 'Legacy product', quantity: 2 });
+    for (const key of ['category_code', 'subcategory_code', 'classification_source', 'classification_confidence', 'classification_status']) {
+      expect(sent).not.toHaveProperty(key);
+    }
     // Identity fields of the old Card are preserved.
     expect(wh.received[0].customer_arrival_card.id).toBe(`card_${card.clientId}`);
     expect(wh.received[0].customer_arrival_card.customer.id).toBe(card.customerId);

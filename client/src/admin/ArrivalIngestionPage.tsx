@@ -143,6 +143,20 @@ interface ExtractedProduct {
   fieldEvidence: Record<string, string | null>;
   reviewReasons: string[];
   approvedAt: string | null;
+  // ---- Category classification (official Category Master, CRM-side only) ----
+  categoryCode: string | null;
+  subcategoryCode: string | null;
+  classificationSource: 'AI' | 'MANUAL' | null;
+  classificationConfidence: number | null;
+  classificationStatus: 'UNCLASSIFIED' | 'CLASSIFIED' | 'NEEDS_REVIEW';
+  classificationReasons: string[];
+  classificationRequired: boolean;
+}
+interface CategoryOption {
+  code: string;
+  name: string;
+  parentCode: string | null;
+  active: boolean;
 }
 
 const sourceLabels: Record<SourceType, string> = {
@@ -231,6 +245,9 @@ function ProductReviewModal({
   const [draft, setDraft] = useState<Partial<ExtractedProduct>>({});
   const [manual, setManual] = useState({ sourceId: '', productName: '', sku: '', reference: '', variant: '', color: '', quantity: '1' });
   const [showManual, setShowManual] = useState(false);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
+  const [categoriesAvailable, setCategoriesAvailable] = useState(false);
+  const [catBusyId, setCatBusyId] = useState('');
 
   const load = useCallback(async () => {
     if (!client) return;
@@ -249,6 +266,54 @@ function ProductReviewModal({
   useEffect(() => {
     if (client?.sources.length && !manual.sourceId) setManual((value) => ({ ...value, sourceId: client.sources[0].id }));
   }, [client?.id, client?.sources.length]);
+
+  // Official Category Master — the only list the administrator may pick from.
+  useEffect(() => {
+    if (!open) return;
+    adminApi<{ data: { available: boolean; categories: CategoryOption[] } }>('/arrival-ingestion/categories?includeInactive=false')
+      .then((result) => { setCategories(result.data.categories || []); setCategoriesAvailable(result.data.available); })
+      .catch(() => { setCategories([]); setCategoriesAvailable(false); });
+  }, [open, client?.id]);
+
+  const categoryOptions = useMemo(() => {
+    const active = categories.filter((item) => item.active);
+    const parents = active.filter((item) => !item.parentCode);
+    const options: Array<{ value: string; label: string }> = parents.map((parent) => ({
+      value: parent.code,
+      label: `${parent.name} · ${parent.code}`,
+    }));
+    for (const parent of parents) {
+      for (const child of active.filter((item) => item.parentCode === parent.code)) {
+        options.push({ value: `${parent.code}|${child.code}`, label: `${parent.name} / ${child.name} · ${child.code}` });
+      }
+    }
+    return options;
+  }, [categories]);
+
+  const setCategory = async (product: ExtractedProduct, value: string) => {
+    setCatBusyId(product.id); setError('');
+    try {
+      const [categoryCode, subcategoryCode] = value.split('|');
+      await adminApi(`/arrival-ingestion/products/${product.id}/category`, {
+        method: 'PATCH',
+        body: JSON.stringify({ categoryCode, subcategoryCode: subcategoryCode || undefined }),
+      });
+      await load(); onChanged();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Catégorie invalide.');
+    } finally { setCatBusyId(''); }
+  };
+
+  const classifyAll = async () => {
+    if (!client) return;
+    setCatBusyId('all'); setError('');
+    try {
+      await adminApi(`/arrival-ingestion/clients/${client.id}/classify`, { method: 'POST', body: '{}' });
+      await load(); onChanged();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Classification impossible.');
+    } finally { setCatBusyId(''); }
+  };
 
   const startEdit = (product: ExtractedProduct) => {
     setEditingId(product.id);
@@ -305,7 +370,7 @@ function ProductReviewModal({
     <Modal open={open} wide eyebrow="AYROVI CRM · REVIEW" title={client ? `${client.customer.name} · ${client.store?.code || 'Store requis'}` : 'Produits'} onClose={onClose}>
       <div className="arrival-review-head">
         <div><strong>{products.length} produit{products.length === 1 ? '' : 's'}</strong><span>Chaque correction est auditée. Les champs inconnus restent vides.</span></div>
-        {canWrite && <div><Button variant="secondary" onClick={() => setShowManual(!showManual)}><Plus />Produit manquant</Button><Button busy={busyId === 'all'} onClick={approveAll}><CheckCircle2 />Approuver les lignes valides</Button></div>}
+        {canWrite && <div><Button variant="secondary" busy={catBusyId === 'all'} disabled={!categoriesAvailable} onClick={() => void classifyAll()} title={categoriesAvailable ? 'Classification automatique par l’IA sur la liste officielle' : 'Aucune catégorie officielle active'}><Sparkles />Classifier (IA)</Button><Button variant="secondary" onClick={() => setShowManual(!showManual)}><Plus />Produit manquant</Button><Button busy={busyId === 'all'} onClick={approveAll}><CheckCircle2 />Approuver les lignes valides</Button></div>}
       </div>
       {showManual && (
         <section className="arrival-manual-product" aria-label="Ajouter un produit manquant">
@@ -326,7 +391,7 @@ function ProductReviewModal({
       {loading ? <LoadingState /> : products.length === 0 ? <div className="arrival-empty-inline">Aucun produit extrait. Importez une source puis lancez EXTRACT.</div> : (
         <div className="arrival-product-table-wrap">
           <table className="arrival-product-table">
-            <thead><tr><th>Image</th><th>Produit</th><th>SKU</th><th>Référence</th><th>Variante</th><th>Couleur</th><th>Qty</th><th>Statut</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Image</th><th>Produit</th><th>SKU</th><th>Référence</th><th>Variante</th><th>Couleur</th><th>Qty</th><th>Catégorie</th><th>Statut</th><th>Actions</th></tr></thead>
             <tbody>{products.map((product) => {
               const editing = editingId === product.id;
               const input = (field: keyof Pick<ExtractedProduct, 'productName' | 'sku' | 'reference' | 'variant' | 'color'>, label: string) => editing
@@ -340,6 +405,29 @@ function ProductReviewModal({
                 <td>{input('variant', 'Variante')}</td>
                 <td>{input('color', 'Couleur')}</td>
                 <td>{editing ? <input className="qty" aria-label="Quantité" type="number" min="1" max="10000" value={draft.quantity ?? ''} onChange={(event) => setDraft({ ...draft, quantity: event.target.value ? Number(event.target.value) : null })} /> : product.quantity ?? '—'}</td>
+                <td>
+                  {product.classificationStatus === 'CLASSIFIED' ? (
+                    <span className="arrival-cat-tag is-set" title={`${product.classificationSource || ''}${product.classificationConfidence != null ? ` · ${Math.round(product.classificationConfidence * 100)}%` : ''}`}>
+                      {product.categoryCode}{product.subcategoryCode ? ` / ${product.subcategoryCode}` : ''}
+                      {product.classificationSource === 'AI' ? ' · IA' : product.classificationSource === 'MANUAL' ? ' · Manuel' : ''}
+                    </span>
+                  ) : !product.classificationRequired ? (
+                    <span title="Ligne antérieure à la classification">—</span>
+                  ) : canWrite && categoryOptions.length ? (
+                    <select
+                      className="arrival-cat-select"
+                      aria-label="Catégorie officielle"
+                      disabled={catBusyId === product.id}
+                      value=""
+                      onChange={(event) => { if (event.target.value) void setCategory(product, event.target.value); }}
+                    >
+                      <option value="">{catBusyId === product.id ? '…' : 'Choisir…'}</option>
+                      {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  ) : (
+                    <span className="review-reason" title={(product.classificationReasons || []).join(', ')}>À revoir</span>
+                  )}
+                </td>
                 <td><StatusBadge status={product.extractionStatus} /><small>{Math.round(product.extractionConfidence * 100)}% · {product.sourceReference}</small>{product.reviewReasons[0] && <small className="review-reason" title={product.reviewReasons.join(', ')}>{product.reviewReasons[0]}</small>}{product.approvedAt && <small className="approved"><Check />Approuvé</small>}</td>
                 <td>{canWrite && (editing
                   ? <div className="arrival-row-actions"><Button busy={busyId === product.id} onClick={() => save(product.id)}><Save />Sauver</Button><Button variant="ghost" onClick={() => setEditingId('')}>Annuler</Button></div>

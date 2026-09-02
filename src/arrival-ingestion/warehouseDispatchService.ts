@@ -101,13 +101,9 @@ export class WarehouseDispatchService {
 
     const products = this.db.all<any>(`SELECT
         product_name, sku, reference, variant, color, size, quantity,
-        category_code, subcategory_code, classification_source, classification_confidence,
-        classification_status,
         store_id, store_code, store_name
       FROM (
         SELECT p.product_name, p.sku, p.reference, p.variant, p.color, p.size, p.quantity,
-          p.category_code, p.subcategory_code, p.classification_source, p.classification_confidence,
-          p.classification_status,
           s.id store_id, s.code store_code, s.name store_name
         FROM crm_extracted_products p
         JOIN crm_arrival_client_stores acs ON acs.id=p.arrival_client_store_id
@@ -138,6 +134,11 @@ export class WarehouseDispatchService {
           }
           return null;
         })(),
+        // The Warehouse Core validates each product with additionalProperties:false,
+        // so the card product MUST carry exactly the canonical fields and nothing
+        // else. The Category classification lives only in the CRM database
+        // (crm_extracted_products) and in the dispatch payload_summary below; it
+        // is deliberately NOT sent to the Warehouse.
         products: products.map((p) => ({
           product_id: null,
           sku: p.sku || null,
@@ -147,16 +148,6 @@ export class WarehouseDispatchService {
           variant: p.variant || null,
           color: p.color || null,
           size: p.size ?? null,
-          // ---- Category classification (additive; official Category Master) ----
-          // category_code / subcategory_code always come from the official
-          // master (never free text). classification_source records provenance:
-          // 'AI' when the classifier decided, 'MANUAL' after human review, and
-          // null for Cards that predate the Category Master feature.
-          category_code: p.category_code || null,
-          subcategory_code: p.subcategory_code || null,
-          classification_source: p.classification_source || null,
-          classification_confidence: p.classification_confidence == null ? null : Number(p.classification_confidence),
-          classification_status: p.classification_status || 'UNCLASSIFIED',
         })),
       },
     };
@@ -230,12 +221,14 @@ export class WarehouseDispatchService {
     const now = new Date().toISOString();
     const id = existing?.id ?? `crm_dispatch_${randomUUID()}`;
     const attempts = (existing?.attempts || 0) + 1;
+    // Classification state is audited locally (never sent to the Warehouse).
+    const classified = Number(this.db.get<any>(`SELECT COUNT(*) n FROM crm_extracted_products
+      WHERE arrival_client_id=? AND is_current=1 AND classification_status='CLASSIFIED'`, arrivalClientId)?.n || 0);
     const summary = JSON.stringify({
       products: products.length,
       units: products.reduce((s, p) => s + (Number(p.quantity) || 0), 0),
       stores: [...new Set(products.map((p) => p.store_name).filter(Boolean))],
-      classified: products.filter((p) => p.classification_status === 'CLASSIFIED').length,
-      classificationSources: [...new Set(products.map((p) => p.classification_source).filter(Boolean))],
+      classified,
     });
 
     this.db.transaction(() => {

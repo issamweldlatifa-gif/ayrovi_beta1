@@ -73,9 +73,13 @@ SKU / Reference + Product Name
   `classification_required=0` and behave exactly as before; the gate is inert
   while the master has no active entry, and `ARRIVAL_CLASSIFICATION_GATE=off`
   disables it.
-- The Customer Arrival Card payload gains `category_code`, `subcategory_code`,
-  `classification_source`, `classification_confidence` and
-  `classification_status` per product (additive; `null` for legacy lines).
+- The classification is stored CRM-side only (`crm_extracted_products`) and is
+  deliberately NOT included in the Customer Arrival Card payload: the Warehouse
+  Core validates each product with `additionalProperties:false`, so the card
+  keeps exactly the canonical product fields. The Administration review screen
+  shows the classification (AI / Manual / needs-review) and an official-list
+  category selector plus an AI classify action, so a pending line can be
+  resolved before the card is sent.
 
 ## Evidence and uncertainty
 
