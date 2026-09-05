@@ -18,7 +18,7 @@
 import { NextFunction, Request, Response } from 'express';
 import type { QatafoDatabase } from '../db/database';
 import type { AdminPermission, AdminRole } from '../admin/permissions';
-import { hasPermission } from '../admin/permissions';
+import { ALL_ADMIN_PERMISSIONS, hasPermission } from '../admin/permissions';
 import { resolveAdmin } from '../admin/auth';
 import { resolveEmployee } from './identity';
 import { auditContextFromRequest, writeAuditEvent } from './audit';
@@ -53,6 +53,12 @@ const LEGACY_PERMISSION_MAP: Record<string, { module: string; action: string }> 
   'payments:write': { module: 'finance', action: 'write' },
   'settings:write': { module: 'settings', action: 'write' },
   'users:write': { module: 'users', action: 'write' },
+  // P1 closure gate: `GET /users` était gated users:write (un droit d'écriture pour
+  // une lecture) et `ai-knowledge` settings:write (droit du module réglages pour une
+  // ressource IA). Ces deux lignes rendent la lecture/écriture nommable en données.
+  'users:read': { module: 'users', action: 'read' },
+  'ai:read': { module: 'ai', action: 'read' },
+  'ai:write': { module: 'ai', action: 'write' },
   'audit:read': { module: 'audit', action: 'read' },
   'reports:read': { module: 'reports', action: 'read' },
   'reports:write': { module: 'finance', action: 'export' },
@@ -71,6 +77,7 @@ const MODULE_RESOURCES: Record<string, string[]> = {
   catalog: ['product', 'brand'],
   cms: ['publication', 'reel', 'story_publisher', 'story', 'news', 'hero_visual', 'media', 'setting'],
   users: ['admin_user', 'employee'],
+  ai: ['ai_knowledge', 'ai_suggestion'],
   employees: ['employee'],
   organization: ['organization', 'branch', 'department', 'team'],
   permissions: ['role_permission'],
@@ -96,9 +103,9 @@ export function seedLegacyPermissions(db: QatafoDatabase): { inserted: number } 
   const now = new Date().toISOString();
   let inserted = 0;
   for (const role of roles) {
-    const legacy = (['dashboard:read', 'content:read', 'content:write', 'commerce:read', 'orders:write', 'pricing:write',
-      'payments:write', 'settings:write', 'users:write', 'audit:read', 'reports:read', 'reports:write'] as AdminPermission[])
-      .filter((permission) => hasPermission(role as AdminRole, permission));
+    // Liste dérivée du modèle lui-même: un droit ajouté dans src/admin/permissions.ts
+    // est automatiquement mirroité ici (aucune liste à maintenir à deux endroits).
+    const legacy = ALL_ADMIN_PERMISSIONS.filter((permission) => hasPermission(role as AdminRole, permission));
     for (const permission of legacy) {
       const mapped = LEGACY_PERMISSION_MAP[permission];
       if (!mapped) continue;

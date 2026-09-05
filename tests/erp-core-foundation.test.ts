@@ -223,7 +223,10 @@ describe('ERP Core foundation (P0 + P1)', () => {
       expect(response.status).toBe(200);
       const permissions = response.body.data;
       // the logged-in identity is SUPER_ADMIN: every legacy string, nothing invented
-      expect(permissions.legacyPermissions.length).toBe(12);
+      // (15 depuis la closure gate P1 : users:read, ai:read, ai:write sont venus nommer
+      //  des droits deja exerces via users:write / settings:write — pas de nouveaux acces)
+      expect(permissions.legacyPermissions.length).toBe(15);
+      for (const named of ['users:read', 'ai:read', 'ai:write']) expect(permissions.legacyPermissions).toContain(named);
       for (const expected of ['dashboard:read', 'content:write', 'payments:write', 'audit:read', 'users:write']) {
         expect(permissions.legacyPermissions).toContain(expected);
       }
