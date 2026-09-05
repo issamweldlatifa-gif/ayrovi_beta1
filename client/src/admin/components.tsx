@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { adminApi } from './api';
 import {
-  ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, Image, Loader2, Plus, Search as SearchIcon,
-  Trash2, X,
+  AlertCircle, ArrowLeft, ArrowRight, Calendar, Check, ChevronDown, Image, Loader2, Plus, RefreshCw,
+  Search as SearchIcon, Trash2, X,
 } from '../components/QatafoIcons';
 
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'ghost'; busy?: boolean }> = ({
@@ -56,27 +56,131 @@ export const Pagination: React.FC<{ page: number; totalPages: number; total: num
   </div>
 );
 
+/**
+ * La table du back office — un seul composant pour les 88 écrans.
+ *
+ * P2.0 ne crée pas une seconde table : il généralise `DataTable` (27 usages) avec des capacités
+ * optionnelles, pour que les 10 `<table>` écrits à la main puissent migrer et que toute
+ * ressource du framework obtienne gratuitement tri, sélection, actions groupées, états
+ * d'erreur et colonnes configurables. Tout est optionnel : les appels existants rendent
+ * exactement le même markup qu'avant.
+ */
 export interface DataColumn<T> {
   key: string;
   label: string;
   render?: (row: T) => React.ReactNode;
   className?: string;
+  /** Tri côté serveur : le parent reçoit la colonne et le sens. */
+  sortable?: boolean;
+  align?: 'start' | 'end' | 'center';
+  /** Colonne masquée par défaut, activable par l'appelant (le framework la connaît). */
+  hidden?: boolean;
 }
 
-export function DataTable<T extends { id?: string }>({ columns, rows, loading, emptyText = 'Aucune donnée disponible.', onRowClick }:
-  { columns: DataColumn<T>[]; rows: T[]; loading?: boolean; emptyText?: string; onRowClick?: (row: T) => void }) {
+export interface TableRowAction<T> {
+  key: string;
+  label: string;
+  icon?: React.ReactNode;
+  onRun: (row: T) => void;
+  /** Permission refusée : le bouton reste visible mais inerte, avec le motif (jamais un 403 surprise). */
+  disabled?: boolean;
+  reason?: string;
+  tone?: 'default' | 'danger';
+}
+
+export interface TableBulkAction<T> {
+  key: string;
+  label: string;
+  onRun: (rows: T[]) => void;
+  disabled?: boolean;
+  reason?: string;
+  tone?: 'default' | 'danger';
+}
+
+export function DataTable<T extends { id?: string }>({
+  columns, rows, loading, emptyText = 'Aucune donnée disponible.', onRowClick,
+  error, onRetry, emptyAction, selectable, selection, onSelectionChange, rowActions, bulkActions, sort, onSortChange, density, caption,
+}: {
+  columns: DataColumn<T>[]; rows: T[]; loading?: boolean; emptyText?: string; onRowClick?: (row: T) => void;
+  error?: string; onRetry?: () => void; emptyAction?: React.ReactNode;
+  /** Sélection multiple + actions groupées (uniquement quand le parent les déclare). */
+  selectable?: boolean; selection?: string[]; onSelectionChange?: (ids: string[]) => void;
+  rowActions?: TableRowAction<T>[]; bulkActions?: TableBulkAction<T>[];
+  sort?: { key: string; direction: 'asc' | 'desc' }; onSortChange?: (key: string) => void;
+  density?: 'comfortable' | 'compact'; caption?: string;
+}) {
+  const visibleColumns = columns.filter((column) => !column.hidden);
+  const withActions = rowActions && rowActions.length ? [...visibleColumns, { key: '__actions', label: '', className: 'admin-table-cell--actions' } as DataColumn<T>] : visibleColumns;
+  const ids = rows.map((row) => String(row.id ?? '')).filter(Boolean);
+  const selected = selection ?? [];
+  const allSelected = selectable && ids.length > 0 && ids.every((id) => selected.includes(id));
+  const toggleAll = () => onSelectionChange?.(allSelected ? [] : ids);
+  const toggleOne = (id: string) => onSelectionChange?.(selected.includes(id) ? selected.filter((item) => item !== id) : [...selected, id]);
+  const colSpan = withActions.length + (selectable ? 1 : 0);
+  const stateRow = (content: React.ReactNode) => <tr><td colSpan={colSpan}><div className="admin-table-state">{content}</div></td></tr>;
+
   return (
-    <div className="admin-table-wrap">
+    <div className={`admin-table-wrap ${density === 'compact' ? 'is-compact' : ''}`.trim()}>
+      {bulkActions && bulkActions.length > 0 && selected.length > 0 && (
+        <div className="admin-table-bulkbar" role="toolbar" aria-label="Actions groupées">
+          <strong>{selected.length} sélectionné{selected.length > 1 ? 's' : ''}</strong>
+          {bulkActions.map((action) => (
+            <Button key={action.key} type="button" variant={action.tone === 'danger' ? 'danger' : 'secondary'} disabled={action.disabled} title={action.disabled ? action.reason : undefined}
+              onClick={() => action.onRun(rows.filter((row) => selected.includes(String(row.id ?? ''))))}>
+              {action.label}
+            </Button>
+          ))}
+          <button type="button" className="admin-table-bulkbar-clear" onClick={() => onSelectionChange?.([])}>Annuler</button>
+        </div>
+      )}
       <table className="admin-table">
-        <thead><tr>{columns.map((column) => <th key={column.key} className={column.className}>{column.label}</th>)}</tr></thead>
+        {caption && <caption className="admin-table-caption">{caption}</caption>}
+        <thead>
+          <tr>
+            {selectable && <th scope="col" className="admin-table-cell--select"><input type="checkbox" checked={Boolean(allSelected)} onChange={toggleAll} aria-label="Tout sélectionner" /></th>}
+            {withActions.map((column) => (
+              <th key={column.key} scope="col" className={`${column.className ?? ''} ${column.align === 'end' ? 'is-end' : ''}`.trim()}
+                aria-sort={column.sortable && onSortChange && sort?.key === column.key ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}>
+                {column.sortable && onSortChange ? (
+                  <button type="button" className="admin-table-sort" onClick={() => onSortChange(column.key)} data-active={sort?.key === column.key ? 'true' : undefined}>
+                    {column.label}{sort?.key === column.key && <i>{sort.direction === 'asc' ? '↑' : '↓'}</i>}
+                  </button>
+                ) : column.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
         <tbody>
-          {loading ? <tr><td colSpan={columns.length}><div className="admin-table-state"><Loader2 className="admin-spin" /> Chargement…</div></td></tr>
-            : rows.length === 0 ? <tr><td colSpan={columns.length}><div className="admin-table-state">{emptyText}</div></td></tr>
-              : rows.map((row, index) => (
-                <tr key={row.id || index} onClick={() => onRowClick?.(row)} className={onRowClick ? 'admin-table-row--clickable' : ''}>
-                  {columns.map((column) => <td key={column.key} className={column.className}>{column.render ? column.render(row) : String((row as any)[column.key] ?? '—')}</td>)}
-                </tr>
-              ))}
+          {loading ? stateRow(<><Loader2 className="admin-spin" /> Chargement…</>)
+            : error ? stateRow(<>
+              <AlertCircle /> <strong>{error}</strong>
+              {onRetry && <Button type="button" variant="ghost" onClick={onRetry}><RefreshCw size={16} /> Réessayer</Button>}
+            </>)
+              : rows.length === 0 ? stateRow(<>{emptyText}{emptyAction}</>)
+                : rows.map((row, index) => {
+                  const id = String((row as any).id ?? index);
+                  return (
+                    <tr key={id} onClick={() => onRowClick?.(row)} className={onRowClick ? 'admin-table-row--clickable' : ''}>
+                      {selectable && <td className="admin-table-cell--select" onClick={(event) => event.stopPropagation()}>
+                        <input type="checkbox" checked={selected.includes(String((row as any).id ?? ''))} onChange={() => toggleOne(String((row as any).id ?? ''))} aria-label={`Sélectionner ${id}`} />
+                      </td>}
+                      {withActions.map((column) => (
+                        <td key={column.key} className={`${column.className ?? ''} ${column.align === 'end' ? 'is-end' : ''}`.trim()}>
+                          {column.key === '__actions' ? (
+                            <div className="admin-row-actions">
+                              {(rowActions ?? []).map((action) => (
+                                <button key={action.key} type="button" disabled={action.disabled} title={action.disabled ? action.reason : action.label}
+                                  aria-label={action.label} onClick={(event) => { event.stopPropagation(); action.onRun(row); }}>
+                                  {action.icon}{action.label}
+                                </button>
+                              ))}
+                            </div>
+                          ) : column.render ? column.render(row) : String((row as any)[column.key] ?? '—')}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
         </tbody>
       </table>
     </div>

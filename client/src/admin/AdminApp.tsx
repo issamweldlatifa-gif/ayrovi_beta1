@@ -25,25 +25,13 @@ import { ErpEmployeesPage, ErpEnvironmentPage, ErpEventsPage, ErpAuditPage, ErpO
 import { CatalogueBrandsPage, CatalogueCategoriesPage, CatalogueProductsPage } from './CataloguePages';
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
 import './interface-studio.css';
+import { BackOfficeProvider, useBackOffice } from './back-office/framework';
+import { BackOfficeShell, type BackOfficeRenderContext } from './back-office/BackOfficeShell';
+import { NotificationsBell } from './back-office/NotificationsBell';
+import { formatMoney, formatDate, labels, nowPlus, options, ResourceForm, type FieldDefinition, type Permission, type ResourceDefinition } from './back-office/resource-ui';
 
-type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'users:read' | 'ai:read' | 'ai:write' | 'audit:read' | 'reports:read' | 'reports:write';
 type UserIdentity = { id: string; email: string; name: string; role: string; permissions: Permission[] };
-type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'image' | 'boolean' | 'list';
-type FieldDefinition = { key: string; label: string; type: FieldType; required?: boolean; options?: string[]; hint?: string; full?: boolean };
-type ResourceDefinition = { title: string; singular: string; description: string; endpoint: string; keyField: string; statusField?: string; permission: Permission; fields: FieldDefinition[]; defaults: Record<string, any> };
 
-const labels: Record<string, string> = {
-  STANDARD: 'Standard', EXPRESS: 'Express', DRAFT: 'Brouillon', SCHEDULED: 'Programmé', ACTIVE: 'Actif', COMPLETED: 'Terminé', ARCHIVED: 'Archivé',
-  SHEIN: 'SHEIN', AMAZON: 'Amazon', TEMU: 'TEMU', ALIEXPRESS: 'AliExpress', OTHER: 'Autre', EUR: 'EUR', USD: 'USD', GBP: 'GBP', JPY: 'JPY', TND: 'TND',
-  AVAILABLE: 'Disponible', LIMITED: 'Stock limité', OUT_OF_STOCK: 'Épuisé', INACTIVE: 'Inactif', PERCENTAGE: 'Pourcentage', FIXED: 'Montant fixe',
-  IMAGE: 'Image', VIDEO: 'Vidéo', PUBLISHED: 'Publié', EXPIRED: 'Expiré', NEW_ARRIVAL: 'Nouvel arrivage', NEW_BRAND: 'Nouvelle marque', PROMOTION: 'Promotion',
-  DELIVERY: 'Livraison', AYROVI: 'AYROVI', INFORMATION: 'Information', FASHION: 'Mode', SPORT_LIFESTYLE: 'Sport & lifestyle', BEAUTY: 'Beauté', TECH: 'Tech', HOME: 'Maison',
-  FAQ: 'FAQ', PREDEFINED_RESPONSE: 'Réponse prédéfinie', PAYMENT: 'Paiement', BRAND: 'Marque', ARRIVAL: 'Arrivage', GENERAL: 'Général',
-  PENDING: 'En attente', IN_PROGRESS: 'En cours', RESOLVED: 'Résolu', CLOSED: 'Fermé', NORMAL: 'Normale', HIGH: 'Haute',
-};
-
-const options = (values: string[]) => values.map((value) => ({ value, label: labels[value] || value }));
-const nowPlus = (days: number) => new Date(Date.now() + days * 86400000).toISOString();
 
 const resources: Record<string, ResourceDefinition> = {
   arrivals: {
@@ -138,52 +126,7 @@ const resources: Record<string, ResourceDefinition> = {
   },
 };
 
-const navGroups = [
-  { label: 'Vue générale', items: [{ id: 'dashboard', label: 'Tableau de bord', icon: Home, permission: 'dashboard:read' as Permission }] },
-  { label: 'Contenu', items: [
-    { id: 'arrivals', label: 'Arrivages', icon: Calendar, permission: 'content:read' as Permission }, { id: 'products', label: 'Produits', icon: ShoppingBag, permission: 'content:read' as Permission },
-    { id: 'promotions', label: 'Promotions', icon: Gift, permission: 'content:read' as Permission }, { id: 'social', label: 'Social', icon: ChartLine, permission: 'content:read' as Permission },
-    { id: 'news', label: 'مجلتي', icon: FileText, permission: 'content:read' as Permission }, { id: 'magazine-agent', label: 'وكيل مجلتي', icon: Sparkles, permission: 'content:read' as Permission },
-    { id: 'brands', label: 'Marques', icon: Tag, permission: 'content:read' as Permission },
-    { id: 'hero-visuals', label: 'Hero Management', icon: Image, permission: 'content:read' as Permission }, { id: 'lens-section', label: 'LENS', icon: LensBox, permission: 'content:read' as Permission },
-    { id: 'home-sections', label: 'Sections accueil', icon: LayoutGrid, permission: 'content:read' as Permission },
-    { id: 'ticker', label: 'Ticker annonces', icon: Bell, permission: 'content:read' as Permission }, { id: 'trust-bar', label: 'Trust Bar', icon: ShieldCheck, permission: 'content:read' as Permission },
-  ]},
-  { label: 'Catalogue', items: [
-    { id: 'catalogue-products', label: 'Produits', icon: ShoppingBag, permission: 'content:read' as Permission },
-    { id: 'catalogue-categories', label: 'Catégories', icon: LayoutGrid, permission: 'content:read' as Permission },
-    { id: 'catalogue-brands', label: 'Marques', icon: Tag, permission: 'content:read' as Permission },
-  ]},
-  { label: 'Commerce', items: [
-    { id: 'arrival-ingestion', label: 'Arrivals CRM', icon: Package, permission: 'commerce:read' as Permission },
-    { id: 'orders', label: 'Commandes', icon: Package, permission: 'commerce:read' as Permission }, { id: 'lens-requests', label: 'Demandes Lens', icon: Sparkles, permission: 'commerce:read' as Permission },
-    { id: 'assistant-support', label: 'Support IA', icon: MessageSquare, permission: 'commerce:read' as Permission },
-    { id: 'lens-lab', label: 'Lens Test Lab', icon: Camera, permission: 'settings:write' as Permission }, { id: 'ai-discovery', label: 'AI Discovery', icon: ChartLine, permission: 'reports:read' as Permission },
-    { id: 'customers', label: 'Clients', icon: User, permission: 'commerce:read' as Permission }, { id: 'pricing', label: 'Prix & taux', icon: Calculator, permission: 'commerce:read' as Permission }, { id: 'reports', label: 'Rapports', icon: ChartLine, permission: 'reports:read' as Permission },
-  ]},
-  { label: 'ERP', items: [
-    { id: 'erp-employees', label: 'Employés', icon: User, permission: 'users:write' as Permission },
-    { id: 'erp-organization', label: 'Organisation', icon: Grid, permission: 'users:write' as Permission },
-    { id: 'erp-permissions', label: 'Rôles & permissions', icon: ShieldCheck, permission: 'users:write' as Permission },
-    { id: 'erp-audit', label: 'Audit (ERP)', icon: History, permission: 'audit:read' as Permission },
-    { id: 'erp-events', label: 'Événements', icon: Bell, permission: 'dashboard:read' as Permission },
-    { id: 'erp-environment', label: 'Modules & environnement', icon: Settings, permission: 'dashboard:read' as Permission },
-  ]},
-  { label: 'Système', items: [
-    { id: 'interface', label: 'واجهتي', icon: Eye, permission: 'settings:write' as Permission },
-    { id: 'design', label: 'Développement', icon: Palette, permission: 'settings:write' as Permission },
-    { id: 'assistant', label: 'Assistant IA', icon: MessageSquare, permission: 'ai:read' as Permission }, { id: 'settings', label: 'Paramètres', icon: Settings, permission: 'content:read' as Permission },
-    { id: 'users', label: 'Utilisateurs', icon: ShieldCheck, permission: 'users:write' as Permission }, { id: 'audit', label: 'Journal d’audit', icon: History, permission: 'audit:read' as Permission },
-  ]},
-];
 
-function formatMoney(value: unknown) { return `${Number(value || 0).toLocaleString('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} TND`; }
-function formatDate(value: unknown, time = false) {
-  if (!value) return '—';
-  const date = new Date(String(value));
-  return Number.isNaN(date.getTime()) ? '—' : new Intl.DateTimeFormat('fr-TN', time ? { dateStyle: 'medium', timeStyle: 'short' } : { dateStyle: 'medium' }).format(date);
-}
-function titleFor(section: string) { return resources[section]?.title || navGroups.flatMap((group) => group.items).find((item) => item.id === section)?.label || 'Administration'; }
 
 const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = ({ onAuthenticated }) => {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [show, setShow] = useState(false);
@@ -240,24 +183,17 @@ const ChartEmpty = () => <div className="admin-chart-empty">Les premières donn�
 const CardTitle: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => <header className="admin-card-title"><div><h3>{title}</h3><p>{subtitle}</p></div></header>;
 const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = ({ title, description, action }) => <div className="admin-page-header"><div><span className="admin-eyebrow">AYROVI ADMIN</span><h1>{title}</h1><p>{description}</p></div>{action}</div>;
 
-const ResourceForm: React.FC<{ definition: ResourceDefinition; value: Record<string, any>; onChange: (value: Record<string, any>) => void; onSubmit: () => void; busy: boolean }> = ({ definition, value, onChange, onSubmit, busy }) => {
-  const update = (key: string, next: any) => onChange({ ...value, [key]: next });
-  return <Form onSubmit={(event) => { event.preventDefault(); onSubmit(); }}>
-    {definition.fields.map((field) => <Field key={field.key} label={field.label} required={field.required} hint={field.hint} full={field.full}>
-      {field.type === 'textarea' ? <textarea rows={field.key === 'content' || field.key === 'answer' ? 7 : 4} value={value[field.key] ?? ''} required={field.required} onChange={(event) => update(field.key, event.target.value)} />
-        : field.type === 'select' ? <Select value={value[field.key] ?? ''} required={field.required} onChange={(event) => update(field.key, event.target.value)} options={options(field.options || [])} />
-          : field.type === 'number' ? <input type="number" min="0" step="any" value={value[field.key] ?? ''} required={field.required} onChange={(event) => update(field.key, event.target.value === '' ? '' : Number(event.target.value))} />
-            : field.type === 'date' ? <DatePicker value={value[field.key]} required={field.required} onChange={(next) => update(field.key, next)} />
-              : field.type === 'image' ? <ImageUploader value={value[field.key]} onChange={(next) => update(field.key, next)} />
-                : field.type === 'boolean' ? <button className={`admin-switch ${value[field.key] ? 'is-on' : ''}`} type="button" onClick={() => update(field.key, !value[field.key])}><i /><span>{value[field.key] ? 'Oui' : 'Non'}</span></button>
-                  : field.type === 'list' ? <textarea rows={2} value={Array.isArray(value[field.key]) ? value[field.key].join(', ') : value[field.key] || ''} onChange={(event) => update(field.key, event.target.value.split(',').map((item) => item.trim()).filter(Boolean))} placeholder="Séparez les valeurs par une virgule" />
-                    : <input value={value[field.key] ?? ''} required={field.required} onChange={(event) => update(field.key, event.target.value)} />}
-    </Field>)}
-    <div className="admin-form-actions"><Button type="submit" busy={busy}><CheckCircle2 size={17} />Enregistrer</Button></div>
-  </Form>;
-};
 
 const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resource, canWrite }) => {
+  // P2.0 — les actions de cette page sont d'abord décidées par la matrice centrale
+  // (`module:action:resource:scope`, rendue par `GET /back-office/resources/:key`). Tant que le
+  // framework n'a pas répondu — ou qu'il ne grise rien (`null`) — on garde la règle legacy de
+  // l'écran : aucune page ne se retrouve bloquée par un méta-endpoint.
+  const { capabilitiesFor, loadCapabilities } = useBackOffice();
+  const capability = capabilitiesFor(resource);
+  useEffect(() => { void loadCapabilities(resource); }, [resource]);
+  const writable = capability?.edit ?? canWrite;
+  const creatable = capability?.create ?? canWrite;
   const definition = resources[resource]; const [rows, setRows] = useState<any[]>([]); const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [loading, setLoading] = useState(true); const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState<any>(null); const [form, setForm] = useState<Record<string, any>>({ ...definition.defaults }); const [busy, setBusy] = useState(false);
@@ -288,13 +224,13 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
     { key: definition.keyField, label: definition.keyField === 'name' ? 'Nom' : definition.keyField === 'question' ? 'Question' : definition.keyField === 'text' ? 'Message' : 'Titre', render: (row) => <div className="admin-entity"><span>{row.image || row.main_image || row.logo || row.media_url ? <img src={row.image || row.main_image || row.logo || row.media_url} alt="" /> : <i><FileText /></i>}</span><div><strong>{row[definition.keyField] || (resource === 'assistant' ? row.answer.slice(0, 60) : 'Sans titre')}</strong><small>{row.type || row.category || row.source_platform || row.media_type || ''}</small></div></div> },
     { key: 'status', label: 'Statut', render: (row) => <StatusBadge status={displayStatus(row)} /> },
     { key: 'updated_at', label: 'Dernière modification', render: (row) => formatDate(row.updated_at, true) },
-    { key: 'actions', label: '', render: (row) => canWrite && <div className="admin-row-actions"><button type="button" onClick={(event) => { event.stopPropagation(); openEdit(row); }} aria-label="Modifier"><Pencil size={17} /></button><button type="button" onClick={(event) => { event.stopPropagation(); setArchiveTarget(row); }} aria-label="Archiver"><X size={17} /></button></div> },
+    { key: 'actions', label: '', render: (row) => writable && <div className="admin-row-actions"><button type="button" onClick={(event) => { event.stopPropagation(); openEdit(row); }} aria-label="Modifier"><Pencil size={17} /></button><button type="button" onClick={(event) => { event.stopPropagation(); setArchiveTarget(row); }} aria-label="Archiver"><X size={17} /></button></div> },
   ];
   const statusOptions = definition.fields.find((field) => field.key === 'status')?.options || [];
   return <>
-    <PageHeader title={definition.title} description={definition.description} action={canWrite ? <Button onClick={openCreate}><Plus size={18} />Nouveau</Button> : undefined} />
+    <PageHeader title={definition.title} description={definition.description} action={creatable ? <Button onClick={openCreate}><Plus size={18} />Nouveau</Button> : undefined} />
     <section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} /><Filters>{statusOptions.length > 0 && <Select value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'Tous les statuts' }, ...options(statusOptions)]} />}</Filters></div>
-      <DataTable columns={columns} rows={rows} loading={loading} emptyText={`Aucun ${definition.singular} pour le moment.`} onRowClick={canWrite ? openEdit : undefined} />
+      <DataTable columns={columns} rows={rows} loading={loading} emptyText={`Aucun ${definition.singular} pour le moment.`} onRowClick={writable ? openEdit : undefined} />
       <Pagination {...pagination} onChange={(page) => load(page)} />
     </section>
     <Modal open={modal} title={`${editing ? 'Modifier' : 'Créer'} ${definition.singular}`} onClose={() => setModal(false)} wide><ResourceForm definition={definition} value={form} onChange={setForm} onSubmit={save} busy={busy} /></Modal>
@@ -629,17 +565,6 @@ const UsersPage:React.FC=()=>{
 
 const AuditPage:React.FC=()=>{const[rows,setRows]=useState<any[]>([]);const[page,setPage]=useState({page:1,totalPages:1,total:0});const[loading,setLoading]=useState(true);const load=async(p=1)=>{setLoading(true);const r=await adminApi<any>(`/audit-logs?page=${p}&pageSize=30`);setRows(r.data);setPage(r.pagination);setLoading(false);};useEffect(()=>{load();},[]);return <><PageHeader title="Journal d’audit" description="Qui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après."/><section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[{key:'created_at',label:'Date',render:r=>formatDate(r.created_at,true)},{key:'user_name',label:'Acteur'},{key:'action',label:'Action',render:r=><StatusBadge status={r.action}/>},{key:'module',label:'Module'},{key:'entity_id',label:'Cible',render:r=><code>{r.entity_id||'—'}</code>},{key:'changes',label:'Modification',render:r=><small>{r.old_value?'Valeur précédente conservée':''}{r.old_value&&r.new_value?' → ':''}{r.new_value?'Nouvelle valeur conservée':''}</small>}]}/><Pagination {...page} onChange={load}/></section></>};
 
-// ===== جرس إشعارات الإدارة (وصل جديد / طلب جديد) =====
-const NotificationsBell:React.FC<{onNavigate:(section:string,request?:string)=>void}>=({onNavigate})=>{
-  const [open,setOpen]=useState(false);const [rows,setRows]=useState<any[]>([]);const [unread,setUnread]=useState(0);
-  const load=useCallback(async()=>{try{const r=await adminApi<any>('/notifications?limit=20');setRows(r.data||[]);setUnread(Number(r.unread)||0);}catch{/* صامت */}},[]);
-  useEffect(()=>{load();const t=setInterval(load,30000);return()=>clearInterval(t);},[load]);
-  const markAll=async()=>{try{await adminApi('/notifications/read-all',{method:'POST'});await load();}catch{/* */}};
-  const openItem=async(item:any)=>{try{const r=await adminApi<any>(`/notifications/${item.id}/read`,{method:'POST'});setUnread(Number(r.unread)||0);}catch{/* */}setOpen(false);const action=String(item.action_url||'');if(action.includes('section=lens-requests')){const target=new URL(action,location.origin);onNavigate('lens-requests',target.searchParams.get('request')||undefined);}else if(action.includes('section=assistant-support')){const target=new URL(action,location.origin);onNavigate('assistant-support',target.searchParams.get('ticket')||undefined);}else if(action.includes('tab=orders'))onNavigate('orders');};
-  return <div className="admin-bell"><button className="admin-icon-button" onClick={()=>{setOpen(!open);if(!open)void load();}} aria-label="Notifications"><Bell/>{unread>0&&<b className="admin-bell-badge">{unread>99?'99+':unread}</b>}</button>
-  {open&&<div className="admin-bell-panel"><header><strong>Notifications</strong>{unread>0&&<button onClick={markAll}>Tout marquer lu</button>}</header>
-  <div className="admin-bell-list">{rows.length===0&&<p className="admin-bell-empty">Aucune notification.</p>}{rows.map(item=><button key={item.id} className={item.read_at?'':'is-unread'} onClick={()=>openItem(item)}><strong>{item.title}</strong><span>{item.message}</span><time>{formatDate(item.created_at,true)}</time></button>)}</div></div>}</div>;
-};
 
 // ===== التقارير المالية: مداخيل / مصاريف / أرباح =====
 const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
@@ -726,16 +651,19 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   </div>{toast&&<Toast {...toast}/>}</>;
 };
 
+/**
+ * P2.0 — `AdminShell` n'est plus la mise en page : il fournit la page du `section` demandé et
+ * laisse la coquille (`BackOfficeShell`) gérer navigation, recherche, palette, notifications et
+ * identité employé. La résolution d'écran est inchangée, écran par écran — seuls les états de
+ * navigation viennent maintenant de la coquille (deep links `?section=&request=` conservés).
+ */
 const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout})=>{
-  const initialParams=new URLSearchParams(location.search);const initial=initialParams.get('section')||'dashboard';const[section,setSection]=useState(initial);const[requestedReview,setRequestedReview]=useState(initialParams.get('request')||'');const[pendingMagazineDraft,setPendingMagazineDraft]=useState('');const[mobile,setMobile]=useState(false);const[profile,setProfile]=useState(false);
-  const has=(permission:Permission)=>user.permissions.includes(permission);const navigate=(id:string,request?:string)=>{setSection(id);setRequestedReview(request||'');setMobile(false);const params=new URLSearchParams({section:id});if(request)params.set('request',request);pushUrlPreservingNavigation(`/admin?${params}`);if(id==='arrival-ingestion')window.dispatchEvent(new PopStateEvent('popstate',{state:window.history.state}));};
-  const openMagazineDraft=useCallback((draftId?:string)=>{setPendingMagazineDraft(draftId||'');navigate('news');},[]);
-  const clearPendingMagazineDraft=useCallback(()=>setPendingMagazineDraft(''),[]);
-  useEffect(()=>{const pop=()=>{const params=new URLSearchParams(location.search);setSection(params.get('section')||'dashboard');setRequestedReview(params.get('request')||'');};addEventListener('popstate',pop);return()=>removeEventListener('popstate',pop);},[]);
-  useEffect(()=>{if(!navGroups.flatMap(g=>g.items).some(i=>i.id===section&&has(i.permission)))navigate('dashboard');},[section]);
+  const renderSection=(ctx:BackOfficeRenderContext)=>{
+    const {section,requestedReview,pendingMagazineDraft,openMagazineDraft,clearPendingMagazineDraft,can:has}=ctx;
   let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='hero-visuals')page=<HeroVisualsPage canWrite={has('content:write')}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='trust-bar')page=<TrustBarPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
-  return <div className="admin-shell"><aside className={`admin-sidebar ${mobile?'is-open':''}`}><div className="admin-sidebar-logo"><img src="/media/logo-ayrovi.png" alt="AYROVI" style={{width:30,height:30,objectFit:"contain"}} /><div><strong>AYROVI</strong><span>ADMIN CONTROL</span></div><button onClick={()=>setMobile(false)}><X/></button></div><nav>{navGroups.map(group=>{const items=group.items.filter(item=>has(item.permission));return items.length?<div key={group.label}><span>{group.label}</span>{items.map(({id,label})=><button key={id} className={`${section===id?'is-active':''} ${id==='news'?'is-magazine-drop-target':''}`.trim()} onClick={()=>navigate(id)} onDragOver={id==='news'?(event)=>{event.preventDefault();event.dataTransfer.dropEffect='copy';}:undefined} onDrop={id==='news'?(event)=>{event.preventDefault();const draftId=event.dataTransfer.getData('application/x-ayrovi-magazine-draft')||event.dataTransfer.getData('text/plain');if(draftId.startsWith('mag_draft_'))openMagazineDraft(draftId);}:undefined}><span>{label}</span>{section===id&&<i/>}</button>)}</div>:null;})}</nav><div className="admin-sidebar-foot"><a href="/" target="_blank" rel="noopener noreferrer">Voir le site public</a><span>AYROVI v3.10.4 · Tunis</span></div></aside>{mobile&&<button className="admin-sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Fermer le menu"/>}
-  <div className="admin-workspace"><header className="admin-header"><button className="admin-mobile-menu" onClick={()=>setMobile(true)}><Menu/></button><div className="admin-header-title"><span>Console /</span><strong>{titleFor(section)}</strong></div><div className="admin-header-actions"><button className="admin-icon-button"><SearchIcon/></button><NotificationsBell onNavigate={navigate}/><div className="admin-profile"><button onClick={()=>setProfile(!profile)}><i>{user.name.slice(0,2).toUpperCase()}</i><span><strong>{user.name}</strong><small>{labels[user.role]||user.role}</small></span></button>{profile&&<div><span>{user.email}</span><button onClick={onLogout}><LogOut/>Se déconnecter</button></div>}</div></div></header><main className="admin-main">{page}</main></div></div>;
+    return page;
+  };
+  return <BackOfficeShell identity={user} onLogout={onLogout} renderPage={renderSection}/>;
 };
 
 export const AdminApp:React.FC=()=>{
@@ -749,5 +677,6 @@ export const AdminApp:React.FC=()=>{
   },[]);
   if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png" alt="" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
-  return <AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/>;
+  // Un seul provider pour tout le back office : contexte, navigation et descripteurs partagés.
+  return <BackOfficeProvider><AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/></BackOfficeProvider>;
 };

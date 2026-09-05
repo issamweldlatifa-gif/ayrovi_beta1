@@ -41,6 +41,8 @@ import {
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { requireErpPermission } from '../erp-core/permissions';
 import { createCatalogueRouter } from '../catalogue/routes';
+import { createBackOfficeRouter } from '../back-office/routes';
+import { registerFrameworkResources } from '../back-office/resources';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
 import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
 import { getAyrovixStats } from '../ayrovix/events';
@@ -66,7 +68,7 @@ import {
   prepareMagazineDraft,
 } from '../magazine/service';
 
-interface ResourceConfig {
+export interface ResourceConfig {
   table: string;
   module: string;
   prefix: string;
@@ -83,7 +85,7 @@ interface ResourceConfig {
   softDelete: Record<string, any>;
 }
 
-const resources: Record<string, ResourceConfig> = {
+export const resources: Record<string, ResourceConfig> = {
   arrivals: {
     table: 'arrivals', module: 'ARRIVALS', prefix: 'arrival', permission: 'content:write',
     fields: ['name','type','departure_at','expected_arrival_at','ends_at','description','main_image','secondary_images','badge','status','published_at'],
@@ -154,6 +156,13 @@ const resources: Record<string, ResourceConfig> = {
     jsonFields: ['keywords'], enums: { category: ['FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'] }, softDelete: { active: 0 },
   },
 };
+
+/**
+ * Back Office P2.0 : le framework de ressources lit ces descripteurs, il ne les recopie pas.
+ * L'enregistrement se fait ici, au chargement du module, pour que la dépendance aille dans un
+ * seul sens (admin → back-office). Toute divergence de colonne est donc impossible par construction.
+ */
+registerFrameworkResources(resources);
 
 const orderStatuses = ['CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'];
 const paymentStatuses = ['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED'];
@@ -408,6 +417,10 @@ export function createAdminRouter(
   // Catalogue (P2.1): produits, variantes/SKU, catégories, marques, médias, attributs.
   // Un nouveau préfixe — aucune route existante n'est déplacée ni renommée.
   router.use('/catalogue', createCatalogueRouter(db));
+  // Back Office (P2.0): coquille + framework de ressources. Uniquement de la LECTURE : la
+  // coquille décrit l'espace de travail (navigation, descripteurs, recherche, capacités) et ne
+  // déplace aucune écriture. Le moteur générique s'y enregistre lui-même, source unique.
+  router.use('/back-office', createBackOfficeRouter(db));
 
 
   /* ==================== TRUST BAR — إدارة كاملة للمحتوى، التصميم محكوم بالهوية ==================== */
