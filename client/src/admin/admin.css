@@ -662,3 +662,21 @@ input[type="color"]{width:100%;height:40px;border:1px solid #e5e2ee;border-radiu
 .hfb-frame-mobile { width: 230px; aspect-ratio: 9 / 14; }
 .hfb-frame-mobile .hero-fullbleed-copy { padding: 18px 16px; }
 .hfb-frame-mobile .hero-fullbleed-copy strong { font-size: 17px; }
+
+/* ===== P2.1 — écran Catalogue (produits / catégories / marques) ===== */
+/* Additive only: nothing above this block was modified. These classes are used by
+   client/src/admin/CataloguePages.tsx and by no other screen. */
+.admin-cell-media { display: flex; align-items: center; gap: 10px; min-width: 190px; }
+.admin-cell-media img, .admin-cell-placeholder { width: 44px; height: 44px; flex: 0 0 auto; object-fit: cover; border: 1px solid var(--admin-line); border-radius: 10px; background: #f6f5f9; }
+.admin-cell-media > div { display: grid; gap: 2px; min-width: 0; }
+.admin-cell-media code, .admin-detail-grid code { font-size: 11px; }
+.admin-detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.admin-detail-grid > div { display: grid; gap: 3px; padding: 10px 12px; border: 1px solid var(--admin-line); border-radius: 12px; background: #fbfafc; }
+.admin-detail-grid span { color: var(--admin-muted); font-size: 9px; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.admin-detail-grid strong { display: grid; gap: 2px; font-size: 13px; }
+.admin-tabs { display: flex; gap: 4px; margin: 4px 0 14px; border-bottom: 1px solid var(--admin-line); }
+.admin-tabs button { padding: 9px 12px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--admin-muted); font: inherit; font-size: 12px; font-weight: 800; cursor: pointer; }
+.admin-tabs button.is-active { color: var(--admin-purple); border-bottom-color: #fe7003; }
+.admin-inline-form { margin-top: 10px; padding: 14px; gap: 10px; align-items: end; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); border: 1px solid var(--admin-line); border-radius: 14px; background: #fbfafc; }
+.admin-check { display: inline-flex; align-items: center; gap: 7px; color: var(--admin-muted); font-size: 12px; font-weight: 750; }
+.admin-row-actions--labels button { width: auto; height: auto; padding: 6px 10px; font-size: 11px; font-weight: 750; }

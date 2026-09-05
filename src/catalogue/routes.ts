@@ -27,7 +27,7 @@ import { archiveVariant, createVariant, getVariant, listVariants, updateVariant 
 import { archiveCategory, categoryTree, createCategory, getCategory, listCategories, updateCategory } from './categories';
 import { BRAND_CATEGORIES, createBrand, getBrand, listBrands, updateBrand } from './brands';
 import { addMedia, listMedia, makeMediaPrimary, removeMedia } from './media';
-import { createAttribute, listAttributes } from './attributes';
+import { createAttribute, listAttributes, readAttributes } from './attributes';
 import { catalogueContext } from './audit';
 import {
   CATALOGUE_ERRORS, CATALOGUE_RESOURCES, MEDIA_TYPES, PRODUCT_STATUSES, VARIANT_STATUSES, CATALOGUE_STATUSES,
@@ -105,8 +105,12 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
       success: true,
       data: {
         ...product,
-        variants: listVariants(db, product.id),
+        variants: listVariants(db, product.id).map((variant) => ({
+          ...variant, attributes: readAttributes(db, product.id, variant.id),
+        })),
         media: listMedia(db, product.id),
+        // Declared attribute values of the product itself (variants carry their own above).
+        attributes: readAttributes(db, product.id, null),
         category: product.category_id ? getCategory(db, product.category_id) : null,
         brand: product.brand_id ? getBrand(db, product.brand_id) : null,
       },
@@ -248,7 +252,20 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
   });
 
   // ---------- Vocabulary for the UI (no invented statuses) ----------
-  router.get('/meta', ...requireCatalogue(db, 'read', 'product'), (_req, res) => {
+  router.get('/meta', ...requireCatalogue(db, 'read', 'product'), (req, res) => {
+    // A display hint only: which buttons to grey out. The decision itself is never made
+    // here — every write route re-checks through requireCatalogue, so a tampered client
+    // cannot gain anything from this payload.
+    const role = (req as CatalogueRequest).admin?.role ?? null;
+    const employee = (req as CatalogueRequest & { erpEmployee?: any }).erpEmployee ?? null;
+    const actions = ['read', 'create', 'update', 'delete', 'approve'] as const;
+    const capabilities: Record<string, Record<string, boolean>> = {};
+    for (const resource of CATALOGUE_RESOURCES) {
+      capabilities[resource] = {} as Record<string, boolean>;
+      for (const action of actions) {
+        capabilities[resource][action] = can(db, role, { module: 'catalog', action, resourceType: resource, employee }).allowed;
+      }
+    }
     res.json({
       success: true,
       data: {
@@ -263,6 +280,7 @@ export function createCatalogueRouter(db: QatafoDatabase): Router {
           deletion: 'archivage: aucun produit, variante, catégorie ou marque n’est supprimé physiquement',
           pricing: 'les prix restent calculés par le moteur de tarification existant',
         },
+        capabilities,
       },
     });
   });
