@@ -233,12 +233,18 @@ Six commits de code logiques (service → câblage → tests → UI → correcti
 docs), aucun mélange de sujets non liés.
 
 ```
-$ git push origin main      # après backend + tests
+$ git push origin main      # backend + tests
 To github.com:…/ayrovi_beta1.git   89a0ac3..fde4207  main -> main
-$ git push origin main      # après UI, correctif d’index, docs
+$ git push origin main      # UI + correctif d’index + inventaire + rapport
 To github.com:…/ayrovi_beta1.git   fde4207..d73420e  main -> main
+$ git push origin main      # validations d’arbre neuf
+To github.com:…/ayrovi_beta1.git   d73420e..4d62337  main -> main
+$ git push origin main      # derniers ajustements du rapport
+To github.com:…/ayrovi_beta1.git   120d14b..62cfbba  main -> main
 $ git rev-list --left-right --count origin/main...main
 0   0
+$ git log --oneline 89a0ac3..HEAD | wc -l
+8        # 6 de code/tests + 2 de documents, tous poussés
 ```
 
 Rien n'est resté local : chaque lot vert a été poussé avant le suivant. Déploiement : la mise à
