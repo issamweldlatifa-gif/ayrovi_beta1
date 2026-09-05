@@ -59,9 +59,21 @@ tests/catalogue-foundation.test.ts    48 tests neufs
 tests/erp-core-foundation.test.ts     1 attestation re-ciblée (voir §5)
 ```
 
-`git diff --shortstat 89a0ac3..HEAD` → **21 fichiers, +3 885 / −4**. Les −4 lignes sont
-intégralement dans `tests/erp-core-foundation.test.ts` (le §5) : **aucune ligne de code
-existant n'a été supprimée ni renommée**.
+Chiffres mesurés (`git diff --shortstat 89a0ac3..HEAD`) : **23 fichiers, +4 311 / −4**
+(dont +3 885 pour le code et les tests, le reste étant les deux documents de cette phase).
+
+Les **4 lignes supprimées sont 4 lignes remplacées**, une par fichier touché, et rien d'autre :
+
+| Fichier | Ligne retirée | Devient |
+|---|---|---|
+| `src/erp-core/modules.ts` | entrée `catalog` avec `status: 'legacy'` | même entrée, `status: 'active'` + `apiPrefix` |
+| `src/erp-core/permissions.ts` | `catalog: ['product', 'brand']` | `catalog: ['product','brand','variant','category','media','product_media','product_attribute']` |
+| `tests/erp-core-foundation.test.ts` | `expect(catalog.status).toBe('legacy')` | `toBe('active')` (§5) |
+| `client/src/admin/AdminApp.tsx` | ligne d'ouverture du groupe `Commerce` | même ligne, précédée du groupe `Catalogue` |
+
+Aucune capacité existante n'a été retirée, aucune table, colonne, route ou clé de permission
+n'a été supprimée ni renommée — vérifié par les 4 tests de non-régression (§7) et par
+`git diff` : le contenu des routeurs legacy est mot pour mot inchangé.
 
 ## 3. Base de données — additif, idempotent, testé sur trois cas
 
