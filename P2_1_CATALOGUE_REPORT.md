@@ -26,6 +26,7 @@ mutation **et de chaque refus**, et `/api/admin/catalogue/*`.
 | `npm test` | **421 tests / 43 fichiers, 0 échec** (373 à la référence + 48 nouveaux, aucun test supprimé) |
 | Suite catalogue relancée 3× de suite | 46/46, 46/46, puis 48/48 après durcissement — aucun flap, aucune course |
 | Base neuve / existante / init répétée | trois cas épinglés par test (§7) |
+| Même validation sur **un arbre neuf du commit poussé** (`git worktree add /tmp/wt-cat2 d73420e`) | tsc 0 / tsc front 0 / build ✓ / **421 tests** / suite catalogue relancée 2× (48/48, 48/48) |
 
 Une exigence de l'énoncé entrait en conflit avec une attestation figée de P1 : elle est
 traitée au §5, avec la règle appliquée (ne pas affaiblir l'ancien test) et la ligne exacte à
@@ -215,11 +216,32 @@ e22c0e5  test(catalogue): pin the seeded permission surface (60 explicit rows, z
 + le présent rapport et P2_1_CATALOGUE_INVENTORY.md (commit docs)
 ```
 
-Six commits logiques (service → câblage → tests → UI → correctif trouvé par test → doc),
-aucun mélange de sujets non liés. Poussée : `git push origin main` a répondu `89a0ac3..fde4207`
-puis le complément ; `git rev-list --left-right --count origin/main...main` → `0 0` après la
-poussée finale (re-vérifiée ci-dessous). Déploiement : la mise à jour Render reste une action
-humaine — **je ne déclare jamais un déploiement** que je n'ai pas vu dans Render → Events.
+Six commits de code logiques (service → câblage → tests → UI → correctif trouvé par test →
+docs), aucun mélange de sujets non liés.
+
+```
+$ git push origin main      # après backend + tests
+To github.com:…/ayrovi_beta1.git   89a0ac3..fde4207  main -> main
+$ git push origin main      # après UI, correctif d’index, docs
+To github.com:…/ayrovi_beta1.git   fde4207..d73420e  main -> main
+$ git rev-list --left-right --count origin/main...main
+0   0
+```
+
+Rien n'est resté local : chaque lot vert a été poussé avant le suivant. Déploiement : la mise à
+jour Render reste une action humaine — **je ne déclare jamais un déploiement** que je n'ai pas vu
+dans Render → Events.
+
+**Correction d'une consigne de vérification que j'avais donnée en P1** : `cd client && npx tsc
+--noEmit` ne vérifie **rien** — `client/` ne contient aucun `tsconfig.json`, donc tsc n'a aucun
+projet à charger et sort en 0 sans lire un fichier. La vraie porte avant est
+`npx tsc -p tsconfig.client.json --noEmit` (ou `npm run typecheck`, qui enchaîne les deux) ; c'est
+elle qui a été exécutée ici, et `--listFiles` prouve que `CataloguePages.tsx` est dans le graphe.
+À remplacer dans votre checklist d'atelier : `npm run typecheck` plutôt que le `cd client`.
+
+Ce que P2.1 n'a **pas** touché, vérifié par test : `/api/admin/products` et `/api/admin/brands`
+(générateur CRUD générique), `/api/public/products` et son filtre `ACTIVE`, `/api/ready`, le garde
+`/uploads/*` de P1, les colonnes `sku`/`variant` du CRM et `requested_size` de `order_items`.
 
 ## 9. Données existantes
 
