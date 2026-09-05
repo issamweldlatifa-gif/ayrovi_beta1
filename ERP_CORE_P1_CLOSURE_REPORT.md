@@ -74,7 +74,7 @@ que teste « granting read access is a row of data, not a code change » (insert
 grant `CONTENT_MANAGER / users / read`, `GET /users` passe à 200, `POST /users` reste à
 403, suppression du grant → 403 de nouveau).
 
-Le refus est **audité** : `access_denied` avec `module='PERMISSIONS'`,
+Le refus est **audité** : une ligne `action='ACCESS_DENIED'`, `module='PERMISSIONS'`,
 `resource_type='role_permission'`, `new_value` contenant le module, l'action et la
 raison (`no-grant`). Aucun refus silencieux.
 
