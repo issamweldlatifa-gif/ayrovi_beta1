@@ -139,7 +139,11 @@ describe('ERP Core foundation (P0 + P1)', () => {
       const modules = response.body.data.sections.flatMap((section: any) => section.modules);
       expect(modules.length).toBe(response.body.data.total);
       const catalog = modules.find((entry: any) => entry.key === 'catalog');
-      expect(catalog.status).toBe('legacy');
+      // P1 froze this as 'legacy' (the catalogue had no ERP Core governance yet).
+      // P2.1 delivers that governance (registry entry, permissions, audit, events, sequences),
+      // so the registry now reports it as an active module. The assertion stays exact —
+      // it pins the new truth, it does not relax the old one. See ERP_CORE_P2_1 report, §Conflicts.
+      expect(catalog.status).toBe('active');
       const arrival = modules.find((entry: any) => entry.key === 'crm');
       expect(['active', 'legacy']).toContain(arrival.status);
       const keys = modules.map((entry: any) => entry.key);
