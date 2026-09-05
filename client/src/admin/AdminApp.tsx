@@ -25,7 +25,7 @@ import { ErpEmployeesPage, ErpEnvironmentPage, ErpEventsPage, ErpAuditPage, ErpO
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
 import './interface-studio.css';
 
-type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'audit:read' | 'reports:read' | 'reports:write';
+type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'users:read' | 'ai:read' | 'ai:write' | 'audit:read' | 'reports:read' | 'reports:write';
 type UserIdentity = { id: string; email: string; name: string; role: string; permissions: Permission[] };
 type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'image' | 'boolean' | 'list';
 type FieldDefinition = { key: string; label: string; type: FieldType; required?: boolean; options?: string[]; hint?: string; full?: boolean };
@@ -127,7 +127,7 @@ const resources: Record<string, ResourceDefinition> = {
     ],
   },
   assistant: {
-    title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant AYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'settings:write',
+    title: 'Assistant IA', singular: 'connaissance', description: 'Source administrable des réponses commerciales critiques de l’Assistant AYROVI.', endpoint: '/ai-knowledge', keyField: 'question', statusField: 'active', permission: 'ai:write',
     defaults: { category: 'FAQ', question: '', answer: '', keywords: [], priority: 0, active: true },
     fields: [
       { key: 'category', label: 'Catégorie', type: 'select', options: ['FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'] },
@@ -166,7 +166,7 @@ const navGroups = [
   { label: 'Système', items: [
     { id: 'interface', label: 'واجهتي', icon: Eye, permission: 'settings:write' as Permission },
     { id: 'design', label: 'Développement', icon: Palette, permission: 'settings:write' as Permission },
-    { id: 'assistant', label: 'Assistant IA', icon: MessageSquare, permission: 'settings:write' as Permission }, { id: 'settings', label: 'Paramètres', icon: Settings, permission: 'content:read' as Permission },
+    { id: 'assistant', label: 'Assistant IA', icon: MessageSquare, permission: 'ai:read' as Permission }, { id: 'settings', label: 'Paramètres', icon: Settings, permission: 'content:read' as Permission },
     { id: 'users', label: 'Utilisateurs', icon: ShieldCheck, permission: 'users:write' as Permission }, { id: 'audit', label: 'Journal d’audit', icon: History, permission: 'audit:read' as Permission },
   ]},
 ];

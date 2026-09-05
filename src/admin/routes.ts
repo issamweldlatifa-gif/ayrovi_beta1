@@ -39,6 +39,7 @@ import {
   verifyPassword,
 } from './auth';
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
+import { requireErpPermission } from '../erp-core/permissions';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
 import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
 import { getAyrovixStats } from '../ayrovix/events';
@@ -69,6 +70,8 @@ interface ResourceConfig {
   module: string;
   prefix: string;
   permission: AdminPermission;
+  /** Permission used by GET routes when it differs from the write permission (P1 closure gate). */
+  readPermission?: AdminPermission;
   fields: string[];
   required: string[];
   searchable: string[];
@@ -140,7 +143,11 @@ const resources: Record<string, ResourceConfig> = {
     softDelete: { active: 0 },
   },
   'ai-knowledge': {
-    table: 'ai_knowledge', module: 'AI_KNOWLEDGE', prefix: 'knowledge', permission: 'settings:write',
+    // P1 closure gate — la base de connaissances de l'assistant n'est pas un reglage.
+    // Elle etait lue ET ecrite avec `settings:write` (droit du module Reglages) : un
+    // role « consultation IA » etait impossible a exprimer. Les deux droits sont des
+    // noms nouveaux pour des acces deja existants, donc aucun compte legitime ne perd.
+    table: 'ai_knowledge', module: 'AI_KNOWLEDGE', prefix: 'knowledge', permission: 'ai:write', readPermission: 'ai:read',
     fields: ['category','question','answer','keywords','priority','active'], required: ['category','answer'],
     searchable: ['question','answer','category'], sortable: ['category','priority','active','created_at'], defaultSort: 'priority',
     jsonFields: ['keywords'], enums: { category: ['FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'] }, softDelete: { active: 0 },
@@ -1247,7 +1254,7 @@ export function createAdminRouter(
 
   // Apprentissage approuvé : une suggestion de knowledge gap devient une entrée
   // vérifiée de la base de connaissance uniquement par décision humaine.
-  router.post('/ai-suggestions/approve', requireAdmin(db, 'settings:write'), (req, res) => {
+  router.post('/ai-suggestions/approve', requireAdmin(db, 'ai:write'), (req, res) => {
     const question = String(req.body?.question || '').trim().slice(0, 240);
     const answer = String(req.body?.answer || '').trim().slice(0, 1200);
     const category = ['FAQ','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'].includes(String(req.body?.category)) ? String(req.body.category) : 'GENERAL';
@@ -1287,7 +1294,8 @@ export function createAdminRouter(
   });
 
   for (const [resource, config] of Object.entries(resources)) {
-    router.get(`/${resource}`, requireAdmin(db, resource === 'ai-knowledge' ? 'settings:write' : 'content:read'), (req, res) => {
+    const readPermission = config.readPermission ?? 'content:read';
+    router.get(`/${resource}`, requireAdmin(db, readPermission), (req, res) => {
       const page = parsePositiveInteger(req.query.page, 1, 100000);
       const pageSize = parsePositiveInteger(req.query.pageSize, 20, 100);
       const search = String(req.query.search || '').trim().slice(0, 200);
@@ -1311,7 +1319,7 @@ export function createAdminRouter(
       res.json({ success: true, data: rows, pagination: { page, pageSize, total: Number(count), totalPages: Math.max(1, Math.ceil(Number(count) / pageSize)) } });
     });
 
-    router.get(`/${resource}/:id`, requireAdmin(db, resource === 'ai-knowledge' ? 'settings:write' : 'content:read'), (req, res) => {
+    router.get(`/${resource}/:id`, requireAdmin(db, readPermission), (req, res) => {
       const row = db.get<any>(`SELECT * FROM ${config.table} WHERE id=?`, req.params.id);
       if (!row) return res.status(404).json({ success: false, error: 'Élément introuvable.' });
       res.json({ success: true, data: withRelations(db, resource, row) });
@@ -1855,7 +1863,13 @@ export function createAdminRouter(
     res.json({ success: true });
   });
 
-  router.get('/users', requireAdmin(db, 'users:write'), (_req, res) => {
+  // P1 closure gate — la liste des comptes est une LECTURE : elle exigeait `users:write`,
+  // ce qui rendait impossible un role « consulter sans gerer ». Le gate passe par le
+  // moteur ERP : `users:read` herite (SUPER_ADMIN) ou un grant en table (module users,
+  // action read). `permissive:false` = pas de grant, pas d'acces : le comportement du
+  // jour reste identique (ADMIN, CONTENT_MANAGER, ORDER_MANAGER recoivent toujours 403,
+  // comme le fige tests/ayrovi.test.ts), tandis que POST/PUT/DELETE exigent users:write.
+  router.get('/users', requireErpPermission(db, { module: 'users', action: 'read', resourceType: 'admin_user', permissive: false }), (_req, res) => {
     res.json({ success: true, data: db.all<any>('SELECT id,email,name,role,active,last_login_at,created_at,updated_at FROM admin_users ORDER BY created_at') });
   });
 
