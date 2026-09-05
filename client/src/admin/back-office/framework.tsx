@@ -167,6 +167,17 @@ export const RESOURCE_ACTION_LABELS: Record<string, string> = {
 
 const BackOfficeContext = createContext<BackOfficeStore | null>(null);
 
+/**
+ * Deep link de section. `?section=…` reste la forme écrite par l'application ; la forme
+ * `/admin/<section>` est acceptée en lecture (liens sortants, e-mails, favoris anciens) : elle
+ * n'ajoute aucune route, elle ne fait qu'initialiser la même variable d'écran. La validation
+ * « cette section est-elle permise ? » reste faite par la navigation serveur, pas ici.
+ */
+export function sectionFromAdminPath(pathname: string): string | null {
+  const match = /^\/admin\/([a-z0-9][a-z0-9-]{0,40})$/.exec(pathname || '');
+  return match ? match[1] : null;
+}
+
 export const BACK_OFFICE_FRAMEWORK_VERSION = 'p2.0';
 
 /**

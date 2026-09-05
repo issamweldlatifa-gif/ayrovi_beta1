@@ -20,7 +20,7 @@ import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory'
 import { labels } from './resource-ui';
 import { NotificationsBell } from './NotificationsBell';
 import { CommandPalette, GlobalSearch } from './BackOfficeSearch';
-import { useBackOffice, type BackOfficeNavItem } from './framework';
+import { sectionFromAdminPath, useBackOffice, type BackOfficeNavItem } from './framework';
 import './back-office.css';
 
 export type BackOfficeRenderContext = {
@@ -56,7 +56,10 @@ export const BackOfficeShell: React.FC<{
   // Garde d'environnement : le rendu serveur (tests, pré-rendu) n'a pas d'URL — la coquille
   // démarre alors sur le tableau de bord, sans jamais lever d'exception.
   const initialParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
-  const [section, setSection] = useState(initialParams.get('section') || 'dashboard');
+  const initialSection = initialParams.get('section')
+    || (typeof window === 'undefined' ? null : sectionFromAdminPath(window.location.pathname))
+    || 'dashboard';
+  const [section, setSection] = useState(initialSection);
   const [requestedReview, setRequestedReview] = useState(initialParams.get('request') || '');
   const [pendingMagazineDraft, setPendingMagazineDraft] = useState('');
   const [domain, setDomain] = useState<string>('ALL');
@@ -82,7 +85,7 @@ export const BackOfficeShell: React.FC<{
   useEffect(() => {
     const onPop = () => {
       const params = new URLSearchParams(location.search);
-      setSection(params.get('section') || 'dashboard');
+      setSection(params.get('section') || sectionFromAdminPath(location.pathname) || 'dashboard');
       setRequestedReview(params.get('request') || '');
     };
     addEventListener('popstate', onPop);

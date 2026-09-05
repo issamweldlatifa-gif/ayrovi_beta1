@@ -90,15 +90,16 @@ import { BackOfficeShell } from '../client/src/admin/back-office/BackOfficeShell
 import { CommandPalette, buildPaletteEntries } from '../client/src/admin/back-office/BackOfficeSearch';
 import { ResourceTableView, buildColumns, fieldDefinitionsFor, renderCell, AuditTrailPanel } from '../client/src/admin/back-office/ResourceWorkspace';
 import { DataTable } from '../client/src/admin/components';
+import { sectionFromAdminPath } from '../client/src/admin/back-office/framework';
 
 /**
  * `window` n'existe pas dans l'environnement node des tests : on le simule juste assez pour
  * vérifier la lecture du deep-link, sans tromper le composant sur sa disponibilité réelle.
 */
-function withLocation<T>(search: string, run: () => T): T {
+function withLocation<T>(search: string, run: () => T, pathname = '/admin'): T {
   const previous = (globalThis as any).window;
   (globalThis as any).window = {
-    location: { search }, addEventListener() {}, removeEventListener() {},
+    location: { search, pathname }, addEventListener() {}, removeEventListener() {},
     localStorage: { getItem: () => null, setItem() {} }, setTimeout: () => 0, clearTimeout() {}, dispatchEvent: () => true,
   };
   try { return run(); } finally {
@@ -153,6 +154,28 @@ describe('BackOfficeShell — navigation pilotée par le registre', () => {
       expect(seen.can('content:write')).toBe(true);
       expect(seen.can('settings:write')).toBe(false);
     });
+  });
+
+  it('accepte la forme /admin/<section> sans ajouter aucune route', () => {
+    expect(sectionFromAdminPath('/admin/products')).toBe('products');
+    expect(sectionFromAdminPath('/admin/orders')).toBe('orders');
+    expect(sectionFromAdminPath('/admin')).toBeNull();
+    expect(sectionFromAdminPath('/admin/news/draft-1')).toBeNull();
+    expect(sectionFromAdminPath('/admin/../etc/passwd')).toBeNull();
+    expect(sectionFromAdminPath('/admin/Produits')).toBeNull();
+    // la query garde la priorité : c'est la forme écrite par l'application
+    const seen = withLocation('?section=users', () => {
+      let ctx: any = null;
+      renderShell((value) => { ctx = value; return <div>page</div>; });
+      return ctx;
+    }, '/admin/products');
+    expect(seen.section).toBe('users');
+    const fromPath = withLocation('', () => {
+      let ctx: any = null;
+      renderShell((value) => { ctx = value; return <div>page</div>; });
+      return ctx;
+    }, '/admin/products');
+    expect(fromPath.section).toBe('products');
   });
 
   it('signale la ressource legacy par son maître canonique sans retirer l’écran', () => {
