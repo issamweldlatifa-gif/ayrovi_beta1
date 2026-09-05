@@ -233,19 +233,18 @@ Six commits de code logiques (service → câblage → tests → UI → correcti
 docs), aucun mélange de sujets non liés.
 
 ```
-$ git push origin main      # backend + tests
-To github.com:…/ayrovi_beta1.git   89a0ac3..fde4207  main -> main
-$ git push origin main      # UI + correctif d’index + inventaire + rapport
-To github.com:…/ayrovi_beta1.git   fde4207..d73420e  main -> main
-$ git push origin main      # validations d’arbre neuf
-To github.com:…/ayrovi_beta1.git   d73420e..4d62337  main -> main
-$ git push origin main      # derniers ajustements du rapport
-To github.com:…/ayrovi_beta1.git   120d14b..62cfbba  main -> main
-$ git rev-list --left-right --count origin/main...main
-0   0
 $ git log --oneline 89a0ac3..HEAD | wc -l
-8        # 6 de code/tests + 2 de documents, tous poussés
+12          # 6 commits de code/tests + 6 de documents, dont celui qui clôture ce décompte
+$ git rev-list --left-right --count origin/main...main
+0   0       # rien en local : chaque lot vert a été poussé immédiatement
+$ git ls-remote origin main
+f0bf743…    refs/heads/main     # puis le commit de clôture, vérifié après poussée
 ```
+
+Le détail des poussées, dans l'ordre : `89a0ac3..fde4207` (backend + suite catalogue),
+`fde4207..d73420e` (écran d'admin, durcissement de l'index d'unicité, inventaire + rapport),
+`d73420e..4d62337`, `120d14b..62cfbba`, `62cfbba..f0bf743`, puis le commit de clôture de ce
+rapport — six poussées, aucune jamais annoncée sans la sortie de `git push` sous les yeux.
 
 Rien n'est resté local : chaque lot vert a été poussé avant le suivant. Déploiement : la mise à
 jour Render reste une action humaine — **je ne déclare jamais un déploiement** que je n'ai pas vu
