@@ -432,6 +432,36 @@ describe('catalogue foundation (P2.1)', () => {
   });
 
   describe('permissions as revocable data', () => {
+    test('the seed writes exactly the catalogue rows — two roles, five actions, six resources', () => {
+      const rows = db.all<{ role: string; action: string; resource_type: string, origin: string }>(
+        `SELECT role, action, resource_type, origin FROM erp_role_permissions WHERE module_key='catalog'`);
+      // 2 rôles × 5 actions × 6 ressources = 60 lignes explicites, plus les 10 lignes
+      // « * » que le miroir legacy de P1 écrivait déjà pour le module catalog. Personne
+      // d'autre ne reçoit de droit catalogue dans cette phase: redistribuer les privilèges
+      // est une décision produit, pas un effet de bord du code.
+      expect(rows.length).toBe(70);
+      const explicit = rows.filter((row) => row.resource_type !== '*');
+      const wildcard = rows.filter((row) => row.resource_type === '*');
+      expect(explicit.length).toBe(60);
+      // 1 ligne pour ADMIN + 9 pour SUPER_ADMIN: le miroir legacy de P1, pas le catalogue
+      expect(wildcard.length).toBe(10);
+      expect(new Set(explicit.map((row) => row.role))).toEqual(new Set(['ADMIN', 'CONTENT_MANAGER']));
+      expect(new Set(explicit.map((row) => row.action))).toEqual(new Set(['read', 'create', 'update', 'delete', 'approve']));
+      expect(new Set(explicit.map((row) => row.resource_type)))
+        .toEqual(new Set(['product', 'variant', 'category', 'brand', 'product_media', 'product_attribute']));
+      expect(new Set(rows.map((row) => row.origin))).toEqual(new Set(['SEED']));
+      // aucune dérive de privilège: ORDER_MANAGER ne reçoit rien, ni explicite ni wildcard
+      expect(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM erp_role_permissions WHERE module_key='catalog' AND role='ORDER_MANAGER'`)!.n).toBe(0);
+      // SUPER_ADMIN is granted by the engine rule, not by a row it could never revoke
+      expect(canCatalogue(db, 'SUPER_ADMIN', 'approve', 'product').allowed).toBe(true);
+      expect(canCatalogue(db, 'SUPER_ADMIN', 'delete', 'variant').allowed).toBe(true);
+      expect(canCatalogue(db, 'ORDER_MANAGER', 'read', 'product').allowed).toBe(false);
+      // 199 = 139 héritées de P1 + 60 semées par le catalogue. Exact, et non « au moins »:
+      // un droit accordé par erreur à un autre rôle doit faire rougir cette assertion.
+      const total = Number(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM erp_role_permissions`)!.n);
+      expect(total).toBe(199);
+    });
+
     test('CONTENT_MANAGER keeps parity with the legacy screen (create allowed)', async () => {
       const response = await content.agent.post('/api/admin/catalogue/products').set('x-csrf-token', content.csrf)
         .send({ name: `Produit rédacteur ${suffix}`, source_platform: 'OTHER', currency: 'TND', original_price: 10 });
