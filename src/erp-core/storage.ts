@@ -42,11 +42,30 @@ export function dataDirectory(): string {
   return path.dirname(path.resolve(dbPath));
 }
 
+/**
+ * Create a private directory AND assert its mode.
+ *
+ * `mkdir(mode)` only applies the mode to directories it actually creates: when the
+ * target (or a parent) already exists — from an earlier process, a deploy script, or
+ * another module — the mode of whoever got there first wins. A tree that holds
+ * invoices, transfer proofs and employee documents must not inherit an accident, so
+ * the mode is repaired on every use. Idempotent and cheap (one stat, a chmod only
+ * when the mode drifted). On a read-only volume the chmod is skipped and the URL
+ * guard in src/server.ts stays the primary control.
+ */
+function ensurePrivateDirectory(dir: string): string {
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  try {
+    if ((fs.statSync(dir).mode & 0o777) !== 0o700) fs.chmodSync(dir, 0o700);
+  } catch {
+    /* read-only or restricted volume: never fail a request over local permissions */
+  }
+  return dir;
+}
+
 function privateDocumentsRootPath(): string {
   const data = dataDirectory();
-  const root = path.join(data, 'private', 'documents');
-  fs.mkdirSync(root, { recursive: true, mode: 0o700 });
-  return root;
+  return ensurePrivateDirectory(path.join(data, 'private', 'documents'));
 }
 
 /** Private document kinds. A new kind needs no other change than this list. */
@@ -60,8 +79,7 @@ export function privateDocumentsRoot(): string {
 export function privateDirectory(kind: PrivateDocumentKind): string {
   const root = privateDocumentsRoot();
   const dir = path.join(root, kind);
-  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
-  return dir;
+  return ensurePrivateDirectory(dir);
 }
 
 /** True when an absolute path lives inside the private documents root or a legacy private dir. */

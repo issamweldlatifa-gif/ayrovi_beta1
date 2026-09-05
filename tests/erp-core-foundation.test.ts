@@ -24,7 +24,9 @@ const privateRoot = path.join(dataDirectory(), 'private', 'documents');
 const createdFiles: string[] = [];
 
 function writeFixture(absolutePath: string, contents = 'fixture') {
-  fs.mkdirSync(path.dirname(absolutePath), { recursive: true });
+  // the same mode the production writer uses, so a fixture can never leave a private
+  // tree group-readable while the run lasts (test files run in parallel workers)
+  fs.mkdirSync(path.dirname(absolutePath), { recursive: true, mode: 0o700 });
   fs.writeFileSync(absolutePath, contents);
   createdFiles.push(absolutePath);
   return absolutePath;
