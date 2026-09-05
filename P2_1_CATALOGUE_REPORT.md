@@ -48,10 +48,10 @@ src/catalogue/          (12 fichiers, 2 455 lignes, tous nouveaux)
   media.ts        références média publiques seulement, primaire miroité dans products.image
   attributes.ts   attributs déclarés + valeurs (produit ou variante), validés par type
   routes.ts       27 routes /api/admin/catalogue/*, erreurs contrôlées 400/403/404/409
-src/admin/routes.ts     +2 lignes : montage `router.use('/catalogue', createCatalogueRouter(db))`
-src/db/database.ts      +2 lignes : `initCatalogueSchema()` (try/catch, additif) dans le constructeur
-src/erp-core/modules.ts     registre : `catalog` → `active`, `apiPrefix:'/catalogue'`, +4 clés de ressources
-src/erp-core/permissions.ts MODULE_RESOURCES.catalog += variant/category/product_media/product_attribute
+src/admin/routes.ts     +4 : import + montage `router.use('/catalogue', createCatalogueRouter(db))`
+src/db/database.ts      +17 : appel `initCatalogueSchema()` dans le constructeur (try/catch) + son commentaire
+src/erp-core/modules.ts     +6/−1 : registre `catalog` → `active`, `apiPrefix:'/catalogue'`, 4 entrées RESOURCE_TO_MODULE
+src/erp-core/permissions.ts +1/−1 : MODULE_RESOURCES.catalog += variant/category/product_media/product_attribute
 client/src/admin/CataloguePages.tsx   641 lignes : trois écrans (Produits / Catégories / Marques)
 client/src/admin/AdminApp.tsx         +8 : groupe de nav « Catalogue » + trois branches de rendu
 client/src/admin/admin.css            +18 : six classes neuves, uniquement additive
@@ -213,7 +213,8 @@ fde4207  test(catalogue): 46 foundation tests for P2.1 …
 c28ea4c  feat(admin-ui): catalogue screens for products, categories and brands (P2.1)
 b0f6bbc  fix(catalogue): enforce slug identity case-insensitively in the database
 e22c0e5  test(catalogue): pin the seeded permission surface (60 explicit rows, zero drift)
-+ le présent rapport et P2_1_CATALOGUE_INVENTORY.md (commit docs)
+d73420e  docs(catalogue): P2.1 inspection inventory and phase report
+4d62337  docs(catalogue): fresh-worktree validation and the exact pushed ranges
 ```
 
 Six commits de code logiques (service → câblage → tests → UI → correctif trouvé par test →
