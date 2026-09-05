@@ -25,6 +25,21 @@ Note d'honnêteté : une mesure intérimaire affichait « 41 fichiers / 352 test
 
 ---
 
+## 0. Livraison git (exécutée le 2026-09-05)
+
+| | |
+|---|---|
+| Commit | `d2a7c26` — `feat(erp-core): P0 file privacy + P1 ERP foundation (audit, identity, permissions, events, sequences)` |
+| Contenu | 25 fichiers, **+4 350 / −52** (8 fichiers existants modifiés, le reste en additif) |
+| Poussé sur | `https://github.com/issamweldlatifa-gif/ayrovi_beta1` → `main` : `f4c96a1..d2a7c26` |
+| Vérification | `git ls-remote origin refs/heads/main` → `d2a7c26` · `git status -sb` → aucune divergence · `git status --porcelain` → vide |
+| Hygiène | `.gitignore` enrichi de `data/private/` : 36 images de justificatifs générées par les tests étaient sur le point d'entrer dans l'historique |
+| Secret | le token n'est écrit nulle part (ni `.git/config`, ni référentiels, ni fichier du dépôt) — helper d'authentification jetable, puis révoqué par le propriétaire |
+
+**Conséquence d'exploitation :** `render.yaml` déclenche un déploiement sur `main`. La version déployée applique donc la garde `/uploads` (403 sur les documents privés). À confirmer dans le journal Render ; en cas de besoin, `GET /uploads/invoices/probe.pdf` doit répondre 403 avec `PRIVATE_DOCUMENT_NOT_PUBLIC`.
+
+---
+
 ## 1. Point de départ — l'état exact du code (rappel vérifié)
 
 | Constat de l'audit | Confirmé dans le code par | Ce qui a changé maintenant |
