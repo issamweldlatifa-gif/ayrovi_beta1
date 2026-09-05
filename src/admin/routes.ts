@@ -40,6 +40,7 @@ import {
 } from './auth';
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { requireErpPermission } from '../erp-core/permissions';
+import { createCatalogueRouter } from '../catalogue/routes';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
 import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
 import { getAyrovixStats } from '../ayrovix/events';
@@ -404,6 +405,9 @@ export function createAdminRouter(
   router.use('/arrival-ingestion', createArrivalIngestionRouter(db, arrivalIngestionDependencies));
   // ERP Core (P1): modules registry, employees, organization, permissions, audit, events.
   router.use('/core', createErpCoreRouter(db));
+  // Catalogue (P2.1): produits, variantes/SKU, catégories, marques, médias, attributs.
+  // Un nouveau préfixe — aucune route existante n'est déplacée ni renommée.
+  router.use('/catalogue', createCatalogueRouter(db));
 
 
   /* ==================== TRUST BAR — إدارة كاملة للمحتوى، التصميم محكوم بالهوية ==================== */

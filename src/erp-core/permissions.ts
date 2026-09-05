@@ -74,7 +74,7 @@ const MODULE_RESOURCES: Record<string, string[]> = {
   sales: ['order', 'delivery'],
   finance: ['payment', 'payment_transaction', 'payment_proof', 'invoice', 'expense'],
   customers: ['customer', 'customer_account'],
-  catalog: ['product', 'brand'],
+  catalog: ['product', 'brand', 'variant', 'category', 'media', 'product_media', 'product_attribute'],
   cms: ['publication', 'reel', 'story_publisher', 'story', 'news', 'hero_visual', 'media', 'setting'],
   users: ['admin_user', 'employee'],
   ai: ['ai_knowledge', 'ai_suggestion'],

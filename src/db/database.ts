@@ -6,6 +6,7 @@ import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
+import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -204,6 +205,7 @@ export class QatafoDatabase {
     this.backupBeforeArrivalMultistoreMigration(resolvedPath, existingDatabase);
     this.initSchema();
     this.initErpCoreSchema();
+    this.initCatalogueSchema();
     this.seedCoreData();
   }
 
@@ -216,6 +218,21 @@ export class QatafoDatabase {
    * so any consumer of QatafoDatabase — including tests and background jobs —
    * finds the same schema.
    */
+  /**
+   * Catalogue foundation (P2.1): variants/SKU, category tree, media references, declared
+   * attributes, plus the additive columns on `products`/`brands`. Same contract as the ERP
+   * core block above: additive DDL only, idempotent, and a failure must never stop the
+   * store from booting — it is logged and stays visible in the environment screen.
+   */
+  private initCatalogueSchema(): void {
+    try {
+      ensureCatalogueSchema(this);
+    } catch (error: any) {
+      console.error('[catalogue] schema initialization failed:', error?.message || error);
+      console.error('[catalogue] variants, categories, media and attributes are unavailable until this is fixed');
+    }
+  }
+
   private initErpCoreSchema(): void {
     try {
       ensureErpCoreSchema(this);
