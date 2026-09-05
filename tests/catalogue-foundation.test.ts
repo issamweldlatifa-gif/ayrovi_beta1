@@ -560,6 +560,26 @@ describe('catalogue foundation (P2.1)', () => {
       }
     });
 
+    test('slug uniqueness is case-insensitive in the database, not by convention', () => {
+      // The API lowercases every slug, so a case variant can only come from another writer
+      // (a script, a future import). The answer must still be a refusal — never two products
+      // fighting for one address — so the partial unique index carries COLLATE NOCASE.
+      for (const name of ['idx_products_slug_unique', 'idx_brands_slug_unique', 'idx_catalogue_categories_slug_unique', 'idx_products_product_code_unique']) {
+        const row = db.get<{ sql: string }>(`SELECT sql FROM sqlite_master WHERE type='index' AND name=?`, name);
+        expect(String(row?.sql), name).toMatch(/COLLATE NOCASE/i);
+      }
+      const now = new Date().toISOString();
+      const slug = `p21-case-${suffix}`;
+      db.run(`INSERT INTO products (id,name,slug,status,source_platform,currency,created_at,updated_at) VALUES ('cat_case_z','Cas Z',?,'ACTIVE','OTHER','TND',?,?)`, slug, now, now);
+      let refused = 'AUCUNE ERREUR — deux slugs identiques à la casse près coexistent';
+      try {
+        db.run(`INSERT INTO products (id,name,slug,status,source_platform,currency,created_at,updated_at) VALUES ('cat_case_w','Cas W',?,'ACTIVE','OTHER','TND',?,?)`, slug.toUpperCase(), now, now);
+      } catch (error: any) { refused = String(error?.message || error); }
+      db.run(`DELETE FROM products WHERE id IN ('cat_case_z','cat_case_w')`);
+      expect(refused).toMatch(/UNIQUE constraint failed/i);
+      expect(refused).toContain('products.slug');
+    });
+
     test('repeated initialization is a no-op, not an error and not a duplicate', () => {
       const measure = () => ({
         tables: db.all<any>(`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'catalogue_%'`).length,

@@ -138,9 +138,11 @@ export function explicitSlug(value: unknown): Check<string | null > {
 type SlugTable = 'products' | 'catalogue_categories' | 'brands';
 
 function slugTaken(db: QatafoDatabase, table: SlugTable, candidate: string, excludeId: string | null): boolean {
+  // COLLATE NOCASE, exactly like the unique index in bootstrap.ts: the pre-check and the
+  // database must refuse the same set of values, or a race would answer 500 instead of 409.
   const row = excludeId
-    ? db.get<{ id: string }>(`SELECT id FROM ${table} WHERE slug=? AND id<>?`, candidate, excludeId)
-    : db.get<{ id: string }>(`SELECT id FROM ${table} WHERE slug=?`, candidate);
+    ? db.get<{ id: string }>(`SELECT id FROM ${table} WHERE slug COLLATE NOCASE = ? AND id<>?`, candidate, excludeId)
+    : db.get<{ id: string }>(`SELECT id FROM ${table} WHERE slug COLLATE NOCASE = ?`, candidate);
   return Boolean(row);
 }
 

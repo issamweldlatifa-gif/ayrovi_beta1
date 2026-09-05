@@ -124,7 +124,7 @@ function hasColumn(db: QatafoDatabase, table: string, column: string): boolean {
  * from the router: whoever holds the database gets the same catalogue shape, which is
  * what makes "fresh DB / existing DB / repeated init" land in the same place.
  */
-export function ensureCatalogueSchema(db: QatafoDatabase): void {
+export function ensureCatalogueSchema(db: QatafoDatabase): CatalogueIndexReport {
   db.runSchema(CATALOGUE_SCHEMA_SQL);
   for (const [column, ddl] of PRODUCT_COLUMN_ADDITIONS) {
     if (hasColumn(db, 'products', column)) continue;
@@ -138,30 +138,82 @@ export function ensureCatalogueSchema(db: QatafoDatabase): void {
   // partial (`WHERE … IS NOT NULL`) so legacy rows without a code/slug cannot collide
   // with each other before they are ever catalogued.
   db.runSchema(`
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_products_product_code_unique ON products(product_code) WHERE product_code IS NOT NULL;
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug_unique ON products(slug) WHERE slug IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_products_product_code_unique ON products(product_code COLLATE NOCASE) WHERE product_code IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_products_slug_unique ON products(slug COLLATE NOCASE) WHERE slug IS NOT NULL;
     CREATE INDEX IF NOT EXISTS idx_products_category ON products(category_id, status);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_brands_slug_unique ON brands(slug) WHERE slug IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_brands_slug_unique ON brands(slug COLLATE NOCASE) WHERE slug IS NOT NULL;
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_catalogue_categories_slug_unique ON catalogue_categories(slug COLLATE NOCASE);
   `);
+  const indexes = rebuildSlugIndexesCaseInsensitive(db);
   ensureSequencesSchema(db);
   const now = new Date().toISOString();
   for (const sequence of CATALOGUE_SEQUENCES) {
     db.run(`INSERT OR IGNORE INTO erp_sequences (sequence_key,prefix,year_scoped,next_value,padding,description,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?,?)`, sequence.key, sequence.prefix, sequence.yearScoped, 1, sequence.padding, sequence.description, now, now);
   }
+  return indexes;
+}
+
+/**
+ * Slug identity is URL identity, and URLs do not care about case: `Baskets` and `baskets`
+ * would be two products fighting for one address. The catalogue API only ever writes
+ * lowercase slugs (slugify / explicitSlug), so this changes no user-facing behaviour — it
+ * is the database refusing what another writer could still do.
+ *
+ * Idempotent and data-safe: an index is a lookup structure, never a row. A previously
+ * created index whose definition lacks NOCASE is dropped and rebuilt over the same column;
+ * nothing here reads, rewrites or removes catalogue data.
+ */
+const CASE_INSENSITIVE_SLUG_INDEXES: Array<[string, string]> = [
+  ['idx_products_product_code_unique', 'CREATE UNIQUE INDEX idx_products_product_code_unique ON products(product_code COLLATE NOCASE) WHERE product_code IS NOT NULL'],
+  ['idx_products_slug_unique', 'CREATE UNIQUE INDEX idx_products_slug_unique ON products(slug COLLATE NOCASE) WHERE slug IS NOT NULL'],
+  ['idx_brands_slug_unique', 'CREATE UNIQUE INDEX idx_brands_slug_unique ON brands(slug COLLATE NOCASE) WHERE slug IS NOT NULL'],
+  ['idx_catalogue_categories_slug_unique', 'CREATE UNIQUE INDEX idx_catalogue_categories_slug_unique ON catalogue_categories(slug COLLATE NOCASE)'],
+];
+
+export interface CatalogueIndexReport {
+  rebuilt: number;
+  warnings: string[];
+}
+
+function rebuildSlugIndexesCaseInsensitive(db: QatafoDatabase): CatalogueIndexReport {
+  const report: CatalogueIndexReport = { rebuilt: 0, warnings: [] };
+  for (const [name, ddl] of CASE_INSENSITIVE_SLUG_INDEXES) {
+    const existing = db.get<{ sql: string }>(`SELECT sql FROM sqlite_master WHERE type='index' AND name=?`, name);
+    if (!existing) continue; // absent → the CREATE above will make it
+    const previous = String(existing.sql || '');
+    if (/COLLATE NOCASE/i.test(previous)) continue; // already strong enough
+    db.run(`DROP INDEX IF EXISTS ${name}`);
+    try {
+      db.run(ddl);
+      report.rebuilt += 1;
+    } catch (error: any) {
+      // If the data itself refuses the stricter index (two rows differing only by case),
+      // the previous guarantee is restored rather than left dropped, and the incident is
+      // reported through /catalogue/health instead of silently weakening the constraint.
+      try { db.run(previous); } catch { /* keep the warning either way */ }
+      report.warnings.push(`${name}: ${String(error?.message || error).slice(0, 120)}`);
+    }
+  }
+  return report;
 }
 
 export interface CatalogueBootReport {
   grantsSeeded: number;
   sequencesReady: number;
+  slugIndexesCaseInsensitive: number;
+  indexWarnings: string[];
 }
 
 /** Grants are data; a boot never fabricates catalogue content. */
 export function bootstrapCatalogue(db: QatafoDatabase): CatalogueBootReport {
-  ensureCatalogueSchema(db);
+  const indexes = ensureCatalogueSchema(db);
   const { seeded } = seedCataloguePermissions(db);
   const sequencesReady = db.all<{ n: number }>(
     `SELECT COUNT(*) AS n FROM erp_sequences WHERE sequence_key IN ('product_code','variant_sku')`,
   )[0]?.n ?? 0;
-  return { grantsSeeded: seeded, sequencesReady: Number(sequencesReady) };
+  return {
+    grantsSeeded: seeded, sequencesReady: Number(sequencesReady),
+    slugIndexesCaseInsensitive: indexes.rebuilt, indexWarnings: indexes.warnings,
+  };
 }
