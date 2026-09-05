@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import multer from 'multer';
 import { Request, Router } from 'express';
 import { QatafoDatabase } from '../db/database';
-import { uploadsDir, invoiceAbsolutePath } from '../services/invoice';
+import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '../services/invoice';
+import { servePrivateDocument } from '../documents/fileAccess';
 import { sendMail } from '../services/mailer';
 import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
 import { normalizeTunisianPhone } from './phone';
@@ -1230,7 +1231,8 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     if (!signature) return res.status(415).json({ success: false, error: 'Format non supporté : JPG, PNG ou PDF uniquement.' });
 
     const filename = `${order.id}-${Date.now()}-${randomInt(1000, 9999)}.${signature.ext}`;
-    const absolute = path.join(uploadsDir('deposits'), filename);
+    // P0: proofs are written under the ERP private root (never reachable by URL).
+    const absolute = path.join(depositWriteDir(), filename);
     fs.writeFileSync(absolute, file.buffer);
     try {
       const updated = db.attachDepositProof(order.id, {
@@ -1264,14 +1266,16 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     if (!order || order.account_id !== account.id) return res.status(404).json({ success: false, error: 'Commande introuvable.' });
     const invoice = db.get<any>("SELECT * FROM invoices WHERE order_id=? AND account_id=? AND status='ISSUED'", order.id, account.id);
     if (!invoice?.invoice_number || !invoice?.file_path) return res.status(404).json({ success: false, error: 'Facture non émise ou fichier pas encore disponible.' });
-    const absolute = invoiceAbsolutePath(String(invoice.invoice_number));
-    if (path.resolve(invoice.file_path) !== path.resolve(absolute) || !fs.existsSync(absolute)) {
-      return res.status(404).json({ success: false, error: 'Fichier de facture indisponible.' });
-    }
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf"`);
-    res.setHeader('Cache-Control', 'private, no-store');
-    fs.createReadStream(absolute).pipe(res);
+    // P0: the path comes from the invoice row (never from the URL) and must sit inside a
+    // private invoice root. The access is recorded (DOWNLOAD / ACCESS_DENIED) in the ERP audit.
+    const target = invoiceAbsolutePath(String(invoice.invoice_number));
+    const served = servePrivateDocument(db, req, res, {
+      filePath: target, allowedRoots: invoiceRoots(), module: 'INVOICES',
+      resourceType: 'invoice', resourceId: invoice.id, contentType: 'application/pdf',
+      filename: String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '') + '.pdf',
+    });
+    if (served.served) return;
+    return res.status(served.status).json({ success: false, code: served.code, error: served.message });
   });
 
   router.get('/account/favorites', requireCustomer(db), (req, res) => {

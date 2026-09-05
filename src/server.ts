@@ -21,6 +21,9 @@ import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
 import { cardGatewayAvailable } from './services/paymentGateway';
 import { getAyroviAiCore } from './ai-core/core';
+import { ERP_MODULES } from './erp-core/modules';
+import { bootstrapErpCore } from './erp-core/bootstrap';
+import { isPublicUploadPath } from './erp-core/storage';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -148,6 +151,12 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
+// ERP Core foundation (P1): sequences, employees, audit columns, permission grants,
+// event log, notification payload columns. Idempotent, additive only, never drops anything.
+const erpCoreBoot = bootstrapErpCore(db);
+if (process.env.NODE_ENV !== 'test') {
+  console.info(`[erp-core] employés créés=${erpCoreBoot.employeesCreated} grants miroir=${erpCoreBoot.permissionGrantsSeeded} modules=${ERP_MODULES.length}`);
+}
 const scraper = new SmartLinkScraper();
 const visionExtractor = new VisualProductExtractor();
 
@@ -163,12 +172,24 @@ app.use(express.static(publicDir, {
   },
 }));
 
-// Uploads static directory
+// Uploads static directory — P0: PUBLIC MEDIA ONLY.
+// `data/uploads` used to be served whole, which also exposed `<uploads>/invoices/*.pdf`
+// (file name = invoice number) and `<uploads>/deposits/*` (customer transfer proofs).
+// Public media keeps its exact URL shape; private documents are readable only through
+// authorized endpoints (see src/documents/fileAccess.ts).
 const uploadsDir = path.resolve(process.cwd(), 'data/uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir, { maxAge: '7d', immutable: true }));
+const uploadsStatic = express.static(uploadsDir, { maxAge: '7d', immutable: true });
+app.use('/uploads', (req, res, next) => {
+  const relative = decodeURIComponent(String(req.path || '').replace(/^\/+/, ''));
+  // Directory traversal and non-public trees never reach the static handler.
+  if (!relative || relative.includes('..') || !isPublicUploadPath(path.join(uploadsDir, relative))) {
+    return res.status(403).json({ success: false, code: 'PRIVATE_DOCUMENT_NOT_PUBLIC', error: 'Ce document n’est pas accessible publiquement.' });
+  }
+  return uploadsStatic(req, res, next);
+});
 
 // API Routes
 app.use('/api', (_req, res, next) => {
@@ -193,6 +214,8 @@ app.get('/api/health', (_req, res) => {
     framework: 'React 19 + Vite + TypeScript + Express',
   });
 });
+// Liveness: le processus HTTP répond. Readiness: SQLite est réellement lisible;
+// les fournisseurs externes restent des capacités optionnelles clairement signalées.
 app.get('/api/ready', (_req, res) => {
   try {
     db.get('SELECT 1 AS ready');

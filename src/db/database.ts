@@ -5,6 +5,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
+import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -202,7 +203,28 @@ export class QatafoDatabase {
     this.db.pragma('busy_timeout = 5000');
     this.backupBeforeArrivalMultistoreMigration(resolvedPath, existingDatabase);
     this.initSchema();
+    this.initErpCoreSchema();
     this.seedCoreData();
+  }
+
+  /**
+   * ERP Core foundation (module registry, single audit, identity, permissions,
+   * events, notifications, sequences). Additive DDL only — every statement is
+   * `CREATE TABLE IF NOT EXISTS`, `CREATE INDEX IF NOT EXISTS` or
+   * `ALTER TABLE ... ADD COLUMN` on a missing column, so an existing database is
+   * never rewritten, renamed or dropped. Required here (not only at server boot)
+   * so any consumer of QatafoDatabase — including tests and background jobs —
+   * finds the same schema.
+   */
+  private initErpCoreSchema(): void {
+    try {
+      ensureErpCoreSchema(this);
+    } catch (error: any) {
+      // A foundation-table problem must never prevent the store from booting;
+      // it is surfaced in the log and stays visible in /api/admin/core/environment.
+      console.error('[erp-core] schema initialization failed:', error?.message || error);
+      console.error('[erp-core] the foundation tables are incomplete — audit identity and permissions may be missing');
+    }
   }
 
   /**
@@ -2183,6 +2205,30 @@ export class QatafoDatabase {
 
   public run(sql: string, ...params: any[]): Database.RunResult {
     return this.db.prepare(sql).run(...params);
+  }
+
+  /**
+   * Multi-statement DDL helper. `run()` prepares a single statement, so a schema
+   * block written as `CREATE TABLE …; CREATE TABLE …;` would silently execute only
+   * its first statement. Additive foundations (ERP Core) use this instead.
+   * Every statement is expected to be idempotent (IF NOT EXISTS / ALTER on a
+   * missing column); a statement that fails is skipped, never thrown.
+   */
+  public runSchema(sql: string): number {
+    const statements = sql
+      .split(';')
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0 && !statement.startsWith('--'));
+    let applied = 0;
+    for (const statement of statements) {
+      try {
+        this.db.exec(`${statement};`);
+        applied += 1;
+      } catch {
+        // already applied (e.g. ALTER TABLE ADD COLUMN on an existing column) — idempotent by design
+      }
+    }
+    return applied;
   }
 
   public transaction<T>(work: () => T): T {

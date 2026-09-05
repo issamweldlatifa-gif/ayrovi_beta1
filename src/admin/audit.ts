@@ -1,7 +1,16 @@
-import { randomUUID } from 'node:crypto';
+/**
+ * AYROVI Administration — audit actor plumbing.
+ *
+ * The writer itself lives in `src/erp-core/audit.ts` (ONE audit system for the
+ * whole back office, including the CRM). This module keeps the API the 13
+ * arrival-ingestion services already call (`AdminAuditActor`,
+ * `auditActorFromRequest`, `recordAdminAudit`) and forwards to that writer, so
+ * no call site changed while every row now carries employee identity, resource
+ * type, request id and a field-level diff.
+ */
 import type { Request } from 'express';
 import type { QatafoDatabase } from '../db/database';
-import type { AdminIdentity } from './auth';
+import { writeAuditEvent, type ErpFieldChange } from '../erp-core/audit';
 
 export interface AdminAuditActor {
   id: string | null;
@@ -10,11 +19,21 @@ export interface AdminAuditActor {
 }
 
 export function auditActorFromRequest(req: Request): AdminAuditActor {
-  const actor = (req as Request & { admin?: AdminIdentity }).admin;
+  const actor = (req as Request & { admin?: { id?: string; name?: string } }).admin;
   return {
     id: actor?.id || null,
     name: actor?.name || 'Système',
     ipAddress: req.ip || null,
+  };
+}
+
+/** Request-scoped context the ERP audit writer needs (no extra DB read here). */
+export function auditContextFromAdminRequest(req: Request) {
+  const actor = (req as Request & { admin?: { id?: string } }).admin;
+  return {
+    requestId: (req as Request & { requestId?: string }).requestId ?? null,
+    sessionId: actor?.id ? String(actor.id).slice(0, 80) : null,
+    userAgent: (String(req.headers['user-agent'] || '').slice(0, 300) || null),
   };
 }
 
@@ -30,20 +49,16 @@ export function recordAdminAudit(
   entityId: string | null,
   oldValue: unknown,
   newValue: unknown,
+  extra?: { resourceType?: string; fieldChanges?: ErpFieldChange[]; context?: Parameters<typeof writeAuditEvent>[1]['context'] },
 ): string {
-  const id = `audit_${randomUUID()}`;
-  db.run(`INSERT INTO audit_logs
-    (id,user_id,user_name,action,module,entity_id,old_value,new_value,ip_address,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?)`,
-  id,
-  actor.id,
-  String(actor.name || 'Système').slice(0, 160),
-  String(action).slice(0, 100),
-  String(module).slice(0, 100),
-  entityId,
-  oldValue == null ? null : JSON.stringify(oldValue),
-  newValue == null ? null : JSON.stringify(newValue),
-  actor.ipAddress,
-  new Date().toISOString());
-  return id;
+  return writeAuditEvent(db, {
+    actor,
+    action,
+    module,
+    resource: { type: extra?.resourceType, id: entityId },
+    oldValues: oldValue,
+    newValues: newValue,
+    fieldChanges: extra?.fieldChanges,
+    context: extra?.context,
+  });
 }

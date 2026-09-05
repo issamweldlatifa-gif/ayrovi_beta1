@@ -19,7 +19,11 @@ import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
 import { ocrRecognize } from '../services/vision';
 import { discoveryAggregates, recordLensEvaluation } from '../assistant/learning';
 import { calculatePrice } from '../services/pricing';
-import { generateInvoicePdf, invoiceEmailHtml, uploadsDir } from '../services/invoice';
+import { generateInvoicePdf, invoiceEmailHtml, proofRoots } from '../services/invoice';
+import { writeAuditEvent, finalizeRequestAudit } from '../erp-core/audit';
+import { auditContextFromAdminRequest } from './audit';
+import { servePrivateDocument } from '../documents/fileAccess';
+import { createErpCoreRouter } from '../erp-core/routes';
 import { sendMail } from '../services/mailer';
 import {
   cleanupExpiredSessions,
@@ -267,11 +271,20 @@ function admin(req: Request) {
   return (req as any).admin as { id: string; name: string; role: AdminRole };
 }
 
+/**
+ * Thin wrapper over the ERP Core audit writer. The INSERT that used to live here
+ * (and its own `audit_${uuid}` id format) now exists in exactly one place, so
+ * back-office and CRM rows are comparable and carry the same columns.
+ * Signature and behaviour for callers are unchanged.
+ */
 function audit(db: QatafoDatabase, req: Request, action: string, module: string, entityId: string | null, oldValue: any, newValue: any) {
   const actor = admin(req);
-  db.run(`INSERT INTO audit_logs (id,user_id,user_name,action,module,entity_id,old_value,new_value,ip_address,created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?)`, `audit_${randomUUID()}`, actor?.id || null, actor?.name || 'Système', action, module, entityId,
-    oldValue == null ? null : JSON.stringify(oldValue), newValue == null ? null : JSON.stringify(newValue), req.ip || null, new Date().toISOString());
+  writeAuditEvent(db, {
+    actor: { id: actor?.id || null, name: actor?.name || 'Système', ipAddress: req.ip || null },
+    action, module, resource: { id: entityId },
+    oldValues: oldValue ?? null, newValues: newValue ?? null,
+    context: auditContextFromAdminRequest(req),
+  });
 }
 
 function addRelations(db: QatafoDatabase, resource: string, id: string, body: any) {
@@ -382,6 +395,8 @@ export function createAdminRouter(
   });
 
   router.use('/arrival-ingestion', createArrivalIngestionRouter(db, arrivalIngestionDependencies));
+  // ERP Core (P1): modules registry, employees, organization, permissions, audit, events.
+  router.use('/core', createErpCoreRouter(db));
 
 
   /* ==================== TRUST BAR — إدارة كاملة للمحتوى، التصميم محكوم بالهوية ==================== */
@@ -949,6 +964,7 @@ export function createAdminRouter(
       db.run(`INSERT INTO lens_lab_runs (id,image_hash,question,result_json,duration_ms,created_at) VALUES (?,?,?,?,?,?)`,
         id, hashImage(normalized.buffer), String(req.body?.question || '').slice(0, 300),
         JSON.stringify({ lens, ocr }).slice(0, 20000), durationMs, new Date().toISOString());
+      audit(db, req, 'ACCESS', 'LENS_LAB', id, null, { imageBytes: file.buffer.length, durationMs, question: String(req.body?.question || '').slice(0, 120) });
       res.json({ success: true, data: { id, lens, ocr, durationMs } });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error?.message || 'Analyse impossible.' });
@@ -981,6 +997,7 @@ export function createAdminRouter(
       actual: { price: detected, currency: actual?.pricing?.currency || null, confidence: actual?.confidence || 0 },
       errorType, note: String(req.body?.note || '').slice(0, 500), source: 'lab',
     });
+    audit(db, req, 'UPDATE', 'LENS_LAB', req.params.id, { errorType: null }, { errorType, note: String(req.body?.note || '').slice(0, 200) });
     res.json({ success: true, data: { errorType } });
   });
 
@@ -1002,6 +1019,7 @@ export function createAdminRouter(
     db.run(`INSERT INTO publications (id,title,subtitle,channel_id,image_url,remark,publish_at,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)`,
       id, title, String(req.body?.subtitle || '').slice(0, 150), channelId, imageUrl, String(req.body?.remark || ''),
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+    audit(db, req, 'CREATE', 'SOCIAL_PUBLICATIONS', id, null, db.get<any>('SELECT * FROM publications WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
   router.put('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
@@ -1013,10 +1031,13 @@ export function createAdminRouter(
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       new Date().toISOString(), req.params.id);
+    audit(db, req, 'UPDATE', 'SOCIAL_PUBLICATIONS', req.params.id, row, db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id));
     res.json({ success: true });
   });
   router.delete('/publications/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM publications WHERE id=?', req.params.id);
     db.run(`DELETE FROM publications WHERE id=?`, req.params.id);
+    audit(db, req, 'DELETE', 'SOCIAL_PUBLICATIONS', req.params.id, existing ? { title: existing.title, status: existing.status, channel: existing.channel_id } : null, null);
     res.json({ success: true });
   });
 
@@ -1034,6 +1055,7 @@ export function createAdminRouter(
       id, title, channelId, String(req.body?.description || ''), videoUrl,
       Number.isFinite(Number(req.body?.duration_seconds)) ? Math.max(0, Math.round(Number(req.body.duration_seconds))) : 0,
       req.body?.publish_at ? String(req.body.publish_at) : now, ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : 'brouillon', now, now);
+    audit(db, req, 'CREATE', 'SOCIAL_REELS', id, null, db.get<any>('SELECT * FROM reels WHERE id=?', id));
     res.status(201).json({ success: true, data: { id } });
   });
   router.put('/reels/:id', requireAdmin(db, 'content:write'), (req, res) => {
@@ -1046,10 +1068,13 @@ export function createAdminRouter(
       req.body?.publish_at ? String(req.body.publish_at) : row.publish_at,
       ['brouillon','publie','archive'].includes(req.body?.status) ? req.body.status : row.status,
       new Date().toISOString(), req.params.id);
+    audit(db, req, 'UPDATE', 'SOCIAL_REELS', req.params.id, row, db.get<any>('SELECT * FROM reels WHERE id=?', req.params.id));
     res.json({ success: true });
   });
   router.delete('/reels/:id', requireAdmin(db, 'content:write'), (req, res) => {
+    const existing = db.get<any>('SELECT * FROM reels WHERE id=?', req.params.id);
     db.run(`DELETE FROM reels WHERE id=?`, req.params.id);
+    audit(db, req, 'DELETE', 'SOCIAL_REELS', req.params.id, existing ? { title: existing.title, status: existing.status, channel: existing.channel_id } : null, null);
     res.json({ success: true });
   });
 
@@ -1066,6 +1091,7 @@ export function createAdminRouter(
     try {
       db.run(`INSERT INTO story_publishers (id,slug,name,subtitle,avatar,official,created_at,updated_at) VALUES (?,?,?,?,?,0,?,?)`,
         id, slug, name, String(req.body?.subtitle || '').slice(0, 60), String(req.body?.avatar || '').slice(0, 500), now, now);
+      audit(db, req, 'CREATE', 'SOCIAL_PUBLISHERS', id, null, { slug, name });
       res.status(201).json({ success: true, data: { id } });
     } catch { res.status(409).json({ success: false, error: 'Ce canal existe déjà.' }); }
   });
@@ -1077,6 +1103,7 @@ export function createAdminRouter(
     db.run(`UPDATE story_publishers SET name=?, subtitle=?, avatar=?, updated_at=? WHERE id=?`,
       name || existing.name, String(req.body?.subtitle ?? existing.subtitle).slice(0, 60),
       String(req.body?.avatar ?? existing.avatar).slice(0, 500), new Date().toISOString(), req.params.id);
+    audit(db, req, 'UPDATE', 'SOCIAL_PUBLISHERS', req.params.id, { name: existing.name, subtitle: existing.subtitle, avatar: existing.avatar }, { name: name || existing.name, subtitle: String(req.body?.subtitle ?? existing.subtitle).slice(0, 60) });
     res.json({ success: true });
   });
 
@@ -1229,6 +1256,7 @@ export function createAdminRouter(
     const now = new Date().toISOString();
     db.run(`INSERT INTO ai_knowledge (id,category,question,answer,keywords,priority,active,created_at,updated_at)
       VALUES (?,?,?,?,?,50,1,?,?)`, id, category, question, answer, JSON.stringify(question.toLowerCase().split(/\s+/).slice(0, 8)), now, now);
+    audit(db, req, 'APPROVE', 'AI_KNOWLEDGE', id, null, { category, question: question.slice(0, 160), approvedFromSuggestion: true });
     res.status(201).json({ success: true, data: { id } });
   });
 
@@ -1426,26 +1454,30 @@ export function createAdminRouter(
     if (!paymentStatuses.includes(status)) return res.status(400).json({ success: false, error: 'Statut de paiement invalide.' });
     const payment = db.get<any>('SELECT id FROM payments WHERE order_id=?', req.params.id);
     if (!payment) return res.status(404).json({ success: false, error: 'Paiement introuvable.' });
+    // Financial writes refused by policy are recorded: an ERP must know who tried,
+    // not only who succeeded.
+    audit(db, req, 'ACCESS_DENIED', 'PAYMENTS', payment.id, null, {
+      reason: 'MANUAL_PAYMENT_STATUS_FORBIDDEN', requestedStatus: String(req.body?.status || '').slice(0, 40),
+    });
     return res.status(409).json({ success: false, error: 'Le statut est géré uniquement par la vérification Konnect ou la révision du justificatif; aucun paiement/remboursement manuel n’est enregistré ici.' });
   });
 
   // ===== Manual-transfer proof files (admin only, path never exposed) =====
-  const sendProofFile = (proof: any, res: any) => {
-    if (!proof?.file_path || !fs.existsSync(String(proof.file_path))) return res.status(404).json({ success: false, error: 'Justificatif indisponible.' });
-    const absolute = path.resolve(String(proof.file_path));
-    const safeRoot = path.resolve(uploadsDir('deposits'));
-    if (!absolute.startsWith(safeRoot + path.sep)) return res.status(403).json({ success: false, error: 'Chemin de justificatif invalide.' });
-    res.setHeader('Content-Type', String(proof.mime_type || 'application/octet-stream'));
-    res.setHeader('Cache-Control', 'private, no-store');
-    return fs.createReadStream(absolute).pipe(res);
+  const sendProofFile = (req: Request, res: Response, proof: any) => {
+    const served = servePrivateDocument(db, req, res, {
+      filePath: proof?.file_path, allowedRoots: proofRoots(), module: 'PAYMENT_PROOFS',
+      resourceType: 'payment_proof', resourceId: proof?.id || null, contentType: proof?.mime_type,
+    });
+    if (served.served) return res;
+    return res.status(served.status).json({ success: false, code: served.code, error: served.message });
   };
   router.get('/orders/:id/deposit-proof', requireAdmin(db, 'commerce:read'), (req, res) => {
     const proof = db.get<any>('SELECT * FROM payment_proofs WHERE order_id=? ORDER BY submitted_at DESC LIMIT 1', req.params.id);
-    return sendProofFile(proof, res);
+    return sendProofFile(req, res, proof);
   });
   router.get('/payment-proofs/:id/file', requireAdmin(db, 'commerce:read'), (req, res) => {
     const proof = db.get<any>('SELECT * FROM payment_proofs WHERE id=?', req.params.id);
-    return sendProofFile(proof, res);
+    return sendProofFile(req, res, proof);
   });
 
   router.get('/payment-proofs/pending', requireAdmin(db, 'commerce:read'), (_req, res) => {
@@ -1921,13 +1953,15 @@ export function createAdminRouter(
     }
   });
 
-  router.get('/reports/orders.csv', requireAdmin(db, 'commerce:read'), (_req, res) => {
+  router.get('/reports/orders.csv', requireAdmin(db, 'commerce:read'), (req, res) => {
     const rows = db.all<any>(`SELECT o.order_number,c.name customer,c.phone,o.status,o.payment_status,o.payment_method,
       o.source,o.total_tnd,o.governorate,o.created_at FROM orders o JOIN customers c ON c.id=o.customer_id ORDER BY o.created_at DESC LIMIT 10000`);
     const headers = ['order_number','customer','phone','status','payment_status','payment_method','source','total_tnd','governorate','created_at'];
     const csv = [headers.join(','), ...rows.map((row) => headers.map((key) => csvCell(row[key])).join(','))].join('\n');
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="ayrovi-orders.csv"');
+    // Bulk export of customer data is a read that must leave a trace (report item A5).
+    audit(db, req, 'ACCESS', 'REPORTS', null, null, { resourceType: 'order_export', rows: rows.length, columns: headers.length });
     res.send(`\uFEFF${csv}`);
   });
 

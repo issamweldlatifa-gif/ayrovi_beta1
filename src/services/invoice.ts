@@ -1,31 +1,60 @@
 /**
  * AYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
- * - تُحفظ الفواتير في  <dataDir>/uploads/invoices/<invoice_number>.pdf
- *   (على Render: داخل القرص الدائم ayrovi-data).
+ * P0 (ERP foundation) — séparation Public Media / Private Documents :
+ *   • NEW invoices and transfer proofs are written under
+ *     `<dataDir>/private/documents/{invoices,payment-proofs}/` (mode 0700),
+ *     which is NOT served by the static `/uploads` route.
+ *   • `<dataDir>/uploads/{invoices,deposits}` stays readable for rows already
+ *     persisted with an absolute legacy path — no data move, no rewrite.
+ *   The invoice file path is always rebuilt from the DB `invoice_number`
+ *   (never from user input), same as before.
  * - لا يعتمد التوليد على Chromium، لذلك يعمل بنفس النتيجة محليًا وفي الإنتاج.
- * - المسار يُبنى دائمًا من رقم الفاتورة المخزَّن في قاعدة البيانات (لا مدخلات مستخدم).
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { QatafoDatabase } from '../db/database';
+import { privateDirectory, invoiceReadRoots, paymentProofReadRoots } from '../erp-core/storage';
 import { writeSimplePdf, PdfLine } from './simplePdf';
 
+/** Legacy public uploads root — still used for public media only. */
 function uploadsRoot(): string {
   const dbPath = process.env.DATABASE_PATH || './data/qatafo_cart.sqlite';
   return path.join(path.dirname(path.resolve(dbPath)), 'uploads');
 }
 
+/**
+ * @deprecated Private documents live under the ERP private root now. Kept as a
+ * READ path so legacy rows (absolute paths in orders.invoice_path /
+ * payment_proofs.file_path) stay reachable through authorized endpoints.
+ */
 export function uploadsDir(kind: 'invoices' | 'deposits'): string {
   const dir = path.join(uploadsRoot(), kind);
-  fs.mkdirSync(dir, { recursive: true });
+  fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
   return dir;
 }
 
+/** Write target for a new invoice PDF (private). */
+function invoiceWriteDir(): string {
+  return privateDirectory('invoices');
+}
+
+/** Write target for a new transfer proof (private). */
+export function depositWriteDir(): string {
+  return privateDirectory('payment-proofs');
+}
+
+export const invoiceRoots = invoiceReadRoots;
+export const proofRoots = paymentProofReadRoots;
+
+/** Absolute path of an invoice: the private file when present, else the legacy one. */
 export function invoiceAbsolutePath(invoiceNumber: string): string {
   // رقم الفاتورة يأتي من قاعدة البيانات فقط — نعقم الاسم دفاعيًا مع ذلك.
   const safe = invoiceNumber.replace(/[^A-Z0-9-]/gi, '');
-  return path.join(uploadsDir('invoices'), `${safe}.pdf`);
+  const preferred = path.join(invoiceWriteDir(), `${safe}.pdf`);
+  if (fs.existsSync(preferred)) return preferred;
+  const legacy = path.join(uploadsDir('invoices'), `${safe}.pdf`);
+  return fs.existsSync(legacy) ? legacy : preferred;
 }
 
 function escapeHtml(value: unknown): string {
@@ -233,7 +262,7 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
   // Keep legacy invoice columns synchronized for the existing PDF template only;
   // the invoices entity is the authoritative document record.
   db.run('UPDATE orders SET invoice_number=? WHERE id=?', invoice.invoice_number, orderId);
-  const target = invoiceAbsolutePath(String(invoice.invoice_number));
+  const target = path.join(invoiceWriteDir(), `${String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf`);
 
   writeSimplePdf(buildInvoiceLines(db, orderId), target);
   const now = new Date().toISOString();

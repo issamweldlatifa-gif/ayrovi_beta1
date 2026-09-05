@@ -2,6 +2,8 @@ import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from
 import { NextFunction, Request, Response } from 'express';
 import { QatafoDatabase } from '../db/database';
 import { AdminPermission, AdminRole, hasPermission, permissionsForRole } from './permissions';
+import { backfillEmployeesFromAdminUsers } from '../erp-core/identity';
+// (erp-core/identity is loaded lazily above: it imports this module through the admin audit helpers)
 
 const COOKIE_NAME = 'ayrovi_admin_session';
 const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
@@ -81,6 +83,11 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
 
   db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
     VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
+  // Every login credential gets an employee identity immediately, so audit rows
+  // written by the very first session already carry an EMP- code.
+  try {
+    backfillEmployeesFromAdminUsers(db);
+  } catch { /* identity is additive: never block the login bootstrap over it */ }
   if (!configuredPassword) console.warn('[Admin] Compte de développement créé: admin@ayrovi.tn (changez ADMIN_PASSWORD avant production).');
   if (forceReset) console.info(`[Admin] Compte administrateur créé en mode reset pour ${email}.`);
 }
