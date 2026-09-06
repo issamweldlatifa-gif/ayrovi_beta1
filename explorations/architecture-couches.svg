@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 620" font-family="system-ui, -apple-system, Segoe UI, sans-serif">
+  <rect width="1180" height="620" fill="#f6f6f9"/>
+  <text x="1120" y="52" text-anchor="end" font-size="22" font-weight="700" fill="#17151f">بنية النظام المستهدفة — سبع طبقات، مصدر واحد للحقيقة في كل طبقة</text>
+  <text x="1120" y="78" text-anchor="end" font-size="13" fill="#71717f">كل شريط هو طبقة واحدة لا تُتجاوز: الشاشة لا تكتب SQL، والـ SQL لا يكتب التدقيق، والثيم لا يعرف اسم الشاشة.</text>
+
+  <!-- pile de couches -->
+  <g font-size="13.5">
+    <g transform="translate(0,104)">
+      <rect x="40" y="0" width="1100" height="58" rx="10" fill="#17151f"/>
+      <text x="1100" y="26" text-anchor="end" fill="#fff" font-weight="700">7 · الثيم</text>
+      <text x="1100" y="46" text-anchor="end" fill="#c8ccd8">client/src/design/tokens.css → styles/interface-runtime.css → الشاشات · dark/light/auto · RTL · كثافة</text>
+      <text x="80" y="36" fill="#fe7003" font-weight="700">0 لون حرفي</text>
+    </g>
+    <g transform="translate(0,170)">
+      <rect x="80" y="0" width="1020" height="58" rx="10" fill="#ffffff" stroke="#e7e5eb"/>
+      <text x="1060" y="26" text-anchor="end" fill="#17151f" font-weight="700">6 · واجهة مشتركة</text>
+      <text x="1060" y="46" text-anchor="end" fill="#71717f">DataTable (محرّك وحيد) · ResourceForm · Modal · Search · Filters · Pagination · back-office/ (الصدَفة)</text>
+      <text x="120" y="36" fill="#17151f" font-weight="700">1 محرّك</text>
+    </g>
+    <g transform="translate(0,236)">
+      <rect x="120" y="0" width="940" height="58" rx="10" fill="#ffffff" stroke="#e7e5eb"/>
+      <text x="1020" y="26" text-anchor="end" fill="#17151f" font-weight="700">5 · التدقيق والأحداث</text>
+      <text x="1020" y="46" text-anchor="end" fill="#71717f">writeAuditEvent() قلم وحيد · erp_events ناقلًا · erp_notification_deliveries outbox للإشعارات</text>
+      <text x="160" y="36" fill="#17151f" font-weight="700">1 قلم</text>
+    </g>
+    <g transform="translate(0,302)">
+      <rect x="160" y="0" width="860" height="58" rx="10" fill="#ffffff" stroke="#e7e5eb"/>
+      <text x="980" y="26" text-anchor="end" fill="#17151f" font-weight="700">4 · الوصول</text>
+      <text x="980" y="46" text-anchor="end" fill="#71717f">erp_role_permissions · can() · module:action:resource:scope · أرضية legacy لا تُنقص صلاحية</text>
+      <text x="200" y="36" fill="#17151f" font-weight="700">1 قرار</text>
+    </g>
+    <g transform="translate(0,368)">
+      <rect x="200" y="0" width="780" height="58" rx="10" fill="#ffffff" stroke="#e7e5eb"/>
+      <text x="940" y="26" text-anchor="end" fill="#17151f" font-weight="700">3 · السجلّ</text>
+      <text x="940" y="46" text-anchor="end" fill="#71717f">erp-core/modules.ts (21 وحدة) · back-office/resources.ts (39 موردًا) → تنقّل + قدرات + بحث + Deep links</text>
+      <text x="240" y="36" fill="#17151f" font-weight="700">1 قائمة</text>
+    </g>
+    <g transform="translate(0,434)">
+      <rect x="240" y="0" width="700" height="58" rx="10" fill="#ffffff" stroke="#e7e5eb"/>
+      <text x="900" y="26" text-anchor="end" fill="#17151f" font-weight="700">2 · النطاق src/&lt;domain&gt;/&lt;module&gt;/</text>
+      <text x="900" y="46" text-anchor="end" fill="#71717f">types · validation · entities · routes · permissions · audit · bootstrap — handler ناعم</text>
+      <text x="280" y="36" fill="#17151f" font-weight="700">1 غلاف</text>
+    </g>
+    <g transform="translate(0,500)">
+      <rect x="280" y="0" width="620" height="58" rx="10" fill="#111318"/>
+      <text x="860" y="26" text-anchor="end" fill="#fff" font-weight="700">1 · البيانات (إضافة فقط)</text>
+      <text x="860" y="46" text-anchor="end" fill="#aab0be">migrations idempotent · CREATE TABLE IF NOT EXISTS · لا DROP/ALTER تخريبي</text>
+      <text x="320" y="36" fill="#fe7003" font-weight="700">ADD ONLY</text>
+    </g>
+  </g>
+
+  <text x="60" y="596" font-size="12" fill="#71717f">القاعدة: أي سطر في طبقة عليا يتجاوز طبقةً أسفله مباشرةً (شاشة تكتب SQL، شاشة تُدرج في جدول audit، شاشة تضع #FF7A00) هو دَين — والخطة تسدّه لا تكرّسه.</text>
+</svg>

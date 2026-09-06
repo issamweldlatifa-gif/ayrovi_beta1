@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 420" font-family="system-ui, -apple-system, Segoe UI, sans-serif" direction="rtl">
+  <rect width="1240" height="420" fill="#0f1116"/>
+  <text x="1200" y="46" text-anchor="end" fill="#ffffff" font-size="22" font-weight="700">خطة التطوّر — من الصدَفة الموحّدة إلى نظام شركات عالمية</text>
+  <text x="1200" y="72" text-anchor="end" fill="#8b909c" font-size="13">كل عمود = مرحلة. البوابة نفسها في الأسفل: 0 أخطاء أنواع · build ok · لا انكسار اختبار · worktree نظيف · push.</text>
+  <line x1="60" y1="118" x2="1180" y2="118" stroke="#2a2e3a" stroke-width="2"/>
+
+  <g font-size="12" fill="#c8ccd8">
+    <!-- 8 étapes, de droite à gauche (lecture RTL) -->
+    <g transform="translate(1040,0)">
+      <circle cx="60" cy="118" r="9" fill="#3fb27f"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P2.0</text>
+      <text x="60" y="172" text-anchor="middle">الصدَفة + framework</text><text x="60" y="190" text-anchor="middle" fill="#3fb27f">مُغلقة · 471 اختبارًا</text>
+    </g>
+    <g transform="translate(895,0)">
+      <circle cx="60" cy="118" r="9" fill="#fe7003"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P2.1</text>
+      <text x="60" y="172" text-anchor="middle">كتالوج مرجعي</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">توحيد 8 جداول يدوية</text>
+    </g>
+    <g transform="translate(750,0)">
+      <circle cx="60" cy="118" r="9" fill="#4a72ff"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P2.2</text>
+      <text x="60" y="172" text-anchor="middle">Stock</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">4 جداول · حركات وجرد</text>
+    </g>
+    <g transform="translate(605,0)">
+      <circle cx="60" cy="118" r="9" fill="#4a72ff"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P2.3</text>
+      <text x="60" y="172" text-anchor="middle">Achats</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">موردون · أوامر · استلام</text>
+    </g>
+    <g transform="translate(460,0)">
+      <circle cx="60" cy="118" r="9" fill="#c05ce6"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P3</text>
+      <text x="60" y="172" text-anchor="middle">الثيم المتطوّر</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">392 لونًا ← 0</text>
+    </g>
+    <g transform="translate(315,0)">
+      <circle cx="60" cy="118" r="9" fill="#e0b23c"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P4.1</text>
+      <text x="60" y="172" text-anchor="middle">Livraison</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">دمج deliveries/shipments</text>
+    </g>
+    <g transform="translate(170,0)">
+      <circle cx="60" cy="118" r="9" fill="#e0b23c"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P4.2</text>
+      <text x="60" y="172" text-anchor="middle">Comptabilité</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">قيود مزدوجة</text>
+    </g>
+    <g transform="translate(25,0)">
+      <circle cx="60" cy="118" r="9" fill="#5ac8c8"/><text x="60" y="152" text-anchor="middle" fill="#ffffff" font-weight="700">P5</text>
+      <text x="60" y="172" text-anchor="middle">Automatisation</text><text x="60" y="190" text-anchor="middle" fill="#8b909c">قواعد على erp_events</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="60" y="240" width="530" height="150" rx="14" fill="#161a22" stroke="#262b36"/>
+    <text x="566" y="272" text-anchor="end" fill="#ffffff" font-size="14" font-weight="700">المبدأ الحاكم: إضافة قبل تعديل</text>
+    <g font-size="12.5" fill="#aab0be">
+      <text x="566" y="300" text-anchor="end">· DB: لا DROP · لا TRUNCATE · لا إعادة تسمية جماعية</text>
+      <text x="566" y="322" text-anchor="end">· API: مسار جديد يُضاف، القديم يبقى ويُعلَّم deprecated</text>
+      <text x="566" y="344" text-anchor="end">· محرك واحد: جدول · نموذج · بحث · صلاحيات · تدقيق</text>
+      <text x="566" y="366" text-anchor="end">· تعارض اختبار/متطلب ← توقّف + تقرير، لا تعديل الاختبار</text>
+    </g>
+    <rect x="650" y="240" width="530" height="150" rx="14" fill="#161a22" stroke="#262b36"/>
+    <text x="1156" y="272" text-anchor="end" fill="#ffffff" font-size="14" font-weight="700">بوابة الخروج لكل مرحلة</text>
+    <g font-size="12.5" fill="#aab0be">
+      <text x="1156" y="300" text-anchor="end">1) npx tsc --noEmit = 0</text>
+      <text x="1156" y="322" text-anchor="end">2) npx tsc -p tsconfig.client.json --noEmit = 0</text>
+      <text x="1156" y="344" text-anchor="end">3) npm run build = ok · 4) npm test ≥ 471 بلا انكسار</text>
+      <text x="1156" y="366" text-anchor="end">5) worktree نظيف يكرّر 1–4 · 6) commit ثم push إجباري</text>
+    </g>
+  </g>
+</svg>
