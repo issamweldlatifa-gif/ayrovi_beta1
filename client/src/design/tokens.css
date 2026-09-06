@@ -214,6 +214,7 @@
   --admin-danger-text:#b42318; /* texte en erreur */
   --admin-danger-ink:#b6251c; /* erreur profonde (barre latérale) */
   --admin-violet:#673de6; /* accent produit (Lens, IA) */
+  --admin-text: var(--admin-ink); /* P3/T2c — `arrival-ingestion.css:244` appelait ce nom sans qu'il existe ; alias, valeur = encre du thème */
   --admin-danger: var(--ayrovi-danger); /* P3/T2 — AdminApp.tsx appelait cette variable sans qu'elle existe ; alias, aucune valeur nouvelle */
 
   /* — tons verbatims : 231 valeurs longue traîne (à absorber en T2) — */
@@ -448,4 +449,53 @@
   --admin-tone-rgba-48-22-103-8:rgba(48,22,103,.8);
   --admin-tone-rgba-5-5-5-35:rgba(5,5,5,.35);
   --admin-tone-rgba-57-25-118-65:rgba(57,25,118,.65);
+
+  /* — ajout T2c (47 tons portés par arrival-ingestion.css) — */
+  --admin-tone-166534:#166534;
+  --admin-tone-1d4ed8:#1d4ed8;
+  --admin-tone-1e3a8a:#1e3a8a;
+  --admin-tone-2563eb:#2563eb;
+  --admin-tone-64748b:#64748b;
+  --admin-tone-7c2d12:#7c2d12;
+  --admin-tone-991b1b:#991b1b;
+  --admin-tone-9a96a1:#9a96a1;
+  --admin-tone-9f1239:#9f1239;
+  --admin-tone-a5a2ad:#a5a2ad;
+  --admin-tone-bbb7c3:#bbb7c3;
+  --admin-tone-bfdbfe:#bfdbfe;
+  --admin-tone-c05621:#c05621;
+  --admin-tone-c2410c:#c2410c;
+  --admin-tone-c9c6cc:#c9c6cc;
+  --admin-tone-cecbd3:#cecbd3;
+  --admin-tone-d4d4d8:#d4d4d8;
+  --admin-tone-d97706:#d97706;
+  --admin-tone-d9d6dc:#d9d6dc;
+  --admin-tone-e2dfe4:#e2dfe4;
+  --admin-tone-e3e0e5:#e3e0e5;
+  --admin-tone-eeeef1:#eeeef1;
+  --admin-tone-eff6ff:#eff6ff;
+  --admin-tone-f0fdf4:#f0fdf4;
+  --admin-tone-f1f1f3:#f1f1f3;
+  --admin-tone-f2f2f4:#f2f2f4;
+  --admin-tone-f5f5f7:#f5f5f7;
+  --admin-tone-fb923c:#fb923c;
+  --admin-tone-fbfbfc:#fbfbfc;
+  --admin-tone-fdba74:#fdba74;
+  --admin-tone-fecaca:#fecaca;
+  --admin-tone-fff1f2:#fff1f2;
+  --admin-tone-fff3e9:#fff3e9;
+  --admin-tone-rgba-148-163-184-15:rgba(148,163,184,.15);
+  --admin-tone-rgba-148-163-184-4:rgba(148,163,184,.4);
+  --admin-tone-rgba-17-19-24-08:rgba(17,19,24,.08);
+  --admin-tone-rgba-20-18-28-1:rgba(20,18,28,.1);
+  --admin-tone-rgba-239-68-68-12:rgba(239,68,68,.12);
+  --admin-tone-rgba-239-68-68-4:rgba(239,68,68,.4);
+  --admin-tone-rgba-254-112-3-32:rgba(254,112,3,.32);
+  --admin-tone-rgba-255-255-255-18:rgba(255,255,255,.18);
+  --admin-tone-rgba-34-197-94-12:rgba(34,197,94,.12);
+  --admin-tone-rgba-34-197-94-14:rgba(34,197,94,.14);
+  --admin-tone-rgba-34-197-94-35:rgba(34,197,94,.35);
+  --admin-tone-rgba-34-197-94-4:rgba(34,197,94,.4);
+  --admin-tone-rgba-47-124-246-10:rgba(47,124,246,.10);
+  --admin-tone-rgba-47-124-246-28:rgba(47,124,246,.28);
 }

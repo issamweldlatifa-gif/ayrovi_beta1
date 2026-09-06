@@ -29,19 +29,23 @@ import { describe, expect, test } from 'vitest';
 const ROOT = process.cwd();
 const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
 
-/** Les feuilles d'application du back-office : règles seules, zéro valeur. */
+/**
+ * Les feuilles d'application du back-office : des règles, zéro valeur.
+ * `arrival-ingestion.css` y figure depuis P3/T2c : sa congélation datait de P2.0 (avant les
+ * primitives partagées) et le plan prévoyait explicitement de la convertir ici — elle est passée
+ * sous le même garde que les trois autres, avec preuve d'équivalence (0 écart sur 3 479
+ * comparaisons), donc la conversion n'a déplacé aucune couleur.
+ */
 const SYSTEM_SHEETS = [
   'client/src/admin/admin.css',
   'client/src/admin/back-office/back-office.css',
   'client/src/admin/interface-studio.css',
+  'client/src/admin/arrival-ingestion.css',
 ];
 const TOKENS = 'client/src/design/tokens.css';
-/** Feuille gelée depuis P2.0 : elle garde ses littéraux jusqu'à sa conversion (T2). */
-const FROZEN_SHEET = 'client/src/admin/arrival-ingestion.css';
 
-/** Plafonds mesurés au 2026-09-06 (P3/T1) : ils ne peuvent que descendre. */
-const TONE_REFERENCE_CEILING = 275;
-const FROZEN_LITERAL_CEILING = 135;
+/** Plafond mesuré au 2026-09-06 (P3/T2c) : il ne peut que descendre — c'est le ratchet de T2. */
+const TONE_REFERENCE_CEILING = 362;
 
 /** Un `var(--x)` dont personne ne définit `--x` est une indirection morte : allowlist fermée. */
 const UNRESOLVED_ALLOWLIST: Record<string, string> = {
@@ -104,6 +108,12 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
     }
   });
 
+  test('les quatre feuilles du back-office sont à zéro littéral (T2c : arrival-ingestion comprise)', () => {
+    const offenders = SYSTEM_SHEETS.map((file) => [file, literalsIn(file)] as const)
+      .filter(([, hits]) => hits.length > 0);
+    expect(offenders.map(([file, hits]) => `${file} → ${hits.length}`).join(' | ')).toBe('');
+  });
+
   test('les valeurs canoniques de la couche admin sont exactes (P3/T2)', () => {
     const tokens = read(TOKENS);
     const canonical: Record<string, string> = {
@@ -121,12 +131,12 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
       const declared = declarations(tokens).find(([, n]) => n === name);
       expect(declared, `${name} doit être défini dans tokens.css`).toBeTruthy();
       expect(declared![2].trim().toLowerCase()).toBe(value.toLowerCase());
-      for (const file of [...SYSTEM_SHEETS, FROZEN_SHEET]) {
+      for (const file of SYSTEM_SHEETS) {
         expect(declarations(read(file)).some(([, n]) => n === name), `${name} redéfini localement dans ${file}`).toBe(false);
       }
     }
-    // la feuille gelée continue de consommer la couche de tokens (elle n'a plus de valeurs en dur)
-    expect(withoutComments(read(FROZEN_SHEET))).toMatch(/var\(--admin-(ink|line|surface-|tone-)/);
+    // les anciennes feuilles « gelées » consomment la couche de tokens, pas leurs propres valeurs
+    expect(withoutComments(read('client/src/admin/arrival-ingestion.css'))).toMatch(/var\(--admin-(ink|line|surface-|tone-)/);
   });
 
   test('les huit noms hérités survivent comme alias, et plus personne ne les consomme', () => {
@@ -178,7 +188,7 @@ describe('tons verbatims — dette mesurée, plafonnée', () => {
   test('un ton n\u2019est jamais redéfini deux fois avec des valeurs différentes', () => {
     const seen = new Map<string, string>();
     const duplicates: string[] = [];
-    for (const file of [TOKENS, ...SYSTEM_SHEETS, FROZEN_SHEET]) {
+    for (const file of [TOKENS, ...SYSTEM_SHEETS]) {
       for (const [, name, value] of declarations(read(file))) {
         if (!name.startsWith('--admin-tone-')) continue;
         if (seen.has(name) && seen.get(name) !== value.trim()) duplicates.push(name);
@@ -198,10 +208,13 @@ describe('tons verbatims — dette mesurée, plafonnée', () => {
     expect(used).toBeGreaterThan(200);
   });
 
-  test('la feuille gelée ne reçoit aucun littéral supplémentaire', () => {
-    const hits = literalsIn(FROZEN_SHEET);
-    expect(hits.length).toBeLessThanOrEqual(FROZEN_LITERAL_CEILING);
-    expect(hits.length).toBeGreaterThan(0); // la dette est visible, pas masquée
+  test('la conversion de la feuille ex-gelée a bien réduit la dette, sans la masquer', () => {
+    // 135 littéraux avant T2c, 0 après ; et les refs de tons de cette feuille sont comptées dans
+    // le ratchet global ci-dessus (362 aujourd'hui), pas cachées dans une allowance.
+    const arrival = read('client/src/admin/arrival-ingestion.css');
+    expect(literalsIn('client/src/admin/arrival-ingestion.css')).toEqual([]);
+    const toneRefs = (withoutComments(arrival).match(/--admin-tone-[a-z0-9-]+/g) ?? []).length;
+    expect(toneRefs).toBeGreaterThan(0);
   });
 });
 

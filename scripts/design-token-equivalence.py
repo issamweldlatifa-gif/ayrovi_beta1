@@ -15,7 +15,8 @@ import sys
 
 FILES = ['client/src/admin/admin.css',
          'client/src/admin/back-office/back-office.css',
-         'client/src/admin/interface-studio.css']
+         'client/src/admin/interface-studio.css',
+         'client/src/admin/arrival-ingestion.css']
 TOKENS = 'client/src/design/tokens.css'
 MOVED = ['--admin-purple', '--admin-purple-dark', '--admin-yellow', '--admin-ink', '--admin-muted',
          '--admin-line', '--admin-bg', '--admin-card', '--admin-sidebar']
@@ -126,7 +127,15 @@ def state(text, table):
     return {(sel, prop): canon(value, table) for sel, prop, value in rules(text)}, table
 
 
-problems, checked = [], 0
+# Écarts expressément consentis par le user (corrections de défauts mesurés, pas des goûts) :
+# (feuille, sélecteur, propriété, valeur avant, valeur après). Toute autre différence échoue.
+CONSENTED = {
+    ('client/src/admin/AdminApp.tsx', '.admin-block-small', 'color'): None,  # hors CSS (style en ligne)
+    ('client/src/admin/arrival-ingestion.css', '.arrival-store-empty strong', 'color'):
+        ('\x00indefini', '#17151f'),  # F-1 bis : --admin-text n'existait pas, le texte héritait
+}
+
+problems, checked, consented = [], 0, 0
 tokens_new = open(TOKENS).read()
 tokens_old = read_git(REV, TOKENS)
 TABLE_OLD = table_for(REV)
@@ -143,8 +152,12 @@ for path in FILES:
         if key not in new_map:
             problems.append(f'{path}: déclaration perdue  {key[0]} {{ {key[1]} }} = {old_map[key]!r}')
         elif new_map[key] != old_map[key]:
-            problems.append(f'{path}: valeur différente  {key[0]} {{ {key[1]} }}\n'
-                            f'     avant {old_map[key]!r}\n     après {new_map[key]!r}')
+            allowed = CONSENTED.get((path, key[0], key[1]))
+            if allowed == (old_map[key], new_map[key]):
+                consented += 1
+            else:
+                problems.append(f'{path}: valeur différente  {key[0]} {{ {key[1]} }}\n'
+                                f'     avant {old_map[key]!r}\n     après {new_map[key]!r}')
     for key in new_map:
         if key in moved_keys:
             continue
@@ -168,9 +181,11 @@ for name, value in TABLE_OLD.items():
                         f'{canon(TABLE_NEW.get(name, ""), TABLE_NEW)!r}')
 
 print(f'propriétés publiques et admin conservées à la même valeur : {checked}')
+if consented:
+    print(f'écarts consentis (défauts corrigés sur accord) : {consented}')
 if problems:
     print(f'{len(problems)} ÉCART(S) :')
     for p in problems[:30]:
         print(' -', p)
     sys.exit(1)
-print('aucun écart : chaque déclaration résout exactement la valeur quelle résolvait avant.')
+print('aucun écart non consenti : chaque déclaration résout exactement la valeur quelle résolvait avant.')
