@@ -160,6 +160,34 @@
 }
 
 :root {
+
+  /* ─────────────────────────────────────────────────────────────────────────
+     Noms canoniques de la couche back-office (P3/T2). Les valeurs sont celles de
+     T1, caractère par caractère : seul le NOM change, parce que huit des neuf
+     variables héritées mentaient sur leur rôle (« purple » pour un noir,
+     « yellow » pour un pêche). Les alias dépréciés en bas de bloc gardent la
+     cascade ouverte pour tout consommateur que cette phase ne réécrit pas.
+     ───────────────────────────────────────────────────────────────────────── */
+  --admin-ink-strong:#111318; /* c'est un noir, pas un violet */
+  --admin-ink-black:#050505; /* noir profond du rail et des dégradés */
+  --admin-warm-accent:#ffb070; /* pêche : « yellow » induisait en erreur */
+  --admin-ink-muted:#71717f; /* encre atténuée, pas une couleur « muette » */
+  --admin-surface-page:#f6f6f9; /* surface de page */
+  --admin-surface-card:#fff; /* surface de carte */
+  --admin-rail:#17151f; /* le rail latéral (même encre que le texte) */
+
+  /* — alias dépréciés, conservés pour ne rien casser — */
+  --admin-purple: var(--admin-ink-strong); /* alias déprécié — plus aucun usage dans client/src */
+  --admin-purple-dark: var(--admin-ink-black); /* alias déprécié — plus aucun usage dans client/src */
+  --admin-yellow: var(--admin-warm-accent); /* alias déprécié — plus aucun usage dans client/src */
+  --admin-muted: var(--admin-ink-muted); /* alias déprécié — plus aucun usage dans client/src */
+  --admin-bg: var(--admin-surface-page); /* alias déprécié — plus aucun usage dans client/src */
+  --admin-card: var(--admin-surface-card); /* alias déprécié — plus aucun usage dans client/src */
+  --admin-sidebar: var(--admin-rail); /* alias déprécié — plus aucun usage dans client/src */
+
+}
+
+:root {
   /* ─────────────────────────────────────────────────────────────────────────
      Couche back-office (P3/T1). Les valeurs ci-dessous sont les littéraux exacts
      que portaient `admin.css`, `back-office.css` et `interface-studio.css`. Elles
@@ -173,15 +201,8 @@
      teintes en mesurant l’écart. `tests/design-tokens.test.ts` interdit tout
      littéral dans les feuilles du back-office et fait baisser leur nombre de refs.
      ───────────────────────────────────────────────────────────────────────── */
-  --admin-purple:#111318; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-purple-dark:#050505; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-yellow:#ffb070; /* déplacé depuis admin.css — jamais renommé ni retouché */
   --admin-ink:#17151f; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-muted:#71717f; /* déplacé depuis admin.css — jamais renommé ni retouché */
   --admin-line:#e7e5eb; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-bg:#f6f6f9; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-card:#fff; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-sidebar:#17151f; /* déplacé depuis admin.css — jamais renommé ni retouché */
   --admin-surface-sunken:#faf9fc; /* surface en creux des panneaux */
   --admin-surface-tint:#faf8ff; /* surface teintée (fonds de groupe) */
   --admin-surface-soft:#fbfbfe; /* surface adoucie (encadrés, listes) */

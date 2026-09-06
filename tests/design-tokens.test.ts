@@ -68,6 +68,20 @@ function withoutComments(text: string): string {
   }
 }
 
+/** Tous les fichiers sources du client, chemins relatifs au dépôt. */
+function clientFiles(pattern: RegExp): string[] {
+  const out: string[] = [];
+  const walk = (rel: string) => {
+    for (const entry of fs.readdirSync(path.resolve(ROOT, rel), { withFileTypes: true })) {
+      const child = path.join(rel, entry.name);
+      if (entry.isDirectory()) walk(child);
+      else if (pattern.test(entry.name)) out.push(child.split(path.sep).join('/'));
+    }
+  };
+  walk('client/src');
+  return out;
+}
+
 const literalsIn = (rel: string) => withoutComments(read(rel)).match(LITERAL) ?? [];
 const declarations = (text: string) => [...withoutComments(text).matchAll(/(--[a-zA-Z0-9-]+)\s*:\s*([^;]+);/g)];
 
@@ -90,29 +104,51 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
     }
   });
 
-  test('les neuf noms hérités survivent et gardent leur valeur d\u2019origine', () => {
+  test('les valeurs canoniques de la couche admin sont exactes (P3/T2)', () => {
     const tokens = read(TOKENS);
-    const inherited: Record<string, string> = {
-      '--admin-purple': '#111318',
-      '--admin-purple-dark': '#050505',
-      '--admin-yellow': '#ffb070',
+    const canonical: Record<string, string> = {
       '--admin-ink': '#17151f',
-      '--admin-muted': '#71717f',
       '--admin-line': '#e7e5eb',
-      '--admin-bg': '#f6f6f9',
-      '--admin-card': '#fff',
-      '--admin-sidebar': '#17151f',
+      '--admin-ink-strong': '#111318',
+      '--admin-ink-black': '#050505',
+      '--admin-warm-accent': '#ffb070',
+      '--admin-ink-muted': '#71717f',
+      '--admin-surface-page': '#f6f6f9',
+      '--admin-surface-card': '#fff',
+      '--admin-rail': '#17151f',
     };
-    for (const [name, value] of Object.entries(inherited)) {
+    for (const [name, value] of Object.entries(canonical)) {
       const declared = declarations(tokens).find(([, n]) => n === name);
-      expect(declared, `${name} doit rester défini dans tokens.css`).toBeTruthy();
+      expect(declared, `${name} doit être défini dans tokens.css`).toBeTruthy();
       expect(declared![2].trim().toLowerCase()).toBe(value.toLowerCase());
       for (const file of [...SYSTEM_SHEETS, FROZEN_SHEET]) {
         expect(declarations(read(file)).some(([, n]) => n === name), `${name} redéfini localement dans ${file}`).toBe(false);
       }
     }
-    // et ils sont toujours consommés par la feuille gelée : les supprimer casserait son rendu
-    expect(withoutComments(read(FROZEN_SHEET))).toMatch(/var\(--admin-(purple|ink|line|muted|bg|card)/);
+    // la feuille gelée continue de consommer la couche de tokens (elle n'a plus de valeurs en dur)
+    expect(withoutComments(read(FROZEN_SHEET))).toMatch(/var\(--admin-(ink|line|surface-|tone-)/);
+  });
+
+  test('les huit noms hérités survivent comme alias, et plus personne ne les consomme', () => {
+    const aliases: Record<string, string> = {
+      '--admin-purple': '--admin-ink-strong',
+      '--admin-purple-dark': '--admin-ink-black',
+      '--admin-yellow': '--admin-warm-accent',
+      '--admin-muted': '--admin-ink-muted',
+      '--admin-bg': '--admin-surface-page',
+      '--admin-card': '--admin-surface-card',
+      '--admin-sidebar': '--admin-rail',
+    };
+    const tokens = read(TOKENS);
+    for (const [legacy, canonical] of Object.entries(aliases)) {
+      const declared = declarations(tokens).find(([, n]) => n === legacy);
+      expect(declared, `${legacy} doit rester défini : la cascade reste ouverte`).toBeTruthy();
+      expect(declared![2].trim(), `${legacy} doit n'être qu'un alias de ${canonical}`).toBe(`var(${canonical})`);
+    }
+    const strays = clientFiles(/\.(css|tsx|ts)$/)
+      .filter((rel) => rel !== TOKENS)
+      .filter((rel) => Object.keys(aliases).some((legacy) => withoutComments(read(rel)).includes(`var(${legacy})`)));
+    expect(strays, 'un nom déprécié encore utilisé — passer au nom canonique').toEqual([]);
   });
 });
 
