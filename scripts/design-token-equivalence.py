@@ -151,6 +151,24 @@ CONSENTED = {
         ('\x00indefini', '#17151f'),  # F-1 bis : --admin-text n'existait pas, le texte héritait
 }
 
+# Table d'absorption de P3/T2e : un écart est consenti si les deux valeurs sont une paire
+# (valeur absorbée, valeur cible) de cette table. La table est le seul endroit qui relate les
+# valeurs d'avant ; toute différence hors de cette liste reste un échec.
+SNAPS = set()
+SNAP_VALUE = {}          # valeur absorbée -> valeur cible (le seul remplacement autorisé)
+ABSORBED_NAMES = set()
+try:
+    log = open('explorations/P3_T1BIS_PALETTE_SNAP.md').read()
+    for line in log.splitlines():
+        cells = [c.strip().strip('`') for c in line.strip().strip('|').split('|')]
+        if len(cells) >= 4 and cells[1].startswith('#') and cells[3].startswith('#'):
+            SNAPS.add(frozenset((cells[1].lower(), cells[3].lower())))
+            SNAP_VALUE[cells[1].lower()] = cells[3].lower()
+            if cells[0].startswith('--'):
+                ABSORBED_NAMES.add(cells[0])
+except FileNotFoundError:
+    pass
+
 problems, checked, consented = [], 0, 0
 tokens_new = open(TOKENS).read()
 tokens_old = read_git(REV, TOKENS)
@@ -196,7 +214,12 @@ for key, (path, value) in old_by_key.items():
         problems.append(f'{path}: déclaration perdue  {key[0]} {{ {key[1]} }} = {value!r}')
     elif new_by_key[key][1] != value:
         allowed = CONSENTED.get((path, key[0], key[1])) or CONSENTED.get((new_by_key[key][0], key[0], key[1]))
-        if allowed == (value, new_by_key[key][1]):
+        # un écart n'est toléré que si la déclaration est exactement la même, à un remplacement
+        # près figurant dans la table d'absorption (y compris dans un raccourci `1px solid #…`)
+        snapped = value
+        for src, dst in SNAP_VALUE.items():
+            snapped = snapped.replace(src, dst)
+        if allowed == (value, new_by_key[key][1]) or snapped == new_by_key[key][1]:
             consented += 1
         else:
             problems.append(f'{path}: valeur différente  {key[0]} {{ {key[1]} }}\n'
@@ -216,6 +239,8 @@ for name in MOVED:
         problems.append(f'token {name} absent de tokens.css après le sweep')
 
 for name, value in TABLE_OLD.items():
+    if name in ABSORBED_NAMES:
+        continue      # nom absorbé en T2e : sa valeur vit désormais dans la cible, cf. la table
     checked += 1
     if canon(TABLE_NEW.get(name, '\x00absent'), TABLE_NEW) != canon(value, TABLE_OLD):
         problems.append(f'token de la cascade modifié {name}: {canon(value, TABLE_OLD)!r} → '

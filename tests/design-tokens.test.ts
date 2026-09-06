@@ -13,8 +13,8 @@
  *     `arrival-ingestion.css` (feuille gelée depuis P2.0) et `AdminApp.tsx` les référencent — le
  *     renommage sémantique est un pas T2, pas T1 ;
  *  4. ratchet : le nombre de références à un ton verbatim `--admin-tone-*` ne peut pas remonter
- *     au-dessus du nombre mesuré au jour de T1 (275), idem pour les littéraux de la feuille gelée
- *     (135) — la consolidation T2 ne peut que les faire baisser ;
+ *     au-delà du nombre mesuré après la consolidation (334 ; 275 en sortie de T1, 362 après avoir
+ *     absorbé la feuille ex-gelée, 334 après l'absorption de palette) ;
  *  5. aucun `var(--x)` utilisé par une feuille système, ni par un style en ligne de la couche
  *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
  *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
@@ -45,8 +45,12 @@ const MERGED_AWAY = [
 ];
 const TOKENS = 'client/src/design/tokens.css';
 
-/** Plafond mesuré au 2026-09-06 (P3/T2c) : il ne peut que descendre — c'est le ratchet de T2. */
-const TONE_REFERENCE_CEILING = 362;
+/**
+ * Plafonds mesurés : 362 références après la conversion de `arrival-ingestion.css` (P3/T2c),
+ * 334 après l'absorption de palette (P3/T2e). Le ratchet ne peut que descendre ; le relever
+ * exige decrire le nouveau nombre ici, donc de passer en revue ce qui a été ajouté.
+ */
+const TONE_REFERENCE_CEILING = 334;
 
 /** Un `var(--x)` dont personne ne définit `--x` est une indirection morte : allowlist fermée. */
 const UNRESOLVED_ALLOWLIST: Record<string, string> = {
@@ -134,10 +138,16 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
       '--admin-surface-card': '#fff',
       '--admin-rail': '#17151f',
     };
+    const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim()]));
+    /** Une valeur de rôle peut être un alias d'un autre rôle (T2e) : on résout un saut. */
+    const resolve = (name: string, depth = 0): string => {
+      const raw = declared.get(name) ?? '';
+      const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
+      return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw.toLowerCase();
+    };
     for (const [name, value] of Object.entries(canonical)) {
-      const declared = declarations(tokens).find(([, n]) => n === name);
-      expect(declared, `${name} doit être défini dans tokens.css`).toBeTruthy();
-      expect(declared![2].trim().toLowerCase()).toBe(value.toLowerCase());
+      expect(declared.has(name), `${name} doit être défini dans tokens.css`).toBe(true);
+      expect(resolve(name), `${name} doit résoudre ${value}`).toBe(value.toLowerCase());
       for (const file of SYSTEM_SHEETS) {
         expect(declarations(read(file)).some(([, n]) => n === name), `${name} redéfini localement dans ${file}`).toBe(false);
       }
@@ -276,6 +286,38 @@ describe('intégrité structurelle des feuilles', () => {
       const close = (body.match(/\}/g) ?? []).length;
       expect(`${file} ${open}/${close}`, `${file}: ${open} ouvrantes contre ${close} fermantes`).toBe(`${file} ${close}/${close}`);
     }
+  });
+});
+
+describe('une valeur, un seul porteur', () => {
+  test('deux tokens de la couche admin ne portent jamais la même valeur hexadécimale', () => {
+    // P3/T2e : `--admin-rail` et `--admin-on-dark` étaient deux noms pour la valeur d'un autre.
+    // Ils restent des noms de rôle (le rail et le texte-sur-sombre ne sont pas le même concept)
+    // mais ne répètent plus la valeur : ils aliasent le porteur canonique.
+    const hex = /^(#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6})$/;
+    const byValue = new Map<string, string[]>();
+    for (const [, name, raw] of declarations(read(TOKENS))) {
+      if (!name.startsWith('--admin-')) continue;
+      const value = raw.trim().toLowerCase();
+      if (!hex.test(value)) continue;
+      const wide = value.length === 4 ? `#${value.slice(1).split('').map((c) => c + c).join('')}` : value;
+      byValue.set(wide, [...(byValue.get(wide) ?? []), name]);
+    }
+    const duplicates = [...byValue.entries()].filter(([, names]) => names.length > 1).map(([v, n]) => `${v} ← ${n.join(', ')}`);
+    expect(duplicates).toEqual([]);
+  });
+
+  test('la table d’absorption de palette existe et relate chaque valeur retirée', () => {
+    // T2e a déplacé des teintes voisines de ≤ 2/255 : la table est la seule trace des valeurs
+    // d'avant. Sans elle, la consolidation serait incompressible et invérifiable.
+    const log = read('explorations/P3_T1BIS_PALETTE_SNAP.md');
+    const rows = log.split('\n').filter((line) => line.startsWith('| `--admin-tone-'));
+    expect(rows.length).toBeGreaterThan(40);
+    expect(rows.every((line) => line.split('|').length >= 7)).toBe(true);
+    // et aucun de ces noms absorbés ne survit dans la feuille d’application
+    const sheet = withoutComments(read(SYSTEM_SHEETS[0]));
+    const dead = rows.map((line) => line.split('|')[1].trim().replace(/`/g, '')).filter((name) => sheet.includes(`var(${name})`));
+    expect(dead, 'un ton absorbé est encore référencé').toEqual([]);
   });
 });
 

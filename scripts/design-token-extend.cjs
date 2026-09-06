@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T2c : étendre la couche de tokens à une feuille restée en littéraux.
+ * AYROVI — P3/T1-bis c : étendre la couche de tokens à une feuille restée en littéraux.
  *
  * Même contrat que `design-token-sweep.cjs` (T1) : une valeur n'est remplacée que par un token
  * dont la valeur est STRICTEMENT égale (à la casse et à la forme courte près), sinon un ton

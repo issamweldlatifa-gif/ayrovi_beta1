@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T2b : noms canoniques de la couche back-office.
+ * AYROVI — P3/T1-bis b : noms canoniques de la couche back-office.
  *
  * Huit des neuf variables héritées d'`admin.css` portent un nom qui ment sur leur valeur
  * (`--admin-purple` = #111318 est un noir, `--admin-yellow` = #ffb070 est un pêche,

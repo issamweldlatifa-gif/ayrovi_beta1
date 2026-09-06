@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * AYROVI — P3/T2d : fusion de la couche application du back-office en une seule feuille.
+ * AYROVI — P3/T1-bis d : fusion de la couche application du back-office en une seule feuille.
  *
  * Le plan vise « 3 fichiers CSS pour le système » : `tokens.css` (les valeurs),
  * `interface-runtime.css` (le runtime partagé avec la vitrine) et UNE couche d'application.
