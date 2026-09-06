@@ -13,8 +13,8 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Eye, FileText, Gift, Grid, History, Home, Image, LayoutGrid, LensBox,
-  LogOut, Menu, MessageSquare, Package, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, User, X, Zap,
+  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Grid, History, Home, Image, LayoutGrid, LensBox,
+  LogOut, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,
 } from '../../components/QatafoIcons';
 import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory';
 import { labels } from './resource-ui';
@@ -37,6 +37,8 @@ export type BackOfficeRenderContext = {
 const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   Home, Calendar, ShoppingBag, Gift, ChartLine, FileText, Sparkles, Tag, Image, LensBox, LayoutGrid,
   Bell, ShieldCheck, Package, MessageSquare, Camera, User, Calculator, Grid, History, Settings, Eye, Palette, Zap, CheckCircle2,
+  // P2.3 — trois entrées de navigation d'achats ; le sprite partagé reste la seule source d'icônes.
+  Truck, Clipboard, PackageCheck,
 };
 
 /** Les icônes sont un détail de présentation : la liste des modules, elle, vit côté serveur. */

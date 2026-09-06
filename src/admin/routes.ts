@@ -42,6 +42,7 @@ import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { requireErpPermission } from '../erp-core/permissions';
 import { createCatalogueRouter } from '../catalogue/routes';
 import { createInventoryRouter } from '../inventory/routes';
+import { createPurchasingRouter } from '../purchasing/routes';
 import { createBackOfficeRouter } from '../back-office/routes';
 import { registerFrameworkResources } from '../back-office/resources';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
@@ -421,6 +422,10 @@ export function createAdminRouter(
   // P2.2 — Stock : surface additive du back-office (`/api/admin/inventory/*`), gardée par
   // la matrice `inventory:*`. Rien d'existant n'est redirigé ni réécrit ici.
   router.use('/inventory', createInventoryRouter(db));
+  // P2.3 — Achats : surface additive (`/api/admin/purchasing/*`), gardée par la matrice
+  // `purchasing:*`. Le lien avec `arrival-ingestion` se fait par mes propres colonnes
+  // (`purchase_orders.arrival_id`, `goods_receipts.arrival_id`) : aucune table du CRM n'est modifiée.
+  router.use('/purchasing', createPurchasingRouter(db));
   // Back Office (P2.0): coquille + framework de ressources. Uniquement de la LECTURE : la
   // coquille décrit l'espace de travail (navigation, descripteurs, recherche, capacités) et ne
   // déplace aucune écriture. Le moteur générique s'y enregistre lui-même, source unique.

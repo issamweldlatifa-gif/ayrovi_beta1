@@ -34,19 +34,13 @@ function fail(code: string, message: string): Result<never> {
   return { ok: false, code, message };
 }
 
-/** Transaction imbriquable (voir en-tête). */
-function withSavepoint<T>(db: QatafoDatabase, label: string, body: () => T): T {
-  const name = `sp_${label.replace(/[^a-z0-9_]/gi, '')}_${Date.now().toString(36)}`;
-  db.run(`SAVEPOINT ${name}`);
-  try {
-    const value = body();
-    db.run(`RELEASE ${name}`);
-    return value;
-  } catch (error) {
-    try { db.run(`ROLLBACK TO ${name}`); db.run(`RELEASE ${name}`); } catch { /* la cause d'origine prime */ }
-    throw error;
-  }
-}
+/**
+ * Transaction imbriquable : l'idiome vit désormais dans `src/db/savepoint.ts` (le module
+ * Achats en a eu besoin et ne devait pas en recopier une seconde version). Ré-exporté pour
+ * que les appelants du stock n'aient pas à bouger.
+ */
+import { withSavepoint } from '../db/savepoint';
+export { withSavepoint };
 
 const STOCK_SELECT = `
   SELECT item.id, item.product_id, item.variant_id, item.location, item.quantity, item.reorder_point,

@@ -85,6 +85,9 @@ const MODULE_RESOURCES: Record<string, string[]> = {
   reports: ['financial_report', 'order_export'],
   crm: ['crm_arrival', 'crm_arrival_client', 'crm_extracted_product', 'crm_shipment'],
   inventory: ['stock_item', 'stock_movement', 'stocktake'],
+  // P2.3 — même raison que le stock : déclarer les ressources du module ici, c'est ce qui fait
+  // that the SUPER_ADMIN mirror (legacy parity) covers the new ERP-only verbs `approve` and `write`.
+  purchasing: ['supplier', 'purchase_order', 'purchase_order_line', 'goods_receipt'],
 };
 
 export const ERP_ACTIONS = ['read', 'write', 'create', 'update', 'delete', 'approve', 'export', 'assign', 'manage'] as const;

@@ -8,6 +8,7 @@ import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
+import { ensurePurchasingSchema } from '../purchasing/bootstrap';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -208,6 +209,7 @@ export class QatafoDatabase {
     this.initErpCoreSchema();
     this.initCatalogueSchema();
     this.initInventorySchema();
+    this.initPurchasingSchema();
     this.seedCoreData();
   }
 
@@ -245,6 +247,21 @@ export class QatafoDatabase {
     } catch (error: any) {
       console.error('[inventory] schema initialization failed:', error?.message || error);
       console.error('[inventory] stock levels, movements and stocktakes are unavailable until this is fixed');
+    }
+  }
+
+  /**
+   * P2.3 — les achats ajoutent cinq tables et leur numérotation. Exactement la même discipline
+   * que le stock : DDL seule ici, AUCUN grant de permission écrit par le constructeur (les
+   * droits se sèment par la voie canonique idempotente `bootstrapPurchasing`), et un échec ne
+   * doit jamais empêcher la boutique de démarrer.
+   */
+  private initPurchasingSchema(): void {
+    try {
+      ensurePurchasingSchema(this);
+    } catch (error: any) {
+      console.error('[purchasing] schema initialization failed:', error?.message || error);
+      console.error('[purchasing] suppliers, purchase orders and goods receipts are unavailable until this is fixed');
     }
   }
 
@@ -2250,6 +2267,17 @@ export class QatafoDatabase {
     const statements = sql
       .split(';')
       .map((statement) => statement.trim())
+      // Un segment qui COMMENCE par des lignes de commentaire n'est pas un commentaire :
+      // `-- ... \n CREATE UNIQUE INDEX ...` est une contrainte documentée. Les ignorer tels
+      // quels faisait disparaître silencieusement des index (mesuré en P2.3 sur
+      // `idx_inventory_item_identity`, `idx_inventory_movement_idempotency`,
+      // `idx_po_line_product_unique`). On ne retire que les lignes de tête, jamais le texte
+      // d'une instruction, et un segment entièrement commenté reste écarté.
+      .map((statement) => {
+        const lines = statement.split('\n');
+        while (lines.length && lines[0].trim().startsWith('--')) lines.shift();
+        return lines.join('\n').trim();
+      })
       .filter((statement) => statement.length > 0 && !statement.startsWith('--'));
     let applied = 0;
     for (const statement of statements) {

@@ -38,18 +38,25 @@ export function propagate<T>(check: Check<any>): Check<T> {
 }
 
 const ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
-const LOCATION_RE = /^[A-Za-z0-9_.-]{1,40}$/;
 
-export function isIdentifier(value: unknown): boolean {
-  return typeof value === 'string' && ID_RE.test(value.trim());
-}
+// `isIdentifier`, `paginationOf` et `sortOf` ne sont plus redéfinis ici : depuis P2.3, ces
+// trois primitives — qui ne portent aucune règle propre au stock — vivent dans
+// `src/domain/query.ts` et sont ré-exportées telles quelles (logique identique au caractère
+// près, vérifiée à la reprise). Le module Achats, qui allait les recopier, les lit à la même
+// source : une seule politique de pagination et de tri dans le dépôt.
+import { isIdentifier, locationLabelField, paginationOf, sortOf } from '../domain/query';
+export { isIdentifier, paginationOf, sortOf };
 
-/** Un emplacement est une étiquette courte (« MAIN », « TUNIS-1 »), pas du texte libre. */
+/**
+ * Un emplacement est une étiquette courte (« MAIN », « TUNIS-1 »), pas du texte libre. Depuis
+ * P2.3, la grammaire vit dans `domain/query.locationLabelField`, partagée avec le module Achats :
+ * deux modules ne décrivent plus le même concept chacun de leur côté. Comportement identique à
+ * la reprise (même regex, même repli, même majuscule en sortie), seul le chemin change.
+ */
 export function locationField(value: unknown, fallback = 'MAIN'): Check<string> {
   const raw = String(value ?? '').trim();
   if (!raw) return pass(fallback);
-  if (!LOCATION_RE.test(raw)) return fail(INVENTORY_ERRORS.VALIDATION, '« emplacement » doit être une étiquette courte (lettres, chiffres, - et _).', [{ field: 'location', reason: 'FORMAT' }]);
-  return pass(raw.toUpperCase());
+  return locationLabelField(raw, 'emplacement', INVENTORY_ERRORS.VALIDATION, fallback);
 }
 
 /**
@@ -114,21 +121,6 @@ export function textField(value: unknown, field: string, max = MAX_REASON_LENGTH
   const text = String(value ?? '').trim();
   if (text.length > max) return fail(INVENTORY_ERRORS.VALIDATION, `« ${field} » dépasse ${max} caractères.`, [{ field, reason: 'LENGTH' }]);
   return pass(text);
-}
-
-/** Une page d'API ne dépasse jamais 100 lignes, quel que soit ce que le client envoie. */
-export function paginationOf(query: { page?: unknown; pageSize?: unknown; page_size?: unknown }) {
-  const page = Math.max(1, Number(query.page) || 1);
-  const requested = Number(query.pageSize ?? query.page_size ?? 20);
-  const pageSize = Math.min(100, Math.max(1, Number.isFinite(requested) ? requested : 20));
-  return { page, pageSize };
-}
-
-/** Tri : seule une colonne connue du module est adressable — aucun nom inventé n'atteint le SQL. */
-export function sortOf(query: { sort?: unknown; direction?: unknown }, allowed: readonly string[], fallback: string) {
-  const key = String(query.sort ?? '').trim();
-  const direction = String(query.direction ?? 'asc').trim().toLowerCase() === 'desc' ? 'DESC' : 'ASC';
-  return { key: allowed.includes(key) ? key : '', direction, fallback };
 }
 
 export interface MovementInput {

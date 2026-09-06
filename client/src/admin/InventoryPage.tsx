@@ -7,7 +7,7 @@
  * `erp_role_permissions` via `can()`. Une action refusée reste visible mais inerte, avec son
  * motif en infobulle : jamais un 403 après le clic.
  *
- * Deux écranstrois responsabilités distinctes, séparées comme les droits :
+ * Trois écrans, trois responsabilités distinctes, séparées comme les droits :
  *  • déplacer une quantité (ajustement motivé) ;
  *  • compter (inventaire), puis trancher les écarts — la seconde exige `inventory:approve`.
  */
@@ -107,7 +107,11 @@ export const InventoryMovementsPage: React.FC<{ canWriteFallback?: boolean }> = 
   const [form, setForm] = useState<Record<string, any>>(EMPTY_FORM);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
-  const mayWrite = may('stock_movement', 'adjust');
+  // `inventory:write` et non un hypothétique `inventory:adjust` : le verbe `adjust` n'existe pas
+  // dans le vocabulaire du moteur (écart écrit au rapport P2.2, §6), et la route de mouvement est
+  // gardée par `write`. Demander « adjust » laissait le bouton éternellement grisé, même en
+  // SUPER_ADMIN — un CTA inerte qui refuse ce que l'API autorise.
+  const mayWrite = may('stock_movement', 'write');
 
   const load = useCallback(async (page = pagination.page) => {
     setLoading(true); setError('');
@@ -174,7 +178,7 @@ export const InventoryMovementsPage: React.FC<{ canWriteFallback?: boolean }> = 
         description="Journal append-only : chaque unité entrée, sortie ou ajustée garde son solde avant/après et son motif. Une erreur se corrige par un mouvement de plus, jamais en réécrivant le passé."
         action={mayWrite
           ? <Button onClick={() => setOpen(true)}>Enregistrer un mouvement</Button>
-          : <Button disabled title="Le droit « inventory:adjust » n’est pas accordé à ce rôle">Enregistrer un mouvement</Button>}
+          : <Button disabled title="Le droit « inventory:write » n’est pas accordé à ce rôle">Enregistrer un mouvement</Button>}
       />
       <KpiStrip meta={meta} />
       <section className="admin-list-card">

@@ -13,6 +13,7 @@ import './admin.css';
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
 import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } from './InventoryPage';
+import { PurchasingOrdersPage, PurchasingReceiptsPage, PurchasingSuppliersPage } from './PurchasingPage';
 import { MagazineAgentPage } from './MagazineAgentPage';
 import { HeroVisualsPage } from './HeroVisualsPage';
 import { TrustBarPage } from './TrustBarPage';
@@ -684,6 +685,11 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
     else if(section==='inventory')page=<InventoryStockPage/>;
     else if(section==='inventory-movements')page=<InventoryMovementsPage/>;
     else if(section==='inventory-stocktakes')page=<InventoryStocktakesPage/>;
+    // P2.3 — Achats : la liste des fournisseurs EST le descripteur serveur (ResourceWorkspace),
+    // les commandes et les réceptions sont des écrans métier qui appellent le même moteur.
+    else if(section==='purchasing')page=<PurchasingSuppliersPage/>;
+    else if(section==='purchasing-orders')page=<PurchasingOrdersPage/>;
+    else if(section==='purchasing-receipts')page=<PurchasingReceiptsPage/>;
     // P2.2 — premier écran métier servi par `ResourceWorkspace` : la liste de stock n'a pas
     // de page dédiée, elle EST le descripteur serveur (colonnes, tri, droits, audit).
     else { const descriptor = descriptorFor(section); if (descriptor?.surface === 'framework') page = <ResourceWorkspace descriptor={descriptor} />; }

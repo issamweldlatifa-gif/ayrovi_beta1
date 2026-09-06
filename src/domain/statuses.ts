@@ -29,6 +29,11 @@ export const AYROVIX_REVIEW_STATUSES = ['PENDING', 'IN_REVIEW', 'QUOTED', 'REJEC
 export const INVENTORY_STOCKTAKE_STATUSES = ['DRAFT', 'COUNTING', 'SUBMITTED', 'APPROVED', 'REJECTED'] as const;
 export const INVENTORY_MOVEMENT_DIRECTIONS = ['IN', 'OUT', 'ADJUST'] as const;
 
+/** P2.3 — achats : la commande et le bon de réception ajoutent leurs états au registre. */
+export const PURCHASING_ORDER_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'PARTIALLY_RECEIVED', 'RECEIVED', 'CANCELLED'] as const;
+export const PURCHASING_RECEIPT_STATUSES = ['DRAFT', 'POSTED', 'DISCARDED'] as const;
+export const PURCHASING_QUALITIES = ['GOOD', 'DAMAGED', 'REJECTED'] as const;
+
 /** Le framework ne connaît qu'un petit nombre de tons de badge — un seul rendu pour tout le back office. */
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -36,7 +41,7 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   ACTIVE: 'success', PAID: 'success', DELIVERED: 'success', PUBLISHED: 'success', COMPLETED: 'success', CONFIRMED: 'success', VERIFIED: 'success', AVAILABLE: 'success', RESOLVED: 'success', CLOSED: 'success', SENT: 'success',
   DRAFT: 'neutral', PENDING: 'neutral', NOT_STARTED: 'neutral', INACTIVE: 'neutral', NONE: 'neutral',
   SCHEDULED: 'info', PREPARING: 'info', IN_REVIEW: 'info', PROCESSING: 'info', QUEUED: 'info', REVIEW: 'info', PARTIAL: 'info', OUT_FOR_DELIVERY: 'info', SHIPPED: 'info', IN_TRANSIT: 'info',
-  APPROVED: 'success', IN: 'success', COUNTING: 'info', SUBMITTED: 'info', ADJUST: 'info', OK: 'success', LOW: 'warning', OUT: 'danger',
+  APPROVED: 'success', PARTIALLY_RECEIVED: 'info', RECEIVED: 'success', POSTED: 'success', DISCARDED: 'neutral', GOOD: 'success', DAMAGED: 'warning', IN: 'success', COUNTING: 'info', SUBMITTED: 'info', ADJUST: 'info', OK: 'success', LOW: 'warning', OUT: 'danger',
   AWAITING_DEPOSIT: 'warning', AWAITING_PAYMENT_VERIFICATION: 'warning', PENDING_VERIFICATION: 'warning', PENDING_MANUAL: 'warning', LIMITED: 'warning', NEEDS_REVIEW: 'warning', PARTIALLY_PAID: 'warning', QUOTED: 'warning',
   CANCELLED: 'danger', FAILED: 'danger', REJECTED: 'danger', OUT_OF_STOCK: 'danger', ARCHIVED: 'danger', EXPIRED: 'danger', REFUNDED: 'warning', RETURNED: 'warning', SEND_FAILED: 'danger', BLOCKED: 'danger',
 };
@@ -82,6 +87,12 @@ export const STATUS_LABELS: Record<string, { fr: string; ar: string }> = {
   ADJUST: { fr: 'Ajustement', ar: 'تسوية' },
   LOW: { fr: 'Stock bas', ar: 'مخزون منخفض' },
   OK: { fr: 'En stock', ar: 'متوفر' },
+  PARTIALLY_RECEIVED: { fr: 'Partiellement reçue', ar: 'مستلمة جزئيًا' },
+  RECEIVED: { fr: 'Reçue', ar: 'مستلمة' },
+  POSTED: { fr: 'Affichée', ar: 'مسجّلة' },
+  DISCARDED: { fr: 'Écartée', ar: 'مُبعَدة' },
+  GOOD: { fr: 'Conforme', ar: 'سليم' },
+  DAMAGED: { fr: 'Endommagé', ar: 'تالف' },
   IN_PROGRESS: { fr: 'En cours', ar: 'قيد المعالجة' },
   RESOLVED: { fr: 'Résolu', ar: 'تم الحل' },
   CLOSED: { fr: 'Clôturé', ar: 'مغلق' },
@@ -102,6 +113,9 @@ export const STATUS_VOCABULARIES: Record<string, readonly string[]> = {
   'support.ticket': SUPPORT_STATUSES,
   'inventory.stocktake': INVENTORY_STOCKTAKE_STATUSES,
   'inventory.movement': INVENTORY_MOVEMENT_DIRECTIONS,
+  'purchasing.order': PURCHASING_ORDER_STATUSES,
+  'purchasing.receipt': PURCHASING_RECEIPT_STATUSES,
+  'purchasing.quality': PURCHASING_QUALITIES,
 };
 
 export function statusVocabulary(key: string | undefined): readonly string[] | undefined {
