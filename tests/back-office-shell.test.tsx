@@ -388,7 +388,15 @@ describe('Consolidation — une seule implémentation par abstraction', () => {
   });
 
   it('laisse DataTable et ResourceForm à un seul définition dans le back office', () => {
-    expect([...components.matchAll(/export (?:const|function) DataTable/g)]).toHaveLength(1);
+    // P3/T2 : la définition a quitté le moteur pour la couche primitives ; `components.tsx` est
+    // devenu une façade, donc la règle se lit désormais ainsi : une seule définition dans toute
+    // la source cliente, et la façade n'en porte aucune.
+    const walkTs = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((entry) => (
+      entry.isDirectory() ? walkTs(`${dir}/${entry.name}`) : /\.(tsx|ts)$/.test(entry.name) ? [`${dir}/${entry.name}`] : []
+    ));
+    const defining = walkTs('client/src').filter((file) => /export (?:const|function) DataTable\b/.test(readFileSync(file, 'utf8')));
+    expect(defining.map((file) => file.replace('client/src/', ''))).toEqual(['design/admin/DataTable.tsx']);
+    expect(components).not.toMatch(/export (?:const|function|interface|type) /);
     const shared = readFileSync('client/src/admin/back-office/resource-ui.tsx', 'utf8');
     expect([...shared.matchAll(/export const ResourceForm/g)]).toHaveLength(1);
     const workspace = readFileSync('client/src/admin/back-office/ResourceWorkspace.tsx', 'utf8');
@@ -444,19 +452,21 @@ describe('Consolidation — une seule implémentation par abstraction', () => {
 
   it('ne laisse aucune liste dessinée à la main hors du moteur (gel P2.1)', () => {
     // Le moteur de table est le seul à écrire un <table>. Les deux exceptions sont listées avec
-    // leur raison : `components.tsx` EST le moteur ; `ArrivalIngestionPage.tsx` est gelé (P2.1)
-    // et dessine une table métier propre (`arrival-product-table`), pas une liste admin.
-    const dir = 'client/src/admin';
+    // leur raison : `design/admin/DataTable.tsx` EST le moteur (sa place depuis P3/T2) ;
+    // `ArrivalIngestionPage.tsx` est gelé (P2.1) et dessine une table métier propre
+    // (`arrival-product-table`), pas une liste admin.
     const walk = (path: string): string[] => readdirSync(path, { withFileTypes: true }).flatMap((entry) => (
       entry.isDirectory() ? walk(`${path}/${entry.name}`) : entry.name.endsWith('.tsx') ? [`${path}/${entry.name}`] : []
     ));
-    const files = walk(dir);
+    const files = walk('client/src/admin').concat(walk('client/src/design'));
     const handRolled = files.filter((file) => /<table\b/.test(readFileSync(file, 'utf8')));
-    expect(handRolled.map((file) => file.split('/').pop()).sort()).toEqual(['ArrivalIngestionPage.tsx', 'components.tsx']);
-    const outsideEngine = handRolled.filter((file) => !file.endsWith('components.tsx') && !file.endsWith('ArrivalIngestionPage.tsx'));
+    expect(handRolled.map((file) => file.replace('client/src/', '')).sort()).toEqual([
+      'admin/ArrivalIngestionPage.tsx', 'design/admin/DataTable.tsx',
+    ]);
+    const outsideEngine = handRolled.filter((file) => !file.endsWith('design/admin/DataTable.tsx') && !file.endsWith('ArrivalIngestionPage.tsx'));
     expect(outsideEngine).toEqual([]);
     // aucune classe de table admin recopiée dans un écran
-    const copied = files.filter((file) => /className="admin-table"/.test(readFileSync(file, 'utf8')) && !file.endsWith('components.tsx'));
+    const copied = files.filter((file) => /className="admin-table"/.test(readFileSync(file, 'utf8')) && !file.endsWith('design/admin/DataTable.tsx'));
     expect(copied).toEqual([]);
   });
 });
