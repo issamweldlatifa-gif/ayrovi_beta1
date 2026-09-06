@@ -39,6 +39,8 @@
 /* Bandeau de doublon / canonique — une information, pas une décision automatique. */
 .bo-notice { display: flex; align-items: center; gap: 8px; margin: 0 0 18px; padding: 10px 13px; border-left: 3px solid var(--bo-accent); background: #fff6ef; color: #8a4a17; font-size: 12px; font-weight: 600; }
 .bo-notice code { padding: 1px 5px; background: #fff; border: 1px solid #f3d9c4; border-radius: 5px; }
+.bo-notice button { margin-inline-start: auto; padding: 5px 10px; border: 1px solid #e9c3a3; border-radius: 7px; background: #fff; color: #8a4a17; font: inherit; font-size: 11px; font-weight: 800; cursor: pointer; }
+.bo-notice button:hover { border-color: var(--bo-accent); color: #6f3a10; }
 
 /* Recherche globale — un seul champ pour tout le back office. */
 .bo-search { position: relative; display: flex; align-items: center; gap: 8px; width: min(360px, 34vw); height: 38px; padding: 0 12px; border: 1px solid var(--admin-line); border-radius: 10px; background: #fff; color: var(--admin-muted); }

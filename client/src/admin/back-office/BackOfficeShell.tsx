@@ -52,7 +52,7 @@ export const BackOfficeShell: React.FC<{
   onLogout: () => void;
   renderPage: (context: BackOfficeRenderContext) => React.ReactNode;
 }> = ({ identity, onLogout, renderPage }) => {
-  const { context, navigation, loading, error, retry, descriptorFor } = useBackOffice();
+  const { context, navigation, resources, loading, error, retry, descriptorFor } = useBackOffice();
   // Garde d'environnement : le rendu serveur (tests, pré-rendu) n'a pas d'URL — la coquille
   // démarre alors sur le tableau de bord, sans jamais lever d'exception.
   const initialParams = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
@@ -124,6 +124,16 @@ export const BackOfficeShell: React.FC<{
 
   const activeItem = navigation?.groups.flatMap((group) => group.items).find((item) => item.section === section);
   const descriptor = descriptorFor(section);
+  // Le maître canonique est une clé de ressource : on la résout en section, et le lien ne s'affiche
+  // que si CET écran est réellement navigable pour ce rôle (sinon le bandeau reste informatif —
+  // une action invisible vaut mieux qu'un bouton qui mène dans le vide).
+  const canonicalSection = (() => {
+    const key = descriptor?.canonicalOf;
+    if (!key) return undefined;
+    const target = resources.find((item) => item.key === key || item.section === key);
+    if (!target) return undefined;
+    return navigation?.groups.flatMap((group) => group.items).find((item) => item.section === target.section);
+  })();
   const title = descriptor?.label || activeItem?.label || 'Administration';
   const employee = context?.employee;
 
@@ -228,8 +238,12 @@ export const BackOfficeShell: React.FC<{
 
       {descriptor?.canonicalOf && (
         <p className="bo-notice">
-          <ShieldCheck size={16} /> Ancienne surface : le maître canonique est <code>{descriptor.canonicalOf}</code>.
-          {descriptor.notes ? ` ${descriptor.notes}` : ''}
+          <ShieldCheck size={16} />
+          <span>
+            Ancienne surface : le maître canonique est <code>{canonicalSection?.label ?? descriptor.canonicalOf}</code>.
+            {descriptor.notes ? ` ${descriptor.notes}` : ''}
+          </span>
+          {canonicalSection && <button type="button" onClick={() => navigate(canonicalSection.section)}>Ouvrir la surface canonique</button>}
         </p>
       )}
 

@@ -1,13 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowUp, Pencil, Plus, Trash2 } from '../components/QatafoIcons';
 import { adminApi } from './api';
-import { Button, Field, Modal, StatusBadge } from './components';
+import { Button, DataTable, Field, Modal, StatusBadge } from './components';
 import { StoriesStudioPage } from './StoriesStudio';
 
 const TABS = ['Publication', 'Reel', 'Story'] as const;
 type Tab = typeof TABS[number];
 
 const st = (s: string) => s === 'publie' ? 'PUBLISHED' : s === 'archive' ? 'ARCHIVED' : 'DRAFT';
+
+/** Suppression avec confirmation — un seul chemin pour les onglets social (publication, reel). */
+const removeWithConfirm = async (path: string, message: string, reload: () => void) => {
+  if (!window.confirm(message)) return;
+  try { await adminApi(path, { method: 'DELETE' }); reload(); } catch { reload(); }
+};
 
 const readDataUrl = (file: File) => new Promise<string>((resolve, reject) => {
   const reader = new FileReader();
@@ -67,26 +73,21 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
         <Button onClick={() => { setError(''); setForm({ title: '', subtitle: '', channel_id: channels[0]?.id || '', image_url: '', remark: '', status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : image verticale 4:5, titre court et canal actif.</span>
       </div>
-      <div className="no-scrollbar overflow-x-auto">
-        <table className="admin-table" style={{ minWidth: 640 }}>
-          <thead><tr><th>Titre</th><th>Canal</th><th>Date</th><th>Statut</th><th>Actions</th></tr></thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td><div className="flex items-center gap-2">{row.image_url && <img src={row.image_url} alt="" className="h-9 w-9 rounded-lg object-cover" />}<strong>{row.title}</strong></div></td>
-                <td>{channels.find((c) => c.id === row.channel_id)?.name || '—'}</td>
-                <td className="admin-block-small">{new Date(row.publish_at).toLocaleDateString('fr-FR')}</td>
-                <td><StatusBadge status={st(row.status)} /></td>
-                <td><div className="admin-actions" style={{ marginTop: 0 }}>
-                  <Button variant="ghost" onClick={() => setForm({ ...row })}><Pencil size={14} /></Button>
-                  <Button variant="danger" onClick={async () => { if (window.confirm('Supprimer ?')) { await adminApi(`/publications/${row.id}`, { method: 'DELETE' }); load(); } }}><Trash2 size={14} /></Button>
-                </div></td>
-              </tr>
-            ))}
-            {!rows.length && <tr><td colSpan={5} className="admin-block-small">Aucune publication.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        minWidth={640}
+        emptyText="Aucune publication."
+        rows={rows}
+        columns={[
+          { key: 'title', label: 'Titre', render: (row: any) => <div className="admin-entity">{row.image_url && <img src={row.image_url} alt="" />}<div><strong>{row.title}</strong></div></div> },
+          { key: 'channel', label: 'Canal', render: (row: any) => channels.find((c) => c.id === row.channel_id)?.name || '—' },
+          { key: 'publish_at', label: 'Date', render: (row: any) => new Date(row.publish_at).toLocaleDateString('fr-FR') },
+          { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={st(row.status)} /> },
+        ]}
+        rowActions={[
+          { key: 'edit', label: 'Éditer', icon: <Pencil size={14} />, hideLabel: true, onRun: (row: any) => { setError(''); setForm({ ...row }); } },
+          { key: 'delete', label: 'Supprimer', tone: 'danger', icon: <Trash2 size={14} />, hideLabel: true, onRun: (row: any) => void removeWithConfirm(`/publications/${row.id}`, 'Supprimer cette publication ?', load) },
+        ]}
+      />
       <Modal open={Boolean(form)} title={form?.id ? 'Éditer' : 'Nouvelle publication'} onClose={() => setForm(null)} wide
         footer={<><Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button><Button busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button></>}>
         {form && <div className="admin-grid-2">
@@ -142,28 +143,23 @@ const ReelsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
         <Button onClick={() => { setError(''); setForm({ title: '', channel_id: channels[0]?.id || '', description: '', video_url: '', duration_seconds: 0, status: 'publie' }); }}><Plus size={15} />Ajouter</Button>
         <span className="admin-block-small">Format conseillé : vidéo verticale 9:16, sous-titres lisibles et caption courte.</span>
       </div>
-      <div className="no-scrollbar overflow-x-auto">
-        <table className="admin-table" style={{ minWidth: 700 }}>
-          <thead><tr><th>Titre</th><th>Canal</th><th>Durée</th><th>Vues</th><th>Likes</th><th>Statut</th><th>Actions</th></tr></thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id}>
-                <td><strong>{row.title}</strong></td>
-                <td>{channels.find((c) => c.id === row.channel_id)?.name || '—'}</td>
-                <td>{fmt(row.duration_seconds || 0)}</td>
-                <td>{row.views}</td>
-                <td>{row.likes}</td>
-                <td><StatusBadge status={st(row.status)} /></td>
-                <td><div className="admin-actions" style={{ marginTop: 0 }}>
-                  <Button variant="ghost" onClick={() => setForm({ ...row })}><Pencil size={14} /></Button>
-                  <Button variant="danger" onClick={async () => { if (window.confirm('Supprimer ?')) { await adminApi(`/reels/${row.id}`, { method: 'DELETE' }); load(); } }}><Trash2 size={14} /></Button>
-                </div></td>
-              </tr>
-            ))}
-            {!rows.length && <tr><td colSpan={7} className="admin-block-small">Aucun reel.</td></tr>}
-          </tbody>
-        </table>
-      </div>
+      <DataTable
+        minWidth={700}
+        emptyText="Aucun reel."
+        rows={rows}
+        columns={[
+          { key: 'title', label: 'Titre', render: (row: any) => <strong>{row.title}</strong> },
+          { key: 'channel', label: 'Canal', render: (row: any) => channels.find((c) => c.id === row.channel_id)?.name || '—' },
+          { key: 'duration_seconds', label: 'Durée', render: (row: any) => fmt(row.duration_seconds || 0) },
+          { key: 'views', label: 'Vues', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.views}</span> },
+          { key: 'likes', label: 'Likes', align: 'end', render: (row: any) => <span className="admin-cell-num">{row.likes}</span> },
+          { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={st(row.status)} /> },
+        ]}
+        rowActions={[
+          { key: 'edit', label: 'Éditer', icon: <Pencil size={14} />, hideLabel: true, onRun: (row: any) => { setError(''); setForm({ ...row }); } },
+          { key: 'delete', label: 'Supprimer', tone: 'danger', icon: <Trash2 size={14} />, hideLabel: true, onRun: (row: any) => void removeWithConfirm(`/reels/${row.id}`, 'Supprimer ce reel ?', load) },
+        ]}
+      />
       <Modal open={Boolean(form)} title={form?.id ? 'Éditer' : 'Nouveau reel'} onClose={() => setForm(null)} wide
         footer={<><Button variant="ghost" onClick={() => setForm(null)}>Annuler</Button><Button busy={busy === 'save'} onClick={() => void save()}>Enregistrer</Button></>}>
         {form && <div className="admin-grid-2">

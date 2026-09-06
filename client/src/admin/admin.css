@@ -682,6 +682,20 @@ input[type="color"]{width:100%;height:40px;border:1px solid #e5e2ee;border-radiu
 .admin-row-actions--labels button { width: auto; height: auto; padding: 6px 10px; font-size: 11px; font-weight: 750; }
 
 /* ===== P2.0 — capacités du moteur de table partagé (tri, sélection, actions, légende, erreur) ===== */
+/* Les boutons d'action du moteur portent leur libellé : largeur automatique, variante danger,
+   état inerte lisible (une action refusée reste visible avec son motif). */
+.admin-row-actions .admin-table-action { display: inline-flex; min-width: 30px; width: auto; height: 30px; align-items: center; justify-content: center; gap: 6px; padding: 0 9px; border: 1px solid var(--admin-line); border-radius: 7px; background: #fff; color: #5f5b66; font-size: 11px; font-weight: 750; cursor: pointer; }
+.admin-row-actions .admin-table-action:hover { color: var(--admin-purple); border-color: var(--admin-purple); }
+.admin-row-actions .admin-table-action.is-danger:hover { color: #b3261e; border-color: #b3261e; }
+.admin-row-actions .admin-table-action:disabled { color: #9ca3af; opacity: .55; cursor: not-allowed; }
+.admin-row-actions .admin-table-action svg { width: 14px; height: 14px; }
+/* Chiffres alignés : une seule règle pour toutes les listes (vues, likes, montants). */
+.admin-cell-num { font-variant-numeric: tabular-nums; font-weight: 650; }
+
+/* Réordonnancement par glisser-déposer (liste à ordre manuel : trust bar, stories, blocs d'accueil). */
+.admin-table-cell--drag { width: 26px; }
+.admin-table-grip { color: #b6b2bf; font-size: 13px; letter-spacing: -3px; cursor: grab; }
+.admin-table tr.is-drag-over td { background: #fffaf5; box-shadow: inset 0 2px 0 var(--admin-yellow); }
 .admin-table-wrap { position: relative; }
 .admin-table-wrap.is-compact .admin-table th, .admin-table-wrap.is-compact .admin-table td { padding-top: 7px; padding-bottom: 7px; }
 .admin-table-caption { padding: 0 0 10px; color: var(--admin-muted); font-size: 11px; text-align: left; caption-side: top; }

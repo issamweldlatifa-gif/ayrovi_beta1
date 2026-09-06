@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Camera, CheckCircle2, AlertCircle, Loader2, ChartLine, FileText } from '../components/QatafoIcons';
 import { adminApi } from './api';
-import { Button, Field } from './components';
+import { Button, DataTable, Field } from './components';
 
 /* ------------------------------------------------------------------ */
 /* LENS TEST LAB — upload, question, run, résultats + évaluation       */
@@ -87,10 +87,17 @@ export const LensLabPage: React.FC = () => {
           <h3 style={{ marginTop: 14 }}>OCR (deuxième opinion)</h3>
           <p className="admin-block-small">Caractères : {result.lens?.sources?.ocr?.text_chars || 0} · confiance OCR : {Math.round((result.ocr?.confidence || 0) * 100)}% · segments : {result.lens?.sources?.ocr?.segments || 0}</p>
           {result.ocr?.findings?.length > 0 && (
-            <table className="admin-table"><thead><tr><th>Rôle</th><th>Montant</th><th>Devise</th><th>Confiance</th><th>Extrait</th></tr></thead>
-              <tbody>{result.ocr.findings.slice(0, 8).map((f: any, i: number) => (
-                <tr key={i}><td>{f.role}</td><td>{f.value}</td><td>{f.currency || '—'}</td><td>{Math.round(f.confidence * 100)}%</td><td className="admin-block-small">{f.snippet}</td></tr>
-              ))}</tbody></table>
+            <DataTable
+              rows={result.ocr.findings.slice(0, 8)}
+              rowKey={(_: any, index: number) => `ocr-${index}`}
+              columns={[
+                { key: 'role', label: 'Rôle' },
+                { key: 'value', label: 'Montant' },
+                { key: 'currency', label: 'Devise', render: (row: any) => row.currency || '—' },
+                { key: 'confidence', label: 'Confiance', render: (row: any) => `${Math.round(row.confidence * 100)}%` },
+                { key: 'snippet', label: 'Extrait', className: 'admin-block-small' },
+              ]}
+            />
           )}
           {result.lens?.products?.length > 0 && (
             <><h3 style={{ marginTop: 14 }}>Produits détectés</h3>
@@ -119,18 +126,19 @@ export const LensLabPage: React.FC = () => {
 
       <section className="admin-card">
         <h3>Historique des runs</h3>
-        <table className="admin-table"><thead><tr><th>Date</th><th>Question</th><th>Prix lu</th><th>Confiance</th><th>Vérifié</th><th>Durée</th><th></th></tr></thead>
-          <tbody>{history.map((row) => (
-            <tr key={row.id}>
-              <td>{new Date(row.createdAt).toLocaleString('fr-FR')}</td>
-              <td className="admin-block-small">{row.question || '—'}</td>
-              <td>{row.pricing ? `${price(row.pricing.sale_price ?? row.pricing.total_price)} ${row.pricing.currency || ''}` : '—'}</td>
-              <td>{Math.round(row.confidence * 100)}%</td>
-              <td>{row.verified ? <CheckCircle2 size={15} /> : '—'}</td>
-              <td>{row.durationMs} ms</td>
-              <td><Button variant="ghost" onClick={() => setEvalFor(row)}>Évaluer</Button></td>
-            </tr>
-          ))}</tbody></table>
+        <DataTable
+          rows={history}
+          emptyText="Aucun run enregistré pour le moment."
+          columns={[
+            { key: 'createdAt', label: 'Date', render: (row: LabRun) => new Date(row.createdAt).toLocaleString('fr-FR') },
+            { key: 'question', label: 'Question', className: 'admin-block-small', render: (row: LabRun) => row.question || '—' },
+            { key: 'pricing', label: 'Prix lu', render: (row: LabRun) => (row.pricing ? `${price(row.pricing.sale_price ?? row.pricing.total_price)} ${row.pricing.currency || ''}` : '—') },
+            { key: 'confidence', label: 'Confiance', render: (row: LabRun) => `${Math.round(row.confidence * 100)}%` },
+            { key: 'verified', label: 'Vérifié', render: (row: LabRun) => (row.verified ? <CheckCircle2 size={15} /> : '—') },
+            { key: 'durationMs', label: 'Durée', render: (row: LabRun) => `${row.durationMs} ms` },
+          ]}
+          rowActions={[{ key: 'evaluate', label: 'Évaluer', onRun: (row: LabRun) => setEvalFor(row) }]}
+        />
       </section>
     </div>
   );
@@ -208,17 +216,19 @@ export const AiDiscoveryPage: React.FC = () => {
 
       <section className="admin-card" style={{ marginTop: 14 }}>
         <h3>Journal des actions AI (40 derniers)</h3>
-        <table className="admin-table"><thead><tr><th>Date</th><th>Événement</th><th>Outils</th><th>Question</th><th>Confiance</th><th>Succès</th></tr></thead>
-          <tbody>{(data.recentEvents || []).map((event: any, index: number) => (
-            <tr key={index}>
-              <td className="admin-block-small">{new Date(event.at).toLocaleString('fr-FR')}</td>
-              <td>{event.type}</td>
-              <td className="admin-block-small">{event.tools || '—'}</td>
-              <td className="admin-block-small">{event.question || '—'}</td>
-              <td>{event.confidence ? Math.round(event.confidence * 100) + '%' : '—'}</td>
-              <td>{event.success ? '✓' : '✗'}</td>
-            </tr>
-          ))}</tbody></table>
+        <DataTable
+          rows={data.recentEvents || []}
+          rowKey={(_: any, index: number) => `evt-${index}`}
+          emptyText="Aucune action AI enregistrée."
+          columns={[
+            { key: 'at', label: 'Date', className: 'admin-block-small', render: (row: any) => new Date(row.at).toLocaleString('fr-FR') },
+            { key: 'type', label: 'Événement' },
+            { key: 'tools', label: 'Outils', className: 'admin-block-small', render: (row: any) => row.tools || '—' },
+            { key: 'question', label: 'Question', className: 'admin-block-small', render: (row: any) => row.question || '—' },
+            { key: 'confidence', label: 'Confiance', render: (row: any) => (row.confidence ? `${Math.round(row.confidence * 100)}%` : '—') },
+            { key: 'success', label: 'Succès', render: (row: any) => (row.success ? '✓' : '✗') },
+          ]}
+        />
       </section>
       <p className="admin-block-small" style={{ marginTop: 12 }}><ChartLine size={14} /> Ces données alimentent l'évaluation humaine : aucun prompt ni modèle n'est modifié automatiquement.</p>
     </div>

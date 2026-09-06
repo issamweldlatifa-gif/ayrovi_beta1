@@ -1,6 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, X } from '../components/QatafoIcons';
-import { Button, Field, Toast } from './components';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Pencil, Plus, X } from '../components/QatafoIcons';
+import { Button, DataTable, Field, Toast } from './components';
 import { adminApi } from './api';
 import {
   Bell, CheckCircle2, CreditCard, Globe2, Lock, MapPin, MessageCircle, PackageCheck, Phone,
@@ -35,8 +35,6 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const [draft, setDraft] = useState(emptyDraft);
   const [modalOpen, setModalOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
-  const dragIndex = useRef<number | null>(null);
-
   useEffect(() => { if (toast) { const t = window.setTimeout(() => setToast(null), 3800); return () => window.clearTimeout(t); } }, [toast]);
 
   const load = useCallback(async () => {
@@ -92,13 +90,11 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
     try { await adminApi('/trust-bar/reorder', { method: 'PUT', body: JSON.stringify({ ids: nextItems.map((item) => item.id) }) }); setToast({ message: 'Ordre mis à jour.', tone: 'success' }); }
     catch (reason: any) { setToast({ message: reason.message, tone: 'error' }); await load(); }
   };
-  const onDrop = (index: number) => {
-    const from = dragIndex.current;
-    dragIndex.current = null;
-    if (from === null || from === index) return;
+  /** Le déplacement est géré par le moteur de table ; l'écran ne garde que la persistance. */
+  const move = (from: number, to: number) => {
     const next = [...items];
     const [moved] = next.splice(from, 1);
-    next.splice(index, 0, moved);
+    next.splice(to, 0, moved);
     void commitOrder(next);
   };
 
@@ -158,44 +154,30 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           <div><h3>Éléments ({items.length})</h3><p>Glissez-déposez pour réordonner — l’ordre s’enregistre automatiquement.</p></div>
           {canWrite && <Button onClick={() => { setDraft(emptyDraft); setModalOpen(true); }}><Plus size={16} /> Ajouter</Button>}
         </div>
-        {loading ? <p className="admin-empty">Chargement…</p> : (
-          <table className="admin-table">
-            <thead><tr><th /><th>Icône</th><th>Titre</th><th>Description</th><th>Statut</th><th>Ordre</th><th /></tr></thead>
-            <tbody>
-              {items.map((row, index) => (
-                <tr
-                  key={row.id}
-                  draggable={canWrite}
-                  onDragStart={() => { dragIndex.current = index; }}
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={() => onDrop(index)}
-                  className={row.enabled ? '' : 'is-muted'}
-                >
-                  <td style={{ cursor: canWrite ? 'grab' : 'default', color: '#9ca3af', width: 26 }} title="Glisser">⋮⋮</td>
-                  <td>{React.createElement(ICON_COMPONENTS[row.icon] || ShieldCheck, { className: 'h-6 w-6', style: { color: row.iconColor || settings.title_color } })}</td>
-                  <td><strong>{row.title}</strong></td>
-                  <td className="admin-trustbar-desc">{row.description}</td>
-                  <td>
-                    <label className="admin-toggle">
-                      <input type="checkbox" checked={row.enabled} disabled={!canWrite || busy} onChange={() => void toggleEnabled(row)} />
-                      <span />
-                    </label>
-                  </td>
-                  <td>{row.sortOrder}</td>
-                  <td>
-                    {canWrite && (
-                      <div className="admin-row-actions">
-                        <button type="button" title="Modifier" onClick={() => { setDraft({ ...row, titleColor: row.titleColor || '', descriptionColor: row.descriptionColor || '', iconColor: row.iconColor || '' }); setModalOpen(true); }}>✎</button>
-                        <button type="button" title="Supprimer" onClick={() => void removeItem(row)}><X size={16} /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {!items.length && <tr><td colSpan={7} className="admin-empty">Aucun élément — le site affiche la configuration par défaut.</td></tr>}
-            </tbody>
-          </table>
-        )}
+        <DataTable<TrustItemRow>
+          loading={loading}
+          rows={items}
+          rowKey={(row) => row.id}
+          rowClassName={(row) => (row.enabled ? '' : 'is-muted')}
+          reorder={canWrite ? { onReorder: move } : undefined}
+          emptyText="Aucun élément — le site affiche la configuration par défaut."
+          columns={[
+            { key: 'icon', label: 'Icône', render: (row) => React.createElement(ICON_COMPONENTS[row.icon] || ShieldCheck, { className: 'h-6 w-6', style: { color: row.iconColor || settings.title_color } }) },
+            { key: 'title', label: 'Titre', render: (row) => <strong>{row.title}</strong> },
+            { key: 'description', label: 'Description', className: 'admin-trustbar-desc' },
+            { key: 'enabled', label: 'Statut', render: (row) => (
+              <label className="admin-toggle">
+                <input type="checkbox" checked={row.enabled} disabled={!canWrite || busy} onChange={() => void toggleEnabled(row)} />
+                <span />
+              </label>
+            ) },
+            { key: 'sortOrder', label: 'Ordre' },
+          ]}
+          rowActions={canWrite ? [
+            { key: 'edit', label: 'Modifier', icon: <Pencil size={14} />, hideLabel: true, onRun: (row) => { setDraft({ ...row, titleColor: row.titleColor || '', descriptionColor: row.descriptionColor || '', iconColor: row.iconColor || '' }); setModalOpen(true); } },
+            { key: 'delete', label: 'Supprimer', tone: 'danger', icon: <X size={14} />, hideLabel: true, onRun: (row) => void removeItem(row) },
+          ] : undefined}
+        />
       </section>
 
       {/* نافذة التحرير */}

@@ -11,6 +11,8 @@
  *    inchangé, les capacités nouvelles sont opt-in, et `ResourceWorkspace` s'appuie dessus.
  */
 import React from 'react';
+import { Eye, Pencil } from '../client/src/components/QatafoIcons';
+import fs from 'node:fs';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -183,6 +185,28 @@ describe('BackOfficeShell — navigation pilotée par le registre', () => {
     expect(markup).toContain('Ancienne surface');
     expect(markup).toContain('catalog.product');
     expect(markup).toContain('Conservé pour les deep links.');
+    // Le maître n'est pas un écran navigable dans ce fixture : pas de bouton, seulement l'info.
+    expect(markup).not.toContain('Ouvrir la surface canonique');
+  });
+
+  it('propose le maître canonique en navigation quand cet écran est permis', () => {
+    const previous = store;
+    const master: ResourceDescriptor = { ...PRODUCTS_DESCRIPTOR, key: 'catalog.product', label: 'Produits (canonique)', section: 'catalogue-products', canonicalOf: null };
+    store = {
+      ...previous,
+      resources: [PRODUCTS_DESCRIPTOR, master],
+      navigation: {
+        ...NAVIGATION,
+        groups: NAVIGATION.groups.map((group) => (group.label === 'Catalogue'
+          ? { ...group, items: [...group.items, { ...NAVIGATION.groups[1].items[0], section: 'catalogue-products', label: 'Produits (canonique)' }] }
+          : group)),
+      },
+    };
+    try {
+      const markup = withLocation('?section=products', () => renderShell(() => <div>page</div>));
+      expect(markup).toContain('Ouvrir la surface canonique');
+      expect(markup).toContain('Produits (canonique)');
+    } finally { store = previous; }
   });
 
   it('affiche l’identité employée rattachée au compte', () => {
@@ -374,9 +398,72 @@ describe('Consolidation — une seule implémentation par abstraction', () => {
     expect(admin).toContain('<DataTable');
   });
 
+  it('fait piloter les 9 écrans du moteur par le descripteur, sans second rendu', () => {
+    // tri + erreur/réessai viennent du framework ; le reste de l'écran reste `ContentPage`
+    expect(admin).toContain('sortableOf(column.key)');
+    expect(admin).toContain('onRetry={() => void load()}');
+    expect(admin).toContain('if (sort) { query.sort = sort.key; query.direction = sort.direction; }');
+    // un seul chemin de rendu par ressource : aucune copie de la logique de table dans l'écran
+    expect(admin).not.toMatch(/const [A-Za-z]+Table: React\.FC[\s\S]{0,200}<table/);
+  });
+
   it('relie les capacités de la ressource à la matrice centrale, avec repli legacy', () => {
     expect(admin).toContain('capabilitiesFor(resource)');
     expect(admin).toContain('capability?.edit ?? canWrite');
     expect(admin).toContain('capability?.create ?? canWrite');
+  });
+
+  it('ne laisse aucune liste dessinée à la main hors du moteur (gel P2.1)', () => {
+    // Le moteur de table est le seul à écrire un <table>. Les deux exceptions sont listées avec
+    // leur raison : `components.tsx` EST le moteur ; `ArrivalIngestionPage.tsx` est gelé (P2.1)
+    // et dessine une table métier propre (`arrival-product-table`), pas une liste admin.
+    const dir = 'client/src/admin';
+    const walk = (path: string): string[] => fs.readdirSync(path, { withFileTypes: true }).flatMap((entry) => (
+      entry.isDirectory() ? walk(`${path}/${entry.name}`) : entry.name.endsWith('.tsx') ? [`${path}/${entry.name}`] : []
+    ));
+    const files = walk(dir);
+    const handRolled = files.filter((file) => /<table\b/.test(fs.readFileSync(file, 'utf8')));
+    expect(handRolled.map((file) => file.split('/').pop()).sort()).toEqual(['ArrivalIngestionPage.tsx', 'components.tsx']);
+    const outsideEngine = handRolled.filter((file) => !file.endsWith('components.tsx') && !file.endsWith('ArrivalIngestionPage.tsx'));
+    expect(outsideEngine).toEqual([]);
+    // aucune classe de table admin recopiée dans un écran
+    const copied = files.filter((file) => /className="admin-table"/.test(fs.readFileSync(file, 'utf8')) && !file.endsWith('components.tsx'));
+    expect(copied).toEqual([]);
+  });
+});
+
+describe('DataTable — capacités ajoutées pour absorber les écrans', () => {
+  const rows = [{ id: 'a', title: 'Un', views: 4 }, { id: 'b', title: 'Deux', views: 0 }];
+  const columns = [{ key: 'title', label: 'Titre' }, { key: 'views', label: <><Eye /> Vues</> }];
+
+  it('réordonne, masque le libellé, fixe une largeur minimale et accepte une clé par index', () => {
+    const markup = renderToStaticMarkup(<DataTable
+      columns={columns as any} rows={rows} minWidth={860} selectable selection={['a']} onSelectionChange={vi.fn()}
+      rowKey={(row: any, index: number) => `evt-${index}`}
+      reorder={{ onReorder: vi.fn() }}
+      rowActions={[
+        { key: 'edit', label: 'Éditer', icon: <Pencil />, hideLabel: true, onRun: vi.fn() },
+        { key: 'publish', label: 'Publier', show: (row: any) => row.views === 0, disabled: (row: any) => row.id === 'b', onRun: vi.fn() },
+      ] as any}
+    />);
+    expect(markup).toContain('admin-table-cell--drag');
+    expect(markup).toContain('admin-table-grip');
+    expect(markup).toContain('min-width:860px');
+    expect(markup).toContain('Sélectionner evt-0');
+    expect(markup).toContain('aria-label="Éditer"');
+    expect(markup).toContain('<svg');
+    // libellé masqué sur le bouton à icône…
+    expect(markup).not.toContain('>Éditer<');
+    // …et l'action conditionnelle n'est rendue que sur la ligne concernée (une seule fois en texte)
+    expect(markup.match(/>Publier</g)?.length).toBe(1);
+    expect(markup).toContain('disabled');
+  });
+
+  it('n’ajoute aucune colonne quand le parent ne demande rien', () => {
+    const plain = renderToStaticMarkup(<DataTable columns={columns as any} rows={rows} />);
+    expect(plain).not.toContain('admin-table-cell--drag');
+    expect(plain).not.toContain('admin-table-cell--actions');
+    expect(plain).not.toContain('min-width');
+    expect(plain).not.toContain('aria-sort');
   });
 });

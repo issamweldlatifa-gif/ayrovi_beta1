@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
-import { Button, ConfirmDialog, Field, StatusBadge, Toast } from './components';
+import { Button, ConfirmDialog, DataTable, Field, StatusBadge, Toast } from './components';
 import { adminApi } from './api';
 
 /**
@@ -409,44 +409,34 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
 
       <section className="admin-list-card">
         <div className="admin-card-head"><div><h3>Tous les visuals</h3><p>{rows.length} élément(s) — planifiez, publiez ou supprimez.</p></div></div>
-        {loading ? <p className="admin-empty">Chargement…</p> : (
-          <table className="admin-table">
-            <thead>
-              <tr><th>Aperçu</th><th>Statut</th><th>Planification</th><th>Focal</th><th>Publié le</th><th /></tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td><div className="admin-hero-thumb"><img src={row.imageUrl} alt="" style={{ objectPosition: `${row.focalX * 100}% ${row.focalY * 100}%` }} /></div></td>
-                  <td><StatusBadge status={row.status === 'PUBLISHED' ? 'ACTIVE' : 'INACTIVE'} /></td>
-                  <td>
-                    {row.startDate || row.endDate ? `${dateLabel(row.startDate)} → ${dateLabel(row.endDate)}` : '—'}
-                    {canWrite && (
-                      <span className="admin-hero-quick">
-                        <input type="date" defaultValue={toInputDate(row.startDate)} onChange={(event) => void setSchedule(row, { startDate: event.target.value })} title="Start" />
-                        <input type="date" defaultValue={toInputDate(row.endDate)} onChange={(event) => void setSchedule(row, { endDate: event.target.value })} title="End" />
-                      </span>
-                    )}
-                  </td>
-                  <td>D {Math.round(row.focalX * 100)}/{Math.round(row.focalY * 100)} · M {Math.round((row.mobileFocalX ?? 0.5) * 100)}/{Math.round((row.mobileFocalY ?? 0.5) * 100)}</td>
-                  <td>{row.publishedAt ? new Date(row.publishedAt).toLocaleDateString('fr-TN') : '—'}</td>
-                  <td>
-                    {canWrite && (
-                      <div className="admin-row-actions">
-                        <button type="button" title="Ajuster (focal/alt/planification)" onClick={() => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setOverlayMode(row.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO'); setOverlayStrength(typeof row.overlayStrength === 'number' ? row.overlayStrength : 0.3); setOrientationOverride(row.orientationOverride === 'LANDSCAPE' ? 'LANDSCAPE' : row.orientationOverride === 'PORTRAIT' ? 'PORTRAIT' : 'AUTO'); try { setAnalysis(row.analysis ? JSON.parse(row.analysis) : null); } catch { setAnalysis(null); } setAltText(row.altText); setPreviewUrl(''); setFile(null); }}><RefreshCw size={16} /></button>
-                        {row.status === 'PUBLISHED'
-                          ? <button type="button" title="Dépublier" onClick={() => void unpublish(row)}><X size={16} /></button>
-                          : <button type="button" title="Publier" onClick={() => void publish(row)}>✓</button>}
-                        <button type="button" title="Supprimer" onClick={() => setDeleteTarget(row)}><X size={16} /></button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-              {!rows.length && <tr><td colSpan={6} className="admin-empty">Aucun visual — le Hero utilise l’image par défaut.</td></tr>}
-            </tbody>
-          </table>
-        )}
+        <DataTable
+          loading={loading}
+          emptyText="Aucun visual — le Hero utilise l’image par défaut."
+          rows={rows}
+          columns={[
+            { key: 'imageUrl', label: 'Aperçu', render: (row: any) => <div className="admin-hero-thumb"><img src={row.imageUrl} alt="" style={{ objectPosition: `${row.focalX * 100}% ${row.focalY * 100}%` }} /></div> },
+            { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status === 'PUBLISHED' ? 'ACTIVE' : 'INACTIVE'} /> },
+            { key: 'schedule', label: 'Planification', render: (row: any) => (
+              <>
+                {row.startDate || row.endDate ? `${dateLabel(row.startDate)} → ${dateLabel(row.endDate)}` : '—'}
+                {canWrite && (
+                  <span className="admin-hero-quick">
+                    <input type="date" defaultValue={toInputDate(row.startDate)} onChange={(event) => void setSchedule(row, { startDate: event.target.value })} title="Start" />
+                    <input type="date" defaultValue={toInputDate(row.endDate)} onChange={(event) => void setSchedule(row, { endDate: event.target.value })} title="End" />
+                  </span>
+                )}
+              </>
+            ) },
+            { key: 'focal', label: 'Focal', render: (row: any) => `D ${Math.round(row.focalX * 100)}/${Math.round(row.focalY * 100)} · M ${Math.round((row.mobileFocalX ?? 0.5) * 100)}/${Math.round((row.mobileFocalY ?? 0.5) * 100)}` },
+            { key: 'publishedAt', label: 'Publié le', render: (row: any) => (row.publishedAt ? new Date(row.publishedAt).toLocaleDateString('fr-TN') : '—') },
+          ]}
+          rowActions={canWrite ? [
+            { key: 'adjust', label: 'Ajuster (focal/alt/planification)', icon: <RefreshCw size={16} />, hideLabel: true, onRun: (row: any) => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setOverlayMode(row.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO'); setOverlayStrength(typeof row.overlayStrength === 'number' ? row.overlayStrength : 0.3); setOrientationOverride(row.orientationOverride === 'LANDSCAPE' ? 'LANDSCAPE' : row.orientationOverride === 'PORTRAIT' ? 'PORTRAIT' : 'AUTO'); try { setAnalysis(row.analysis ? JSON.parse(row.analysis) : null); } catch { setAnalysis(null); } setAltText(row.altText); setPreviewUrl(''); setFile(null); } },
+            { key: 'publish', label: 'Publier', icon: '✓', hideLabel: true, show: (row: any) => row.status !== 'PUBLISHED', onRun: (row: any) => void publish(row) },
+            { key: 'unpublish', label: 'Dépublier', icon: <X size={16} />, hideLabel: true, show: (row: any) => row.status === 'PUBLISHED', onRun: (row: any) => void unpublish(row) },
+            { key: 'delete', label: 'Supprimer', icon: <X size={16} />, hideLabel: true, tone: 'danger', onRun: (row: any) => setDeleteTarget(row) },
+          ] : undefined}
+        />
       </section>
 
       {deleteTarget && (

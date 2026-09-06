@@ -189,20 +189,34 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
   // (`module:action:resource:scope`, rendue par `GET /back-office/resources/:key`). Tant que le
   // framework n'a pas répondu — ou qu'il ne grise rien (`null`) — on garde la règle legacy de
   // l'écran : aucune page ne se retrouve bloquée par un méta-endpoint.
-  const { capabilitiesFor, loadCapabilities } = useBackOffice();
+  const { capabilitiesFor, loadCapabilities, descriptorFor } = useBackOffice();
   const capability = capabilitiesFor(resource);
+  // Le descripteur du framework pilote ce qui peut l'être sans changer l'écran : colonnes
+  // triables (validées côté serveur) et libellés. Sans lui, l'écran rend exactement comme avant.
+  const descriptor = descriptorFor(resource);
   useEffect(() => { void loadCapabilities(resource); }, [resource]);
   const writable = capability?.edit ?? canWrite;
   const creatable = capability?.create ?? canWrite;
   const definition = resources[resource]; const [rows, setRows] = useState<any[]>([]); const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [loading, setLoading] = useState(true); const [modal, setModal] = useState(false);
+  const [sort, setSort] = useState<{ key: string; direction: 'asc' | 'desc' } | undefined>(undefined);
+  const [loadError, setLoadError] = useState('');
   const [editing, setEditing] = useState<any>(null); const [form, setForm] = useState<Record<string, any>>({ ...definition.defaults }); const [busy, setBusy] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<any>(null); const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
   const load = useCallback(async (page = pagination.page) => {
-    setLoading(true);
-    try { const result = await adminApi<any>(`${definition.endpoint}?${queryString({ page, pageSize: 20, search, status })}`); setRows(result.data); setPagination(result.pagination); }
-    catch (reason: any) { setToast({ message: reason.message, tone: 'error' }); } finally { setLoading(false); }
-  }, [definition.endpoint, pagination.page, search, status]);
+    setLoading(true); setLoadError('');
+    try {
+      // `sort`/`direction` sont validés côté serveur contre `config.sortable` : aucun nom de
+      // colonne inventé n'atteint le SQL. Sans descripteur, la liste garde son ordre habituel.
+      const query: Record<string, any> = { page, pageSize: 20, search, status };
+      if (sort) { query.sort = sort.key; query.direction = sort.direction; }
+      const result = await adminApi<any>(`${definition.endpoint}?${queryString(query)}`);
+      setRows(result.data); setPagination(result.pagination);
+    }
+    catch (reason: any) { setLoadError(reason.message || 'Liste indisponible.'); setToast({ message: reason.message, tone: 'error' }); }
+    finally { setLoading(false); }
+  }, [definition.endpoint, pagination.page, search, status, sort]);
+  const toggleSort = (key: string) => setSort((current) => (current?.key === key ? { key, direction: current.direction === 'asc' ? 'desc' : 'asc' } : { key, direction: 'asc' }));
   useEffect(() => { const timer = window.setTimeout(() => load(1), 250); return () => clearTimeout(timer); }, [search, status]);
   const openCreate = () => { setEditing(null); setForm({ ...definition.defaults }); setModal(true); };
   const openEdit = (row: any) => { setEditing(row); setForm({ ...definition.defaults, ...row }); setModal(true); };
@@ -220,6 +234,7 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
     catch (reason: any) { setToast({ message: reason.message, tone: 'error' }); } finally { setBusy(false); }
   };
   const displayStatus = (row: any) => definition.statusField === 'active' ? (row.active ? 'ACTIVE' : 'INACTIVE') : row[definition.statusField || 'status'];
+  const sortableOf = (key: string) => Boolean(descriptor?.columns.find((column) => column.key === key && column.sortable));
   const columns: DataColumn<any>[] = [
     { key: definition.keyField, label: definition.keyField === 'name' ? 'Nom' : definition.keyField === 'question' ? 'Question' : definition.keyField === 'text' ? 'Message' : 'Titre', render: (row) => <div className="admin-entity"><span>{row.image || row.main_image || row.logo || row.media_url ? <img src={row.image || row.main_image || row.logo || row.media_url} alt="" /> : <i><FileText /></i>}</span><div><strong>{row[definition.keyField] || (resource === 'assistant' ? row.answer.slice(0, 60) : 'Sans titre')}</strong><small>{row.type || row.category || row.source_platform || row.media_type || ''}</small></div></div> },
     { key: 'status', label: 'Statut', render: (row) => <StatusBadge status={displayStatus(row)} /> },
@@ -230,7 +245,9 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
   return <>
     <PageHeader title={definition.title} description={definition.description} action={creatable ? <Button onClick={openCreate}><Plus size={18} />Nouveau</Button> : undefined} />
     <section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} /><Filters>{statusOptions.length > 0 && <Select value={status} onChange={(e) => setStatus(e.target.value)} options={[{ value: '', label: 'Tous les statuts' }, ...options(statusOptions)]} />}</Filters></div>
-      <DataTable columns={columns} rows={rows} loading={loading} emptyText={`Aucun ${definition.singular} pour le moment.`} onRowClick={writable ? openEdit : undefined} />
+      <DataTable columns={columns.map((column) => ({ ...column, sortable: sortableOf(column.key) }))} rows={rows} loading={loading}
+        error={loadError || undefined} onRetry={() => void load()} onSortChange={toggleSort} sort={sort}
+        emptyText={`Aucun ${definition.singular} pour le moment.`} onRowClick={writable ? openEdit : undefined} />
       <Pagination {...pagination} onChange={(page) => load(page)} />
     </section>
     <Modal open={modal} title={`${editing ? 'Modifier' : 'Créer'} ${definition.singular}`} onClose={() => setModal(false)} wide><ResourceForm definition={definition} value={form} onChange={setForm} onSubmit={save} busy={busy} /></Modal>

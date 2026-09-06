@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp } from '../components/QatafoIcons';
 import { adminApi } from './api';
-import { Button, Field, Modal, StatusBadge } from './components';
+import { Button, DataTable, Field, Modal, StatusBadge } from './components';
 
 const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
 const CHANNELS = [
@@ -193,43 +193,34 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
       {error && <div className="admin-error">{error}</div>}
 
       <section className="admin-card">
-        <div className="no-scrollbar overflow-x-auto">
-          <table className="admin-table" style={{ minWidth: 860 }}>
-            <thead><tr>
-              <th>Story</th><th>Canal</th><th>Statut</th>
-              <th><Eye size={14} /> Vues</th><th><Heart size={14} /> Likes</th>
-              <th><MessageSquare size={14} /> Comm.</th><th><Share2 size={14} /> Part.</th><th>Actions</th>
-            </tr></thead>
-            <tbody>
-              {rows.map((row) => {
-                const st = stats[row.id] || { views: 0, likes: 0, comments: 0, shares: 0 };
-                return (
-                  <tr key={row.id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        {row.media_url && <img src={row.media_url} alt="" className="h-9 w-9 rounded-lg object-cover" />}
-                        <div><strong>{row.title}</strong><span className="admin-block-small">{new Date(row.publish_at).toLocaleDateString('fr-FR')}</span></div>
-                      </div>
-                    </td>
-                    <td>{(CHANNELS.find(([key]) => key === row.category) || [row.category, row.category])[1]}</td>
-                    <td><StatusBadge status={row.status} /></td>
-                    <td>{st.views}</td><td>{st.likes}</td><td>{st.comments}</td><td>{st.shares}</td>
-                    <td>
-                      <div className="admin-actions" style={{ marginTop: 0 }}>
-                        <Button variant="ghost" onClick={() => { setError(''); setForm({ ...emptyForm, ...row, secondary_images: safeJson(row.secondary_images), publish_at: toLocal(row.publish_at), expires_at: toLocal(row.expires_at || '') }); }}><Pencil size={14} /></Button>
-                        {row.status !== 'PUBLISHED'
-                          ? <Button busy={busy === row.id} onClick={() => void setStatus(row.id, 'PUBLISHED')}>Publier</Button>
-                          : <Button variant="ghost" busy={busy === row.id} onClick={() => void setStatus(row.id, 'EXPIRED')}><Box size={14} /></Button>}
-                        <Button variant="danger" busy={busy === row.id} onClick={() => void remove(row.id)}><Trash2 size={14} /></Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {!rows.length && <tr><td colSpan={8} className="admin-block-small">Aucune story — créez la première avec « Nouvelle story ».</td></tr>}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          minWidth={860}
+          emptyText="Aucune story — créez la première avec « Nouvelle story »."
+          rows={rows}
+          columns={[
+            { key: 'title', label: 'Story', render: (row: any) => (
+              <div className="admin-entity">
+                {row.media_url && <img src={row.media_url} alt="" />}
+                <div><strong>{row.title}</strong><span>{new Date(row.publish_at).toLocaleDateString('fr-FR')}</span></div>
+              </div>
+            ) },
+            { key: 'category', label: 'Canal', render: (row: any) => (CHANNELS.find(([key]) => key === row.category) || [row.category, row.category])[1] },
+            { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={row.status} /> },
+            { key: 'views', label: <><Eye size={14} /> Vues</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { views: 0 }).views}</span> },
+            { key: 'likes', label: <><Heart size={14} /> Likes</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { likes: 0 }).likes}</span> },
+            { key: 'comments', label: <><MessageSquare size={14} /> Comm.</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { comments: 0 }).comments}</span> },
+            { key: 'shares', label: <><Share2 size={14} /> Part.</>, align: 'end', render: (row: any) => <span className="admin-cell-num">{(stats[row.id] || { shares: 0 }).shares}</span> },
+          ]}
+          rowActions={[
+            { key: 'edit', label: 'Éditer', icon: <Pencil size={14} />, hideLabel: true, onRun: (row: any) => {
+              setError('');
+              setForm({ ...emptyForm, ...row, secondary_images: safeJson(row.secondary_images), publish_at: toLocal(row.publish_at), expires_at: toLocal(row.expires_at || '') });
+            } },
+            { key: 'publish', label: 'Publier', show: (row: any) => row.status !== 'PUBLISHED', disabled: (row: any) => busy === row.id, onRun: (row: any) => void setStatus(row.id, 'PUBLISHED') },
+            { key: 'unpublish', label: 'Dépublier', icon: <Box size={14} />, tone: 'danger', hideLabel: true, show: (row: any) => row.status === 'PUBLISHED', disabled: (row: any) => busy === row.id, onRun: (row: any) => void setStatus(row.id, 'EXPIRED') },
+            { key: 'delete', label: 'Supprimer', icon: <Trash2 size={14} />, tone: 'danger', hideLabel: true, disabled: (row: any) => busy === row.id, onRun: (row: any) => void remove(row.id) },
+          ]}
+        />
       </section>
 
       <section className="admin-card" style={{ marginTop: 14 }}>
