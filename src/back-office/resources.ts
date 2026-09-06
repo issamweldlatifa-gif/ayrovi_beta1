@@ -76,7 +76,7 @@ export interface BackOfficeFieldDef {
 export interface BackOfficeColumnDef {
   key: string;
   label: string;
-  render?: 'entity' | 'status' | 'money' | 'datetime' | 'code' | 'text';
+  render?: 'entity' | 'status' | 'money' | 'datetime' | 'code' | 'number' | 'text';
   sortable?: boolean;
   hiddenByDefault?: boolean;
 }
@@ -342,6 +342,100 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     fields: [{ key: 'name', label: 'Nom', type: 'text', required: true }, { key: 'category', label: 'Univers', type: 'select' }],
     actions: ['list', 'view', 'create', 'edit', 'delete'], statusVocabulary: 'catalogue.status',
     audit: { module: 'CATALOGUE_BRANDS', resourceType: 'brand' },
+  },
+  // ---- P2.2 — Stock (module neuf : aucune surface legacy à dualiser) ----
+  {
+    key: 'inventory.stock', label: 'Stock', singular: 'ligne de stock', module: 'inventory', domain: 'COMMERCE',
+    description: 'Quantités par produit, variante et emplacement — la seule table qui détient le stock, jamais `products`.',
+    navPermission: 'commerce:read',
+    permissions: {
+      list: 'inventory:read', view: 'inventory:read', create: 'inventory:create',
+      edit: 'inventory:update', delete: 'inventory:update',
+    },
+    section: 'inventory', nav: { group: 'Commerce', order: 260, icon: 'Package' },
+    // `custom` + un composant qui N'EST qu'une commande du moteur : la preuve que
+    // `ResourceWorkspace` sert un écran réel, sans ajouter une sixième liste quelque part.
+    surface: 'custom', component: 'InventoryStockPage', api: { prefix: '/inventory/stock', kind: 'module' },
+    columns: [
+      { key: 'product_name', label: 'Produit', render: 'entity', sortable: true },
+      { key: 'product_code', label: 'Code', render: 'code', sortable: false },
+      { key: 'sku', label: 'SKU', render: 'code', hiddenByDefault: true },
+      { key: 'location', label: 'Emplacement', sortable: true },
+      { key: 'quantity', label: 'Quantité', render: 'number', sortable: true },
+      { key: 'reorder_point', label: 'Point de commande', render: 'number', hiddenByDefault: true, sortable: true },
+      { key: 'stock_state', label: 'État', render: 'status' },
+      { key: 'last_movement_at', label: 'Dernier mouvement', render: 'datetime', sortable: true },
+      { key: 'updated_at', label: 'Modifié le', render: 'datetime', sortable: true, hiddenByDefault: true },
+    ],
+    fields: [
+      { key: 'product_id', label: 'Identifiant produit', type: 'text', hint: 'Ou « code produit » — la fiche produit reste la source de la désignation' },
+      { key: 'variant_id', label: 'Variante', type: 'text', hint: 'Vide = ligne sans variante' },
+      { key: 'location', label: 'Emplacement', type: 'text', required: true, hint: 'Étiquette courte : MAIN, TUNIS-1…' },
+      { key: 'quantity', label: 'Quantité d’ouverture', type: 'number', readonly: true, hint: 'Écrite comme mouvement OPENING_BALANCE ; ensuite, seul un mouvement déplace la quantité' },
+      { key: 'reorder_point', label: 'Point de commande', type: 'number', hint: 'Déclenche l’état « stock bas » ; ne bloque aucune vente' },
+      { key: 'status', label: 'Statut', type: 'select', options: ['ACTIVE', 'ARCHIVED'] },
+    ],
+    actions: ['list', 'view', 'create', 'edit', 'delete'],
+    statusField: 'status', statuses: ['ACTIVE', 'LOW', 'OUT', 'ARCHIVED'],
+    audit: { module: 'INVENTORY', resourceType: 'stock_item' },
+    notes: 'P2.2 — écran rendu par ResourceWorkspace depuis le descripteur ; aucune quantité stockée sur la fiche produit.',
+  },
+  {
+    key: 'inventory.movement', label: 'Mouvements de stock', singular: 'mouvement', module: 'inventory', domain: 'COMMERCE',
+    description: 'Journal append-only : chaque unité entrée, sortie ou ajustée, avec solde avant/après et motif.',
+    navPermission: 'commerce:read',
+    permissions: { list: 'inventory:read', view: 'inventory:read', create: 'inventory:write' },
+    section: 'inventory-movements', nav: { group: 'Commerce', order: 270, icon: 'History' },
+    surface: 'custom', component: 'InventoryMovementsPage', api: { prefix: '/inventory/movements', kind: 'module' },
+    columns: [
+      { key: 'created_at', label: 'Horodatage', render: 'datetime', sortable: true },
+      { key: 'product_name', label: 'Produit', render: 'entity' },
+      { key: 'direction', label: 'Sens', render: 'status' },
+      { key: 'quantity', label: 'Quantité', render: 'number', sortable: true },
+      { key: 'location', label: 'Emplacement' },
+      { key: 'balance_after', label: 'Solde après', render: 'number' },
+      { key: 'reason', label: 'Motif' },
+    ],
+    fields: [
+      { key: 'product_code', label: 'Code produit', type: 'text', hint: 'Ou sélectionnez la ligne de stock' },
+      { key: 'location', label: 'Emplacement', type: 'text', required: true },
+      { key: 'direction', label: 'Sens', type: 'select', required: true, options: ['IN', 'OUT', 'ADJUST'] },
+      { key: 'quantity', label: 'Quantité', type: 'number', required: true, hint: 'Signée pour un ajustement' },
+      { key: 'reason', label: 'Motif', type: 'select', required: true, options: ['RECEPTION', 'SALE', 'RETURN', 'TRANSFER_IN', 'TRANSFER_OUT', 'DAMAGE', 'LOSS', 'STOCKTAKE_VARIANCE', 'OPENING_BALANCE', 'CORRECTION', 'OTHER'] },
+      { key: 'note', label: 'Note', type: 'textarea', hint: 'Obligatoire pour un ajustement' },
+    ],
+    actions: ['list', 'view', 'create'],
+    statusField: 'direction', statuses: ['IN', 'OUT', 'ADJUST'], statusVocabulary: 'inventory.movement',
+    audit: { module: 'INVENTORY', resourceType: 'stock_movement' },
+    notes: 'Aucun verbe d’édition ni de suppression : un mouvement ne se corrige que par un mouvement.',
+  },
+  {
+    key: 'inventory.stocktake', label: 'Inventaires', singular: 'inventaire', module: 'inventory', domain: 'COMMERCE',
+    description: 'Comptage physique par emplacement, puis validation — les écarts ne touchent le stock qu’à l’approbation.',
+    navPermission: 'commerce:read',
+    permissions: {
+      list: 'inventory:read', view: 'inventory:read', create: 'inventory:create',
+      edit: 'inventory:update', approve: 'inventory:approve',
+    },
+    section: 'inventory-stocktakes', nav: { group: 'Commerce', order: 280, icon: 'CheckCircle2' },
+    surface: 'custom', component: 'InventoryStocktakesPage', api: { prefix: '/inventory/stocktakes', kind: 'module' },
+    columns: [
+      { key: 'code', label: 'Référence', render: 'code', sortable: true },
+      { key: 'location', label: 'Emplacement', sortable: true },
+      { key: 'status', label: 'Statut', render: 'status', sortable: true },
+      { key: 'lines_count', label: 'Lignes', render: 'number' },
+      { key: 'counted_count', label: 'Comptées', render: 'number' },
+      { key: 'variance_count', label: 'Écarts', render: 'number' },
+      { key: 'created_at', label: 'Ouvert le', render: 'datetime', sortable: true },
+    ],
+    fields: [
+      { key: 'location', label: 'Emplacement', type: 'text', required: true },
+      { key: 'note', label: 'Note de session', type: 'textarea' },
+    ],
+    actions: ['list', 'view', 'create', 'edit', 'approve'],
+    statusField: 'status', statuses: ['DRAFT', 'COUNTING', 'SUBMITTED', 'APPROVED', 'REJECTED'], statusVocabulary: 'inventory.stocktake',
+    audit: { module: 'INVENTORY', resourceType: 'stocktake' },
+    notes: 'Compter exige inventory:update, trancher exige inventory:approve — deux droits distincts.',
   },
   {
     key: 'catalog.pricing', label: 'Prix & taux', singular: 'réglage de prix', module: 'catalog', domain: 'COMMERCE',

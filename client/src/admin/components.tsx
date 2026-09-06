@@ -314,6 +314,17 @@ export const ImageUploader: React.FC<{ value?: string; onChange: (value: string)
   );
 };
 
+/**
+ * En-tête d'écran du back office. Il existait en trois copies quasi identiques (AdminApp,
+ * CataloguePages, ErpCorePages) qui ne différaient que par l'œil-de-bœuf : une seule
+ * implémentation désormais, le libellé du domaine reste un paramètre.
+ */
+export const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode; eyebrow?: string }> = ({
+  title, description, action, eyebrow = 'AYROVI ADMIN',
+}) => (
+  <div className="admin-page-header"><div><span className="admin-eyebrow">{eyebrow}</span><h1>{title}</h1><p>{description}</p></div>{action}</div>
+);
+
 export const EmptyState: React.FC<{ title: string; description: string; action?: React.ReactNode }> = ({ title, description, action }) => (
   <div className="admin-empty"><div><Plus /></div><h3>{title}</h3><p>{description}</p>{action}</div>
 );

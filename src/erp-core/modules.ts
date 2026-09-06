@@ -45,7 +45,7 @@ export const ERP_MODULES: readonly ErpModuleDefinition[] = [
   { key: 'sales', label: 'Ventes & commandes', section: 'OPERATIONS', status: 'legacy', basePermission: 'commerce:read', adminSection: 'orders', description: 'OMS existant (orders/order_items/deliveries)' },
   { key: 'customers', label: 'Clients', section: 'OPERATIONS', status: 'legacy', basePermission: 'commerce:read', adminSection: 'customers', description: 'Fiches clients CRM + comptes clients' },
   { key: 'catalog', label: 'Catalogue', section: 'OPERATIONS', status: 'active', basePermission: 'content:read', apiPrefix: '/catalogue', adminSection: 'products', description: 'P2.1 — produit canonique, variantes/SKU, arborescence de catégories, marques, médias, attributs' },
-  { key: 'inventory', label: 'Stock', section: 'OPERATIONS', status: 'planned', basePermission: 'commerce:read', description: 'Emplacements, quantités, mouvements — P6' },
+  { key: 'inventory', label: 'Stock', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/inventory', adminSection: 'inventory', description: 'P2.2 — lignes de stock par emplacement, journal de mouvements append-only, inventaires physiques avec validation' },
   { key: 'purchasing', label: 'Achats', section: 'OPERATIONS', status: 'planned', basePermission: 'commerce:read', description: 'Fournisseurs, demandes d’achat, commandes d’achat — P8' },
   { key: 'shipping', label: 'Expéditions', section: 'OPERATIONS', status: 'legacy', basePermission: 'commerce:read', adminSection: 'orders', description: 'Livraisons client + cartons CRM' },
 
@@ -94,6 +94,9 @@ const RESOURCE_TO_MODULE: Record<string, string> = {
   category: 'catalog',
   product_media: 'catalog',
   product_attribute: 'catalog',
+  stock_item: 'inventory',
+  stock_movement: 'inventory',
+  stocktake: 'inventory',
   promotion: 'marketing',
   story: 'cms',
   news: 'cms',

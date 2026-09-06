@@ -1,6 +1,6 @@
 # خطة تطوّر AYROVI — نظام بمستوى شركات عالمية + ثيم متطوّر
 
-**المرحلة الحالية:** P2.1 مُغلقة ودُفعت (`57fe0bb` + تصحيح العرض المشترك، 477 اختبارًا أخضر، لا انكسار). **المرحلة القادمة: P2.2 (Stock)** وفق §4 وD-03. هذه الوثيقة تبقى مرجع الخطة P2.2 ← P5. كل مرحلة تُنفَّذ بنفس العقد الذي جعل P0→P2.0 تمرّ بدون انكسار واحد.
+**المرحلة الحالية:** P2.1 وP2.2 مُغلقتان ومدفوعتان (P2.2: مخزون كامل — 4 جداول، سجل حركة append-only، جرد فيزيائي بشاشاته الثلاث، 509 اختبارًا أخضر، لا انكسار). **المرحلة القادمة: P2.3 (Achats)** وفق §4 وD-03. هذه الوثيقة تبقى مرجع الخطة P2.3 ← P5. كل مرحلة تُنفَّذ بنفس العقد الذي جعل P0→P2.0 تمرّ بدون انكسار واحد.
 
 ---
 
@@ -69,13 +69,15 @@
 | # | المرحلة | ما يُبنى | جداول جديدة (إضافة فقط) | بوابة الخروج | الحجم |
 |---|---|---|---|---|---|
 | **P2.1 — مُنجزة** | كتالوج داخل الصدَفة + توحيد | شاشات `catalogue-*` تصير الموردَ المرجعي؛ `products`/`brands` القديمة تُعلَّم `canonicalOf` وتبقى؛ **حذف 8 جداول مرسومة يدويًا** (`AiLabPages`, `SocialAdminPage` ×2, `HeroVisualsPage`, `TrustBarPage`, `StoriesStudio`) لفائدة `DataTable` | لا شيء | نفس 471 اختبارًا + اختبارات توحيد؛ `ResourceWorkspace` يستهلكه شاشةٌ حقيقية واحدة على الأقل | M |
-| **P2.2** | **Inventory** (`inventory` → active) | مستودعات، أرصدة، حركات (entrée/sortie/ajustement)،جرد، حدّ أدنى وتنبيه؛ **الكميات هنا، لا في `products`** | `inventory_stock_items`, `inventory_movements`, `inventory_stocktakes`, `inventory_stocktake_lines` | `GET/POST /api/inventory/*` + مورد في الـ framework + صلاحيات `inventory:read/write/adjust/approve` + تدقيق + بحث شامل + Deep link؛ **لا يلمس `crm_warehouse_dispatches`** (جسر إضافة فقط) | L |
+| **P2.2 — مُنجزة** | **Inventory** (`inventory` → active) | مستودعات، أرصدة، حركات (entrée/sortie/ajustement)،جرد، حدّ أدنى وتنبيه؛ **الكميات هنا، لا في `products`** | `inventory_stock_items`, `inventory_stock_movements`, `inventory_stocktakes`, `inventory_stocktake_lines` (الاسم الفعلي كما نُفِّذ) | `GET/POST /api/admin/inventory/*` (17 مسارًا) + مورد في الـ framework + صلاحيات `inventory:read|create|update|write|approve` + تدقيق + Deep link؛ **لا يلمس `crm_warehouse_dispatches`** | L ✅ |
 | **P2.3** | **Purchasing** (`purchasing` → active) | موردون، أوامر شراء، استلام جزئي، سعر购入 بالعملة، ربط الاستلام بالـ arrival-ingestion **بإضافة حقول فقط** (لا إعادة كتابة) | `suppliers`, `purchase_orders`, `purchase_order_lines`, `goods_receipts`, `goods_receipt_lines` | دورة كاملة: طلب → موافقة → استلام → حركة مخزون (P2.2) — كل انتقال مكتوب عبر `writeAuditEvent()` | L |
 | **P3** | **الثيم المتطوّر** (§5) | لا شيء | لا شيء (فقط CSS/رموز) | 0 لون حرفي خارج `tokens.css`؛ dark + light + RTL + كثافة مُختبَرة بصريًا | M |
 | **P4.1** | **Shipping** توحيد | `deliveries` و`crm_shipment_*` موجودة ومتشابهة: توحيد تحت مورد واحد بدل اثنين، مع إبقاء المسارين | لا شيء | تكافؤ API مُثبَت باختبار مقارنة (نفس الطلب ⇒ نفس البنية) | M |
 | **P4.2** | **Accounting** (`accounting` → active) | دليل حسابات، قيود يومية مزدوجة، ربط الفاتورة/الدفع (`invoices`, `payments`) بمصدر القيد، ميزان مراجعة | `accounting_accounts`, `accounting_journal_entries`, `accounting_journal_lines` | توازن القيد مفروض في `validation.ts` ومختبَر؛ لا تعديل على `invoices` | L |
 | **P4.3** | **RH / Paie** (`hr`, `payroll` → planned→active) | عقود، إجازات وأذونات، دورة صرف، كشف راتب، ربط محاسبي بـ P4.2 — **فوق `erp_employees` الموجودة** | `hr_contracts`, `hr_leave_requests`, `payroll_runs`, `payroll_run_lines` | توسيع `ERP_MODULES` 21 ← 23 **في نفس commit** مع تحديث الاختبار المجمِّد + صلاحيات `hr:*`/`payroll:*` + تدقيق لكل حركة مالية | L |
 | **P5** | **Automation** (`automation` → active) | قواعد على ناقل `erp_events`، تنفيذ idempotent، إعادة محاولة، سجلّ تشغيل | `automation_rules`, `automation_runs`, `automation_run_steps` | إعادة استخدام `assistant_tool_idempotency` كنمط؛ الإشعارات تُستهلك من outbox ERP بدل قناة ثالثة | L |
+
+**تسوية P2.2 (ما تقرّر عند التنفيذ):** فعل `adjust` غير موجود في قاموس محرّك الصلاحيات، فصار حقّ كتابة الحركة `inventory:write` وبقى `approve` فصلًا للجرد؛ التنبيه (`reorder_point`) حالة قراءة لا إشعارًا (الإشعار في P5)، والبحث الشامل لم يُضف لأنّ مصدر البحث جدول واحد فلا يجلب اسم المنتج — مُرجَّع إلى P3/T2 بدل نتيجة رديئة. التفاصيل في `BACK_OFFICE_P2_2_REPORT.md` §6.
 
 **لماذا هذا الترتيب بالضبط:** P2.1 يُنظّف ما بنيناه للتو (تكلفة منخفضة، ربح مرتفع: لا مصدرَي حقيقة)؛ P2.2/P2.3 يبنيان العمود الفقري التشغيلي الذي تطلبه كل بقية الأنظمة (لا مشتريات بلا مخزون، لا محاسبة بلا مشتريات)؛ الثيم في P3 لأنّه بعد أن تستقرّ الشاشات — وإلّا أُعيد تزيين شاشاتٍ ستتغيّر؛ المحاسبة والأتمتة في الآخر لأنّهما أكبر انكشاف على البيانات التاريخية.
 
@@ -139,3 +141,13 @@
 - الوصف الخادمي صارت له أسنان على الشاشات: فرز `ContentPage` عبر `descriptor.columns[].sortable` (والخادم يقبل الأسماء فقط من `config.sortable`)، وحالة خطأ + إعادة محاولة بدل toast وحيد.
 - **الحقيقة الوحيدة للخلية:** `renderCell('entity', …)` صارت تُستعمل في `ResourceWorkspace` وفي شاشات المحرّك وفي `SocialAdminPage`/`StoriesStudio` — بنية واحدة (`.admin-entity > span` للصورة 42×42) بدل ثلاث.
 - **ما أُجِّل بوعي إلى P3/T2:** تحويل شاشة مهنية حقيقية إلى `ResourceWorkspace` (يغيّر تسميات وأعمدة شاشة حيّة — لا يُفعل إلا مع الثيم)، وتوحيد أزرار الإجراءات بين `.admin-row-actions button` و`.admin-table-action`. الأسباب موثّقة في `BACK_OFFICE_P2_1_REPORT.md` §4.
+
+
+### 9 bis) ما أُنجز في P2.2 (المخزون) وما تُرِك موثّقًا
+
+- أربع جداول `inventory_*` أُضيفت بلا أي `DROP`/تعديل تدميري؛ **الكمية لم تدخل إلى `products`** (اختبار يقرأ `PRAGMA table_info(products)` ويرفض أي عمود كمية).
+- سجلّ الحركة لا يُعدَّل ولا يُحذف (409 مقصود)، والكمية لا تصبح سالبة أبدًا (`CHECK` + رفض في الخدمة + نقطة حفظ واحدة للحركة والسطر).
+- الجرد الفيزيائي: تجميع النظرية ← العدّ ← التقديم ← **المصادقة كتحرّكات ADJUST** (حقّ `approve` منفصل)؛ الرفض لا يلمس شيئًا.
+- `ResourceWorkspace` يخدم شاشة حقيقية الآن: `InventoryStockPage` هو سطر واحد يستدعي المُولِّد من الوصف الخادمي (البند الذي أُجِّل في P2.1 أُغلق بوحدة جديدة، لا بإعادة تجميل شاشة قائمة).
+- **انحراف مقصود وموثّق:** `inventory:adjust` غير موجود في قاموس محرّك الأذونات (`read|write|create|update|delete|approve|export|assign|manage`) — حقّ كتابة الحركة صار `inventory:write`. اختبار P2.0 جمّد 199 سطر أذونات فأصبح 208 (+9 مرآة SUPER_ADMIN) بدافع مكتوب، مع تأكد إضافي أن لا دور آخر نال شيئًا.
+- **مفتوح عمداً:** لا مصدر بحث شامل للمخزون (المحرك جدول واحد)، لا نقل بين المواقع حتى يُحسم من يصادق (`UNKNOWN-013`)، والمخزون لا يمنع البيع بعد (`UNKNOWN-014`).

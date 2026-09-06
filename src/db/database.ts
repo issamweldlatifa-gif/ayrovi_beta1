@@ -7,6 +7,7 @@ import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, Pricing
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
+import { ensureInventorySchema } from '../inventory/bootstrap';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -206,6 +207,7 @@ export class QatafoDatabase {
     this.initSchema();
     this.initErpCoreSchema();
     this.initCatalogueSchema();
+    this.initInventorySchema();
     this.seedCoreData();
   }
 
@@ -230,6 +232,19 @@ export class QatafoDatabase {
     } catch (error: any) {
       console.error('[catalogue] schema initialization failed:', error?.message || error);
       console.error('[catalogue] variants, categories, media and attributes are unavailable until this is fixed');
+    }
+  }
+
+  /**
+   * P2.2 — le stock est additif lui aussi : quatre tables, aucune colonne retirée à
+   * `products`. Un échec ici ne doit pas empêcher la boutique de démarrer.
+   */
+  private initInventorySchema(): void {
+    try {
+      ensureInventorySchema(this);
+    } catch (error: any) {
+      console.error('[inventory] schema initialization failed:', error?.message || error);
+      console.error('[inventory] stock levels, movements and stocktakes are unavailable until this is fixed');
     }
   }
 

@@ -691,6 +691,15 @@ input[type="color"]{width:100%;height:40px;border:1px solid #e5e2ee;border-radiu
 .admin-row-actions .admin-table-action svg { width: 14px; height: 14px; }
 /* Chiffres alignés : une seule règle pour toutes les listes (vues, likes, montants). */
 .admin-cell-num { font-variant-numeric: tabular-nums; font-weight: 650; }
+/* P2.2 — le signe d'un mouvement est une information, pas une couleur décorative :
+   mêmes teintes que les écarts du tableau de bord, aucune valeur inventée. */
+.admin-cell-num.is-positive { color: #168253; }
+.admin-cell-num.is-negative { color: #c9362b; }
+.admin-cell-num small { color: var(--admin-muted); font-weight: 600; }
+/* Saisie d'un comptage dans la ligne elle-même : le champ épouse la cellule, pas l'inverse. */
+.admin-cell-input { width: 92px; padding: 5px 8px; border: 1px solid var(--admin-line); background: #fff; text-align: end;
+  font-variant-numeric: tabular-nums; font-weight: 700; }
+.admin-cell-input:focus { outline: 2px solid var(--admin-purple); outline-offset: 1px; }
 
 /* Réordonnancement par glisser-déposer (liste à ordre manuel : trust bar, stories, blocs d'accueil). */
 .admin-table-cell--drag { width: 26px; }

@@ -41,6 +41,7 @@ import {
 import { AdminPermission, AdminRole, permissionsForRole } from './permissions';
 import { requireErpPermission } from '../erp-core/permissions';
 import { createCatalogueRouter } from '../catalogue/routes';
+import { createInventoryRouter } from '../inventory/routes';
 import { createBackOfficeRouter } from '../back-office/routes';
 import { registerFrameworkResources } from '../back-office/resources';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
@@ -417,6 +418,9 @@ export function createAdminRouter(
   // Catalogue (P2.1): produits, variantes/SKU, catégories, marques, médias, attributs.
   // Un nouveau préfixe — aucune route existante n'est déplacée ni renommée.
   router.use('/catalogue', createCatalogueRouter(db));
+  // P2.2 — Stock : surface additive du back-office (`/api/admin/inventory/*`), gardée par
+  // la matrice `inventory:*`. Rien d'existant n'est redirigé ni réécrit ici.
+  router.use('/inventory', createInventoryRouter(db));
   // Back Office (P2.0): coquille + framework de ressources. Uniquement de la LECTURE : la
   // coquille décrit l'espace de travail (navigation, descripteurs, recherche, capacités) et ne
   // déplace aucune écriture. Le moteur générique s'y enregistre lui-même, source unique.

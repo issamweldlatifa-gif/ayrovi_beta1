@@ -413,6 +413,20 @@ describe('Consolidation — une seule implémentation par abstraction', () => {
     expect(admin).not.toContain('<div className="admin-entity"><span>');
   });
 
+  it('rend le premier écran métier par le framework, sans page écrite à la main', () => {
+    // P2.2 : la liste de stock n'a pas de composant propre, elle EST le descripteur
+    // le cadre sait rendre un écran depuis le seul descripteur…
+    expect(admin).toContain("if (descriptor?.surface === 'framework') page = <ResourceWorkspace descriptor={descriptor} />");
+    // …et la page de stock n'est que cette commande, sans copie de liste
+    const inventory = readFileSync('client/src/admin/InventoryPage.tsx', 'utf8');
+    expect(inventory).toContain("<ResourceWorkspace descriptor={descriptor} />");
+    expect(admin).toContain("section==='inventory'");
+    expect(admin).toContain("section==='inventory-movements'");
+    expect(admin).toContain("section==='inventory-stocktakes'");
+    expect(inventory).toContain('DataTable');
+    expect(inventory).toContain('export const InventoryStockPage');
+  });
+
   it('fait piloter les 9 écrans du moteur par le descripteur, sans second rendu', () => {
     // tri + erreur/réessai viennent du framework ; le reste de l'écran reste `ContentPage`
     expect(admin).toContain('sortableOf(column.key)');

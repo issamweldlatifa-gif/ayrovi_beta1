@@ -25,6 +25,10 @@ export const SUPPORT_STATUSES = ['PENDING', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
 /** Revues Lens (`ayrovix_review_requests.status`), tel que validé par l'API admin. */
 export const AYROVIX_REVIEW_STATUSES = ['PENDING', 'IN_REVIEW', 'QUOTED', 'REJECTED', 'CANCELLED'] as const;
 
+/** P2.2 — le stock ne réinvente pas ses libellés : il ajoute deux vocabulaires au registre. */
+export const INVENTORY_STOCKTAKE_STATUSES = ['DRAFT', 'COUNTING', 'SUBMITTED', 'APPROVED', 'REJECTED'] as const;
+export const INVENTORY_MOVEMENT_DIRECTIONS = ['IN', 'OUT', 'ADJUST'] as const;
+
 /** Le framework ne connaît qu'un petit nombre de tons de badge — un seul rendu pour tout le back office. */
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -32,6 +36,7 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   ACTIVE: 'success', PAID: 'success', DELIVERED: 'success', PUBLISHED: 'success', COMPLETED: 'success', CONFIRMED: 'success', VERIFIED: 'success', AVAILABLE: 'success', RESOLVED: 'success', CLOSED: 'success', SENT: 'success',
   DRAFT: 'neutral', PENDING: 'neutral', NOT_STARTED: 'neutral', INACTIVE: 'neutral', NONE: 'neutral',
   SCHEDULED: 'info', PREPARING: 'info', IN_REVIEW: 'info', PROCESSING: 'info', QUEUED: 'info', REVIEW: 'info', PARTIAL: 'info', OUT_FOR_DELIVERY: 'info', SHIPPED: 'info', IN_TRANSIT: 'info',
+  APPROVED: 'success', IN: 'success', COUNTING: 'info', SUBMITTED: 'info', ADJUST: 'info', OK: 'success', LOW: 'warning', OUT: 'danger',
   AWAITING_DEPOSIT: 'warning', AWAITING_PAYMENT_VERIFICATION: 'warning', PENDING_VERIFICATION: 'warning', PENDING_MANUAL: 'warning', LIMITED: 'warning', NEEDS_REVIEW: 'warning', PARTIALLY_PAID: 'warning', QUOTED: 'warning',
   CANCELLED: 'danger', FAILED: 'danger', REJECTED: 'danger', OUT_OF_STOCK: 'danger', ARCHIVED: 'danger', EXPIRED: 'danger', REFUNDED: 'warning', RETURNED: 'warning', SEND_FAILED: 'danger', BLOCKED: 'danger',
 };
@@ -69,6 +74,14 @@ export const STATUS_LABELS: Record<string, { fr: string; ar: string }> = {
   AVAILABLE: { fr: 'Disponible', ar: 'متاح' },
   LIMITED: { fr: 'Stock limité', ar: 'مخزون محدود' },
   OUT_OF_STOCK: { fr: 'Épuisé', ar: 'غير متوفر' },
+  COUNTING: { fr: 'Comptage en cours', ar: 'جارٍ العد' },
+  SUBMITTED: { fr: 'Soumis', ar: 'مقدَّم' },
+  APPROVED: { fr: 'Validé', ar: 'معتمد' },
+  IN: { fr: 'Entrée', ar: 'إدخال' },
+  OUT: { fr: 'Sortie', ar: 'إخراج' },
+  ADJUST: { fr: 'Ajustement', ar: 'تسوية' },
+  LOW: { fr: 'Stock bas', ar: 'مخزون منخفض' },
+  OK: { fr: 'En stock', ar: 'متوفر' },
   IN_PROGRESS: { fr: 'En cours', ar: 'قيد المعالجة' },
   RESOLVED: { fr: 'Résolu', ar: 'تم الحل' },
   CLOSED: { fr: 'Clôturé', ar: 'مغلق' },
@@ -87,6 +100,8 @@ export const STATUS_VOCABULARIES: Record<string, readonly string[]> = {
   'catalogue.status': CATALOGUE_ENTRY_STATUSES,
   'ayrovix.review': AYROVIX_REVIEW_STATUSES,
   'support.ticket': SUPPORT_STATUSES,
+  'inventory.stocktake': INVENTORY_STOCKTAKE_STATUSES,
+  'inventory.movement': INVENTORY_MOVEMENT_DIRECTIONS,
 };
 
 export function statusVocabulary(key: string | undefined): readonly string[] | undefined {

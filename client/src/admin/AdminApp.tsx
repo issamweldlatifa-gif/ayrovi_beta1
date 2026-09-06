@@ -7,11 +7,12 @@ import {
 import { ADMIN_SESSION_EXPIRED_EVENT, adminApi, ApiError, loadIdentity, login, logout, queryString } from './api';
 import {
   Button, ConfirmDialog, DataColumn, DataTable, DatePicker, Field, Filters, Form, ImageUploader, Modal,
-  Pagination, Search, Select, StatusBadge, Toast,
+  PageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
 import './admin.css';
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
+import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } from './InventoryPage';
 import { MagazineAgentPage } from './MagazineAgentPage';
 import { HeroVisualsPage } from './HeroVisualsPage';
 import { TrustBarPage } from './TrustBarPage';
@@ -29,7 +30,7 @@ import { BackOfficeProvider, useBackOffice } from './back-office/framework';
 import { BackOfficeShell, type BackOfficeRenderContext } from './back-office/BackOfficeShell';
 import { NotificationsBell } from './back-office/NotificationsBell';
 import { formatMoney, formatDate, labels, nowPlus, options, ResourceForm, type FieldDefinition, type Permission, type ResourceDefinition } from './back-office/resource-ui';
-import { renderCell } from './back-office/ResourceWorkspace';
+import { renderCell, ResourceWorkspace } from './back-office/ResourceWorkspace';
 
 type UserIdentity = { id: string; email: string; name: string; role: string; permissions: Permission[] };
 
@@ -182,7 +183,7 @@ const DashboardPage: React.FC = () => {
 const PageLoading: React.FC<{ error?: string }> = ({ error }) => <div className="admin-page-loading">{error ? <><AlertCircle /><strong>{error}</strong></> : <><span /><p>Chargement des données…</p></>}</div>;
 const ChartEmpty = () => <div className="admin-chart-empty">Les premières données apparaîtront ici.</div>;
 const CardTitle: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => <header className="admin-card-title"><div><h3>{title}</h3><p>{subtitle}</p></div></header>;
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = ({ title, description, action }) => <div className="admin-page-header"><div><span className="admin-eyebrow">AYROVI ADMIN</span><h1>{title}</h1><p>{description}</p></div>{action}</div>;
+// `PageHeader` vient de ./components : un seul en-tête pour tout le back office (P2.2).
 
 
 const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resource, canWrite }) => {
@@ -676,9 +677,16 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
  * navigation viennent maintenant de la coquille (deep links `?section=&request=` conservés).
  */
 const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout})=>{
+  const { descriptorFor } = useBackOffice();
   const renderSection=(ctx:BackOfficeRenderContext)=>{
     const {section,requestedReview,pendingMagazineDraft,openMagazineDraft,clearPendingMagazineDraft,can:has}=ctx;
   let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='hero-visuals')page=<HeroVisualsPage canWrite={has('content:write')}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='trust-bar')page=<TrustBarPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
+    else if(section==='inventory')page=<InventoryStockPage/>;
+    else if(section==='inventory-movements')page=<InventoryMovementsPage/>;
+    else if(section==='inventory-stocktakes')page=<InventoryStocktakesPage/>;
+    // P2.2 — premier écran métier servi par `ResourceWorkspace` : la liste de stock n'a pas
+    // de page dédiée, elle EST le descripteur serveur (colonnes, tri, droits, audit).
+    else { const descriptor = descriptorFor(section); if (descriptor?.surface === 'framework') page = <ResourceWorkspace descriptor={descriptor} />; }
     return page;
   };
   return <BackOfficeShell identity={user} onLogout={onLogout} renderPage={renderSection}/>;

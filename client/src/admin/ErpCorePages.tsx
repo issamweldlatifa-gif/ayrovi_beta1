@@ -10,13 +10,13 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, queryString } from './api';
-import { Button, DataTable, Field, Filters, Form, Modal, Pagination, Search, Select, StatusBadge, Toast } from './components';
+import { Button, DataTable, Field, Filters, Form, Modal, PageHeader as SharedPageHeader, Pagination, Search, Select, StatusBadge, Toast } from './components';
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = ({ title, description, action }) => (
-  <div className="admin-page-header"><div><span className="admin-eyebrow">AYROVI ERP</span><h1>{title}</h1><p>{description}</p></div>{action}</div>
-);
+// Une seule implémentation de l'en-tête (./components) ; le libellé du domaine reste local.
+const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <SharedPageHeader {...props} eyebrow="AYROVI ERP" />;
+
 const CardTitle: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => (
   <header className="admin-card-title"><div><h3>{title}</h3><p>{subtitle}</p></div></header>
 );

@@ -13,7 +13,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Bell, Calculator, Calendar, Camera, ChartLine, Eye, FileText, Gift, Grid, History, Home, Image, LayoutGrid, LensBox,
+  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Eye, FileText, Gift, Grid, History, Home, Image, LayoutGrid, LensBox,
   LogOut, Menu, MessageSquare, Package, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, User, X, Zap,
 } from '../../components/QatafoIcons';
 import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory';
@@ -36,7 +36,7 @@ export type BackOfficeRenderContext = {
 /** Toutes les icônes déclarées par le registre serveur — le sprite partagé, jamais un composant par écran. */
 const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   Home, Calendar, ShoppingBag, Gift, ChartLine, FileText, Sparkles, Tag, Image, LensBox, LayoutGrid,
-  Bell, ShieldCheck, Package, MessageSquare, Camera, User, Calculator, Grid, History, Settings, Eye, Palette, Zap,
+  Bell, ShieldCheck, Package, MessageSquare, Camera, User, Calculator, Grid, History, Settings, Eye, Palette, Zap, CheckCircle2,
 };
 
 /** Les icônes sont un détail de présentation : la liste des modules, elle, vit côté serveur. */

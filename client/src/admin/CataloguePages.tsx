@@ -16,16 +16,15 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, ApiError, queryString } from './api';
 import {
   Button, ConfirmDialog, DataTable, Field, Filters, Form, ImageUploader, Modal,
-  Pagination, Search, Select, StatusBadge, Toast,
+  PageHeader as SharedPageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
 
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 type Capabilities = Record<string, Record<string, boolean>>;
 
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = ({ title, description, action }) => (
-  <div className="admin-page-header"><div><span className="admin-eyebrow">AYROVI CATALOGUE</span><h1>{title}</h1><p>{description}</p></div>{action}</div>
-);
+const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <SharedPageHeader {...props} eyebrow="AYROVI CATALOGUE" />;
+
 const options = (values: Array<string | { value: string; label: string }>) =>
   values.map((value) => (typeof value === 'string' ? { value, label: value } : value));
 const rowsOf = (value: any): any[] => (Array.isArray(value?.data) ? value.data : Array.isArray(value) ? value : []);

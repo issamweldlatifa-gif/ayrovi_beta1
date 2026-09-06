@@ -120,6 +120,13 @@ describe('back office shell (P2.0)', () => {
       ];
       for (const section of expected) expect(sections.has(section), `section perdue: ${section}`).toBe(true);
       expect(expected.length).toBe(39);
+      // P2.2 a ajouté trois surfaces (le stock). Elles sont citées nommément : une section
+      // nouvelle ne doit jamais apparaître sans être écrite ici.
+      for (const section of ['inventory', 'inventory-movements', 'inventory-stocktakes']) {
+        expect(sections.has(section), `section P2.2 absente: ${section}`).toBe(true);
+      }
+      // 39 legacy + `hero-slides` (alias de deep link) + les 3 entrées du stock = 43.
+      expect(sections.size).toBe(43);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -140,13 +147,15 @@ describe('back office shell (P2.0)', () => {
       for (const id of legacyIds) {
         expect(resourceDescriptorBySection(id)?.section, `descripteur manquant pour ${id}`).toBe(id);
       }
-      // 2) la navigation calculée rend exactement ce même ensemble, ni plus ni moins ;
+      // 2) la navigation calculée rend exactement ce même ensemble, ni plus ni moins —
+      // aux trois entrées du stock près, seules entrées ajoutées depuis P2.0 ;
+      const p22Additions = ['inventory', 'inventory-movements', 'inventory-stocktakes'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...legacyIds].sort());
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -163,12 +172,12 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 37 entrées navigables', async () => {
+    test('SUPER_ADMIN voit les 37 entrées legacy + les 3 du stock (P2.2)', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(37);
-      expect(result.body.data.counts).toMatchObject({ sections: 37, visible: 37 });
+      expect(items.length).toBe(40);
+      expect(result.body.data.counts).toMatchObject({ sections: 40, visible: 40 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'ERP', 'Système']);
     });
@@ -201,7 +210,9 @@ describe('back office shell (P2.0)', () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       const sections = result.body.data.groups.flatMap((group: any) => group.items.map((item: any) => item.section));
       const roadmap = result.body.data.roadmap.map((entry: any) => entry.module);
-      expect(roadmap).toContain('inventory');
+      // P2.2 a sorti `inventory` de la roadmap en le construisant ; les trois autres modules
+      // planifiés doivent y rester ET ne jamais devenir des écrans cliquables.
+      expect(roadmap).not.toContain('inventory');
       expect(roadmap).toContain('purchasing');
       expect(roadmap).toContain('accounting');
       for (const planned of roadmap) expect(sections.some((section: string) => section.includes(planned)), `module planifié ${planned} ne doit pas être une entrée`).toBe(false);

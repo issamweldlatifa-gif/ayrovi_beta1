@@ -24,6 +24,7 @@ export function renderCell(kind: string | undefined, row: Record<string, any>, c
     case 'money': return <strong className="bo-cell-money">{formatMoney(raw)}</strong>;
     case 'datetime': return <time dateTime={raw ? String(raw) : undefined}>{formatDate(raw, true)}</time>;
     case 'code': return raw ? <code>{String(raw)}</code> : <span className="bo-cell-empty">—</span>;
+    case 'number': return <span className="admin-cell-num">{raw === null || raw === undefined || raw === '' ? '—' : Number(raw).toLocaleString('fr-FR')}</span>;
     case 'status': return <StatusBadge status={String(raw ?? '')} />;
     case 'entity': {
       const image = row.image || row.main_image || row.logo || row.media_url;
