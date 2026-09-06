@@ -158,3 +158,272 @@
     }
   }
 }
+
+:root {
+  /* ─────────────────────────────────────────────────────────────────────────
+     Couche back-office (P3/T1). Les valeurs ci-dessous sont les littéraux exacts
+     que portaient `admin.css`, `back-office.css` et `interface-studio.css`. Elles
+     sont déplacées ici caractère par caractère : aucun rendu ne change. Les neuf
+     `--admin-*` gardent leurs noms actuels — `arrival-ingestion.css` (feuille gelée
+     depuis P2.0) et `AdminApp.tsx` y font référence ; les renommer en noms sémantiques
+     se fera en T2, quand cette feuille rejoindra les primitives.
+
+     Les `--admin-tone-*` sont une dette MESURÉE, pas une palette : chacune porte la
+     valeur littérale qu’elle remplace, pour que T2 consolide la longue traîne des
+     teintes en mesurant l’écart. `tests/design-tokens.test.ts` interdit tout
+     littéral dans les feuilles du back-office et fait baisser leur nombre de refs.
+     ───────────────────────────────────────────────────────────────────────── */
+  --admin-purple:#111318; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-purple-dark:#050505; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-yellow:#ffb070; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-ink:#17151f; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-muted:#71717f; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-line:#e7e5eb; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-bg:#f6f6f9; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-card:#fff; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-sidebar:#17151f; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-surface-sunken:#faf9fc; /* surface en creux des panneaux */
+  --admin-surface-tint:#faf8ff; /* surface teintée (fonds de groupe) */
+  --admin-surface-soft:#fbfbfe; /* surface adoucie (encadrés, listes) */
+  --admin-line-soft:#e5e7eb; /* filet clair (listes, encadrés) */
+  --admin-line-firm:#f0eef7; /* filet renforcé (champs, séparateurs) */
+  --admin-text-soft:#77727f; /* texte tertiaire */
+  --admin-on-dark:#ffffff; /* encre pleine sur fond sombre */
+  --admin-danger-strong:#c9362b; /* danger soutenu (bandeaux, badges) */
+  --admin-danger-text:#b42318; /* texte en erreur */
+  --admin-danger-ink:#b6251c; /* erreur profonde (barre latérale) */
+  --admin-violet:#673de6; /* accent produit (Lens, IA) */
+
+  /* — tons verbatims : 231 valeurs longue traîne (à absorber en T2) — */
+  --admin-tone-047857:#047857;
+  --admin-tone-059669:#059669;
+  --admin-tone-0b7044:#0b7044;
+  --admin-tone-0f7147:#0f7147;
+  --admin-tone-111217:#111217;
+  --admin-tone-145f40:#145f40;
+  --admin-tone-14734b:#14734b;
+  --admin-tone-168253:#168253;
+  --admin-tone-21172e:#21172e;
+  --admin-tone-23183a:#23183a;
+  --admin-tone-241735:#241735;
+  --admin-tone-25104f:#25104f;
+  --admin-tone-271250:#271250;
+  --admin-tone-2a1358:#2a1358;
+  --admin-tone-2c2100:#2c2100;
+  --admin-tone-34d399:#34d399;
+  --admin-tone-3730a3:#3730a3;
+  --admin-tone-374151:#374151;
+  --admin-tone-39285a:#39285a;
+  --admin-tone-392a00:#392a00;
+  --admin-tone-473a10:#473a10;
+  --admin-tone-475569:#475569;
+  --admin-tone-4b5563:#4b5563;
+  --admin-tone-4c2bb1:#4c2bb1;
+  --admin-tone-4e27a6:#4e27a6;
+  --admin-tone-5230a4:#5230a4;
+  --admin-tone-534961:#534961;
+  --admin-tone-554b62:#554b62;
+  --admin-tone-5a477b:#5a477b;
+  --admin-tone-5b4b70:#5b4b70;
+  --admin-tone-5d4100:#5d4100;
+  --admin-tone-5f39bf:#5f39bf;
+  --admin-tone-5f586b:#5f586b;
+  --admin-tone-5f5b66:#5f5b66;
+  --admin-tone-604700:#604700;
+  --admin-tone-685f72:#685f72;
+  --admin-tone-6c6779:#6c6779;
+  --admin-tone-6d6476:#6d6476;
+  --admin-tone-6f3a10:#6f3a10;
+  --admin-tone-6f647b:#6f647b;
+  --admin-tone-6f6579:#6f6579;
+  --admin-tone-71677c:#71677c;
+  --admin-tone-746a7d:#746a7d;
+  --admin-tone-756b80:#756b80;
+  --admin-tone-756b83:#756b83;
+  --admin-tone-7650db:#7650db;
+  --admin-tone-766c80:#766c80;
+  --admin-tone-777280:#777280;
+  --admin-tone-7951df:#7951df;
+  --admin-tone-795400:#795400;
+  --admin-tone-7b7288:#7b7288;
+  --admin-tone-7d7288:#7d7288;
+  --admin-tone-7d7889:#7d7889;
+  --admin-tone-7f7588:#7f7588;
+  --admin-tone-805700:#805700;
+  --admin-tone-8069bc:#8069bc;
+  --admin-tone-81778b:#81778b;
+  --admin-tone-82778d:#82778d;
+  --admin-tone-82788d:#82788d;
+  --admin-tone-867d91:#867d91;
+  --admin-tone-898491:#898491;
+  --admin-tone-8a4a17:#8a4a17;
+  --admin-tone-8a8691:#8a8691;
+  --admin-tone-8b352b:#8b352b;
+  --admin-tone-8b88a0:#8b88a0;
+  --admin-tone-8c5b00:#8c5b00;
+  --admin-tone-8c8395:#8c8395;
+  --admin-tone-8d8494:#8d8494;
+  --admin-tone-8f8c98:#8f8c98;
+  --admin-tone-918c9d:#918c9d;
+  --admin-tone-9994a0:#9994a0;
+  --admin-tone-9a3412:#9a3412;
+  --admin-tone-9aa0b4:#9aa0b4;
+  --admin-tone-9c2d25:#9c2d25;
+  --admin-tone-9c98a2:#9c98a2;
+  --admin-tone-9c98a5:#9c98a5;
+  --admin-tone-9ca3af:#9ca3af;
+  --admin-tone-a12a21:#a12a21;
+  --admin-tone-a1392f:#a1392f;
+  --admin-tone-a19daf:#a19daf;
+  --admin-tone-a1a1aa:#a1a1aa;
+  --admin-tone-a3a0b4:#a3a0b4;
+  --admin-tone-a53128:#a53128;
+  --admin-tone-a5a1ae:#a5a1ae;
+  --admin-tone-aaa6b1:#aaa6b1;
+  --admin-tone-b0adb8:#b0adb8;
+  --admin-tone-b3261e:#b3261e;
+  --admin-tone-b45309:#b45309;
+  --admin-tone-b6b2bf:#b6b2bf;
+  --admin-tone-b7b2c1:#b7b2c1;
+  --admin-tone-b8dfcd:#b8dfcd;
+  --admin-tone-b91c1c:#b91c1c;
+  --admin-tone-b9acd8:#b9acd8;
+  --admin-tone-b9b7c0:#b9b7c0;
+  --admin-tone-bbb5c5:#bbb5c5;
+  --admin-tone-bbf7d0:#bbf7d0;
+  --admin-tone-bcb0dc:#bcb0dc;
+  --admin-tone-c4c0ca:#c4c0ca;
+  --admin-tone-c7d2fe:#c7d2fe;
+  --admin-tone-ccc8d1:#ccc8d1;
+  --admin-tone-ccc8d2:#ccc8d2;
+  --admin-tone-d1d5db:#d1d5db;
+  --admin-tone-d7cff0:#d7cff0;
+  --admin-tone-d9cef3:#d9cef3;
+  --admin-tone-d9cff2:#d9cff2;
+  --admin-tone-d9d1e7:#d9d1e7;
+  --admin-tone-d9d3df:#d9d3df;
+  --admin-tone-d9d3e3:#d9d3e3;
+  --admin-tone-d9d5de:#d9d5de;
+  --admin-tone-dad2ec:#dad2ec;
+  --admin-tone-dcd4ed:#dcd4ed;
+  --admin-tone-dcd7e3:#dcd7e3;
+  --admin-tone-ddd5ee:#ddd5ee;
+  --admin-tone-ddd6e9:#ddd6e9;
+  --admin-tone-ddd7e8:#ddd7e8;
+  --admin-tone-ddd7ec:#ddd7ec;
+  --admin-tone-ddd8e4:#ddd8e4;
+  --admin-tone-ddd8e6:#ddd8e6;
+  --admin-tone-ddd8ec:#ddd8ec;
+  --admin-tone-ddd9e5:#ddd9e5;
+  --admin-tone-dfd9e8:#dfd9e8;
+  --admin-tone-dfdbe4:#dfdbe4;
+  --admin-tone-dfdbe5:#dfdbe5;
+  --admin-tone-e0dce5:#e0dce5;
+  --admin-tone-e1ddea:#e1ddea;
+  --admin-tone-e2deea:#e2deea;
+  --admin-tone-e3dfe7:#e3dfe7;
+  --admin-tone-e4f7ec:#e4f7ec;
+  --admin-tone-e5e1e9:#e5e1e9;
+  --admin-tone-e5e2ee:#e5e2ee;
+  --admin-tone-e5e7ef:#e5e7ef;
+  --admin-tone-e6e2ea:#e6e2ea;
+  --admin-tone-e6f7ef:#e6f7ef;
+  --admin-tone-e7f7ef:#e7f7ef;
+  --admin-tone-e9c3a3:#e9c3a3;
+  --admin-tone-e9e6f2:#e9e6f2;
+  --admin-tone-eadc9b:#eadc9b;
+  --admin-tone-ecfdf5:#ecfdf5;
+  --admin-tone-eeeaf3:#eeeaf3;
+  --admin-tone-eeeeee:#eeeeee;
+  --admin-tone-eef2ff:#eef2ff;
+  --admin-tone-efedf2:#efedf2;
+  --admin-tone-f0ebfb:#f0ebfb;
+  --admin-tone-f0ebff:#f0ebff;
+  --admin-tone-f0edf8:#f0edf8;
+  --admin-tone-f1edf8:#f1edf8;
+  --admin-tone-f1eef8:#f1eef8;
+  --admin-tone-f1eff4:#f1eff4;
+  --admin-tone-f1f5f9:#f1f5f9;
+  --admin-tone-f1fbf6:#f1fbf6;
+  --admin-tone-f2edff:#f2edff;
+  --admin-tone-f2f2f6:#f2f2f6;
+  --admin-tone-f3d9c4:#f3d9c4;
+  --admin-tone-f4f2fa:#f4f2fa;
+  --admin-tone-f4f4f5:#f4f4f5;
+  --admin-tone-f5f1ff:#f5f1ff;
+  --admin-tone-f5f4f7:#f5f4f7;
+  --admin-tone-f6f5f9:#f6f5f9;
+  --admin-tone-f7c948:#f7c948;
+  --admin-tone-f7f3ff:#f7f3ff;
+  --admin-tone-f7f4ff:#f7f4ff;
+  --admin-tone-f7f5fb:#f7f5fb;
+  --admin-tone-f7f6fa:#f7f6fa;
+  --admin-tone-f8f5ff:#f8f5ff;
+  --admin-tone-f8f7fa:#f8f7fa;
+  --admin-tone-f9fafb:#f9fafb;
+  --admin-tone-faf8fe:#faf8fe;
+  --admin-tone-faf9fb:#faf9fb;
+  --admin-tone-fafafa:#fafafa;
+  --admin-tone-fafafd:#fafafd;
+  --admin-tone-fbfafc:#fbfafc;
+  --admin-tone-fca5a5:#fca5a5;
+  --admin-tone-fcfbfd:#fcfbfd;
+  --admin-tone-fde68a:#fde68a;
+  --admin-tone-fed7aa:#fed7aa;
+  --admin-tone-ffcb9f:#ffcb9f;
+  --admin-tone-ffd7bd:#ffd7bd;
+  --admin-tone-ffebe8:#ffebe8;
+  --admin-tone-ffebe9:#ffebe9;
+  --admin-tone-fff0bd:#fff0bd;
+  --admin-tone-fff1f1:#fff1f1;
+  --admin-tone-fff2c6:#fff2c6;
+  --admin-tone-fff5cf:#fff5cf;
+  --admin-tone-fff5d9:#fff5d9;
+  --admin-tone-fff6ef:#fff6ef;
+  --admin-tone-fff7ed:#fff7ed;
+  --admin-tone-fff8d8:#fff8d8;
+  --admin-tone-fff8da:#fff8da;
+  --admin-tone-fffaf5:#fffaf5;
+  --admin-tone-fffbeb:#fffbeb;
+  --admin-tone-rgba-0-0-0-08:rgba(0,0,0,.08);
+  --admin-tone-rgba-0-0-0-25:rgba(0,0,0,.25);
+  --admin-tone-rgba-0-0-0-3:rgba(0,0,0,.3);
+  --admin-tone-rgba-0-0-0-4:rgba(0,0,0,.4);
+  --admin-tone-rgba-0-0-0-45:rgba(0,0,0,.45);
+  --admin-tone-rgba-0-0-0-55:rgba(0,0,0,.55);
+  --admin-tone-rgba-0-0-0-7:rgba(0,0,0,.7);
+  --admin-tone-rgba-103-61-230-08:rgba(103,61,230,.08);
+  --admin-tone-rgba-17-18-23-45:rgba(17,18,23,.45);
+  --admin-tone-rgba-17-18-23-88:rgba(17,18,23,.88);
+  --admin-tone-rgba-17-19-24-18:rgba(17,19,24,.18);
+  --admin-tone-rgba-17-19-24-34:rgba(17,19,24,.34);
+  --admin-tone-rgba-17-19-24-42:rgba(17,19,24,.42);
+  --admin-tone-rgba-17-19-24-55:rgba(17,19,24,.55);
+  --admin-tone-rgba-18-15-24-65:rgba(18,15,24,.65);
+  --admin-tone-rgba-20-18-24-85:rgba(20,18,24,.85);
+  --admin-tone-rgba-247-201-72-22:rgba(247,201,72,.22);
+  --admin-tone-rgba-254-112-3-06:rgba(254,112,3,.06);
+  --admin-tone-rgba-254-112-3-08:rgba(254,112,3,.08);
+  --admin-tone-rgba-254-112-3-12:rgba(254,112,3,.12);
+  --admin-tone-rgba-254-112-3-14:rgba(254,112,3,.14);
+  --admin-tone-rgba-254-112-3-16:rgba(254,112,3,.16);
+  --admin-tone-rgba-254-112-3-2:rgba(254,112,3,.2);
+  --admin-tone-rgba-254-112-3-24:rgba(254,112,3,.24);
+  --admin-tone-rgba-254-112-3-35:rgba(254,112,3,.35);
+  --admin-tone-rgba-255-255-255-025:rgba(255,255,255,.025);
+  --admin-tone-rgba-255-255-255-05:rgba(255,255,255,.05);
+  --admin-tone-rgba-255-255-255-055:rgba(255,255,255,.055);
+  --admin-tone-rgba-255-255-255-06:rgba(255,255,255,.06);
+  --admin-tone-rgba-255-255-255-07:rgba(255,255,255,.07);
+  --admin-tone-rgba-255-255-255-08:rgba(255,255,255,.08);
+  --admin-tone-rgba-255-255-255-1:rgba(255,255,255,.1);
+  --admin-tone-rgba-255-255-255-12:rgba(255,255,255,.12);
+  --admin-tone-rgba-255-255-255-75:rgba(255,255,255,.75);
+  --admin-tone-rgba-255-255-255-85:rgba(255,255,255,.85);
+  --admin-tone-rgba-255-255-255-92:rgba(255,255,255,.92);
+  --admin-tone-rgba-28-16-64-35:rgba(28,16,64,.35);
+  --admin-tone-rgba-30-20-50-15:rgba(30,20,50,.15);
+  --admin-tone-rgba-48-22-103-8:rgba(48,22,103,.8);
+  --admin-tone-rgba-5-5-5-35:rgba(5,5,5,.35);
+  --admin-tone-rgba-57-25-118-65:rgba(57,25,118,.65);
+}
