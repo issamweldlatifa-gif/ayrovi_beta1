@@ -41,12 +41,19 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   Truck, Clipboard, PackageCheck,
 };
 
-/** Les icônes sont un détail de présentation : la liste des modules, elle, vit côté serveur. */
+/**
+ * Les icônes sont un détail de présentation : la liste des modules, elle, vit côté serveur.
+ *
+ * P3/T2 — contrat verrouillé par `tests/back-office-foundation.test.ts` : chaque `nav.icon` du
+ * registre a une clé dans `ICONS` (les 43 entrées actuelles sont couvertes). Un nom inconnu rend
+ * désormais le glyphe neutre du sprite ; l'ancien repli `<i class="bo-nav-icon …">` comptait sur une
+ * variable `--bo-icon` que personne ne définit et sur des classes `.bo-nav-icon--*` absentes du
+ * dépôt — c'est-à-dire un carré de 19 px, silencieux. La règle CSS reste en place (aucune
+ * suppression) mais n'est plus atteinte.
+ */
 function NavIcon({ name }: { name: string }) {
-  const Icon = ICONS[name];
-  if (Icon) return <Icon size={17} />;
-  // Les autres noms d'icône sont rendus par le sprite partagé via la classe (pas de composant par écran).
-  return <i className={`bo-nav-icon bo-nav-icon--${name.toLowerCase()}`} aria-hidden="true" />;
+  const Icon = ICONS[name] ?? Grid;
+  return <Icon size={17} />;
 }
 
 export const BackOfficeShell: React.FC<{

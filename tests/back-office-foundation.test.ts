@@ -382,4 +382,44 @@ describe('back office shell (P2.0)', () => {
       expect(ALL_ADMIN_PERMISSIONS.filter((permission) => permission.startsWith('back-office'))).toEqual([]);
     });
   });
+
+  describe("contrat d'icônes de la navigation (P3/T2)", () => {
+    const shellPath = 'client/src/admin/back-office/BackOfficeShell.tsx';
+    const spritePath = 'client/src/components/QatafoIcons.tsx';
+    const read = (rel: string) => fs.readFileSync(path.resolve(process.cwd(), rel), 'utf8');
+
+    /** Les clés de la carte `ICONS` du client, lues dans la source (pas de liste dupliquée ici). */
+    function iconCard(): string[] {
+      const shell = read(shellPath);
+      const match = shell.match(/const ICONS: Record<[\s\S]*?=\s*\{([\s\S]*?)\n\};/);
+      expect(match, `${shellPath} doit déclarer ICONS`).toBeTruthy();
+      return [...match![1].matchAll(/\b([A-Z][A-Za-z0-9]*)\s*[:,]/g)].map((m) => m[1]);
+    }
+
+    test('le registre serveur ne peut pas promettre une icône que le client ne sait pas rendre', () => {
+      const card = new Set(iconCard());
+      const declared = resourceDescriptors()
+        .filter((descriptor) => descriptor.nav?.icon)
+        .map((descriptor) => descriptor.nav!.icon as string);
+      expect(declared.length).toBe(43);
+      const missing = [...new Set(declared)].filter((name) => !card.has(name));
+      expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
+    });
+
+    test('chaque clé de la carte est bien exportée par le sprite partagé', () => {
+      const exports = new Set(
+        [...read(spritePath).matchAll(/^export (?:const|function) ([A-Z][A-Za-z0-9]*)/gm)].map((m) => m[1]),
+      );
+      const unknown = iconCard().filter((name) => !exports.has(name));
+      expect(unknown, `ICONS référence un composant absent de ${spritePath}`).toEqual([]);
+    });
+
+    test('un nom non couvert rend un glyphe du sprite, plus une classe CSS sans masque', () => {
+      const shell = read(shellPath);
+      expect(shell).toMatch(/ICONS\[name\]\s*\?\?\s*Grid/);
+      // plus aucun rendu ne retombe sur la classe dont le masque dépendait d'une var inexistante
+      expect(shell).not.toMatch(/className=\{`bo-nav-icon/);
+      expect(shell).not.toMatch(/<i\s+className=\{`bo-nav-icon/);
+    });
+  });
 });

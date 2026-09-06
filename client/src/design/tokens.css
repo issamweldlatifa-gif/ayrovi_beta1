@@ -193,6 +193,7 @@
   --admin-danger-text:#b42318; /* texte en erreur */
   --admin-danger-ink:#b6251c; /* erreur profonde (barre latérale) */
   --admin-violet:#673de6; /* accent produit (Lens, IA) */
+  --admin-danger: var(--ayrovi-danger); /* P3/T2 — AdminApp.tsx appelait cette variable sans qu'elle existe ; alias, aucune valeur nouvelle */
 
   /* — tons verbatims : 231 valeurs longue traîne (à absorber en T2) — */
   --admin-tone-047857:#047857;

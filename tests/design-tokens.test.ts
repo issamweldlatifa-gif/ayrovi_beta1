@@ -15,8 +15,9 @@
  *  4. ratchet : le nombre de références à un ton verbatim `--admin-tone-*` ne peut pas remonter
  *     au-dessus du nombre mesuré au jour de T1 (275), idem pour les littéraux de la feuille gelée
  *     (135) — la consolidation T2 ne peut que les faire baisser ;
- *  5. aucun `var(--x)` utilisé par une feuille système ne reste non résolu, à une seule exception
- *     allowlistée et documentée (`--bo-icon`, défaut antérieur à T1,cf. rapport P3 §6) ;
+ *  5. aucun `var(--x)` utilisé par une feuille système, ni par un style en ligne de la couche
+ *     admin (`client/src/admin/**`), ne reste non résolu — à une seule exception allowlistée :
+ *     `--bo-icon`, règle CSS morte de `back-office.css` (voir rapport P3/T1 §7, F-2) ;
  *  6. la couche admin ne connaît qu'un seul orange : la valeur de `--ayrovi-cta`.
  *
  * Les nombres de ce fichier sont MESURÉS (scripts/design-token-sweep.cjs --check), pas déduits.
@@ -44,7 +45,10 @@ const FROZEN_LITERAL_CEILING = 135;
 
 /** Un `var(--x)` dont personne ne définit `--x` est une indirection morte : allowlist fermée. */
 const UNRESOLVED_ALLOWLIST: Record<string, string> = {
-  '--bo-icon': 'défaut antérieur à T1 — la classe .bo-nav-icon--* n\u2019est définie nulle part ; correction en T2 (chg. de rendu)',
+  // Règle CSS héritée de P2.0, jamais atteinte depuis T2 : `NavIcon` rend un glyphe du sprite, plus
+  // un <i> dont le masque dépendait d'une variable que personne ne déclarait. La règle reste en
+  // place (rien n'est supprimé) mais ne peut plus servir de piège — voir rapport P3/T1 §7 (F-2).
+  '--bo-icon': 'client/src/admin/back-office/back-office.css:20 — masque inerte, non atteinte depuis P3/T2',
 };
 
 const HEX = String.raw`#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])`;
@@ -166,7 +170,7 @@ describe('tons verbatims — dette mesurée, plafonnée', () => {
 });
 
 describe('aucune indirection morte ajoutée par la migration', () => {
-  test('tout var() des feuilles système résout vers une valeur connue', () => {
+  test('tout var() de la couche admin (CSS et styles en ligne) résout vers une valeur connue', () => {
     const defined = new Set<string>();
     for (const dir of ['client/src']) {
       const walk = (rel: string) => {
@@ -184,15 +188,26 @@ describe('aucune indirection morte ajoutée par la migration', () => {
       for (const m of text.matchAll(/['"](--[a-zA-Z0-9-]+)['"]/g)) defined.add(m[1]);
     }
     const unresolved = new Map<string, string[]>();
-    for (const file of SYSTEM_SHEETS) {
-      const body = withoutComments(read(file));
-      for (const m of body.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)) {
+    const scan = (rel: string, text: string) => {
+      for (const m of text.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)) {
         if (!defined.has(m[1]) && !(m[1] in UNRESOLVED_ALLOWLIST)) {
-          unresolved.set(m[1], [...(unresolved.get(m[1]) ?? []), file]);
+          unresolved.set(m[1], [...(unresolved.get(m[1]) ?? []), rel]);
         }
       }
-    }
-    expect([...unresolved.keys()]).toEqual([]);
+    };
+    // 1) les feuilles système : le lieu exact du sweep T1
+    for (const file of SYSTEM_SHEETS) scan(file, withoutComments(read(file)));
+    // 2) les styles en ligne de la couche admin (F-1 né là : `var(--admin-danger)` n'était défini
+    //    nulle part et le texte de motif de refus héritait d'une couleur non voulue)
+    const walkTsx = (rel: string) => {
+      for (const entry of fs.readdirSync(path.resolve(ROOT, rel), { withFileTypes: true })) {
+        const child = path.join(rel, entry.name);
+        if (entry.isDirectory()) walkTsx(child);
+        else if (/\.(tsx|ts)$/.test(entry.name)) scan(child, read(child));
+      }
+    };
+    walkTsx('client/src/admin');
+    expect([...unresolved.entries()].map(([name, files]) => `${name} ← ${files.join(', ')}`)).toEqual([]);
   });
 });
 

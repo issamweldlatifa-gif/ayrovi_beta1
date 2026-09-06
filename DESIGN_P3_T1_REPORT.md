@@ -111,10 +111,10 @@ Ils changeraient le rendu : hors du contrat « identique au pixel près ». Ils 
 **F‑2 — les icônes de la barre latérale ne sont pas masquées**
 - **WHERE** : `client/src/admin/back-office/back-office.css:20` (`.bo-nav-icon { -webkit-mask: var(--bo-icon) … }`) et `client/src/admin/back-office/BackOfficeShell.tsx:49` qui rend `bo-nav-icon bo-nav-icon--<nom>`.
 - **WHY** : aucune règle `.bo-nav-icon--*` n'existe dans le dépôt, et `--bo-icon` n'est défini ni en CSS ni par un `setProperty` : le masque tombe, seul le `background: currentColor` reste.
-- **IMPACT** : chaque entrée de navigation affiche un carré de 19 px à 75 % d'opacité à la place d'un glyphe. Le composant est rendu pour chaque entrée de navigation de la coquille (`NavIcon` dans `BackOfficeShell.tsx`), donc sur tous les écrans admin.
+- **IMPACT** — *corrigé après mesure : ma première phrase était fausse.* Les 43 entrées de navigation déclarent 27 noms d'icône distincts et **tous** figurent dans la carte `ICONS` (`BackOfficeShell.tsx:37‑42`) : le rendu passe par un composant SVG, **aucune icône n'est un carré aujourd'hui**. La branche `<i className="bo-nav-icon…">` n'est atteinte que par un nom absent de la carte — le défaut est **latent** (il apparaît au prochain module qui oublie la carte), pas une panne visible.
 - **DEPENDENCIES** : la `carte ICONS` de `BackOfficeShell.tsx` (allowlist d'icônes déjà testée dans `back-office-foundation.test.ts`) ; un jeu de SVG data‑URI à brancher ; aucun changement de données.
-- **RECOMMENDED SOLUTION** : en T2, définir les masques par modificateur depuis le même registre d'icônes (une source, pas une copie par écran), avec capture avant/après dans le rapport de phase.
-- **PRIORITY** : P2 (le seul des deux qui dégrade visuellement tous les écrans admin).
+- **RECOMMENDED SOLUTION** : en T2, rendre un glyphe neutre du sprite quand un nom n'est pas couvert, et verrouiller le contrat « registre → carte d'icônes » par un test. Rien à inventer côté masque : `--bo-icon` était une promesse non tenue, pas un branchement manquant.
+- **PRIORITY** : P3 (latent). La règle CSS de masque reste en place et allowlistée dans le garde ; le repli rendu est désormais un glyphe, plus un carré muet.
 
 ## 8) Ce que T2 devra demander avant de faire
 
