@@ -122,3 +122,19 @@ Aucun test n'a été supprimé, aucun test métier n'a été affaibli ; les 31 t
 - la matrice : `purchasing` est encore `planned` → même promotion que celle de P2.2 ;
 - le garde-fou `<table>` et l'auto-test du framework (une ressource déclarée avec une action hors vocabulaire ou un `api.prefix` inventé rougit immédiatement) ;
 - `arrival-ingestion` reste non réécrit : P2.3 s'y branche en additif (lien `purchase_order` sur les arrivages existants), pas en remplacement.
+
+## 9) Mesures et preuve d'isomorphie (base fraîche, script exécuté après le commit)
+
+Sur une baseSQLite créée de zéro par `new QatafoDatabase(chemin_tmp)` :
+
+| Mesure | Valeur |
+|---|---|
+| Tables au total | **92**, dont **88 hors stock** et **4 du module** (`inventory_stock_items`, `inventory_stock_movements`, `inventory_stocktake_lines`, `inventory_stocktakes`) |
+| Index `idx_inventory*` | 8 (dont l'index d'expression d'identité de ligne et l'index unique d'idempotence) |
+| `erp_sequences` | 1 ligne ajoutée : `stocktake_code` / préfixe `STK` / padding 5 / year-scoped |
+| Colonnes de `products` contenant `qty|quantity|stock` | **`stock_status` uniquement** — une étiquette de disponibilité qui existait avant P2.2 ; aucune colonne de quantité n'a été ajoutée (c'est ce que vérifie le test de garde) |
+| `erp_role_permissions` au boot du constructeur seul | 0 — le constructeur n'assure que le DDL ; les grants sont semés par `bootstrapInventory` (à la demande, comme le catalogue), donc aucune écriture de données au chargement du module |
+
+Le chiffre de « 87 tables » cité dans les rapports de phases précédentes provenait d'une base de travail existante ; la mesure ci-dessus est faite sur une base fraîche et le delta imputable à P2.2 est exactement **+4 tables / 8 index / 1 séquence**, sans aucune modification de table préexistante.
+
+**Vérification sur arbre frais au commit `5f39547` :** `git worktree add -f … 5f39547` + build + `npx tsc --noEmit` + `npx tsc -p tsconfig.client.json --noEmit` + suite complète → build ok, **0 / 0**, **46 fichiers / 509 tests passés**.
