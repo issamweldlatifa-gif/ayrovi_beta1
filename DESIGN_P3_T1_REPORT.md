@@ -63,7 +63,7 @@ Le sweep est rejouable et non destructif : `node scripts/design-token-sweep.cjs 
 - la seule différence de structure tolérée est le bloc `:root` déplacé, et ses neuf définitions sont contrôlées séparément, mot pour mot ;
 - toutes les variables de la cascade admin (avant) sont revérifiées à l'identique après.
 
-Résultat : **3 229 comparaisons, 0 écart.**
+Résultat : **3 229 comparaisons, 0 écart.** Le script prend `--rev <commit>` pour rejouer la comparaison contre le commit d'avant le sweep : `python3 scripts/design-token-equivalence.py --rev 98d83c6` → même résultat (depuis `400fa83`, un run sans `--rev` compare l'arbre à lui‑même sur 3 471 comparaisons et reste à 0 écart).
 
 ```
 propriétés publiques et admin conservées à la même valeur : 3229

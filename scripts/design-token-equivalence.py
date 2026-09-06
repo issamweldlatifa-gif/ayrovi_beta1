@@ -21,6 +21,9 @@ MOVED = ['--admin-purple', '--admin-purple-dark', '--admin-yellow', '--admin-ink
          '--admin-line', '--admin-bg', '--admin-card', '--admin-sidebar']
 
 
+REV = sys.argv[sys.argv.index('--rev') + 1] if '--rev' in sys.argv else 'HEAD'
+
+
 def read_git(rev, path):
     return subprocess.run(['git', 'show', f'{rev}:{path}'], capture_output=True, text=True, check=True).stdout
 
@@ -125,12 +128,12 @@ def state(text, table):
 
 problems, checked = [], 0
 tokens_new = open(TOKENS).read()
-tokens_old = read_git('HEAD', TOKENS)
-TABLE_OLD = table_for('HEAD')
+tokens_old = read_git(REV, TOKENS)
+TABLE_OLD = table_for(REV)
 TABLE_NEW = table_for()
 moved_keys = set()
 for path in FILES:
-    old_map, _ = state(text_of(path, 'HEAD'), TABLE_OLD)
+    old_map, _ = state(text_of(path, REV), TABLE_OLD)
     new_map, _ = state(text_of(path), TABLE_NEW)
     moved_keys |= {k for k in old_map if k[0] == ':root' and k[1] in MOVED}
     for key in old_map:
