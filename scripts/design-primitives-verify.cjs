@@ -57,6 +57,13 @@ for (const block of blocksOf(src)) {
 }
 if (pending.length) throw new Error('commentaire final sans déclaration dans la référence');
 
+const declarations = decls.filter((d) => /^export (const|function|interface|type)/m.test(d.trimStart()) || d.split('\n').some((line) => /^(export (const|function|interface|type)|const |interface |type )/.test(line)));
+if (!declarations.length) {
+  console.log(`référence ${rev} : client/src/admin/components.tsx n'y contient déjà plus aucune définition —`);
+  console.log('ce script ne sert que pour le commit qui a fait le déplacement (il compare un fichier source à sa nouvelle maison).');
+  process.exit(0);
+}
+
 const squash = (value) => value.replace(/\n{2,}/g, '\n').trim();
 const dir = 'client/src/design/admin';
 const files = fs.readdirSync(dir).filter((f) => f.endsWith('.tsx'));

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Field, Toast } from './components';
+import { Button, Field, Switch, Toast } from './components';
 import { adminApi } from './api';
 import { ArrowDown, ArrowUp, RefreshCw, Trash2 } from '../components/QatafoIcons';
 
@@ -176,7 +176,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
                 <input disabled={!canWrite} type="number" min={0} max={999} value={draft.sortOrder} onChange={(event) => patch({ sortOrder: Number(event.target.value) })} />
               </Field>
               <Field label="Afficher la section" full>
-                <button type="button" disabled={!canWrite} className={`admin-switch ${draft.enabled ? 'is-on' : ''}`} onClick={() => patch({ enabled: !draft.enabled })}><i /><span>{draft.enabled ? 'Section visible' : 'Section masquée'}</span></button>
+                <Switch disabled={!canWrite} checked={draft.enabled} onLabel="Section visible" offLabel="Section masquée" onChange={() => patch({ enabled: !draft.enabled })} />
               </Field>
             </div>
 
@@ -226,7 +226,7 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
             <h3 style={{ marginTop: 18 }}>Mockup téléphone</h3>
             <div className="admin-form">
               <Field label="Afficher le mockup" full>
-                <button type="button" disabled={!canWrite} className={`admin-switch ${draft.phoneEnabled ? 'is-on' : ''}`} onClick={() => patch({ phoneEnabled: !draft.phoneEnabled })}><i /><span>{draft.phoneEnabled ? 'Mockup visible' : 'Mockup masqué'}</span></button>
+                <Switch disabled={!canWrite} checked={draft.phoneEnabled} onLabel="Mockup visible" offLabel="Mockup masqué" onChange={() => patch({ phoneEnabled: !draft.phoneEnabled })} />
               </Field>
               <Field label="Image dans l’écran" full hint="Photo affichée dans la zone de scan.">
                 <input ref={phoneInput} disabled={!canWrite} type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => pickFile(event.target.files?.[0] || null, 'phone')} />

@@ -6,8 +6,8 @@ import {
 } from '../components/QatafoIcons';
 import { ADMIN_SESSION_EXPIRED_EVENT, adminApi, ApiError, loadIdentity, login, logout, queryString } from './api';
 import {
-  Button, ConfirmDialog, DataColumn, DataTable, DatePicker, Field, Filters, Form, ImageUploader, Modal,
-  PageHeader, Pagination, Search, Select, StatusBadge, Toast,
+  Badge, Button, CardTitle, ConfirmDialog, DataColumn, DataTable, DatePicker, Field, Filters, Form,
+  ImageUploader, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
 import './admin.css';
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
@@ -183,7 +183,6 @@ const DashboardPage: React.FC = () => {
 
 const PageLoading: React.FC<{ error?: string }> = ({ error }) => <div className="admin-page-loading">{error ? <><AlertCircle /><strong>{error}</strong></> : <><span /><p>Chargement des données…</p></>}</div>;
 const ChartEmpty = () => <div className="admin-chart-empty">Les premières données apparaîtront ici.</div>;
-const CardTitle: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => <header className="admin-card-title"><div><h3>{title}</h3><p>{subtitle}</p></div></header>;
 // `PageHeader` vient de ./components : un seul en-tête pour tout le back office (P2.2).
 
 
@@ -609,9 +608,9 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
       <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
       {ayx&&<section className="admin-card"><CardTitle title="AYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
-          <span className={`admin-badge ${ayx.providers.vision?.configured?'is-success':'is-warning'}`}>{ayx.providers.vision?.configured?'✅':'⚠️'} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</span>
-          <span className={`admin-badge ${ayx.providers.visualSearch?.configured?'is-success':'is-warning'}`}>{ayx.providers.visualSearch?.configured?'✅':'⚠️'} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</span>
-          <span className={`admin-badge ${ayx.providers.search?.configured?'is-success':'is-warning'}`}>{ayx.providers.search?.configured?'✅':'⚠️'} AI Core Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Fournisseur non configuré'}</span>
+          <Badge tone={ayx.providers.vision?.configured?'success':'warning'}>{ayx.providers.vision?.configured?'✅':'⚠️'} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</Badge>
+          <Badge tone={ayx.providers.visualSearch?.configured?'success':'warning'}>{ayx.providers.visualSearch?.configured?'✅':'⚠️'} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</Badge>
+          <Badge tone={ayx.providers.search?.configured?'success':'warning'}>{ayx.providers.search?.configured?'✅':'⚠️'} AI Core Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Fournisseur non configuré'}</Badge>
         </div>}
         <div className="admin-kpi-grid" style={{marginBottom:12}}>
           <section className="admin-kpi"><span>Analyses</span><strong>{ayx.last7d.total}</strong><small className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1"><Camera size={12} />{ayx.last7d.image}</span><span className="inline-flex items-center gap-1"><Link2 size={12} />{ayx.last7d.url}</span><span className="inline-flex items-center gap-1"><Grid size={12} />{ayx.last7d.qr}</span></small></section>

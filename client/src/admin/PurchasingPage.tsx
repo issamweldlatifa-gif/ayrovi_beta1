@@ -19,7 +19,8 @@ import { adminApi } from './api';
 import { useBackOffice } from './back-office/framework';
 import { ResourceWorkspace } from './back-office/ResourceWorkspace';
 import {
-  Button, DataColumn, DataTable, Field, Modal, PageHeader as SharedPageHeader, Pagination, Search, Select, StatusBadge, Toast,
+  Button, DataColumn, DataTable, Field, MetricStrip, Modal, PageHeader, Pagination, Search,
+  Select, StatusBadge, Toast,
   type TableRowAction,
 } from './components';
 import { formatDate } from './back-office/resource-ui';
@@ -56,33 +57,25 @@ function usePurchasingMeta() {
 }
 
 // En-tête partagé du back office (./components) — le libellé du domaine reste local.
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => (
-  <SharedPageHeader {...props} eyebrow="AYROVI ACHATS" />
-);
+const PurchasingHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI ACHATS" />;
 
 const money = (value: unknown, currency = 'TND') => {
   const number = Number(value ?? 0);
   return `${number.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
 };
 
-const KpiStrip: React.FC<{ meta: Meta | null }> = ({ meta }) => {
+/* Idem Stock : la bande de chiffres est la primitive MetricStrip (P3/T2), l'écran ne fait que
+   mapper ses compteurs. Les valeurs sont déjà formatées côté écran (la primitive ne connaît ni
+   nombre ni devise), donc le rendu reste identique au caractère près. */
+const kpiCells = (meta: Meta | null) => {
   const summary = meta?.summary;
   if (!summary) return null;
-  const cells = [
+  return [
     { label: 'Commandes en attente', value: String(summary.orders_pending) },
     { label: 'Montant engagé (attente)', value: money(summary.orders_pending_amount) },
     { label: 'Bons de réception en brouillon', value: String(summary.receipts_draft) },
     { label: 'Fournisseurs actifs', value: String(summary.suppliers_active) },
   ];
-  return (
-    <div className="admin-metrics">
-      {cells.map((cell) => (
-        <div className="admin-metric" key={cell.label}>
-          <div><span>{cell.label}</span><strong className="admin-cell-num">{cell.value}</strong><small>module Achats · P2.3</small></div>
-        </div>
-      ))}
-    </div>
-  );
 };
 
 /* ==================== Fournisseurs (délégué au framework) ==================== */
@@ -243,14 +236,14 @@ export const PurchasingOrdersPage: React.FC = () => {
 
   return (
     <>
-      <PageHeader
+      <PurchasingHeader
         title="Commandes d’achat"
         description="Une commande engage l’argent : brouillon, soumission, approbation, puis réception. Les totaux sont lus sur les lignes — aucune colonne ne les recopie."
         action={mayCreate
           ? <Button onClick={() => setCreating(true)}>Nouvelle commande</Button>
           : <Button disabled title="Le droit « purchasing:create » n’est pas accordé à ce rôle">Nouvelle commande</Button>}
       />
-      <KpiStrip meta={meta} />
+      <MetricStrip note="module Achats · P2.3" cells={kpiCells(meta)} />
       <section className="admin-list-card">
         <div className="admin-list-toolbar">
           <Search value={search} onChange={setSearch} placeholder="Référence, fournisseur, note…" />
@@ -520,7 +513,7 @@ export const PurchasingReceiptsPage: React.FC = () => {
 
   return (
     <>
-      <PageHeader
+      <PurchasingHeader
         title="Réceptions"
         description="La réception partielle est normale, la sur-réception est refusée. Un bon endommagé entre puis sort du stock — deux mouvements, jamais un oubli."
         action={mayCreate

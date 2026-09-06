@@ -17,7 +17,8 @@ import { adminApi } from './api';
 import { useBackOffice } from './back-office/framework';
 import { ResourceWorkspace } from './back-office/ResourceWorkspace';
 import {
-  Button, DataColumn, DataTable, Field, Modal, PageHeader as SharedPageHeader, Pagination, Search, Select, StatusBadge, Toast,
+  Button, DataColumn, DataTable, Field, MetricStrip, Modal, PageHeader, Pagination, Search,
+  Select, StatusBadge, Toast,
   type TableRowAction,
 } from './components';
 import { formatDate } from './back-office/resource-ui';
@@ -51,28 +52,19 @@ function useInventoryMeta() {
 }
 
 // En-tête partagé du back office (./components) — le libellé du domaine reste local.
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => (
-  <SharedPageHeader {...props} eyebrow="AYROVI STOCK" />
-);
+const StockHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI STOCK" />;
 
-const KpiStrip: React.FC<{ meta: Meta | null }> = ({ meta }) => {
+/* Les chiffres du module : la bande est la primitive MetricStrip (P3/T2), l'écran ne garde que
+   la correspondance données -> cellules. `null` = méta absente = rien n'est rendu, comme avant. */
+const kpiCells = (meta: Meta | null) => {
   const summary = meta?.summary;
   if (!summary) return null;
-  const cells = [
-    { label: 'Unités en stock', value: summary.units },
-    { label: 'Lignes suivies', value: summary.lines },
-    { label: 'Sous le point de commande', value: summary.lowStock },
-    { label: 'Épuisées', value: summary.outOfStock },
+  return [
+    { label: 'Unités en stock', value: summary.units.toLocaleString('fr-FR') },
+    { label: 'Lignes suivies', value: summary.lines.toLocaleString('fr-FR') },
+    { label: 'Sous le point de commande', value: summary.lowStock.toLocaleString('fr-FR') },
+    { label: 'Épuisées', value: summary.outOfStock.toLocaleString('fr-FR') },
   ];
-  return (
-    <div className="admin-metrics">
-      {cells.map((cell) => (
-        <div className="admin-metric" key={cell.label}>
-          <div><span>{cell.label}</span><strong className="admin-cell-num">{cell.value.toLocaleString('fr-FR')}</strong><small>module Stock · P2.2</small></div>
-        </div>
-      ))}
-    </div>
-  );
 };
 
 /* ==================== Stock (délégué au framework) ==================== */
@@ -173,14 +165,14 @@ export const InventoryMovementsPage: React.FC<{ canWriteFallback?: boolean }> = 
 
   return (
     <>
-      <PageHeader
+      <StockHeader
         title="Mouvements de stock"
         description="Journal append-only : chaque unité entrée, sortie ou ajustée garde son solde avant/après et son motif. Une erreur se corrige par un mouvement de plus, jamais en réécrivant le passé."
         action={mayWrite
           ? <Button onClick={() => setOpen(true)}>Enregistrer un mouvement</Button>
           : <Button disabled title="Le droit « inventory:write » n’est pas accordé à ce rôle">Enregistrer un mouvement</Button>}
       />
-      <KpiStrip meta={meta} />
+      <MetricStrip note="module Stock · P2.2" cells={kpiCells(meta)} />
       <section className="admin-list-card">
         <div className="admin-list-toolbar">
           <Search value={search} onChange={setSearch} placeholder="Produit, code, note, référence…" />
@@ -373,7 +365,7 @@ export const InventoryStocktakesPage: React.FC = () => {
 
   return (
     <>
-      <PageHeader
+      <StockHeader
         title="Inventaires physiques"
         description="On photographie le stock théorique, on compte, on soumet, puis la validation applique les écarts — un droit séparé, parce que trancher n’est pas compter."
         action={mayCreate

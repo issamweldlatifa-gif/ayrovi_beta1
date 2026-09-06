@@ -10,16 +10,13 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, queryString } from './api';
-import { Button, DataTable, Field, Filters, Form, Modal, PageHeader as SharedPageHeader, Pagination, Search, Select, StatusBadge, Toast } from './components';
+import { Button, CardTitle, DataTable, Field, Filters, Form, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast } from './components';
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 
 // Une seule implémentation de l'en-tête (./components) ; le libellé du domaine reste local.
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <SharedPageHeader {...props} eyebrow="AYROVI ERP" />;
+const ErpHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI ERP" />;
 
-const CardTitle: React.FC<{ title: string; subtitle: string }> = ({ title, subtitle }) => (
-  <header className="admin-card-title"><div><h3>{title}</h3><p>{subtitle}</p></div></header>
-);
 
 interface Employee {
   id: string;
@@ -107,7 +104,7 @@ export const ErpEmployeesPage: React.FC<{ canManage: boolean }> = ({ canManage }
   };
 
   return <>
-    <PageHeader title="Employés" description="Identité ERP lisible (EMP-…), poste et rattachement. Elle complète le compte de connexion, elle ne le remplace jamais." />
+    <ErpHeader title="Employés" description="Identité ERP lisible (EMP-…), poste et rattachement. Elle complète le compte de connexion, elle ne le remplace jamais." />
     <Filters>
       <Search value={search} onChange={(value) => { setSearch(value); setPage(1); }} placeholder="Code EMP-, nom, poste, email…" />
       <Select value={status} onChange={(event) => { setStatus(event.target.value); setPage(1); }} options={[{ value: '', label: 'Tous les statuts' }, ...options(EMPLOYEE_STATUS)]} />
@@ -187,7 +184,7 @@ export const ErpOrganizationPage: React.FC<{ canManage: boolean }> = ({ canManag
   );
 
   return <>
-    <PageHeader title="Organisation" description="Organisation juridique, succursales, départements et équipes — base des portées de permission (all / organization / branch / department / team / own)." />
+    <ErpHeader title="Organisation" description="Organisation juridique, succursales, départements et équipes — base des portées de permission (all / organization / branch / department / team / own)." />
     {tree.error && <p className="admin-block-small">{tree.error}</p>}
     <div className="admin-report-grid">
       <section className="admin-card"><CardTitle title="Organisation" subtitle={tree.loading ? 'Chargement…' : `${tree.data?.organizations?.length || 0} enregistrée(s)`} />
@@ -250,7 +247,7 @@ export const ErpPermissionsPage: React.FC<{ canManage: boolean; role: string }> 
   }, [payload]);
 
   return <>
-    <PageHeader title="Rôles & permissions" description={`Modèle module:action:resource:scope stocké en table. Le rôle hérité (${payload?.role || role}) reste la référence : aucune ligne ERP ne peut le réduire.`}
+    <ErpHeader title="Rôles & permissions" description={`Modèle module:action:resource:scope stocké en table. Le rôle hérité (${payload?.role || role}) reste la référence : aucune ligne ERP ne peut le réduire.`}
       action={canManage ? <Button variant="secondary" busy={busy} onClick={reseed}>Régénérer le miroir</Button> : undefined} />
     <div className="admin-report-grid">
       <section className="admin-card"><CardTitle title="Décision héritée" subtitle="Ce que le rôle peut déjà faire aujourd’hui" />
@@ -302,7 +299,7 @@ export const ErpEnvironmentPage: React.FC = () => {
   const env = environment.data;
 
   return <>
-    <PageHeader title="Modules & environnement" description="Registre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité et séquences de numérotation." />
+    <ErpHeader title="Modules & environnement" description="Registre des modules (actif / hérité / planifié), politique de stockage des fichiers, auto-test de sécurité et séquences de numérotation." />
     {registry.error && <p className="admin-block-small">{registry.error}</p>}
     <div className="admin-report-grid">
       <section className="admin-card"><CardTitle title="Registre des modules" subtitle={`${total} module(s) déclarés`} />
@@ -376,7 +373,7 @@ export const ErpAuditPage: React.FC = () => {
   const set = (patch: Record<string, string>) => { setFilters((current) => ({ ...current, ...patch })); setPage(1); };
 
   return <>
-    <PageHeader title="Journal d’audit (ERP)" description="Un seul système pour le back-office et le CRM : qui (employé), quoi (action), quand, où (écran), sur quel enregistrement, avant/après champ par champ, IP, session et user-agent." />
+    <ErpHeader title="Journal d’audit (ERP)" description="Un seul système pour le back-office et le CRM : qui (employé), quoi (action), quand, où (écran), sur quel enregistrement, avant/après champ par champ, IP, session et user-agent." />
     <Filters>
       <Search value={filters.employeeCode} onChange={(value) => set({ employeeCode: value })} placeholder="Code EMP-…" />
       <Search value={filters.module} onChange={(value) => set({ module: value })} placeholder="Module (SOCIAL_REELS, TRUST_BAR…)" />
@@ -425,7 +422,7 @@ export const ErpEventsPage: React.FC = () => {
   const query = useMemo(() => queryString({ limit: 50, module: moduleKey }), [moduleKey]);
   const events = useAsync<any>(() => adminApi<any>(`/core/events?${query}`), [query]);
   return <>
-    <PageHeader title="Événements" description="Événements de domaine dérivés de chaque écriture auditée — la base des notifications, automatisations et réconciliations à venir." />
+    <ErpHeader title="Événements" description="Événements de domaine dérivés de chaque écriture auditée — la base des notifications, automatisations et réconciliations à venir." />
     <Filters><Search value={moduleKey} onChange={setModuleKey} placeholder="Filtrer par module (catalog, sales, crm…)" /></Filters>
     <section className="admin-list-card"><DataTable rows={rowsOf(events.data)} loading={events.loading} columns={[
       { key: 'created_at', label: 'Date', render: (row: any) => new Date(String(row.created_at)).toLocaleString('fr-TN') },

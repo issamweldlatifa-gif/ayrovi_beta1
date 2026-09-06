@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Button, Toast } from './components';
+import { Button, Switch, Toast } from './components';
 import { adminApi } from './api';
 import { ArrowDown, ArrowUp, RefreshCw } from '../components/QatafoIcons';
 
@@ -89,9 +89,7 @@ export const HomeSectionsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) 
                   <p className="admin-block-small" style={{ margin: '2px 0 0' }}>{BLOCK_LABELS[row.id]?.hint}</p>
                 </div>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button type="button" disabled={!canWrite} className={`admin-switch ${row.visible ? 'is-on' : ''}`} onClick={() => setRows((current) => current.map((item, at) => (at === index ? { ...item, visible: !item.visible } : item)))}>
-                    <i /><span>{row.visible ? 'Visible' : 'Masquée'}</span>
-                  </button>
+                  <Switch disabled={!canWrite} checked={row.visible} onLabel="Visible" offLabel="Masquée" onChange={() => setRows((current) => current.map((item, at) => (at === index ? { ...item, visible: !item.visible } : item)))} />
                   <Button variant="ghost" disabled={!canWrite || index === 0} onClick={() => move(index, -1)} aria-label="Monter"><ArrowUp size={15} /></Button>
                   <Button variant="ghost" disabled={!canWrite || index === rows.length - 1} onClick={() => move(index, 1)} aria-label="Descendre"><ArrowDown size={15} /></Button>
                 </span>

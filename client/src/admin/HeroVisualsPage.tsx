@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
-import { Button, ConfirmDialog, DataTable, Field, StatusBadge, Toast } from './components';
+import { Button, ConfirmDialog, DataTable, Field, StatusBadge, Switch, Toast } from './components';
 import { adminApi } from './api';
 
 /**
@@ -304,7 +304,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           <Field label="Destination du CTA" hint="https://… ou chemin interne /…"><input disabled={!canWrite} value={content.ctaUrl} onChange={(event) => setContent((current) => ({ ...current, ctaUrl: event.target.value }))} placeholder="https://ayrovi.tn/…" /></Field>
           <Field label="Couleur d’accent"><input disabled={!canWrite} type="color" value={content.accentColor} onChange={(event) => setContent((current) => ({ ...current, accentColor: event.target.value }))} /></Field>
           <Field label="Afficher le contenu" full>
-            <button type="button" disabled={!canWrite} className={`admin-switch ${content.enabled ? 'is-on' : ''}`} onClick={() => setContent((current) => ({ ...current, enabled: !current.enabled }))}><i /><span>{content.enabled ? 'Contenu visible' : 'Contenu masqué'}</span></button>
+            <Switch disabled={!canWrite} checked={content.enabled} onLabel="Contenu visible" offLabel="Contenu masqué" onChange={() => setContent((current) => ({ ...current, enabled: !current.enabled }))} />
           </Field>
         </div>
         <h4 style={{ margin: '16px 0 8px' }}>Ordre des éléments</h4>

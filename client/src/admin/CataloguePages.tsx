@@ -16,14 +16,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { adminApi, ApiError, queryString } from './api';
 import {
   Button, ConfirmDialog, DataTable, Field, Filters, Form, ImageUploader, Modal,
-  PageHeader as SharedPageHeader, Pagination, Search, Select, StatusBadge, Toast,
+  PageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
 
 
 type ToastValue = { message: string; tone: 'success' | 'error' } | null;
 type Capabilities = Record<string, Record<string, boolean>>;
 
-const PageHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <SharedPageHeader {...props} eyebrow="AYROVI CATALOGUE" />;
+const CatalogueHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> = (props) => <PageHeader {...props} eyebrow="AYROVI CATALOGUE" />;
 
 const options = (values: Array<string | { value: string; label: string }>) =>
   values.map((value) => (typeof value === 'string' ? { value, label: value } : value));
@@ -186,7 +186,7 @@ export const CatalogueProductsPage: React.FC = () => {
   };
 
   if (metaDenied || list.denied) return <>
-    <PageHeader title="Produits" description="Le produit canonique: une ligne, un code, un slug, ses variantes et ses médias." />
+    <CatalogueHeader title="Produits" description="Le produit canonique: une ligne, un code, un slug, ses variantes et ses médias." />
     <Denied message={list.error || metaError} />
   </>;
 
@@ -195,7 +195,7 @@ export const CatalogueProductsPage: React.FC = () => {
   const canPublish = can('product', 'approve');
 
   return <>
-    <PageHeader
+    <CatalogueHeader
       title="Produits"
       description="Le produit canonique du catalogue: une ligne, un code PRD-, un slug, ses variantes/SKU, ses médias et ses attributs. Rien n’est dupliqué pour le site ni pour le CRM."
       action={can('product', 'create') ? <Button onClick={openCreate}>Nouveau produit</Button> : null}
@@ -458,10 +458,10 @@ export const CatalogueCategoriesPage: React.FC = () => {
     } catch (e: any) { setToast({ message: e?.message || 'Archivage refusé — des produits sont peut-être encore rattachés.', tone: 'error' }); setArchiveFor(null); } finally { setBusy(false); }
   };
 
-  if (denied || tree.denied) return <><PageHeader title="Catégories" description="Arborescence du catalogue." /><Denied message={tree.error || error} /></>;
+  if (denied || tree.denied) return <><CatalogueHeader title="Catégories" description="Arborescence du catalogue." /><Denied message={tree.error || error} /></>;
 
   return <>
-    <PageHeader
+    <CatalogueHeader
       title="Catégories"
       description="Hiérarchie libre: « Homme », « Femme », « Enfant » sont des lignes de cette table, pas du code. Profondeur, ordre et statut sont des données."
       action={can('category', 'create') ? <Button onClick={() => openCreate()}>Nouvelle catégorie</Button> : null}
@@ -581,10 +581,10 @@ export const CatalogueBrandsPage: React.FC = () => {
     } catch (e: any) { const parsed = fieldErrors(e); setFormError(parsed.message); setByField(parsed.byField); } finally { setBusy(false); }
   };
 
-  if (denied || list.denied) return <><PageHeader title="Marques" description="Référence canonique des marques." /><Denied message={list.error || error} /></>;
+  if (denied || list.denied) return <><CatalogueHeader title="Marques" description="Référence canonique des marques." /><Denied message={list.error || error} /></>;
 
   return <>
-    <PageHeader
+    <CatalogueHeader
       title="Marques"
       description={`Une seule table de marques pour tout le monde: produits, vitrine et CMS lisent la même ligne. Retirer une marque du catalogue se fait en la passant INACTIVE — aucune suppression physique dans cette phase.`}
       action={can('brand', 'create') ? <Button onClick={openCreate}>Nouvelle marque</Button> : null}

@@ -12,7 +12,7 @@
  */
 import React from 'react';
 import { CheckCircle2 } from '../../components/QatafoIcons';
-import { Button, DatePicker, Field, Form, ImageUploader, Select } from '../components';
+import { Button, DatePicker, Field, Form, ImageUploader, Select, Switch } from '../components';
 
 export type FieldType = 'text' | 'textarea' | 'number' | 'select' | 'date' | 'image' | 'boolean' | 'list';
 export type Permission = 'dashboard:read' | 'content:read' | 'content:write' | 'commerce:read' | 'orders:write' | 'pricing:write' | 'payments:write' | 'settings:write' | 'users:write' | 'users:read' | 'ai:read' | 'ai:write' | 'audit:read' | 'reports:read' | 'reports:write';
@@ -75,7 +75,7 @@ export const ResourceForm: React.FC<{
           : field.type === 'number' ? <input type="number" min="0" step="any" value={value[field.key] ?? ''} required={field.required} onChange={(event) => update(field.key, event.target.value === '' ? '' : Number(event.target.value))} />
             : field.type === 'date' ? <DatePicker value={value[field.key]} required={field.required} onChange={(next) => update(field.key, next)} />
               : field.type === 'image' ? <ImageUploader value={value[field.key]} onChange={(next) => update(field.key, next)} />
-                : field.type === 'boolean' ? <button className={`admin-switch ${value[field.key] ? 'is-on' : ''}`} type="button" onClick={() => update(field.key, !value[field.key])}><i /><span>{value[field.key] ? 'Oui' : 'Non'}</span></button>
+                : field.type === 'boolean' ? <Switch checked={Boolean(value[field.key])} onLabel="Oui" offLabel="Non" onChange={() => update(field.key, !value[field.key])} />
                   : field.type === 'list' ? <textarea rows={2} value={Array.isArray(value[field.key]) ? value[field.key].join(', ') : value[field.key] || ''} onChange={(event) => update(field.key, event.target.value.split(',').map((item) => item.trim()).filter(Boolean))} placeholder="Séparez les valeurs par une virgule" />
                     : <input value={value[field.key] ?? ''} required={field.required} onChange={(event) => update(field.key, event.target.value)} />}
     </Field>)}

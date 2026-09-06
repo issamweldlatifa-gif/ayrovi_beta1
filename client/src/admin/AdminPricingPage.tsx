@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminApi } from './api';
-import { Button, Field, Form, Select, Toast } from './components';
+import { Button, CardTitle, Field, Form, Select, Toast } from './components';
 
 const money = (value: unknown) => `${Number(value || 0).toLocaleString('fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} TND`;
 const currencies = [
@@ -95,7 +95,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
 
     <div className="admin-pricing-layout">
       <section className="admin-card">
-        <header className="admin-card-title"><div><h3>Paramètres du moteur</h3><p>Mise à jour {form.updatedAt ? new Date(form.updatedAt).toLocaleString('fr-TN') : '—'}</p></div></header>
+        <CardTitle title="Paramètres du moteur" subtitle={`Mise à jour ${form.updatedAt ? new Date(form.updatedAt).toLocaleString('fr-TN') : '—'}`} />
         <div className="admin-pricing-grid">
           {fields.map(([key, label]) => (
             <Field key={key} label={label}>
@@ -109,7 +109,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
       </section>
 
       <section className="admin-card admin-price-preview">
-        <header className="admin-card-title"><div><h3>Simulateur TND</h3><p>Acompte inclus selon le % enregistré</p></div></header>
+        <CardTitle title="Simulateur TND" subtitle="Acompte inclus selon le % enregistré" />
         <Form onSubmit={calculate}>
           <Field label="Prix source"><input name="price" type="number" min="0.01" step="0.01" defaultValue="50" required /></Field>
           <Field label="Devise"><Select name="currency" defaultValue="EUR" options={currencies} /></Field>
@@ -137,7 +137,7 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
     </div>
 
     <section className="admin-card" style={{ marginTop: 16 }}>
-      <header className="admin-card-title"><div><h3>Matrice douanière</h3><p>Les identifiants ne se créent pas depuis le navigateur. Droit et TVA en %.</p></div></header>
+      <CardTitle title="Matrice douanière" subtitle="Les identifiants ne se créent pas depuis le navigateur. Droit et TVA en %." />
       <div className="admin-category-grid">
         {categories.map((category: any, index: number) => (
           <article key={category.id} className="admin-category-card">

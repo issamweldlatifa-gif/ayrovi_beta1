@@ -9,6 +9,7 @@
 import React, { useRef, useState } from 'react';
 import { AlertCircle, Loader2, RefreshCw } from '../../components/QatafoIcons';
 import { Button } from './Button';
+import { TableCell } from './TableCell';
 
 /**
  * La table du back office — un seul composant pour toutes les listes.
@@ -159,7 +160,7 @@ export function DataTable<T extends { id?: string }>({
                         <input type="checkbox" checked={selected.includes(String((row as any).id ?? ''))} onChange={() => toggleOne(String((row as any).id ?? ''))} aria-label={`Sélectionner ${id}`} />
                       </td>}
                       {withActions.map((column) => (
-                        <td key={column.key} className={`${column.className ?? ''} ${column.align === 'end' ? 'is-end' : ''}`.trim()}>
+                        <TableCell key={column.key} className={column.className} align={column.align}>
                           {column.key === '__drag' ? <span className="admin-table-grip" title="Glisser pour réordonner" aria-hidden="true">⋮⋮</span>
                             : column.key === '__actions' ? (
                             <div className="admin-row-actions">
@@ -176,7 +177,7 @@ export function DataTable<T extends { id?: string }>({
                               })}
                             </div>
                           ) : column.render ? column.render(row) : String((row as any)[column.key] ?? '—')}
-                        </td>
+                        </TableCell>
                       ))}
                     </tr>
                   );

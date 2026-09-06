@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pencil, Plus, X } from '../components/QatafoIcons';
-import { Button, DataTable, Field, Toast } from './components';
+import { Button, DataTable, Field, Toggle, Toast } from './components';
 import { adminApi } from './api';
 import {
   Bell, CheckCircle2, CreditCard, Globe2, Lock, MapPin, MessageCircle, PackageCheck, Phone,
@@ -120,7 +120,7 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           {colorField('Accent', 'accent_color', '#FF7A00')}
           {colorField('Séparateurs', 'divider_color', 'rgba(255,255,255,0.15)')}
           <Field label="Bandeau activé">
-            <label className="admin-toggle"><input type="checkbox" checked={Boolean(settings.enabled)} disabled={!canWrite} onChange={(event) => setSettings({ ...settings, enabled: event.target.checked ? 1 : 0 })} /><span /> Visible sur le site</label>
+            <Toggle checked={Boolean(settings.enabled)} disabled={!canWrite} onChange={(checked) => setSettings({ ...settings, enabled: checked ? 1 : 0 })}>{' Visible sur le site'}</Toggle>
           </Field>
         </div>
         <div style={{ marginTop: 12 }}><Button disabled={busy || !canWrite} onClick={() => void saveSettings()}>Enregistrer les réglages</Button></div>
@@ -166,10 +166,7 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
             { key: 'title', label: 'Titre', render: (row) => <strong>{row.title}</strong> },
             { key: 'description', label: 'Description', className: 'admin-trustbar-desc' },
             { key: 'enabled', label: 'Statut', render: (row) => (
-              <label className="admin-toggle">
-                <input type="checkbox" checked={row.enabled} disabled={!canWrite || busy} onChange={() => void toggleEnabled(row)} />
-                <span />
-              </label>
+              <Toggle checked={row.enabled} disabled={!canWrite || busy} onChange={() => void toggleEnabled(row)} />
             ) },
             { key: 'sortOrder', label: 'Ordre' },
           ]}
@@ -201,7 +198,7 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
               <Field label="Couleur description"><input type="text" value={draft.descriptionColor} placeholder="rgba(255,255,255,0.68)" onChange={(event) => setDraft({ ...draft, descriptionColor: event.target.value })} /></Field>
               <Field label="Couleur icône"><input type="text" value={draft.iconColor} placeholder="#FFFFFF" onChange={(event) => setDraft({ ...draft, iconColor: event.target.value })} /></Field>
               <Field label="Activé">
-                <label className="admin-toggle"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /><span /> Visible</label>
+                <Toggle checked={draft.enabled} onChange={(checked) => setDraft({ ...draft, enabled: checked })}>{' Visible'}</Toggle>
               </Field>
             </div>
             <div className="admin-hero-actions" style={{ marginTop: 14 }}>
