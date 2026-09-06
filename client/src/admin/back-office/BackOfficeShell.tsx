@@ -21,7 +21,7 @@ import { labels } from './resource-ui';
 import { NotificationsBell } from './NotificationsBell';
 import { CommandPalette, GlobalSearch } from './BackOfficeSearch';
 import { sectionFromAdminPath, useBackOffice, type BackOfficeNavItem } from './framework';
-import './back-office.css';
+// P3/T2d : la feuille `back-office.css` a été fondue dans `admin.css` (même couche d'application).
 
 export type BackOfficeRenderContext = {
   section: string;

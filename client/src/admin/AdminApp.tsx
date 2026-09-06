@@ -26,7 +26,7 @@ import { ArrivalIngestionPage } from './ArrivalIngestionPage';
 import { ErpEmployeesPage, ErpEnvironmentPage, ErpEventsPage, ErpAuditPage, ErpOrganizationPage, ErpPermissionsPage } from './ErpCorePages';
 import { CatalogueBrandsPage, CatalogueCategoriesPage, CatalogueProductsPage } from './CataloguePages';
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
-import './interface-studio.css';
+// P3/T2d : la feuille `interface-studio.css` a été fondue dans `admin.css` (même couche d'application).
 import { BackOfficeProvider, useBackOffice } from './back-office/framework';
 import { BackOfficeShell, type BackOfficeRenderContext } from './back-office/BackOfficeShell';
 import { NotificationsBell } from './back-office/NotificationsBell';

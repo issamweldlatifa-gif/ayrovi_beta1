@@ -7,7 +7,7 @@ import { adminApi, ApiError } from './api';
 import ArrivalShipments from './ArrivalShipments';
 import { Button, Field, Modal, Pagination, Search, Select, StatusBadge, Toast } from './components';
 import { pushUrlPreservingNavigation } from '../navigation/NavigationHistory';
-import './arrival-ingestion.css';
+// P3/T2d : la feuille `arrival-ingestion.css` a été fondue dans `admin.css` (même couche d'application).
 
 type ArrivalStatus = 'DRAFT' | 'PROCESSING' | 'REVIEW' | 'CONFIRMED';
 

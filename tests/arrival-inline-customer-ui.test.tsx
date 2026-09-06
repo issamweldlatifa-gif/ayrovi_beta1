@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { normalizeTunisianPhone, tunisianPhoneDigits } from '../src/customer/phone';
 
 const pageSource = readFileSync('client/src/admin/ArrivalIngestionPage.tsx', 'utf8');
-const pageCss = readFileSync('client/src/admin/arrival-ingestion.css', 'utf8');
+const pageCss = readFileSync('client/src/admin/admin.css', 'utf8'); // P3/T2d : la feuille a été fondue dans admin.css
 
 describe('Arrival inline CRM customer UI contract', () => {
   it('offers explicit existing-search and canonical-new-customer modes in one modal', () => {

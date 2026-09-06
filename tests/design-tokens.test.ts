@@ -36,11 +36,12 @@ const read = (rel: string) => fs.readFileSync(path.resolve(ROOT, rel), 'utf8');
  * sous le même garde que les trois autres, avec preuve d'équivalence (0 écart sur 3 479
  * comparaisons), donc la conversion n'a déplacé aucune couleur.
  */
-const SYSTEM_SHEETS = [
-  'client/src/admin/admin.css',
-  'client/src/admin/back-office/back-office.css',
-  'client/src/admin/interface-studio.css',
+const SYSTEM_SHEETS = ['client/src/admin/admin.css'];
+/** Feuilles fondues dans `admin.css` en P3/T2d (le plan visait « 3 fichiers pour le système »). */
+const MERGED_AWAY = [
   'client/src/admin/arrival-ingestion.css',
+  'client/src/admin/interface-studio.css',
+  'client/src/admin/back-office/back-office.css',
 ];
 const TOKENS = 'client/src/design/tokens.css';
 
@@ -52,7 +53,7 @@ const UNRESOLVED_ALLOWLIST: Record<string, string> = {
   // Règle CSS héritée de P2.0, jamais atteinte depuis T2 : `NavIcon` rend un glyphe du sprite, plus
   // un <i> dont le masque dépendait d'une variable que personne ne déclarait. La règle reste en
   // place (rien n'est supprimé) mais ne peut plus servir de piège — voir rapport P3/T1 §7 (F-2).
-  '--bo-icon': 'client/src/admin/back-office/back-office.css:20 — masque inerte, non atteinte depuis P3/T2',
+  '--bo-icon': 'rule inerte héritée de P2.0 (`.bo-nav-icon`, masque jamais atteint depuis P3/T2a) — conservée, non supprimée',
 };
 
 const HEX = String.raw`#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])`;
@@ -108,7 +109,13 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
     }
   });
 
-  test('les quatre feuilles du back-office sont à zéro littéral (T2c : arrival-ingestion comprise)', () => {
+  test('la couche d’application est une seule feuille, sans valeur en dur (P3/T2d)', () => {
+    for (const gone of MERGED_AWAY) {
+      expect(fs.existsSync(path.resolve(ROOT, gone)), `${gone} doit avoir été fondu, pas dupliqué`).toBe(false);
+      const admin = read('client/src/admin/admin.css');
+      expect(admin, `${gone} a disparu avec ses règles`).toContain(gone);
+    }
+    expect(SYSTEM_SHEETS.length).toBe(1);
     const offenders = SYSTEM_SHEETS.map((file) => [file, literalsIn(file)] as const)
       .filter(([, hits]) => hits.length > 0);
     expect(offenders.map(([file, hits]) => `${file} → ${hits.length}`).join(' | ')).toBe('');
@@ -136,7 +143,7 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
       }
     }
     // les anciennes feuilles « gelées » consomment la couche de tokens, pas leurs propres valeurs
-    expect(withoutComments(read('client/src/admin/arrival-ingestion.css'))).toMatch(/var\(--admin-(ink|line|surface-|tone-)/);
+    expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(/var\(--admin-(ink|line|surface-|tone-)/);
   });
 
   test('les huit noms hérités survivent comme alias, et plus personne ne les consomme', () => {
@@ -211,9 +218,9 @@ describe('tons verbatims — dette mesurée, plafonnée', () => {
   test('la conversion de la feuille ex-gelée a bien réduit la dette, sans la masquer', () => {
     // 135 littéraux avant T2c, 0 après ; et les refs de tons de cette feuille sont comptées dans
     // le ratchet global ci-dessus (362 aujourd'hui), pas cachées dans une allowance.
-    const arrival = read('client/src/admin/arrival-ingestion.css');
-    expect(literalsIn('client/src/admin/arrival-ingestion.css')).toEqual([]);
-    const toneRefs = (withoutComments(arrival).match(/--admin-tone-[a-z0-9-]+/g) ?? []).length;
+    const merged = read('client/src/admin/admin.css');
+    expect(literalsIn('client/src/admin/admin.css')).toEqual([]);
+    const toneRefs = (withoutComments(merged).match(/--admin-tone-[a-z0-9-]+/g) ?? []).length;
     expect(toneRefs).toBeGreaterThan(0);
   });
 });
@@ -287,7 +294,7 @@ describe('accent — une seule source', () => {
     expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
       /\.mag-agent\s*{[^}]*--mag-yellow:\s*var\(--ayrovi-cta\)/,
     );
-    expect(withoutComments(read('client/src/admin/back-office/back-office.css'))).toMatch(
+    expect(withoutComments(read('client/src/admin/admin.css'))).toMatch(
       /\.bo-shell\s*{[^}]*--bo-accent:\s*var\(--ayrovi-cta\)/,
     );
   });

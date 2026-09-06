@@ -9,10 +9,13 @@ définitions `--admin-*` sont allées dans `tokens.css` et sont contrôlées sé
 
 Sortie : 0 écart + le nombre de déclarations comparées. Code de sortie 1 sinon.
 """
+import os
 import re
 import subprocess
 import sys
 
+# La couche application du back-office : les quatre feuilles d'origine, plus le fichier fondu
+# (P3/T2d) — le mode union tolère les deux états.
 FILES = ['client/src/admin/admin.css',
          'client/src/admin/back-office/back-office.css',
          'client/src/admin/interface-studio.css',
@@ -98,11 +101,24 @@ def canon(value, table):
 
 import os
 
-BUNDLE = [TOKENS] + sorted(
-    os.path.relpath(os.path.join(root, f), '.')
-    for root, _dirs, files in os.walk('client/src')
-    for f in files if f.endswith('.css')
-)
+def css_files(rev=None):
+    """Union des feuilles CSS du travail et de celles du commit comparé : après une fusion de
+    fichiers (P3/T2d), celles qui n'existent plus dans l'arbre de travail existent encore au
+    commit d'avant, et leurs définitions doivent entrer dans la table de résolution de l'état
+    comparé — sinon un `var()` apparaîtrait « non défini » alors qu'il l'était."""
+    found = set()
+    for root, _dirs, files in os.walk('client/src'):
+        for f in files:
+            if f.endswith('.css'):
+                found.add(os.path.relpath(os.path.join(root, f), '.'))
+    if rev:
+        listing = subprocess.run(['git', 'ls-tree', '-r', '--name-only', rev, '--', 'client/src'],
+                                 capture_output=True, text=True, check=True).stdout
+        found |= {line for line in listing.splitlines() if line.endswith('.css')}
+    return sorted(found)
+
+
+BUNDLE = sorted({TOKENS, *css_files(), *css_files(REV)})
 
 
 def text_of(path, rev=None):
@@ -141,29 +157,54 @@ tokens_old = read_git(REV, TOKENS)
 TABLE_OLD = table_for(REV)
 TABLE_NEW = table_for()
 moved_keys = set()
+# MODE UNION : on compare la couche complète, feuille par feuille ou bien fondue en un seul
+# fichier (P3/T2d). Comme aucune (sélecteur, propriété) n'est partagée entre les feuilles
+# (mesuré : 0 chevauchement), l'union sans perte est équivalente à la cascade réelle ; si un
+# jour un chevauchement apparaît, l'ordre de BUNDLE_FILES fait foi, comme l'ordre de chargement.
+old_union, new_union = {}, {}
 for path in FILES:
-    old_map, _ = state(text_of(path, REV), TABLE_OLD)
-    new_map, _ = state(text_of(path), TABLE_NEW)
+    if REV is not None:
+        try:
+            old_map, _ = state(text_of(path, REV), TABLE_OLD)
+        except subprocess.CalledProcessError:
+            old_map = {}
+    else:
+        old_map = {}
+    for k, v in old_map.items():
+        old_union[(path, k)] = v
+    if os.path.exists(path):
+        new_map, _ = state(text_of(path), TABLE_NEW)
+        for k, v in new_map.items():
+            new_union[(path, k)] = v
     moved_keys |= {k for k in old_map if k[0] == ':root' and k[1] in MOVED}
-    for key in old_map:
-        if key in moved_keys:
-            continue
-        checked += 1
-        if key not in new_map:
-            problems.append(f'{path}: déclaration perdue  {key[0]} {{ {key[1]} }} = {old_map[key]!r}')
-        elif new_map[key] != old_map[key]:
-            allowed = CONSENTED.get((path, key[0], key[1]))
-            if allowed == (old_map[key], new_map[key]):
-                consented += 1
-            else:
-                problems.append(f'{path}: valeur différente  {key[0]} {{ {key[1]} }}\n'
-                                f'     avant {old_map[key]!r}\n     après {new_map[key]!r}')
-    for key in new_map:
-        if key in moved_keys:
-            continue
-        if key not in old_map:
-            problems.append(f'{path}: déclaration ajoutée  {key[0]} {{ {key[1]} }}')
-        checked += 0
+
+# après fusion, les déclarations peuvent avoir changé de fichier : on compare par (sel, prop)
+old_by_key = {}
+for (path, key), value in old_union.items():
+    if key in moved_keys:
+        continue
+    old_by_key.setdefault(key, (path, value))
+new_by_key = {}
+for (path, key), value in new_union.items():
+    if key in moved_keys:
+        continue
+    new_by_key.setdefault(key, (path, value))
+
+for key, (path, value) in old_by_key.items():
+    checked += 1
+    if key not in new_by_key:
+        problems.append(f'{path}: déclaration perdue  {key[0]} {{ {key[1]} }} = {value!r}')
+    elif new_by_key[key][1] != value:
+        allowed = CONSENTED.get((path, key[0], key[1])) or CONSENTED.get((new_by_key[key][0], key[0], key[1]))
+        if allowed == (value, new_by_key[key][1]):
+            consented += 1
+        else:
+            problems.append(f'{path}: valeur différente  {key[0]} {{ {key[1]} }}\n'
+                            f'     avant {value!r}\n     après {new_by_key[key][1]!r}')
+for key, (path, value) in new_by_key.items():
+    checked += 1
+    if key not in old_by_key:
+        problems.append(f'{path}: déclaration ajoutée  {key[0]} {{ {key[1]} }} = {value!r}')
 
 for name in MOVED:
     before = canon(TABLE_OLD.get(name, '\x00absent'), TABLE_OLD)
