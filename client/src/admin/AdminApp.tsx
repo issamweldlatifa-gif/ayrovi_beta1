@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, FileText, Gift, Globe2, Grid,
+  AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
   History, Home, Image, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,
   Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,
 } from '../components/QatafoIcons';
@@ -29,6 +29,7 @@ import { BackOfficeProvider, useBackOffice } from './back-office/framework';
 import { BackOfficeShell, type BackOfficeRenderContext } from './back-office/BackOfficeShell';
 import { NotificationsBell } from './back-office/NotificationsBell';
 import { formatMoney, formatDate, labels, nowPlus, options, ResourceForm, type FieldDefinition, type Permission, type ResourceDefinition } from './back-office/resource-ui';
+import { renderCell } from './back-office/ResourceWorkspace';
 
 type UserIdentity = { id: string; email: string; name: string; role: string; permissions: Permission[] };
 
@@ -236,7 +237,7 @@ const ContentPage: React.FC<{ resource: string; canWrite: boolean }> = ({ resour
   const displayStatus = (row: any) => definition.statusField === 'active' ? (row.active ? 'ACTIVE' : 'INACTIVE') : row[definition.statusField || 'status'];
   const sortableOf = (key: string) => Boolean(descriptor?.columns.find((column) => column.key === key && column.sortable));
   const columns: DataColumn<any>[] = [
-    { key: definition.keyField, label: definition.keyField === 'name' ? 'Nom' : definition.keyField === 'question' ? 'Question' : definition.keyField === 'text' ? 'Message' : 'Titre', render: (row) => <div className="admin-entity"><span>{row.image || row.main_image || row.logo || row.media_url ? <img src={row.image || row.main_image || row.logo || row.media_url} alt="" /> : <i><FileText /></i>}</span><div><strong>{row[definition.keyField] || (resource === 'assistant' ? row.answer.slice(0, 60) : 'Sans titre')}</strong><small>{row.type || row.category || row.source_platform || row.media_type || ''}</small></div></div> },
+    { key: definition.keyField, label: definition.keyField === 'name' ? 'Nom' : definition.keyField === 'question' ? 'Question' : definition.keyField === 'text' ? 'Message' : 'Titre', render: (row) => renderCell('entity', { ...row, [definition.keyField]: row[definition.keyField] || (resource === 'assistant' ? row.answer.slice(0, 60) : '') }, definition.keyField) },
     { key: 'status', label: 'Statut', render: (row) => <StatusBadge status={displayStatus(row)} /> },
     { key: 'updated_at', label: 'Dernière modification', render: (row) => formatDate(row.updated_at, true) },
     { key: 'actions', label: '', render: (row) => writable && <div className="admin-row-actions"><button type="button" onClick={(event) => { event.stopPropagation(); openEdit(row); }} aria-label="Modifier"><Pencil size={17} /></button><button type="button" onClick={(event) => { event.stopPropagation(); setArchiveTarget(row); }} aria-label="Archiver"><X size={17} /></button></div> },

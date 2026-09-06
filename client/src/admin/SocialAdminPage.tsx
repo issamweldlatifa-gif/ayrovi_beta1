@@ -78,7 +78,7 @@ const PublicationsTab: React.FC<{ channels: any[] }> = ({ channels }) => {
         emptyText="Aucune publication."
         rows={rows}
         columns={[
-          { key: 'title', label: 'Titre', render: (row: any) => <div className="admin-entity">{row.image_url && <img src={row.image_url} alt="" />}<div><strong>{row.title}</strong></div></div> },
+          { key: 'title', label: 'Titre', render: (row: any) => <div className="admin-entity">{row.image_url ? <span><img src={row.image_url} alt="" /></span> : null}<div><strong>{row.title}</strong></div></div> },
           { key: 'channel', label: 'Canal', render: (row: any) => channels.find((c) => c.id === row.channel_id)?.name || '—' },
           { key: 'publish_at', label: 'Date', render: (row: any) => new Date(row.publish_at).toLocaleDateString('fr-FR') },
           { key: 'status', label: 'Statut', render: (row: any) => <StatusBadge status={st(row.status)} /> },

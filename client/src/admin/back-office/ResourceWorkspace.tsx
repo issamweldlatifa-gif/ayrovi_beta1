@@ -11,6 +11,7 @@
  * `ResourceWorkspace` est le patron de référence, exercé par les tests, pas un écran de plus.
  */
 import React, { useCallback, useEffect, useState } from 'react';
+import { FileText } from '../../components/QatafoIcons';
 import { adminApi } from '../api';
 import { Button, DataColumn, DataTable, Modal, Pagination, Search, Select, StatusBadge, Toast, type TableRowAction } from '../components';
 import { formatDate, formatMoney, ResourceForm, type FieldDefinition } from './resource-ui';
@@ -27,8 +28,10 @@ export function renderCell(kind: string | undefined, row: Record<string, any>, c
     case 'entity': {
       const image = row.image || row.main_image || row.logo || row.media_url;
       const subtitle = row.type || row.category || row.source_platform || row.media_type || '';
+      // Structure canonique (`.admin-entity > span` porte la vignette 42×42) : identique à
+      // celle des écrans du moteur, pour qu'une seule règle CSS habille toutes les listes.
       return <div className="admin-entity">
-        {image ? <img src={String(image)} alt="" /> : <i />}
+        <span>{image ? <img src={String(image)} alt="" /> : <i><FileText /></i>}</span>
         <div><strong>{String(raw || 'Sans titre')}</strong>{subtitle ? <small>{String(subtitle)}</small> : null}</div>
       </div>;
     }

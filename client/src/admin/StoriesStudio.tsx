@@ -200,8 +200,8 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
           columns={[
             { key: 'title', label: 'Story', render: (row: any) => (
               <div className="admin-entity">
-                {row.media_url && <img src={row.media_url} alt="" />}
-                <div><strong>{row.title}</strong><span>{new Date(row.publish_at).toLocaleDateString('fr-FR')}</span></div>
+                {row.media_url ? <span><img src={row.media_url} alt="" /></span> : null}
+                <div><strong>{row.title}</strong><small>{new Date(row.publish_at).toLocaleDateString('fr-FR')}</small></div>
               </div>
             ) },
             { key: 'category', label: 'Canal', render: (row: any) => (CHANNELS.find(([key]) => key === row.category) || [row.category, row.category])[1] },

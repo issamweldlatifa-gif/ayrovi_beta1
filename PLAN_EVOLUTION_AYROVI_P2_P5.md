@@ -1,6 +1,6 @@
 # خطة تطوّر AYROVI — نظام بمستوى شركات عالمية + ثيم متطوّر
 
-**المرحلة الحالية:** P2.0 مُغلقة ودُفعت (`origin/main = 980725e`, 471 اختبارًا أخضر). هذه الوثيقة هي **خطة** P2.1 ← P5، لا كود بعد. كل مرحلة تُنفَّذ بنفس العقد الذي جعل P0→P2.0 تمرّ بدون انكسار واحد.
+**المرحلة الحالية:** P2.1 مُغلقة ودُفعت (`57fe0bb` + تصحيح العرض المشترك، 477 اختبارًا أخضر، لا انكسار). **المرحلة القادمة: P2.2 (Stock)** وفق §4 وD-03. هذه الوثيقة تبقى مرجع الخطة P2.2 ← P5. كل مرحلة تُنفَّذ بنفس العقد الذي جعل P0→P2.0 تمرّ بدون انكسار واحد.
 
 ---
 
@@ -68,7 +68,7 @@
 
 | # | المرحلة | ما يُبنى | جداول جديدة (إضافة فقط) | بوابة الخروج | الحجم |
 |---|---|---|---|---|---|
-| **P2.1** | كتالوج داخل الصدَفة + توحيد | شاشات `catalogue-*` تصير الموردَ المرجعي؛ `products`/`brands` القديمة تُعلَّم `canonicalOf` وتبقى؛ **حذف 8 جداول مرسومة يدويًا** (`AiLabPages`, `SocialAdminPage` ×2, `HeroVisualsPage`, `TrustBarPage`, `StoriesStudio`) لفائدة `DataTable` | لا شيء | نفس 471 اختبارًا + اختبارات توحيد؛ `ResourceWorkspace` يستهلكه شاشةٌ حقيقية واحدة على الأقل | M |
+| **P2.1 — مُنجزة** | كتالوج داخل الصدَفة + توحيد | شاشات `catalogue-*` تصير الموردَ المرجعي؛ `products`/`brands` القديمة تُعلَّم `canonicalOf` وتبقى؛ **حذف 8 جداول مرسومة يدويًا** (`AiLabPages`, `SocialAdminPage` ×2, `HeroVisualsPage`, `TrustBarPage`, `StoriesStudio`) لفائدة `DataTable` | لا شيء | نفس 471 اختبارًا + اختبارات توحيد؛ `ResourceWorkspace` يستهلكه شاشةٌ حقيقية واحدة على الأقل | M |
 | **P2.2** | **Inventory** (`inventory` → active) | مستودعات، أرصدة، حركات (entrée/sortie/ajustement)،جرد، حدّ أدنى وتنبيه؛ **الكميات هنا، لا في `products`** | `inventory_stock_items`, `inventory_movements`, `inventory_stocktakes`, `inventory_stocktake_lines` | `GET/POST /api/inventory/*` + مورد في الـ framework + صلاحيات `inventory:read/write/adjust/approve` + تدقيق + بحث شامل + Deep link؛ **لا يلمس `crm_warehouse_dispatches`** (جسر إضافة فقط) | L |
 | **P2.3** | **Purchasing** (`purchasing` → active) | موردون، أوامر شراء، استلام جزئي، سعر购入 بالعملة، ربط الاستلام بالـ arrival-ingestion **بإضافة حقول فقط** (لا إعادة كتابة) | `suppliers`, `purchase_orders`, `purchase_order_lines`, `goods_receipts`, `goods_receipt_lines` | دورة كاملة: طلب → موافقة → استلام → حركة مخزون (P2.2) — كل انتقال مكتوب عبر `writeAuditEvent()` | L |
 | **P3** | **الثيم المتطوّر** (§5) | لا شيء | لا شيء (فقط CSS/رموز) | 0 لون حرفي خارج `tokens.css`؛ dark + light + RTL + كثافة مُختبَرة بصريًا | M |
@@ -129,3 +129,13 @@
 
 ### ملاحظة بيئة العمل (حتى لا تُقرأ الأرقام كضمانة حية)
 عند بدء هذه الجلسة كانت استعادةُ البيئة قد محَت `.git/config` وصلاحيات مفتاح SSH و`node_modules` بالكامل. أُعِيد إنشاء الـ remote و`chmod 600` فنُجِح الدفع (`980725e..eb2a69c`)؛ لكن **لا يمكن تشغيل الأبواب الأربعة قبل استعادة الحزم بـ `npm install`**. الأبواب المذكورة في §6 (471 اختبارًا، tsc صفر، build ok) هي نتيجة آخر تشغيل موثّق على نفس محتوى الكود — وهذا Commit وثائقُ واستكشافاتٌ فقط (9 ملفات، لا سطر كود).
+
+
+---
+
+## 9) ملاحظة ختامية على P2.1 (ما تمّ وما أُجِّل بوعي)
+
+- الجداول الثمانية المرسومة يدويًا اختفت: `grep -rn "<table" client/src/admin --include=*.tsx` لا يُرجع الآن إلا `ArrivalIngestionPage.tsx` (متجمّدة بعقد P2.0) و`components.tsx` (المحرّك نفسه). القاعدة صارت **اختبارًا** لا نية.
+- الوصف الخادمي صارت له أسنان على الشاشات: فرز `ContentPage` عبر `descriptor.columns[].sortable` (والخادم يقبل الأسماء فقط من `config.sortable`)، وحالة خطأ + إعادة محاولة بدل toast وحيد.
+- **الحقيقة الوحيدة للخلية:** `renderCell('entity', …)` صارت تُستعمل في `ResourceWorkspace` وفي شاشات المحرّك وفي `SocialAdminPage`/`StoriesStudio` — بنية واحدة (`.admin-entity > span` للصورة 42×42) بدل ثلاث.
+- **ما أُجِّل بوعي إلى P3/T2:** تحويل شاشة مهنية حقيقية إلى `ResourceWorkspace` (يغيّر تسميات وأعمدة شاشة حيّة — لا يُفعل إلا مع الثيم)، وتوحيد أزرار الإجراءات بين `.admin-row-actions button` و`.admin-table-action`. الأسباب موثّقة في `BACK_OFFICE_P2_1_REPORT.md` §4.

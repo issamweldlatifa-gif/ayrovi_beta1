@@ -12,8 +12,7 @@
  */
 import React from 'react';
 import { Eye, Pencil } from '../client/src/components/QatafoIcons';
-import fs from 'node:fs';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import type { BackOfficeContextPayload, BackOfficeNavigation, ResourceDescriptor } from '../client/src/admin/back-office/framework';
@@ -398,6 +397,22 @@ describe('Consolidation — une seule implémentation par abstraction', () => {
     expect(admin).toContain('<DataTable');
   });
 
+  it('dessine la cellule « entité » à un seul endroit, partagé par tous les écrans', () => {
+    const markup = renderToStaticMarkup(
+      renderCell('entity', { name: 'Casque ATOMX', logo: 'https://cdn/x.png' }, 'name'),
+    );
+    // la vignette vit dans le <span> que habille `.admin-entity > span` (42×42)
+    expect(markup).toContain('<span><img src="https://cdn/x.png"');
+    expect(markup).toContain('<strong>Casque ATOMX</strong>');
+    // repli sans image : l’icône du moteur, pas une case vide
+    const noImage = renderToStaticMarkup(renderCell('entity', { name: 'Sans visuel' }, 'name'));
+    expect(noImage).toContain('<svg');
+    expect(noImage).not.toContain('<img');
+    // et l’écran du moteur ne redessine plus la cellule lui-même : il délègue
+    expect(admin).toContain("renderCell('entity'");
+    expect(admin).not.toContain('<div className="admin-entity"><span>');
+  });
+
   it('fait piloter les 9 écrans du moteur par le descripteur, sans second rendu', () => {
     // tri + erreur/réessai viennent du framework ; le reste de l'écran reste `ContentPage`
     expect(admin).toContain('sortableOf(column.key)');
@@ -418,16 +433,16 @@ describe('Consolidation — une seule implémentation par abstraction', () => {
     // leur raison : `components.tsx` EST le moteur ; `ArrivalIngestionPage.tsx` est gelé (P2.1)
     // et dessine une table métier propre (`arrival-product-table`), pas une liste admin.
     const dir = 'client/src/admin';
-    const walk = (path: string): string[] => fs.readdirSync(path, { withFileTypes: true }).flatMap((entry) => (
+    const walk = (path: string): string[] => readdirSync(path, { withFileTypes: true }).flatMap((entry) => (
       entry.isDirectory() ? walk(`${path}/${entry.name}`) : entry.name.endsWith('.tsx') ? [`${path}/${entry.name}`] : []
     ));
     const files = walk(dir);
-    const handRolled = files.filter((file) => /<table\b/.test(fs.readFileSync(file, 'utf8')));
+    const handRolled = files.filter((file) => /<table\b/.test(readFileSync(file, 'utf8')));
     expect(handRolled.map((file) => file.split('/').pop()).sort()).toEqual(['ArrivalIngestionPage.tsx', 'components.tsx']);
     const outsideEngine = handRolled.filter((file) => !file.endsWith('components.tsx') && !file.endsWith('ArrivalIngestionPage.tsx'));
     expect(outsideEngine).toEqual([]);
     // aucune classe de table admin recopiée dans un écran
-    const copied = files.filter((file) => /className="admin-table"/.test(fs.readFileSync(file, 'utf8')) && !file.endsWith('components.tsx'));
+    const copied = files.filter((file) => /className="admin-table"/.test(readFileSync(file, 'utf8')) && !file.endsWith('components.tsx'));
     expect(copied).toEqual([]);
   });
 });
