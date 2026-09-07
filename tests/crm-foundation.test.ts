@@ -582,4 +582,122 @@ describe('CRM 360 (E1/E2)', () => {
       expect(missing.body.code).toBe('CRM_PARTY_NOT_FOUND');
     });
   });
+
+  describe('API complémentaire (E7-bis) — relations, notes, doublons, prochaine action, communications', () => {
+    let left = '';
+    let right = '';
+    let taskId = '';
+
+    const makeParty = async (kind: string, name: string, email: string) => {
+      const response = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/parties')
+        .send({ partyType: 'COMPANY', kind, name, email });
+      expect(response.status, JSON.stringify(response.body)).toBe(200);
+      return response.body.data.party;
+    };
+
+    test('lier deux fiches, lister, retirer le lien', async () => {
+      const a = await makeParty('CUSTOMER', `Rel A ${SUFFIX}`, EMAIL('rela'));
+      const b = await makeParty('PARTNER', `Rel B ${SUFFIX}`, EMAIL('relb'));
+      left = a.id; right = b.id;
+
+      const linked = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post(`/api/admin/crm/parties/${left}/relationships`)
+        .send({ toPartyId: right, relationshipType: 'PARTNER', notes: `relation E7-bis ${SUFFIX}` });
+      expect(linked.status).toBe(200);
+      const relId = linked.body.data.relationship.id;
+
+      const listed = await admin.get(`/api/admin/crm/parties/${left}/relationships`);
+      expect(listed.status).toBe(200);
+      expect(listed.body.data.some((item: any) => item.id === relId)).toBe(true);
+      // une relation vers soi-même est refusée proprement
+      const self = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post(`/api/admin/crm/parties/${left}/relationships`)
+        .send({ toPartyId: left, relationshipType: 'PARTNER' });
+      expect(self.status).toBe(400);
+
+      const removed = await admin
+        .set('x-csrf-token', adminCsrf)
+        .delete(`/api/admin/crm/relationships/${relId}`);
+      expect(removed.status).toBe(200);
+      const after = await admin.get(`/api/admin/crm/parties/${left}/relationships`);
+      expect(after.body.data.some((item: any) => item.id === relId)).toBe(false);
+    });
+
+    test('notes listées avec filtres, doublons détectés, prochaine action calculée', async () => {
+      const pinned = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/notes')
+        .send({ partyId: left, content: `Note épinglée ${SUFFIX}`, isPinned: true });
+      expect(pinned.status).toBe(200);
+      const plain = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/notes')
+        .send({ partyId: left, content: `Note simple ${SUFFIX}` });
+      expect(plain.status).toBe(200);
+
+      const all = await admin.get(`/api/admin/crm/notes?partyId=${left}`);
+      expect(all.status).toBe(200);
+      expect(all.body.pagination.total).toBeGreaterThanOrEqual(2);
+      const pinnedOnly = await admin.get(`/api/admin/crm/notes?partyId=${left}&pinned=1`);
+      expect(pinnedOnly.body.pagination.total).toBe(1);
+      expect(pinnedOnly.body.data[0].is_pinned).toBe(1);
+
+      // doublons : le nom exact (>= 3 caractères) doit remonter la fiche
+      const dup = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/parties/duplicates')
+        .send({ name: `Rel A ${SUFFIX}` });
+      expect(dup.status).toBe(200);
+      expect(dup.body.data.some((item: any) => item.id === left)).toBe(true);
+
+      // prochaine action : une tâche ouverte future est la prochaine action PENDING
+      const task = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/tasks')
+        .send({ partyId: left, title: `Prochaine action ${SUFFIX}`, dueAt: new Date(Date.now() + 3_600_000).toISOString() });
+      expect(task.status).toBe(200);
+      taskId = task.body.data.task.id;
+      const next = await admin.get(`/api/admin/crm/parties/${left}/next-action`);
+      expect(next.status).toBe(200);
+      expect(next.body.data.id).toBe(taskId);
+      expect(next.body.data.state).toBe('PENDING');
+    });
+
+    test('enregistrer une communication et la relire sur la fiche', async () => {
+      const comm = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/communications')
+        .send({ partyId: left, channel: 'EMAIL', direction: 'OUTBOUND', subject: `Relance commerciale ${SUFFIX}` });
+      expect(comm.status, JSON.stringify(comm.body)).toBe(200);
+      expect(comm.body.data.communication.channel).toBe('EMAIL');
+
+      const list = await admin.get(`/api/admin/crm/communications?partyId=${left}&channel=EMAIL`);
+      expect(list.status).toBe(200);
+      expect(list.body.pagination.total).toBeGreaterThanOrEqual(1);
+      expect(list.body.data[0].subject).toContain(SUFFIX);
+
+      // un canal inconnu est refusé en validation, jamais en 500
+      const bad = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/communications')
+        .send({ partyId: left, channel: 'FAX', direction: 'OUTBOUND', subject: 'x' });
+      expect(bad.status).toBe(400);
+      expect(bad.body.code).toBe('CRM_VALIDATION');
+    });
+  });
+
+  describe('couche client (E7-bis) — le SPA dessert chaque écran CRM', () => {
+    const sections = ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues'];
+    test('chaque section répond 200 en HTML', async () => {
+      for (const section of sections) {
+        const response = await admin.get(`/admin?section=${section}`);
+        expect(response.status, `section ${section}`).toBe(200);
+        expect(response.headers['content-type']).toContain('text/html');
+      }
+    });
+  });
 });

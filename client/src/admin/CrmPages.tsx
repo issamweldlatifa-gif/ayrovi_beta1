@@ -180,6 +180,18 @@ export const CrmPartiesPage: React.FC = () => {
     }
   };
 
+  // E7-bis : un résultat de la recherche globale porte `?id=party_…` — ce deep link ouvre
+  // directement la vue 360° au lieu de laisser la liste silencieuse.
+  const [requestedId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return new URLSearchParams(window.location.search).get('id');
+  });
+  useEffect(() => {
+    if (!requestedId) return;
+    void openDetail({ id: requestedId } as Row);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedId]);
+
   const create = async () => {
     setBusy(true);
     try {

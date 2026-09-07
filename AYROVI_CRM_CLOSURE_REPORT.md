@@ -1,7 +1,7 @@
 # AYROVI CRM 360 — Closure Report (E7)
 
 > Rapport de clôture du programme CRM — 2026-09-07. Toute affirmation est mesurée dans le dépôt
-> (branche `main`), au moment de la rédaction : **645 tests verts sur 51 fichiers**, typecheck
+> (branche `main`), au moment de la rédaction : **651 tests verts sur 52 fichiers**, typecheck
 > serveur + client sans erreur, build de production complet, historique poussé sur `origin/main`.
 
 ## 1. Déroulé des phases (E0 → E7)
@@ -15,6 +15,7 @@
 | E5 | Écrans back-office CRM (6 sections, groupe « CRM »), `/crm/meta`, enregistrement registre | `CrmPages.tsx`, tests meta, compteurs 43→49 | `ed8e333` |
 | E6 | Matrice élargie, EXPLAIN/indexation, revue sécurité (anonyme/CSRF/validation/bornes), recherche étendue | `tests/crm-foundation` 32, `tests/crm-indexation` 10 | `1eb2ab5` |
 | E7 | Documentation + closure | six documents + présent rapport | présent commit |
+| E7-bis | Durcissement final : deep link `?id=` ouvre la vue 360°, tests API complémentaires (relations/notes/doublons/prochaine action/communications), SPA dessert les six sections, rendu UI des six écrans verrouillé | `CrmPages.tsx`, `tests/crm-*` | dernier commit |
 
 Porte verte rappelée à chaque étape (REC-09) : `tsc` (serveur + client) 0, `npm run build` ok,
 `npm test` ≥ baseline **sans aucun test affaibli**, worktree propre, commit + push.

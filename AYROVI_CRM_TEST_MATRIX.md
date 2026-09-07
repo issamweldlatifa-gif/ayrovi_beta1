@@ -6,7 +6,7 @@ Cartographie verrous ↔ fonctionnalités, mesurée sur la suite au moment de la
 > jamais dans une intention. Toute métrique citée est mesurée dans ce dépôt au moment de la rédaction.
 
 
-## 1. Couverture fonctionnelle (fichier `tests/crm-foundation.test.ts` — 32 tests)
+## 1. Couverture fonctionnelle (fichier `tests/crm-foundation.test.ts` — 36 tests)
 
 | Domaine | Ce qui est verrouillé |
 |---|---|
@@ -18,6 +18,8 @@ Cartographie verrous ↔ fonctionnalités, mesurée sur la suite au moment de la
 | `/crm/meta` (E5) | matrice complète ressource × action booléenne, dictionnaire de statuts, capacités par rôle (SUPER_ADMIN tout, ORDER_MANAGER partiel, CONTENT rien) |
 | Recherche étendue (E6) | sources crm360 trouvées par l'admin avec deep link existant ; parité ORDER_MANAGER ; CONTENT voit les sources sautées, jamais interrogées |
 | Revue sécurité (E6) | anonyme 401 (listes, meta, dashboard), écriture sans CSRF 403 sur session neuve, validation 400 `CRM_VALIDATION`, pageSize borné, fiche inconnue 404 `CRM_PARTY_NOT_FOUND` |
+| API complémentaire (E7-bis) | relations internes (lier/lister/retirer, refus soi-même 400), notes listées avec filtre `pinned`, endpoint doublons, prochaine action `PENDING`, communications (créer/lire, canal inconnu 400 `CRM_VALIDATION`) |
+| Couche client (E7-bis) | le SPA répond 200 en HTML pour les six sections `crm-*` |
 
 ## 2. Performance — indexation prouvée (`tests/crm-indexation.test.ts` — 10 tests)
 
@@ -33,6 +35,7 @@ Un index disparu fait échouer la suite, pas une découverte en production.
 |---|---|
 | `back-office-foundation.test.ts` (29) | registre, navigation (49 entrées, 7 groupes), deep links (52), icônes, permissions par rôle, recherche globale (auditée, anonyme refusé) |
 | `back-office-shell.test.tsx` (31) | rendu de la coquille, roadmap, absence de liste de navigation dans le client |
+| `crm-ui-render.test.tsx` (2) | montage des six écrans CRM (fetch simulé) : titre + première ligne affichés, aucune image de substitution ; deep link `?id=party_…` ouvre la vue 360° |
 
 ## 4. Méthode
 
