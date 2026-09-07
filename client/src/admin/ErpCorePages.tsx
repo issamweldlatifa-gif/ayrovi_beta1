@@ -421,9 +421,32 @@ export const ErpEventsPage: React.FC = () => {
   const [moduleKey, setModuleKey] = useState('');
   const query = useMemo(() => queryString({ limit: 50, module: moduleKey }), [moduleKey]);
   const events = useAsync<any>(() => adminApi<any>(`/core/events?${query}`), [query]);
+  // E8 — synthèse « Activité » : les compteurs vides (« 0 ») cèdent la place à des
+  // courbes réelles issues de `erp_events` (top événements + tendance 14 jours).
+  const summary = useAsync<any>(() => adminApi<any>(`/core/events/summary${moduleKey ? `?module=${encodeURIComponent(moduleKey)}` : ''}`).then((r) => r.data), [moduleKey]);
+  const series: { date: string; total: number }[] = summary.data?.series || [];
+  const top: { event_name: string; total: number }[] = summary.data?.top || [];
+  const maxDay = Math.max(...series.map((row) => Number(row.total)), 1);
+  const maxTop = Math.max(...top.map((row) => Number(row.total)), 1);
+  const totalEvents = series.reduce((sum, row) => sum + Number(row.total), 0);
   return <>
     <ErpHeader title="Événements" description="Événements de domaine dérivés de chaque écriture auditée — la base des notifications, automatisations et réconciliations à venir." />
     <Filters><Search value={moduleKey} onChange={setModuleKey} placeholder="Filtrer par module (catalog, sales, crm…)" /></Filters>
+    <div className="admin-report-grid">
+      <section className="admin-card">
+        <CardTitle title="Activité des événements" subtitle={`14 derniers jours · ${totalEvents} événement(s) sur la période${moduleKey ? ` (module ${moduleKey})` : ''}`} />
+        <div className="admin-bar-chart">{series.map((row) => <div key={row.date} title={`${row.date} · ${row.total} événement(s)`}>
+          <span style={{ height: `${Math.max((Number(row.total) / maxDay) * 100, 4)}%` }} /><small>{row.date.slice(5)}</small>
+        </div>)}</div>
+      </section>
+      <section className="admin-card">
+        <CardTitle title="Top événements" subtitle="Répartition par type" />
+        <div className="admin-status-chart">{top.length ? top.map((row) => <div key={row.event_name}>
+          <span><code>{row.event_name}</code><b>{row.total}</b></span>
+          <i><em style={{ width: `${Math.max((Number(row.total) / maxTop) * 100, 2)}%` }} /></i>
+        </div>) : <p className="admin-chart-empty">Aucun événement enregistré sur la période — les premiers apparaîtront ici.</p>}</div>
+      </section>
+    </div>
     <section className="admin-list-card"><DataTable rows={rowsOf(events.data)} loading={events.loading} columns={[
       { key: 'created_at', label: 'Date', render: (row: any) => new Date(String(row.created_at)).toLocaleString('fr-TN') },
       { key: 'event_name', label: 'Événement', render: (row: any) => <code>{row.event_name}</code> },

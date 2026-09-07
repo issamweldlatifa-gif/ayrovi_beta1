@@ -59,7 +59,39 @@
 }
 
 @layer base {
-  :root {
+  /* ─────────────────────────────────────────────────────────────────────────
+   Thème sombre du back-office (E8). Bloc additif placé AVANT les blocs clairs :
+   à l'exécution il gagne par spécificité (html[data-theme='dark'] > :root), et
+   les valeurs canoniques claires restent les dernières occurrences textuelles
+   pour les verrous qui lisent le fichier à plat. On ne redéfinit que les rôles
+   sémantiques (encres, surfaces, filets) ; les tons de données (--admin-tone-*)
+   et le dégradé produit restent ceux du thème clair. Le défaut reste clair.
+   ───────────────────────────────────────────────────────────────────────── */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --admin-ink:#e8e6ee;
+  --admin-ink-strong:#f5f3fa;
+  --admin-ink-black:#f7f6fb;
+  --admin-ink-muted:#a4a0b0;
+  --admin-text-soft:#b0acbc;
+  --admin-surface-page:#0f0e14;
+  --admin-surface-card:#171520;
+  --admin-surface-sunken:#121118;
+  --admin-surface-tint:#1c1926;
+  --admin-surface-soft:#15131c;
+  --admin-line:#2a2735;
+  --admin-line-soft:#221f2c;
+  --admin-line-firm:#322e40;
+  --admin-danger-strong:#f0716b;
+  --admin-danger-text:#f08a84;
+  --admin-danger-ink:#ff8a80;
+  /* Rail & encre-sur-sombre découplés du texte dans le thème sombre : le rail
+     reste sombre et son texte reste clair (valeurs sombres ≠ valeurs claires). */
+  --admin-rail:#14131b;
+  --admin-on-dark:#f6f4fb;
+}
+
+:root {
     color-scheme: light;
     --ayrovi-primary: #111318;
     --ayrovi-primary-dark: #050505;

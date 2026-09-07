@@ -13,7 +13,7 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Grid, History, Home, Image, LayoutGrid, LensBox,
+  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,
   LogOut, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,
 } from '../../components/QatafoIcons';
 import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory';
@@ -79,6 +79,21 @@ export const BackOfficeShell: React.FC<{
     if (typeof window === 'undefined') return 'comfortable';
     try { return window.localStorage.getItem('ayrovi.bo.density') === 'compact' ? 'compact' : 'comfortable'; } catch { return 'comfortable'; }
   });
+  // E8 — thème clair/sombre et direction LTR/RTL de la coquille. Défauts : clair + LTR
+  // (aucun changement de rendu pour l'existant). Préférence persistée, application sur
+  // <html data-theme dir> — les tokens sombres vivent dans design/tokens.css.
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof window === 'undefined') return 'light';
+    try {
+      const stored = window.localStorage.getItem('ayrovi.bo.theme');
+      if (stored === 'dark' || stored === 'light') return stored;
+      return window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch { return 'light'; }
+  });
+  const [dir, setDir] = useState<'ltr' | 'rtl'>(() => {
+    if (typeof window === 'undefined') return 'ltr';
+    try { return window.localStorage.getItem('ayrovi.bo.dir') === 'rtl' ? 'rtl' : 'ltr'; } catch { return 'ltr'; }
+  });
 
   const can = useCallback((permission: string) => identity.permissions.includes(permission as never), [identity.permissions]);
   const navigate = useCallback((id: string, request?: string) => {
@@ -122,6 +137,23 @@ export const BackOfficeShell: React.FC<{
   useEffect(() => {
     try { window.localStorage.setItem('ayrovi.bo.density', density); } catch { /* stockage indisponible : presentationnel seulement */ }
   }, [density]);
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') document.documentElement.setAttribute('data-theme', theme);
+    try { window.localStorage.setItem('ayrovi.bo.theme', theme); } catch { /* idem */ }
+  }, [theme]);
+  useEffect(() => {
+    if (typeof document !== 'undefined') document.documentElement.setAttribute('dir', dir);
+    try { window.localStorage.setItem('ayrovi.bo.dir', dir); } catch { /* idem */ }
+  }, [dir]);
+
+  // En quittant /admin, on retire les attributs posés sur <html> : le site public
+  // redevient LTR par défaut et ne porte pas un data-theme sans son thème sombre.
+  useEffect(() => () => {
+    if (typeof document === 'undefined') return;
+    document.documentElement.removeAttribute('data-theme');
+    document.documentElement.removeAttribute('dir');
+  }, []);
 
   const groups = useMemo(() => {
     const all = navigation?.groups ?? [];
@@ -229,6 +261,10 @@ export const BackOfficeShell: React.FC<{
           <button className="admin-icon-button" onClick={() => setPalette(true)} title="Palette de commandes (⌘K)" aria-label="Palette de commandes"><Sparkles /></button>
           <button className="admin-icon-button" onClick={() => setDensity(density === 'compact' ? 'comfortable' : 'compact')}
             title={density === 'compact' ? 'Densité confortable' : 'Densité compacte'} aria-label="Changer la densité"><Zap /></button>
+          <button className="admin-icon-button" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre'} aria-label="Basculer le thème sombre / clair"><Palette /></button>
+          <button className="admin-icon-button" onClick={() => setDir(dir === 'rtl' ? 'ltr' : 'rtl')}
+            title={dir === 'rtl' ? 'Basculer en français (LTR)' : 'Basculer en arabe (RTL)'} aria-label="Basculer la direction droite-à-gauche"><Globe2 /></button>
           <NotificationsBell onNavigate={navigate} />
           <div className="admin-profile">
             <button onClick={() => setProfile(!profile)}>

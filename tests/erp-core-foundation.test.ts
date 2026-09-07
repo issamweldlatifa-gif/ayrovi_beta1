@@ -441,3 +441,43 @@ describe('ERP Core foundation (P0 + P1)', () => {
     });
   });
 });
+
+describe('E8 — événements : résumé du tableau de bord (P1)', () => {
+  const admin = request.agent(app);
+  let csrf = '';
+
+  beforeAll(async () => {
+    const login = await admin
+      .set('User-Agent', 'AYROVI-ErpSummary/1.0 (vitest)')
+      .post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
+    expect(login.status).toBe(200);
+    csrf = login.body.data.csrfToken;
+  });
+
+  test('the summary endpoint answers with a 14-day series and a top list', async () => {
+    const response = await admin.get('/api/admin/core/events/summary');
+    expect(response.status).toBe(200);
+    const { top, series } = response.body.data;
+    expect(Array.isArray(top)).toBe(true);
+    expect(Array.isArray(series)).toBe(true);
+    expect(series).toHaveLength(14);
+    for (const day of series) {
+      expect(String(day.date)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(typeof day.total).toBe('number');
+      expect(day.total).toBeGreaterThanOrEqual(0);
+    }
+    for (const row of top) {
+      expect(typeof row.event_name).toBe('string');
+      expect(Number(row.total)).toBeGreaterThan(0);
+    }
+    // le tri est descendant : l'agrégat SQL est celui du top événements
+    for (let i = 1; i < top.length; i++) expect(top[i - 1].total).toBeGreaterThanOrEqual(top[i].total);
+  });
+
+  test('a module filter narrows the summary without failing on an empty module', async () => {
+    const none = await admin.get('/api/admin/core/events/summary?module=module_inexistant');
+    expect(none.status).toBe(200);
+    expect(none.body.data.series.every((day: any) => day.total === 0)).toBe(true);
+    expect(none.body.data.top).toHaveLength(0);
+  });
+});

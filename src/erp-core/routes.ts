@@ -243,6 +243,31 @@ export function createErpCoreRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: listErpEvents(db, Number(req.query.limit) || 50, typeof req.query.module === 'string' ? req.query.module : undefined) });
   });
 
+  // E8 — résumé des événements ERP pour le tableau de bord : top événements et
+  // courbe des 14 derniers jours. Agrégations purement additives, aucune donnée
+  // brute exportée hors du `WHERE module_key` demandé.
+  router.get('/events/summary', requireAdmin(db, 'dashboard:read'), (req, res) => {
+    const moduleKey = typeof req.query.module === 'string' && req.query.module ? req.query.module : null;
+    const where = moduleKey ? 'WHERE module_key = ?' : '';
+    const params: string[] = moduleKey ? [moduleKey] : [];
+    const top = db.all<{ event_name: string; total: number }>(
+      `SELECT event_name, COUNT(*) AS total FROM erp_events ${where}
+       GROUP BY event_name ORDER BY total DESC LIMIT 8`, ...params);
+    const today = new Date().toISOString().slice(0, 10);
+    const from = new Date(Date.now() - 13 * 86400000).toISOString().slice(0, 10);
+    const rows = db.all<{ day: string; total: number }>(
+      `SELECT substr(created_at, 1, 10) AS day, COUNT(*) AS total FROM erp_events
+       ${where ? where + ' AND' : 'WHERE'} created_at >= ? AND created_at < ?
+       GROUP BY day ORDER BY day`, ...params, from, `${today}T24:00:00.000Z`);
+    const byDay = new Map<string, number>(rows.map((r) => [r.day, Number(r.total)]));
+    const series: { date: string; total: number }[] = [];
+    for (let i = 0; i < 14; i++) {
+      const day = new Date(Date.now() - (13 - i) * 86400000).toISOString().slice(0, 10);
+      series.push({ date: day, total: byDay.get(day) || 0 });
+    }
+    res.json({ success: true, data: { top, series } });
+  });
+
   // ---------- Sequences (numbering foundation) ----------
   router.get('/sequences', requireAdmin(db, 'settings:write'), (_req, res) => {
     res.json({ success: true, data: listSequences(db) });

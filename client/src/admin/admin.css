@@ -1251,3 +1251,52 @@ input[type="color"]{width:100%;height:40px;border:1px solid var(--admin-tone-e5e
 @media (max-width: 1080px) {
   .bo-search { width: 190px; }
 }
+
+/* ─────────────────────────────────────────────────────────────────────
+   E8 — coquille : direction RTL, thème sombre et responsivité mobile.
+   Règles ADDITIVES pilotées par les attributs posés sur <html> par la
+   coquille. Aucune valeur littérale nouvelle — uniquement des tokens.
+   ───────────────────────────────────────────────────────────────────── */
+
+/* RTL : la coquille physique (sidebar fixe à gauche, workspace marginé) */
+[dir='rtl'] .admin-sidebar { left: auto; right: 0; }
+[dir='rtl'] .admin-workspace { margin-left: 0; margin-right: 260px; }
+[dir='rtl'] .admin-sidebar nav button { text-align: right; }
+[dir='rtl'] .admin-sidebar nav button.is-active i { right: auto; left: 0; }
+[dir='rtl'] .admin-sidebar-logo button { margin-left: 0; margin-right: auto; }
+[dir='rtl'] .admin-header-actions { margin-left: 0; margin-right: auto; }
+@media (max-width: 900px) {
+  [dir='rtl'] .admin-workspace { margin-right: 0; }
+}
+
+/* Sombre : éléments qui ne dérivent pas d'un token sémantique (fond blanc
+   translucide du header, ombres) */
+html[data-theme='dark'], html[data-theme='dark'] body { color-scheme: dark; }
+html[data-theme='dark'] .admin-header { background: var(--admin-surface-card); }
+html[data-theme='dark'] .admin-header { border-bottom-color: var(--admin-line); }
+html[data-theme='dark'] .admin-profile > div,
+html[data-theme='dark'] .admin-palette,
+html[data-theme='dark'] .bo-dropdown { background: var(--admin-surface-card); border-color: var(--admin-line); }
+html[data-theme='dark'] .admin-icon-button:hover { background: var(--admin-surface-soft); }
+
+/* Responsivité : les barres d'outils et en-têtes de liste s'empilent sur mobile,
+   les boutons ne débordent pas, les vignettes d'entité restent lisibles. */
+@media (max-width: 860px) {
+  .admin-toolbar, .admin-list-toolbar, .admin-list-actions,
+  .bo-toolbar, .admin-pageheader, .admin-card__title,
+  .admin-form-actions, .admin-header-actions { flex-wrap: wrap; gap: 8px; }
+  .admin-main { padding: 16px; }
+  .admin-header { padding: 0 14px; }
+  .admin-form-grid { grid-template-columns: 1fr; }
+  .admin-kv-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+  .admin-entity { min-width: 0; }
+  .admin-search, .admin-select, .admin-pageheader input,
+  .admin-pageheader select { max-width: 100%; }
+  .admin-pagination { flex-wrap: wrap; justify-content: center; }
+}
+@media (max-width: 560px) {
+  .admin-form-actions { flex-direction: column-reverse; align-items: stretch; }
+  .admin-form-actions > * { width: 100%; }
+  .admin-profile span { display: none; }
+  .admin-header-title strong { font-size: 15px; }
+}
