@@ -87,8 +87,8 @@ export function queueDelivery(db: QatafoDatabase, input: NotifyInput & {
   const id = `deliv_${randomUUID()}`;
   const now = new Date().toISOString();
   db.run(`INSERT INTO erp_notification_deliveries
-    (id,recipient_type,recipient_id,channel,notification_type,title,body,status,attempts,payload,created_at,updated_at)
-    VALUES (?,?,?,COALESCE(?, 'in-app'),?,?,?,?,?,?)`, id, input.recipientType, String(input.recipientId).slice(0, 160),
+    (id,recipient_type,recipient_id,channel,notification_type,title,body,status,attempts,last_error,payload,created_at,updated_at)
+    VALUES (?,?,?,COALESCE(?, 'in-app'),?,?,?,?,?,NULL,?,?,?)`, id, input.recipientType, String(input.recipientId).slice(0, 160),
   input.channel ?? 'in-app', String(input.type).slice(0, 40), String(input.title).slice(0, 200), String(input.message).slice(0, 2000),
   'PENDING', 0, JSON.stringify(input.data ?? {}).slice(0, 4000), now, now);
   return id;

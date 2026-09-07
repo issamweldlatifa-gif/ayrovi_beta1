@@ -34,6 +34,15 @@ export const PURCHASING_ORDER_STATUSES = ['DRAFT', 'SUBMITTED', 'APPROVED', 'PAR
 export const PURCHASING_RECEIPT_STATUSES = ['DRAFT', 'POSTED', 'DISCARDED'] as const;
 export const PURCHASING_QUALITIES = ['GOOD', 'DAMAGED', 'REJECTED'] as const;
 
+/** CRM 360 (E1/E2) — les vocabulaires du module relationnel, une seule source pour les libellés. */
+export const CRM_PARTY_STATUSES = ['ACTIVE', 'INACTIVE', 'ARCHIVED'] as const;
+export const CRM_CONTACT_STATUSES = ['ACTIVE', 'INACTIVE'] as const;
+export const CRM_ACTIVITY_STATUSES = ['OPEN', 'COMPLETED', 'CANCELLED'] as const;
+export const CRM_ACTIVITY_KINDS = ['CALL', 'MEETING', 'EMAIL', 'MESSAGE', 'VISIT', 'FOLLOW_UP', 'INTERNAL', 'OTHER'] as const;
+export const CRM_TASK_STATUSES = ['OPEN', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'] as const;
+export const CRM_ISSUE_STATUSES = ['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED'] as const;
+export const CRM_PRIORITIES = ['LOW', 'NORMAL', 'HIGH', 'URGENT'] as const;
+
 /** Le framework ne connaît qu'un petit nombre de tons de badge — un seul rendu pour tout le back office. */
 export type StatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
@@ -42,6 +51,8 @@ const TONE_BY_STATUS: Record<string, StatusTone> = {
   DRAFT: 'neutral', PENDING: 'neutral', NOT_STARTED: 'neutral', INACTIVE: 'neutral', NONE: 'neutral',
   SCHEDULED: 'info', PREPARING: 'info', IN_REVIEW: 'info', PROCESSING: 'info', QUEUED: 'info', REVIEW: 'info', PARTIAL: 'info', OUT_FOR_DELIVERY: 'info', SHIPPED: 'info', IN_TRANSIT: 'info',
   APPROVED: 'success', PARTIALLY_RECEIVED: 'info', RECEIVED: 'success', POSTED: 'success', DISCARDED: 'neutral', GOOD: 'success', DAMAGED: 'warning', IN: 'success', COUNTING: 'info', SUBMITTED: 'info', ADJUST: 'info', OK: 'success', LOW: 'warning', OUT: 'danger',
+  // CRM 360 : les nouveaux états du relationnel — même registre de tons, pas de palette dédiée.
+  OPEN: 'neutral', WAITING: 'warning', URGENT: 'danger', HIGH: 'warning',
   AWAITING_DEPOSIT: 'warning', AWAITING_PAYMENT_VERIFICATION: 'warning', PENDING_VERIFICATION: 'warning', PENDING_MANUAL: 'warning', LIMITED: 'warning', NEEDS_REVIEW: 'warning', PARTIALLY_PAID: 'warning', QUOTED: 'warning',
   CANCELLED: 'danger', FAILED: 'danger', REJECTED: 'danger', OUT_OF_STOCK: 'danger', ARCHIVED: 'danger', EXPIRED: 'danger', REFUNDED: 'warning', RETURNED: 'warning', SEND_FAILED: 'danger', BLOCKED: 'danger',
 };
@@ -96,6 +107,13 @@ export const STATUS_LABELS: Record<string, { fr: string; ar: string }> = {
   IN_PROGRESS: { fr: 'En cours', ar: 'قيد المعالجة' },
   RESOLVED: { fr: 'Résolu', ar: 'تم الحل' },
   CLOSED: { fr: 'Clôturé', ar: 'مغلق' },
+  // CRM 360 — états et priorités du module relationnel.
+  OPEN: { fr: 'Ouvert', ar: 'مفتوح' },
+  WAITING: { fr: 'En attente', ar: 'قيد الانتظار' },
+  COMPLETED: { fr: 'Terminé', ar: 'مكتمل' },
+  NORMAL: { fr: 'Normale', ar: 'عادية' },
+  HIGH: { fr: 'Haute', ar: 'عالية' },
+  URGENT: { fr: 'Urgente', ar: 'عاجلة' },
 };
 
 export function statusLabel(status: string | null | undefined, locale: 'fr' | 'ar' = 'fr'): string {
@@ -116,6 +134,13 @@ export const STATUS_VOCABULARIES: Record<string, readonly string[]> = {
   'purchasing.order': PURCHASING_ORDER_STATUSES,
   'purchasing.receipt': PURCHASING_RECEIPT_STATUSES,
   'purchasing.quality': PURCHASING_QUALITIES,
+  'crm.party': CRM_PARTY_STATUSES,
+  'crm.contact': CRM_CONTACT_STATUSES,
+  'crm.activity': CRM_ACTIVITY_STATUSES,
+  'crm.activity.kind': CRM_ACTIVITY_KINDS,
+  'crm.task': CRM_TASK_STATUSES,
+  'crm.issue': CRM_ISSUE_STATUSES,
+  'crm.priority': CRM_PRIORITIES,
 };
 
 export function statusVocabulary(key: string | undefined): readonly string[] | undefined {

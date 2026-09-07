@@ -9,6 +9,7 @@ import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
 import { ensurePurchasingSchema } from '../purchasing/bootstrap';
+import { ensureCrmSchema } from '../crm/bootstrap';
 
 export type PaymentMethodCode = 'PENDING_SELECTION' | 'COD' | 'D17' | 'FLOUCI' | 'CARD' | 'BANK_TRANSFER' | 'POSTE';
 export type DepositStatus = 'NONE' | 'PENDING' | 'SUBMITTED' | 'PAID' | 'REJECTED';
@@ -210,6 +211,7 @@ export class QatafoDatabase {
     this.initCatalogueSchema();
     this.initInventorySchema();
     this.initPurchasingSchema();
+    this.initCrmSchema();
     this.seedCoreData();
   }
 
@@ -273,6 +275,22 @@ export class QatafoDatabase {
       // it is surfaced in the log and stays visible in /api/admin/core/environment.
       console.error('[erp-core] schema initialization failed:', error?.message || error);
       console.error('[erp-core] the foundation tables are incomplete — audit identity and permissions may be missing');
+    }
+  }
+
+  /**
+   * CRM 360 (E1) — fiche relationnelle (party), contacts, relations, activités, tâches,
+   * notes, issues, communications, raccordements et événements de timeline. Même
+   * discipline que le stock et les achats : DDL additive seule ici, AUCUN grant de
+   * permission écrit par le constructeur (les droits se sèment via `bootstrapCrm`),
+   * et un échec ne doit jamais empêcher la boutique de démarrer.
+   */
+  private initCrmSchema(): void {
+    try {
+      ensureCrmSchema(this);
+    } catch (error: any) {
+      console.error('[crm360] schema initialization failed:', error?.message || error);
+      console.error('[crm360] parties, contacts, activities, tasks, notes and issues are unavailable until this is fixed');
     }
   }
 

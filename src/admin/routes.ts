@@ -43,6 +43,7 @@ import { requireErpPermission } from '../erp-core/permissions';
 import { createCatalogueRouter } from '../catalogue/routes';
 import { createInventoryRouter } from '../inventory/routes';
 import { createPurchasingRouter } from '../purchasing/routes';
+import { createCrmRouter } from '../crm/routes';
 import { createBackOfficeRouter } from '../back-office/routes';
 import { registerFrameworkResources } from '../back-office/resources';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
@@ -426,6 +427,10 @@ export function createAdminRouter(
   // `purchasing:*`. Le lien avec `arrival-ingestion` se fait par mes propres colonnes
   // (`purchase_orders.arrival_id`, `goods_receipts.arrival_id`) : aucune table du CRM n'est modifiée.
   router.use('/purchasing', createPurchasingRouter(db));
+  // CRM 360 (E1/E2) : fiches relationnelles, contacts, relations, activités, tâches &
+  // follow-ups, notes, issues/support, communications, timeline et tableau de bord —
+  // surface additive `/api/admin/crm/*`, gardée par la matrice `crm360:*`.
+  router.use('/crm', createCrmRouter(db));
   // Back Office (P2.0): coquille + framework de ressources. Uniquement de la LECTURE : la
   // coquille décrit l'espace de travail (navigation, descripteurs, recherche, capacités) et ne
   // déplace aucune écriture. Le moteur générique s'y enregistre lui-même, source unique.

@@ -456,14 +456,16 @@ describe('catalogue foundation (P2.1)', () => {
       expect(canCatalogue(db, 'SUPER_ADMIN', 'approve', 'product').allowed).toBe(true);
       expect(canCatalogue(db, 'SUPER_ADMIN', 'delete', 'variant').allowed).toBe(true);
       expect(canCatalogue(db, 'ORDER_MANAGER', 'read', 'product').allowed).toBe(false);
-      // 217 = 139 héritées de P1 + 60 semées par le catalogue + 9 lignes du miroir SUPER_ADMIN
-      // d'`inventory` (P2.2) + 9 lignes du miroir SUPER_ADMIN de `purchasing` (P2.3), le tout
-      // créé par `seedLegacyPermissions` à partir de MODULE_RESOURCES. Exact, et non « au moins » :
-      // un droit accordé par erreur à un autre rôle doit faire rougir cette assertion. Les 15
-      // grants ADMIN du stock et les 20 grants ADMIN des achats sont semés par bootstrapInventory /
-      // bootstrapPurchasing, qui ne sont pas déclenchés dans ce fichier.
+      // 226 = 139 héritées de P1 + 60 semées par le catalogue + 9 lignes du miroir SUPER_ADMIN
+      // d'`inventory` (P2.2) + 9 lignes du miroir SUPER_ADMIN de `purchasing` (P2.3) + 9 lignes
+      // du miroir SUPER_ADMIN de `crm360` (E1 — CRM 360), le tout créé par `seedLegacyPermissions`
+      // à partir de MODULE_RESOURCES. Exact, et non « au moins » : un droit accordé par erreur à
+      // un autre rôle doit faire rougir cette assertion. Les 15 grants ADMIN du stock, les 20 grants
+      // ADMIN des achats et les grants `crm360` sont semés par bootstrapInventory / bootstrapPurchasing /
+      // seedCrmPermissions, qui ne sont pas déclenchés dans ce fichier (le miroir SUPER_ADMIN, lui, l'est).
       const total = Number(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM erp_role_permissions`)!.n);
-      expect(total).toBe(217);
+      expect(total).toBe(226);
+      expect(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM erp_role_permissions WHERE module_key='crm360'`)!.n).toBe(9);
       // et la croissance est bien celle annoncée : uniquement le miroir SUPER_ADMIN des deux modules
       expect(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM erp_role_permissions WHERE module_key='inventory'`)!.n).toBe(9);
       expect(db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM erp_role_permissions WHERE module_key='inventory' AND role<>'SUPER_ADMIN'`)!.n).toBe(0);
