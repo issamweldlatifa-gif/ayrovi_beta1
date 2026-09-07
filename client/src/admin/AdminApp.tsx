@@ -14,6 +14,7 @@ import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
 import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } from './InventoryPage';
 import { PurchasingOrdersPage, PurchasingReceiptsPage, PurchasingSuppliersPage } from './PurchasingPage';
+import { CrmActivitiesPage, CrmContactsPage, CrmDashboardPage, CrmIssuesPage, CrmPartiesPage, CrmTasksPage } from './CrmPages';
 import { MagazineAgentPage } from './MagazineAgentPage';
 import { HeroVisualsPage } from './HeroVisualsPage';
 import { TrustBarPage } from './TrustBarPage';
@@ -689,6 +690,14 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
     else if(section==='purchasing')page=<PurchasingSuppliersPage/>;
     else if(section==='purchasing-orders')page=<PurchasingOrdersPage/>;
     else if(section==='purchasing-receipts')page=<PurchasingReceiptsPage/>;
+    // E5 — CRM 360 : tableau de bord + cinq écrans métier. La navigation reste `commerce:read`,
+    // chaque action d'écriture est décidée par l'écran lui-même via `/crm/meta` (grants `crm360:*`).
+    else if(section==='crm-dashboard')page=<CrmDashboardPage/>;
+    else if(section==='crm-parties')page=<CrmPartiesPage/>;
+    else if(section==='crm-contacts')page=<CrmContactsPage/>;
+    else if(section==='crm-activities')page=<CrmActivitiesPage/>;
+    else if(section==='crm-tasks')page=<CrmTasksPage/>;
+    else if(section==='crm-issues')page=<CrmIssuesPage/>;
     // P2.2 — premier écran métier servi par `ResourceWorkspace` : la liste de stock n'a pas
     // de page dédiée, elle EST le descripteur serveur (colonnes, tri, droits, audit).
     else { const descriptor = descriptorFor(section); if (descriptor?.surface === 'framework') page = <ResourceWorkspace descriptor={descriptor} />; }

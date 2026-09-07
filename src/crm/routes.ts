@@ -10,10 +10,16 @@
 import { Router, type Request, type Response } from 'express';
 import type { QatafoDatabase } from '../db/database';
 import type { AdminIdentity } from '../admin/auth';
+import { requireAdmin } from '../admin/auth';
 import { bootstrapCrm } from './bootstrap';
-import { requireCrm } from './permissions';
+import { canCrm, requireCrm } from './permissions';
 import { crmContext } from './audit';
 import { httpStatusFor } from './validation';
+import {
+  ACTIVITY_KINDS, ACTIVITY_STATUSES, COMM_CHANNELS, COMM_DIRECTIONS, CONTACT_STATUSES,
+  ISSUE_PRIORITIES, ISSUE_STATUSES, PARTY_KINDS, PARTY_TYPES, PARTY_SOURCES, PARTY_STATUSES,
+  RELATIONSHIP_TYPES, TASK_PRIORITIES, TASK_STATUSES, CRM_ACTIONS, CRM_RESOURCES,
+} from './types';
 import type { Outcome } from './parties';
 import {
   addRelationship, archiveParty, cleanPartyPayload, createContact, createParty, deleteContact, duplicateCandidates,
@@ -81,6 +87,35 @@ export function createCrmRouter(db: QatafoDatabase): Router {
     let report: unknown;
     try { report = bootstrapCrm(db); } catch (error: any) { report = { error: String(error?.message || error) }; }
     res.json({ success: true, data: { module: 'crm360', ...(report as object) } });
+  });
+
+  /**
+   * Capacités réelles du rôle appelant, décidées par le moteur de permissions (canCrm).
+   * L'écran l'utilise pour rendre une action refusée inerte avant tout clic — jamais de 403
+   * après coup. Aucune règle client ne prétend connaître les droits.
+   */
+  router.get('/meta', requireAdmin(db), (req, res) => {
+    const role = (req as Request & { admin?: AdminIdentity }).admin?.role;
+    const capabilities: Record<string, Record<string, boolean>> = {};
+    for (const resource of CRM_RESOURCES) {
+      const row: Record<string, boolean> = {};
+      for (const action of CRM_ACTIONS) row[action] = canCrm(db, role, action, resource).allowed;
+      capabilities[resource] = row;
+    }
+    res.json({
+      success: true,
+      data: {
+        capabilities,
+        statuses: {
+          partyTypes: PARTY_TYPES, partyKinds: PARTY_KINDS, partyStatuses: PARTY_STATUSES, partySources: PARTY_SOURCES,
+          contactStatuses: CONTACT_STATUSES, relationshipTypes: RELATIONSHIP_TYPES,
+          activityKinds: ACTIVITY_KINDS, activityStatuses: ACTIVITY_STATUSES,
+          taskStatuses: TASK_STATUSES, taskPriorities: TASK_PRIORITIES,
+          issueStatuses: ISSUE_STATUSES, issuePriorities: ISSUE_PRIORITIES,
+          commChannels: COMM_CHANNELS, commDirections: COMM_DIRECTIONS,
+        },
+      },
+    });
   });
 
   /* ================= Partie 1 — Fiches (parties) ================= */

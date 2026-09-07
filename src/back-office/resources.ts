@@ -789,10 +789,72 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     surface: 'custom', component: 'UsersPage', api: { prefix: '/users', kind: 'generic' },
     columns: [], fields: [], actions: ['list', 'view', 'create', 'edit'], audit: { module: 'USERS', resourceType: 'admin_user' },
   },
+  {
+    key: 'crm360.dashboard', label: 'Tableau de bord relationnel', singular: 'indicateur', module: 'crm360', domain: 'CRM',
+    description: 'KPI du module relationnel (E2) : clients actifs, tâches en retard, issues vivantes — calculés sur les vraies données.',
+    navPermission: 'commerce:read', permissions: { view: 'commerce:read' },
+    section: 'crm-dashboard', nav: { group: 'CRM', order: 10, icon: 'ChartLine' },
+    surface: 'custom', component: 'CrmDashboardPage', api: { prefix: '/crm/dashboard', kind: 'module' },
+    columns: [], fields: [], actions: ['view'], audit: { module: 'CRM', resourceType: 'dashboard' },
+  },
+  {
+    key: 'crm360.party', label: 'Fiches clients & partenaires', singular: 'fiche relationnelle', module: 'crm360', domain: 'CRM',
+    description: 'Fiche relationnelle (Party) : une identité, un historique, des prochaines actions — refus de doublon et archivage terminal tracés.',
+    navPermission: 'commerce:read',
+    permissions: { list: 'commerce:read', view: 'commerce:read', create: 'orders:write', edit: 'orders:write', delete: 'orders:write' },
+    section: 'crm-parties', nav: { group: 'CRM', order: 20, icon: 'User' },
+    surface: 'custom', component: 'CrmPartiesPage', api: { prefix: '/crm/parties', kind: 'module' },
+    columns: [], fields: [], actions: ['list', 'view', 'create', 'edit', 'delete'],
+    statusField: 'status', statuses: ['ACTIVE', 'INACTIVE', 'ARCHIVED'], statusVocabulary: 'crm.party',
+    audit: { module: 'CRM', resourceType: 'party' },
+    notes: 'Les écritures restent soumises aux grants ERP `crm360:<action>` ; l’écran lit les capacités réelles via `/crm/meta`. L’archivage (terminal, action `crm360:archive`) est exposé par l’écran sous le bouton « Archiver » ; la clé déclarative `delete` ci-dessus n’est qu’un libellé du moteur générique, jamais une suppression physique.',
+  },
+  {
+    key: 'crm360.contact', label: 'Contacts', singular: 'contact', module: 'crm360', domain: 'CRM',
+    description: 'Interlocuteurs rattachés aux fiches — l’unicité téléphone/e-mail par fiche est une règle de base.',
+    navPermission: 'commerce:read',
+    permissions: { list: 'commerce:read', view: 'commerce:read', create: 'orders:write', edit: 'orders:write', delete: 'orders:write' },
+    section: 'crm-contacts', nav: { group: 'CRM', order: 30, icon: 'MessageSquare' },
+    surface: 'custom', component: 'CrmContactsPage', api: { prefix: '/crm/contacts', kind: 'module' },
+    columns: [], fields: [], actions: ['list', 'view', 'create', 'edit', 'delete'], audit: { module: 'CRM', resourceType: 'contact' },
+  },
+  {
+    key: 'crm360.activity', label: 'Activités', singular: 'activité', module: 'crm360', domain: 'CRM',
+    description: 'Appels, rendez-vous, visites, e-mails : ce qui a réellement été fait ou reste à faire sur une fiche.',
+    navPermission: 'commerce:read',
+    permissions: { list: 'commerce:read', view: 'commerce:read', create: 'orders:write', edit: 'orders:write' },
+    section: 'crm-activities', nav: { group: 'CRM', order: 40, icon: 'Calendar' },
+    surface: 'custom', component: 'CrmActivitiesPage', api: { prefix: '/crm/activities', kind: 'module' },
+    columns: [], fields: [], actions: ['list', 'view', 'create', 'edit'],
+    statusField: 'status', statuses: ['OPEN', 'COMPLETED', 'CANCELLED'], statusVocabulary: 'crm.activity',
+    audit: { module: 'CRM', resourceType: 'activity' },
+  },
+  {
+    key: 'crm360.task', label: 'Tâches & suivis', singular: 'tâche', module: 'crm360', domain: 'CRM',
+    description: 'Les prochaines actions : propriétaire, échéance, priorité — le retard se calcule, jamais ne se devine.',
+    navPermission: 'commerce:read',
+    permissions: { list: 'commerce:read', view: 'commerce:read', create: 'orders:write', edit: 'orders:write' },
+    section: 'crm-tasks', nav: { group: 'CRM', order: 50, icon: 'Clipboard' },
+    surface: 'custom', component: 'CrmTasksPage', api: { prefix: '/crm/tasks', kind: 'module' },
+    columns: [], fields: [], actions: ['list', 'view', 'create', 'edit'],
+    statusField: 'status', statuses: ['OPEN', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED'], statusVocabulary: 'crm.task',
+    audit: { module: 'CRM', resourceType: 'task' },
+  },
+  {
+    key: 'crm360.issue', label: 'Issues & réclamations', singular: 'dossier', module: 'crm360', domain: 'CRM',
+    description: 'Dossiers support rattachés aux fiches — la résolution s’écrit, la clôture se trace.',
+    navPermission: 'commerce:read',
+    permissions: { list: 'commerce:read', view: 'commerce:read', create: 'orders:write', edit: 'orders:write' },
+    section: 'crm-issues', nav: { group: 'CRM', order: 60, icon: 'Bell' },
+    surface: 'custom', component: 'CrmIssuesPage', api: { prefix: '/crm/issues', kind: 'module' },
+    columns: [], fields: [], actions: ['list', 'view', 'create', 'edit'],
+    statusField: 'status', statuses: ['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED'], statusVocabulary: 'crm.issue',
+    audit: { module: 'CRM', resourceType: 'issue' },
+  },
 ];
 
 /** Nav : un seul endroit au monde déclare ce que voit un administrateur (groupes, ordre, icônes). */
-export const BACK_OFFICE_GROUP_ORDER = ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'ERP', 'Système'] as const;
+export const BACK_OFFICE_GROUP_ORDER = ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système'] as const;
 
 export const BACK_OFFICE_DOMAINS: ReadonlyArray<{ key: BackOfficeDomain; label: string; description: string; order: number }> = [
   { key: 'ERP', label: 'ERP', description: 'Cœur, identité, réglages, rapports', order: 10 },

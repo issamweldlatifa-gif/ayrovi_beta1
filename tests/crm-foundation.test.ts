@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { ERP_MODULES } from '../src/erp-core/modules';
+import { CRM_ACTIONS, CRM_RESOURCES } from '../src/crm/types';
 import { ensureCrmSchema, bootstrapCrm, CRM360_TABLES, CRM_SEQUENCES } from '../src/crm/bootstrap';
 
 const SUFFIX = `t${Date.now().toString(36)}`;
@@ -402,6 +403,61 @@ describe('CRM 360 (E1/E2)', () => {
       const notifications = db.all<any>(`SELECT * FROM admin_notifications WHERE source='crm360' AND data LIKE ?`, `%${task.body.data.task.id}%`);
       expect(notifications.length).toBeGreaterThanOrEqual(1);
       expect(notifications[0].type).toBe('SYSTEM'); // contrainte CHECK du canal existant
+    });
+  });
+
+  describe('métadonnées d’écran (E5) — /api/admin/crm/meta', () => {
+    test('une capacité par ressource × action, toute booléenne, toutes les ressources présentes', async () => {
+      const result = await admin.get('/api/admin/crm/meta');
+      expect(result.status).toBe(200);
+      const capabilities: Record<string, Record<string, unknown>> = result.body.data.capabilities;
+      for (const resource of CRM_RESOURCES) {
+        expect(capabilities, `ressource absente des capacités : ${resource}`).toHaveProperty(resource);
+        for (const action of CRM_ACTIONS) {
+          expect(capabilities[resource], `action absente ${resource}:${action}`).toHaveProperty(action);
+          expect(typeof capabilities[resource][action]).toBe('boolean');
+        }
+      }
+    });
+
+    test('le dictionnaire de statuts sert les vocabulaires que les écrans affichent', async () => {
+      const result = await admin.get('/api/admin/crm/meta');
+      expect(result.status).toBe(200);
+      const statuses: Record<string, unknown> = result.body.data.statuses;
+      const expectedKeys = ['partyTypes', 'partyKinds', 'partyStatuses', 'partySources', 'contactStatuses',
+        'activityKinds', 'activityStatuses', 'taskStatuses', 'taskPriorities', 'issueStatuses',
+        'issuePriorities', 'commChannels', 'commDirections'];
+      for (const key of expectedKeys) {
+        expect(Array.isArray(statuses[key]), `vocabulaire absent : ${key}`).toBe(true);
+        expect((statuses[key] as unknown[]).length, `vocabulaire vide : ${key}`).toBeGreaterThan(0);
+      }
+      expect(statuses.partyKinds).toContain('CUSTOMER');
+      expect(statuses.partyStatuses).toEqual(['ACTIVE', 'INACTIVE', 'ARCHIVED']);
+      expect(statuses.taskStatuses).toEqual(['OPEN', 'IN_PROGRESS', 'WAITING', 'COMPLETED', 'CANCELLED']);
+      expect(statuses.issueStatuses).toEqual(['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED']);
+      expect(statuses.issuePriorities).toContain('URGENT');
+    });
+
+    test('les capacités vues par l’écran reflètent les grants réels, rôle par rôle', async () => {
+      const metaOf = async (agent: request.Agent) => (await agent.get('/api/admin/crm/meta')).body.data.capabilities;
+      const adminCaps = await metaOf(admin);
+      const operatorCaps = await metaOf(operator);
+      const contentCaps = await metaOf(content);
+      // SUPER_ADMIN (god role + seeds) : tout ce que la matrice déclare est accordé.
+      expect(adminCaps.party.view).toBe(true);
+      expect(adminCaps.party.create).toBe(true);
+      expect(adminCaps.party.archive).toBe(true);
+      // ORDER_MANAGER : lit tout, crée/édite le relationnel, jamais archive/export/config.
+      expect(operatorCaps.task.view).toBe(true);
+      expect(operatorCaps.party.create).toBe(true);
+      expect(operatorCaps.issue.edit).toBe(true);
+      expect(operatorCaps.party.archive).toBe(false);
+      expect(operatorCaps.timeline.create).toBe(false);
+      expect(operatorCaps.crm_config.manage).toBe(false);
+      // CONTENT_MANAGER : aucun grant crm360 → aucune action ne doit être proposée.
+      for (const resource of CRM_RESOURCES) {
+        for (const action of CRM_ACTIONS) expect(contentCaps[resource][action]).toBe(false);
+      }
     });
   });
 });

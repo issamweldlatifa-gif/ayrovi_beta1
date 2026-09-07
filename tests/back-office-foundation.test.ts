@@ -126,11 +126,15 @@ describe('back office shell (P2.0)', () => {
         expect(sections.has(section), `section P2.2 absente: ${section}`).toBe(true);
       }
       // 39 legacy + `hero-slides` (alias de deep link) + les 3 entrées du stock (P2.2)
-      // + les 3 entrées des achats (P2.3) = 46. Valeur mesurée, pas déduite.
+      // + les 3 entrées des achats (P2.3) + les 6 entrées du CRM 360 (E5) = 52.
+      // Valeur mesurée, pas déduite.
       for (const section of ['purchasing', 'purchasing-orders', 'purchasing-receipts']) {
         expect(sections.has(section), `section P2.3 absente: ${section}`).toBe(true);
       }
-      expect(sections.size).toBe(46);
+      for (const section of ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues']) {
+        expect(sections.has(section), `section E5 absente: ${section}`).toBe(true);
+      }
+      expect(sections.size).toBe(52);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -156,12 +160,15 @@ describe('back office shell (P2.0)', () => {
       const p22Additions = ['inventory', 'inventory-movements', 'inventory-stocktakes'];
       // P2.3 a ajouté trois autres surfaces (les achats), citées de la même façon.
       const p23Additions = ['purchasing', 'purchasing-orders', 'purchasing-receipts'];
+      // E5 a ajouté six surfaces (CRM 360), citées nommément — la preuve d'équivalence grandit,
+      // elle ne s'aligne jamais sur le serveur.
+      const crmAdditions = ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -178,14 +185,14 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 37 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3)', async () => {
+    test('SUPER_ADMIN voit les 37 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5)', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(43);
-      expect(result.body.data.counts).toMatchObject({ sections: 43, visible: 43 });
+      expect(items.length).toBe(49);
+      expect(result.body.data.counts).toMatchObject({ sections: 49, visible: 49 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
-        ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'ERP', 'Système']);
+        ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
 
     test('un rôle ne voit que ce que la permission autorise — sans jamais enlever davantage', async () => {
@@ -401,7 +408,7 @@ describe('back office shell (P2.0)', () => {
       const declared = resourceDescriptors()
         .filter((descriptor) => descriptor.nav?.icon)
         .map((descriptor) => descriptor.nav!.icon as string);
-      expect(declared.length).toBe(43);
+      expect(declared.length).toBe(49);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });
