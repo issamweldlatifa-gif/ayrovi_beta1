@@ -51,6 +51,22 @@ export const SEARCH_SOURCES: readonly SearchSource[] = [
   { resource: 'crm.party', label: 'Clients', table: 'customers', title: 'name', secondary: 'governorate', codeColumn: 'phone', searchColumns: ['name', 'phone', 'normalized_phone', 'address'], orderBy: 'updated_at DESC', section: 'customers', idParam: 'id', permission: 'commerce:read', erp: { module: 'sales', action: 'read' } },
   { resource: 'crm.arrival', label: 'Arrivages CRM', table: 'crm_arrivals', title: 'name', secondary: 'status', searchColumns: ['name'], orderBy: 'created_at DESC', section: 'arrival-ingestion', idParam: 'arrival', permission: 'commerce:read' },
   { resource: 'core.employee', label: 'Employés', table: 'erp_employees', title: 'employee_code', secondary: 'job_title', searchColumns: ['employee_code', 'first_name', 'last_name', 'job_title'], orderBy: 'employee_code ASC', section: 'erp-employees', idParam: 'id', permission: 'users:write' },
+  // E6/REC-07 : le module relationnel (crm360) devient trouvable depuis la recherche globale.
+  // Même discipline que les autres sources : lecture seule, colonnes en allowlist vérifiées sur
+  // PRAGMA table_info, un deep link vers un écran qui existe. Le dernier mot reste au moteur ERP
+  // (grants `crm360:view`) via le champ `erp` ; aucun rôle ne gagne d'accès par ce biais.
+  { resource: 'crm360.party', label: 'Fiches relationnelles', table: 'crm360_parties', title: 'name', secondary: 'governorate', codeColumn: 'party_code',
+    searchColumns: ['name', 'legal_name', 'party_code', 'email', 'phone', 'normalized_phone', 'tax_id'], orderBy: 'updated_at DESC',
+    section: 'crm-parties', idParam: 'id', permission: 'commerce:read', erp: { module: 'crm360', action: 'view' } },
+  { resource: 'crm360.contact', label: 'Contacts', table: 'crm360_contacts', title: 'email', codeColumn: 'phone',
+    searchColumns: ['email', 'phone', 'normalized_phone', 'first_name', 'last_name'], orderBy: 'updated_at DESC',
+    section: 'crm-contacts', idParam: 'id', permission: 'commerce:read', erp: { module: 'crm360', action: 'view' } },
+  { resource: 'crm360.task', label: 'Tâches & suivis', table: 'crm360_tasks', title: 'title', secondary: 'status', codeColumn: 'task_no',
+    searchColumns: ['title', 'description', 'task_no'], orderBy: 'created_at DESC',
+    section: 'crm-tasks', idParam: 'id', permission: 'commerce:read', erp: { module: 'crm360', action: 'view' } },
+  { resource: 'crm360.issue', label: 'Issues & réclamations', table: 'crm360_issues', title: 'subject', secondary: 'status', codeColumn: 'issue_no',
+    searchColumns: ['subject', 'description', 'issue_no', 'category'], orderBy: 'created_at DESC',
+    section: 'crm-issues', idParam: 'id', permission: 'commerce:read', erp: { module: 'crm360', action: 'view' } },
 ] as const;
 
 export interface SearchHit {

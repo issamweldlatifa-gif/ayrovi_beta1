@@ -15,6 +15,7 @@ import request from 'supertest';
 import { app, db } from '../src/server';
 import { ERP_MODULES } from '../src/erp-core/modules';
 import { CRM_ACTIONS, CRM_RESOURCES } from '../src/crm/types';
+import { resourceDescriptorBySection } from '../src/back-office/resources';
 import { ensureCrmSchema, bootstrapCrm, CRM360_TABLES, CRM_SEQUENCES } from '../src/crm/bootstrap';
 
 const SUFFIX = `t${Date.now().toString(36)}`;
@@ -458,6 +459,127 @@ describe('CRM 360 (E1/E2)', () => {
       for (const resource of CRM_RESOURCES) {
         for (const action of CRM_ACTIONS) expect(contentCaps[resource][action]).toBe(false);
       }
+    });
+  });
+
+  describe('recherche globale étendue (E6/REC-07) — crm360 trouvable, jamais plus que les droits', () => {
+    let partyId = '';
+    let issueNo = '';
+
+    test('créer des données CRM indexables par la voie canonique', async () => {
+      const party = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/parties')
+        .send({ partyType: 'COMPANY', kind: 'CUSTOMER', name: `Alpha Recherche Globale ${SUFFIX}`, email: EMAIL('searchco') });
+      expect(party.status).toBe(200);
+      partyId = party.body.data.party.id;
+      const contact = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/contacts')
+        .send({ partyId, firstName: 'Rechercheuse', lastName: 'Globale', email: EMAIL('search.person'), phone: '+21622110011' });
+      expect(contact.status).toBe(200);
+      const task = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/tasks')
+        .send({ partyId, title: `Appeler Alpha pour le renouvellement ${SUFFIX}` });
+      expect(task.status).toBe(200);
+      const issue = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/issues')
+        .send({ partyId, subject: `Alpha réclame une facture corrigée ${SUFFIX}` });
+      expect(issue.status).toBe(200);
+      issueNo = issue.body.data.issue.issue_no;
+    });
+
+    test('l’admin retrouve les quatre sources crm360 avec un deep link existant', async () => {
+      const result = await admin.get(`/api/admin/back-office/search?q=${encodeURIComponent(`Alpha Recherche Globale ${SUFFIX}`)}`);
+      expect(result.status).toBe(200);
+      const partyHit = result.body.data.hits.find((item: any) => item.resource === 'crm360.party');
+      expect(partyHit, JSON.stringify(result.body.data.hits)).toBeTruthy();
+      expect(partyHit.href).toContain('/admin?section=crm-parties&id=');
+      expect(resourceDescriptorBySection('crm-parties')).toBeTruthy();
+
+      const contactHit = await admin.get(`/api/admin/back-office/search?q=${encodeURIComponent('Rechercheuse')}`);
+      const cHit = contactHit.body.data.hits.find((item: any) => item.resource === 'crm360.contact');
+      expect(cHit, JSON.stringify(contactHit.body.data.hits)).toBeTruthy();
+      expect(cHit.href).toContain('/admin?section=crm-contacts&id=');
+
+      const taskHit = await admin.get(`/api/admin/back-office/search?q=${encodeURIComponent(`renouvellement ${SUFFIX}`)}`);
+      const tHit = taskHit.body.data.hits.find((item: any) => item.resource === 'crm360.task');
+      expect(tHit).toBeTruthy();
+      expect(tHit.href).toContain('/admin?section=crm-tasks&id=');
+
+      const issueHit = await admin.get(`/api/admin/back-office/search?q=${encodeURIComponent(`facture corrigée ${SUFFIX}`)}`);
+      const iHit = issueHit.body.data.hits.find((item: any) => item.resource === 'crm360.issue');
+      expect(iHit).toBeTruthy();
+      expect(iHit.href).toContain('/admin?section=crm-issues&id=');
+      expect(iHit.code).toBe(issueNo);
+    });
+
+    test('un ORDER_MANAGER (grant crm360:view) les voit aussi — parité préservée', async () => {
+      const result = await operator.get(`/api/admin/back-office/search?q=${encodeURIComponent(`Alpha Recherche Globale ${SUFFIX}`)}`);
+      expect(result.status).toBe(200);
+      const partyHit = result.body.data.hits.find((item: any) => item.resource === 'crm360.party');
+      expect(partyHit).toBeTruthy();
+    });
+
+    test('un CONTENT_MANAGER sans grant crm360 voit les sources sautées, jamais interrogées', async () => {
+      const result = await content.get(`/api/admin/back-office/search?q=${encodeURIComponent(`Alpha Recherche Globale ${SUFFIX}`)}`);
+      expect(result.status).toBe(200);
+      const sources = result.body.data.sources as any[];
+      const skipped = sources.filter((source: any) => source.skipped === 'permission').map((source: any) => source.resource);
+      expect(skipped).toEqual(expect.arrayContaining(['crm360.party', 'crm360.contact', 'crm360.task', 'crm360.issue']));
+      expect(result.body.data.hits.some((item: any) => item.resource?.startsWith('crm360.'))).toBe(false);
+    });
+  });
+
+  describe('revue sécurité (E6) — anonyme, CSRF, bornes', () => {
+    test('aucune route CRM n’est ouverte aux non-connectés', async () => {
+      const anon = request(app);
+      const list = await anon.get('/api/admin/crm/parties');
+      expect(list.status).toBe(401);
+      const meta = await anon.get('/api/admin/crm/meta');
+      expect(meta.status).toBe(401);
+      const dashboard = await anon.get('/api/admin/crm/dashboard');
+      expect(dashboard.status).toBe(401);
+    });
+
+    test('une écriture sans jeton CSRF est refusée même avec une session valide', async () => {
+      // L'agent partagé porte un x-csrf-token par défaut : on ouvre une session neuve pour prouver
+      // que le jeton est réellement exigé (pas seulement présent dans le harnais de test).
+      const fresh = request.agent(app);
+      await login(fresh, 'admin@ayrovi.tn', adminPassword);
+      const probe = await fresh.post('/api/admin/crm/parties')
+        .send({ partyType: 'INDIVIDUAL', kind: 'CUSTOMER', name: `Sans CSRF ${SUFFIX}` });
+      expect(probe.status).toBe(403);
+      expect(probe.body.code ?? probe.body.error).toBeTruthy();
+      const inserted = db.get(`SELECT id FROM crm360_parties WHERE name=?`, `Sans CSRF ${SUFFIX}`);
+      expect(inserted).toBeFalsy();
+    });
+
+
+  });
+
+  describe('matrice de validation (E6) — bornes et intégrité', () => {
+    test('une fiche sans nom est refusée en 400 CRM_VALIDATION, jamais en 500', async () => {
+      const invalid = await admin
+        .set('x-csrf-token', adminCsrf)
+        .post('/api/admin/crm/parties')
+        .send({ partyType: 'COMPANY', kind: 'CUSTOMER', email: EMAIL('noname') });
+      expect(invalid.status).toBe(400);
+      expect(invalid.body.code).toBe('CRM_VALIDATION');
+    });
+
+    test('la pagination est bornée : pageSize énorme est ramené à la borne', async () => {
+      const result = await admin.get('/api/admin/crm/parties?page=1&pageSize=99999');
+      expect(result.status).toBe(200);
+      expect(result.body.pagination.pageSize).toBeLessThanOrEqual(100);
+    });
+
+    test('consulter une fiche inconnue répond CRM_PARTY_NOT_FOUND, pas un 500', async () => {
+      const missing = await admin.get('/api/admin/crm/parties/party_inconnue');
+      expect(missing.status).toBe(404);
+      expect(missing.body.code).toBe('CRM_PARTY_NOT_FOUND');
     });
   });
 });
