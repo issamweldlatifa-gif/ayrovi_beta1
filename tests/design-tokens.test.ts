@@ -341,3 +341,41 @@ describe('accent — une seule source', () => {
     );
   });
 });
+
+describe('chrome back-office — zéro littéral en dur dans les styles inline (E10)', () => {
+  /**
+   * E10 : après migration, aucun style inline des écrans back-office ne porte de couleur
+   * littérale — SAUF six fichiers qui, par nature, portent des valeurs qui ne sont PAS du
+   * chrome :
+   *   • InterfaceStudio.tsx  → palettes « presets » de la boutique (données de thème envoyées
+   *     au magasin public, pas des couleurs d'interface admin) ;
+   *   • LensSectionPage.tsx  → maquettes téléphone Lens (simulent l'écran public) ;
+   *   • TrustBarPage.tsx     → valeurs par défaut persistées du widget TrustBar (données) ;
+   *   • HeroVisualsPage.tsx  → défaut persisté d'accent du hero (valeur d'enregistrement) ;
+   *   • AdminApp.tsx         → une miniature « Boutique AYROVI » (blanc sur l'accent client, dynamique) ;
+   *   • SocialAdminPage.tsx  → un fond #000 derrière un <video> (constante média, jamais de thème).
+   * Tout AUTRE fichier doit rester à zéro ; ajouter un littéral au chrome admin est une
+   * régression bloquée par ce test.
+   */
+  const DATA_OR_MOCK = new Map<string, string>([
+    ['client/src/admin/InterfaceStudio.tsx', 'palettes boutique (données)'],
+    ['client/src/admin/LensSectionPage.tsx', 'maquettes téléphone (simulent l\'écran public)'],
+    ['client/src/admin/TrustBarPage.tsx', 'défauts persistés du widget (données)'],
+    ['client/src/admin/HeroVisualsPage.tsx', 'défaut persisté d\'accent du hero (valeur d\'enregistrement)'],
+    ['client/src/admin/AdminApp.tsx', 'miniature « Boutique AYROVI » (accent dynamique)'],
+    ['client/src/admin/SocialAdminPage.tsx', 'fond #000 d\'un <video> (constante média)'],
+  ]);
+  const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]{3})(?![0-9a-zA-Z_])/g;
+  test('seuls les fichiers données/maquettes/média portent un littéral', () => {
+    const offenders: string[] = [];
+    for (const rel of clientFiles(/\.tsx$/)) {
+      if (!rel.startsWith('client/src/admin/')) continue;
+      const text = read(rel);
+      const hits = text.match(HEX) ?? [];
+      if (hits.length === 0) continue;
+      if (!DATA_OR_MOCK.has(rel)) offenders.push(`${rel} → ${hits.length} (${hits.slice(0, 4).join(' ')})`);
+    }
+    expect(offenders.join(' | ')).toBe('');
+    expect([...DATA_OR_MOCK.keys()].every((f) => fs.existsSync(path.resolve(ROOT, f))), 'l’allowlist cite des fichiers réels').toBe(true);
+  });
+});

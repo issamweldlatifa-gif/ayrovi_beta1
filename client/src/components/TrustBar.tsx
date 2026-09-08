@@ -87,7 +87,7 @@ export const TrustBar: React.FC = () => {
           return (
             <div key={index} className={`trust-bar-compact__item ${index > 0 ? 'has-divider' : ''}`}>
               <span aria-hidden="true" className="trust-bar-compact__icon">
-                <IconComponent className="h-7 w-7 lg:h-8 lg:w-8" style={{ color: item.iconColor || settings.accentColor || '#FF7A00', strokeWidth: 1.9 }} />
+                <IconComponent className="h-7 w-7 lg:h-8 lg:w-8" style={{ color: item.iconColor || settings.accentColor || 'var(--ayrovi-cta)', strokeWidth: 1.9 }} />
               </span>
               <span className="trust-bar-compact__label" style={{ color: settings.titleColor }}>{item.title}</span>
               {Boolean(item.description) && (
