@@ -506,3 +506,38 @@ describe('DataTable — capacités ajoutées pour absorber les écrans', () => {
     expect(plain).not.toContain('aria-sort');
   });
 });
+
+describe('E8/E9 — thème sombre & direction RTL', () => {
+  it('la coquille expose les commandes de thème et de direction dans l’en-tête', () => {
+    const markup = renderShell(() => <div>contenu</div>);
+    expect(markup).toContain('aria-label="Basculer le thème sombre / clair"');
+    expect(markup).toContain('title="Passer au thème sombre"');
+    expect(markup).toContain('aria-label="Basculer la direction droite-à-gauche"');
+    expect(markup).toContain('title="Basculer en arabe (RTL)"');
+  });
+
+  it('tokens.css porte un bloc sombre scopé ≥ 15 rôles et la feuille reste sans littéral actif', () => {
+    const tokens = readFileSync('client/src/design/tokens.css', 'utf8');
+    const start = tokens.indexOf("html[data-theme='dark'] {");
+    expect(start).toBeGreaterThan(-1);
+    const end = tokens.indexOf('}', start);
+    const block = tokens.slice(start, end);
+    const roles = (block.match(/--admin-[a-z-]+:/g) ?? []).length;
+    expect(roles).toBeGreaterThanOrEqual(15);
+    // le bloc sombre est placé avant les blocs clairs (voirie à plat des verrous)
+    expect(start).toBeLessThan(tokens.indexOf('--admin-ink:#17151f'));
+  });
+
+  it('la feuille admin embarque les finitions sombres et une direction logique (E9)', () => {
+    const sheet = readFileSync('client/src/admin/admin.css', 'utf8');
+    expect(sheet).toContain("html[data-theme='dark'] .admin-table td");
+    expect(sheet).toContain("html[data-theme='dark'] .admin-status-chart i");
+    // RTL par propriétés logiques (aucune règle dupliquée, aucun ton ajouté) :
+    expect(sheet).toContain('.admin-workspace { min-height: 100dvh; margin-inline-start: 260px; }');
+    expect(sheet).toContain('.admin-profile > div { position: absolute; top: calc(100% + 14px); inset-inline-end: 0;');
+    expect(sheet).toContain('.admin-timeline { border-inline-start: 1px solid var(--admin-tone-d9d3df);');
+    expect(sheet).toContain('.admin-toggle input:checked::after { inset-inline-start: 18px; }');
+    // seul le tiroir mobile reste un déplacement physique, miroiré par direction
+    expect(sheet).toContain("[dir='rtl'] .admin-sidebar { transform: translateX(100%); }");
+  });
+});
