@@ -154,7 +154,65 @@ const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = (
   );
 };
 
-const DashboardPage: React.FC = () => {
+const queueTotal = async (path: string): Promise<number | null> => {
+  try {
+    const result = await adminApi<any>(path);
+    if (result?.pagination?.total != null) return Number(result.pagination.total);
+    const rows = Array.isArray(result?.rows) ? result.rows : Array.isArray(result?.data) ? result.data : [];
+    return rows.length;
+  } catch { return null; }
+};
+
+const queueReviewCount = async (): Promise<number | null> => {
+  try {
+    const result = await adminApi<any>('/arrival-ingestion/arrivals?pageSize=100');
+    const rows = Array.isArray(result?.rows) ? result.rows : Array.isArray(result?.data) ? result.data : [];
+    return rows.filter((row: any) => String(row.status) === 'REVIEW').length;
+  } catch { return null; }
+};
+
+/**
+ * Poste de travail (Model C) — les files d'action du jour, calculées en direct
+ * depuis le backend (aucune donnée copiée côté client). Chaque carte ouvre la
+ * section correspondante, pré-filtrée quand la section le supporte.
+ */
+const WorkbenchQueues: React.FC<{ navigate: (section: string, request?: string) => void }> = ({ navigate }) => {
+  const [queues, setQueues] = useState<Array<{ key: string; label: string; sub: string; count: number | null; section: string; request?: string; icon: React.ComponentType<{ size?: number | string }> }>>([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const [deposits, fresh, support, arrivals] = await Promise.all([
+        queueTotal('/orders?status=AWAITING_PAYMENT_VERIFICATION&pageSize=1'),
+        queueTotal('/orders?status=AWAITING_DEPOSIT&pageSize=1'),
+        queueTotal('/assistant-support?status=PENDING&pageSize=1'),
+        queueReviewCount(),
+      ]);
+      if (!alive) return;
+      setQueues([
+        { key: 'deposits', label: 'Acomptes à vérifier', sub: 'Justificatifs reçus, en attente de votre décision', count: deposits, section: 'orders', request: 'AWAITING_PAYMENT_VERIFICATION', icon: ShieldCheck },
+        { key: 'fresh', label: 'Nouvelles commandes', sub: 'Acompte en attente de paiement client', count: fresh, section: 'orders', request: 'AWAITING_DEPOSIT', icon: Package },
+        { key: 'support', label: 'Questions support', sub: 'Tickets en attente de réponse', count: support, section: 'assistant-support', icon: MessageSquare },
+        { key: 'arrivals', label: 'Arrivages à valider', sub: 'Cartes CRM en révision', count: arrivals, section: 'arrival-ingestion', icon: Truck },
+      ]);
+    })();
+    return () => { alive = false; };
+  }, []);
+  if (!queues.length) return null;
+  return <section className="admin-queues">
+    <header><strong>À traiter</strong><span>Files du jour, calculées en direct</span></header>
+    <div className="admin-queues-grid">
+      {queues.map(({ key, label, sub, count, section, request, icon: Icon }) => (
+        <button key={key} type="button" className={`admin-queue-card ${count ? 'is-pending' : ''}`} onClick={() => navigate(section, request)}>
+          <Icon size={18} />
+          <div><span>{label}</span><small>{sub}</small></div>
+          <strong>{count ?? '—'}</strong>
+        </button>
+      ))}
+    </div>
+  </section>;
+};
+
+const DashboardPage: React.FC<{ navigate: (section: string, request?: string) => void }> = ({ navigate }) => {
   const [data, setData] = useState<any>(null); const [days, setDays] = useState(30); const [error, setError] = useState('');
   useEffect(() => { setData(null); adminApi<any>(`/dashboard?days=${days}`).then((result) => setData(result.data)).catch((reason) => setError(reason.message)); }, [days]);
   const maxRevenue = Math.max(...(data?.daily || []).map((row: any) => Number(row.revenue)), 1);
@@ -168,6 +226,7 @@ const DashboardPage: React.FC = () => {
   ];
   return <>
     <PageHeader title="Tableau de bord" description="L’activité AYROVI consolidée en temps réel depuis SQLite." action={<Select value={days} onChange={(event) => setDays(Number(event.target.value))} options={[{value:'7',label:'7 jours'},{value:'30',label:'30 jours'},{value:'90',label:'90 jours'},{value:'365',label:'12 mois'}]} />} />
+    <WorkbenchQueues navigate={navigate} />
     <div className="admin-metrics">{cards.map(({ label, value, change }) => <article key={label} className="admin-metric"><div><span>{label}</span><strong>{value}</strong><small className={change >= 0 ? 'positive' : 'negative'}>{change >= 0 ? '+' : ''}{change}% vs période précédente</small></div></article>)}</div>
     <div className="admin-arrival-summary"><article><span>Arrivages Standard actifs</span><strong>{data.metrics.activeStandardArrivals}</strong><Calendar /></article><article><span>Arrivages Express actifs</span><strong>{data.metrics.activeExpressArrivals}</strong><Truck /></article></div>
     <div className="admin-dashboard-grid">
@@ -276,8 +335,72 @@ const MagazinePage: React.FC<{
   </>;
 };
 
-const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite, canPay }) => {
-  const [rows, setRows] = useState<any[]>([]); const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 }); const [search, setSearch] = useState(''); const [status, setStatus] = useState(''); const [paymentStatus, setPaymentStatus] = useState('');
+/**
+ * Model C — ligne de KPIs cliquables au-dessus du tableau des commandes :
+ * chaque carte applève/retire le filtre de statut correspondant (les valeurs
+ * viennent du backend via /orders, jamais d'une copie côté client).
+ */
+const OrderKpis: React.FC<{ active: string; onSelect: (status: string) => void }> = ({ active, onSelect }) => {
+  const [kpis, setKpis] = useState<Array<{ status: string; label: string; count: number | null }>>([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const fetchCount = async (statusValue: string) => queueTotal(`/orders?${statusValue ? `status=${statusValue}&` : ''}pageSize=1`);
+      const [total, awaitingDeposit, verification, delivered, cancelled] = await Promise.all([
+        fetchCount(''), fetchCount('AWAITING_DEPOSIT'), fetchCount('AWAITING_PAYMENT_VERIFICATION'),
+        fetchCount('DELIVERED'), fetchCount('CANCELLED'),
+      ]);
+      if (!alive) return;
+      setKpis([
+        { status: '', label: 'Toutes', count: total },
+        { status: 'AWAITING_DEPOSIT', label: 'Acompte en attente', count: awaitingDeposit },
+        { status: 'AWAITING_PAYMENT_VERIFICATION', label: 'À vérifier', count: verification },
+        { status: 'DELIVERED', label: 'Livrées', count: delivered },
+        { status: 'CANCELLED', label: 'Annulées', count: cancelled },
+      ]);
+    })();
+    return () => { alive = false; };
+  }, []);
+  if (!kpis.length) return null;
+  return <div className="admin-order-kpis">
+    {kpis.map(({ status: value, label, count }) => (
+      <button key={value || 'all'} type="button" className={`admin-order-kpi ${active === value ? 'is-active' : ''}`} onClick={() => onSelect(value)}>
+        <span>{label}</span><strong>{count ?? '—'}</strong>
+      </button>
+    ))}
+  </div>;
+};
+
+const PIPELINE_STEPS: Array<{ status: string; label: string }> = [
+  { status: 'CREATED', label: 'Créée' },
+  { status: 'AWAITING_DEPOSIT', label: 'Acompte attendu' },
+  { status: 'AWAITING_PAYMENT_VERIFICATION', label: 'Vérification' },
+  { status: 'CONFIRMED', label: 'Confirmée' },
+  { status: 'PREPARING', label: 'Préparation' },
+  { status: 'SHIPPED', label: 'Expédiée' },
+  { status: 'IN_TRANSIT', label: 'En transit' },
+  { status: 'OUT_FOR_DELIVERY', label: 'En livraison' },
+  { status: 'DELIVERED', label: 'Livrée' },
+];
+
+/** Pipeline visuel de la commande (Model C) — étape courante + étapes passées. */
+const OrderPipeline: React.FC<{ status: string }> = ({ status }) => {
+  if (status === 'CANCELLED') {
+    return <div className="admin-pipeline admin-pipeline--cancelled"><AlertCircle size={16} /><span>Commande annulée — le pipeline normal ne s’applique plus.</span></div>;
+  }
+  const currentIndex = PIPELINE_STEPS.findIndex((step) => step.status === status);
+  if (currentIndex === -1) return null;
+  return <ol className="admin-pipeline">
+    {PIPELINE_STEPS.map((step, index) => (
+      <li key={step.status} className={index < currentIndex ? 'is-done' : index === currentIndex ? 'is-current' : ''} title={step.status}>
+        <i /><span>{step.label}</span>
+      </li>
+    ))}
+  </ol>;
+};
+
+const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?: string }> = ({ canWrite, canPay, initialStatus }) => {
+  const [rows, setRows] = useState<any[]>([]); const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 }); const [search, setSearch] = useState(''); const [status, setStatus] = useState(initialStatus || ''); const [paymentStatus, setPaymentStatus] = useState('');
   const [loading, setLoading] = useState(true); const [selected, setSelected] = useState<any>(null); const [detailLoading, setDetailLoading] = useState(false); const [toast, setToast] = useState<any>(null); const [busy, setBusy] = useState(false);
   const [deliveryDraft,setDeliveryDraft]=useState({status:'PENDING',carrier:'',tracking_number:'',tracking_url:''});
   const load = useCallback(async (page = 1) => { setLoading(true); try { const result = await adminApi<any>(`/orders?${queryString({ page, pageSize: 20, search, status, payment_status:paymentStatus })}`); setRows(result.data); setPagination(result.pagination); } catch (e: any) { setToast({message:e.message,tone:'error'}); } finally { setLoading(false); } }, [search,status,paymentStatus]);
@@ -291,6 +414,7 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite
   const issueInvoice=async()=>{if(!selected||busy)return;setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/issue`,{method:'POST'});await open(selected);setToast({message:`Facture ${r.data?.invoiceNumber} émise.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   return <>
     <PageHeader title="Commandes" description="OMS persistant : clients, articles, paiements, livraisons et historique immuable." action={<a className="admin-button admin-button--secondary" href="/api/admin/reports/orders.csv" target="_blank" rel="noopener noreferrer">Exporter CSV</a>} />
+    <OrderKpis active={status} onSelect={setStatus} />
     <section className="admin-list-card"><div className="admin-list-toolbar"><Search value={search} onChange={setSearch} placeholder="Référence, client ou téléphone…"/><Select value={status} onChange={(e)=>setStatus(e.target.value)} options={[{value:'',label:'Tous les statuts'},...options(['CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'])]} /><Select value={paymentStatus} onChange={(e)=>setPaymentStatus(e.target.value)} options={[{value:'',label:'Tous les paiements'},...options(['PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED'])]} /></div>
       <DataTable rows={rows} loading={loading} onRowClick={open} columns={[
         {key:'order_number',label:'Commande',render:(row)=><div><strong>{row.order_number}</strong><small className="admin-block-small">{formatDate(row.created_at,true)}</small></div>},
@@ -300,6 +424,7 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean }> = ({ canWrite
         {key:'total_tnd',label:'Total',render:(row)=><strong>{formatMoney(row.total_tnd)}</strong>},
       ]}/><Pagination {...pagination} onChange={load}/></section>
     <Modal open={Boolean(selected)} title={selected?.order_number || 'Commande'} onClose={()=>setSelected(null)} wide>{detailLoading ? <PageLoading/> : selected && <div className="admin-order-detail">
+      <OrderPipeline status={selected.status} />
       <div className="admin-order-summary"><article><span>Client</span><strong>{selected.customer_name}</strong><small>{selected.phone}</small></article><article><span>Total</span><strong>{formatMoney(selected.total_tnd)}</strong><small>{selected.payment_method}</small></article><article><span>Livraison</span><strong>{selected.governorate}</strong><small>{selected.address}</small></article></div>
       <section className="admin-list-card" style={{marginBottom:16}}>
         <h3>Snapshot CIF figé (millimes)</h3>
@@ -681,7 +806,7 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
   const { descriptorFor } = useBackOffice();
   const renderSection=(ctx:BackOfficeRenderContext)=>{
     const {section,requestedReview,pendingMagazineDraft,openMagazineDraft,clearPendingMagazineDraft,can:has}=ctx;
-  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='hero-visuals')page=<HeroVisualsPage canWrite={has('content:write')}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='trust-bar')page=<TrustBarPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
+  let page:React.ReactNode;if(section==='dashboard')page=<DashboardPage navigate={ctx.navigate}/>;else if(section==='news')page=<MagazinePage canWrite={has('content:write')} pendingDraftId={pendingMagazineDraft||undefined} onPendingHandled={clearPendingMagazineDraft}/>;else if(section==='magazine-agent')page=<MagazineAgentPage canWrite={has('content:write')} onOpenMagazine={openMagazineDraft}/>;else if(resources[section])page=<ContentPage resource={section} canWrite={has(resources[section].permission)}/>;else if(section==='arrival-ingestion')page=<ArrivalIngestionPage canWrite={has('orders:write')} canManageStores={has('settings:write')}/>;else if(section==='orders')page=<OrdersPage canWrite={has('orders:write')} canPay={has('payments:write')} initialStatus={requestedReview||undefined}/>;else if(section==='lens-requests')page=<LensRequestsPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='assistant-support')page=<AssistantSupportPage canWrite={has('orders:write')} requestedId={requestedReview||undefined}/>;else if(section==='hero-visuals')page=<HeroVisualsPage canWrite={has('content:write')}/>;else if(section==='lens-section')page=<LensSectionPage canWrite={has('content:write')}/>;else if(section==='home-sections')page=<HomeSectionsPage canWrite={has('content:write')}/>;else if(section==='trust-bar')page=<TrustBarPage canWrite={has('content:write')}/>;else if(section==='social')page=<SocialAdminPage/>;else if(section==='lens-lab')page=<LensLabPage/>;else if(section==='ai-discovery')page=<AiDiscoveryPage/>;else if(section==='customers')page=<CustomersPage canWrite={has('orders:write')}/>;else if(section==='pricing')page=<PricingPage canWrite={has('pricing:write')}/>;else if(section==='reports')page=<ReportsPage canWrite={has('reports:write')}/>;else if(section==='interface')page=<InterfaceStudio canWrite={has('settings:write')}/>;else if(section==='design')page=<DesignPage canWrite={has('settings:write')}/>;else if(section==='settings')page=<SettingsPage canWrite={has('settings:write')}/>;else if(section==='users')page=<UsersPage/>;else if(section==='audit')page=<AuditPage/>;else if(section==='catalogue-products')page=<CatalogueProductsPage/>;else if(section==='catalogue-categories')page=<CatalogueCategoriesPage/>;else if(section==='catalogue-brands')page=<CatalogueBrandsPage/>;else if(section==='erp-employees')page=<ErpEmployeesPage canManage={has('users:write')}/>;else if(section==='erp-organization')page=<ErpOrganizationPage canManage={has('users:write')}/>;else if(section==='erp-permissions')page=<ErpPermissionsPage canManage={has('users:write')} role={user.role}/>;else if(section==='erp-audit')page=<ErpAuditPage/>;else if(section==='erp-events')page=<ErpEventsPage/>;else if(section==='erp-environment')page=<ErpEnvironmentPage/>;
     else if(section==='inventory')page=<InventoryStockPage/>;
     else if(section==='inventory-movements')page=<InventoryMovementsPage/>;
     else if(section==='inventory-stocktakes')page=<InventoryStocktakesPage/>;

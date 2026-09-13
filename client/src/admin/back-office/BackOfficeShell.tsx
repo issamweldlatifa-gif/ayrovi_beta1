@@ -204,29 +204,57 @@ export const BackOfficeShell: React.FC<{
             Navigation indisponible ({error}). <button type="button" onClick={retry}>Réessayer</button>
           </p>
         )}
-        {groups.map((group) => (
-          <div key={group.label}>
-            <span>{group.label}</span>
-            {group.items.map((item) => (
-              <button key={item.section}
-                className={`${section === item.section ? 'is-active' : ''} ${item.section === 'news' ? 'is-magazine-drop-target' : ''}`.trim()}
-                onClick={() => navigate(item.section)}
-                onDragOver={item.section === 'news' ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } : undefined}
-                onDrop={item.section === 'news' ? (event) => {
-                  event.preventDefault();
-                  const draftId = event.dataTransfer.getData('application/x-ayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
-                  if (draftId.startsWith('mag_draft_')) openMagazineDraft(draftId);
-                } : undefined}
-                title={item.description}>
-                <NavIcon name={item.icon} />
-                <span>{item.label}</span>
-                {item.moduleStatus === 'legacy' && <em className="bo-tag">legacy</em>}
-                {item.canonicalOf && <em className="bo-tag bo-tag--warn">doublon</em>}
-                {section === item.section && <i />}
-              </button>
-            ))}
-          </div>
-        ))}
+        {(() => {
+          // Accès rapide (Model C) : même liste servie par le serveur — on ne
+          // recopie aucun élément, on ne réordonne que les 4 écrans du quotidien
+          // en tête de rail. Les groupes CRM/ERP passent en bloc repliable pour
+          // décharger le rail sans masquer aucun module.
+          const renderNavButton = (item: (typeof groups)[number]['items'][number]) => (
+            <button key={item.section}
+              className={`${section === item.section ? 'is-active' : ''} ${item.section === 'news' ? 'is-magazine-drop-target' : ''}`.trim()}
+              onClick={() => navigate(item.section)}
+              onDragOver={item.section === 'news' ? (event) => { event.preventDefault(); event.dataTransfer.dropEffect = 'copy'; } : undefined}
+              onDrop={item.section === 'news' ? (event) => {
+                event.preventDefault();
+                const draftId = event.dataTransfer.getData('application/x-ayrovi-magazine-draft') || event.dataTransfer.getData('text/plain');
+                if (draftId.startsWith('mag_draft_')) openMagazineDraft(draftId);
+              } : undefined}
+              title={item.description}>
+              <NavIcon name={item.icon} />
+              <span>{item.label}</span>
+              {item.moduleStatus === 'legacy' && <em className="bo-tag">legacy</em>}
+              {item.canonicalOf && <em className="bo-tag bo-tag--warn">doublon</em>}
+              {section === item.section && <i />}
+            </button>
+          );
+          const quickSections = ['dashboard', 'orders', 'customers', 'assistant-support'];
+          const quickItems = groups.flatMap((group) => group.items).filter((item) => quickSections.includes(item.section));
+          const advancedLabels = new Set(['CRM', 'ERP']);
+          return <>
+            {quickItems.length > 0 && (
+              <div className="bo-nav-quick">
+                <span>Au quotidien</span>
+                {quickItems.map(renderNavButton)}
+              </div>
+            )}
+            {groups.map((group) => {
+              if (advancedLabels.has(group.label)) {
+                return (
+                  <details key={group.label} className="bo-nav-advanced">
+                    <summary><span>{group.label}</span><em>{group.items.length}</em></summary>
+                    {group.items.map(renderNavButton)}
+                  </details>
+                );
+              }
+              return (
+                <div key={group.label}>
+                  <span>{group.label}</span>
+                  {group.items.map(renderNavButton)}
+                </div>
+              );
+            })}
+          </>;
+        })()}
         {(context?.roadmap?.length ?? 0) > 0 && (
           <div className="bo-roadmap">
             <span>Modules à venir</span>
