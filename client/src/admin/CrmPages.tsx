@@ -70,6 +70,48 @@ function useCrmMeta() {
 const CrmHeader: React.FC<{ title: string; description: string; action?: React.ReactNode }> =
   (props) => <PageHeader {...props} eyebrow="AYROVI CRM 360" />;
 
+/** Recherche une fiche CRM par nom ou référence puis enregistre son identifiant réel. */
+const PartyPicker: React.FC<{ value: string; onChange: (partyId: string) => void; required?: boolean }> = ({ value, onChange, required }) => {
+  const [query, setQuery] = useState('');
+  const [options, setOptions] = useState<Row[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => {
+      const params = new URLSearchParams({ page: '1', pageSize: '12' });
+      if (query.trim()) params.set('search', query.trim());
+      adminApi<Envelope<Row[]>>(`/crm/parties?${params}`)
+        .then((result) => { if (active) setOptions(result.data ?? []); })
+        .catch(() => { if (active) setOptions([]); });
+    }, 180);
+    return () => { active = false; window.clearTimeout(timer); };
+  }, [query]);
+
+  const labelFor = (party: Row) => `${party.party_code} — ${party.name}`;
+
+  return (
+    <>
+      <input
+        list="crm-party-picker-options"
+        required={required}
+        value={query}
+        onChange={(event) => {
+          const next = event.target.value;
+          setQuery(next);
+          const selected = options.find((party) => labelFor(party) === next);
+          if (selected) onChange(String(selected.id));
+        }}
+        placeholder={value ? 'Fiche sélectionnée — recherchez pour remplacer' : 'Rechercher par nom ou code client…'}
+        aria-label="Rechercher une fiche CRM"
+      />
+      <datalist id="crm-party-picker-options">
+        {options.map((party) => <option key={party.id} value={labelFor(party)} />)}
+      </datalist>
+      {value && <small className="admin-field__hint">Fiche liée.</small>}
+    </>
+  );
+};
+
 /* ============================================================ */
 /* Tableau de bord — KPI réels, aucune donnée de démonstration   */
 /* ============================================================ */
@@ -414,8 +456,8 @@ export const CrmContactsPage: React.FC = () => {
       <Modal open={creating || Boolean(editing)} title={editing ? 'Modifier le contact' : 'Nouveau contact'} eyebrow="AYROVI CRM 360"
         onClose={() => { setCreating(false); setEditing(null); }}>
         <div className="admin-form-grid">
-          <Field label="Identifiant de la fiche" required hint="Collé depuis la fiche (partie « Vue 360° »).">
-            <input value={form.partyId} onChange={(event) => setForm({ ...form, partyId: event.target.value })} placeholder="party_…" />
+          <Field label="Fiche liée" required hint="Recherchez la fiche à laquelle ajouter ce contact.">
+            <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} required />
           </Field>
           <Field label="Prénom"><input value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} /></Field>
           <Field label="Nom"><input value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} /></Field>
@@ -516,8 +558,8 @@ export const CrmActivitiesPage: React.FC = () => {
         <div className="admin-form-grid">
           <Field label="Nature" required><Select value={form.kind} onChange={(event) => setForm({ ...form, kind: event.target.value })}
             options={['CALL', 'MEETING', 'EMAIL', 'MESSAGE', 'VISIT', 'FOLLOW_UP', 'INTERNAL', 'OTHER'].map((value) => ({ value, label: label(value) }))} /></Field>
-          <Field label="Identifiant de la fiche" hint="Laissez vide pour une activité interne.">
-            <input value={form.partyId} onChange={(event) => setForm({ ...form, partyId: event.target.value })} placeholder="party_…" />
+          <Field label="Fiche liée" hint="Recherchez un client, fournisseur ou prospect. Laissez vide pour une activité interne.">
+            <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} />
           </Field>
           <Field label="Sujet" required full><input value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} /></Field>
           <Field label="Planifiée pour"><input type="datetime-local" value={form.scheduledAt} onChange={(event) => setForm({ ...form, scheduledAt: event.target.value })} /></Field>
@@ -632,8 +674,8 @@ export const CrmTasksPage: React.FC = () => {
       <Modal open={creating} title="Nouvelle tâche" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
           <Field label="Titre" required full><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></Field>
-          <Field label="Fiche liée" hint="Identifiant de la fiche (optionnel).">
-            <input value={form.partyId} onChange={(event) => setForm({ ...form, partyId: event.target.value })} placeholder="party_…" />
+          <Field label="Fiche liée" hint="Recherchez la fiche concernée (optionnel).">
+            <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} />
           </Field>
           <Field label="Priorité"><Select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })} options={[{ value: 'LOW', label: 'Basse' }, { value: 'NORMAL', label: 'Normale' }, { value: 'HIGH', label: 'Haute' }]} /></Field>
           <Field label="Échéance"><input type="datetime-local" value={form.dueAt} onChange={(event) => setForm({ ...form, dueAt: event.target.value })} /></Field>
@@ -727,15 +769,16 @@ export const CrmIssuesPage: React.FC = () => {
           : <Button disabled title="Ouvrir un dossier exige le grant « crm360:create »."><Plus size={14} /> Ouvrir un dossier</Button>} />
       <div className="admin-toolbar">
         <Search value={search} onChange={setSearch} placeholder="Référence, sujet…" />
-        <Select value={status} onChange={(event) => setStatus(event.target.value)} options={[{ value: '', label: 'Tous statuts' }]} />
+        <Select value={status} onChange={(event) => setStatus(event.target.value)}
+          options={[{ value: '', label: 'Tous statuts' }, ...['OPEN', 'IN_PROGRESS', 'WAITING', 'RESOLVED', 'CLOSED'].map((value) => ({ value, label: label(value) }))]} />
       </div>
       <DataTable columns={columns} rows={rows} loading={loading} error={error || undefined} onRetry={() => void load()}
         rowActions={rowActions} emptyText="Aucun dossier." />
       <Pagination {...pagination} onChange={(page) => void load(page)} />
       <Modal open={creating} title="Ouvrir un dossier" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
-          <Field label="Fiche liée" hint="Identifiant de la fiche (optionnel).">
-            <input value={form.partyId} onChange={(event) => setForm({ ...form, partyId: event.target.value })} placeholder="party_…" />
+          <Field label="Fiche liée" hint="Recherchez la fiche concernée (optionnel).">
+            <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} />
           </Field>
           <Field label="Priorité"><Select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })} options={[{ value: 'LOW', label: 'Basse' }, { value: 'NORMAL', label: 'Normale' }, { value: 'HIGH', label: 'Haute' }, { value: 'URGENT', label: 'Urgente' }]} /></Field>
           <Field label="Sujet" required full><input value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} /></Field>
