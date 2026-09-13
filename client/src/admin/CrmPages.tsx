@@ -456,8 +456,8 @@ export const CrmContactsPage: React.FC = () => {
       <Modal open={creating || Boolean(editing)} title={editing ? 'Modifier le contact' : 'Nouveau contact'} eyebrow="AYROVI CRM 360"
         onClose={() => { setCreating(false); setEditing(null); }}>
         <div className="admin-form-grid">
-          <Field label="Identifiant de la fiche" required hint="Collé depuis la fiche (partie « Vue 360° »).">
-            <input value={form.partyId} onChange={(event) => setForm({ ...form, partyId: event.target.value })} placeholder="party_…" />
+          <Field label="Fiche liée" required hint="Recherchez la fiche à laquelle ajouter ce contact.">
+            <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} required />
           </Field>
           <Field label="Prénom"><input value={form.firstName} onChange={(event) => setForm({ ...form, firstName: event.target.value })} /></Field>
           <Field label="Nom"><input value={form.lastName} onChange={(event) => setForm({ ...form, lastName: event.target.value })} /></Field>
@@ -777,8 +777,8 @@ export const CrmIssuesPage: React.FC = () => {
       <Pagination {...pagination} onChange={(page) => void load(page)} />
       <Modal open={creating} title="Ouvrir un dossier" eyebrow="AYROVI CRM 360" onClose={() => setCreating(false)}>
         <div className="admin-form-grid">
-          <Field label="Fiche liée" hint="Identifiant de la fiche (optionnel).">
-            <input value={form.partyId} onChange={(event) => setForm({ ...form, partyId: event.target.value })} placeholder="party_…" />
+          <Field label="Fiche liée" hint="Recherchez la fiche concernée (optionnel).">
+            <PartyPicker value={String(form.partyId ?? '')} onChange={(partyId) => setForm({ ...form, partyId })} />
           </Field>
           <Field label="Priorité"><Select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })} options={[{ value: 'LOW', label: 'Basse' }, { value: 'NORMAL', label: 'Normale' }, { value: 'HIGH', label: 'Haute' }, { value: 'URGENT', label: 'Urgente' }]} /></Field>
           <Field label="Sujet" required full><input value={form.subject} onChange={(event) => setForm({ ...form, subject: event.target.value })} /></Field>
