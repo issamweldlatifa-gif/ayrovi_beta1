@@ -1,7 +1,10 @@
 import { afterAll, describe, expect, test, vi } from 'vitest';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import request from 'supertest';
 import { app, db, scraper } from '../src/server';
+import { QatafoDatabase } from '../src/db/database';
 import { calculatePrice } from '../src/services/pricing';
 import { createCustomerSession, hashToken } from '../src/customer/auth';
 import { createAyrovixPriceToken } from '../src/ayrovix/priceQuote';
@@ -1308,5 +1311,45 @@ describe('AYSONIC platform', () => {
     const response = await request(app).get('/api/health');
     expect(response.status).toBe(200);
     expect(response.body.status).toBe('ok');
+  });
+
+  test('one-shot data migrations never clobber admin edits across restarts (trust bar + payment methods)', () => {
+    // Regression guard for the persistence bug: legacy "compact trust bar" /
+    // payment-methods / rebrand data migrations used to run on EVERY boot and
+    // silently reverted admin CMS edits to stale defaults after a server restart.
+    // Each migration must now run exactly once (applied_data_migrations marker).
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-persist-'));
+    const file = path.join(dir, 'restart.sqlite');
+    try {
+      // Boot 1: fresh database, seeds applied, one-shot migrations run.
+      const firstBoot = new QatafoDatabase(file);
+      const item = firstBoot.get<any>('SELECT id, title FROM trust_bar_items WHERE title=\'Authentique\'');
+      expect(item).toBeTruthy();
+      // Admin edits content from the CMS (same writes the Admin API performs).
+      firstBoot.run('UPDATE trust_bar_items SET description=? WHERE id=?', 'Description edited by admin', item.id);
+      firstBoot.run(`UPDATE settings SET setting_value='["FLOUCI","BANK_TRANSFER"]',updated_at=? WHERE setting_key='payment_methods'`, new Date().toISOString());
+      firstBoot.close();
+
+      // Boot 2: simulated server restart on the SAME file.
+      const secondBoot = new QatafoDatabase(file);
+      const afterRestart = secondBoot.get<any>('SELECT description FROM trust_bar_items WHERE id=?', item.id);
+      expect(afterRestart.description).toBe('Description edited by admin');
+      const paymentAfter = secondBoot.get<any>('SELECT setting_value FROM settings WHERE setting_key=\'payment_methods\'');
+      expect(paymentAfter.setting_value).toBe('["FLOUCI","BANK_TRANSFER"]');
+      const marker = secondBoot.get<any>('SELECT applied_at FROM applied_data_migrations WHERE key=\'trust_bar_compact_v1\'');
+      expect(marker).toBeTruthy();
+      secondBoot.close();
+
+      // Boot 3: idempotency — a further restart must not touch the data either.
+      const thirdBoot = new QatafoDatabase(file);
+      const stable = thirdBoot.get<any>('SELECT description FROM trust_bar_items WHERE id=?', item.id);
+      expect(stable.description).toBe('Description edited by admin');
+      thirdBoot.close();
+    } finally {
+      for (const suffix of ['', '-wal', '-shm']) {
+        try { fs.rmSync(file + suffix, { force: true }); } catch { /* ignore */ }
+      }
+      try { fs.rmdirSync(dir); } catch { /* ignore */ }
+    }
   });
 });

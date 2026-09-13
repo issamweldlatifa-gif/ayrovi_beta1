@@ -413,6 +413,17 @@ export class QatafoDatabase {
   }
 
   private initSchema() {
+    // Registry for one-shot DATA migrations (UPDATE/DELETE on seeded business rows).
+    // DDL migrations above are idempotent by construction, but data migrations were
+    // historically re-executed on every boot and silently overwrote admin edits
+    // (trust bar copy, payment methods, legacy rebrand) — the root cause of
+    // "content reverts to an old version after a server restart". Each key below is
+    // recorded here the first time it runs and never runs again.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS applied_data_migrations (
+      key TEXT PRIMARY KEY,
+      applied_at TEXT NOT NULL
+    );`);
+
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS customer_accounts (
         id TEXT PRIMARY KEY,
@@ -1564,8 +1575,11 @@ export class QatafoDatabase {
         ].forEach(([title, description, icon], index) => insertTrust.run(`trust_${randomUUID()}`, title, description, icon, index + 1, seededAt, seededAt));
       })();
     }
-    // COMPACT TRUST BAR: ترحيل البذر القديم إلى العناوين المختصرة وحذف العنصر الخامس
-    this.db.transaction(() => {
+    // COMPACT TRUST BAR: ترحيل البذر القديم إلى العناوين المختصرة وحذف العنصر الخامس.
+    // هجرة بيانات تُنفَّذ مرة واحدة فقط (was: re-ran on every boot and reverted
+    // any admin edit to these items to the compact defaults — fixed via the
+    // applied_data_migrations guard).
+    this.runOnceDataMigration('trust_bar_compact_v1', () => {
       const remap: Array<[string, string]> = [
         ['Produits authentiques', 'Authentique'],
         ['Dédouanement inclus', 'Dédouanement'],
@@ -1582,7 +1596,7 @@ export class QatafoDatabase {
       ];
       for (const [title, nextDescription] of descRemap) this.run('UPDATE trust_bar_items SET description=?,updated_at=? WHERE title=?', nextDescription, new Date().toISOString(), title);
       this.run("UPDATE trust_bar_settings SET background_color='#000000',updated_at=? WHERE background_color='#111217'", new Date().toISOString());
-    })();
+    });
     if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
       const seededAt = new Date().toISOString();
       const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
@@ -1702,8 +1716,12 @@ export class QatafoDatabase {
     // فهرس عمود العربون — بعد الترقية (القواعد القديمة تحصل عليه داخل إعادة البناء)
     this.ensurePricingEngine();
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC)');
-    this.db.exec(`UPDATE settings SET setting_value='["CARD","FLOUCI","BANK_TRANSFER","POSTE"]',updated_at=datetime('now')
-      WHERE setting_key='payment_methods' AND setting_value NOT LIKE '%CARD%'`);
+    // One-shot: legacy installs had no CARD option in the default payment methods.
+    // (was: re-ran on every boot, silently re-adding CARD after an admin removed it)
+    this.runOnceDataMigration('payment_methods_default_card_v1', () => {
+      this.db.exec(`UPDATE settings SET setting_value='["CARD","FLOUCI","BANK_TRANSFER","POSTE"]',updated_at=datetime('now')
+        WHERE setting_key='payment_methods' AND setting_value NOT LIKE '%CARD%'`);
+    });
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_cart_account ON cart_items(account_id, updated_at DESC);
       CREATE INDEX IF NOT EXISTS idx_orders_account ON orders(account_id, created_at DESC);
@@ -2005,6 +2023,26 @@ export class QatafoDatabase {
     if (!columns.some((item) => item.name === column)) this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
 
+  /**
+   * Run a one-shot data migration at most once per database file.
+   *
+   * The migration body and the marker insert commit in a single transaction, so a
+   * crash between them simply re-runs the migration on the next boot (all bodies
+   * are safe to re-apply). Without this guard the legacy UPDATE/DELETE statements
+   * used to run on EVERY startup and clobber values that admins had edited in the
+   * CMS between boots.
+   */
+  private runOnceDataMigration(key: string, work: () => void): void {
+    const alreadyApplied = this.get<any>('SELECT 1 AS applied FROM applied_data_migrations WHERE key=?', key);
+    if (alreadyApplied) return;
+    this.db.transaction(() => {
+      work();
+      this.run('INSERT OR IGNORE INTO applied_data_migrations (key, applied_at) VALUES (?,?)',
+        key, new Date().toISOString());
+    })();
+    console.info(`[database] data migration applied (one-shot): ${key}`);
+  }
+
   private ensurePricingEngine() {
     this.ensureColumn('pricing_config', 'exchange_buffer_percent', 'REAL NOT NULL DEFAULT 3');
     this.ensureColumn('pricing_config', 'freight_per_kg_tnd', 'REAL NOT NULL DEFAULT 13');
@@ -2033,14 +2071,23 @@ export class QatafoDatabase {
       insert.run(category.id, category.label, JSON.stringify(category.keywords), category.customsRate,
         category.tvaRate, category.defaultWeightKg, category.status, index + 1, now);
     });
-    this.db.exec(`UPDATE settings SET setting_value='AYROVI',updated_at='${now}'
-      WHERE setting_key IN ('company_name','company_legal_name') AND setting_value='AYSONIC'`);
-    this.db.exec(`UPDATE admin_users SET name='AYROVI Admin',updated_at='${now}' WHERE name='AYSONIC Admin'`);
+    // One-shot legacy rebrand (was: executed on every boot).
+    this.runOnceDataMigration('rebrand_aysonic_legacy_v1', () => {
+      this.db.exec(`UPDATE settings SET setting_value='AYROVI',updated_at='${now}'
+        WHERE setting_key IN ('company_name','company_legal_name') AND setting_value='AYSONIC'`);
+      this.db.exec(`UPDATE admin_users SET name='AYROVI Admin',updated_at='${now}' WHERE name='AYSONIC Admin'`);
+    });
     this.rebrandNoirOrangePalette();
   }
 
   /** Public chrome: 70% white / 25% black / 5% orange. Rewrites old purple/yellow/orange-wash defaults. */
   private rebrandNoirOrangePalette() {
+    // One-shot legacy palette rewrite. (was: executed on every boot, so an admin
+    // theme edit containing any legacy color value was silently reverted on restart)
+    this.runOnceDataMigration('rebrand_noir_orange_v1', () => this.applyNoirOrangePalette());
+  }
+
+  private applyNoirOrangePalette(): void {
     const now = new Date().toISOString();
     const wash = new Set(['#ffb070', '#fbbf24', '#fe7003', '#f7c948']);
     const paint = (raw: string) => {

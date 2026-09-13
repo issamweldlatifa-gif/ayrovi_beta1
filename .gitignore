@@ -17,3 +17,6 @@ uploads/
 .config/
 .local/
 *.traineddata
+
+# état des tests E2E locaux (regénéré à chaque exécution)
+verify/.e2e-marker.json

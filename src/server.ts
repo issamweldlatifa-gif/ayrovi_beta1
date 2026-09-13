@@ -151,6 +151,14 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
+// Persistence guardrail: in production a relative DATABASE_PATH usually means the
+// SQLite file sits on the ephemeral container filesystem — every deploy/restart
+// would then boot a fresh database and orders/CMS content would appear "lost".
+if (process.env.NODE_ENV === 'production' && databasePath && !path.isAbsolute(databasePath)) {
+  console.warn(`[database] WARNING: DATABASE_PATH=${databasePath} is relative in production. ` +
+    'Point it at an ABSOLUTE path on persistent storage (Render: /opt/render/project/src/data/qatafo.sqlite), ' +
+    'otherwise the database is lost on restart.');
+}
 // ERP Core foundation (P1): sequences, employees, audit columns, permission grants,
 // event log, notification payload columns. Idempotent, additive only, never drops anything.
 const erpCoreBoot = bootstrapErpCore(db);

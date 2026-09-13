@@ -108,7 +108,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   };
 
   router.get('/commerce-config', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({ success: true, data: commerceConfig(), serverTime: new Date().toISOString() });
   });
 
@@ -132,20 +132,20 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   });
 
   router.get('/announcement-messages', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const rows = db.all<any>(`SELECT id,text FROM announcement_messages WHERE active=1 ORDER BY display_order,id`);
     res.json({ success: true, data: rows });
   });
 
   /** Visual الـ Hero النشط — المجدول الصالح حالياً، وإلا آخر منشور، وإلا الافتراضي */
   router.get('/hero/active', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=30, stale-while-revalidate=60');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({ success: true, data: resolveActiveHeroVisual(db) });
   });
 
   /** AYROVIX LENS HERO — إعدادات عامة (خلفية/محتوى) — كل المحتوى من الـ Dashboard */
   router.get('/lens-hero', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const row = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
     res.json({ success: true, data: row ? {
       eyebrow: row.eyebrow, title: row.title, description: row.description,
@@ -171,7 +171,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   /** محتوى الـ Hero (عنوان/وصف/CTA) — الـ Visual يبقى في /hero/active */
   router.get('/hero-content', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const row = db.get<any>("SELECT * FROM hero_content_settings WHERE id='global'");
     res.json({ success: true, data: row ? {
       eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
@@ -182,14 +182,14 @@ export function createPublicRouter(db: QatafoDatabase): Router {
 
   /** ترتيب وإظهار كتل الصفحة الرئيسية */
   router.get('/home-blocks', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const rows = db.all<any>('SELECT id,sort_order sortOrder,visible FROM home_blocks ORDER BY sort_order,id');
     res.json({ success: true, data: rows.map((row) => ({ id: row.id, sortOrder: row.sortOrder, visible: Boolean(row.visible) })) });
   });
 
   /** AYROVI Trust Bar — العناصر المفعّلة + الإعدادات العامة */
   router.get('/trust-bar', (_req, res) => {
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     const settings = db.get<any>(`SELECT * FROM trust_bar_settings WHERE id='global'`);
     const items = db.all<any>(`SELECT title,description,icon,title_color titleColor,description_color descriptionColor,icon_color iconColor
       FROM trust_bar_items WHERE enabled=1 ORDER BY sort_order,id`);
@@ -282,7 +282,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       ('company_name','company_phone','company_email','delivery_delay','governorates','payment_methods')`);
     const facts: Record<string, any> = {};
     for (const row of settings) facts[row.setting_key] = row.value_type === 'JSON' ? parseJson(row.setting_value) : row.setting_value;
-    res.setHeader('Cache-Control', 'public, max-age=60, stale-while-revalidate=300');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({ success: true, data: {
       serverTime: now,
       pricing: {
