@@ -85,7 +85,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   // d'accueil ; on mesure donc le Hero, le Trust Bar et l'écran LENS ouvert.
   for (const [selector, name] of [
     ['.interface-hero, [data-public-section="hero"]', 'section Hero'],
-    ['[class*="trust-bar"]', 'Trust Bar'],
+    ['.stories-showcase', 'conteneur Stories'],
     ['.lens-feature', 'section LENS (bloc éditorial)'],
   ]) {
     const node = page.locator(selector).first();

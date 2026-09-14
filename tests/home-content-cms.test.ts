@@ -13,10 +13,11 @@ let csrf = '';
 
 const appSource = readFileSync('client/src/App.tsx', 'utf8');
 /**
- * P4/T2 : `LensHero.tsx` et `BrandsShowcase.tsx` ont été SUPPRIMÉS du projet —
- * la page d'accueil se limite au Hero + Trust Bar. Les verrous qui lisaient leur
- * source sont retirés ; ce qui reste à verrouiller, c'est que le contenu publié
- * vient bien de la base (API) et que le Hero ne contient toujours aucun texte figé.
+ * P4/T2 : `LensHero.tsx`, `BrandsShowcase.tsx` puis `TrustBar.tsx` ont été SUPPRIMÉS
+ * du projet — la page d'accueil se limite au Hero, au conteneur Stories et au bloc
+ * LENS. Les verrous qui lisaient leur source sont retirés ; ce qui reste à verrouiller,
+ * c'est que le contenu publié vient bien de la base (API) et que le Hero ne contient
+ * toujours aucun texte figé.
  */
 const heroSource = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
@@ -150,7 +151,7 @@ describe('AYROVI mobile width-first layout rule', () => {
     expect(indexCss).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*?\.brands-marquee__track \{ animation: brandsMarquee 48s linear infinite;/);
   });
 
-  test('the homepage ends at the Trust Bar — no footer or content rendered below it', () => {
+  test('the homepage ends at its own sections — no footer or content below them', () => {
     // الفوتر مستثنى من أقسام الصفحة الرئيسية المعروضة
     expect(appSource).toContain("!['brands', 'about', 'footer'].includes(section.id)");
     // قسم الـhero يُغلق بدون padding سفلي حتى تنتهي الصفحة عند LENS

@@ -25,6 +25,17 @@ All notable AYROVI changes are recorded in this file.
 - `PUBLIC_UPLOAD_DIRS` widened from `['hero']` to `['hero', 'lens']` — `data/uploads/lens/` is the new public home for LENS videos. The allow-list remains closed and default-deny; the three governance tests that lock it were updated to the new explicit list.
 
 ### Added
+- **Stories container on the home page (reference: Zalando « Stories sur … »).** A titled container placed between the Hero and the LENS block: title + subtitle → a row of **4 or 5 cards of strictly identical dimensions** (equal-column grid, fixed 9/16 thumbnails) → the action link **centred in the middle of the container**. Tapping a card opens the story viewer; the centred link opens the Stories tab unless a destination is configured. Every field is dashboard-driven from **Stories Studio → Bloc d'accueil** (`/api/public/stories-showcase`): title, subtitle, link label, link destination (internal path or https URL, validated), number of cards (4 or 5, bounded) and visibility. The block hides itself when no story is currently published, rather than showing an empty frame.
+- `client/src/components/StoriesShowcase.tsx` + its CSS block in `client/src/index.css`, and the `stories_showcase_settings` table with `GET/PUT /api/admin/stories-showcase` and `GET /api/public/stories-showcase`.
+- `tests/stories-showcase.test.ts` (13 locks): no frozen copy in the component, card count bounded to 4/5, unsafe link destinations rejected, Trust Bar gone from the page *and* the project, strictly identical card dimensions, centred link, comfortable section gap, and the Zalando charter (monochrome container, orange used exactly once — on the action arrow; unseen stories are marked with ink, not orange).
+
+### Removed
+- **The public Trust Bar is deleted for good** (`client/src/components/TrustBar.tsx`, `git rm`) and no longer rendered on the home page. The home page is now Hero → Stories container → LENS block. The admin screen (CONTENU → Trust Bar) and its API are left in place for now — say the word and they go too.
+
+### Changed
+- Orange coverage after this change: Stories container 1.24–1.77% (the measured pixels come from the story photos themselves; the CSS contributes only the arrow), home page 0.71–0.91%, LENS block 0.004–0.016% — max **1.77%** against the 3% budget. Suite: 703/703 passing, typecheck and build green.
+
+### Added
 - `client/src/styles/zalando-ui.css`: reusable charter primitives (`.ay-surface-card`, `.ay-surface-plain`, `.ay-badge`, `.ay-icon-action`, `.ay-cta-primary`/`.ay-btn-cta`, `.ay-accent-rule`, `.ay-step`), with zero colour literal — every value comes from `tokens.css`.
 - `tests/design-zalando.test.ts` (20 tests): locks the six tokens, the single orange bearer, the absence of any legacy orange literal, the neutralised LENS surfaces and transition card, and a closed allowlist plus numeric ceiling for the remaining `bg-cta`/`bg-accent` usages.
 - `verify/zalando-audit.mjs` (`npm run audit:design`): loads the real page and **counts orange pixels**, failing when any screen exceeds the 3% charter budget. Before/after evidence screenshots are committed under `verify/`.

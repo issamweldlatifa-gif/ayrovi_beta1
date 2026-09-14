@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp } from '../components/QatafoIcons';
 import { adminApi } from './api';
-import { Button, DataTable, Field, Modal, StatusBadge } from './components';
+import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
 
 const KNOWN_CATEGORIES = ['ARRIVAGE', 'NEW', 'STYLE', 'INFO', 'PROMO'];
 const CHANNELS = [
@@ -77,6 +77,77 @@ const NewPublisherRow: React.FC<{ onChanged: () => void }> = ({ onChanged }) => 
 };
 
 /** Gestion complète des Stories : création, édition, upload média, publication, stats. */
+/**
+ * BLOC D'ACCUEIL STORIES — le conteneur affiché sur la page d'accueil
+ * (référence Zalando : titre + sous-titre → 4-5 cartes de mêmes dimensions →
+ * lien d'action centré). Tout se règle ici ; le site ne contient aucun texte figé.
+ */
+const ShowcaseBlock: React.FC = () => {
+  const [draft, setDraft] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+
+  const load = useCallback(() => {
+    adminApi<any>('/stories-showcase')
+      .then((result) => setDraft(result.data || null))
+      .catch(() => setMessage('Impossible de charger les réglages du bloc.'));
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const patch = (changes: Record<string, unknown>) => setDraft((current: any) => ({ ...current, ...changes }));
+
+  const save = async () => {
+    if (!draft) return;
+    setBusy(true); setMessage('');
+    try {
+      const result = await adminApi<any>('/stories-showcase', {
+        method: 'PUT',
+        body: JSON.stringify({
+          title: draft.title, subtitle: draft.subtitle, ctaLabel: draft.ctaLabel,
+          ctaUrl: draft.ctaUrl, cardCount: Number(draft.cardCount) || 4, enabled: Boolean(draft.enabled),
+        }),
+      });
+      setDraft(result.data || draft);
+      setMessage('Bloc Stories enregistré — visible immédiatement sur la page d’accueil.');
+    } catch (e: any) { setMessage(e?.message || 'Enregistrement impossible.'); }
+    finally { setBusy(false); }
+  };
+
+  if (!draft) return null;
+
+  return (
+    <section className="admin-card">
+      <h3>Bloc d’accueil — le conteneur Stories</h3>
+      <p className="admin-block-small">
+        C’est le conteneur affiché sur la page d’accueil : le titre, une ligne de cartes
+        <strong> toutes de la même taille</strong>, puis le lien d’action centré au milieu.
+        Les cartes affichent les stories publiées, groupées par canal (les plus prioritaires d’abord).
+      </p>
+      <div className="admin-form" style={{ marginTop: 10 }}>
+        <Field label="Titre du conteneur"><input value={draft.title || ''} onChange={(e) => patch({ title: e.target.value })} maxLength={80} /></Field>
+        <Field label="Sous-titre"><input value={draft.subtitle || ''} onChange={(e) => patch({ subtitle: e.target.value })} maxLength={160} /></Field>
+        <Field label="Nombre de cartes" hint="Toutes les cartes gardent strictement les mêmes dimensions." >
+          <select value={String(draft.cardCount || 4)} onChange={(e) => patch({ cardCount: Number(e.target.value) })}>
+            <option value="4">4 stories</option>
+            <option value="5">5 stories</option>
+          </select>
+        </Field>
+        <Field label="Libellé du lien central"><input value={draft.ctaLabel || ''} onChange={(e) => patch({ ctaLabel: e.target.value })} maxLength={60} /></Field>
+        <Field label="Destination du lien central" hint="Vide = ouvre l’onglet Stories. Sinon : /stories, /promotions, ou une URL https://…">
+          <input value={draft.ctaUrl || ''} onChange={(e) => patch({ ctaUrl: e.target.value })} placeholder="/stories" />
+        </Field>
+        <Field label="Afficher le bloc" full>
+          <Switch checked={Boolean(draft.enabled)} onLabel="Bloc visible" offLabel="Bloc masqué" onChange={() => patch({ enabled: !draft.enabled })} />
+        </Field>
+      </div>
+      <div className="admin-actions">
+        <Button busy={busy} onClick={() => void save()}>Enregistrer le bloc</Button>
+        {message ? <span className="admin-block-small">{message}</span> : null}
+      </div>
+    </section>
+  );
+};
+
 export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onEditContent }) => {
   const [rows, setRows] = useState<any[]>([]);
   const [stats, setStats] = useState<Record<string, any>>({});
@@ -192,7 +263,9 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
       </header>
       {error && <div className="admin-error">{error}</div>}
 
-      <section className="admin-card">
+      <ShowcaseBlock />
+
+      <section className="admin-card" style={{ marginTop: 14 }}>
         <DataTable
           minWidth={860}
           emptyText="Aucune story — créez la première avec « Nouvelle story »."

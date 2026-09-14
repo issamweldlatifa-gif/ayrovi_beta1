@@ -255,6 +255,21 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: rows, serverTime: now });
   });
 
+  /** Bloc « Stories » de la page d'accueil — réglages du conteneur (Admin → Stories). */
+  router.get('/stories-showcase', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const row = db.get<any>("SELECT * FROM stories_showcase_settings WHERE id='global'");
+    res.json({ success: true, data: row ? {
+      title: row.title,
+      subtitle: row.subtitle,
+      ctaLabel: row.cta_label,
+      ctaUrl: row.cta_url || '',
+      cardCount: Math.min(5, Math.max(4, Number(row.card_count ?? 4))),
+      enabled: Boolean(row.enabled),
+      sortOrder: Number(row.sort_order ?? 0),
+    } : null });
+  });
+
   router.get('/news', (req, res) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 50);
     const now = new Date().toISOString();

@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
-import { TrustBar } from './components/TrustBar';
+import { StoriesShowcase } from './components/StoriesShowcase';
 import { LensFeature } from './components/LensFeature';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
@@ -428,9 +428,13 @@ export const App: React.FC = () => {
       if (section.id === 'hero') content = (
         <>
           <EvergreenHero />
-          <TrustBar />
-          {/* قسم LENS التحريري (مرجع Zalando) — العنوان والفيديو من الـ Dashboard.
-              يوضع بعد شريط الثقة مباشرة، بمسافة رأسية مريحة (--lens-feature-gap). */}
+          {/* حاوية Stories (مرجع Zalando) — العنوان والعنوان الفرعي ورابط الوسط
+              وعدد البطاقات (4 أو 5) كلها من الـ Dashboard. */}
+          <StoriesShowcase
+            isAuthenticated={Boolean(customerSession)}
+            onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
+          />
+          {/* قسم LENS التحريري (مرجع Zalando) — العنوان والفيديو من الـ Dashboard. */}
           <LensFeature onOpenLens={handleOpenLens} />
         </>
       );

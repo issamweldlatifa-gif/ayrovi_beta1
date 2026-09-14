@@ -1455,6 +1455,25 @@ export class QatafoDatabase {
     this.ensureColumn('lens_hero_settings', 'video_muted', 'INTEGER NOT NULL DEFAULT 1');
     this.ensureColumn('lens_hero_settings', 'video_loop', 'INTEGER NOT NULL DEFAULT 1');
 
+    // Bloc « Stories » de la page d'accueil (référence Zalando) : un conteneur
+    // titré qui présente 4 ou 5 stories de mêmes dimensions, avec un lien
+    // d'action centré. Titre, sous-titre, lien et nombre de cartes sont pilotés
+    // depuis Admin → Stories → Bloc d'accueil — rien n'est figé dans le code.
+    this.db.exec(`CREATE TABLE IF NOT EXISTS stories_showcase_settings (
+      id TEXT PRIMARY KEY CHECK(id='global'),
+      title TEXT NOT NULL DEFAULT 'Social AYROVI',
+      subtitle TEXT NOT NULL DEFAULT 'Le meilleur de la semaine',
+      cta_label TEXT NOT NULL DEFAULT 'Explorer toutes les stories',
+      cta_url TEXT NOT NULL DEFAULT '',
+      card_count INTEGER NOT NULL DEFAULT 4 CHECK(card_count IN (4,5)),
+      enabled INTEGER NOT NULL DEFAULT 1,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      updated_at TEXT NOT NULL
+    );`);
+    if (!(this.db.prepare("SELECT COUNT(*) AS count FROM stories_showcase_settings WHERE id='global'").get() as { count: number }).count) {
+      this.run("INSERT INTO stories_showcase_settings (id,updated_at) VALUES ('global',?)", new Date().toISOString());
+    }
+
     // LENS v2 — المحتوى الموسّع (mini-features / AI card / phone merchants / steps / banner)
     // يُخزَّن JSON في عمود واحد ويُدار من الـ Dashboard؛ الواجهة تعرضه فقط (لا نص ثابت في الكود).
     this.ensureColumn('lens_hero_settings', 'sections_json', "TEXT NOT NULL DEFAULT '{}'");

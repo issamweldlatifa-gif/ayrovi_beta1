@@ -703,6 +703,57 @@ export function createAdminRouter(
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
   });
 
+  /* ==================== STORIES — بلوك الصفحة الرئيسية (مرجع Zalando) ==================== */
+  /**
+   * Le conteneur « Stories » de la page d'accueil : titre, sous-titre, libellé et
+   * destination du lien central, nombre de cartes (4 ou 5), visibilité.
+   */
+  router.get('/stories-showcase', requireAdmin(db, 'content:read'), (_req, res) => {
+    const row = db.get<any>("SELECT * FROM stories_showcase_settings WHERE id='global'");
+    if (!row) return res.status(404).json({ success: false, error: 'Réglages du bloc Stories introuvables.' });
+    res.json({ success: true, data: {
+      title: row.title, subtitle: row.subtitle, ctaLabel: row.cta_label, ctaUrl: row.cta_url || '',
+      cardCount: Math.min(5, Math.max(4, Number(row.card_count ?? 4))),
+      enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 0), updatedAt: row.updated_at,
+    } });
+  });
+
+  router.put('/stories-showcase', requireAdmin(db, 'content:write'), async (req, res) => {
+    const existing = db.get<any>("SELECT * FROM stories_showcase_settings WHERE id='global'");
+    if (!existing) return res.status(404).json({ success: false, error: 'Réglages du bloc Stories introuvables.' });
+
+    let ctaUrl = existing.cta_url || '';
+    if (req.body.ctaUrl !== undefined) {
+      const raw = String(req.body.ctaUrl ?? '').trim();
+      if (!raw) ctaUrl = '';
+      else {
+        try { ctaUrl = normalizeCtaUrl(raw); }
+        catch { return res.status(400).json({ success: false, error: 'Destination invalide — URL https://… ou chemin interne /…' }); }
+      }
+    }
+
+    const text = (value: unknown, fallback: string, max: number) => String(value ?? fallback).slice(0, max);
+    const cardCount = Math.min(5, Math.max(4, Number(req.body.cardCount ?? existing.card_count ?? 4) || 4));
+
+    db.run(`UPDATE stories_showcase_settings SET title=?,subtitle=?,cta_label=?,cta_url=?,card_count=?,enabled=?,sort_order=?,updated_at=? WHERE id='global'`,
+      text(req.body.title, existing.title, 80) || existing.title,
+      text(req.body.subtitle, existing.subtitle, 160),
+      text(req.body.ctaLabel, existing.cta_label, 60),
+      ctaUrl,
+      cardCount,
+      req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
+      Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
+      new Date().toISOString());
+    audit(db, req, 'UPDATE', 'STORIES_SHOWCASE', 'global', null, null);
+
+    const row = db.get<any>("SELECT * FROM stories_showcase_settings WHERE id='global'");
+    res.json({ success: true, data: {
+      title: row.title, subtitle: row.subtitle, ctaLabel: row.cta_label, ctaUrl: row.cta_url || '',
+      cardCount: Number(row.card_count), enabled: Boolean(row.enabled),
+      sortOrder: Number(row.sort_order ?? 0), updatedAt: row.updated_at,
+    } });
+  });
+
   /* ==================== HERO CONTENT — العنوان/الوصف/CTA من الـ Dashboard ==================== */
   const heroContentRowForApi = (row: any) => (row ? {
     eyebrow: row.eyebrow, title: row.title, highlight: row.highlight, description: row.description,
