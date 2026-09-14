@@ -42,14 +42,18 @@ async function coverage(png, label) {
 const browser = await chromium.launch();
 const report = [];
 
-/** Ouvre le tiroir AYROVIX LENS depuis le CTA de la section v2 et mesure l'écran obtenu. */
+/**
+ * Ouvre AYROVIX LENS et mesure l'écran obtenu.
+ * P4/T2 : la section v2 ne fait plus partie de la page d'accueil, LENS s'ouvre
+ * désormais depuis la navigation basse (bouton « Lens — recherche par image »).
+ */
 async function measureLensScreen(page, tag) {
-  const cta = page.locator('.lens2__cta').first();
+  const cta = page.locator('.ayrovi-glass-bottom-nav button[aria-label*="Lens"]').first();
   if (!(await cta.count())) return { label: `écran LENS — ${tag}`, absent: true };
-  await cta.scrollIntoViewIfNeeded();
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.waitForTimeout(400);
   await cta.click();
-  await page.waitForTimeout(2200);
+  await page.waitForTimeout(2500);
   const opened = await page.locator('.lens-home, .lens-drop').count();
   if (!opened) return { label: `écran LENS — ${tag}`, absent: true };
   const file = `${OUT}/zalando-lens-screen-${tag}.png`;
@@ -76,14 +80,16 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   await page.screenshot({ path: file, fullPage: true });
   report.push(await coverage(file, `accueil ${tag} (page entière)`));
 
-  // sections nommées par le cahier des charges
+  // surfaces nommées par le cahier des charges.
+  // P4/T2 : `.lens2` et la carte « Découvrez AYROVI » ont été retirés de la page
+  // d'accueil ; on mesure donc le Hero, le Trust Bar et l'écran LENS ouvert.
   for (const [selector, name] of [
-    ['.lens2', 'section LENS v2'],
-    ['.transition-card-fade', 'carte « Découvrez AYROVI »'],
+    ['.interface-hero, [data-public-section="hero"]', 'section Hero'],
+    ['[class*="trust-bar"]', 'Trust Bar'],
   ]) {
     const node = page.locator(selector).first();
     if (await node.count()) {
-      const sectionFile = `${OUT}/zalando-${selector.replace(/[^a-z0-9]/gi, '')}-${tag}.png`;
+      const sectionFile = `${OUT}/zalando-${name.replace(/[^a-z0-9]/gi, '')}-${tag}.png`;
       await node.screenshot({ path: sectionFile }).catch(() => undefined);
       report.push(await coverage(sectionFile, `${name} — ${tag}`));
     } else {

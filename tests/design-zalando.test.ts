@@ -214,10 +214,24 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
     expect(beam).toMatch(/background:\s*var\(--ayrovi-white\)/);
   });
 
-  test('la carte « Découvrez AYROVI » est une surface, pas un aplat orange', () => {
-    const source = read('client/src/components/TransitionCard.tsx');
-    expect(source).toMatch(/ay-surface-card/);
-    expect(source).not.toMatch(/bg-\[#FF7A00\]|bg-\[#ff7a00\]/);
+  /**
+   * P4/T2 : la carte « Découvrez AYROVI » (bloc `transition`) a été SUPPRIMÉE du
+   * projet avec `BrandsShowcase` et `LensHero` — la page d'accueil se limite au
+   * Hero + Trust Bar. La règle qu'elle portait (surface grise + filet 3px) est
+   * désormais portée par la primitive `.ay-surface-card`, verrouillée ci-dessous.
+   */
+  test('les anciens blocs oranges de la page d’accueil ont bien été retirés', () => {
+    for (const gone of [
+      'client/src/components/TransitionCard.tsx',
+      'client/src/components/BrandsShowcase.tsx',
+      'client/src/components/LensHero.tsx',
+    ]) {
+      expect(fs.existsSync(path.resolve(ROOT, gone)), `${gone} doit avoir été supprimé`).toBe(false);
+    }
+    // le mécanisme de blocs reste branché mais ne rend plus rien
+    expect(read('client/src/App.tsx')).toMatch(/DEFAULT_HOME_BLOCKS:\s*string\[\]\s*=\s*\[\]/);
+    // et la règle de surface qu'ils portaient vit dans les primitives, pas dans un composant
+    expect(withoutComments(read(PRIMITIVES))).toMatch(/\.ay-surface-card\s*\{[^}]*--ayrovi-bg-surface/);
   });
 });
 

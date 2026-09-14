@@ -6,6 +6,28 @@ import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';
 
 /**
+ * ⚠️ CONSERVÉ VOLONTAIREMENT — NON RENDU (décision produit du 2026-09-14).
+ *
+ * La page d'accueil se limite désormais au Hero + Trust Bar. Ce composant a été
+ * retiré de l'arbre de rendu (`client/src/App.tsx`) mais **le fichier reste au
+ * projet** : sa logique d'onglets doit être réemployée plus tard.
+ *
+ * Ce qu'il contient et qui a de la valeur :
+ *   • `TABS` + l'état `active` : un rail d'onglets à un seul panneau actif ;
+ *   • `onKeyDown` : navigation clavier (ArrowLeft/ArrowRight/Home/End) et le
+ *     modèle `tabIndex` 0/−1 correct pour un `role="tablist"` ;
+ *   • `refs` + `scrollIntoView` : l'onglet actif reste visible dans un rail
+ *     à défilement horizontal ;
+ *   • `useNavigationHistory()` : chaque onglet ouvre une vue applicative
+ *     (arrivages / promotions / magazine) via la pile de navigation ;
+ *   • `key={active}` sur le panneau : remontage propre à chaque changement.
+ *
+ * Pour le réactiver : réimporter le composant et ajouter son identifiant à
+ * `DEFAULT_HOME_BLOCKS` dans `client/src/App.tsx`.
+ *
+ * NE PAS SUPPRIMER ce fichier comme « code mort ».
+ *
+ * ─────────────────────────────────────────────────────────────────────────
  * DISCOVERY HUB — منطقة اكتشاف واحدة ديناميكية تحت البطاقة البرتقالية
  * (فجوة مقصودة 56px فوقها). خلفية الصفحة البيضاء كما هي.
  * أربعة أبعاد مختلفة: منتجات / عرض / مجتمع / تحريري — Preview فقط ثم Explore.

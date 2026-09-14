@@ -12,13 +12,15 @@ const admin = request.agent(app);
 let csrf = '';
 
 const appSource = readFileSync('client/src/App.tsx', 'utf8');
-const lensSource = readFileSync('client/src/components/LensHero.tsx', 'utf8');
-const brandsSource = readFileSync('client/src/components/BrandsShowcase.tsx', 'utf8');
+/**
+ * P4/T2 : `LensHero.tsx` et `BrandsShowcase.tsx` ont été SUPPRIMÉS du projet —
+ * la page d'accueil se limite au Hero + Trust Bar. Les verrous qui lisaient leur
+ * source sont retirés ; ce qui reste à verrouiller, c'est que le contenu publié
+ * vient bien de la base (API) et que le Hero ne contient toujours aucun texte figé.
+ */
 const heroSource = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
 
-const headingIndex = brandsSource.indexOf('brands-heading');
-const railIndex = brandsSource.indexOf('brands-rail');
 
 describe('Dashboard is the single source of truth for Hero, LENS and home sections', () => {
   test('super admin authenticates', async () => {
@@ -125,13 +127,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(rejected.status).toBe(400);
   });
 
-  test('no LENS or Hero copy is hardcoded in the frontend', () => {
-    expect(lensSource).not.toContain('Analysez. Comparez. Achetez mieux.');
-    expect(lensSource).not.toContain('Fiable. Rapide. Intelligent.');
-    expect(lensSource).not.toContain('Sneakers');
-    expect(lensSource).not.toContain('298,900');
-    expect(lensSource).toContain("fetch('/api/public/lens-hero')");
-
+  test('no Hero copy is hardcoded in the frontend', () => {
     expect(heroSource).not.toContain('Vous le voyez.');
     expect(heroSource).not.toContain('vous le livre.');
     expect(heroSource).not.toContain('Mode, beauté, technologie');
@@ -140,19 +136,6 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
 });
 
 describe('AYROVI mobile width-first layout rule', () => {
-  test('the brands heading is a static block placed above and outside the slider', () => {
-    expect(headingIndex).toBeGreaterThan(-1);
-    expect(railIndex).toBeGreaterThan(-1);
-    expect(headingIndex).toBeLessThan(railIndex);
-    // العنوان والوصف داخل brands-heading وليس داخل brands-rail
-    const headingBlock = brandsSource.slice(headingIndex, railIndex);
-    expect(headingBlock).toContain('Les marques que vous aimez.');
-    expect(headingBlock).toContain('Découvrez les marques et boutiques disponibles avec AYROVI.');
-    const railBlock = brandsSource.slice(railIndex);
-    expect(railBlock).not.toContain('Les marques que vous aimez.');
-    expect(brandsSource).toContain('className="brands-rail"');
-  });
-
   test('the slider reaches the screen edges and stays swipeable on mobile', () => {
     // gap ثابت 16px بين البطاقات
     expect(indexCss).toContain('--ay-rail-gap: 16px;');
@@ -167,27 +150,7 @@ describe('AYROVI mobile width-first layout rule', () => {
     expect(indexCss).toMatch(/@media \(min-width: 1024px\) \{[\s\S]*?\.brands-marquee__track \{ animation: brandsMarquee 48s linear infinite;/);
   });
 
-  test('the heading block uses a 24px reading gutter with the specified type scale', () => {
-    expect(indexCss).toContain('--ay-gutter: 24px;');
-    expect(indexCss).toMatch(/\.brands-heading \{ padding-inline: var\(--ay-gutter\); text-align: left; \}/);
-    expect(indexCss).toMatch(/\.brands-heading__title \{[\s\S]*?max-width: 90%;[\s\S]*?font-size: 34px;[\s\S]*?line-height: 1\.08;/);
-    expect(indexCss).toMatch(/\.brands-heading__subtitle \{[\s\S]*?margin: var\(--ay-heading-to-text\) 0 0;[\s\S]*?font-size: 17\.5px;[\s\S]*?line-height: 1\.45;/);
-    expect(indexCss).toContain('--ay-heading-to-text: 16px;');
-    expect(indexCss).toContain('--ay-heading-to-slider: 32px;');
-    expect(indexCss).toMatch(/\.brands-rail \{[^}]*margin-top: var\(--ay-heading-to-slider\)/);
-  });
-
-  test('LENS v2 section is full-width with a large phone mockup (reference composition)', () => {
-    expect(indexCss).toContain('.lens2__inner { position: relative; z-index: 1; padding-inline: var(--ay-gutter);');
-    expect(indexCss).toMatch(/\.lens2__phone-frame \{ position: relative; width: min\(340px, 88vw\);/);
-    expect(indexCss).toContain('.lens2__merchant');
-    expect(indexCss).toContain('.lens2__steps-grid');
-    expect(indexCss).toContain('.lens2__banner');
-    expect(lensSource).toContain('className="lens2"');
-    expect(lensSource).toContain("fetch('/api/public/lens-hero')");
-  });
-
-  test('the homepage ends at LENS — no footer or content rendered below it', () => {
+  test('the homepage ends at the Trust Bar — no footer or content rendered below it', () => {
     // الفوتر مستثنى من أقسام الصفحة الرئيسية المعروضة
     expect(appSource).toContain("!['brands', 'about', 'footer'].includes(section.id)");
     // قسم الـhero يُغلق بدون padding سفلي حتى تنتهي الصفحة عند LENS

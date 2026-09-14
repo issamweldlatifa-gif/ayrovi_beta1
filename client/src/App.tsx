@@ -3,10 +3,6 @@ import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
 import { TrustBar } from './components/TrustBar';
-import { TransitionCard } from './components/TransitionCard';
-import { DiscoveryHub } from './components/DiscoveryHub';
-import { BrandsShowcase } from './components/BrandsShowcase';
-import { LensHero } from './components/LensHero';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
@@ -33,7 +29,14 @@ const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').th
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
 /** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
-export const DEFAULT_HOME_BLOCKS = ['transition', 'discovery', 'brands', 'lens'];
+/**
+ * Blocs de la page d'accueil — VOLONTAIREMENT VIDE.
+ * La page se limite désormais au Hero + Trust Bar (décision produit du 2026-09-14).
+ * Le mécanisme reste branché : l'endpoint public et l'écran Admin → Sections
+ * continuent de fonctionner, et réinscrire un identifiant ici réactive le bloc
+ * correspondant (les composants supprimés sont dans l'historique Git).
+ */
+export const DEFAULT_HOME_BLOCKS: string[] = [];
 
 const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => {
   const style = {
@@ -75,7 +78,6 @@ export const App: React.FC = () => {
   const [extractedProduct, setExtractedProduct] = useState<ScrapedProduct | null>(null);
   const [interfaceConfig, setInterfaceConfig] = useState<PublicInterfaceConfig>(() => structuredClone(DEFAULT_INTERFACE_CONFIG));
   // ترتيب كتل الصفحة الرئيسية (transition/discovery/brands/lens) — يُدار من Admin → Sections
-  const [homeBlocks, setHomeBlocks] = useState<string[]>(DEFAULT_HOME_BLOCKS);
 
   // Cart & Checkout State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -202,22 +204,6 @@ export const App: React.FC = () => {
   }, [isLensOpen, lensSessionActive]);
 
   // ترتيب وإظهار كتل الصفحة الرئيسية — من الـ Dashboard (Admin → Sections)
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/public/home-blocks')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((result) => {
-        if (cancelled || !Array.isArray(result?.data) || !result.data.length) return;
-        const ordered = result.data
-          .filter((block: any) => block?.visible !== false && DEFAULT_HOME_BLOCKS.includes(String(block.id)))
-          .sort((a: any, b: any) => Number(a.sortOrder) - Number(b.sortOrder))
-          .map((block: any) => String(block.id));
-        if (ordered.length) setHomeBlocks(ordered);
-      })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, []);
-
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.ayrovixTheme = lensDarkMode ? 'dark' : 'light';
@@ -429,7 +415,7 @@ export const App: React.FC = () => {
     openAppView('app:order-success', true);
   };
 
-  // HOMEPAGE CLEANUP: الصفحة تنتهي عند قسم LENS — لا فوتر ولا أي محتوى تحته.
+  // HOMEPAGE CLEANUP: الصفحة تنتهي عند الـ Trust Bar — لا فوتر ولا أي محتوى تحته.
   // الأقسام القديمة (brands/about) والفوتر محذوفة من العرض لا من المشروع،
   // مع إبقاء cms لأنها تستضيف صفحات CMS بملء الشاشة (تُفتح من Discovery/Menu).
   const publicSections = [...interfaceConfig.sections]
@@ -442,15 +428,6 @@ export const App: React.FC = () => {
         <>
           <EvergreenHero />
           <TrustBar />
-          <div className="bg-white pt-8 pb-10">
-            {homeBlocks.map((block) => {
-              if (block === 'transition') return <TransitionCard key="transition" />;
-              if (block === 'discovery') return <DiscoveryHub key="discovery" />;
-              if (block === 'brands') return <BrandsShowcase key="brands" />;
-              if (block === 'lens') return <LensHero key="lens" onOpenLens={handleOpenLens} />;
-              return null;
-            })}
-          </div>
         </>
       );
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
