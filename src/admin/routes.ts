@@ -15,6 +15,7 @@ import {
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { parsePublicHttpUrl } from '../services/safeUrl';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
+import { storeLensVideo, resolveLensVideoUrl } from '../services/lensMedia';
 import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
 import { ocrRecognize } from '../services/vision';
 import { discoveryAggregates, recordLensEvaluation } from '../assistant/learning';
@@ -551,7 +552,8 @@ export function createAdminRouter(
     return parsePublicHttpUrl(raw).toString();
   };
 
-  const lensUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 8 * 1024 * 1024, files: 2 } });
+  // Vidéo LENS : 32 Mo (voir LENS_VIDEO_MAX_BYTES) + 4 champs (fond, mockup, vidéo, affiche).
+  const lensUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 32 * 1024 * 1024, files: 4 } });
 
   const lensRowForApi = (row: any) => (row ? {
     eyebrow: row.eyebrow, title: row.title, description: row.description,
@@ -565,6 +567,16 @@ export function createAdminRouter(
       productName: row.phone_product_name || '', priceChip: row.phone_price_chip || '', metaChip: row.phone_meta_chip || '',
       stockChip: row.phone_stock_chip || '', ctaLabel: row.phone_cta_label || '',
     },
+    media: {
+      type: row.media_type === 'IMAGE' ? 'IMAGE' : 'VIDEO',
+      videoUrl: row.video_url || '',
+      videoPath: row.video_path || '',
+      poster: row.video_poster || '',
+      ratio: row.video_ratio || '16/9',
+      autoplay: Boolean(row.video_autoplay ?? 1),
+      muted: Boolean(row.video_muted ?? 1),
+      loop: Boolean(row.video_loop ?? 1),
+    },
     updatedAt: row.updated_at,
   } : null);
 
@@ -572,7 +584,10 @@ export function createAdminRouter(
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
   });
 
-  router.put('/lens-hero', requireAdmin(db, 'content:write'), lensUpload.fields([{ name: 'bgImage', maxCount: 1 }, { name: 'phoneImage', maxCount: 1 }]), async (req, res) => {
+  router.put('/lens-hero', requireAdmin(db, 'content:write'), lensUpload.fields([
+    { name: 'bgImage', maxCount: 1 }, { name: 'phoneImage', maxCount: 1 },
+    { name: 'video', maxCount: 1 }, { name: 'poster', maxCount: 1 },
+  ]), async (req, res) => {
     const existing = db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'");
     if (!existing) return res.status(404).json({ success: false, error: 'Paramètres LENS introuvables.' });
     const files = (req.files || {}) as Record<string, Express.Multer.File[]>;
@@ -600,6 +615,47 @@ export function createAdminRouter(
       catch { return res.status(400).json({ success: false, error: 'Lien CTA invalide — utilisez une URL https:// ou un chemin interne /…' }); }
     }
 
+    /* ---- Média de la section LENS : vidéo déposée, URL externe, ou image ---- */
+    const mediaType = req.body.mediaType === 'IMAGE' ? 'IMAGE' : 'VIDEO';
+    // Ratio : liste fermée, sinon on garde la valeur existante.
+    const RATIOS = ['16/9', '4/5', '1/1', '9/16'] as const;
+    const requestedRatio = String(req.body.videoRatio || existing.video_ratio || '16/9');
+    const videoRatio = (RATIOS as readonly string[]).includes(requestedRatio) ? requestedRatio : '16/9';
+
+    let videoPath = req.body.videoPath !== undefined ? String(req.body.videoPath) : (existing.video_path || '');
+    let videoPoster = req.body.poster !== undefined && typeof req.body.poster === 'string'
+      ? String(req.body.poster) : (existing.video_poster || '');
+
+    // Fichier vidéo déposé → stockage public (data/uploads/lens).
+    // Uniquement si un fichier est réellement joint : les enregistrements qui ne
+    // touchent pas au média ne doivent pas être refusés.
+    if (files.video?.[0]) {
+      try { videoPath = (await storeLensVideo(files.video[0])).url; }
+      catch (error: any) { return res.status(400).json({ success: false, error: error?.message || 'Vidéo invalide.' }); }
+    }
+    // Affiche (image) → ré-encodée et stockée comme les autres visuels.
+    try {
+      const storedPoster = await storeUpload(files.poster?.[0], 'mobile');
+      if (storedPoster) videoPoster = storedPoster;
+    } catch (error: any) {
+      return res.status(400).json({ success: false, error: `Affiche — ${error?.message || 'invalide'}` });
+    }
+    if (req.body.removeVideo === 'true' || req.body.removeVideo === true) videoPath = '';
+    if (req.body.removePoster === 'true' || req.body.removePoster === true) videoPoster = '';
+
+    // URL externe (YouTube / Vimeo / fichier https) → validée puis normalisée.
+    let videoUrl = existing.video_url || '';
+    if (req.body.videoUrl !== undefined) {
+      try {
+        const resolved = resolveLensVideoUrl(req.body.videoUrl);
+        videoUrl = resolved ? resolved.src : '';
+      } catch (error: any) {
+        return res.status(400).json({ success: false, error: error?.message || 'Lien vidéo invalide.' });
+      }
+    }
+    // Une vidéo déposée prime : on vide l'URL externe pour éviter deux sources concurrentes.
+    if (files.video?.[0] && videoPath) videoUrl = '';
+
     const bgType = req.body.bgType === 'IMAGE' ? 'IMAGE' : 'COLOR';
     const validColor = (value: unknown, fallback: string) => (/^#[0-9a-fA-F]{3,8}$/.test(String(value || '')) ? String(value) : fallback);
     const clamp = (value: unknown, fallback: number) => Math.min(1, Math.max(0, Number(value ?? fallback) || 0));
@@ -607,6 +663,7 @@ export function createAdminRouter(
     db.run(`UPDATE lens_hero_settings SET eyebrow=?,title=?,description=?,cta_label=?,cta_url=?,proof_line=?,accent_color=?,element_order=?,
       bg_type=?,bg_color=?,bg_image=?,overlay_strength=?,focal_x=?,focal_y=?,phone_enabled=?,enabled=?,sort_order=?,
       phone_image=?,phone_status_label=?,phone_result_label=?,phone_product_name=?,phone_price_chip=?,phone_meta_chip=?,phone_stock_chip=?,phone_cta_label=?,
+      media_type=?,video_url=?,video_path=?,video_poster=?,video_ratio=?,video_autoplay=?,video_muted=?,video_loop=?,
       updated_at=? WHERE id='global'`,
       text(req.body.eyebrow, existing.eyebrow, 40) || 'LENS',
       text(req.body.title, existing.title, 160) || existing.title,
@@ -633,6 +690,14 @@ export function createAdminRouter(
       text(req.body.phone?.metaChip ?? req.body.phoneMetaChip, existing.phone_meta_chip, 40),
       text(req.body.phone?.stockChip ?? req.body.phoneStockChip, existing.phone_stock_chip, 40),
       text(req.body.phone?.ctaLabel ?? req.body.phoneCtaLabel, existing.phone_cta_label, 40),
+      mediaType,
+      String(videoUrl || '').slice(0, 600),
+      String(videoPath || '').slice(0, 400),
+      String(videoPoster || '').slice(0, 400),
+      videoRatio,
+      req.body.videoAutoplay === undefined ? (existing.video_autoplay ?? 1) : (req.body.videoAutoplay ? 1 : 0),
+      req.body.videoMuted === undefined ? (existing.video_muted ?? 1) : (req.body.videoMuted ? 1 : 0),
+      req.body.videoLoop === undefined ? (existing.video_loop ?? 1) : (req.body.videoLoop ? 1 : 0),
       new Date().toISOString());
     audit(db, req, 'UPDATE', 'LENS_HERO', 'global', null, null);
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });

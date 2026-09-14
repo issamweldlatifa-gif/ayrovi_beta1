@@ -1444,6 +1444,17 @@ export class QatafoDatabase {
     this.ensureColumn('lens_hero_settings', 'phone_stock_chip', "TEXT NOT NULL DEFAULT 'Disponible'");
     this.ensureColumn('lens_hero_settings', 'phone_cta_label', "TEXT NOT NULL DEFAULT 'Ajouter au panier'");
 
+    // LENS — média de la section : vidéo (fichier déposé ou URL externe) ou image.
+    // Le type et les sources sont choisis depuis CONTENU → LENS ; rien n'est figé dans le code.
+    this.ensureColumn('lens_hero_settings', 'media_type', "TEXT NOT NULL DEFAULT 'VIDEO' CHECK(media_type IN ('VIDEO','IMAGE'))");
+    this.ensureColumn('lens_hero_settings', 'video_url', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('lens_hero_settings', 'video_path', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('lens_hero_settings', 'video_poster', "TEXT NOT NULL DEFAULT ''");
+    this.ensureColumn('lens_hero_settings', 'video_ratio', "TEXT NOT NULL DEFAULT '16/9' CHECK(video_ratio IN ('16/9','4/5','1/1','9/16'))");
+    this.ensureColumn('lens_hero_settings', 'video_autoplay', 'INTEGER NOT NULL DEFAULT 1');
+    this.ensureColumn('lens_hero_settings', 'video_muted', 'INTEGER NOT NULL DEFAULT 1');
+    this.ensureColumn('lens_hero_settings', 'video_loop', 'INTEGER NOT NULL DEFAULT 1');
+
     // LENS v2 — المحتوى الموسّع (mini-features / AI card / phone merchants / steps / banner)
     // يُخزَّن JSON في عمود واحد ويُدار من الـ Dashboard؛ الواجهة تعرضه فقط (لا نص ثابت في الكود).
     this.ensureColumn('lens_hero_settings', 'sections_json', "TEXT NOT NULL DEFAULT '{}'");
@@ -2079,6 +2090,24 @@ export class QatafoDatabase {
     });
     this.rebrandNoirOrangePalette();
     this.rebrandZalandoOrange();
+    this.seedLensFeatureMedia();
+  }
+
+  /**
+   * Bloc éditorial LENS (référence Zalando) : sans média, la section afficherait
+   * un grand vide. On amorce donc l'affiche produit livrée avec le projet, en mode
+   * « image ». Dès que l'administrateur dépose une vidéo ou colle un lien depuis
+   * CONTENU → LENS, la section bascule en mode vidéo — l'amorçage ne rejoue jamais.
+   */
+  private seedLensFeatureMedia(): void {
+    this.runOnceDataMigration('lens_feature_media_v1', () => {
+      const now = new Date().toISOString();
+      this.run(
+        `UPDATE lens_hero_settings SET video_poster=?, media_type='IMAGE', updated_at=?
+         WHERE id='global' AND COALESCE(video_poster,'')='' AND COALESCE(video_path,'')='' AND COALESCE(video_url,'')=''`,
+        '/media/lens-sneakers.jpg', now,
+      );
+    });
   }
 
   /**

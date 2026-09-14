@@ -27,7 +27,7 @@ import path from 'node:path';
 /** Sub-paths that are always private, wherever they appear under `uploads/`. */
 export const LEGACY_PRIVATE_UPLOAD_DIRS = ['invoices', 'deposits'] as const;
 /** Sub-paths explicitly published under `/uploads`. */
-export const PUBLIC_UPLOAD_DIRS = ['hero'] as const;
+export const PUBLIC_UPLOAD_DIRS = ['hero', 'lens'] as const;
 
 export interface PublicUploadsView {
   root: string;

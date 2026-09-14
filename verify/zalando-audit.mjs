@@ -86,6 +86,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   for (const [selector, name] of [
     ['.interface-hero, [data-public-section="hero"]', 'section Hero'],
     ['[class*="trust-bar"]', 'Trust Bar'],
+    ['.lens-feature', 'section LENS (bloc éditorial)'],
   ]) {
     const node = page.locator(selector).first();
     if (await node.count()) {

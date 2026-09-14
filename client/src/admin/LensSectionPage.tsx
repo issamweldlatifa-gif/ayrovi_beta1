@@ -20,6 +20,18 @@ interface LensPhoneDraft {
   ctaLabel: string;
 }
 
+/** Média de la section : vidéo déposée, lien externe, ou simple image. */
+interface LensMediaDraft {
+  type: 'VIDEO' | 'IMAGE';
+  videoUrl: string;
+  videoPath: string;
+  poster: string;
+  ratio: '16/9' | '4/5' | '1/1' | '9/16';
+  autoplay: boolean;
+  muted: boolean;
+  loop: boolean;
+}
+
 interface LensDraft {
   eyebrow: string;
   title: string;
@@ -39,6 +51,7 @@ interface LensDraft {
   enabled: boolean;
   sortOrder: number;
   phone: LensPhoneDraft;
+  media: LensMediaDraft;
 }
 
 const EMPTY_DRAFT: LensDraft = {
@@ -47,6 +60,7 @@ const EMPTY_DRAFT: LensDraft = {
   bgType: 'COLOR', bgColor: '#F6F7F9', bgImage: '', overlayStrength: 0.25, focalX: 0.5, focalY: 0.45,
   phoneEnabled: true, enabled: true, sortOrder: 40,
   phone: { image: '', statusLabel: '', resultLabel: '', productName: '', priceChip: '', metaChip: '', stockChip: '', ctaLabel: '' },
+  media: { type: 'VIDEO', videoUrl: '', videoPath: '', poster: '', ratio: '16/9', autoplay: true, muted: true, loop: true },
 };
 
 const ELEMENT_LABELS: Record<string, string> = {
@@ -62,8 +76,16 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
   const [phoneFile, setPhoneFile] = useState<File | null>(null);
   const [phonePreview, setPhonePreview] = useState('');
   const [bgPreview, setBgPreview] = useState('');
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [posterFile, setPosterFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState('');
+  const [posterPreview, setPosterPreview] = useState('');
+  const [removeVideo, setRemoveVideo] = useState(false);
+  const [removePoster, setRemovePoster] = useState(false);
   const bgInput = useRef<HTMLInputElement>(null);
   const phoneInput = useRef<HTMLInputElement>(null);
+  const videoInput = useRef<HTMLInputElement>(null);
+  const posterInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (toast) { const timer = window.setTimeout(() => setToast(null), 3800); return () => window.clearTimeout(timer); } }, [toast]);
 
@@ -71,7 +93,11 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
     setLoading(true);
     try {
       const result = await adminApi<any>('/lens-hero');
-      if (result.data) setDraft({ ...EMPTY_DRAFT, ...result.data, phone: { ...EMPTY_DRAFT.phone, ...(result.data.phone || {}) } });
+      if (result.data) setDraft({
+        ...EMPTY_DRAFT, ...result.data,
+        phone: { ...EMPTY_DRAFT.phone, ...(result.data.phone || {}) },
+        media: { ...EMPTY_DRAFT.media, ...(result.data.media || {}) },
+      });
     } catch (reason: any) { setToast({ message: reason.message, tone: 'error' }); }
     finally { setLoading(false); }
   }, []);
@@ -90,10 +116,14 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
     patch({ elementOrder: next.join(',') });
   };
 
-  const pickFile = (file: File | null, kind: 'bg' | 'phone') => {
+  const pickFile = (file: File | null, kind: 'bg' | 'phone' | 'video' | 'poster') => {
     if (kind === 'bg') { setBgFile(file); setBgPreview(file ? URL.createObjectURL(file) : ''); }
-    else { setPhoneFile(file); setPhonePreview(file ? URL.createObjectURL(file) : ''); }
+    else if (kind === 'phone') { setPhoneFile(file); setPhonePreview(file ? URL.createObjectURL(file) : ''); }
+    else if (kind === 'video') { setVideoFile(file); setVideoPreview(file ? URL.createObjectURL(file) : ''); }
+    else { setPosterFile(file); setPosterPreview(file ? URL.createObjectURL(file) : ''); }
   };
+
+  const patchMedia = (changes: Partial<LensMediaDraft>) => setDraft((current) => ({ ...current, media: { ...current.media, ...changes } }));
 
   const save = async () => {
     if (!draft.title.trim()) { setToast({ message: 'Le titre LENS est obligatoire.', tone: 'error' }); return; }
@@ -127,9 +157,28 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
       form.append('phoneCtaLabel', draft.phone.ctaLabel);
       if (bgFile) form.append('bgImage', bgFile, bgFile.name);
       if (phoneFile) form.append('phoneImage', phoneFile, phoneFile.name);
+      // Média de la section (vidéo déposée / affiche / lien externe)
+      form.append('mediaType', draft.media.type);
+      form.append('videoUrl', draft.media.videoUrl);
+      form.append('videoPath', draft.media.videoPath);
+      form.append('poster', draft.media.poster);
+      form.append('videoRatio', draft.media.ratio);
+      form.append('videoAutoplay', draft.media.autoplay ? 'true' : 'false');
+      form.append('videoMuted', draft.media.muted ? 'true' : 'false');
+      form.append('videoLoop', draft.media.loop ? 'true' : 'false');
+      if (videoFile) form.append('video', videoFile, videoFile.name);
+      if (posterFile) form.append('poster', posterFile, posterFile.name);
+      if (removeVideo) form.append('removeVideo', 'true');
+      if (removePoster) form.append('removePoster', 'true');
       const result = await adminApi<any>('/lens-hero', { method: 'PUT', body: form });
-      if (result.data) setDraft({ ...EMPTY_DRAFT, ...result.data, phone: { ...EMPTY_DRAFT.phone, ...(result.data.phone || {}) } });
+      if (result.data) setDraft({
+        ...EMPTY_DRAFT, ...result.data,
+        phone: { ...EMPTY_DRAFT.phone, ...(result.data.phone || {}) },
+        media: { ...EMPTY_DRAFT.media, ...(result.data.media || {}) },
+      });
       setBgFile(null); setPhoneFile(null); setBgPreview(''); setPhonePreview('');
+      setVideoFile(null); setPosterFile(null); setVideoPreview(''); setPosterPreview('');
+      setRemoveVideo(false); setRemovePoster(false);
       setToast({ message: 'Section LENS enregistrée — visible immédiatement sur le site.', tone: 'success' });
     } catch (reason: any) { setToast({ message: reason.message, tone: 'error' }); }
     finally { setBusy(false); }
@@ -241,6 +290,97 @@ export const LensSectionPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
               <Field label="Puce disponibilité"><input disabled={!canWrite} value={draft.phone.stockChip} onChange={(event) => patchPhone({ stockChip: event.target.value })} maxLength={40} /></Field>
               <Field label="Bouton du mockup" full><input disabled={!canWrite} value={draft.phone.ctaLabel} onChange={(event) => patchPhone({ ctaLabel: event.target.value })} maxLength={40} /></Field>
             </div>
+          </section>
+
+          <section className="admin-card" style={{ gridColumn: '1 / -1' }}>
+            <h3>Média — vidéo ou image</h3>
+            <p className="admin-block-small">
+              Le bloc LENS affiche un grand média sous le titre. Déposez une vidéo (MP4/WebM/MOV, 32&nbsp;Mo max.)
+              <strong> ou</strong> collez un lien YouTube / Vimeo / fichier .mp4 en https. Titre et vidéo se changent ici.
+            </p>
+            <div className="admin-form">
+              <Field label="Type de média">
+                <select disabled={!canWrite} value={draft.media.type} onChange={(event) => patchMedia({ type: event.target.value === 'IMAGE' ? 'IMAGE' : 'VIDEO' })}>
+                  <option value="VIDEO">Vidéo</option>
+                  <option value="IMAGE">Image (affiche seule)</option>
+                </select>
+              </Field>
+
+              <Field label="Format du média" hint="Le grand format donne un rendu plus éditorial, comme la référence Zalando.">
+                <select disabled={!canWrite} value={draft.media.ratio} onChange={(event) => patchMedia({ ratio: event.target.value as LensMediaDraft['ratio'] })}>
+                  <option value="16/9">Paysage 16:9</option>
+                  <option value="4/5">Portrait 4:5</option>
+                  <option value="1/1">Carré 1:1</option>
+                  <option value="9/16">Vertical 9:16</option>
+                </select>
+              </Field>
+
+              {draft.media.type === 'VIDEO' ? (
+                <>
+                  <Field label="Fichier vidéo" full hint="MP4, WebM ou MOV — 32 Mo maximum. Remplace le lien externe.">
+                    <input
+                      ref={videoInput}
+                      disabled={!canWrite}
+                      type="file"
+                      accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
+                      onChange={(event) => pickFile(event.target.files?.[0] || null, 'video')}
+                    />
+                  </Field>
+
+                  <Field label="Lien vidéo externe" full hint="YouTube, Vimeo ou un fichier .mp4/.webm en https. Le lien est réécrit vers le lecteur officiel (youtube-nocookie / player.vimeo).">
+                    <input
+                      disabled={!canWrite}
+                      value={draft.media.videoUrl}
+                      onChange={(event) => patchMedia({ videoUrl: event.target.value })}
+                      placeholder="https://www.youtube.com/watch?v=… — ou https://…/video.mp4"
+                    />
+                  </Field>
+
+                  <Field label="Lecture en boucle" full><Switch disabled={!canWrite} checked={draft.media.loop} onLabel="Boucle activée" offLabel="Lecture unique" onChange={() => patchMedia({ loop: !draft.media.loop })} /></Field>
+                  <Field label="Lecture automatique" full hint="La lecture automatique exige le son coupé pour être acceptée par les navigateurs."><Switch disabled={!canWrite} checked={draft.media.autoplay} onLabel="Automatique" offLabel="Sur commande" onChange={() => patchMedia({ autoplay: !draft.media.autoplay })} /></Field>
+                  <Field label="Son coupé" full><Switch disabled={!canWrite} checked={draft.media.muted} onLabel="Muette" offLabel="Avec le son" onChange={() => patchMedia({ muted: !draft.media.muted })} /></Field>
+                </>
+              ) : null}
+
+              <Field label="Affiche (image de couverture)" full hint="Image affichée avant le lancement de la vidéo. Obligatoire en mode « Image ».">
+                <input
+                  ref={posterInput}
+                  disabled={!canWrite}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif"
+                  onChange={(event) => pickFile(event.target.files?.[0] || null, 'poster')}
+                />
+              </Field>
+
+              <Field label="Réglages de lecture" full>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {draft.media.videoPath ? (
+                    <Button variant="ghost" disabled={!canWrite} onClick={() => { patchMedia({ videoPath: '' }); setRemoveVideo(true); }}>
+                      <Trash2 size={15} /> Retirer la vidéo déposée
+                    </Button>
+                  ) : null}
+                  {draft.media.poster ? (
+                    <Button variant="ghost" disabled={!canWrite} onClick={() => { patchMedia({ poster: '' }); setRemovePoster(true); }}>
+                      <Trash2 size={15} /> Retirer l’affiche
+                    </Button>
+                  ) : null}
+                </div>
+              </Field>
+            </div>
+
+            {/* Aperçu du média tel qu’il apparaîtra dans la section */}
+            <div style={{ maxWidth: 390, margin: '14px 0 0', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(17,18,23,0.12)', background: '#f8f9fa', aspectRatio: String(draft.media.ratio).replace('/', ' / ') }}>
+              {videoPreview
+                ? <video src={videoPreview} controls muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : draft.media.videoPath
+                  ? <video src={draft.media.videoPath} controls muted loop playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  : (posterPreview || draft.media.poster)
+                    ? <img src={posterPreview || draft.media.poster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : <div style={{ display: 'grid', placeItems: 'center', height: '100%', fontSize: 12, color: '#666' }}>Aucun média — déposez une vidéo ou collez un lien.</div>}
+            </div>
+            {draft.media.videoUrl && !videoPreview ? (
+              <p className="admin-block-small" style={{ marginTop: 8 }}>Lien enregistré : {draft.media.videoUrl}</p>
+            ) : null}
           </section>
 
           <section className="admin-card" style={{ gridColumn: '1 / -1' }}>

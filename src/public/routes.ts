@@ -166,6 +166,16 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         stockChip: row.phone_stock_chip || '',
         ctaLabel: row.phone_cta_label || '',
       },
+      media: {
+        type: row.media_type === 'IMAGE' ? 'IMAGE' : 'VIDEO',
+        videoUrl: row.video_url || '',
+        videoPath: row.video_path || '',
+        poster: row.video_poster || '',
+        ratio: row.video_ratio || '16/9',
+        autoplay: Boolean(row.video_autoplay ?? 1),
+        muted: Boolean(row.video_muted ?? 1),
+        loop: Boolean(row.video_loop ?? 1),
+      },
     } : null });
   });
 

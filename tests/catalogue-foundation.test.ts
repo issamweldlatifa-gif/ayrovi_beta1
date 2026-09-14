@@ -389,7 +389,7 @@ describe('catalogue foundation (P2.1)', () => {
       expect(scheme.status).toBe(400);
       expect(scheme.body.code).toBe('CATALOGUE_MEDIA_URL_INVALID');
       // the policy itself is unchanged by this phase
-      expect([...PUBLIC_UPLOAD_DIRS]).toEqual(['hero']);
+      expect([...PUBLIC_UPLOAD_DIRS]).toEqual(['hero', 'lens']);
     });
 
     test('removing a media row deletes the reference only, and is audited', async () => {

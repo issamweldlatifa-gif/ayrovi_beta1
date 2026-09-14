@@ -42,6 +42,8 @@ app.use((req, res, next) => {
     "font-src 'self' data: https://fonts.gstatic.com",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
+    // Lecteurs embarqués pour les vidéos CMS (LENS) — domaines d'intégration fermés.
+    "frame-src 'self' https://www.youtube-nocookie.com https://player.vimeo.com",
     "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",

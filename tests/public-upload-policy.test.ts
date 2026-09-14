@@ -78,16 +78,20 @@ describe('public upload policy (P0/P1 closure gate)', () => {
   });
 
   test('the policy is an explicit allow-list, not a naming convention', () => {
-    expect([...PUBLIC_UPLOAD_DIRS]).toEqual(['hero']);
+    // 'lens' holds the LENS showcase videos uploaded from CONTENU -> LENS.
+    expect([...PUBLIC_UPLOAD_DIRS]).toEqual(['hero', 'lens']);
     expect([...LEGACY_PRIVATE_UPLOAD_DIRS]).toEqual(['invoices', 'deposits']);
     // The public view the admin screen reads agrees with the guard itself.
-    expect(publicUploadsView().publicDirs).toEqual(['hero']);
+    expect(publicUploadsView().publicDirs).toEqual(['hero', 'lens']);
     // A directory nobody thought about is private by default (default-deny).
     expect(isPublicUploadPath(path.join(uploadsRoot, 'contracts', 'a.pdf'))).toBe(false);
     expect(isPublicUploadPath(path.join(uploadsRoot, 'avatars', 'me.png'))).toBe(false);
     // ...while a loose file at the uploads root stays reachable, as it was before P0.
     expect(isPublicUploadPath(path.join(uploadsRoot, 'loose.png'))).toBe(true);
     expect(isPublicUploadPath(path.join(uploadsRoot, 'hero', 'slide.jpg'))).toBe(true);
+    expect(isPublicUploadPath(path.join(uploadsRoot, 'lens', 'showcase.mp4'))).toBe(true);
+    // Un répertoire voisin au nom proche reste privé : la liste est fermée.
+    expect(isPublicUploadPath(path.join(uploadsRoot, 'lensx', 'a.mp4'))).toBe(false);
   });
 
   test('every document tree is classified private, on both the new and the legacy layout', () => {

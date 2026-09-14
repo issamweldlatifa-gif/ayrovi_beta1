@@ -3,6 +3,7 @@ import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
 import { TrustBar } from './components/TrustBar';
+import { LensFeature } from './components/LensFeature';
 import { PartnerBrandsSlider } from './components/PartnerBrandsSlider';
 import { PublicCmsSections } from './components/PublicCmsSections';
 import { AboutSection } from './components/AboutSection';
@@ -428,6 +429,9 @@ export const App: React.FC = () => {
         <>
           <EvergreenHero />
           <TrustBar />
+          {/* قسم LENS التحريري (مرجع Zalando) — العنوان والفيديو من الـ Dashboard.
+              يوضع بعد شريط الثقة مباشرة، بمسافة رأسية مريحة (--lens-feature-gap). */}
+          <LensFeature onOpenLens={handleOpenLens} />
         </>
       );
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
