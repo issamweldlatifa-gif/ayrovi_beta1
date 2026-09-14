@@ -150,7 +150,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
-                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-warning">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
+                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-muted">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">
@@ -192,7 +192,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           {/* Footer & Checkout */}
           {items.length > 0 && (
             <div className="ay-safe-bottom p-4 sm:p-6 border-t border-line bg-surface space-y-3">
-              <div className="rounded-xl border border-accent bg-accent/10 p-3 text-[11px] leading-5 text-ink">
+              <div className="rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink">
                 <p className="font-black">{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</p>
                 {pendingManual && <p className="font-bold">{tr('Le prix du produit sera vérifié par l’équipe avant l’achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}
                 <p>{tr(depositPolicy.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</p>

@@ -144,7 +144,7 @@ export const EvergreenHero: React.FC = () => {
   } as React.CSSProperties;
 
   // ===== المحتوى من الـ CMS =====
-  const accent = content?.accentColor || '#FE7003';
+  const accent = content?.accentColor || '#FF6900';
   const highlight = (content?.highlight || '').trim();
   const titleLines = String(content?.title || '').split('\n').map((line) => line.trim()).filter(Boolean);
 
@@ -246,7 +246,7 @@ export const EvergreenHero: React.FC = () => {
       </div>
 
       {/* فاصل برتقالي رفيع أسفل الـHero — accent فقط */}
-      <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-px bg-gradient-to-r from-transparent via-[#FE7003]/60 to-transparent" />
+      <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-px bg-gradient-to-r from-transparent via-[var(--ayrovi-color-brand-orange)]/60 to-transparent" />
     </section>
   );
 };

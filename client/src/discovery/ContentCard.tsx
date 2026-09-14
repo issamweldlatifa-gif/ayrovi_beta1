@@ -15,8 +15,8 @@ interface ContentCardProps {
 }
 
 const variantClasses: Record<ContentCardVariant, { body: string; eyebrow: string; description: string }> = {
-  arrival: { body: 'bg-brand-gradient text-white', eyebrow: 'text-accent', description: 'text-white/75' },
-  promo: { body: 'bg-brand text-white', eyebrow: 'text-accent', description: 'text-white/75' },
+  arrival: { body: 'bg-brand-gradient text-white', eyebrow: 'text-white/70', description: 'text-white/75' },
+  promo: { body: 'bg-brand text-white', eyebrow: 'text-white/70', description: 'text-white/75' },
   magazine: { body: 'bg-white text-ink', eyebrow: 'text-brand', description: 'text-muted' },
 };
 
@@ -27,7 +27,7 @@ export const ContentCard: React.FC<ContentCardProps> = ({ variant, image, imageA
     <article className="overflow-hidden rounded-card border border-line bg-white shadow-card" dir={dir}>
       <div className="relative aspect-[16/10] overflow-hidden bg-surface">
         <img src={image} alt={imageAlt} className="h-full w-full object-cover" loading="lazy" />
-        {badge && <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-black text-ink">{badge}</span>}
+        {badge && <span className="absolute start-3 top-3 rounded-full border border-line bg-white px-2.5 py-1 text-[10px] font-black text-ink">{badge}</span>}
       </div>
       <div className={`flex min-h-52 flex-col p-6 ${styles.body}`}>
         {eyebrow && <p className={`text-xs font-black uppercase tracking-[0.16em] ${styles.eyebrow}`}>{eyebrow}</p>}

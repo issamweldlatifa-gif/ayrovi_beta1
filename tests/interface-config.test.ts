@@ -8,12 +8,12 @@ describe('واجهتي full interface configuration', () => {
     expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
       pageBackground: '#ffffff',
       primary: '#111318',
-      accent: '#fe7003',
+      accent: '#ff6900',
       announcementBackground: '#111318',
       announcementText: '#ffffff',
       heroBackground: '#111318',
     });
-    expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#fe7003');
+    expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#ff6900');
     expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#111318' });
     expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#111318');
   });
@@ -51,7 +51,7 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.colors.pageBackground).toBe('#ffffff');
     expect(normalized.buttons.secondaryColor).toBe('#111318');
     // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système AYROVI.
-    expect(normalized.icons).toMatchObject({ library: 'ayrovi', color: '#654321', activeColor: '#fe7003' });
+    expect(normalized.icons).toMatchObject({ library: 'ayrovi', color: '#654321', activeColor: '#ff6900' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });
   });
 

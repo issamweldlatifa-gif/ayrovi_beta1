@@ -11,6 +11,7 @@
     "build": "npm run build:client && npm run build:server",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
+    "audit:design": "node verify/zalando-audit.mjs",
     "backup": "node scripts/backup-sqlite.mjs"
   },
   "keywords": [

@@ -191,12 +191,12 @@ preEdit('client/src/admin/admin.css', [
    '   vivent uniquement dans `client/src/design/tokens.css`. Noms et valeurs inchangés (même\n' +
    '   `#fff` court, même noir `#111318`) — `arrival-ingestion.css`, feuille gelée depuis P2.0, et\n' +
    '   `AdminApp.tsx` continuent de les référencer. Le renommage en noms sémantiques est en T2. */\n'],
-  ['.mag-agent { --mag-ink:#111318; --mag-purple:#111318; --mag-deep:#050505; --mag-yellow:#fe7003; color:var(--mag-ink); }',
+  ['.mag-agent { --mag-ink:#111318; --mag-purple:#111318; --mag-deep:#050505; --mag-yellow:#ff6900; color:var(--mag-ink); }',
    '/* P3/T1 : la fiche agent prend les tokens du back-office — valeurs identiques, aucun littéral. */\n' +
    '.mag-agent { --mag-ink: var(--admin-purple); --mag-purple: var(--admin-purple); --mag-deep: var(--admin-purple-dark); --mag-yellow: var(--ayrovi-cta); color: var(--mag-ink); }'],
 ]);
 preEdit('client/src/admin/back-office/back-office.css', [
-  ['.bo-shell { --bo-accent: #fe7003; }',
+  ['.bo-shell { --bo-accent: #ff6900; }',
    '.bo-shell { --bo-accent: var(--ayrovi-cta); /* accent partagé avec la vitrine (valeur unique) */ }'],
 ]);
 

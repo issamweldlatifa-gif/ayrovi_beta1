@@ -49,7 +49,7 @@ export const LensHero: React.FC<{ onOpenLens?: () => void }> = ({ onOpenLens }) 
     return () => { cancelled = true; };
   }, []);
 
-  const accent = data?.accentColor || '#FF7A00';
+  const accent = data?.accentColor || '#FF6900';
   const s = useMemo<Sections>(() => data?.sections || {}, [data]);
 
   if (!data || !data.enabled) return null;
@@ -170,7 +170,9 @@ export const LensHero: React.FC<{ onOpenLens?: () => void }> = ({ onOpenLens }) 
               {(steps.items || []).map((step, index) => {
                 const Icon = iconFor(step.icon);
                 return (
-                  <div key={index} className="lens2__step">
+                  /* Tracker d'étapes : la première étape est l'étape ACTIVE (orange),
+                     les suivantes restent gris pâle — norme figée de la charte. */
+                  <div key={index} className={`lens2__step${index === 0 ? ' is-active' : ''}`}>
                     <span className="lens2__step-num">{index + 1}</span>
                     <span className="lens2__step-icon"><Icon size={20} /></span>
                     <strong>{step.title}</strong>

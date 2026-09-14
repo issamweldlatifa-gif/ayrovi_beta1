@@ -1,8 +1,11 @@
 /* AYROVI design tokens — the only source of brand, semantic, spacing and shape values.
-   Visual weight (not a pixel count): 70% white/off-white · 25% black/near-black · 5% orange.
-   Orange (#fe7003) = attention, not decoration. Never body/heading text, full cards,
-   page chrome or every button. Allowed: logo dot, primary CTA, active nav, selected
-   state, progress, AI/Lens accent, thin glow. Hero orange coverage ≤ 8%. */
+   ZALANDO STRATEGY (P4/T1) — Muted & Punchy UI: the platform is strictly monochromatic
+   (white / black); orange is an ACTION trigger, never a decoration.
+   Orange (#ff6900) is allowed on: the single primary CTA of a screen, the active step of
+   a progress tracker, the active nav dot, the 3px accent rule of a surface card, and thin
+   micro-interaction glows. It is FORBIDDEN as: a page/container background, an orange
+   gradient, a full card wash, a thick border around a product or a list row, or a filled
+   badge. Budget: ≤ 3% of any screen's surface, one filled orange button per screen. */
 @theme inline {
   --color-brand: var(--ayrovi-primary);
   --color-brand-dark: var(--ayrovi-primary-dark);
@@ -93,15 +96,31 @@ html[data-theme='dark'] {
 
 :root {
     color-scheme: light;
+
+    /* ───────────────────────────────────────────────────────────────────────
+       ZALANDO STRATEGY — les six jetons canoniques (source unique de vérité).
+       La plateforme est monochrome : le orange n'est PAS un outil de
+       décoration, c'est un déclencheur d'action (Action-Driven Trigger).
+       Interdit en fond de page, en dégradé, en pleine carte ou en bordure
+       épaisse ; réservé au CTA principal, à l'étape active et aux
+       micro-interactions, soit ≤ 3 % de la surface d'un écran.
+       ─────────────────────────────────────────────────────────────────────── */
+    --ayrovi-bg-main: #ffffff;              /* Canvas 95 % — fond pur de toutes les pages */
+    --ayrovi-bg-surface: #f8f9fa;           /* Cartes, listes, écrans de comparaison */
+    --ayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
+    --ayrovi-text-primary: #111111;         /* Noir premium : titres, marques, prix */
+    --ayrovi-text-secondary: #666666;       /* Gris équilibré : légendes, prix secondaires */
+    --ayrovi-color-brand-orange: #ff6900;   /* Orange pur — CTA principal uniquement */
+
     --ayrovi-primary: #111318;
     --ayrovi-primary-dark: #050505;
     --ayrovi-primary-light: #3f3f46;
-    --ayrovi-cta: #fe7003;
-    --ayrovi-cta-dark: #e05f00;
-    --ayrovi-orange: #fe7003;
-    --ayrovi-accent: #fe7003;
-    --ayrovi-accent-soft: #ffb070;
-    --ayrovi-accent-dark: #e05f00;
+    --ayrovi-cta: var(--ayrovi-color-brand-orange);
+    --ayrovi-cta-dark: #d95a00;
+    --ayrovi-orange: var(--ayrovi-color-brand-orange);
+    --ayrovi-accent: var(--ayrovi-color-brand-orange);
+    --ayrovi-accent-soft: var(--ayrovi-bg-surface);
+    --ayrovi-accent-dark: var(--ayrovi-cta-dark);
     --ayrovi-success: #15803d;
     --ayrovi-danger: #dc2626;
     --ayrovi-warning: #b77900;

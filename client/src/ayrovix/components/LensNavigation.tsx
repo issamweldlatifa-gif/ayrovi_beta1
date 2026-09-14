@@ -135,7 +135,7 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
           </ol>}
 
           {section === 'terms' && <div className="space-y-4 text-sm leading-6 text-muted">
-            <p className="rounded-xl border border-accent bg-accent/10 p-3 font-bold text-ink">{tr('Structure informative en attente de validation du texte juridique officiel.', 'هيكل معلوماتي في انتظار اعتماد النص القانوني الرسمي.')}</p>
+            <p className="rounded-xl border border-line bg-surface p-3 font-bold text-ink">{tr('Structure informative en attente de validation du texte juridique officiel.', 'هيكل معلوماتي في انتظار اعتماد النص القانوني الرسمي.')}</p>
             <ul className="list-disc space-y-2 ps-5">
               <li>{tr('Nature et limites de la recherche visuelle automatisée.', 'طبيعة وحدود البحث البصري الآلي.')}</li>
               <li>{tr("Possibilité d’erreur dans l’identification du produit.", 'إمكانية الخطأ في التعرف على المنتج.')}</li>

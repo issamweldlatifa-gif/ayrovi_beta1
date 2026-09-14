@@ -758,12 +758,12 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
-  {id:'noir',label:'Noir AYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#fe7003',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:'jakarta'},
-  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#fe7003',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:'jakarta'},
-  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#fe7003',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:'jakarta'},
-  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#fe7003',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:'jakarta'},
-  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#fe7003',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:'jakarta'},
-  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#fe7003',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:'jakarta'},
+  {id:'noir',label:'Noir AYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#ff6900',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:'jakarta'},
+  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#ff6900',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:'jakarta'},
+  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#ff6900',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:'jakarta'},
+  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#ff6900',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:'jakarta'},
+  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#ff6900',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:'jakarta'},
+  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#ff6900',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:'jakarta'},
 ];
 const FONT_OPTIONS=[{value:'jakarta',label:'Inter — identité AYROVI'}];
 const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{

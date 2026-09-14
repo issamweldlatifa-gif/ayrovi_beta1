@@ -160,7 +160,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
             <PayBadge label="Mastercard" className="bg-white not-italic text-danger" />
             <PayBadge label="Flouci" className="bg-brand not-italic text-white" />
             <PayBadge label="D17" className="bg-danger not-italic text-white" />
-            <PayBadge label="Mandat postal" className="bg-accent not-italic text-ink" />
+            <PayBadge label="Mandat postal" className="bg-white not-italic text-ink" />
           </div>
           <p className="text-[11px] font-semibold text-white/70">
             <a href="/privacy.html" className="hover:text-white">Politique de confidentialité</a>
@@ -175,7 +175,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <div className="mt-6 flex flex-col items-center justify-between gap-3 text-center text-[11px] text-muted sm:flex-row sm:text-left">
           <p>Commandes confirmées après vérification de l’acompte — facture après émission et suivi après expédition.</p>
           <p className="flex items-center gap-1">
-            Conçu avec <Heart className="h-3 w-3 fill-cta text-cta" /> pour faciliter vos achats en Tunisie.
+            Conçu avec <Heart className="h-3 w-3 fill-brand text-brand" /> pour faciliter vos achats en Tunisie.
           </p>
         </div>
       </div>

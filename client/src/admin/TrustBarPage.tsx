@@ -28,7 +28,7 @@ const emptyDraft = { id: '', title: '', description: '', icon: 'ShieldCheck', en
 
 export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const [items, setItems] = useState<TrustItemRow[]>([]);
-  const [settings, setSettings] = useState<TrustSettings>({ background_color: '#111217', title_color: '#FFFFFF', description_color: 'rgba(255,255,255,0.68)', accent_color: '#FF7A00', divider_color: 'rgba(255,255,255,0.15)', enabled: 1 });
+  const [settings, setSettings] = useState<TrustSettings>({ background_color: '#111217', title_color: '#FFFFFF', description_color: 'rgba(255,255,255,0.68)', accent_color: '#FF6900', divider_color: 'rgba(255,255,255,0.15)', enabled: 1 });
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
@@ -117,7 +117,7 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           {colorField('Fond', 'background_color', '#111217')}
           {colorField('Titres', 'title_color', '#FFFFFF')}
           {colorField('Descriptions', 'description_color', 'rgba(255,255,255,0.68)')}
-          {colorField('Accent', 'accent_color', '#FF7A00')}
+          {colorField('Accent', 'accent_color', '#FF6900')}
           {colorField('Séparateurs', 'divider_color', 'rgba(255,255,255,0.15)')}
           <Field label="Bandeau activé">
             <Toggle checked={Boolean(settings.enabled)} disabled={!canWrite} onChange={(checked) => setSettings({ ...settings, enabled: checked ? 1 : 0 })}>{' Visible sur le site'}</Toggle>
@@ -139,7 +139,7 @@ export const TrustBarPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
           <div className="mx-auto grid grid-cols-4" style={{ gap: 0, padding: previewMode === 'mobile' ? '10px 8px' : '14px 18px' }}>
             {previewItems.slice(0, 4).map((item, index) => (
               <div key={item.id} className="trust-bar-compact__item">
-                <span className="trust-bar-compact__icon">{React.createElement(ICON_COMPONENTS[item.icon] || ShieldCheck, { className: previewMode === 'mobile' ? 'h-7 w-7' : 'h-8 w-8', style: { color: item.iconColor || settings.accent_color || '#FF7A00' } })}</span>
+                <span className="trust-bar-compact__icon">{React.createElement(ICON_COMPONENTS[item.icon] || ShieldCheck, { className: previewMode === 'mobile' ? 'h-7 w-7' : 'h-8 w-8', style: { color: item.iconColor || settings.accent_color || '#FF6900' } })}</span>
                 <span className="trust-bar-compact__label" style={{ color: item.titleColor || settings.title_color }}>{item.title}</span>
                 {Boolean(item.description) && <span className="trust-bar-compact__desc">{item.description}</span>}
               </div>

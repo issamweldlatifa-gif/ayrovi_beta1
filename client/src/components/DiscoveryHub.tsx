@@ -23,7 +23,7 @@ const TABS = [
 const media = (value: unknown, fallback: string) => String(value || fallback);
 
 const Cta: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
-  <button type="button" onClick={onClick} className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-bold text-[#FF7A00] transition-colors hover:text-[#e56a00]">
+  <button type="button" onClick={onClick} className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-bold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-muted">
     {children}
   </button>
 );
@@ -65,7 +65,7 @@ export const DiscoveryHub: React.FC = () => {
     <section aria-label="Discovery AYROVI" className="mt-20 lg:mt-24">
       <div className="mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
         {/* مقدمة تحريرية مضغوطة */}
-        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-[#FF7A00]">DISCOVERY</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-muted">DISCOVERY</p>
         <h2 className="ay-edit-32 mt-2 max-w-[300px] text-ink lg:max-w-none">Ce qui mérite votre attention.</h2>
       </div>
 
@@ -84,7 +84,7 @@ export const DiscoveryHub: React.FC = () => {
             className={`relative shrink-0 whitespace-nowrap pb-2.5 text-[12.5px] font-bold tracking-[0.02em] transition-colors sm:text-[13.5px] ${active === tab.key ? 'text-ink' : 'text-muted hover:text-ink'}`}
           >
             {tab.label}
-            <span aria-hidden className={`absolute inset-x-0 bottom-0 h-[2.5px] rounded-full transition-opacity duration-300 ${active === tab.key ? 'bg-[#FF7A00] opacity-100' : 'opacity-0'}`} />
+            <span aria-hidden className={`absolute inset-x-0 bottom-0 h-[2.5px] rounded-full transition-opacity duration-300 ${active === tab.key ? 'bg-ink opacity-100' : 'opacity-0'}`} />
           </button>
         ))}
       </div>
@@ -99,7 +99,7 @@ export const DiscoveryHub: React.FC = () => {
           <div>
             <div className="relative overflow-hidden bg-white">
               <img src={media(products[0]?.image || home?.arrivals?.[0]?.main_image, heroFemme)} alt={products[0]?.name || 'Arrivages AYROVI'} className="aspect-[4/3] w-full object-cover sm:aspect-[21/10]" />
-              <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-[#FF7A00]" />
+              <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-white/90" />
             </div>
             <div className="px-5 sm:px-8">
               <h3 className="mt-6 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-[28px]">Les nouveautés viennent d’arriver.</h3>
@@ -114,8 +114,9 @@ export const DiscoveryHub: React.FC = () => {
           <div className="relative overflow-hidden bg-white">
             <div className="relative">
               <img src={media(promo?.image, heroHomme)} alt={promo?.name || 'Offre du moment'} className="aspect-[16/10] w-full object-cover sm:aspect-[16/9]" loading="lazy" />
-              <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-[#FF7A00]" />
-              <span className="absolute bottom-3 start-4 rounded-full bg-[#FF7A00] px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-white">OFFRE DU MOMENT</span>
+              <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-white/90" />
+              {/* badge : fond blanc, filet fin, encre noire — jamais de pastille orange pleine */}
+              <span className="absolute bottom-3 start-4 rounded-full border border-white/70 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-ink">OFFRE DU MOMENT</span>
             </div>
             <div className="p-5">
               <h3 className="text-[22px] font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-[24px]">{promo?.name || 'Les offres AYROVI'}</h3>
@@ -150,10 +151,10 @@ export const DiscoveryHub: React.FC = () => {
             <img src={media(article?.image, heroFemme)} alt={article?.title || 'Magazine AYROVI'} className="aspect-[4/3] w-full object-cover opacity-95 sm:aspect-[21/10]" loading="lazy" />
             <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
             <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-              <span className="text-[10.5px] font-black uppercase tracking-[0.2em] text-[#FF7A00]">{article?.category || 'STYLE'}</span>
+              <span className="text-[10.5px] font-black uppercase tracking-[0.2em] text-white/70">{article?.category || 'STYLE'}</span>
               <h3 className="mt-2 max-w-xl text-[24px] font-extrabold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">{article?.title || 'Les tendances qui méritent votre attention.'}</h3>
               <p className="mt-2 max-w-lg text-[12.5px] leading-relaxed text-white/80 sm:text-[14px]">{article?.summary || 'Découvrez les inspirations et nouveautés sélectionnées par AYROVI.'}</p>
-              <button type="button" onClick={() => open('news')} className="mt-3.5 inline-flex items-center gap-1.5 text-[14.5px] font-bold text-white transition-colors hover:text-[#FF7A00]">
+              <button type="button" onClick={() => open('news')} className="mt-3.5 inline-flex items-center gap-1.5 text-[14.5px] font-bold text-white underline decoration-1 underline-offset-4 transition-colors hover:text-white/70">
                 Explorer le magazine →
               </button>
             </div>

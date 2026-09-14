@@ -49,7 +49,7 @@ const RatingLine: React.FC<{ candidate: AyrovixCandidate }> = ({ candidate }) =>
   const rating = displayRating(candidate);
   const merchant = candidate.ratingKind === 'merchant';
   return (
-    <p className="inline-flex items-center gap-1 text-[10.5px] font-bold text-accent-deep">
+    <p className="inline-flex items-center gap-1 text-[10.5px] font-bold text-ink">
       <Star size={13} fill="currentColor" />{rating.toFixed(1)}/5
       {Number(candidate.ratingCount) > 0 && <span className="text-muted">({Number(candidate.ratingCount).toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-FR')})</span>}
       {!merchant && <span className="text-muted">{tr('pertinence', 'تطابق')}</span>}
@@ -106,12 +106,12 @@ export const LensResults: React.FC<LensResultsProps> = ({ view, fallbackImage, o
         <div className="overflow-hidden rounded-[22px] border-2 border-brand bg-white shadow-lg">
           <div className="relative h-44 bg-surface">
             <CandidateImage fallback={detected.imageUrl || fallbackImage} alt={detected.title || name} />
-            <span className="absolute start-3 top-3 rounded-full bg-accent px-2.5 py-1 text-[10px] font-extrabold text-ink">{tr('Prix repéré', 'سعر مكتشف')}</span>
+            <span className="absolute start-3 top-3 rounded-full border border-line bg-white px-2.5 py-1 text-[10px] font-extrabold text-ink">{tr('Prix repéré', 'سعر مكتشف')}</span>
           </div>
           <div className="space-y-3 p-4">
             <h4 className="text-[15px] font-extrabold text-ink line-clamp-2">{detected.title || name}</h4>
-            <div className="rounded-2xl border border-accent/30 bg-accent/10 p-3.5">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-warning">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
+            <div className="rounded-2xl border border-line bg-surface p-3.5">
+              <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
               <p className="mt-1 text-[26px] font-black leading-none text-ink">{detected.totalPriceTND?.toFixed(2) || '—'} DT</p>
             </div>
             <button type="button" onClick={() => onCommandDetected(detected)} className="ay-btn-primary w-full text-sm">
@@ -124,7 +124,7 @@ export const LensResults: React.FC<LensResultsProps> = ({ view, fallbackImage, o
       {/* ===== Meilleure correspondance ===== */}
       {best && (
         <article className="rounded-[22px] border-2 border-brand/60 bg-brand/5 p-3.5">
-          <p className="mb-2.5 inline-block rounded-full bg-brand/15 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-brand">{tr('Meilleure correspondance', 'أفضل تطابق')}</p>
+          <p className="mb-2.5 inline-block rounded-full border border-line bg-white px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-[0.08em] text-ink">{tr('Meilleure correspondance', 'أفضل تطابق')}</p>
           <div className="flex gap-3">
             <div className="relative h-[110px] w-[92px] flex-none overflow-hidden rounded-xl border border-line bg-surface p-1">
               <CandidateImage candidate={best} fallback={fallbackImage} alt={best.title} />

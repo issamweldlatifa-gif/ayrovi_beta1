@@ -1,0 +1,200 @@
+/* ============================================================================
+   AYROVI — P4/T1 « Zalando Strategy » : primitives d'interface (Muted & Punchy).
+
+   Règle stricte de la plateforme : le canvas est monochrome (blanc / noir).
+   L'orange n'est PAS un outil de décoration : c'est un déclencheur d'action.
+   Il est INTERDIT en fond de page, en dégradé, en pleine carte, en badge plein
+   ou en bordure épaisse autour d'un produit. Il est RÉSERVÉ :
+     • au CTA principal — un seul bouton orange plein par écran ;
+     • à l'étape active d'un tracker de progression ;
+     • au filet vertical de 3px d'une carte de surface ;
+     • aux micro-interactions (point actif de navigation, halo fin).
+   Budget : ≤ 3 % de la surface d'un écran.
+
+   Cette feuille ne définit aucune valeur : chaque couleur vient de
+   `client/src/design/tokens.css`.
+   ============================================================================ */
+
+/* ── 1. Surfaces ─────────────────────────────────────────────────────────────
+   Remplace les anciennes cartes/bannières oranges pleines. Fond gris très clair,
+   texte noir, et un filet vertical de 3px sur le bord amont comme seule trace
+   d'identité. */
+.ay-surface-card {
+  position: relative;
+  background: var(--ayrovi-bg-surface);
+  border: 1px solid var(--ayrovi-border-soft);
+  border-inline-start: 3px solid var(--ayrovi-color-brand-orange);
+  color: var(--ayrovi-text-primary);
+}
+
+.ay-surface-plain {
+  background: var(--ayrovi-bg-surface);
+  border: 1px solid var(--ayrovi-border-soft);
+  color: var(--ayrovi-text-primary);
+}
+
+/* Titre et corps d'une carte de surface : encre noire, légende grise. */
+.ay-surface-card__title,
+.ay-surface-plain__title {
+  color: var(--ayrovi-text-primary);
+}
+
+.ay-surface-card__text,
+.ay-surface-plain__text {
+  color: var(--ayrovi-text-secondary);
+}
+
+/* ── 2. Badges ───────────────────────────────────────────────────────────────
+   Un badge n'est jamais une pastille orange pleine : fond blanc ou gris très
+   clair, filet fin, texte noir ou gris foncé. */
+.ay-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem;
+  border: 1px solid var(--ayrovi-border-soft);
+  border-radius: 999px;
+  background: var(--ayrovi-bg-main);
+  color: var(--ayrovi-text-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.ay-badge--muted {
+  background: var(--ayrovi-bg-surface);
+  color: var(--ayrovi-text-secondary);
+}
+
+/* ── 3. Boutons d'action secondaires (flèches des prix marchands) ────────────
+   Cercle transparent, filet fin, icône noire. Supprime l'accumulation de
+   pastilles orange dans les listes de prix et rend la comparaison lisible. */
+.ay-icon-action {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--ayrovi-border-soft);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ayrovi-text-primary);
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.ay-icon-action:hover {
+  border-color: var(--ayrovi-text-primary);
+  background: var(--ayrovi-bg-surface);
+}
+
+.ay-icon-action:active {
+  transform: scale(0.94);
+}
+
+.ay-icon-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Variante carrée (listes denses) */
+.ay-icon-action--square {
+  border-radius: 0.625rem;
+}
+
+/* ── 4. CTA principal — un seul par écran ────────────────────────────────────
+   Orange plein, texte blanc, gras 700. Si un second bouton orange apparaît sur
+   le même écran, le moins important doit passer en `ay-btn-secondary`. */
+.ay-cta-primary,
+.ay-btn-cta {
+  min-height: var(--ayrovi-button-height, 44px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid var(--ayrovi-color-brand-orange);
+  border-radius: var(--ayrovi-radius-control);
+  background: var(--ayrovi-color-brand-orange);
+  color: var(--ayrovi-bg-main);
+  font-weight: 700;
+  transition: filter 160ms ease, transform 160ms ease;
+}
+
+.ay-cta-primary:hover,
+.ay-btn-cta:hover {
+  filter: brightness(0.94);
+}
+
+.ay-cta-primary:active,
+.ay-btn-cta:active {
+  transform: scale(0.985);
+}
+
+.ay-cta-primary:disabled,
+.ay-btn-cta:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+/* ── 5. Filet d'identité ─────────────────────────────────────────────────────
+   Le seul endroit où l'orange peut « tenir » une surface : un filet fin. */
+.ay-accent-rule {
+  display: block;
+  width: 3rem;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ayrovi-color-brand-orange);
+}
+
+/* ── 6. Tracker d'étapes ─────────────────────────────────────────────────────
+   Norme figée : le point et le trait de l'étape ACTIVE sont oranges, les
+   étapes à venir restent grises. Rien d'autre n'est orange dans le rail. */
+.ay-step {
+  --ay-step-dot: var(--ayrovi-border-soft);
+  --ay-step-line: var(--ayrovi-border-soft);
+  --ay-step-ink: var(--ayrovi-text-secondary);
+}
+
+.ay-step.is-active,
+.ay-step.is-current,
+.ay-step.is-done,
+.ay-step.is-complete {
+  --ay-step-dot: var(--ayrovi-color-brand-orange);
+  --ay-step-line: var(--ayrovi-color-brand-orange);
+  --ay-step-ink: var(--ayrovi-text-primary);
+}
+
+/* ── 7. Utilitaires de purge ─────────────────────────────────────────────────
+   Posés sur les conteneurs hérités qui portaient un lavis orange : le canvas
+   redevient blanc, la carte redevient grise. */
+.ay-canvas-main {
+  background: var(--ayrovi-bg-main) !important;
+}
+
+.ay-canvas-surface {
+  background: var(--ayrovi-bg-surface) !important;
+}
+
+.ay-ink-primary {
+  color: var(--ayrovi-text-primary) !important;
+}
+
+.ay-ink-secondary {
+  color: var(--ayrovi-text-secondary) !important;
+}
+
+.ay-edge-soft {
+  border-color: var(--ayrovi-border-soft) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-icon-action,
+  .ay-cta-primary,
+  .ay-btn-cta {
+    transition-duration: 1ms;
+  }
+}

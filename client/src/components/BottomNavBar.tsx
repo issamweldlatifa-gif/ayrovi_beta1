@@ -26,7 +26,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const iconStyle = (active = false): React.CSSProperties => ({
     width: Math.max(iconConfig.size, 30),
     height: Math.max(iconConfig.size, 30),
-    color: active ? (iconConfig.activeColor || '#fe7003') : (iconConfig.color || '#5b6472'),
+    color: active ? (iconConfig.activeColor || '#ff6900') : (iconConfig.color || '#5b6472'),
     fill: 'none',
   });
   useBodyScrollLock(isVisionOpen);

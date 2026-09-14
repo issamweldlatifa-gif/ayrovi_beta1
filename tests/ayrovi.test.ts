@@ -1030,8 +1030,8 @@ describe('AYSONIC platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-modern');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111318', heroBackground: '#111318', announcementBackground: '#111318', accent: '#fe7003' });
-    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#fe7003' });
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111318', heroBackground: '#111318', announcementBackground: '#111318', accent: '#ff6900' });
+    expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
     expect(row.setting_value.navigation.color).toBe('#111318');
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({

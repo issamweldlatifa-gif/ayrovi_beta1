@@ -112,7 +112,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: "Segoe UI", Arial, sans-serif; color: #17131f; font-size: 13px; padding: 40px; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #fe7003; padding-bottom: 20px; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #FF6900; padding-bottom: 20px; }
   .brand { font-size: 26px; font-weight: 900; color: #111318; letter-spacing: -0.5px; }
   .brand small { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
@@ -134,7 +134,7 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   .deposit strong { color: #047857; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: #f4f4f5; border: 1px dashed #fe7003; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking { background: #f4f4f5; border: 1px dashed #FF6900; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
   .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #111318; letter-spacing: 1px; }
   footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7f0; color: #8b8494; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>

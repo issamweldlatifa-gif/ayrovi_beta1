@@ -1432,7 +1432,7 @@ export class QatafoDatabase {
     // LENS — بقية المحتوى يُدار من الـ Dashboard (لا يوجد أي نص ثابت في الواجهة)
     this.ensureColumn('lens_hero_settings', 'cta_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('lens_hero_settings', 'proof_line', "TEXT NOT NULL DEFAULT 'Fiable. Rapide. Intelligent.'");
-    this.ensureColumn('lens_hero_settings', 'accent_color', "TEXT NOT NULL DEFAULT '#FF7A00'");
+    this.ensureColumn('lens_hero_settings', 'accent_color', "TEXT NOT NULL DEFAULT '#FF6900'");
     this.ensureColumn('lens_hero_settings', 'element_order', "TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta,proof'");
     this.ensureColumn('lens_hero_settings', 'sort_order', 'INTEGER NOT NULL DEFAULT 40');
     this.ensureColumn('lens_hero_settings', 'phone_image', "TEXT NOT NULL DEFAULT '/media/hero-femme.jpg'");
@@ -1510,7 +1510,7 @@ export class QatafoDatabase {
       description TEXT NOT NULL DEFAULT '',
       cta_label TEXT NOT NULL DEFAULT '',
       cta_url TEXT NOT NULL DEFAULT '',
-      accent_color TEXT NOT NULL DEFAULT '#FE7003',
+      accent_color TEXT NOT NULL DEFAULT '#FF6900',
       element_order TEXT NOT NULL DEFAULT 'eyebrow,title,description,cta',
       enabled INTEGER NOT NULL DEFAULT 1,
       sort_order INTEGER NOT NULL DEFAULT 10,
@@ -1555,7 +1555,7 @@ export class QatafoDatabase {
       background_color TEXT NOT NULL DEFAULT '#111217',
       title_color TEXT NOT NULL DEFAULT '#FFFFFF',
       description_color TEXT NOT NULL DEFAULT 'rgba(255,255,255,0.68)',
-      accent_color TEXT NOT NULL DEFAULT '#FF7A00',
+      accent_color TEXT NOT NULL DEFAULT '#FF6900',
       divider_color TEXT NOT NULL DEFAULT 'rgba(255,255,255,0.15)',
       enabled INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL
@@ -2078,6 +2078,48 @@ export class QatafoDatabase {
       this.db.exec(`UPDATE admin_users SET name='AYROVI Admin',updated_at='${now}' WHERE name='AYSONIC Admin'`);
     });
     this.rebrandNoirOrangePalette();
+    this.rebrandZalandoOrange();
+  }
+
+  /**
+   * P4/T1 « Zalando Strategy » — l'orange de marque passe de #fe7003 / #ff7a00 à
+   * #FF6900 (orange pur). One-shot : les réglages déjà persistés en base, y compris
+   * ceux que l'administrateur a enregistrés, sont repeints une seule fois, puis la
+   * valeur canonique vit uniquement dans `client/src/design/tokens.css`.
+   */
+  private rebrandZalandoOrange() {
+    this.runOnceDataMigration('rebrand_zalando_orange_v1', () => this.applyZalandoOrange());
+  }
+
+  private applyZalandoOrange(): void {
+    const now = new Date().toISOString();
+    const paintJson = (raw: string) => {
+      let next = raw.replace(/#fe7003/gi, '#ff6900').replace(/#ff7a00/gi, '#ff6900');
+      try {
+        const parsed = JSON.parse(next);
+        if (parsed?.colors?.accent) parsed.colors.accent = String(parsed.colors.accent).replace(/#fe7003/gi, '#ff6900').replace(/#ff7a00/gi, '#ff6900');
+        if (parsed?.icons?.activeColor) parsed.icons.activeColor = String(parsed.icons.activeColor).replace(/#fe7003/gi, '#ff6900').replace(/#ff7a00/gi, '#ff6900');
+        if (parsed?.accent) parsed.accent = String(parsed.accent).replace(/#fe7003/gi, '#ff6900').replace(/#ff7a00/gi, '#ff6900');
+        next = JSON.stringify(parsed);
+      } catch {
+        /* valeur non JSON : le remplacement littéral suffit */
+      }
+      return next;
+    };
+    for (const key of ['interface_config', 'site_theme']) {
+      const row = this.get<any>('SELECT id,setting_value FROM settings WHERE setting_key=?', key);
+      if (!row?.setting_value) continue;
+      const next = paintJson(String(row.setting_value));
+      if (next !== row.setting_value) this.run('UPDATE settings SET setting_value=?,updated_at=? WHERE id=?', next, now, row.id);
+    }
+    this.run(
+      "UPDATE lens_hero_settings SET accent_color='#FF6900',updated_at=? WHERE lower(accent_color) IN ('#fe7003','#ff7a00')",
+      now,
+    );
+    this.run(
+      "UPDATE trust_bar_settings SET accent_color='#FF6900',updated_at=? WHERE lower(accent_color) IN ('#fe7003','#ff7a00')",
+      now,
+    );
   }
 
   /** Public chrome: 70% white / 25% black / 5% orange. Rewrites old purple/yellow/orange-wash defaults. */
@@ -2108,11 +2150,11 @@ export class QatafoDatabase {
             parsed.colors.announcementText = '#ffffff';
           }
           const accent = String(parsed.colors.accent || '').toLowerCase();
-          if (accent === '#fbbf24' || accent === '#ffb070') parsed.colors.accent = '#fe7003';
+          if (accent === '#fbbf24' || accent === '#ffb070') parsed.colors.accent = '#ff6900';
         }
         if (parsed?.icons) {
           const active = String(parsed.icons.activeColor || '').toLowerCase();
-          if (active === '#ffb070' || active === '#fbbf24' || active === '#111318') parsed.icons.activeColor = '#fe7003';
+          if (active === '#ffb070' || active === '#fbbf24' || active === '#111318') parsed.icons.activeColor = '#ff6900';
         }
         if (parsed?.navigation) {
           const navBg = String(parsed.navigation.background || '').toLowerCase();
@@ -2125,7 +2167,7 @@ export class QatafoDatabase {
           }
         }
         if (parsed?.preset === 'noir' && String(parsed.accent || '').toLowerCase() === '#ffb070') {
-          parsed.accent = '#fe7003';
+          parsed.accent = '#ff6900';
         }
         return JSON.stringify(parsed);
       } catch {
@@ -2180,7 +2222,7 @@ export class QatafoDatabase {
       ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
         preset: 'noir', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46',
-        accent: '#fe7003', ink: '#1d2130', gradient: 'linear-gradient(135deg,#111318 0%,#050505 100%)',
+        accent: '#ff6900', ink: '#1d2130', gradient: 'linear-gradient(135deg,#111318 0%,#050505 100%)',
         font: 'jakarta', radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
@@ -2193,9 +2235,9 @@ export class QatafoDatabase {
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
         ],
         typography: { preset: 'ayrovi-modern', body: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", display: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
-        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#fe7003', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#111318', announcementText: '#ffffff', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
+        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#111318', announcementText: '#ffffff', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
         buttons: { background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#050505', borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#fe7003', size: 28, style: 'outline' },
+        icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#ff6900', size: 28, style: 'outline' },
         navigation: { background: '#ffffff', color: '#111318', activeBackground: '#ffffff', showLabels: true, height: 80, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
@@ -2307,6 +2349,7 @@ export class QatafoDatabase {
         JSON.stringify(['commande','commander','lens','capture']),80,1,now,now);
     }
     this.rebrandNoirOrangePalette();
+    this.rebrandZalandoOrange();
   }
 
   public all<T = any>(sql: string, ...params: any[]): T[] {

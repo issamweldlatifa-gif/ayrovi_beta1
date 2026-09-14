@@ -103,8 +103,10 @@
   justify-content: center;
   border-radius: 999px;
   padding: 0.2rem 0.45rem;
-  background: color-mix(in srgb, var(--ayrovi-accent) 24%, transparent);
-  color: var(--ayrovi-accent-dark);
+  /* Badge : jamais une pastille orange pleine — fond gris très clair, encre foncée. */
+  background: var(--ayrovi-bg-surface);
+  border: 1px solid var(--ayrovi-border-soft);
+  color: var(--ayrovi-text-primary);
   font-size: 0.55rem;
   font-weight: 900;
   line-height: 1.2;

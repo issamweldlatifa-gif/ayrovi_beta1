@@ -43,7 +43,7 @@ interface LensDraft {
 
 const EMPTY_DRAFT: LensDraft = {
   eyebrow: '', title: '', description: '', ctaLabel: '', ctaUrl: '', proofLine: '',
-  accentColor: '#FF7A00', elementOrder: 'eyebrow,title,description,cta,proof',
+  accentColor: '#FF6900', elementOrder: 'eyebrow,title,description,cta,proof',
   bgType: 'COLOR', bgColor: '#F6F7F9', bgImage: '', overlayStrength: 0.25, focalX: 0.5, focalY: 0.45,
   phoneEnabled: true, enabled: true, sortOrder: 40,
   phone: { image: '', statusLabel: '', resultLabel: '', productName: '', priceChip: '', metaChip: '', stockChip: '', ctaLabel: '' },

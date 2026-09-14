@@ -52,7 +52,7 @@ export const AssistantVoiceOrb: React.FC<AssistantVoiceOrbProps> = ({
   }[state];
 
   const orbTheme = {
-    listening: 'from-[#fe7003] via-[#ff8f33] to-[#e05f00]',
+    listening: 'from-[#ff6900] via-[#ff8a3d] to-[#d95a00]',
     processing: 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]',
     speaking: 'from-[#10b981] via-[#34d399] to-[#059669]',
   }[state];
@@ -62,7 +62,7 @@ export const AssistantVoiceOrb: React.FC<AssistantVoiceOrbProps> = ({
       className={`relative mx-auto my-3 w-full max-w-sm overflow-hidden rounded-[24px] border p-4 shadow-lg backdrop-blur-md transition-all duration-300 ${
         isDark
           ? 'border-white/15 bg-neutral-900/90 text-white'
-          : 'border-orange-200/80 bg-white/95 text-ink'
+          : 'border-line bg-white/95 text-ink'
       }`}
       role="status"
       aria-live="polite"

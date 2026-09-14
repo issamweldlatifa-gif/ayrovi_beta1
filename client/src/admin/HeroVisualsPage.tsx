@@ -18,7 +18,7 @@ interface HeroContentRow {
 
 const HERO_CONTENT_EMPTY: HeroContentRow = {
   eyebrow: '', title: '', highlight: 'AYROVI', description: '',
-  ctaLabel: '', ctaUrl: '', accentColor: '#FE7003', elementOrder: 'eyebrow,title,description,cta', enabled: true,
+  ctaLabel: '', ctaUrl: '', accentColor: '#FF6900', elementOrder: 'eyebrow,title,description,cta', enabled: true,
 };
 
 const HERO_ELEMENT_LABELS: Record<string, string> = {

@@ -518,7 +518,7 @@ export function createAdminRouter(
       validColor(req.body?.backgroundColor, existing?.background_color || '#111217'),
       validColor(req.body?.titleColor, existing?.title_color || '#FFFFFF'),
       validColor(req.body?.descriptionColor, existing?.description_color || 'rgba(255,255,255,0.68)'),
-      validColor(req.body?.accentColor, existing?.accent_color || '#FF7A00'),
+      validColor(req.body?.accentColor, existing?.accent_color || '#FF6900'),
       validColor(req.body?.dividerColor, existing?.divider_color || 'rgba(255,255,255,0.15)'),
       req.body?.enabled === undefined ? (existing?.enabled ?? 1) : (req.body.enabled ? 1 : 0),
       new Date().toISOString());
@@ -556,7 +556,7 @@ export function createAdminRouter(
   const lensRowForApi = (row: any) => (row ? {
     eyebrow: row.eyebrow, title: row.title, description: row.description,
     ctaLabel: row.cta_label, ctaUrl: row.cta_url || '', proofLine: row.proof_line || '',
-    accentColor: row.accent_color || '#FF7A00', elementOrder: row.element_order || LENS_ELEMENT_ORDER.join(','),
+    accentColor: row.accent_color || '#FF6900', elementOrder: row.element_order || LENS_ELEMENT_ORDER.join(','),
     bgType: row.bg_type, bgColor: row.bg_color, bgImage: row.bg_image,
     overlayStrength: row.overlay_strength, focalX: row.focal_x, focalY: row.focal_y,
     phoneEnabled: Boolean(row.phone_enabled), enabled: Boolean(row.enabled), sortOrder: Number(row.sort_order ?? 40),
@@ -614,7 +614,7 @@ export function createAdminRouter(
       text(req.body.ctaLabel, existing.cta_label, 40) || 'Ouvrir LENS',
       ctaUrl,
       text(req.body.proofLine, existing.proof_line, 120),
-      validColor(req.body.accentColor, existing.accent_color || '#FF7A00'),
+      validColor(req.body.accentColor, existing.accent_color || '#FF6900'),
       normalizeElementOrder(req.body.elementOrder, LENS_ELEMENT_ORDER, LENS_ELEMENT_ORDER.join(',')),
       bgType,
       validColor(req.body.bgColor, existing.bg_color),

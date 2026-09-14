@@ -122,7 +122,9 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     ? 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]'
     : state === 'error'
       ? 'from-[#ef4444] via-[#f87171] to-[#dc2626]'
-      : 'from-[#FF7A00] via-[#ff9433] to-[#e05f00]';
+      : state === 'listening'
+        ? 'from-[#FF6900] via-[#ff8a3d] to-[#d95a00]'
+        : 'from-[#17181c] via-[#2b2e36] to-[#0b0c0f]';
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -190,7 +192,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
 
         {/* Center Live Mode Indicator */}
         <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white/70 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/30">
-          <span className="h-2 w-2 rounded-full bg-[#FF7A00] animate-pulse" />
+          <span className="h-2 w-2 rounded-full bg-[#FF6900] animate-pulse" />
           <span className="text-xs font-black tracking-wide">
             AYROVI VOICE
           </span>
@@ -201,7 +203,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
           onClick={() => { triggerHaptic(); setShowSettingsModal(true); }}
           className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
             showSettingsModal
-              ? 'bg-[#FF7A00] text-white'
+              ? 'bg-[#111111] text-white'
               : isDark
                 ? 'bg-white/10 text-white hover:bg-white/15'
                 : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
@@ -225,13 +227,13 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                 className="h-7 w-7 rounded-full object-cover shadow-sm"
               />
             ) : (
-              <Camera size={16} className="text-[#FF7A00]" />
+              <Camera size={16} className="text-[#111111]" />
             )}
             <span className="truncate text-xs font-bold">
               {activeProduct?.title || tr('Photo attachée pour analyse', 'صورة مرفقة للتحليل')}
             </span>
             {activeProduct?.priceTnd != null && (
-              <span className="rounded bg-[#FF7A00]/10 px-1.5 py-0.5 text-[11px] font-black text-[#FF7A00]">
+              <span className="rounded bg-[#F8F9FA] px-1.5 py-0.5 text-[11px] font-black text-[#111111]">
                 {activeProduct.priceTnd} TND
               </span>
             )}
@@ -250,7 +252,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
 
         {/* Ambient background glow */}
         <div
-          className="pointer-events-none absolute h-72 w-72 rounded-full bg-[#FF7A00]/15 blur-3xl transition-all duration-300"
+          className="pointer-events-none absolute h-72 w-72 rounded-full bg-[#111111]/10 blur-3xl transition-all duration-300"
           style={{ transform: `scale(${scale * 1.35})` }}
         />
 
@@ -275,15 +277,15 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
 
           {/* Floating satellite dots */}
           <div
-            className="pointer-events-none absolute -left-2 top-10 h-3 w-3 rounded-full bg-[#FF7A00] opacity-80 shadow-md transition-transform duration-300"
+            className="pointer-events-none absolute -left-2 top-10 h-3 w-3 rounded-full bg-[#111111] opacity-60 shadow-md transition-transform duration-300"
             style={{ transform: `translateY(${Math.sin(smoothedVolume * 10) * 8}px)` }}
           />
           <div
-            className="pointer-events-none absolute -right-2 top-20 h-4 w-4 rounded-full bg-[#FF7A00] opacity-90 shadow-md transition-transform duration-300"
+            className="pointer-events-none absolute -right-2 top-20 h-4 w-4 rounded-full bg-[#111111] opacity-70 shadow-md transition-transform duration-300"
             style={{ transform: `translateY(${-Math.sin(smoothedVolume * 10) * 10}px)` }}
           />
           <div
-            className="pointer-events-none absolute bottom-8 left-4 h-2.5 w-2.5 rounded-full bg-[#FF7A00] opacity-75 shadow-md"
+            className="pointer-events-none absolute bottom-8 left-4 h-2.5 w-2.5 rounded-full bg-[#111111] opacity-55 shadow-md"
           />
 
           {/* Core Central Glowing Orb */}
@@ -297,8 +299,8 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             style={{
               transform: `scale(${scale})`,
               boxShadow: isDark
-                ? `0 0 ${glow * 1.5}px rgba(255, 122, 0, 0.45)`
-                : `0 0 ${glow * 1.8}px rgba(255, 122, 0, 0.55)`,
+                ? `0 0 ${glow * 1.5}px rgba(17, 17, 17, 0.35)`
+                : `0 0 ${glow * 1.8}px rgba(17, 17, 17, 0.45)`,
             }}
             aria-label={tr('Appuyer pour envoyer ou parler', 'اضغط للإرسال أو التحدث')}
           >
@@ -350,7 +352,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
                 }`}
               >
-                <Sparkles size={12} className="text-[#FF7A00]" />
+                <Sparkles size={12} className="text-[#111111]" />
                 <span>{tr(sug.fr, sug.ar)}</span>
               </button>
             ))}
@@ -374,7 +376,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     ? 'bg-blue-500'
                     : state === 'error'
                       ? 'bg-red-500'
-                      : 'bg-[#FF7A00]'
+                      : 'bg-[#111111]'
                 }`}
                 style={{ height: `${barH}px` }}
               />
@@ -394,7 +396,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                 onClick={() => { triggerHaptic(); onOpenAttachments(); }}
                 className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
                   attachments && attachments.length > 0
-                    ? 'bg-[#FF7A00] text-white shadow-md'
+                    ? 'bg-[#111111] text-white shadow-md'
                     : isDark
                       ? 'bg-white/10 text-white hover:bg-white/15'
                       : 'bg-white text-[#111111] shadow-sm hover:bg-black/5'
@@ -460,7 +462,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             <button
               type="button"
               onClick={() => { triggerHaptic(); onExit(); }}
-              className="grid h-14 w-14 place-items-center rounded-full bg-[#FF7A00] text-white shadow-lg shadow-[#FF7A00]/30 transition hover:bg-[#e05f00] active:scale-95"
+              className="grid h-14 w-14 place-items-center rounded-full bg-[#FF6900] text-white shadow-lg shadow-[#FF6900]/30 transition hover:bg-[#d95a00] active:scale-95"
               aria-label={tr('Quitter le mode vocal', 'إيقاف والخروج من الوضع الصوتي')}
             >
               <X size={26} strokeWidth={2.5} />
@@ -519,7 +521,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     onClick={() => handleVoiceSelect('Aoede', 'female')}
                     className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
                       selectedVoiceId === 'Aoede'
-                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        ? 'border-2 border-[#111111] bg-[#111111]/5 text-[#111111]'
                         : isDark
                           ? 'border border-white/10 bg-white/5 text-white'
                           : 'border border-black/5 bg-black/5 text-[#111111]'
@@ -533,7 +535,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     onClick={() => handleVoiceSelect('Kore', 'female')}
                     className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
                       selectedVoiceId === 'Kore'
-                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        ? 'border-2 border-[#111111] bg-[#111111]/5 text-[#111111]'
                         : isDark
                           ? 'border border-white/10 bg-white/5 text-white'
                           : 'border border-black/5 bg-black/5 text-[#111111]'
@@ -547,7 +549,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     onClick={() => handleVoiceSelect('Puck', 'male')}
                     className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
                       selectedVoiceId === 'Puck'
-                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        ? 'border-2 border-[#111111] bg-[#111111]/5 text-[#111111]'
                         : isDark
                           ? 'border border-white/10 bg-white/5 text-white'
                           : 'border border-black/5 bg-black/5 text-[#111111]'
@@ -561,7 +563,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     onClick={() => handleVoiceSelect('Fenrir', 'male')}
                     className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
                       selectedVoiceId === 'Fenrir'
-                        ? 'border-2 border-[#FF7A00] bg-[#FF7A00]/10 text-[#FF7A00]'
+                        ? 'border-2 border-[#111111] bg-[#111111]/5 text-[#111111]'
                         : isDark
                           ? 'border border-white/10 bg-white/5 text-white'
                           : 'border border-black/5 bg-black/5 text-[#111111]'
@@ -591,7 +593,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                       onClick={() => handleVoiceRateChange(item.val)}
                       className={`rounded-xl py-2.5 text-xs font-bold transition ${
                         Math.abs(voiceRate - item.val) < 0.04
-                          ? 'bg-[#FF7A00] text-white shadow-md'
+                          ? 'bg-[#111111] text-white shadow-md'
                           : isDark
                             ? 'bg-white/5 text-white hover:bg-white/10'
                             : 'bg-black/5 text-[#111111] hover:bg-black/10'
@@ -621,7 +623,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
                     if (next) triggerHaptic();
                   }}
                   className={`relative h-6 w-11 rounded-full transition-colors ${
-                    hapticsEnabled ? 'bg-[#FF7A00]' : 'bg-gray-400/40'
+                    hapticsEnabled ? 'bg-[#111111]' : 'bg-gray-400/40'
                   }`}
                 >
                   <span
@@ -636,7 +638,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
             <button
               type="button"
               onClick={() => { triggerHaptic(); setShowSettingsModal(false); }}
-              className="mt-6 w-full rounded-2xl bg-[#FF7A00] py-3.5 text-center text-xs font-black text-white shadow-lg shadow-[#FF7A00]/25 active:scale-95"
+              className="mt-6 w-full rounded-2xl bg-[#FF6900] py-3.5 text-center text-xs font-black text-white shadow-lg shadow-[#FF6900]/25 active:scale-95"
             >
               {tr('Appliquer', 'تطبيق الإعدادات')}
             </button>

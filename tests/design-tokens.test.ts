@@ -326,7 +326,18 @@ describe('accent — une seule source', () => {
     const tokens = read(TOKENS);
     const cta = declarations(tokens).find(([, n]) => n === '--ayrovi-cta');
     expect(cta).toBeTruthy();
-    expect(cta![2].trim().toLowerCase()).toBe('#fe7003');
+    /* P4/T1 « Zalando Strategy » : l'orange de marque n'est plus un littéral local — il
+       alias le jeton canonique, qui est le seul porteur de la valeur. On résout la chaîne
+       pour continuer à verrouiller la couleur elle-même. */
+    const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim().toLowerCase()]));
+    const resolve = (name: string, depth = 0): string => {
+      const raw = declared.get(name) ?? '';
+      const alias = raw.match(/^var\((--[a-z0-9-]+)\)$/);
+      return alias && depth < 4 ? resolve(alias[1], depth + 1) : raw;
+    };
+    expect(cta![2].trim().toLowerCase()).toBe('var(--ayrovi-color-brand-orange)');
+    expect(resolve('--ayrovi-cta')).toBe('#ff6900');
+    expect(resolve('--ayrovi-color-brand-orange')).toBe('#ff6900');
     for (const file of SYSTEM_SHEETS) {
       const body = withoutComments(read(file));
       const oranges = (body.match(/var\(--ayrovi-cta\)|var\(--admin-yellow\)/g) ?? []).length;

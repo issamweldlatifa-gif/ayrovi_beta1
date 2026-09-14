@@ -173,7 +173,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     primary: '#111318',
     primaryDark: '#050505',
     primaryLight: '#3f3f46',
-    accent: '#fe7003',
+    accent: '#ff6900',
     headerBackground: '#ffffff',
     headerText: '#1d2130',
     announcementBackground: '#111318',
@@ -190,7 +190,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111318',
     borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#fe7003', size: 28, style: 'outline' },
+  icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#ff6900', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#111318', activeBackground: '#111318', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',

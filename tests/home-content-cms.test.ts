@@ -33,7 +33,7 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     const data = response.body.data;
     expect(data.eyebrow).toBe('LENS');
     expect(data.title).toBe('Voyez-le.\nLENS le trouve.\nOn s’occupe du reste.');
-    expect(data.accentColor).toBe('#FF7A00');
+    expect(data.accentColor).toBe('#FF6900');
     // النموذج الجديد: المحتوى الموسّع كله من الـ DB (sections)
     expect(data.sections.miniFeatures).toHaveLength(4);
     expect(data.sections.steps.items).toHaveLength(4);

@@ -124,10 +124,10 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
 
         {/* قسم العربون 20% */}
         {result.deposit && (
-          <div className="rounded-2xl border border-accent bg-accent/10 p-4 text-start space-y-2" role="alert">
+          <div className="rounded-2xl border border-line bg-surface p-4 text-start space-y-2" role="alert">
             <div className="checkout-confirmation-row items-center">
               <span className="text-xs font-black text-ink uppercase tracking-wide">{tr(`Acompte de confirmation (${result.deposit.percent}%) :`, `عربون التأكيد (${result.deposit.percent}%):`)}</span>
-              <span className="text-lg font-black text-accent-deep">{result.deposit.amountTnd.toFixed(3)} {tr('DT', 'د.ت')}</span>
+              <span className="text-lg font-black text-ink">{result.deposit.amountTnd.toFixed(3)} {tr('DT', 'د.ت')}</span>
             </div>
             <p className="text-[11px] leading-5 text-ink">
               {manualDeposit ? tr(
@@ -138,7 +138,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
                 'الطلب موجود في حسابي ← طلباتي. يجب أن تؤكد بوابة الدفع عملية البطاقة قبل تأكيد الطلب.',
               )}
             </p>
-            <p className="rounded-full border border-warning/30 bg-warning/10 px-3 py-2 text-center text-[10px] font-black text-warning">
+            <p className="rounded-full border border-line bg-surface px-3 py-2 text-center text-[10px] font-black text-ink">
               {tr('Commande en attente d’acompte', 'الطلب في انتظار العربون')}
             </p>
             <ol className="space-y-1 rounded-xl border border-line bg-surface p-3 text-[10px] font-semibold leading-5 text-muted">

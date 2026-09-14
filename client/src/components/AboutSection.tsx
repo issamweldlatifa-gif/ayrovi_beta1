@@ -9,7 +9,7 @@ const BENEFITS = [
     description:
       'Un taux clair et garanti vous permet de connaître le montant exact en Dinars dès la validation de votre panier.',
     icon: ArrowRightLeft,
-    iconClassName: 'bg-accent text-ink',
+    iconClassName: 'bg-surface border border-line text-ink',
     accentClassName: 'from-accent to-accent-deep',
   },
   {
@@ -100,9 +100,9 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
       </div>
 
       <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand sm:text-xs">
-        <span className="h-px w-10 bg-accent" />
+        <span className="h-px w-10 bg-brand/20" />
         Simple · Transparent · Local
-        <span className="h-px w-10 bg-accent" />
+        <span className="h-px w-10 bg-brand/20" />
       </div>
     </section>
   );

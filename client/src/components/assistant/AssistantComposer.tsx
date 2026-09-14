@@ -73,7 +73,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
 
         {isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
-            <span className="h-6 w-6 shrink-0 animate-spin rounded-full border-2 border-[#FF7A00]/25 border-t-[#FF7A00]" />
+            <span className="h-6 w-6 shrink-0 animate-spin rounded-full border-2 border-[#111111]/25 border-t-[#111111]" />
             <span className={`text-sm ${isDark ? 'text-white/80' : 'text-muted'}`}>{tr('Transcription en cours…', 'جارٍ تحويل الصوت إلى نص…')}</span>
           </div>
         ) : (
@@ -124,7 +124,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
                 type="button"
                 onClick={isGenerating ? onStop : onSend}
                 disabled={isTranscribing}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-white shadow-md transition hover:bg-[#e05f00] active:scale-90 disabled:pointer-events-none disabled:opacity-30"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF6900] text-white shadow-md transition hover:bg-[#d95a00] active:scale-90 disabled:pointer-events-none disabled:opacity-30"
                 aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
               >
                 {isGenerating ? <Pause className="h-6 w-6 fill-current" /> : <ArrowUp className="h-6 w-6 stroke-[2.5]" />}
@@ -137,7 +137,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
                 type="button"
                 onClick={onToggleVoiceMode}
                 disabled={isGenerating || isTranscribing || isRecording}
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#FF7A00] text-white shadow-md shadow-[#FF7A00]/25 transition hover:bg-[#e05f00] active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#EAEAEA] bg-white text-[#111111] shadow-sm transition hover:bg-[#F8F9FA] active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
                   voiceMode ? 'ring-2 ring-white animate-pulse' : ''
                 }`}
                 aria-label={tr('Mode vocal', 'الوضع الصوتي')}

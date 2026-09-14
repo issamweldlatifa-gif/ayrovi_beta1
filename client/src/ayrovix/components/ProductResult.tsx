@@ -22,7 +22,7 @@ interface ProductResultProps {
 
 const AVAILABILITY: Record<string, { fr: string; ar: string; cls: string }> = {
   in_stock: { fr: 'Disponible', ar: 'متوفر', cls: 'bg-brand/10 text-brand-dark' },
-  limited: { fr: 'Stock limité', ar: 'مخزون محدود', cls: 'bg-accent/20 text-ink' },
+  limited: { fr: 'Stock limité', ar: 'مخزون محدود', cls: 'bg-surface text-ink border border-line' },
   out_of_stock: { fr: 'Rupture signalée', ar: 'غير متوفر', cls: 'bg-danger/5 text-danger' },
   unknown: { fr: 'Disponibilité à confirmer', ar: 'التوفر يحتاج إلى تأكيد', cls: 'bg-surface text-muted' },
 };
@@ -153,7 +153,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <h3 className="text-[15px] font-extrabold leading-snug text-ink">{product.title}</h3>
             <p className="mt-0.5 text-xs font-semibold text-muted">{[product.brand, product.model].filter(Boolean).join(' · ') || tr('Produit identifié par AYROVIX', 'منتج تعرّفت عليه AYROVIX')}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-warning" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Qualité de la fiche AYROVIX', 'جودة بطاقة AYROVIX')}><Star size={14} fill="currentColor" />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('fiche AYROVIX', 'بطاقة AYROVIX')}</span></span>
+              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-ink" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Qualité de la fiche AYROVIX', 'جودة بطاقة AYROVIX')}><Star size={14} fill="currentColor" />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('fiche AYROVIX', 'بطاقة AYROVIX')}</span></span>
               {validProductUrl(product.sourceUrl) && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 text-[11px] font-extrabold text-brand underline decoration-brand/30 underline-offset-4">{tr('Page du marchand', 'صفحة المتجر')}<ArrowUpRight size={14} /></a>}
             </div>
           </div>
@@ -173,7 +173,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           {priceVerified ? (
             <p className="flex items-center gap-1.5 rounded-xl border border-brand/25 bg-brand/5 px-3 py-2 text-[11px] font-bold text-brand-dark"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
           ) : (
-            <div className="rounded-xl border border-accent bg-accent/10 px-3 py-2 text-[11px] font-semibold text-ink">
+            <div className="rounded-xl border border-line bg-surface px-3 py-2 text-[11px] font-semibold text-ink">
               <p className="flex items-start gap-1.5"><Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tr(`Prix estimé — vérification manuelle par notre équipe après l’acompte de ${depositPercent}%.`, `السعر تقديري — يتحقق منه فريقنا يدويًا بعد دفع عربون ${depositPercent}%.`)}</p>
               {verificationReason(product.verificationFailureCode, isArabic) && <p className="mt-1 font-medium">{tr('Motif :', 'السبب:')} {verificationReason(product.verificationFailureCode, isArabic)}.</p>}
             </div>
