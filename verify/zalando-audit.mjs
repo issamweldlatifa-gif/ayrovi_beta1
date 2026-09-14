@@ -25,6 +25,7 @@ function isOrangePixel(r, g, b) {
   return r > 190 && g > 55 && g < 190 && b < 110 && r - b > 110;
 }
 
+/** Part de pixels « orange de marque » dans une image rendue. */
 async function coverage(png, label) {
   const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
   const channels = info.channels;
@@ -40,6 +41,21 @@ async function coverage(png, label) {
 
 const browser = await chromium.launch();
 const report = [];
+
+/** Ouvre le tiroir AYROVIX LENS depuis le CTA de la section v2 et mesure l'écran obtenu. */
+async function measureLensScreen(page, tag) {
+  const cta = page.locator('.lens2__cta').first();
+  if (!(await cta.count())) return { label: `écran LENS — ${tag}`, absent: true };
+  await cta.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(400);
+  await cta.click();
+  await page.waitForTimeout(2200);
+  const opened = await page.locator('.lens-home, .lens-drop').count();
+  if (!opened) return { label: `écran LENS — ${tag}`, absent: true };
+  const file = `${OUT}/zalando-lens-screen-${tag}.png`;
+  await page.screenshot({ path: file, fullPage: true });
+  return coverage(file, `écran LENS ouvert — ${tag}`);
+}
 
 for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
   const page = await browser.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: 1 });
@@ -74,6 +90,7 @@ for (const [w, h, tag] of [[390, 844, 'mobile'], [1440, 900, 'desktop']]) {
       report.push({ label: `${name} — ${tag}`, absent: true });
     }
   }
+  report.push(await measureLensScreen(page, tag));
   await page.close();
 }
 
