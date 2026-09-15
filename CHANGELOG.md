@@ -34,6 +34,12 @@ All notable AYROVI changes are recorded in this file.
 - Tests re-pointed rather than weakened: the one-shot-migration persistence guard (`tests/ayrovi.test.ts`) now proves the same regression on `lens_hero_settings` + `lens_feature_media_v1`; the back-office snapshots drop to 36 legacy sections / 48 navigation entries / 51 section ids; `TrustBarPage` leaves the six-file colour allow-list in `tests/design-tokens.test.ts`.
 - **Note:** the shared `Toggle` primitive (`client/src/design/admin/Toggle.tsx`) is now unused — it is exported from the admin component barrel, so it was kept. Say the word and it goes too.
 
+### Changed
+- **The Stories section is rebuilt to match the reference model, and moved below the LENS block.** The first version was wrong on two counts, both corrected here: the cards were a 4-column grid of small thumbnails (83 px wide) instead of the very large card of the model, and the section sat between the Hero and LENS instead of below it. Measured on the reference screenshot, one card spans **78 % of the screen** with the next one peeking ~57 px, so the row scrolls horizontally (`scroll-snap-type: x mandatory`, hidden scrollbar). Each card carries its own content **overlaid at the bottom of the image** — channel pill, story title, story description — over a dark monochrome scrim, exactly like « Sponsorisé / L'effet lululemon street / Un kit technique à porter au quotidien sportif ». One card now equals one story (the viewer receives one group per card) rather than one publisher.
+- `client/src/social/types.ts` and `mapDbStories()` now carry the story's `title` and `description` through to the frontend, so the card can show both lines instead of only the caption.
+- Home page order is now **Hero → LENS block → Stories section**, locked by tests in both `tests/lens-feature.test.ts` and `tests/stories-showcase.test.ts`.
+- Measured orange coverage after the rebuild: Stories section 1.0–1.98 % (the pixels come from the story photos; the CSS contributes only the arrow), LENS block 0.004–0.016 %, home page 0.73–1.24 % — max **1.98 %** against the 3 % budget. Suite: 704/704 passing, typecheck and build green.
+
 ### Added
 - **Five demo stories** published across the five channels (Ayrovi Official / Nouveautés / Style / Actus / Promos) so the container is visible immediately. They are ordinary rows in the `stories` table — edit or delete them freely from Stories Studio.
 

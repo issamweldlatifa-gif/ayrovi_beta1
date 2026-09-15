@@ -133,6 +133,8 @@ export function mapDbStories(rows: any[], publishers: StoryPublisher[] = []): St
         return [{ type, url: String(row.media_url) }, ...extra.filter((u) => /^https?:\/\//.test(u) || String(u).startsWith('/')).map((u) => ({ type: 'image' as const, url: String(u) }))];
       })(),
       caption: String(row.description || row.title || ''),
+      title: String(row.title || ''),
+      description: String(row.description || ''),
       cta: row.cta || row.product_id || row.arrival_id || row.promotion_id
         ? {
             label: String(row.cta || (row.product_id ? 'Voir le produit' : 'Découvrir')),

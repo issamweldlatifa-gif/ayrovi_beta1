@@ -1243,22 +1243,30 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 @media (prefers-reduced-motion: reduce) { .lens-feature__cta svg { transition: none; } }
 
 /* ============================================================
-   STORIES — CONTENEUR D'ACCUEIL (référence Zalando « Stories sur … »)
-   Titre + sous-titre → ligne de 4-5 cartes de dimensions IDENTIQUES
-   → lien d'action centré au milieu du conteneur.
-   Même respiration verticale que le bloc LENS, pour un rythme homogène.
-   Monochrome : blanc / gris / encre. Seule la flèche du lien porte l'orange.
+   STORIES — SECTION D'ACCUEIL (modèle fourni : « Stories sur Zalando »)
+   Titre + sous-titre + lien « Explorer toutes les stories › », puis un rail
+   horizontal : une carte de ~78 % de la largeur de l'écran, la suivante dépasse
+   du bord droit pour inviter au défilement. Le texte est posé EN BAS de l'image.
+   Respiration verticale large, identique au bloc LENS, entre les sections.
+   Monochrome : seule la flèche du lien porte l'orange.
    ============================================================ */
 .stories-showcase {
   --stories-showcase-gap: clamp(64px, 15vw, 104px);
-  --stories-showcase-gutter: clamp(18px, 4.2vw, 40px);
+  --stories-showcase-gutter: clamp(16px, 4.2vw, 40px);
+  /* Largeur d'une carte — 78 % de l'écran, mesure relevée sur le modèle fourni.
+     La suivante dépasse donc du bord droit et invite au défilement. Plafond à
+     560 px pour que les cartes restent alignées sur la colonne de lecture. */
+  --stories-showcase-card: min(78vw, 560px);
 
   background: var(--ayrovi-bg-main);
   padding-block: var(--stories-showcase-gap);
-  padding-inline: var(--stories-showcase-gutter);
 }
 
-.stories-showcase__inner { max-width: 720px; margin-inline: auto; }
+.stories-showcase__head {
+  max-width: 720px;
+  margin-inline: auto;
+  padding-inline: var(--stories-showcase-gutter);
+}
 
 .stories-showcase__title {
   margin: 0;
@@ -1275,72 +1283,9 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   color: var(--ayrovi-text-secondary);
 }
 
-/* Grille à colonnes égales : toutes les cartes ont strictement les mêmes
-   dimensions, quel que soit le nombre (4 ou 5) choisi dans le Dashboard. */
-.stories-showcase__grid {
-  list-style: none;
-  margin: clamp(22px, 5.5vw, 34px) 0 0;
-  padding: 0;
-  display: grid;
-  gap: clamp(8px, 2vw, 16px);
-  grid-template-columns: repeat(var(--stories-showcase-count, 4), minmax(0, 1fr));
-}
-
-.stories-showcase__cell { margin: 0; min-width: 0; }
-
-.stories-showcase__card {
-  display: block;
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  text-align: start;
-}
-
-.stories-showcase__thumb {
-  display: block;
-  position: relative;
-  width: 100%;
-  aspect-ratio: 9 / 16;
-  overflow: hidden;
-  border-radius: 14px;
-  background: var(--ayrovi-bg-surface);
-  border: 1px solid var(--ayrovi-border-soft);
-}
-
-/* Story non vue : liseré en encre. L'orange reste réservé aux actions décisives. */
-.stories-showcase__card.is-unseen .stories-showcase__thumb {
-  border-color: var(--ayrovi-text-primary);
-  border-width: 1.5px;
-}
-
-.stories-showcase__thumb > img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.stories-showcase__name {
-  display: block;
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--ayrovi-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Le lien d'action est centré au milieu du conteneur, sous la ligne de cartes. */
-.stories-showcase__action {
-  margin-top: clamp(24px, 6vw, 36px);
-  display: flex;
-  justify-content: center;
-}
-
+/* Lien « Explorer toutes les stories › » — juste sous le sous-titre. */
 .stories-showcase__cta {
+  margin-top: 14px;
   display: inline-flex;
   align-items: center;
   gap: 9px;
@@ -1357,5 +1302,89 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .stories-showcase__cta > svg { color: var(--ayrovi-color-brand-orange); transition: transform 0.18s ease; }
 .stories-showcase__cta:hover > svg { transform: translateX(3px); }
 .stories-showcase__cta:focus-visible { outline: 2px solid var(--ayrovi-text-primary); outline-offset: 4px; }
+
+/* Rail horizontal aimanté ; la barre de défilement est masquée. */
+.stories-showcase__rail {
+  list-style: none;
+  max-width: calc(720px + 2 * var(--stories-showcase-gutter));
+  margin: clamp(22px, 5.5vw, 32px) auto 0;
+  padding: 0 var(--stories-showcase-gutter);
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline-start: var(--stories-showcase-gutter);
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.stories-showcase__rail::-webkit-scrollbar { display: none; }
+
+.stories-showcase__cell {
+  flex: 0 0 var(--stories-showcase-card);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+
+.stories-showcase__card {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--ayrovi-border-soft);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--ayrovi-bg-surface);
+  cursor: pointer;
+  text-align: start;
+}
+
+.stories-showcase__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Texte posé en bas de l'image, sur un voile sombre — monochrome, pas d'orange. */
+.stories-showcase__overlay {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 18px 16px 16px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.82), rgba(0, 0, 0, 0.4) 55%, rgba(0, 0, 0, 0));
+  color: rgb(255, 255, 255);
+}
+
+.stories-showcase__badge {
+  display: inline-block;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--ayrovi-bg-main);
+  color: var(--ayrovi-text-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.stories-showcase__cardtitle {
+  font-size: clamp(18px, 5vw, 24px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.stories-showcase__carddesc {
+  font-size: 13px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.82);
+}
 
 @media (prefers-reduced-motion: reduce) { .stories-showcase__cta > svg { transition: none; } }

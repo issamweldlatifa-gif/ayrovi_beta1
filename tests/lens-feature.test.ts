@@ -51,18 +51,19 @@ describe('LENS editorial block — content comes from the dashboard', () => {
     }
   });
 
-  test('the block closes the home page, after the Hero and the Stories container', () => {
+  test('the LENS block sits between the Hero and the Stories section', () => {
     // extraction robuste : la branche contient des « ); » imbriqués
     const src = code(appSource);
     const start = src.indexOf("section.id === 'hero'");
     const end = src.indexOf("section.id === 'cms'", start);
     const heroBranch = src.slice(start, end > start ? end : undefined);
     expect(heroBranch).toContain('<EvergreenHero />');
-    expect(heroBranch).toContain('<StoriesShowcase');
     expect(heroBranch).toContain('<LensFeature');
-    // Hero → conteneur Stories → bloc LENS, dans cet ordre
-    expect(heroBranch.indexOf('<EvergreenHero />')).toBeLessThan(heroBranch.indexOf('<StoriesShowcase'));
-    expect(heroBranch.indexOf('<StoriesShowcase')).toBeLessThan(heroBranch.indexOf('<LensFeature'));
+    expect(heroBranch).toContain('<StoriesShowcase');
+    // Hero → bloc LENS → section Stories, dans cet ordre (demande explicite :
+    // la section Stories se place SOUS le bloc LENS, pas au-dessus)
+    expect(heroBranch.indexOf('<EvergreenHero />')).toBeLessThan(heroBranch.indexOf('<LensFeature'));
+    expect(heroBranch.indexOf('<LensFeature')).toBeLessThan(heroBranch.indexOf('<StoriesShowcase'));
     // شريط الثقة محذوف نهائياً
     expect(src).not.toContain('TrustBar');
   });

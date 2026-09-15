@@ -428,14 +428,14 @@ export const App: React.FC = () => {
       if (section.id === 'hero') content = (
         <>
           <EvergreenHero />
-          {/* حاوية Stories (مرجع Zalando) — العنوان والعنوان الفرعي ورابط الوسط
-              وعدد البطاقات (4 أو 5) كلها من الـ Dashboard. */}
+          {/* قسم LENS التحريري (مرجع Zalando) — العنوان والفيديو من الـ Dashboard. */}
+          <LensFeature onOpenLens={handleOpenLens} />
+          {/* قسم Stories (النموذج المرجعي) — يأتي تحت قسم LENS لا فوقه.
+              العنوان والعنوان الفرعي والرابط وعدد البطاقات كلها من الـ Dashboard. */}
           <StoriesShowcase
             isAuthenticated={Boolean(customerSession)}
             onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
           />
-          {/* قسم LENS التحريري (مرجع Zalando) — العنوان والفيديو من الـ Dashboard. */}
-          <LensFeature onOpenLens={handleOpenLens} />
         </>
       );
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;

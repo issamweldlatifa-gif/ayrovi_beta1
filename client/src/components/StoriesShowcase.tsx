@@ -1,26 +1,26 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getStories } from '../social/storyService';
 import type { Story, StoryCta } from '../social/types';
-import { groupByPublisher, type StoryGroup } from '../social/components/StoryCircles';
+import type { StoryGroup } from '../social/components/StoryCircles';
 import { StoryViewer } from '../social/components/StoryViewer';
 import { CommentSheet } from '../social/components/CommentSheet';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 
 /**
- * STORIES — CONTENEUR D'ACCUEIL (référence : Zalando « Stories sur Zalando »)
- * -------------------------------------------------------------------------
- * Le modèle repris de la référence : un conteneur titré, une ligne de 4 ou 5
- * cartes **de dimensions identiques**, puis le lien d'action **centré au milieu
- * du conteneur** (« Explorer toutes les stories › »).
+ * STORIES — SECTION D'ACCUEIL (modèle fourni : « Stories sur Zalando »)
+ * --------------------------------------------------------------------
+ * Le modèle de référence, relevé au pixel sur la capture :
+ *   • un titre très lisible, son sous-titre, puis le lien « Explorer toutes les stories › » ;
+ *   • une CARTE TRÈS GRANDE — environ 78 % de la largeur de l'écran — la suivante
+ *     dépasse légèrement du bord droit pour inviter au défilement ;
+ *   • sur chaque carte, un texte posé EN BAS de l'image : une pastille de canal,
+ *     le titre de la story puis sa description.
  *
- * Dashboard = Control · CMS = Source of Truth · Frontend = Presentation :
- * le titre, le sous-titre, le libellé et la destination du lien, le nombre de
- * cartes (4 ou 5) et la visibilité du bloc viennent de /api/public/stories-showcase
- * (Admin → Stories → Bloc d'accueil). Les stories, elles, viennent de /api/public/stories.
+ * Tout est piloté depuis Admin → Contenu → Social → onglet Story → « Bloc d'accueil ».
  * Aucun texte ni image n'est figé dans ce composant.
  *
- * Charte Zalando : conteneur monochrome (blanc/gris/encre). Le liseré des stories
- * non vues est en encre, pas en orange — l'orange reste réservé aux actions décisives.
+ * Charte Zalando : la section reste monochrome. La seule touche orangée est la
+ * flèche du lien « Explorer toutes les stories ».
  */
 
 interface ShowcaseSettings {
@@ -41,8 +41,8 @@ interface Props {
 
 /**
  * Valeurs de repli volontairement vides : la base est la SEULE source de vérité.
- * Si l'API ne répond pas, le bloc ne s'affiche pas du tout plutôt que d'exposer
- * un texte qui ne viendrait pas du Dashboard.
+ * Si l'API ne répond pas, la section ne s'affiche pas plutôt que d'exposer un
+ * texte qui ne viendrait pas du Dashboard.
  */
 const FALLBACK: ShowcaseSettings = {
   title: '', subtitle: '', ctaLabel: '', ctaUrl: '', cardCount: 4, enabled: true,
@@ -63,18 +63,26 @@ export const StoriesShowcase: React.FC<Props> = ({ isAuthenticated, onRequireAut
       getStories().catch(() => [] as Story[]),
     ]).then(([settingsJson, loadedStories]) => {
       if (!alive) return;
-      if (settingsJson?.success && settingsJson.data) {
-        setSettings({ ...FALLBACK, ...settingsJson.data });
-      }
+      if (settingsJson?.success && settingsJson.data) setSettings({ ...FALLBACK, ...settingsJson.data });
       setStories(loadedStories);
       setReady(true);
     });
     return () => { alive = false; };
   }, []);
 
-  const groups = useMemo<StoryGroup[]>(() => groupByPublisher(stories), [stories]);
   const count = Math.min(5, Math.max(4, Number(settings?.cardCount ?? 4)));
-  const visible = useMemo(() => groups.slice(0, count), [groups, count]);
+  /** Les stories les plus prioritaires d'abord — comme les trie le Dashboard. */
+  const visible = useMemo(() => stories.slice(0, count), [stories, count]);
+
+  /** Le viewer attend des groupes : ici, une carte = une story. */
+  const groups = useMemo<StoryGroup[]>(
+    () => visible.map((story) => ({
+      publisher: story.publisher,
+      stories: [story],
+      hasUnseen: !story.seen,
+    })),
+    [visible],
+  );
 
   const refreshSeen = useCallback(() => {
     setStories((current) => current.map((story) => ({ ...story, seen: true })));
@@ -88,7 +96,7 @@ export const StoriesShowcase: React.FC<Props> = ({ isAuthenticated, onRequireAut
     navigation.navigate([{ id: 'cms:arrivals' }]);
   }, [navigation, onCta]);
 
-  /** Le lien central : destination configurée, sinon l'onglet Stories du site. */
+  /** Le lien du haut : destination configurée, sinon l'onglet Stories du site. */
   const explore = () => {
     const url = String(settings?.ctaUrl || '').trim();
     if (url.startsWith('/')) { navigation.navigate([{ id: `cms:${url.replace(/^\/+/, '')}` }]); return; }
@@ -101,48 +109,43 @@ export const StoriesShowcase: React.FC<Props> = ({ isAuthenticated, onRequireAut
 
   return (
     <section className="stories-showcase" aria-labelledby="stories-showcase-title">
-      <div className="stories-showcase__inner">
+      <div className="stories-showcase__head">
         <h2 className="stories-showcase__title" id="stories-showcase-title">{settings.title}</h2>
         {settings.subtitle ? <p className="stories-showcase__subtitle">{settings.subtitle}</p> : null}
-
-        {/* Ligne de cartes — toutes de dimensions identiques (grille à colonnes égales). */}
-        <ul
-          className="stories-showcase__grid"
-          style={{ ['--stories-showcase-count' as string]: String(count) }}
-        >
-          {visible.map((group, index) => (
-            <li key={group.publisher.id} className="stories-showcase__cell">
-              <button
-                type="button"
-                className={`stories-showcase__card${group.hasUnseen ? ' is-unseen' : ''}`}
-                onClick={() => setViewerIndex(index)}
-                aria-label={`Stories de ${group.publisher.name}`}
-              >
-                <span className="stories-showcase__thumb">
-                  <img src={group.stories[0]?.media?.url || ''} alt="" loading="lazy" decoding="async" />
-                </span>
-                <span className="stories-showcase__name">{group.publisher.name}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-
-        {/* Lien d'action : centré au milieu du conteneur, sous la ligne de cartes. */}
         {settings.ctaLabel ? (
-          <div className="stories-showcase__action">
-            <button type="button" className="stories-showcase__cta" onClick={explore}>
-              <span>{settings.ctaLabel}</span>
-              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-                <path d="M5 12h13M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
-          </div>
+          <button type="button" className="stories-showcase__cta" onClick={explore}>
+            <span>{settings.ctaLabel}</span>
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
+              <path d="M5 12h13M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         ) : null}
       </div>
 
-      {viewerIndex != null && visible[viewerIndex] ? (
+      {/* Rail horizontal : une carte très large, la suivante dépasse du bord. */}
+      <ul className="stories-showcase__rail">
+        {visible.map((story, index) => (
+          <li key={story.id} className="stories-showcase__cell">
+            <button
+              type="button"
+              className="stories-showcase__card"
+              onClick={() => setViewerIndex(index)}
+              aria-label={story.title}
+            >
+              <img className="stories-showcase__img" src={story.media?.url || ''} alt="" loading="lazy" decoding="async" />
+              <span className="stories-showcase__overlay">
+                {story.publisher?.name ? <span className="stories-showcase__badge">{story.publisher.name}</span> : null}
+                <span className="stories-showcase__cardtitle">{story.title}</span>
+                {story.description ? <span className="stories-showcase__carddesc">{story.description}</span> : null}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {viewerIndex != null && groups[viewerIndex] ? (
         <StoryViewer
-          groups={visible}
+          groups={groups}
           startIndex={viewerIndex}
           isAuthenticated={isAuthenticated}
           onRequireAuth={onRequireAuth}

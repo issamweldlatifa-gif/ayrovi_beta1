@@ -25,6 +25,10 @@ export interface Story {
   media: StoryMedia;
   mediaList?: StoryMedia[];
   caption?: string;
+  /** Titre de la story tel qu'il est saisi dans le Dashboard (bloc d'accueil). */
+  title?: string;
+  /** Description courte affichée sous le titre de la carte. */
+  description?: string;
   cta?: StoryCta;
   createdAt: string;
   expiresAt: string;
