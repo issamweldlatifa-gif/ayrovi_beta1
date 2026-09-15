@@ -105,6 +105,7 @@ const ShowcaseBlock: React.FC = () => {
         body: JSON.stringify({
           title: draft.title, subtitle: draft.subtitle, ctaLabel: draft.ctaLabel,
           ctaUrl: draft.ctaUrl, cardCount: Number(draft.cardCount) || 4, enabled: Boolean(draft.enabled),
+          sortOrder: Number(draft.sortOrder ?? 1),
         }),
       });
       setDraft(result.data || draft);
@@ -135,6 +136,12 @@ const ShowcaseBlock: React.FC = () => {
         <Field label="Libellé du lien central"><input value={draft.ctaLabel || ''} onChange={(e) => patch({ ctaLabel: e.target.value })} maxLength={60} /></Field>
         <Field label="Destination du lien central" hint="Vide = ouvre l’onglet Stories. Sinon : /stories, /promotions, ou une URL https://…">
           <input value={draft.ctaUrl || ''} onChange={(e) => patch({ ctaUrl: e.target.value })} placeholder="/stories" />
+        </Field>
+        <Field label="Position du bloc" hint="Par défaut : la section Stories se place SOUS le bloc LENS.">
+          <select value={String(Number(draft.sortOrder ?? 1) >= 1 ? 1 : 0)} onChange={(e) => patch({ sortOrder: Number(e.target.value) })}>
+            <option value="1">Sous le bloc LENS</option>
+            <option value="0">Au-dessus du bloc LENS</option>
+          </select>
         </Field>
         <Field label="Afficher le bloc" full>
           <Switch checked={Boolean(draft.enabled)} onLabel="Bloc visible" offLabel="Bloc masqué" onChange={() => patch({ enabled: !draft.enabled })} />

@@ -295,6 +295,23 @@ export const App: React.FC = () => {
   };
 
   // AYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
+  /**
+   * Position de la section Stories par rapport au bloc LENS.
+   * Pilotée depuis Admin → Contenu → Social → onglet Story → « Bloc d'accueil »
+   * (champ « Position » : 1 = sous LENS, 0 = au-dessus). Défaut : sous LENS.
+   */
+  const [storiesBelowLens, setStoriesBelowLens] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/public/stories-showcase')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (alive && json?.success && json.data) setStoriesBelowLens(Number(json.data.sortOrder ?? 1) >= 1);
+      })
+      .catch(() => { /* on garde l'ordre par défaut */ });
+    return () => { alive = false; };
+  }, []);
+
   const handleOpenLens = () => {
     setLensSessionActive(true);
     navigation.navigate([
@@ -428,14 +445,28 @@ export const App: React.FC = () => {
       if (section.id === 'hero') content = (
         <>
           <EvergreenHero />
-          {/* قسم LENS التحريري (مرجع Zalando) — العنوان والفيديو من الـ Dashboard. */}
-          <LensFeature onOpenLens={handleOpenLens} />
-          {/* قسم Stories (النموذج المرجعي) — يأتي تحت قسم LENS لا فوقه.
-              العنوان والعنوان الفرعي والرابط وعدد البطاقات كلها من الـ Dashboard. */}
-          <StoriesShowcase
-            isAuthenticated={Boolean(customerSession)}
-            onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
-          />
+          {/*
+            Ordre piloté par le Dashboard : par défaut le bloc LENS d'abord, la
+            section Stories ENSUITE. Mettre « Position = au-dessus du bloc LENS »
+            dans le Dashboard inverse les deux — sans toucher au code.
+          */}
+          {storiesBelowLens ? (
+            <>
+              <LensFeature onOpenLens={handleOpenLens} />
+              <StoriesShowcase
+                isAuthenticated={Boolean(customerSession)}
+                onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
+              />
+            </>
+          ) : (
+            <>
+              <StoriesShowcase
+                isAuthenticated={Boolean(customerSession)}
+                onRequireAuth={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
+              />
+              <LensFeature onOpenLens={handleOpenLens} />
+            </>
+          )}
         </>
       );
       else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;

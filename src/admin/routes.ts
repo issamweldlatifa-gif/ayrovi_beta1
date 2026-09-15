@@ -592,7 +592,8 @@ export function createAdminRouter(
       clamp(req.body.focalY, existing.focal_y),
       req.body.phoneEnabled === undefined ? existing.phone_enabled : (req.body.phoneEnabled ? 1 : 0),
       req.body.enabled === undefined ? existing.enabled : (req.body.enabled ? 1 : 0),
-      Math.min(999, Math.max(0, Number(req.body.sortOrder ?? existing.sort_order) || 0)),
+      // 1 = sous le bloc LENS (défaut), 0 = au-dessus. Toute autre valeur → 1.
+      Number(req.body.sortOrder) === 0 ? 0 : 1,
       phoneImage,
       text(req.body.phone?.statusLabel ?? req.body.phoneStatusLabel, existing.phone_status_label, 40),
       text(req.body.phone?.resultLabel ?? req.body.phoneResultLabel, existing.phone_result_label, 40),

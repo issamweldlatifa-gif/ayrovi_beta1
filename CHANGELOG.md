@@ -40,6 +40,12 @@ All notable AYROVI changes are recorded in this file.
 - Home page order is now **Hero → LENS block → Stories section**, locked by tests in both `tests/lens-feature.test.ts` and `tests/stories-showcase.test.ts`.
 - Measured orange coverage after the rebuild: Stories section 1.0–1.98 % (the pixels come from the story photos; the CSS contributes only the arrow), LENS block 0.004–0.016 %, home page 0.73–1.24 % — max **1.98 %** against the 3 % budget. Suite: 704/704 passing, typecheck and build green.
 
+### Fixed
+- **The Stories section was rendering ABOVE the LENS block — root cause found and fixed.** The section position became dashboard-driven, and the `sort_order` column defaulted to `0`; the frontend read `0` as « above LENS », so the section jumped back to the top of the page. The column now defaults to `1` (« sous le bloc LENS »), the one-shot migration `stories_showcase_position_v1` promotes existing rows that still carry the old `0`, the admin API clamps the value to `0` or `1`, and the frontend keeps `>= 1` as « below ». Verified on the running page: Hero (45–440) → LENS (440–1205) → Stories (1205–1862).
+
+### Added
+- **The block position is now controlled from the Dashboard**: Admin → Contenu → Social → onglet Story → « Bloc d'accueil » → champ **Position** (`Sous le bloc LENS` · `Au-dessus du bloc LENS`). Flipping it takes effect immediately, with no code change. Defaults to « sous le bloc LENS ».
+
 ### Added
 - **Five demo stories** published across the five channels (Ayrovi Official / Nouveautés / Style / Actus / Promos) so the container is visible immediately. They are ordinary rows in the `stories` table — edit or delete them freely from Stories Studio.
 

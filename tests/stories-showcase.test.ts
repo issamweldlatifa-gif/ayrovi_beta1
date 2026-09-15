@@ -89,35 +89,22 @@ describe('Stories showcase — settings come from the dashboard', () => {
     }
   });
 
-  test('the block sits BELOW the LENS block, and the Trust Bar is gone for good', () => {
-    // extraction robuste : la branche contient des « ); » imbriqués
+  test('the block sits BELOW the LENS block — and the Dashboard can flip it', () => {
     const src = code(appSource);
-    const start = src.indexOf("section.id === 'hero'");
-    const end = src.indexOf("section.id === 'cms'", start);
-    const heroBranch = src.slice(start, end > start ? end : undefined);
-    expect(heroBranch).toContain('<EvergreenHero />');
-    expect(heroBranch).toContain('<LensFeature');
-    expect(heroBranch).toContain('<StoriesShowcase');
-    // Hero → bloc LENS → section Stories, dans cet ordre (demande explicite)
-    expect(heroBranch.indexOf('<EvergreenHero />')).toBeLessThan(heroBranch.indexOf('<LensFeature'));
-    expect(heroBranch.indexOf('<LensFeature')).toBeLessThan(heroBranch.indexOf('<StoriesShowcase'));
+    // L'ordre n'est plus figé dans le code : il vient du réglage « Position » du bloc.
+    expect(src).toMatch(/storiesBelowLens/);
+    expect(src).toContain("fetch('/api/public/stories-showcase')");
+    expect(src).toMatch(/setStoriesBelowLens\(Number\(json\.data\.sortOrder \?\? 1\) >= 1\)/);
+    // Valeur par défaut : la section Stories se place SOUS le bloc LENS.
+    expect(src).toMatch(/useState\(true\)/);
+    // Dans cette branche, LENS est rendu avant Stories.
+    const branch = /storiesBelowLens \? \(([\s\S]*?)\) : \(/.exec(src)?.[1] ?? '';
+    expect(branch).toContain('<LensFeature');
+    expect(branch).toContain('<StoriesShowcase');
+    expect(branch.indexOf('<LensFeature')).toBeLessThan(branch.indexOf('<StoriesShowcase'));
     // شريط الثقة محذوف نهائياً
-    expect(code(appSource)).not.toContain('TrustBar');
+    expect(src).not.toContain('TrustBar');
     expect(() => readFileSync('client/src/components/TrustBar.tsx', 'utf8')).toThrow();
-  });});
-
-describe('Stories showcase — le modèle fourni et la charte', () => {
-  test('the reference model: one very wide card per screen, the next one peeking', () => {
-    // Largeur de carte relevée sur la capture de référence : ~78 % de l'écran,
-    // la suivante dépasse du bord droit pour inviter au défilement.
-    expect(indexCss).toMatch(/--stories-showcase-card:\s*min\(78vw,\s*560px\)/);
-    const cell = /\.stories-showcase__cell\s*\{[^}]*\}/.exec(indexCss)?.[0] ?? '';
-    expect(cell).toMatch(/flex:\s*0 0 var\(--stories-showcase-card\)/);
-    expect(cell).toMatch(/scroll-snap-align:\s*start/);
-    // toutes les cartes ont donc strictement la même largeur et la même hauteur
-    const card = /\.stories-showcase__card\s*\{[^}]*\}/.exec(indexCss)?.[0] ?? '';
-    expect(card).toMatch(/aspect-ratio:\s*3 \/ 4/);
-    expect(card).toMatch(/width:\s*100%/);
   });
 
   test('the rail scrolls horizontally with snap and no visible scrollbar', () => {

@@ -1467,7 +1467,9 @@ export class QatafoDatabase {
       cta_url TEXT NOT NULL DEFAULT '',
       card_count INTEGER NOT NULL DEFAULT 4 CHECK(card_count IN (4,5)),
       enabled INTEGER NOT NULL DEFAULT 1,
-      sort_order INTEGER NOT NULL DEFAULT 0,
+      /* 1 = la section Stories se place SOUS le bloc LENS (valeur par defaut),
+         0 = au-dessus. Voir la migration stories_showcase_position_v1. */
+      sort_order INTEGER NOT NULL DEFAULT 1,
       updated_at TEXT NOT NULL
     );`);
     if (!(this.db.prepare("SELECT COUNT(*) AS count FROM stories_showcase_settings WHERE id='global'").get() as { count: number }).count) {
@@ -2048,7 +2050,21 @@ export class QatafoDatabase {
     });
     this.rebrandNoirOrangePalette();
     this.rebrandZalandoOrange();
+    this.seedStoriesShowcasePosition();
     this.seedLensFeatureMedia();
+  }
+
+  /**
+   * Position du bloc Stories : les réglages créés avant l'introduction du champ
+   * « Position » portent la valeur 0, qui signifiait alors « non renseigné ».
+   * Ils passent une seule fois à 1 — « sous le bloc LENS », la position demandée —
+   * sans jamaisécraser un choix fait ensuite depuis le Dashboard.
+   */
+  private seedStoriesShowcasePosition(): void {
+    this.runOnceDataMigration('stories_showcase_position_v1', () => {
+      const now = new Date().toISOString();
+      this.run("UPDATE stories_showcase_settings SET sort_order=1, updated_at=? WHERE id='global' AND sort_order=0", now);
+    });
   }
 
   /**

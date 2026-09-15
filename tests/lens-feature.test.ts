@@ -51,19 +51,15 @@ describe('LENS editorial block — content comes from the dashboard', () => {
     }
   });
 
-  test('the LENS block sits between the Hero and the Stories section', () => {
-    // extraction robuste : la branche contient des « ); » imbriqués
+  test('the LENS block comes before the Stories section by default', () => {
     const src = code(appSource);
-    const start = src.indexOf("section.id === 'hero'");
-    const end = src.indexOf("section.id === 'cms'", start);
-    const heroBranch = src.slice(start, end > start ? end : undefined);
-    expect(heroBranch).toContain('<EvergreenHero />');
-    expect(heroBranch).toContain('<LensFeature');
-    expect(heroBranch).toContain('<StoriesShowcase');
-    // Hero → bloc LENS → section Stories, dans cet ordre (demande explicite :
-    // la section Stories se place SOUS le bloc LENS, pas au-dessus)
-    expect(heroBranch.indexOf('<EvergreenHero />')).toBeLessThan(heroBranch.indexOf('<LensFeature'));
-    expect(heroBranch.indexOf('<LensFeature')).toBeLessThan(heroBranch.indexOf('<StoriesShowcase'));
+    // L'ordre est piloté par le Dashboard ; LENS d'abord est la valeur par défaut.
+    expect(src).toMatch(/storiesBelowLens/);
+    expect(src).toMatch(/useState\(true\)/);
+    const branch = /storiesBelowLens \? \(([\s\S]*?)\) : \(/.exec(src)?.[1] ?? '';
+    expect(branch).toContain('<LensFeature');
+    expect(branch).toContain('<StoriesShowcase');
+    expect(branch.indexOf('<LensFeature')).toBeLessThan(branch.indexOf('<StoriesShowcase'));
     // شريط الثقة محذوف نهائياً
     expect(src).not.toContain('TrustBar');
   });
