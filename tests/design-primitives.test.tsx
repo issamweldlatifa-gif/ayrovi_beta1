@@ -175,7 +175,7 @@ describe('markup des primitives — figé par contrat', () => {
 
 describe('extractions — la primitive rend ce que l’écran écrivait à la main', () => {
   /* Les formes manuscrites ci-dessous sont recopiées des écrans tels qu'ils étaient avant P3/T2
-     (HeroVisualsPage, HomeSectionsPage, InterfaceStudio, LensSectionPage, resource-ui, TrustBarPage,
+     (HeroVisualsPage, HomeSectionsPage, InterfaceStudio, LensSectionPage, resource-ui,
      AdminApp, AdminPricingPage, DataTable). L'égalité est faite sur le rendu, pas sur le code. */
   const noop = () => {};
 
@@ -193,7 +193,7 @@ describe('extractions — la primitive rend ce que l’écran écrivait à la ma
       .toBe(normalize(manual(on, 'Oui')));
   });
 
-  it('remplace les trois cases à cocher en ligne de TrustBarPage sans changer le rendu', () => {
+  it('rend la case à cocher en ligne sans changer le rendu (primitive Toggle)', () => {
     const manual = (checked: boolean, disabled: boolean, text: string) => renderToStaticMarkup(
       <label className="admin-toggle"><input type="checkbox" checked={checked} disabled={disabled} onChange={noop} /><span />{text}</label>,
     );

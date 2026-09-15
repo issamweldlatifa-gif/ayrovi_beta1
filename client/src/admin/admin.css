@@ -619,19 +619,6 @@ input[type="color"]{width:100%;height:40px;border:1px solid var(--admin-tone-e5e
 .admin-hero-quick { display: flex; gap: 6px; margin-top: 4px; }
 .admin-hero-quick input { font-size: 11px; padding: 2px 4px; border: 1px solid var(--admin-line, var(--admin-line-soft)); border-radius: 6px; }
 
-/* ============ TRUST BAR ADMIN ============ */
-.admin-trustbar-page { display: flex; flex-direction: column; }
-.admin-trustbar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-.admin-trustbar-desc { max-width: 320px; }
-.admin-trustbar-preview { border-radius: 12px; padding: 18px 22px; }
-.admin-trustbar-preview.mobile { max-width: 360px; margin: 0 auto; padding: 14px 18px; }
-.admin-trustbar-preview .trust-bar__title { color: var(--admin-on-dark); }
-.admin-preview-toggle { display: inline-flex; border: 1px solid var(--admin-line, var(--admin-line-soft)); border-radius: 999px; overflow: hidden; }
-.admin-preview-toggle button { padding: 6px 14px; font-size: 12px; font-weight: 700; background: transparent; border: 0; cursor: pointer; color: var(--ayrovi-neutral-500); }
-.admin-preview-toggle button.is-active { background: var(--ayrovi-primary); color: var(--admin-on-dark); }
-.admin-icon-picker { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--admin-line, var(--admin-line-soft)); border-radius: 10px; }
-.admin-icon-picker button { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid transparent; border-radius: 9px; background: var(--admin-surface-sunken); cursor: pointer; color: var(--admin-tone-374151); }
-.admin-icon-picker button.is-active { border-color: var(--ayrovi-cta); color: var(--ayrovi-cta); background: var(--admin-tone-fff7ed); }
 .admin-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; cursor: pointer; }
 .admin-toggle input { width: 34px; height: 18px; appearance: none; background: var(--admin-tone-d1d5db); border-radius: 999px; position: relative; cursor: pointer; transition: background .2s; }
 .admin-toggle input:checked { background: var(--ayrovi-success); }

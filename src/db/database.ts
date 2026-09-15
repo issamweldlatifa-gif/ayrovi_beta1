@@ -1566,67 +1566,6 @@ export class QatafoDatabase {
       [['transition', 10], ['discovery', 20], ['brands', 30], ['lens', 40]].forEach(([id, order]) => insertBlock.run(id, order, nowBlock));
     }
 
-    // AYROVI Trust Bar — العناصر والإعدادات العامة
-    this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_items (
-      id TEXT PRIMARY KEY,
-      title TEXT NOT NULL,
-      description TEXT NOT NULL DEFAULT '',
-      icon TEXT NOT NULL DEFAULT 'ShieldCheck',
-      enabled INTEGER NOT NULL DEFAULT 1,
-      sort_order INTEGER NOT NULL DEFAULT 0,
-      title_color TEXT NOT NULL DEFAULT '',
-      description_color TEXT NOT NULL DEFAULT '',
-      icon_color TEXT NOT NULL DEFAULT '',
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL
-    );`);
-    this.db.exec(`CREATE TABLE IF NOT EXISTS trust_bar_settings (
-      id TEXT PRIMARY KEY CHECK(id='global'),
-      background_color TEXT NOT NULL DEFAULT '#111217',
-      title_color TEXT NOT NULL DEFAULT '#FFFFFF',
-      description_color TEXT NOT NULL DEFAULT 'rgba(255,255,255,0.68)',
-      accent_color TEXT NOT NULL DEFAULT '#FF6900',
-      divider_color TEXT NOT NULL DEFAULT 'rgba(255,255,255,0.15)',
-      enabled INTEGER NOT NULL DEFAULT 1,
-      updated_at TEXT NOT NULL
-    );`);
-    if (!(this.db.prepare("SELECT COUNT(*) count FROM trust_bar_settings WHERE id='global'").get() as { count: number }).count) {
-      this.run(`INSERT INTO trust_bar_settings (id,updated_at) VALUES ('global',?)`, new Date().toISOString());
-    }
-    if (!(this.db.prepare('SELECT COUNT(*) count FROM trust_bar_items').get() as { count: number }).count) {
-      const seededAt = new Date().toISOString();
-      const insertTrust = this.db.prepare('INSERT INTO trust_bar_items (id,title,description,icon,enabled,sort_order,created_at,updated_at) VALUES (?,?,?,?,1,?,?,?)');
-      this.db.transaction(() => {
-        [
-          ['Authentique', 'Produits officiels', 'ShieldCheck'],
-          ['Dédouanement', 'Inclus', 'Truck'],
-          ['Acompte 20%', 'Pour confirmer votre commande', 'Lock'],
-          ['Livraison rapide', 'Dans les 24 jours ouvrables', 'Zap'],
-        ].forEach(([title, description, icon], index) => insertTrust.run(`trust_${randomUUID()}`, title, description, icon, index + 1, seededAt, seededAt));
-      })();
-    }
-    // COMPACT TRUST BAR: ترحيل البذر القديم إلى العناوين المختصرة وحذف العنصر الخامس.
-    // هجرة بيانات تُنفَّذ مرة واحدة فقط (was: re-ran on every boot and reverted
-    // any admin edit to these items to the compact defaults — fixed via the
-    // applied_data_migrations guard).
-    this.runOnceDataMigration('trust_bar_compact_v1', () => {
-      const remap: Array<[string, string]> = [
-        ['Produits authentiques', 'Authentique'],
-        ['Dédouanement inclus', 'Dédouanement'],
-        ['Acompte sécurisé 20 %', 'Acompte 20%'],
-        ['Livraison rapide', 'Livraison rapide'],
-      ];
-      for (const [oldTitle, newTitle] of remap) this.run('UPDATE trust_bar_items SET title=?,updated_at=? WHERE title=?', newTitle, new Date().toISOString(), oldTitle)
-      this.run("DELETE FROM trust_bar_items WHERE title='Service client 7j/7' OR title='Service client 7j/7 '");
-      const descRemap: Array<[string, string]> = [
-        ['Authentique', 'Produits officiels'],
-        ['Dédouanement', 'Inclus'],
-        ['Acompte 20%', 'Pour confirmer votre commande'],
-        ['Livraison rapide', 'Dans les 24 jours ouvrables'],
-      ];
-      for (const [title, nextDescription] of descRemap) this.run('UPDATE trust_bar_items SET description=?,updated_at=? WHERE title=?', nextDescription, new Date().toISOString(), title);
-      this.run("UPDATE trust_bar_settings SET background_color='#000000',updated_at=? WHERE background_color='#111217'", new Date().toISOString());
-    });
     if (!(this.db.prepare('SELECT COUNT(*) count FROM announcement_messages').get() as { count: number }).count) {
       const seededAt = new Date().toISOString();
       const insertSeed = this.db.prepare('INSERT INTO announcement_messages (id,text,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?)');
@@ -2162,10 +2101,6 @@ export class QatafoDatabase {
     }
     this.run(
       "UPDATE lens_hero_settings SET accent_color='#FF6900',updated_at=? WHERE lower(accent_color) IN ('#fe7003','#ff7a00')",
-      now,
-    );
-    this.run(
-      "UPDATE trust_bar_settings SET accent_color='#FF6900',updated_at=? WHERE lower(accent_color) IN ('#fe7003','#ff7a00')",
       now,
     );
   }

@@ -106,27 +106,28 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('deep links : rien de ce qui fonctionnait ne doit cesser de répondre', () => {
-    test('les 39 identifiants de section couvrent la navigation legacy ET les alias', () => {
+    test('les 38 identifiants de section couvrent la navigation legacy ET les alias', () => {
       const sections = new Set(backOfficeSections());
-      // La liste vient de l’AdminApp d’origine (37 entrées) + les 2 sections hors nav
+      // La liste vient de l’AdminApp d’origine (37 entrées) - la section « trust-bar »
+      // supprimée + les 2 sections hors nav
       // atteignables par deep link (`hero`, `stories`).
       const expected = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
-        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'trust-bar', 'catalogue-products',
+        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'catalogue-products',
         'catalogue-categories', 'catalogue-brands', 'arrival-ingestion', 'orders', 'lens-requests',
         'assistant-support', 'lens-lab', 'ai-discovery', 'customers', 'pricing', 'reports', 'erp-employees',
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
         'design', 'assistant', 'settings', 'users', 'audit', 'hero', 'stories',
       ];
       for (const section of expected) expect(sections.has(section), `section perdue: ${section}`).toBe(true);
-      expect(expected.length).toBe(39);
+      expect(expected.length).toBe(38);
       // P2.2 a ajouté trois surfaces (le stock). Elles sont citées nommément : une section
       // nouvelle ne doit jamais apparaître sans être écrite ici.
       for (const section of ['inventory', 'inventory-movements', 'inventory-stocktakes']) {
         expect(sections.has(section), `section P2.2 absente: ${section}`).toBe(true);
       }
-      // 39 legacy + `hero-slides` (alias de deep link) + les 3 entrées du stock (P2.2)
-      // + les 3 entrées des achats (P2.3) + les 6 entrées du CRM 360 (E5) = 52.
+      // 38 legacy + `hero-slides` (alias de deep link) + les 3 entrées du stock (P2.2)
+      // + les 3 entrées des achats (P2.3) + les 6 entrées du CRM 360 (E5) = 51.
       // Valeur mesurée, pas déduite.
       for (const section of ['purchasing', 'purchasing-orders', 'purchasing-receipts']) {
         expect(sections.has(section), `section P2.3 absente: ${section}`).toBe(true);
@@ -134,7 +135,7 @@ describe('back office shell (P2.0)', () => {
       for (const section of ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues']) {
         expect(sections.has(section), `section E5 absente: ${section}`).toBe(true);
       }
-      expect(sections.size).toBe(52);
+      expect(sections.size).toBe(51);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -144,13 +145,13 @@ describe('back office shell (P2.0)', () => {
       // « aligné » sur le serveur, c'est l'inverse qui est engagé.
       const legacyIds = [
         'dashboard', 'arrivals', 'products', 'promotions', 'social', 'news', 'magazine-agent', 'brands',
-        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'trust-bar', 'catalogue-products',
+        'hero-visuals', 'lens-section', 'home-sections', 'ticker', 'catalogue-products',
         'catalogue-categories', 'catalogue-brands', 'arrival-ingestion', 'orders', 'lens-requests',
         'assistant-support', 'lens-lab', 'ai-discovery', 'customers', 'pricing', 'reports', 'erp-employees',
         'erp-organization', 'erp-permissions', 'erp-audit', 'erp-events', 'erp-environment', 'interface',
         'design', 'assistant', 'settings', 'users', 'audit',
       ];
-      expect(legacyIds.length).toBe(37);
+      expect(legacyIds.length).toBe(36);
       // 1) chaque id legacy est bien un descripteur enregistré, à la même section ;
       for (const id of legacyIds) {
         expect(resourceDescriptorBySection(id)?.section, `descripteur manquant pour ${id}`).toBe(id);
@@ -185,12 +186,12 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 37 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5)', async () => {
+    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5)', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(49);
-      expect(result.body.data.counts).toMatchObject({ sections: 49, visible: 49 });
+      expect(items.length).toBe(48);
+      expect(result.body.data.counts).toMatchObject({ sections: 48, visible: 48 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
@@ -408,7 +409,7 @@ describe('back office shell (P2.0)', () => {
       const declared = resourceDescriptors()
         .filter((descriptor) => descriptor.nav?.icon)
         .map((descriptor) => descriptor.nav!.icon as string);
-      expect(declared.length).toBe(49);
+      expect(declared.length).toBe(48);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

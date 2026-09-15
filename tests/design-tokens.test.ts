@@ -356,12 +356,11 @@ describe('accent — une seule source', () => {
 describe('chrome back-office — zéro littéral en dur dans les styles inline (E10)', () => {
   /**
    * E10 : après migration, aucun style inline des écrans back-office ne porte de couleur
-   * littérale — SAUF six fichiers qui, par nature, portent des valeurs qui ne sont PAS du
+   * littérale — SAUF cinq fichiers qui, par nature, portent des valeurs qui ne sont PAS du
    * chrome :
    *   • InterfaceStudio.tsx  → palettes « presets » de la boutique (données de thème envoyées
    *     au magasin public, pas des couleurs d'interface admin) ;
    *   • LensSectionPage.tsx  → maquettes téléphone Lens (simulent l'écran public) ;
-   *   • TrustBarPage.tsx     → valeurs par défaut persistées du widget TrustBar (données) ;
    *   • HeroVisualsPage.tsx  → défaut persisté d'accent du hero (valeur d'enregistrement) ;
    *   • AdminApp.tsx         → une miniature « Boutique AYROVI » (blanc sur l'accent client, dynamique) ;
    *   • SocialAdminPage.tsx  → un fond #000 derrière un <video> (constante média, jamais de thème).
@@ -371,7 +370,6 @@ describe('chrome back-office — zéro littéral en dur dans les styles inline (
   const DATA_OR_MOCK = new Map<string, string>([
     ['client/src/admin/InterfaceStudio.tsx', 'palettes boutique (données)'],
     ['client/src/admin/LensSectionPage.tsx', 'maquettes téléphone (simulent l\'écran public)'],
-    ['client/src/admin/TrustBarPage.tsx', 'défauts persistés du widget (données)'],
     ['client/src/admin/HeroVisualsPage.tsx', 'défaut persisté d\'accent du hero (valeur d\'enregistrement)'],
     ['client/src/admin/AdminApp.tsx', 'miniature « Boutique AYROVI » (accent dynamique)'],
     ['client/src/admin/SocialAdminPage.tsx', 'fond #000 d\'un <video> (constante média)'],

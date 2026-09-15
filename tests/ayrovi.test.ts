@@ -1313,8 +1313,8 @@ describe('AYSONIC platform', () => {
     expect(response.body.status).toBe('ok');
   });
 
-  test('one-shot data migrations never clobber admin edits across restarts (trust bar + payment methods)', () => {
-    // Regression guard for the persistence bug: legacy "compact trust bar" /
+  test('one-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)', () => {
+    // Regression guard for the persistence bug: the legacy "compact trust bar" /
     // payment-methods / rebrand data migrations used to run on EVERY boot and
     // silently reverted admin CMS edits to stale defaults after a server restart.
     // Each migration must now run exactly once (applied_data_migrations marker).
@@ -1323,27 +1323,29 @@ describe('AYSONIC platform', () => {
     try {
       // Boot 1: fresh database, seeds applied, one-shot migrations run.
       const firstBoot = new QatafoDatabase(file);
-      const item = firstBoot.get<any>('SELECT id, title FROM trust_bar_items WHERE title=\'Authentique\'');
+      const item = firstBoot.get<any>("SELECT id, video_poster FROM lens_hero_settings WHERE id='global'");
       expect(item).toBeTruthy();
+      // l'amorçage unique du bloc LENS a bien posé l'affiche livrée avec le projet
+      expect(item.video_poster).toBeTruthy();
       // Admin edits content from the CMS (same writes the Admin API performs).
-      firstBoot.run('UPDATE trust_bar_items SET description=? WHERE id=?', 'Description edited by admin', item.id);
+      firstBoot.run("UPDATE lens_hero_settings SET video_poster=?, updated_at=? WHERE id='global'", 'Affiche choisie par l’admin', new Date().toISOString());
       firstBoot.run(`UPDATE settings SET setting_value='["FLOUCI","BANK_TRANSFER"]',updated_at=? WHERE setting_key='payment_methods'`, new Date().toISOString());
       firstBoot.close();
 
       // Boot 2: simulated server restart on the SAME file.
       const secondBoot = new QatafoDatabase(file);
-      const afterRestart = secondBoot.get<any>('SELECT description FROM trust_bar_items WHERE id=?', item.id);
-      expect(afterRestart.description).toBe('Description edited by admin');
+      const afterRestart = secondBoot.get<any>("SELECT video_poster FROM lens_hero_settings WHERE id='global'");
+      expect(afterRestart.video_poster).toBe('Affiche choisie par l’admin');
       const paymentAfter = secondBoot.get<any>('SELECT setting_value FROM settings WHERE setting_key=\'payment_methods\'');
       expect(paymentAfter.setting_value).toBe('["FLOUCI","BANK_TRANSFER"]');
-      const marker = secondBoot.get<any>('SELECT applied_at FROM applied_data_migrations WHERE key=\'trust_bar_compact_v1\'');
+      const marker = secondBoot.get<any>("SELECT applied_at FROM applied_data_migrations WHERE key='lens_feature_media_v1'");
       expect(marker).toBeTruthy();
       secondBoot.close();
 
       // Boot 3: idempotency — a further restart must not touch the data either.
       const thirdBoot = new QatafoDatabase(file);
-      const stable = thirdBoot.get<any>('SELECT description FROM trust_bar_items WHERE id=?', item.id);
-      expect(stable.description).toBe('Description edited by admin');
+      const stable = thirdBoot.get<any>("SELECT video_poster FROM lens_hero_settings WHERE id='global'");
+      expect(stable.video_poster).toBe('Affiche choisie par l’admin');
       thirdBoot.close();
     } finally {
       for (const suffix of ['', '-wal', '-shm']) {

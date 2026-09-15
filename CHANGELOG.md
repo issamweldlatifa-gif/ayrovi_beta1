@@ -30,10 +30,15 @@ All notable AYROVI changes are recorded in this file.
 - `tests/stories-showcase.test.ts` (13 locks): no frozen copy in the component, card count bounded to 4/5, unsafe link destinations rejected, Trust Bar gone from the page *and* the project, strictly identical card dimensions, centred link, comfortable section gap, and the Zalando charter (monochrome container, orange used exactly once — on the action arrow; unseen stories are marked with ink, not orange).
 
 ### Removed
-- **The public Trust Bar is deleted for good** (`client/src/components/TrustBar.tsx`, `git rm`) and no longer rendered on the home page. The home page is now Hero → Stories container → LENS block. The admin screen (CONTENU → Trust Bar) and its API are left in place for now — say the word and they go too.
+- **The Trust Bar is deleted for good — everywhere.** Following the product decision, the whole feature is gone, not just its rendering: `client/src/components/TrustBar.tsx` (public) and `client/src/admin/TrustBarPage.tsx` (admin screen); the 6 admin routes `/trust-bar`, `/trust-bar/items`, `/trust-bar/items/:id`, `/trust-bar/reorder`, `/trust-bar/settings` and the public `GET /trust-bar`; the `trust_bar_items` and `trust_bar_settings` tables with their seeds and the `trust_bar_compact_v1` one-shot migration; the `content.trust-bar` back-office descriptor (so the entry disappears from the admin sidebar); the `TRUST_BAR` audit resource; the `TRUST_BAR_ICONS` allow-list; the `.trust-bar*` / `.trust-bar-compact*` stylesheets; and the admin-only `.admin-trustbar-*`, `.admin-preview-toggle` and `.admin-icon-picker` rules. `.admin-toggle` is kept — it backs the shared `Toggle` primitive. The home page is now Hero → Stories container → LENS block, and `GET /api/public/trust-bar` answers 404.
+- Tests re-pointed rather than weakened: the one-shot-migration persistence guard (`tests/ayrovi.test.ts`) now proves the same regression on `lens_hero_settings` + `lens_feature_media_v1`; the back-office snapshots drop to 36 legacy sections / 48 navigation entries / 51 section ids; `TrustBarPage` leaves the six-file colour allow-list in `tests/design-tokens.test.ts`.
+- **Note:** the shared `Toggle` primitive (`client/src/design/admin/Toggle.tsx`) is now unused — it is exported from the admin component barrel, so it was kept. Say the word and it goes too.
+
+### Added
+- **Five demo stories** published across the five channels (Ayrovi Official / Nouveautés / Style / Actus / Promos) so the container is visible immediately. They are ordinary rows in the `stories` table — edit or delete them freely from Stories Studio.
 
 ### Changed
-- Orange coverage after this change: Stories container 1.24–1.77% (the measured pixels come from the story photos themselves; the CSS contributes only the arrow), home page 0.71–0.91%, LENS block 0.004–0.016% — max **1.77%** against the 3% budget. Suite: 703/703 passing, typecheck and build green.
+- Orange coverage after this change: Stories container 1.24–1.75% (the measured pixels come from the story photos themselves; the CSS contributes only the arrow), home page 0.65–1.08%, LENS block 0.004–0.016% — max **1.75%** against the 3% budget. Suite: 703/703 passing, typecheck and build green.
 
 ### Added
 - `client/src/styles/zalando-ui.css`: reusable charter primitives (`.ay-surface-card`, `.ay-surface-plain`, `.ay-badge`, `.ay-icon-action`, `.ay-cta-primary`/`.ay-btn-cta`, `.ay-accent-rule`, `.ay-step`), with zero colour literal — every value comes from `tokens.css`.
