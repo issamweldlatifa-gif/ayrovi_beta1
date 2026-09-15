@@ -156,9 +156,16 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(code(component)).toContain('stories-showcase__carddesc');
   });
 
-  test('the block breathes — a comfortable gap separates it from its neighbours', () => {
-    expect(indexCss).toMatch(/\.stories-showcase\s*\{[^}]*--stories-showcase-gap:\s*clamp\(64px/);
-    expect(indexCss).toMatch(/\.stories-showcase\s*\{[^}]*padding-block:\s*var\(--stories-showcase-gap\)/);
+  test('the two voids match the model — ~1 cm less than before, at both ends', () => {
+    // Relevé sur le modèle (viewport 720 px) : 57 px avant le titre, 52 px après
+    // la carte. Exprimés en vw pour tenir à toutes les largeurs ; sur un écran
+    // de 390 px cela donne 31 px et 28 px au lieu des 64 px d'avant.
+    expect(indexCss).toMatch(/--stories-showcase-gap-top:\s*clamp\(30px,\s*7\.92vw,\s*57px\)/);
+    expect(indexCss).toMatch(/--stories-showcase-gap-bottom:\s*clamp\(28px,\s*7\.22vw,\s*52px\)/);
+    expect(indexCss).toMatch(/\.stories-showcase\s*\{[^}]*padding-top:\s*var\(--stories-showcase-gap-top\)/);
+    expect(indexCss).toMatch(/\.stories-showcase\s*\{[^}]*padding-bottom:\s*var\(--stories-showcase-gap-bottom\)/);
+    // les deux vides ne sont plus une valeur unique : ils suivent chacun le modèle
+    expect(indexCss).not.toMatch(/--stories-showcase-gap:/);
   });
 
   test('Zalando charter: the whole block is a monochrome dark panel, orange on the arrow only', () => {

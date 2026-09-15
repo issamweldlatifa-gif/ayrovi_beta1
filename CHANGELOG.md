@@ -56,6 +56,10 @@ All notable AYROVI changes are recorded in this file.
   - The spacing follows the model: card **77.4 %** of the screen, left inset **3.33 %**, gap **2.22 %**, next card visible **17.1 %**. Measured on the running page: card 302 px = 77.4 %, next card overflowing 66 px = 16.9 %.
   Measured orange coverage after the change: 1.97 % (Stories) — the pixels come from the story photos, the CSS still contributes only the arrow.
 
+### Changed
+- **The two voids above and below the Stories block are tightened to the model's own measurements.** The block carried 64 px of padding at each end on a phone (104 px on a wide screen) while the supplied model shows **57 px before the title and 52 px after the card** — i.e. 7.92vw and 7.22vw. Expressed as proportions so they hold at every width: on a 390 px screen the voids drop from 64 px to **31 px** (top) and **28 px** (bottom), about a centimetre less at each end, which is the excess that had been reported. The block is now 99 px shorter overall on a 720 px viewport.
+  Re-measuring the model also confirmed the card: 557 × 835 px, a ratio of **0.6671** — 2/3 to within 0.0004.
+
 ### Added
 - **Five demo stories** published across the five channels (Ayrovi Official / Nouveautés / Style / Actus / Promos) so the container is visible immediately. They are ordinary rows in the `stories` table — edit or delete them freely from Stories Studio.
 

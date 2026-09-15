@@ -1255,21 +1255,28 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
    Le modèle est un bloc ENTIER posé sur un fond NOIR : le fond noir commence
    avant le titre et se termine après la carte. Tout le texte est blanc.
    Géométrie mesurée (capture 720 px de large) :
-     · carte  557 px  = 77,4 % de l'écran
+     · carte  557 × 835 px  = 77,36 % de l'écran, rapport 0,6671 → 2/3
      · marge gauche 24 px = 3,33 %   · interstice 16 px = 2,22 %
      · carte suivante visible 123 px = 17,1 %
-     · rapport largeur/hauteur 0,683  →  retenu : 2/3 (0,667)
+     · vide avant le titre 57 px = 7,92vw   · vide après la carte 52 px = 7,22vw
    Ces valeurs sont des proportions : elles tiennent à toutes les largeurs.
    ───────────────────────────────────────────────────────────────────────────── */
 .stories-showcase {
-  --stories-showcase-gap: clamp(64px, 15vw, 104px);
+  /* Vides relevés sur le modèle (viewport 720 px) : 57 px avant le titre,
+     52 px après la carte — soit 7,92vw et 7,22vw. Des proportions, donc
+     valables à toutes les largeurs : sur un écran de 390 px on tombe à
+     31 px et 28 px au lieu des 64 px d'avant, soit ~1 cm de moins à
+     chaque extrémité, exactement le vide qui avait été signalé. */
+  --stories-showcase-gap-top: clamp(30px, 7.92vw, 57px);
+  --stories-showcase-gap-bottom: clamp(28px, 7.22vw, 52px);
   --stories-showcase-gutter: clamp(13px, 3.33vw, 32px);
   --stories-showcase-interstice: clamp(9px, 2.22vw, 16px);
   --stories-showcase-card: min(77.4vw, 560px);
 
   background: var(--ayrovi-text-primary);
   color: var(--ayrovi-bg-main);
-  padding-block: var(--stories-showcase-gap);
+  padding-top: var(--stories-showcase-gap-top);
+  padding-bottom: var(--stories-showcase-gap-bottom);
 }
 
 .stories-showcase__head {
