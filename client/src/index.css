@@ -1250,15 +1250,25 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
    Respiration verticale large, identique au bloc LENS, entre les sections.
    Monochrome : seule la flèche du lien porte l'orange.
    ============================================================ */
+/* ─────────────────────────────────────────────────────────────────────────────
+   STORIES — LE BLOC COMPLET, RELEVÉ AU PIXEL SUR LE MODÈLE FOURNI
+   Le modèle est un bloc ENTIER posé sur un fond NOIR : le fond noir commence
+   avant le titre et se termine après la carte. Tout le texte est blanc.
+   Géométrie mesurée (capture 720 px de large) :
+     · carte  557 px  = 77,4 % de l'écran
+     · marge gauche 24 px = 3,33 %   · interstice 16 px = 2,22 %
+     · carte suivante visible 123 px = 17,1 %
+     · rapport largeur/hauteur 0,683  →  retenu : 2/3 (0,667)
+   Ces valeurs sont des proportions : elles tiennent à toutes les largeurs.
+   ───────────────────────────────────────────────────────────────────────────── */
 .stories-showcase {
   --stories-showcase-gap: clamp(64px, 15vw, 104px);
-  --stories-showcase-gutter: clamp(16px, 4.2vw, 40px);
-  /* Largeur d'une carte — 78 % de l'écran, mesure relevée sur le modèle fourni.
-     La suivante dépasse donc du bord droit et invite au défilement. Plafond à
-     560 px pour que les cartes restent alignées sur la colonne de lecture. */
-  --stories-showcase-card: min(78vw, 560px);
+  --stories-showcase-gutter: clamp(13px, 3.33vw, 32px);
+  --stories-showcase-interstice: clamp(9px, 2.22vw, 16px);
+  --stories-showcase-card: min(77.4vw, 560px);
 
-  background: var(--ayrovi-bg-main);
+  background: var(--ayrovi-text-primary);
+  color: var(--ayrovi-bg-main);
   padding-block: var(--stories-showcase-gap);
 }
 
@@ -1274,16 +1284,16 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   line-height: 1.1;
   letter-spacing: -0.018em;
   font-weight: 800;
-  color: var(--ayrovi-text-primary);
+  color: var(--ayrovi-bg-main);
 }
 
 .stories-showcase__subtitle {
   margin: 8px 0 0;
   font-size: clamp(14px, 3.4vw, 17px);
-  color: var(--ayrovi-text-secondary);
+  color: rgba(255, 255, 255, 0.66);
 }
 
-/* Lien « Explorer toutes les stories › » — juste sous le sous-titre. */
+/* Lien « Explorez toutes les stories › » — juste sous le sous-titre. */
 .stories-showcase__cta {
   margin-top: 14px;
   display: inline-flex;
@@ -1291,17 +1301,17 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   gap: 9px;
   padding: 0 0 5px;
   border: 0;
-  border-bottom: 1px solid var(--ayrovi-text-primary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.55);
   background: none;
   cursor: pointer;
   font-size: clamp(15px, 3.6vw, 17px);
   font-weight: 700;
-  color: var(--ayrovi-text-primary);
+  color: var(--ayrovi-bg-main);
 }
 
 .stories-showcase__cta > svg { color: var(--ayrovi-color-brand-orange); transition: transform 0.18s ease; }
 .stories-showcase__cta:hover > svg { transform: translateX(3px); }
-.stories-showcase__cta:focus-visible { outline: 2px solid var(--ayrovi-text-primary); outline-offset: 4px; }
+.stories-showcase__cta:focus-visible { outline: 2px solid var(--ayrovi-bg-main); outline-offset: 4px; }
 
 /* Rail horizontal aimanté ; la barre de défilement est masquée. */
 .stories-showcase__rail {
@@ -1310,7 +1320,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   margin: clamp(22px, 5.5vw, 32px) auto 0;
   padding: 0 var(--stories-showcase-gutter);
   display: flex;
-  gap: 12px;
+  gap: var(--stories-showcase-interstice);
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scroll-padding-inline-start: var(--stories-showcase-gutter);
@@ -1330,13 +1340,13 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 2 / 3;
   margin: 0;
   padding: 0;
-  border: 1px solid var(--ayrovi-border-soft);
+  border: 0;
   border-radius: 16px;
   overflow: hidden;
-  background: var(--ayrovi-bg-surface);
+  background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
   text-align: start;
 }

@@ -161,19 +161,42 @@ describe('Stories showcase — settings come from the dashboard', () => {
     expect(indexCss).toMatch(/\.stories-showcase\s*\{[^}]*padding-block:\s*var\(--stories-showcase-gap\)/);
   });
 
-  test('Zalando charter: monochrome section, orange limited to the action arrow', () => {
+  test('Zalando charter: the whole block is a monochrome dark panel, orange on the arrow only', () => {
     const block = /\.stories-showcase \{[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
-    // aucun littéral hexadécimal dans la section
+
+    // aucun littéral hexadécimal : tout passe par les jetons ou par du blanc/noir translucide
     expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-    expect(block).toMatch(/var\(--ayrovi-bg-main\)/);
-    expect(block).toMatch(/var\(--ayrovi-text-primary\)/);
-    expect(block).toMatch(/var\(--ayrovi-text-secondary\)/);
-    expect(block).toMatch(/var\(--ayrovi-bg-surface\)/);
+
+    // Le modèle fourni est un bloc ENTIER posé sur un fond NOIR, titre et texte en blanc.
+    expect(block).toMatch(/\.stories-showcase \{[\s\S]*?background:\s*var\(--ayrovi-text-primary\)/);
+    expect(block).toMatch(/\.stories-showcase__title \{[\s\S]*?color:\s*var\(--ayrovi-bg-main\)/);
+    expect(block).toMatch(/\.stories-showcase__cta \{[\s\S]*?color:\s*var\(--ayrovi-bg-main\)/);
+    // Sur fond noir, le texte secondaire est du blanc translucide — jamais #666, illisible.
+    expect(block).toMatch(/\.stories-showcase__subtitle \{[\s\S]*?rgba\(255,\s*255,\s*255/);
+    expect(block).not.toMatch(/--ayrovi-text-secondary/);
+
     // une seule occurrence d'orange : la flèche du lien « Explorer toutes les stories »
     expect(block.match(/--ayrovi-color-brand-orange/g) ?? []).toHaveLength(1);
     expect(block).toMatch(/\.stories-showcase__cta > svg \{[^}]*--ayrovi-color-brand-orange/);
     // le voile sous le texte est noir (monochrome), jamais orangé
     expect(block).not.toMatch(/rgba\(\s*2[0-9]{2}\s*,\s*1[0-9]{2}/);
+  });
+
+  test('the card geometry follows the reference model, measured pixel by pixel', () => {
+    const block = /\.stories-showcase \{[\s\S]*?@media \(prefers-reduced-motion/.exec(indexCss)?.[0] ?? '';
+    // largeur 77,4 % de l'écran · marge 3,33 % · interstice 2,22 % · rapport 2/3
+    expect(block).toMatch(/--stories-showcase-card:\s*min\(77\.4vw,\s*560px\)/);
+    expect(block).toMatch(/--stories-showcase-gutter:\s*clamp\(13px,\s*3\.33vw,\s*32px\)/);
+    expect(block).toMatch(/--stories-showcase-interstice:\s*clamp\(9px,\s*2\.22vw,\s*16px\)/);
+    expect(block).toMatch(/aspect-ratio:\s*2 \/ 3/);
+    // rail aimanté, barre de défilement masquée
+    expect(block).toMatch(/scroll-snap-type:\s*x mandatory/);
+    expect(block).toMatch(/::-webkit-scrollbar \{ display: none; \}/);
+    // le bloc se suffit à lui-même : en-tête + texte posé en bas de l'image
+    expect(block).toMatch(/\.stories-showcase__overlay \{[\s\S]*?bottom:\s*0;/);
+    expect(block).toMatch(/\.stories-showcase__badge/);
+    expect(block).toMatch(/\.stories-showcase__cardtitle/);
+    expect(block).toMatch(/\.stories-showcase__carddesc/);
   });
 
   test('opening a card opens the story viewer, not a new page', () => {

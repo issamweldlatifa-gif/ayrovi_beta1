@@ -49,6 +49,13 @@ All notable AYROVI changes are recorded in this file.
 ### Added
 - **The block position is now controlled from the Dashboard**: Admin → Contenu → Social → onglet Story → « Bloc d'accueil » → champ **Position** (`Sous le bloc LENS` · `Au-dessus du bloc LENS`). Flipping it takes effect immediately, with no code change. Defaults to « sous le bloc LENS ».
 
+### Changed
+- **The Stories block is now reproduced in full, measured pixel by pixel on the supplied model — and it is a DARK block.** Reading the whole capture instead of only its card row changed three things that were wrong:
+  - The model is a **complete panel on a black background**, with white text. The black starts before the title and ends after the card; it is not a white section with a row of cards. The section background is now `var(--ayrovi-text-primary)` (#111111) and the title, the link and the body are white (the subtitle in translucent white, since #666666 is unreadable on black).
+  - The card is **taller** than I had it: measured 557 × 816 px on the model, a width/height ratio of 0.683 — the `2/3` ratio, not `3/4`. A card now measures 302 × 453 px on a 390 px screen, against 304 × 406 before.
+  - The spacing follows the model: card **77.4 %** of the screen, left inset **3.33 %**, gap **2.22 %**, next card visible **17.1 %**. Measured on the running page: card 302 px = 77.4 %, next card overflowing 66 px = 16.9 %.
+  Measured orange coverage after the change: 1.97 % (Stories) — the pixels come from the story photos, the CSS still contributes only the arrow.
+
 ### Added
 - **Five demo stories** published across the five channels (Ayrovi Official / Nouveautés / Style / Actus / Promos) so the container is visible immediately. They are ordinary rows in the `stories` table — edit or delete them freely from Stories Studio.
 
