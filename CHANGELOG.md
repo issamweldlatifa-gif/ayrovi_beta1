@@ -41,6 +41,9 @@ All notable AYROVI changes are recorded in this file.
 - Measured orange coverage after the rebuild: Stories section 1.0–1.98 % (the pixels come from the story photos; the CSS contributes only the arrow), LENS block 0.004–0.016 %, home page 0.73–1.24 % — max **1.98 %** against the 3 % budget. Suite: 704/704 passing, typecheck and build green.
 
 ### Fixed
+- **The Stories section did not appear at all on a deployed site — the demo content lived only in the sandbox database.** `data/*.sqlite` and `data/uploads/` are excluded from the repository, so a fresh install (or the deployed site) started with an empty `stories` table, and the section — which hides itself when no story is published — simply showed nothing. The five demonstration stories are now seeded from the code via the one-shot migration `stories_demo_seed_v1`, which runs only when no published story exists, so content created from the Dashboard is never overwritten. Their visuals were already versioned in `client/public/media`, so they resolve everywhere. Verified by booting the server against an empty database: the section renders, 4 cards at 304×406, no broken images.
+
+### Fixed
 - **The Stories section was rendering ABOVE the LENS block — root cause found and fixed.** The section position became dashboard-driven, and the `sort_order` column defaulted to `0`; the frontend read `0` as « above LENS », so the section jumped back to the top of the page. The column now defaults to `1` (« sous le bloc LENS »), the one-shot migration `stories_showcase_position_v1` promotes existing rows that still carry the old `0`, the admin API clamps the value to `0` or `1`, and the frontend keeps `>= 1` as « below ». Verified on the running page: Hero (45–440) → LENS (440–1205) → Stories (1205–1862).
 
 ### Added

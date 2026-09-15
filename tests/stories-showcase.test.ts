@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, test } from 'vitest';
 import request from 'supertest';
 import { app } from '../src/server';
@@ -26,6 +26,27 @@ const appSource = readFileSync('client/src/App.tsx', 'utf8');
 const code = (source: string) => source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 describe('Stories showcase — settings come from the dashboard', () => {
+  test('the demonstration stories are seeded from the code, not from the database', () => {
+    const src = code(readFileSync('src/db/database.ts', 'utf8'));
+
+    // La base SQLite et les envois sont exclus du dépôt : sans ce seed, une
+    // installation neuve (ou le site déployé) démarre avec une table vide et la
+    // section ne s'affiche pas du tout.
+    expect(src).toMatch(/seedStoriesDemoContent/);
+    expect(src).toMatch(/runOnceDataMigration\('stories_demo_seed_v1'/);
+
+    // On n'insère que si aucune story publiée n'existe : le contenu du
+    // Dashboard n'est jamais écrasé.
+    expect(src).toMatch(/SELECT COUNT\(\*\) AS count FROM stories WHERE status='PUBLISHED'/);
+    expect(src).toMatch(/already\.count > 0\) return;/);
+
+    // Les visuels doivent être versionnés, sinon ils manqueraient en production.
+    for (const url of ['hero-femme', 'hero-homme', 'hero-enfants', 'lens-sneakers', 'hero-default']) {
+      expect(src).toContain(`/media/${url}.jpg`);
+      expect(existsSync(`client/public/media/${url}.jpg`)).toBe(true);
+    }
+  });
+
   test('super admin authenticates', async () => {
     const login = await admin.post('/api/admin/auth/login').send({ email: 'admin@ayrovi.tn', password: 'AyroviBeta2026!' });
     expect(login.status).toBe(200);

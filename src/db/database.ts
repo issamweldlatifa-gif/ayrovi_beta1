@@ -2051,6 +2051,7 @@ export class QatafoDatabase {
     this.rebrandNoirOrangePalette();
     this.rebrandZalandoOrange();
     this.seedStoriesShowcasePosition();
+    this.seedStoriesDemoContent();
     this.seedLensFeatureMedia();
   }
 
@@ -2064,6 +2065,72 @@ export class QatafoDatabase {
     this.runOnceDataMigration('stories_showcase_position_v1', () => {
       const now = new Date().toISOString();
       this.run("UPDATE stories_showcase_settings SET sort_order=1, updated_at=? WHERE id='global' AND sort_order=0", now);
+    });
+  }
+
+  /**
+   * Contenu de démonstration du bloc Stories.
+   *
+   * Pourquoi ce seed vit dans le code et non dans la base livrée : la base
+   * SQLite (data/*.sqlite) et les fichiers envoyés (data/uploads) sont exclus
+   * du dépôt, donc une installation neuve — ou le site déployé — démarre avec
+   * une table `stories` vide. La section Stories se masque alors d'elle-même,
+   * et l'accueil ne montre rien du tout.
+   *
+   * Les visuels, eux, sont bien versionnés : ils vivent dans client/public/media
+   * et sont donc servis partout. On insère uniquement si aucune story publiée
+   * n'existe, pour ne jamais écraser le travail fait depuis le Dashboard.
+   */
+  private seedStoriesDemoContent(): void {
+    this.runOnceDataMigration('stories_demo_seed_v1', () => {
+      const already = this.get<{ count: number }>(
+        "SELECT COUNT(*) AS count FROM stories WHERE status='PUBLISHED'"
+      );
+      if (already && already.count > 0) return;
+
+      const now = new Date();
+      const day = 24 * 60 * 60 * 1000;
+      const at = (offsetDays: number) => new Date(now.getTime() + offsetDays * day).toISOString();
+      const insert = `
+        INSERT INTO stories (
+          id, media_type, media_url, title, description, cta, target_url,
+          publish_at, expires_at, priority, status, created_at, updated_at,
+          category, secondary_images
+        ) VALUES (@id,'IMAGE',@media_url,@title,@description,@cta,@target_url,
+                  @publish_at,NULL,@priority,'PUBLISHED',@created_at,@updated_at,
+                  @category,'[]')
+      `;
+      const demo = [
+        { id: 'story_demo_01', media_url: '/media/hero-femme.jpg',
+          title: 'Nouvel arrivage — Sneakers',
+          description: 'Les paires de la saison viennent d’arriver. Quantités limitées.',
+          cta: 'Voir l’arrivage', category: 'ARRIVAGE', priority: 95 },
+        { id: 'story_demo_02', media_url: '/media/hero-homme.jpg',
+          title: 'Nouveautés de la semaine',
+          description: 'Ce que l’équipe AYROVI a sélectionné pour vous.',
+          cta: 'Découvrir', category: 'NEW', priority: 90 },
+        { id: 'story_demo_03', media_url: '/media/hero-enfants.jpg',
+          title: 'Le dressing minimaliste',
+          description: 'Trois pièces, dix tenues. Notre guide.',
+          cta: 'Lire le guide', category: 'STYLE', priority: 85 },
+        { id: 'story_demo_04', media_url: '/media/lens-sneakers.jpg',
+          title: 'Dédouanement inclus',
+          description: 'Vos commandes sont dédouanées avant expédition.',
+          cta: 'En savoir plus', category: 'INFO', priority: 80 },
+        { id: 'story_demo_05', media_url: '/media/hero-default.jpg',
+          title: '-20 % sur la sélection',
+          description: 'Offre valable jusqu’à épuisement du stock.',
+          cta: 'Voir l’offre', category: 'PROMO', priority: 75 },
+      ];
+      for (const [index, story] of demo.entries()) {
+        this.run(insert, {
+          ...story,
+          target_url: '',
+          publish_at: at(-index),
+          created_at: at(-index),
+          updated_at: at(-index),
+        });
+      }
     });
   }
 
