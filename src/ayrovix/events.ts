@@ -14,9 +14,28 @@ let ensured = false;
 
 export function ensureAyrovixEventsTable(db: QatafoDatabase): void {
   if (ensured) return;
+  // Migrate legacy table that only allowed ('image','url','qr') to also allow 'text'.
+  // SQLite does not support dropping a CHECK via ALTER, so we recreate if needed.
+  try {
+    const existing = db.get<any>(`SELECT sql FROM sqlite_master WHERE type='table' AND name='ayrovix_events'`);
+    if (existing?.sql && !existing.sql.includes("'text'")) {
+      db.run(`CREATE TABLE IF NOT EXISTS ayrovix_events_new (
+        id TEXT PRIMARY KEY,
+        channel TEXT NOT NULL CHECK(channel IN ('image','url','qr','text')),
+        brand TEXT,
+        query TEXT,
+        candidates_count INTEGER NOT NULL DEFAULT 0,
+        chosen INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )`);
+      db.run(`INSERT OR IGNORE INTO ayrovix_events_new SELECT * FROM ayrovix_events`);
+      db.run(`DROP TABLE ayrovix_events`);
+      db.run(`ALTER TABLE ayrovix_events_new RENAME TO ayrovix_events`);
+    }
+  } catch { /* best-effort migration; fresh DB will just create correctly */ }
   db.run(`CREATE TABLE IF NOT EXISTS ayrovix_events (
     id TEXT PRIMARY KEY,
-    channel TEXT NOT NULL CHECK(channel IN ('image','url','qr')),
+    channel TEXT NOT NULL CHECK(channel IN ('image','url','qr','text')),
     brand TEXT,
     query TEXT,
     candidates_count INTEGER NOT NULL DEFAULT 0,
@@ -53,7 +72,7 @@ export function markAyrovixChosen(db: QatafoDatabase, eventId: string): void {
 }
 
 export interface AyrovixStats {
-  last7d: { total: number; image: number; url: number; qr: number; withCandidates: number; chosen: number; matchRate: number };
+  last7d: { total: number; image: number; url: number; qr: number; text: number; withCandidates: number; chosen: number; matchRate: number };
   topBrands: Array<{ brand: string; count: number }>;
   topQueries: Array<{ query: string; count: number }>;
 }
@@ -66,6 +85,7 @@ export function getAyrovixStats(db: QatafoDatabase): AyrovixStats {
             SUM(CASE WHEN channel='image' THEN 1 ELSE 0 END) image,
             SUM(CASE WHEN channel='url' THEN 1 ELSE 0 END) url,
             SUM(CASE WHEN channel='qr' THEN 1 ELSE 0 END) qr,
+            SUM(CASE WHEN channel='text' THEN 1 ELSE 0 END) text,
             SUM(CASE WHEN candidates_count>0 THEN 1 ELSE 0 END) withCandidates,
             SUM(chosen) chosen
      FROM ayrovix_events WHERE created_at>=?`, since,
@@ -77,6 +97,7 @@ export function getAyrovixStats(db: QatafoDatabase): AyrovixStats {
       image: Number(totals.image || 0),
       url: Number(totals.url || 0),
       qr: Number(totals.qr || 0),
+      text: Number(totals.text || 0),
       withCandidates: Number(totals.withCandidates || 0),
       chosen: Number(totals.chosen || 0),
       matchRate: total ? Math.round((Number(totals.withCandidates || 0) / total) * 100) : 0,

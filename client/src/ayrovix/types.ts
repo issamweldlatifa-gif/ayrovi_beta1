@@ -162,7 +162,7 @@ export interface AyrovixReviewRequest {
 /** Charge utile transmise au Calculator/panier AYROVI existant (aucun flow modifié). */
 export interface AyrovixHistoryItem {
   id: string;
-  kind: 'image' | 'url' | 'qr' | 'barcode' | 'code';
+  kind: 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
   inputValue: string;
   queryLabel: string;
   title: string;

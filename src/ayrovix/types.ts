@@ -48,7 +48,7 @@ export interface AyrovixIdentification {
   seller?: string | null;
 }
 
-export type AyrovixChannel = 'image' | 'url' | 'qr';
+export type AyrovixChannel = 'image' | 'url' | 'qr' | 'text';
 
 /** Un candidat produit proposé à l'utilisateur pour confirmation humaine. */
 export interface AyrovixCandidate {

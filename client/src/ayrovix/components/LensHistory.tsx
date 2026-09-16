@@ -13,7 +13,7 @@ interface LensHistoryProps {
 }
 
 const KIND_LABELS: Record<AyrovixHistoryItem['kind'], [string, string]> = {
-  image: ['Photo', 'صورة'], url: ['Lien', 'رابط'], qr: ['QR', 'QR'], barcode: ['Code-barres', 'رمز شريطي'], code: ['Code', 'رمز'],
+  image: ['Photo', 'صورة'], url: ['Lien', 'رابط'], qr: ['QR', 'QR'], barcode: ['Code-barres', 'رمز شريطي'], code: ['Code', 'رمز'], text: ['Texte', 'نص'],
 };
 
 function formatDate(value: string, locale: 'fr' | 'ar'): string {

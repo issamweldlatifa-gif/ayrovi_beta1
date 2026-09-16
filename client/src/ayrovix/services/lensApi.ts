@@ -97,3 +97,14 @@ export async function analyzeBarcode(code: string, signal?: AbortSignal): Promis
   });
   return parseResponse(response);
 }
+
+/** Recherche par nom de produit (texte libre) via AYROVI Catalog + Web Search. */
+export async function analyzeText(query: string, signal?: AbortSignal): Promise<{ query: string; candidates: AyrovixImageResult['candidates']; eventId: string }> {
+  const response = await fetch('/api/ayrovix/analyze-text', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+    signal,
+  });
+  return parseResponse(response);
+}

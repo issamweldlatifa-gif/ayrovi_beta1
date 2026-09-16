@@ -413,6 +413,31 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
   });
 
+  router.post('/analyze-text', async (req: Request, res: Response) => {
+    const raw = String(req.body?.query ?? req.body?.value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (raw.length < 2) {
+      return res.status(400).json({ success: false, code: 'INVALID_TEXT', error: 'Saisissez au moins 2 caractères pour rechercher un produit.' });
+    }
+    // Guard: if the query looks like a URL, suggest URL flow but still handle as text
+    try {
+      const candidates = await searchByCodeOrText(db, raw);
+      const securedCandidates = tokenizedCandidates(candidates);
+      const eventId = recordAyrovixEvent(db, { channel: 'text', query: raw, candidatesCount: candidates.length });
+      const historyMatch = securedCandidates[0];
+      rememberAuthenticatedHistory(db, req, {
+        eventId, kind: 'text', inputValue: raw, queryLabel: raw,
+        title: historyMatch?.title || raw,
+        imageUrl: historyMatch?.image || '', sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'Recherche texte',
+        price: historyMatch?.price ?? null, currency: historyMatch?.currency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL', resultsCount: candidates.length,
+      });
+      return res.json({ success: true, data: { query: raw, candidates: securedCandidates, eventId } });
+    } catch (error: any) {
+      console.warn('[AYROVIX analyze-text]', error?.message || 'unknown');
+      return res.status(502).json({ success: false, code: 'TEXT_SEARCH_FAILED', error: 'La recherche par mot-clé a échoué. Vérifiez votre connexion.' });
+    }
+  });
+
   router.post('/review-request', (req: Request, res: Response) => {
     const sessionId = reviewSessionId(req);
     if (!sessionId) return res.status(400).json({ success: false, code: 'INVALID_SESSION', error: 'Session client invalide.' });

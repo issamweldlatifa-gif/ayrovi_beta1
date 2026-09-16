@@ -3,9 +3,9 @@ import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
   AyrovixCandidate, AyrovixDetectedPrice, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
-import { analyzeBarcode, analyzeCode, analyzeImage, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
+import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
-import { rememberAyrovixHistory } from '../services/history';
+import { readLocalAyrovixHistory, rememberAyrovixHistory } from '../services/history';
 import { getCommerceConfig } from '../../services/publicApi';
 
 import { useLocale } from '../../i18n/LocaleContext';
@@ -78,6 +78,31 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
 
 const NEW_SCAN_MESSAGE = 'Cadrez le produit dans un bon éclairage, ou collez son lien direct.';
 
+function errorGuidance(code: string, tr: (fr:string, ar:string)=>string): { title:string; hint:string; retryLabel:string } {
+  const map: Record<string, { fr:string; ar:string; hintFr:string; hintAr:string; retryFr:string; retryAr:string }> = {
+    IMAGE_REQUIRED: { fr:'Image requise', ar:'الصورة مطلوبة', hintFr:'Ajoutez une photo du produit (JPEG/PNG/WebP).', hintAr:'أضف صورة للمنتج (JPEG/PNG/WebP).', retryFr:'Choisir une image', retryAr:'اختر صورة' },
+    UNSUPPORTED_IMAGE: { fr:'Format non supporté', ar:'صيغة غير مدعومة', hintFr:'Utilisez JPEG, PNG ou WebP uniquement.', hintAr:'استخدم JPEG أو PNG أو WebP فقط.', retryFr:'Choisir une autre image', retryAr:'اختر صورة أخرى' },
+    INVALID_IMAGE: { fr:'Image invalide', ar:'صورة غير صالحة', hintFr:'Le fichier n’est pas une image valide. Réessayez avec une photo plus nette.', hintAr:'الملف ليس صورة صالحة. حاول بصورة أوضح.', retryFr:'Choisir une autre image', retryAr:'اختر صورة أخرى' },
+    LIMIT_FILE_SIZE: { fr:'Image trop volumineuse', ar:'الصورة كبيرة جدًا', hintFr:'Limite 6 Mo. Réduisez la taille ou rognée la photo.', hintAr:'الحد 6 ميغابايت. قلّل الحجم أو اقتص الصورة.', retryFr:'Choisir une image plus légère', retryAr:'اختر صورة أخف' },
+    AYROVIX_UNAVAILABLE: { fr:'AYROVIX arrive très bientôt', ar:'AYROVIX قادمة قريبًا', hintFr:"Le service n’est pas encore activé. Réessayez bientôt.", hintAr:'الخدمة غير مفعّلة بعد. حاول لاحقًا.', retryFr:'Fermer', retryAr:'إغلاق' },
+    IDENTIFICATION_FAILED: { fr:'Produit non reconnu', ar:'تعذر التعرف على المنتج', hintFr:'Photo floue ou trop sombre. Cadrez le produit en bon éclairage ou collez son lien.', hintAr:'صورة ضبابية أو مظلمة. صوّر المنتج بإضاءة جيدة أو ألصق رابطه.', retryFr:'Reprendre la photo', retryAr:'إعادة التصوير' },
+    INVALID_URL: { fr:'Lien invalide', ar:'رابط غير صالح', hintFr:'Vérifiez le format https://. Copiez le lien exact de la page produit.', hintAr:'تحقق من الصيغة https://. انسخ الرابط الدقيق لصفحة المنتج.', retryFr:'Corriger le lien', retryAr:'صحح الرابط' },
+    EXTRACTION_FAILED: { fr:'Fiche non lue', ar:'تعذر قراءة الصفحة', hintFr:'La boutique bloque la lecture auto. Photographiez la page produit : AYROVIX la lira.', hintAr:'المتجر يمنع القراءة التلقائية. صوّر صفحة المنتج وستقرأها AYROVIX.', retryFr:'Photographier la page', retryAr:'تصوير الصفحة' },
+    INVALID_CODE: { fr:'QR illisible', ar:'رمز QR غير مقروء', hintFr:'Contenu vide. Rapprochez-vous ou saisissez le texte manuellement.', hintAr:'المحتوى فارغ. اقترب أو اكتب النص يدويًا.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
+    CODE_SEARCH_FAILED: { fr:'Recherche QR échouée', ar:'فشل بحث QR', hintFr:'Vérifiez la connexion ou photographiez le produit.', hintAr:'تحقق من الاتصال أو صوّر المنتج.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
+    INVALID_BARCODE: { fr:'Code-barres illisible', ar:'رمز شريطي غير مقروء', hintFr:'6 à 14 chiffres requis. Rapprochez-vous.', hintAr:'يلزم 6 إلى 14 رقمًا. اقترب أكثر.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
+    BARCODE_SEARCH_FAILED: { fr:'Recherche code échouée', ar:'فشل بحث الرمز', hintFr:'Aucune offre trouvée. Essayez avec une photo.', hintAr:'لا عروض. جرّب صورة.', retryFr:'Photographier', retryAr:'تصوير' },
+    INVALID_TEXT: { fr:'Mot-clé trop court', ar:'كلمة قصيرة جدًا', hintFr:'Saisissez au moins 2 caractères (marque + modèle).', hintAr:'اكتب حرفين على الأقل (ماركة + موديل).', retryFr:'Corriger', retryAr:'تصحيح' },
+    TEXT_SEARCH_FAILED: { fr:'Recherche échouée', ar:'فشل البحث', hintFr:'Vérifiez la connexion. Essayez un mot-clé plus court ou un lien direct.', hintAr:'تحقق من الاتصال. جرّب كلمة أقصر أو رابط مباشر.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
+    PRICED_RESULT_NOT_FOUND: { fr:'Aucune offre pricée', ar:'لا عروض مسعّرة', hintFr:'Aucun prix positif + lien marchand valide. Essayez une photo plus nette ou un autre lien.', hintAr:'لا سعر إيجابي + رابط صالح. جرّب صورة أوضح أو رابط آخر.', retryFr:'Nouvelle recherche', retryAr:'بحث جديد' },
+    QUOTE_UNAVAILABLE: { fr:'Devis expiré', ar:'عرض السعر منتهي', hintFr:'Le jeton sécurisé a expiré. Relancez la recherche.', hintAr:'انتهت صلاحية الرمز الآمن. أعد البحث.', retryFr:'Relancer', retryAr:'إعادة' },
+    ORDER_FAILED: { fr:'Panier indisponible', ar:'السلة غير متاحة', hintFr:'Impossible d’ajouter au panier. Réessayez.', hintAr:'تعذر الإضافة إلى السلة. حاول مجددًا.', retryFr:'Réessayer', retryAr:'إعادة المحاولة' },
+  };
+  const entry = map[code];
+  if (entry) return { title: tr(entry.fr, entry.ar), hint: tr(entry.hintFr, entry.hintAr), retryLabel: tr(entry.retryFr, entry.retryAr) };
+  return { title: tr('Petit obstacle', 'عائق بسيط'), hint: tr('Vérifiez votre connexion ou réessayez avec une autre méthode.', 'تحقق من اتصالك أو حاول بطريقة أخرى.'), retryLabel: tr('Réessayer', 'إعادة المحاولة') };
+}
+
 export const LensLauncher: React.FC<LensLauncherProps> = ({
   isOpen,
   onClose,
@@ -110,6 +135,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveEnabled, setLiveEnabled] = useState(false);
+  const [textQuery, setTextQuery] = useState('');
+  const [recentItems, setRecentItems] = useState<AyrovixHistoryItem[]>([]);
+  const lastQueryRef = useRef<{ kind:'text'|'url'|'image'|'code'|'barcode'; value:string } | null>(null);
 
   // Feature flag LIVE (AYROVIX_LENS_LIVE_ENABLED) — sans toucher les modes existants
   useEffect(() => {
@@ -121,6 +149,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   }, []);
   const previewRef = useRef<string | null>(null);
   const dropInputRef = useRef<HTMLInputElement | null>(null);
+  const urlInputRef = useRef<HTMLInputElement | null>(null);
+  const textInputRef = useRef<HTMLInputElement | null>(null);
   const stageRef = useRef<Stage>(stage);
   stageRef.current = stage;
   const abortRef = useRef(0);
@@ -153,6 +183,15 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 3)), 1400);
     return () => window.clearInterval(timer);
   }, [stage]);
+
+  // Recent searches for home — local only, no secrets
+  useEffect(() => {
+    if (!isOpen || stage !== 'home') return;
+    try {
+      const items = readLocalAyrovixHistory(historyScope).slice(0, 3);
+      setRecentItems(items);
+    } catch { setRecentItems([]); }
+  }, [isOpen, stage, historyScope]);
 
   if (!isOpen) return null;
 
@@ -229,6 +268,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const runImageAnalysis = async (fileOverride?: File) => {
     const file = fileOverride || imageFile;
     if (!file) return;
+    lastQueryRef.current = { kind:'image', value: file.name || 'image' };
     const { controller, token } = startRequest();
     enterStage('analyzing');
     setError(null);
@@ -271,6 +311,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   const runUrlAnalysis = async (url: string, channel: 'url' | 'qr') => {
+    lastQueryRef.current = { kind: channel==='qr'?'code':'url', value: url };
     const { controller, token } = startRequest();
     enterStage('analyzing');
     setError(null);
@@ -314,7 +355,44 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     }
   };
 
+  const runTextAnalysis = async (query: string) => {
+    const clean = query.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (clean.length < 2) { fail('INVALID_TEXT', 'Saisissez au moins 2 caractères.'); return; }
+    lastQueryRef.current = { kind:'text', value: clean };
+    const { controller, token } = startRequest();
+    enterStage('analyzing');
+    setError(null);
+    try {
+      const result = await analyzeText(clean, controller.signal);
+      if (abortRef.current !== token) return;
+      const historyMatch = result.candidates[0];
+      rememberAyrovixHistory({
+        id: result.eventId, kind: 'text', inputValue: clean, queryLabel: clean,
+        title: historyMatch?.title || clean, imageUrl: historyMatch?.image || '',
+        sourceUrl: historyMatch?.sourceUrl || '', source: historyMatch?.source || 'Recherche texte',
+        price: historyMatch?.price ?? null, currency: historyMatch?.currency ?? null,
+        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
+        resultsCount: result.candidates.length, createdAt: new Date().toISOString(),
+      }, historyScope);
+      if (result.candidates.length) {
+        setCandidatesView({ queryLabel: clean, list: result.candidates, eventId: result.eventId });
+        replaceStage('candidates');
+      } else {
+        // No priced results — show empty candidates screen with helpful CTA
+        setCandidatesView({ queryLabel: clean, list: [], eventId: result.eventId });
+        replaceStage('candidates');
+      }
+    } catch (err: any) {
+      if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
+      const apiError = err instanceof AyrovixApiError ? err : null;
+      fail(apiError?.code || 'TEXT_SEARCH_FAILED', apiError?.message || "La recherche par mot-clé a échoué.");
+    } finally {
+      finishRequest(controller);
+    }
+  };
+
   const runCodeTextAnalysis = async (value: string) => {
+    lastQueryRef.current = { kind:'code', value };
     const { controller, token } = startRequest();
     enterStage('analyzing');
     setError(null);
@@ -347,6 +425,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   const runBarcodeAnalysis = async (code: string) => {
+    lastQueryRef.current = { kind:'barcode', value: code };
     const { controller, token } = startRequest();
     enterStage('analyzing');
     setError(null);
@@ -400,11 +479,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           && result.product.currency === lensProduct.currency;
         setUrlResult(result);
         if (proposedPrice == null && extractedPrice != null) {
-          // A link/code result without a Lens price may use the directly extracted merchant quote.
           setProduct(result.product);
           setVerifiedPriceUrl(result.product.priceVerificationStatus === 'VERIFIED');
         } else {
-          // An AYROVIX Lens quote remains the order price. Auto-verification only confirms it and enriches real options.
           setProduct({
             ...lensProduct,
             description: result.product.description || lensProduct.description,
@@ -424,7 +501,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         return;
       } catch (error: any) {
         if (controller.signal.aborted || error?.name === 'AbortError') return;
-        // Network/extraction failure: keep the Lens match for manual team verification.
       } finally {
         finishRequest(controller);
       }
@@ -468,7 +544,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         priceToken,
         quantity,
       });
-      // Le panier s'ouvre, mais le résultat Lens reste monté pour un retour sans perte d'état.
       setOrdering(false);
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
@@ -504,10 +579,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   const repeatHistoryItem = (item: AyrovixHistoryItem) => {
+    if (item.kind === 'text' && item.inputValue) { void runTextAnalysis(item.inputValue); return; }
     if (item.kind === 'barcode' && item.inputValue) { void runBarcodeAnalysis(item.inputValue); return; }
     if (item.kind === 'code' && item.inputValue) { void runCodeTextAnalysis(item.inputValue); return; }
     const url = item.sourceUrl || item.inputValue;
     if (url) { void runUrlAnalysis(url, item.kind === 'qr' ? 'qr' : 'url'); return; }
+    if (item.kind === 'image') { reset(); return; }
     reset();
   };
 
@@ -520,6 +597,16 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const openHistory = () => {
     setMenuOpen(false);
     if (!historyOpen) navigation.pushLayer({ id: 'lens:history' });
+  };
+  const retryLast = () => {
+    const last = lastQueryRef.current;
+    if (!last) { reset(); return; }
+    if (last.kind === 'text') void runTextAnalysis(last.value);
+    else if (last.kind === 'url') void runUrlAnalysis(last.value, 'url');
+    else if (last.kind === 'code') void runCodeTextAnalysis(last.value);
+    else if (last.kind === 'barcode') void runBarcodeAnalysis(last.value);
+    else if (last.kind === 'image' && imageFile) void runImageAnalysis();
+    else reset();
   };
   const menu = (
     <LensMoreMenu
@@ -615,6 +702,40 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 <LensUpload onImage={(file) => void handleImage(file, false)} />
               </div>
 
+              {/* Product name search — NEW Phase 0 */}
+              <form
+                className="space-y-2.5 rounded-[22px] border border-line bg-white p-4"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (textQuery.trim().length >= 2) void runTextAnalysis(textQuery.trim());
+                }}
+                aria-label={tr('Recherche par nom de produit', 'بحث باسم المنتج')}
+              >
+                <label htmlFor="ayrovix-text-input" className="flex items-center gap-3 text-start">
+                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-surface text-brand"><Search size={18} /></span>
+                  <span>
+                    <span className="block text-sm font-extrabold text-ink">{tr('Nom du produit', 'اسم المنتج')}</span>
+                    <span className="mt-0.5 block text-[11px] font-medium text-muted">{tr('Marque + modèle. Ex. Nike Air Max 270', 'الماركة + الموديل. مثال: Nike Air Max 270')}</span>
+                  </span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    ref={textInputRef}
+                    id="ayrovix-text-input"
+                    name="ayrovix-text"
+                    type="search"
+                    value={textQuery}
+                    onChange={(e) => setTextQuery(e.target.value.slice(0, 200))}
+                    placeholder={tr('Ex. robe d’été verte, iPhone 15…', 'مثال: فستان صيفي أخضر، iPhone 15…')}
+                    className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none"
+                    maxLength={200}
+                    autoComplete="off"
+                  />
+                  <button type="submit" disabled={textQuery.trim().length < 2} className="ay-btn-primary flex-none text-xs disabled:opacity-40">{tr('Rechercher', 'بحث')}</button>
+                </div>
+                <p className="text-[11px] font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue AYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة AYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
+              </form>
+
               <form
                 className="space-y-2.5 rounded-[22px] border border-line bg-white p-4"
                 onSubmit={(e) => {
@@ -630,13 +751,40 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   </span>
                 </label>
                 <div className="flex gap-2">
-                  <input id="ayrovix-url-input" name="ayrovix-url" type="url" inputMode="url" placeholder="https://…"
+                  <input ref={urlInputRef} id="ayrovix-url-input" name="ayrovix-url" type="url" inputMode="url" placeholder="https://…"
                     className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none" />
                   <button type="submit" className="ay-btn-primary flex-none text-xs">{tr('Analyser', 'تحليل')}</button>
                 </div>
               </form>
+
+              {/* Recent searches — local history */}
+              {recentItems.length > 0 && (
+                <div className="rounded-[22px] border border-line bg-surface p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-extrabold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</p>
+                    <button type="button" onClick={openHistory} className="text-[11px] font-bold text-brand underline">{tr('Voir tout', 'عرض الكل')}</button>
+                  </div>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {recentItems.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => repeatHistoryItem(item)}
+                        className="max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-brand/30"
+                        title={item.queryLabel || item.title}
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="grid h-5 w-5 place-items-center rounded-full bg-surface text-[10px] font-black text-muted">{item.kind==='image'?'◉':item.kind==='text'?'Aa':item.kind==='url'?'↗':'◎'}</span>
+                          <span className="truncate max-w-[18ch]">{item.queryLabel || item.title}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <p className="px-2 pt-1 text-center text-[11px] leading-relaxed text-muted">
-                {tr('Caméra inaccessible ? Importez une photo ou collez un lien — AYROVIX identifie le produit et calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو ألصق رابطًا — ستتعرّف AYROVIX على المنتج وتحسب سعره النهائي بالدينار.')}
+                {tr('Caméra inaccessible ? Importez une photo, saisissez un nom ou collez un lien — AYROVIX calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو اكتب اسمًا أو ألصق رابطًا — تحسب AYROVIX سعره النهائي بالدينار.')}
               </p>
             </div>
           )}
@@ -656,7 +804,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'analyzing' && (
             <div className="lens-analyzing mx-auto max-w-md pt-2">
-              {/* صورة المستخدم داخل إطار Lens — لا صورة Demo */}
               <div className="lens-frame">
                 {previewUrl
                   ? <img src={previewUrl} alt="" className="lens-frame__img" />
@@ -698,6 +845,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onChoose={handleChooseCandidate}
               onReset={reset}
               onCommandDetected={commandDetectedPrice}
+              onOpenHistory={openHistory}
             />
           )}
 
@@ -740,20 +888,34 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
             </div>
           )}
 
-          {stage === 'error' && error && (
+          {stage === 'error' && error && (() => {
+            const g = errorGuidance(error.code, tr);
+            const showPreview = Boolean(imageFile && !['AYROVIX_UNAVAILABLE', 'INVALID_TEXT', 'TEXT_SEARCH_FAILED', 'INVALID_URL'].includes(error.code));
+            return (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <div className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-danger/5 text-danger">
+                <span className="text-lg">!</span>
               </div>
-              <p className="text-sm font-extrabold text-ink">{error.code === 'AYROVIX_UNAVAILABLE' ? tr('AYROVIX arrive très bientôt', 'AYROVIX متاحة قريبًا') : tr('Petit obstacle', 'عائق بسيط')}</p>
+              <p className="text-sm font-extrabold text-ink">{g.title}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>
-              <div className="flex justify-center gap-2.5">
-                {imageFile && error.code !== 'AYROVIX_UNAVAILABLE' && (
+              <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{g.hint}</p>
+              <p className="text-[11px] font-mono text-muted">{error.code}</p>
+              <div className="flex flex-wrap justify-center gap-2.5">
+                {showPreview && (
                   <button type="button" onClick={() => replaceStage('preview')} className="ay-btn-secondary text-xs">{tr("Revoir l'image", 'مراجعة الصورة')}</button>
                 )}
+                {['INVALID_URL','EXTRACTION_FAILED'].includes(error.code) && (
+                  <button type="button" onClick={()=> { reset(); setTimeout(()=> urlInputRef.current?.focus(), 120); }} className="ay-btn-secondary text-xs">{tr('Corriger le lien', 'صحح الرابط')}</button>
+                )}
+                {['INVALID_TEXT','TEXT_SEARCH_FAILED'].includes(error.code) && (
+                  <button type="button" onClick={()=> { reset(); setTimeout(()=> textInputRef.current?.focus(), 120); }} className="ay-btn-secondary text-xs">{tr('Corriger le mot-clé', 'صحح الكلمة')}</button>
+                )}
+                <button type="button" onClick={retryLast} className="ay-btn-secondary text-xs">{g.retryLabel}</button>
                 <button type="button" onClick={reset} className="ay-btn-primary text-xs">{tr('Nouvelle recherche', 'بحث جديد')}</button>
               </div>
             </div>
-          )}
+            );
+          })()}
         </main>
       </div>
       <LensHistory open={historyOpen} scope={historyScope} onClose={() => navigation.back()} onRepeat={repeatHistoryItem} onNewScan={reset} />

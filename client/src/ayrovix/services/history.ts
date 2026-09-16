@@ -25,7 +25,7 @@ function publicWebUrl(value: unknown): string {
 
 function normalize(raw: any): AyrovixHistoryItem | null {
   const id = clean(raw?.id, 100);
-  const kind = ['image', 'url', 'qr', 'barcode', 'code'].includes(raw?.kind) ? raw.kind : null;
+  const kind = ['image', 'url', 'qr', 'barcode', 'code', 'text'].includes(raw?.kind) ? raw.kind : null;
   if (!id || !kind) return null;
   const numericPrice = Number(raw?.price);
   return {

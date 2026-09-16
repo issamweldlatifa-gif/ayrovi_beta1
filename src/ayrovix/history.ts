@@ -1,6 +1,6 @@
 import type { QatafoDatabase } from '../db/database';
 
-export type AyrovixHistoryKind = 'image' | 'url' | 'qr' | 'barcode' | 'code';
+export type AyrovixHistoryKind = 'image' | 'url' | 'qr' | 'barcode' | 'code' | 'text';
 export type AyrovixHistoryVerificationStatus = 'VERIFIED' | 'PENDING_MANUAL';
 
 export interface AyrovixHistoryInput {
@@ -43,10 +43,34 @@ function clean(value: unknown, limit: number): string {
 
 export function ensureAyrovixHistoryTable(db: QatafoDatabase): void {
   if (ensured.has(db as object)) return;
+  try {
+    const existing = db.get<any>(`SELECT sql FROM sqlite_master WHERE type='table' AND name='ayrovix_search_history'`);
+    if (existing?.sql && !existing.sql.includes("'text'")) {
+      db.run(`CREATE TABLE IF NOT EXISTS ayrovix_search_history_new (
+        event_id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL CHECK(kind IN ('image','url','qr','barcode','code','text')),
+        input_value TEXT NOT NULL DEFAULT '',
+        query_label TEXT NOT NULL DEFAULT '',
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL DEFAULT '',
+        source_url TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT '',
+        price REAL,
+        currency TEXT,
+        verification_status TEXT NOT NULL DEFAULT 'PENDING_MANUAL' CHECK(verification_status IN ('VERIFIED','PENDING_MANUAL')),
+        results_count INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL
+      )`);
+      db.run(`INSERT OR IGNORE INTO ayrovix_search_history_new SELECT * FROM ayrovix_search_history`);
+      db.run(`DROP TABLE ayrovix_search_history`);
+      db.run(`ALTER TABLE ayrovix_search_history_new RENAME TO ayrovix_search_history`);
+    }
+  } catch { /* best-effort */ }
   db.run(`CREATE TABLE IF NOT EXISTS ayrovix_search_history (
     event_id TEXT PRIMARY KEY,
     account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
-    kind TEXT NOT NULL CHECK(kind IN ('image','url','qr','barcode','code')),
+    kind TEXT NOT NULL CHECK(kind IN ('image','url','qr','barcode','code','text')),
     input_value TEXT NOT NULL DEFAULT '',
     query_label TEXT NOT NULL DEFAULT '',
     title TEXT NOT NULL,
