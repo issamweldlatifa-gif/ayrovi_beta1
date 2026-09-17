@@ -656,7 +656,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 className="hidden"
                 aria-hidden="true"
                 tabIndex={-1}
-                onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImage(file, false); e.target.value = ''; }}
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImage(file, true); e.target.value = ''; }}
               />
 
               {/* Intro — ماذا يفعل Lens؟ ماذا أضع؟ ماذا سيحدث؟ */}
@@ -680,7 +680,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 className="lens-drop"
                 onClick={() => dropInputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files?.[0]; if (file) void handleImage(file, false); }}
+                onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files?.[0]; if (file) void handleImage(file, true); }}
               >
                 <span className="lens-drop__icon"><GalleryIcon size={22} /></span>
                 <strong>{tr('Glissez une image ici', 'أفلِت صورة هنا')}</strong>
@@ -688,8 +688,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               </button>
 
               <div className="lens-home__actions">
-                <LensCamera onImage={(file) => void handleImage(file, false)} />
-                <LensUpload onImage={(file) => void handleImage(file, false)} />
+                <LensCamera onImage={(file) => void handleImage(file, true)} />
+                <LensUpload onImage={(file) => void handleImage(file, true)} />
               </div>
 
               {/* Product name search — NEW Phase 0 */}

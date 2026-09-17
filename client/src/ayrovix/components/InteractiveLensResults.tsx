@@ -349,7 +349,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
       <style>{`@keyframes pulseBox{0%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:0.95}100%{transform:scale(1);opacity:1}}`}</style>
       <div
         ref={containerRef}
-        className="relative flex-1 overflow-hidden bg-black select-none"
+        className="relative flex-1 overflow-hidden bg-[#FAFAFA] select-none"
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -407,7 +407,6 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         <div className="absolute left-2 right-2 top-12 flex items-center justify-between pointer-events-none">
           <div className="pointer-events-auto flex gap-1.5 items-center">
             <span className="hidden">Sélectionner</span>
-            <span className="rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-white/0 select-none pointer-events-none" aria-hidden>{tr('Sélectionner', 'تحديد')}</span>
             {selectedBox && (
               <button type="button" onClick={clearSelection} className="rounded-full bg-black/60 px-3 py-1.5 text-[11px] font-bold text-white border border-white/20 backdrop-blur flex items-center gap-1"><X size={12} /> {tr('Effacer', 'مسح')}</button>
             )}
@@ -428,15 +427,15 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
       <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'} overflow-hidden`} style={{ height: sheetHeight, transition: startY.current == null ? 'height 0.25s ease' : 'none' }}>
         <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { startY.current = e.clientY; const onMove = (ev: MouseEvent) => { if (startY.current == null) return; const dy = startY.current - ev.clientY; if (dy > 60 && sheet !== 'full') setSheet('full'); else if (dy < -60 && sheet === 'full') setSheet('half'); else if (dy < -60 && sheet === 'half') setSheet('peek'); else if (dy > 60 && sheet === 'peek') setSheet('half'); }; const onUp = () => { startY.current=null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
           <span className="h-1.5 w-10 rounded-full bg-black/15" />
-          <div className="flex w-full items-center justify-between pl-14 pr-2 gap-3">
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pl-2 pr-2">
             <div className="min-w-0 flex-1">
-              <h3 className="text-[14px] font-extrabold text-ink truncate">{tr('Résultats Lens', 'نتائج Lens')} • {visible.length}</h3>
-              <p className="text-[11px] font-medium text-muted truncate max-w-[28ch]">{name}</p>
-              {previewUrl && <p className="text-[10px] font-medium text-muted/70 truncate">{tr('Votre image ci-dessus', 'صورتك أعلاه')}</p>}
+              <h3 className="text-[13px] font-extrabold text-ink leading-tight break-words">{tr('Résultats Lens', 'نتائج Lens')} • {visible.length}</h3>
+              <p className="text-[11px] font-medium text-muted break-words line-clamp-2 leading-snug">{name}</p>
+              {previewUrl && <p className="text-[10px] font-medium text-muted/70 break-words">{tr('Votre image ci-dessus — touchez pour sélectionner', 'صورتك أعلاه — المس للتحديد')}</p>}
             </div>
-            <div className="flex gap-1.5">
-              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'half' : 'full')} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold text-ink">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
-              <button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button>
+            <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'half' : 'full')} className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1.5 text-[11px] font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
+              <button type="button" onClick={() => { clearSelection(); onReset(); }} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white whitespace-nowrap">{tr('Nouvelle recherche', 'بحث جديد')}</button>
             </div>
           </div>
         </div>
