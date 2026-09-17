@@ -304,7 +304,7 @@ async function requestIdentification(
         { type: 'text', text: 'Identifie le produit principal et lis uniquement son prix réellement visible.' },
       ],
     }],
-    maxOutputTokens: structured ? 700 : 900,
+    maxOutputTokens: structured ? 550 : 750,
     temperature: 0,
     ...(structured ? {
       outputSchema: { name: 'ayrovix_identification', schema: IDENTIFICATION_SCHEMA },
@@ -335,7 +335,7 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
   if (!provider.isConfigured()) throw new AyrovixUnavailableError('Vision provider is not configured');
 
   const model = provider.resolveModel('vision', 'fast');
-  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 12_000, 8_000, 20_000);
+  const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 8_000, 5_000, 20_000);
   try {
     console.log(`[AYROVIX] Trying ${provider.id} ${model}`);
     try {

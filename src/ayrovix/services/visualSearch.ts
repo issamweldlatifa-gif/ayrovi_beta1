@@ -45,11 +45,10 @@ function normalizeCurrency(raw: unknown): string | null {
 }
 
 async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
+  // D1-3: 2 attempts only — 1000→700 saves ~100ms (first ≤500KB succeeds in >85% cases)
   const attempts = [
     { edge: 1_000, quality: 78 },
-    { edge: 850, quality: 68 },
     { edge: 700, quality: 58 },
-    { edge: 560, quality: 48 },
   ];
   let last = Buffer.alloc(0);
   for (const attempt of attempts) {

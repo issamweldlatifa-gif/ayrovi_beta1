@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 
 const MAX_INPUT_PIXELS = 25_000_000;
-const MAX_OUTPUT_EDGE = 1_800;
+const MAX_OUTPUT_EDGE = 1_280;
 const SUPPORTED_FORMATS = new Set(['jpeg', 'png', 'webp']);
 const SUPPORTED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
