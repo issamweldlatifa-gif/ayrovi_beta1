@@ -1,13 +1,15 @@
 # AYROVIX LENS — تشخيص أداء شامل (من رفع الصورة إلى عرض النتائج)
 **التاريخ:** 2026-09-17 — **البيئة:** Tunis (Africa/Tunis) — **الفرع:** `main`
-**التحديث:** ✅ تم التنفيذ دون توقف — 4 دفعات (57f6a9f→014347e→f477970→35f5f63) — كل Business Logic محفوظ
+**التحديث:** ✅ تم التنفيذ دون توقف — 6 دفعات (57f6a9f→56c164d) — كل Business Logic محفوظ — 730/730 كل مرة
 
-> **ملاحظة تنفيذ 2026-09-17 21:30-21:38:** تم تطبيق كل تحسينات D1 فوراً بعد التشخيص، مع دفع بعد كل إصلاح كما طُلب.
+> **ملاحظة تنفيذ 2026-09-17 21:30-22:55:** تم تطبيق D1 + D2 + D3 فوراً بعد التشخيص، مع دفع بعد كل إصلاح كما طُلب.
 > - **دفعة 1 (57f6a9f):** instrumentation + pipelineCache 6min + background AI (650/750ms race) + direct Voir le produit — 9-11s → 4.5-5.5s
 > - **دفعة 2 (014347e):** MAX_OUTPUT_EDGE 1800→1280 + SerpApi 4→2 attempts + Vision timeout 12s→8s / tokens 700→550 — −1.8s + −30% base64
 > - **دفعة 3 (f477970):** Vision inFlight 1.5s dedup + pricingCache 5min (7× DB→1×) + LensTrace wiring (requestId, 14 timings, X-Lens-Crop-Ms)
-> - **دفعة 4 (35f5f63):** frontend CandidateImage lazy+decoding async (2.1s→0.8s) + cropMs header + SerpApi strict warning (D2-10 pending)
-> - **النتيجة:** 730/730 tests + vite build ok بعد كل دفعة؛ لا حذف Anthropic/SerpApi، لا تغيير ترتيب، لا API جديد قبل القياس.
+> - **دفعة 4 (35f5f63):** frontend CandidateImage lazy+decoding async (2.1s→0.8s) + cropMs header + SerpApi strict warning
+> - **دفعة 5 (66e9689→fc729b6):** D2 streaming relevance background (save 750ms) + ETag W/\"sha1(pKey)\" + Cache-Control private + 304 + backend ROI sharp crop (18% pad jpeg 85) — لا canvas re-upload، pipelineKey(effectiveBuffer)
+> - **دفعة 6 (56c164d):** D2-10 PENDING fallback — strict→lenient (isLenient/filterWithFallback, toCandidates lenient) + client isLenientCandidate + \"Prix à confirmer\" amber UI — never 0 when lens has matches; D3 WebP 85% (webp 90→85, jpeg 88→85, roi 86→85)
+> - **النتيجة:** 730/730 tests + vite build 1.05s بعد كل دفعة؛ لا حذف Anthropic/SerpApi، لا تغيير ترتيب قبل القياس، ROI backend + PENDING يحافظان على Business Logic.
 
 > هذا التقرير يجيب عن سؤال واحد: **لماذا ولات AyroviX Lens أبطأ بعد إضافة Anthropic وتحسين تحديد المنتج (Circle)؟** مع إثبات بالأدلة (ملف/دالة/زمن) وخطة تحسين تحافظ على الدقة والوظائف.
 
