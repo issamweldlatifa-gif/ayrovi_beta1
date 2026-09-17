@@ -73,7 +73,7 @@ const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
   </span>
 );
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onLassoSearch, isLoading, detectedProducts, customerIntent }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, customerIntent }) => {
   const { tr, direction } = useLocale();
   const visible = useMemo(() => view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0)), [view.list]);
   const best = visible[0];
@@ -226,13 +226,18 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   }, [detectedProducts]);
 
   const triggerTapSearch = useCallback(async (box: { x:number;y:number;w:number;h:number }) => {
-    if (!onLassoSearch) return;
     setShowPulse(true); setTimeout(()=> setShowPulse(false), 550);
+    // D2-8: prefer backend ROI crop (no canvas, saves 80-150ms + 60KB) — backend sharp extracts with 18% pad
+    if (onRoiSearch) {
+      onRoiSearch(box);
+      return;
+    }
+    if (!onLassoSearch) return;
     const t0 = performance.now();
     const file = await cropBoxToFile(box);
     const cropMs = Math.round(performance.now() - t0);
     if (file) onLassoSearch(file, cropMs);
-  }, [onLassoSearch, cropBoxToFile]);
+  }, [onRoiSearch, onLassoSearch, cropBoxToFile]);
 
   const handleTap = useCallback((clientX:number, clientY:number) => {
     if (scale > 1) return; // pan mode when zoomed

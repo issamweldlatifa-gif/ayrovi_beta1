@@ -19,6 +19,7 @@ import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } fr
 import { filterDisplayableCandidates, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { createHash } from 'node:crypto';
+import sharp from 'sharp';
 
 /**
  * AYROVIX public API — AI Core provides visual understanding, visible-price
@@ -207,7 +208,38 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const tNorm = Date.now();
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
       mark(trace, 'normalizeMs', Date.now() - tNorm);
-      mark(trace, 'imageBytesIn', normalized.buffer.length as any);
+      // D2-8: backend ROI crop — if frontend sends roi (x,y,w,h % 0..100), crop server-side and avoid second upload
+      // keeps 18% pad like canvas, uses sharp extract on normalized buffer
+      let effectiveBuffer = normalized.buffer;
+      let effectiveMime: typeof normalized.mimeType = normalized.mimeType;
+      const roiRaw = String((req.body as any)?.roi || (req.body as any)?.box || '').trim();
+      if (roiRaw) {
+        try {
+          const roi = JSON.parse(roiRaw);
+          let x = Number(roi.x), y = Number(roi.y), w = Number(roi.w), h = Number(roi.h);
+          if ([x, y, w, h].every((n) => Number.isFinite(n)) && w > 2 && h > 2 && w <= 100 && h <= 100) {
+            x = Math.max(0, Math.min(100, x)); y = Math.max(0, Math.min(100, y));
+            w = Math.max(2, Math.min(100 - x, w)); h = Math.max(2, Math.min(100 - y, h));
+            const nx = normalized.width, ny = normalized.height;
+            let px = Math.round((x / 100) * nx), py = Math.round((y / 100) * ny);
+            let pw = Math.round((w / 100) * nx), ph = Math.round((h / 100) * ny);
+            const pad = Math.max(24, Math.max(pw, ph) * 0.18);
+            let padX = Math.round(px - pad), padY = Math.round(py - pad);
+            let padW = Math.round(pw + pad * 2), padH = Math.round(ph + pad * 2);
+            if (padX < 0) { padW += padX; padX = 0; }
+            if (padY < 0) { padH += padY; padY = 0; }
+            if (padX + padW > nx) padW = nx - padX;
+            if (padY + padH > ny) padH = ny - padY;
+            if (padW >= 20 && padH >= 20) {
+              const tCrop = Date.now();
+              effectiveBuffer = await sharp(effectiveBuffer).extract({ left: padX, top: padY, width: padW, height: padH }).jpeg({ quality: 86, mozjpeg: true }).toBuffer();
+              effectiveMime = 'image/jpeg';
+              mark(trace, 'cropMs', Date.now() - tCrop as any);
+            }
+          }
+        } catch { /* ignore malformed roi — fallback to full image */ }
+      }
+      mark(trace, 'imageBytesIn', effectiveBuffer.length as any);
       if (!ayrovixAiReady() && !serpApiVisualReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
@@ -217,8 +249,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       // Google Lens had already found priced matches.
       const tParallel = Date.now();
       const [visionResult, visualResult] = await Promise.allSettled([
-        identifyProduct(normalized.buffer, normalized.mimeType),
-        serpApiVisualSearch(normalized.buffer, 8),
+        identifyProduct(effectiveBuffer, effectiveMime),
+        serpApiVisualSearch(effectiveBuffer, 8),
       ]);
       mark(trace, 'anthropicVisionMs', Date.now() - tParallel as any); // approx parallel total, serpApiTotalMs overlaps
       mark(trace, 'serpApiTotalMs', Date.now() - tParallel as any);
@@ -275,7 +307,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
 
       // AI Search Intelligence — GOOGLE LENS LEVEL: cached, race with 2.5s, visual shortcut (skip cache in tests — 1px PNG collides)
       const customerIntentText: string | null = String((req.body as any)?.customerIntent || (req.body as any)?.intent || req.query?.intent || '').trim().slice(0,200) || null;
-      const pKey = pipelineKey(normalized.buffer, customerIntentText);
+      const pKey = pipelineKey(effectiveBuffer, customerIntentText);
       const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
       // D3-13: ETag for 304 Not Modified — same image hash → no re-download
       const etag = `W/"${createHash('sha1').update(pKey).digest('hex').slice(0, 16)}"`;

@@ -20,10 +20,11 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload.data as T;
 }
 
-export async function analyzeImage(file: File, signal?: AbortSignal, customerIntent?: string | null, extra?: { cropMs?: number; uploadMs?: number }): Promise<AyrovixImageResult> {
+export async function analyzeImage(file: File, signal?: AbortSignal, customerIntent?: string | null, extra?: { cropMs?: number; uploadMs?: number; roi?: { x:number; y:number; w:number; h:number } }): Promise<AyrovixImageResult> {
   const body = new FormData();
   body.append('image', file, file.name || 'ayrovix.jpg');
   if (customerIntent) body.append('customerIntent', String(customerIntent).slice(0,200));
+  if (extra?.roi) body.append('roi', JSON.stringify(extra.roi));
   const headers: Record<string, string> = {};
   if (extra?.cropMs != null) headers['X-Lens-Crop-Ms'] = String(Math.round(extra.cropMs));
   if (extra?.uploadMs != null) headers['X-Lens-Upload-Ms'] = String(Math.round(extra.uploadMs));

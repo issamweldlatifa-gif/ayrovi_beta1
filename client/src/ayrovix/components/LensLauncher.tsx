@@ -260,28 +260,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const handleClose = () => { clearRuntime(); onClose(); };
 
   const fail = (code: string, message: string) => { setError({ code, message }); setIsAnalyzing(false); replaceStage('error'); };
-  const handleRoiSearch = async (roi: { x: number; y: number; w: number; h: number }) => {
-    if (!imageFile || !previewUrl) return;
-    try {
-      const img = new Image();
-      img.src = previewUrl;
-      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
-      const canvas = document.createElement('canvas');
-      const sx = (roi.x / 100) * img.naturalWidth;
-      const sy = (roi.y / 100) * img.naturalHeight;
-      const sw = (roi.w / 100) * img.naturalWidth;
-      const sh = (roi.h / 100) * img.naturalHeight;
-      if (sw < 10 || sh < 10) return;
-      canvas.width = sw;
-      canvas.height = sh;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
-      const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
-      if (!blob) return;
-      const cropped = new File([blob], 'roi.jpg', { type: 'image/jpeg' });
-      void runImageAnalysis(cropped);
-    } catch {}
+  // D2-8 backend ROI: no canvas crop, just send roi% + original file → backend sharp crops (saves 80-150ms + 60KB upload)
+  const handleRoiSearch = (roi: { x: number; y: number; w: number; h: number }) => {
+    if (!imageFile) return;
+    void runImageAnalysis(imageFile, undefined, roi);
   };
   const handleImage = async (file: File, autoAnalyze: boolean) => {
     setError(null);
@@ -294,7 +276,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     else enterStage('preview');
   };
 
-  const runImageAnalysis = async (fileOverride?: File, cropMs?: number) => {
+  const runImageAnalysis = async (fileOverride?: File, cropMs?: number, roi?: { x:number; y:number; w:number; h:number }) => {
     const file = fileOverride || imageFile;
     if (!file) return;
     lastQueryRef.current = { kind:'image', value: file.name || 'image' };
@@ -305,7 +287,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
-      const result = await analyzeImage(file, controller.signal, null, cropMs != null ? { cropMs } : undefined);
+      const result = await analyzeImage(file, controller.signal, null, { ...(cropMs != null ? { cropMs } : {}), ...(roi ? { roi } : {}) });
       // uploadMs could be measured as tUpload diff but fetch includes network; cropMs is primary
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
