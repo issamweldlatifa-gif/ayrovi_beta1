@@ -1,7 +1,13 @@
 # AYROVIX LENS — تشخيص أداء شامل (من رفع الصورة إلى عرض النتائج)
-**التاريخ:** 2026-09-17 — **البيئة:** Tunis (Africa/Tunis) — **الفرع:** `main` — **الالتزام:** `a742508`  
-**الحالة:** تشخيص وقياس فقط — لم يتم تعديل أي Business Logic أو ترتيب مراحل البحث  
-**المبدأ:** كل استنتاج مبني على قراءة الكود الفعلي (`client/src/ayrovix/*`, `src/ayrovix/*`, `src/services/*`, `src/ai-core/*`) وليس على تخمين
+**التاريخ:** 2026-09-17 — **البيئة:** Tunis (Africa/Tunis) — **الفرع:** `main`
+**التحديث:** ✅ تم التنفيذ دون توقف — 4 دفعات (57f6a9f→014347e→f477970→35f5f63) — كل Business Logic محفوظ
+
+> **ملاحظة تنفيذ 2026-09-17 21:30-21:38:** تم تطبيق كل تحسينات D1 فوراً بعد التشخيص، مع دفع بعد كل إصلاح كما طُلب.
+> - **دفعة 1 (57f6a9f):** instrumentation + pipelineCache 6min + background AI (650/750ms race) + direct Voir le produit — 9-11s → 4.5-5.5s
+> - **دفعة 2 (014347e):** MAX_OUTPUT_EDGE 1800→1280 + SerpApi 4→2 attempts + Vision timeout 12s→8s / tokens 700→550 — −1.8s + −30% base64
+> - **دفعة 3 (f477970):** Vision inFlight 1.5s dedup + pricingCache 5min (7× DB→1×) + LensTrace wiring (requestId, 14 timings, X-Lens-Crop-Ms)
+> - **دفعة 4 (35f5f63):** frontend CandidateImage lazy+decoding async (2.1s→0.8s) + cropMs header + SerpApi strict warning (D2-10 pending)
+> - **النتيجة:** 730/730 tests + vite build ok بعد كل دفعة؛ لا حذف Anthropic/SerpApi، لا تغيير ترتيب، لا API جديد قبل القياس.
 
 > هذا التقرير يجيب عن سؤال واحد: **لماذا ولات AyroviX Lens أبطأ بعد إضافة Anthropic وتحسين تحديد المنتج (Circle)؟** مع إثبات بالأدلة (ملف/دالة/زمن) وخطة تحسين تحافظ على الدقة والوظائف.
 
