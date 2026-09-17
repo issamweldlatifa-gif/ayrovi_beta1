@@ -1,11 +1,11 @@
 /* AYROVI design tokens — the only source of brand, semantic, spacing and shape values.
    ZALANDO STRATEGY (P4/T1) — Muted & Punchy UI: the platform is strictly monochromatic
-   (white / black); orange is an ACTION trigger, never a decoration.
-   Orange (#ff6900) is allowed on: the single primary CTA of a screen, the active step of
+   (white / black); black (#0A0A0A) is the sole ACTION trigger, never a decoration.
+   Black (#0A0A0A) is allowed on: the single primary CTA of a screen, the active step of
    a progress tracker, the active nav dot, the 3px accent rule of a surface card, and thin
-   micro-interaction glows. It is FORBIDDEN as: a page/container background, an orange
-   gradient, a full card wash, a thick border around a product or a list row, or a filled
-   badge. Budget: ≤ 3% of any screen's surface, one filled orange button per screen. */
+   micro-interaction glows. It is FORBIDDEN as: a page/container background, a gradient,
+   a full card wash, a thick border around a product or a list row, or a filled
+   badge. Budget: ≤ 3% of any screen's surface, one filled black button per screen. */
 @theme inline {
   --color-brand: var(--ayrovi-primary);
   --color-brand-dark: var(--ayrovi-primary-dark);
@@ -99,8 +99,8 @@ html[data-theme='dark'] {
 
     /* ───────────────────────────────────────────────────────────────────────
        ZALANDO STRATEGY — les six jetons canoniques (source unique de vérité).
-       La plateforme est monochrome : le orange n'est PAS un outil de
-       décoration, c'est un déclencheur d'action (Action-Driven Trigger).
+       La plateforme est monochrome : le noir (#0A0A0A) est le seul déclencheur
+       d'action (Action-Driven Trigger), pas un outil de décoration.
        Interdit en fond de page, en dégradé, en pleine carte ou en bordure
        épaisse ; réservé au CTA principal, à l'étape active et aux
        micro-interactions, soit ≤ 3 % de la surface d'un écran.
@@ -110,7 +110,7 @@ html[data-theme='dark'] {
     --ayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
     --ayrovi-text-primary: #111111;         /* Noir premium : titres, marques, prix */
     --ayrovi-text-secondary: #666666;       /* Gris équilibré : légendes, prix secondaires */
-    --ayrovi-color-brand-orange: #ff6900;   /* Orange pur — CTA principal uniquement */
+    --ayrovi-color-brand-orange: #ff6900;   /* Orange pur — CTA principal unique (token historique gardé) */
 
     --ayrovi-primary: #111318;
     --ayrovi-primary-dark: #050505;

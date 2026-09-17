@@ -17,7 +17,7 @@ const externalSearchInFlight = new Map<string, Promise<AyrovixCandidate[]>>();
 
 function searchBudgetMs(): number {
   const configured = Number(process.env.AYROVIX_SEARCH_TIMEOUT_MS);
-  return Number.isFinite(configured) ? Math.min(12_000, Math.max(1_500, configured)) : 7_000;
+  return Number.isFinite(configured) ? Math.min(8_000, Math.max(1_200, configured)) : 4_200;
 }
 
 function externalWebSearchEnabled(): boolean {
@@ -143,10 +143,10 @@ export async function providerWebSearch(
         role: 'user',
         content: [{ type: 'text', text: `Find direct product pages selling this exact item or code: ${query.slice(0, 200)}` }],
       }],
-      maxOutputTokens: 384,
+      maxOutputTokens: 220,
       temperature: 0,
       webSearch: { enabled: true, maxUses: 1 },
-    }, AbortSignal.timeout(remainingSearchMs(deadline, 7_500)));
+    }, AbortSignal.timeout(remainingSearchMs(deadline, 4_200)));
 
     const candidates: AyrovixCandidate[] = [];
     for (const item of result.webResults) {

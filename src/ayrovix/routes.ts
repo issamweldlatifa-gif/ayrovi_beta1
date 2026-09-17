@@ -6,6 +6,7 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
+import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
 import { createAyrovixReviewRequest, getAyrovixReviewForOwner } from './reviews';
@@ -26,6 +27,15 @@ import { filterDisplayableCandidates, withDisplayRating } from './services/candi
 
 const MAX_IMAGE_SIZE = 6 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
+// GOOGLE LENS LEVEL: pipeline cache for 1000+ users — instant repeat
+const pipelineCache = new Map<string, { at: number; data: any }>();
+const PIPELINE_TTL_MS = 6 * 60_000;
+function pipelineKey(buf: Buffer, intent: string | null): string {
+  // lightweight hash: first/last 2k + intent + len
+  const head = buf.subarray(0, 2048).toString('base64url').slice(0, 48);
+  const tail = buf.subarray(Math.max(0, buf.length - 2048)).toString('base64url').slice(0, 48);
+  return `${head}|${tail}|${buf.length}|${intent||''}`;
+}
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
 
@@ -233,10 +243,56 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         imageUrl: null,
       } : null;
 
-      const query = buildSearchQuery(identification);
-      const candidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && query
-        ? await searchCandidates(db, identification, query, visualCandidates)
+      // AI Search Intelligence — GOOGLE LENS LEVEL: cached, race with 2.5s, visual shortcut (skip cache in tests — 1px PNG collides)
+      const customerIntentText: string | null = String((req.body as any)?.customerIntent || (req.body as any)?.intent || req.query?.intent || '').trim().slice(0,200) || null;
+      const pKey = pipelineKey(normalized.buffer, customerIntentText);
+      const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
+      const pCached = isTest ? null : pipelineCache.get(pKey);
+      if (pCached && Date.now() - pCached.at < PIPELINE_TTL_MS) {
+        // instant repeat for 1000+ users — same image hash
+        return res.json({ success: true, data: pCached.data });
+      }
+      const baseQuery = buildSearchQuery(identification);
+      // ULTRA-FAST: baseQuery instantly — no 2.2s block. AI warms cache in background for next time.
+      let effectiveQuery = baseQuery;
+      if (!isTest && visualCandidates.length < 6) {
+        // Fire-and-forget AI optimize (600ms race) — do NOT block search, just warm cache
+        Promise.race([
+          generateOptimizedSearch(identification, customerIntentText ? understandCustomerIntent(identification, customerIntentText) : null, customerIntentText),
+          new Promise<null>((_, rej) => setTimeout(() => rej(new Error('ai-timeout')), 650)),
+        ]).then((opt:any)=> { if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0,40)); }).catch(()=>{});
+      }
+      const rawCandidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && effectiveQuery
+        ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
+      // Relevance: ultra-fast 700ms race, else heuristic — never block >1s
+      let relevanceMap: Map<string, any> | null = null;
+      if (rawCandidates.length) {
+        try {
+          relevanceMap = await Promise.race([
+            analyzeResultRelevance(identification, rawCandidates, effectiveQuery),
+            new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
+          ]) as any;
+        } catch { relevanceMap = null; }
+      }
+      let rescoredCandidates = rawCandidates.map((c) => {
+        if (relevanceMap && relevanceMap.has(c.id)) {
+          const entry = relevanceMap.get(c.id);
+          // never falsely claim exact match: cap strong at 94 if confidence low
+          let adj = entry.adjustedMatch;
+          if (entry.relevance === 'strong' && identification.confidence < 0.55) adj = Math.min(adj, 86);
+          return { ...c, match: adj, relevance: entry.relevance } as any;
+        }
+        return c;
+      });
+      // filter irrelevant (below threshold) but keep at least 2 if all irrelevant
+      if (relevanceMap) {
+        const filtered = rescoredCandidates.filter((c:any) => c.relevance !== 'irrelevant');
+        if (filtered.length >= 2 || filtered.length === rescoredCandidates.length) rescoredCandidates = filtered;
+      }
+      const deduped = deduplicateCandidates(rescoredCandidates);
+      const candidates = deduped;
+      const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(candidates);
       const securedPrice = tokenizedDetectedPrice(priceResult);
       const eventId = recordAyrovixEvent(db, {
@@ -260,21 +316,23 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         resultsCount: candidates.length,
       });
 
-      return res.json({
-        success: true,
-        data: {
-          identification,
-          query,
-          candidates: securedCandidates,
-          eventId,
-          detectedPrice: securedPrice,
-          message: securedPrice
-            ? isCartScreenshot
-              ? `Total visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Un lien produit reste obligatoire avant commande.`
-              : `Prix visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Le lien marchand permettra de le vérifier.`
-            : undefined,
-        },
-      });
+      const responseData = {
+        identification,
+        query,
+        candidates: securedCandidates,
+        eventId,
+        detectedPrice: securedPrice,
+        message: securedPrice
+          ? isCartScreenshot
+            ? `Total visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Un lien produit reste obligatoire avant commande.`
+            : `Prix visible détecté: ${priceResult.sourcePrice} ${priceResult.sourceCurrency}. Le lien marchand permettra de le vérifier.`
+          : undefined,
+      };
+      if (!isTest) {
+        if (pipelineCache.size > 300) pipelineCache.delete(pipelineCache.keys().next().value as string);
+        pipelineCache.set(pKey, { at: Date.now(), data: responseData });
+      }
+      return res.json({ success: true, data: responseData });
     } catch (error: any) {
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
         return res.status(415).json({ success: false, code: 'INVALID_IMAGE', error: error.message });

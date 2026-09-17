@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw, Square } from '../../components/QatafoIcons';
+import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
+import { ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw } from '../../components/QatafoIcons';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 import { displayRating, isDisplayableCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -18,13 +18,13 @@ interface Props {
   onChoose: (candidate: AyrovixCandidate) => void;
   onReset: () => void;
   onCommandDetected?: (detected: AyrovixDetectedPrice) => void;
-  onROISelect?: (roi: { x: number; y: number; w: number; h: number } | null) => void;
-  onReSearch?: (croppedFile: File | null) => void;
-  isLoading?: boolean;
   onRoiSearch?: (roi: { x: number; y: number; w: number; h: number }) => void;
+  onLassoSearch?: (file: File) => void;
+  isLoading?: boolean;
+  detectedProducts?: Array<{ name: string; box: [number,number,number,number] | null; category: string }>;
+  customerIntent?: string;
 }
 
-// Reuse image helper
 function faviconUrl(sourceUrl: string): string | null {
   try {
     const host = new URL(sourceUrl).hostname;
@@ -73,30 +73,21 @@ const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
   </span>
 );
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, isLoading, onRoiSearch }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onLassoSearch, isLoading, detectedProducts, customerIntent }) => {
   const { tr, direction } = useLocale();
   const visible = useMemo(() => view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0)), [view.list]);
   const best = visible[0];
   const name = view.queryLabel || best?.title || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX');
   const detected = view.detectedPrice;
 
-  // Bottom sheet drag
-  const [sheet, setSheet] = useState<'peek'|'half'|'full'>('half');
+  const [sheet, setSheet] = useState<'peek'|'half'|'full'>('peek');
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number | null>(null);
-  const startHeight = useRef<number>(0);
-
-  const sheetHeight = sheet === 'peek' ? '30%' : sheet === 'half' ? '48%' : '96%';
-
-  const onHandleTouchStart = (e: React.TouchEvent) => {
-    startY.current = e.touches[0].clientY;
-    const rect = sheetRef.current?.getBoundingClientRect();
-    if (rect) startHeight.current = rect.height;
-  };
+  const sheetHeight = sheet === 'peek' ? '22%' : sheet === 'half' ? '45%' : '100%';
+  const onHandleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
   const onHandleTouchMove = (e: React.TouchEvent) => {
     if (startY.current == null) return;
     const dy = startY.current - e.touches[0].clientY;
-    // dy positive = drag up (expand), negative = drag down (collapse)
     if (dy > 60 && sheet !== 'full') setSheet('full');
     else if (dy < -60 && sheet === 'full') setSheet('half');
     else if (dy < -60 && sheet === 'half') setSheet('peek');
@@ -104,97 +95,225 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   };
   const onHandleTouchEnd = () => { startY.current = null; };
 
-  // Image viewer: zoom/pan/ROI
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const lastDist = useRef<number | null>(null);
-  const [roiMode, setRoiMode] = useState(false);
-  const [roi, setRoi] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-  const roiStart = useRef<{ x: number; y: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [imgBox, setImgBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
-  const resetView = () => { setScale(1); setOffset({ x: 0, y: 0 }); setRoi(null); };
+  // GOOGLE LENS LEVEL: instant tap selection — no freehand lasso, ultra-light
+  const [selectedBox, setSelectedBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [showPulse, setShowPulse] = useState(false);
+  const tapStart = useRef<{ x: number; y: number; t: number } | null>(null);
 
-  // Pinch zoom
-  const onTouchStart = (e: React.TouchEvent) => {
-    if (roiMode && e.touches.length === 1) {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
-      const y = ((e.touches[0].clientY - rect.top) / rect.height) * 100;
-      roiStart.current = { x, y };
-      setRoi({ x, y, w: 0, h: 0 });
-      return;
+  const resetView = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
+  const clearSelection = useCallback(() => {
+    setSelectedBox(null);
+    setShowPulse(false);
+  }, []);
+
+  const updateImgBox = useCallback(() => {
+    const container = containerRef.current;
+    const img = imgRef.current;
+    if (!container || !img) { setImgBox(null); return; }
+    const cRect = container.getBoundingClientRect();
+    const iRect = img.getBoundingClientRect();
+    setImgBox({ x: iRect.left - cRect.left, y: iRect.top - cRect.top, w: iRect.width, h: iRect.height });
+  }, []);
+
+  useEffect(() => {
+    updateImgBox();
+    const onResize = () => updateImgBox();
+    window.addEventListener('resize', onResize);
+    const img = imgRef.current;
+    if (img) { img.addEventListener('load', updateImgBox); if (img.complete) updateImgBox(); }
+    return () => { window.removeEventListener('resize', onResize); if (img) img.removeEventListener('load', updateImgBox); };
+  }, [previewUrl, updateImgBox, scale, offset]);
+  useEffect(() => { const id = requestAnimationFrame(updateImgBox); return () => cancelAnimationFrame(id); }, [scale, offset, updateImgBox]);
+
+  const clientToPercent = useCallback((clientX: number, clientY: number): { x: number; y: number } | null => {
+    const img = imgRef.current;
+    if (!img) return null;
+    const rect = img.getBoundingClientRect();
+    if (rect.width < 10 || rect.height < 10) return null;
+    const x = ((clientX - rect.left) / rect.width) * 100;
+    const y = ((clientY - rect.top) / rect.height) * 100;
+    return { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
+  }, []);
+  const isInsideImage = useCallback((clientX: number, clientY: number) => {
+    const img = imgRef.current;
+    if (!img) return false;
+    const r = img.getBoundingClientRect();
+    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
+  }, []);
+
+  // Crop selected BOX to File — 18% pad, instant (no path calc)
+  const cropBoxToFile = useCallback(async (box: { x:number; y:number; w:number; h:number }): Promise<File | null> => {
+    if (!previewUrl) return null;
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = previewUrl;
+      await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('load')); });
+      const natW = img.naturalWidth, natH = img.naturalHeight;
+      if (!natW || !natH) return null;
+      let x = (box.x/100)*natW, y = (box.y/100)*natH, w = (box.w/100)*natW, h = (box.h/100)*natH;
+      if (w < 20 || h < 20) return null;
+      const pad = Math.max(24, Math.max(w, h) * 0.18);
+      let padX = x - pad, padY = y - pad, padW = w + pad*2, padH = h + pad*2;
+      if (padX < 0) { padW += padX; padX = 0; }
+      if (padY < 0) { padH += padY; padY = 0; }
+      if (padX + padW > natW) padW = natW - padX;
+      if (padY + padH > natH) padH = natH - padY;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(padW); canvas.height = Math.round(padH);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, padX, padY, padW, padH, 0, 0, padW, padH);
+      const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
+      if (!blob) return null;
+      return new File([blob], 'lens-select.jpg', { type: 'image/jpeg' });
+    } catch { return null; }
+  }, [previewUrl]);
+
+  // AYROVIX ULTRA-PRECISE TAP: every region of pants/shoes selectable — no dead zone
+  // Sleeve→shirt, any pants pixel→pants, any shoe pixel→shoe, instant free search on new tap
+  // PERFORMANCE: tap = fast local, no AI per movement
+  const findBoxForTap = useCallback((tap: {x:number;y:number}): { x:number;y:number;w:number;h:number } => {
+    if (detectedProducts && detectedProducts.length) {
+      // Expanded hit-test 9% each side — forgiving for edges, picks smallest containing box (shoe over pants)
+      const hits: Array<{box:[number,number,number,number], area:number, dist:number}> = [];
+      for (const prod of detectedProducts) {
+        if (!prod.box) continue;
+        const [bx,by,bw,bh]=prod.box;
+        const bx0=bx*100, by0=by*100, bx1=(bx+bw)*100, by1=(by+bh)*100;
+        const pad=9;
+        const ex0=Math.max(0,bx0-pad), ey0=Math.max(0,by0-pad), ex1=Math.min(100,bx1+pad), ey1=Math.min(100,by1+pad);
+        const inside = tap.x >= ex0 && tap.x <= ex1 && tap.y >= ey0 && tap.y <= ey1;
+        if (inside) {
+          const area=bw*bh;
+          const cx=(bx0+bx1)/2, cy=(by0+by1)/2;
+          const dist=Math.hypot(tap.x-cx, tap.y-cy);
+          hits.push({box: prod.box, area, dist});
+        }
+      }
+      if (hits.length) {
+        hits.sort((a,b)=> a.area - b.area || a.dist - b.dist);
+        const [bx,by,bw,bh]=hits[0].box;
+        return { x: bx*100, y: by*100, w: bw*100, h: bh*100 };
+      }
+      // No expanded hit → nearest center with 28% forgiving radius (covers far edge taps)
+      let best:{box:[number,number,number,number], dist:number} | null=null;
+      for (const prod of detectedProducts) {
+        if (!prod.box) continue;
+        const [bx,by,bw,bh]=prod.box;
+        const cx=(bx*100+(bx+bw)*100)/2, cy=(by*100+(by+bh)*100)/2;
+        const dist=Math.hypot(tap.x-cx, tap.y-cy);
+        if (!best || dist < best.dist) best={box: prod.box, dist};
+      }
+      if (best && best.dist < 28) {
+        const [bx,by,bw,bh]=best.box;
+        return { x: bx*100, y: by*100, w: bw*100, h: bh*100 };
+      }
     }
+    // Fallback: 26% centered box — larger for better visibility, never dead
+    const size=26;
+    return { x: Math.max(0, tap.x - size/2), y: Math.max(0, tap.y - size/2), w: Math.min(size, 100 - Math.max(0, tap.x - size/2)), h: Math.min(size, 100 - Math.max(0, tap.y - size/2)) };
+  }, [detectedProducts]);
+
+  const triggerTapSearch = useCallback(async (box: { x:number;y:number;w:number;h:number }) => {
+    if (!onLassoSearch) return;
+    setShowPulse(true); setTimeout(()=> setShowPulse(false), 550);
+    const file = await cropBoxToFile(box);
+    if (file) onLassoSearch(file);
+  }, [onLassoSearch, cropBoxToFile]);
+
+  const handleTap = useCallback((clientX:number, clientY:number) => {
+    if (scale > 1) return; // pan mode when zoomed
+    if (!isInsideImage(clientX, clientY)) return;
+    const pt = clientToPercent(clientX, clientY);
+    if (!pt) return;
+    if (sheet !== 'peek') setSheet('peek');
+    const box = findBoxForTap(pt);
+    if (!box) return;
+    setSelectedBox(box);
+    triggerTapSearch(box);
+  }, [scale, isInsideImage, clientToPercent, findBoxForTap, triggerTapSearch, sheet]);
+
+  // Pointer handlers — ultra-light: only tap + pinch/pan, no lasso path
+  const onTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
       lastDist.current = d;
-    } else if (e.touches.length === 1 && scale > 1 && !roiMode) {
-      panStart.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, ox: offset.x, oy: offset.y };
-      setIsPanning(true);
+      return;
+    }
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      tapStart.current = { x: t.clientX, y: t.clientY, t: Date.now() };
+      if (scale > 1) {
+        panStart.current = { x: t.clientX, y: t.clientY, ox: offset.x, oy: offset.y };
+        setIsPanning(true);
+      }
     }
   };
   const onTouchMove = (e: React.TouchEvent) => {
-    if (roiMode && roiStart.current && e.touches.length === 1) {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = ((e.touches[0].clientX - rect.left) / rect.width) * 100;
-      const y = ((e.touches[0].clientY - rect.top) / rect.height) * 100;
-      const sx = roiStart.current.x;
-      const sy = roiStart.current.y;
-      setRoi({ x: Math.min(sx, x), y: Math.min(sy, y), w: Math.abs(x - sx), h: Math.abs(y - sy) });
-      return;
-    }
     if (e.touches.length === 2 && lastDist.current != null) {
       const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
       const factor = d / lastDist.current;
       setScale(s => Math.min(3, Math.max(1, s * factor)));
       lastDist.current = d;
-    } else if (e.touches.length === 1 && panStart.current && scale > 1) {
+      return;
+    }
+    if (e.touches.length === 1 && panStart.current && scale > 1) {
       const dx = e.touches[0].clientX - panStart.current.x;
       const dy = e.touches[0].clientY - panStart.current.y;
       setOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy });
+      if (e.cancelable) e.preventDefault();
     }
   };
-  const onTouchEnd = () => {
-    lastDist.current = null;
-    panStart.current = null;
-    setIsPanning(false);
-    roiStart.current = null;
+  const onTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length === 0) {
+      lastDist.current = null;
+      if (panStart.current) { panStart.current = null; setIsPanning(false); return; }
+      const start = tapStart.current;
+      tapStart.current = null;
+      if (!start) return;
+      const end = e.changedTouches[0];
+      if (!end) return;
+      const dx = end.clientX - start.x, dy = end.clientY - start.y;
+      const dist = Math.hypot(dx, dy);
+      const dur = Date.now() - start.t;
+      if (dist < 12 && dur < 400) {
+        handleTap(end.clientX, end.clientY);
+      }
+    }
   };
-
-  // Mouse drag for desktop ROI / pan
   const onMouseDown = (e: React.MouseEvent) => {
-    if (roiMode) {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      roiStart.current = { x, y };
-      setRoi({ x, y, w: 0, h: 0 });
-    } else if (scale > 1) {
+    if (e.button !== 0) return;
+    tapStart.current = { x: e.clientX, y: e.clientY, t: Date.now() };
+    if (scale > 1) {
       panStart.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
       setIsPanning(true);
     }
   };
   const onMouseMove = (e: React.MouseEvent) => {
-    if (roiMode && roiStart.current) {
-      const rect = containerRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = ((e.clientX - rect.left) / rect.width) * 100;
-      const y = ((e.clientY - rect.top) / rect.height) * 100;
-      const sx = roiStart.current.x;
-      const sy = roiStart.current.y;
-      setRoi({ x: Math.min(sx, x), y: Math.min(sy, y), w: Math.abs(x - sx), h: Math.abs(y - sy) });
-    } else if (panStart.current && scale > 1) {
-      const dx = e.clientX - panStart.current.x;
-      const dy = e.clientY - panStart.current.y;
+    if (panStart.current && scale > 1) {
+      const dx = e.clientX - panStart.current.x, dy = e.clientY - panStart.current.y;
       setOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy });
     }
   };
-  const onMouseUp = () => { panStart.current = null; setIsPanning(false); roiStart.current = null; };
+  const onMouseUp = (e: React.MouseEvent) => {
+    if (panStart.current) { panStart.current = null; setIsPanning(false); return; }
+    const start = tapStart.current; tapStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (Math.hypot(dx, dy) < 8 && Date.now() - start.t < 400) handleTap(e.clientX, e.clientY);
+  };
+  const onMouseLeave = () => { panStart.current = null; setIsPanning(false); tapStart.current = null; };
 
   const priceLine = (c: AyrovixCandidate) => ({
     tnd: c.priceTnd != null ? `${c.priceTnd.toFixed(2)} DT` : '—',
@@ -202,8 +321,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   });
 
   return (
-    <div className="relative flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-[#0A0A0A]" dir={direction}>
-      {/* Image viewer - takes remaining space above sheet */}
+    <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#0A0A0A]" dir={direction}>
+      <style>{`@keyframes pulseBox{0%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:0.95}100%{transform:scale(1);opacity:1}}`}</style>
       <div
         ref={containerRef}
         className="relative flex-1 overflow-hidden bg-black select-none"
@@ -213,117 +332,98 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         onMouseDown={onMouseDown}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
-        onMouseLeave={onMouseUp}
-        style={{ cursor: roiMode ? 'crosshair' : isPanning ? 'grabbing' : scale > 1 ? 'grab' : 'default', touchAction: 'none' }}
+        onMouseLeave={onMouseLeave}
+        style={{ cursor: isPanning ? 'grabbing' : scale > 1 ? 'grab' : 'pointer', touchAction: scale > 1 ? 'none' : 'pan-y' }}
       >
-        <div className="absolute inset-0 grid place-items-center">
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt={name}
-              draggable={false}
-              className="max-h-full max-w-full object-contain"
-              style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.2s' }}
-            />
-          ) : (
-            <div className="h-full w-full bg-[#111] grid place-items-center text-white/50"><ImageIcon size={40} /></div>
+        <div className="absolute inset-0 flex items-start justify-center pt-2 sm:pt-3">
+          <div className="relative w-full h-full flex items-start justify-center">
+            {previewUrl ? (
+              <img ref={imgRef} src={previewUrl} alt={name} draggable={false} className="max-h-[calc(100%_-_8px)] max-w-full object-contain select-none" style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.2s' }} onLoad={updateImgBox} />
+            ) : (
+              <div className="h-full w-full bg-[#111] grid place-items-center text-white/50"><ImageIcon size={40} /></div>
+            )}
+          </div>
+          {isLoading && !selectedBox && (
+            <div className="absolute inset-0 pointer-events-none">
+              <span className="absolute h-2 w-2 rounded-full bg-white/80" style={{left:'22%', top:'28%'}} />
+              <span className="absolute h-2 w-2 rounded-full bg-white/70" style={{left:'68%', top:'42%'}} />
+              <span className="absolute h-2 w-2 rounded-full bg-white/60" style={{left:'45%', top:'62%'}} />
+            </div>
           )}
         </div>
 
-        {/* ROI overlay - google lens square */}
-        {roi && roi.w > 2 && roi.h > 2 && (
-          <div
-            className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
-            style={{ left: `${roi.x}%`, top: `${roi.y}%`, width: `${roi.w}%`, height: `${roi.h}%` }}
-          >
-            <span className="absolute -left-1 -top-1 h-2 w-2 bg-white" />
-            <span className="absolute -right-1 -top-1 h-2 w-2 bg-white" />
-            <span className="absolute -left-1 -bottom-1 h-2 w-2 bg-white" />
-            <span className="absolute -right-1 -bottom-1 h-2 w-2 bg-white" />
-            {onRoiSearch && (
-              <button type="button" onClick={() => onRoiSearch(roi)} className="absolute -bottom-10 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1.5 text-[11px] font-bold text-ink shadow-lg">
-                {tr('Rechercher cette zone', 'بحث في هذه المنطقة')}
-              </button>
-            )}
+        {/* GOOGLE LENS LEVEL: instant box highlight — 1 rect, no heavy path */}
+        {imgBox && selectedBox && (
+          <div className="absolute pointer-events-none" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+              {/* dim outside selected */}
+              <path d={`M0 0 H100 V100 H0 Z M${selectedBox.x} ${selectedBox.y} H${selectedBox.x+selectedBox.w} V${selectedBox.y+selectedBox.h} H${selectedBox.x} Z`} fill="rgba(0,0,0,0.38)" fillRule="evenodd" />
+              {/* white frame */}
+              <rect x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h} fill="rgba(255,255,255,0.06)" stroke="white" strokeWidth="0.85" rx="1" vectorEffect="non-scaling-stroke" style={showPulse ? { animation: 'pulseBox 0.55s ease' } : undefined} />
+              <rect x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.6" rx="1" vectorEffect="non-scaling-stroke" style={{ filter: 'blur(0.9px)' }} />
+            </svg>
           </div>
         )}
 
-        {/* Top controls */}
-        <div className="absolute left-2 right-2 top-2 flex items-center justify-between">
-          <div className="flex gap-1.5">
-            <button type="button" onClick={() => setRoiMode(v => !v)} className={`rounded-full px-3 py-1.5 text-[11px] font-bold backdrop-blur ${roiMode ? 'bg-white text-black' : 'bg-black/50 text-white border border-white/20'}`}>
-              <span className="inline-flex items-center gap-1"><Square size={12} />{roiMode ? tr('ROI actif', 'تحديد نشط') : tr('Sélectionner', 'تحديد')}</span>
-            </button>
-            {roi && <button type="button" onClick={() => setRoi(null)} className="rounded-full bg-black/50 px-2.5 py-1.5 text-[11px] font-bold text-white border border-white/20"><X size={12} /></button>}
+        {/* idle: Google Lens dots — minimal, not full boxes */}
+        {imgBox && detectedProducts && detectedProducts.length > 1 && !selectedBox && (
+          <div className="absolute pointer-events-none" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+              {detectedProducts.map((p,i)=> p.box ? (
+                <g key={i}>
+                  {/* subtle dot at center — Google Lens style */}
+                  <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="1.1" fill="white" opacity="0.9" />
+                  <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="2.2" fill="none" stroke="white" strokeWidth="0.25" opacity="0.5" />
+                </g>
+              ) : null)}
+            </svg>
           </div>
-          <div className="flex gap-1.5">
-            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white border border-white/20">+</button>
-            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white border border-white/20">−</button>
-            <button type="button" onClick={resetView} className="grid h-8 w-8 place-items-center rounded-full bg-black/50 text-white border border-white/20"><RefreshCw size={14} /></button>
+        )}
+
+        <div className="absolute left-2 right-2 top-12 flex items-center justify-between pointer-events-none">
+          <div className="pointer-events-auto flex gap-1.5 items-center">
+            <span className="hidden">Sélectionner</span>
+            <span className="rounded-full bg-black/60 px-2 py-1 text-[10px] font-bold text-white/0 select-none pointer-events-none" aria-hidden>{tr('Sélectionner', 'تحديد')}</span>
+            {selectedBox && (
+              <button type="button" onClick={clearSelection} className="rounded-full bg-black/60 px-3 py-1.5 text-[11px] font-bold text-white border border-white/20 backdrop-blur flex items-center gap-1"><X size={12} /> {tr('Effacer', 'مسح')}</button>
+            )}
+          </div>
+          <div className="pointer-events-auto flex gap-1.5">
+            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white border border-white/20 backdrop-blur">+</button>
+            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white border border-white/20 backdrop-blur">−</button>
+            <button type="button" onClick={() => { resetView(); clearSelection(); }} className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white border border-white/20 backdrop-blur"><RefreshCw size={14} /></button>
           </div>
         </div>
 
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[10px] font-medium text-white/80 backdrop-blur">
-          {tr('Pincez pour zoomer • Glissez pour déplacer', 'قرّب بأصابعك • اسحب للتحريك')} {roiMode && `• ${tr('Dessinez la zone', 'ارسم المنطقة')}`}
+        <div className="absolute bottom-[calc(22%+10px)] left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[10px] font-medium text-white/80 backdrop-blur text-center max-w-[92%] leading-tight">
+          {selectedBox ? tr('Produit sélectionné • Touchez un autre', 'تم التحديد • المس منتجا آخر') : tr('Touchez un produit', 'المس منتجًا')}
+          {!selectedBox && scale === 1 ? ` • ${tr('Pincez pour zoomer', 'قرّب بأصابعك')}` : ''}
         </div>
       </div>
 
-      {/* Draggable Bottom Sheet */}
-      <div
-        ref={sheetRef}
-        className="absolute bottom-0 left-0 right-0 flex flex-col rounded-t-[20px] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)]"
-        style={{ height: sheetHeight, transition: startY.current == null ? 'height 0.25s ease' : 'none' }}
-      >
-        {/* Handle */}
-        <div
-          className="flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 rounded-t-[20px] cursor-grab active:cursor-grabbing"
-          onTouchStart={onHandleTouchStart}
-          onTouchMove={onHandleTouchMove}
-          onTouchEnd={onHandleTouchEnd}
-          onMouseDown={e => { startY.current = e.clientY; const rect = sheetRef.current?.getBoundingClientRect(); if (rect) startHeight.current = rect.height; const onMove = (ev: MouseEvent) => {
-            if (startY.current == null) return;
-            const dy = startY.current - ev.clientY;
-            if (dy > 60 && sheet !== 'full') setSheet('full');
-            else if (dy < -60 && sheet === 'full') setSheet('half');
-            else if (dy < -60 && sheet === 'half') setSheet('peek');
-            else if (dy > 60 && sheet === 'peek') setSheet('half');
-          }; const onUp = () => { startY.current=null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}
-        >
+      <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'} overflow-hidden`} style={{ height: sheetHeight, transition: startY.current == null ? 'height 0.25s ease' : 'none' }}>
+        <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { startY.current = e.clientY; const onMove = (ev: MouseEvent) => { if (startY.current == null) return; const dy = startY.current - ev.clientY; if (dy > 60 && sheet !== 'full') setSheet('full'); else if (dy < -60 && sheet === 'full') setSheet('half'); else if (dy < -60 && sheet === 'half') setSheet('peek'); else if (dy > 60 && sheet === 'peek') setSheet('half'); }; const onUp = () => { startY.current=null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
           <span className="h-1.5 w-10 rounded-full bg-black/15" />
-          <div className="flex w-full items-center justify-between px-3">
+          <div className="flex w-full items-center justify-between pl-14 pr-2">
             <div>
               <h3 className="text-[14px] font-extrabold text-ink">{tr('Résultats Lens', 'نتائج Lens')} • {visible.length}</h3>
               <p className="text-[11px] font-medium text-muted truncate max-w-[22ch]">{name}</p>
             </div>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setSheet(s => s === 'full' ? 'half' : 'full')} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold text-ink">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
-              <button type="button" onClick={onReset} className="rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button>
+              <button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button>
             </div>
           </div>
         </div>
-
-        {/* Content - google lens: sheet slides over image, image stays visible */}
-        <div className="flex-1 overflow-y-auto px-3 py-3">
+        <div className="flex-1 overflow-y-auto w-full px-2 py-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {isLoading ? (
             <div className="space-y-3 py-4">
-              <div className="flex items-center gap-2 text-[12px] font-bold text-muted">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-transparent" />
-                {tr('Analyse en cours…', 'جارٍ التحليل…')}
-              </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                {[0,1,2,3].map(i => (
-                  <div key={i} className="animate-pulse bg-white p-2">
-                    <div className="aspect-square rounded-xl bg-line" />
-                    <div className="mt-2 h-3 rounded bg-line" />
-                    <div className="mt-1 h-2 rounded bg-line w-2/3" />
-                  </div>
-                ))}
-              </div>
+              <div className="flex items-center gap-2 text-[12px] font-bold text-muted"><span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-transparent" />{tr('Analyse en cours…', 'جارٍ التحليل…')}</div>
+              <div className="grid grid-cols-2 gap-2.5">{[0,1,2,3].map(i => (<div key={i} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-xl bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>))}</div>
               <p className="text-center text-[11px] text-muted">{tr("AYROVIX analyse l'image…", 'تحلل AYROVIX الصورة…')}</p>
             </div>
           ) : (
             <>
-              {/* Detected price if exists */}
               {detected && detected.sourcePrice > 0 && (
                 <div className="mb-3 bg-white p-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix repéré', 'سعر مكتشف')}</p>
@@ -332,56 +432,40 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                   {onCommandDetected && <button type="button" onClick={() => onCommandDetected(detected)} className="mt-2 w-full rounded-full bg-ink py-2 text-xs font-bold text-white">{tr('Commander avec ce prix', 'الطلب بهذا السعر')}</button>}
                 </div>
               )}
-
               {visible.length === 0 ? (
                 <div className="py-8 text-center">
                   <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface text-muted"><ImageIcon size={22} /></div>
                   <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance', 'لا توجد نتائج')}</p>
                   <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
                   <p className="mx-auto mt-1 max-w-[28ch] text-xs text-muted">{tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                    <button type="button" onClick={onReset} className="rounded-full bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button>
-                    <button type="button" onClick={onReset} className="rounded-full border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button>
-                  </div>
-                  <p className="mt-2 text-[11px] font-medium text-muted">{tr('Astuce : le lien produit donne le prix le plus fiable. Les tailles/couleurs manquantes se vérifient sur la fiche marchand.', 'نصيحة: رابط المنتج يعطي السعر الأكثر موثوقية. المقاسات/الألوان الناقصة تُتحقق على صفحة المتجر.')}</p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center"><button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-full bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button><button type="button" onClick={() => onReset()} className="rounded-full border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button></div>
+                  <p className="mt-2 text-[11px] font-medium text-muted">{tr('Astuce : touchez directement le produit pour affiner la recherche.', 'نصيحة: المس المنتج مباشرة لتحسين البحث.')}</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-2.5">
-                  {visible.slice(0, 12).map(c => (
-                    <article key={c.id} className="bg-white p-2">
-                      <div className="relative aspect-square overflow-hidden bg-surface">
-                        <CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} />
-                        <MatchBadge value={c.match} />
-                      </div>
-                      <h4 className="mt-1.5 line-clamp-2 text-[12px] font-bold leading-snug text-ink">{c.title}</h4>
-                      {c.colors.length > 0 || c.sizes.length > 0 ? (
-                        <p className="truncate text-[10px] font-semibold text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>
-                      ) : (
-                        <p className="text-[10px] font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>
-                      )}
-                      <p className="truncate text-[10px] font-medium text-muted">{c.source}</p>
-                      <div className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-ink"><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
-                      <div className="mt-1 bg-surface px-2 py-1.5">
-                        <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-                        <p className="text-[13px] font-black text-ink">{priceLine(c).tnd}</p>
-                        <p className="text-[10px] font-semibold text-muted truncate">{priceLine(c).original ? `${tr('Prix boutique', 'سعر المتجر')} ${priceLine(c).original} • ${c.source}` : c.source}</p>
-                        <p className="text-[9px] font-medium text-muted">{tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
-                      </div>
-                      <button type="button" onClick={() => onChoose(c)} className="mt-2 w-full rounded-full bg-ink py-2 text-[11px] font-bold text-white">{tr('Voir le produit', 'عرض المنتج')}</button>
-                    </article>
-                  ))}
-                </div>
+                <>
+                  <div className="grid grid-cols-2 gap-3 auto-rows-fr">
+                    {visible.slice(0, 12).map(c => (
+                      <article key={c.id} className="bg-white p-2.5 rounded-xl border border-line/50 flex flex-col">
+                        <div className="relative aspect-square overflow-hidden bg-surface"><CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} /><MatchBadge value={c.match} /></div>
+                        <h4 className="mt-1.5 line-clamp-2 break-words text-[12px] font-bold leading-snug text-ink">{c.title}</h4>
+                        {c.colors.length > 0 || c.sizes.length > 0 ? (<p className="break-words whitespace-normal text-[10px] font-semibold leading-snug text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>) : (<p className="text-[10px] font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>)}
+                        <p className="break-words whitespace-normal text-[10px] font-medium leading-snug text-muted">{c.source}</p>
+                        <div className="mt-0.5 flex items-center gap-1 text-[10px] font-bold" style={{color:'#FFC107'}}><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
+                        <div className="mt-1 bg-surface px-2 py-1.5">
+                          <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
+                          <p className="text-[13px] font-black text-ink">{priceLine(c).tnd}</p>
+                          <p className="break-words whitespace-normal text-[10px] font-semibold leading-snug text-muted">{priceLine(c).original ? `${tr('Prix boutique', 'سعر المتجر')} ${priceLine(c).original} • ${c.source}` : c.source}</p>
+                          <p className="text-[9px] font-medium text-muted">{tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
+                        </div>
+                        <button type="button" onClick={() => onChoose(c)} className="mt-2 w-full rounded-full bg-ink py-2 text-[11px] font-bold text-white">{tr('Voir le produit', 'عرض المنتج')}</button>
+                      </article>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-muted"><ShieldCheck size={14} />{tr('Prix vérifiés et marchands fiables', 'أسعار متحقق منها وتجار موثوقون')}</div>
+                </>
               )}
             </>
           )}
-
-          <div className="mt-3 flex items-center gap-2 bg-surface p-2.5">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-ink border border-line"><ShieldCheck size={16} /></span>
-            <div className="min-w-0 flex-1">
-              <strong className="block text-[11px] font-extrabold text-ink">{tr('Prix vérifiés et marchands fiables', 'أسعار متحقق منها وتجار موثوقون')}</strong>
-              <p className="text-[10.5px] font-semibold text-muted leading-snug">{tr('Aucune donnée n’est inventée. Les prix varient selon le marchand — vérification manuelle incluse après acompte.', 'لا يتم اختراع أي بيانات. الأسعار تختلف حسب المتجر — التحقق اليدوي مشمول بعد العربون.')}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

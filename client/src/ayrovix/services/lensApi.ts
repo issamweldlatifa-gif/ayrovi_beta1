@@ -20,9 +20,10 @@ async function parseResponse<T>(response: Response): Promise<T> {
   return payload.data as T;
 }
 
-export async function analyzeImage(file: File, signal?: AbortSignal): Promise<AyrovixImageResult> {
+export async function analyzeImage(file: File, signal?: AbortSignal, customerIntent?: string | null): Promise<AyrovixImageResult> {
   const body = new FormData();
   body.append('image', file, file.name || 'ayrovix.jpg');
+  if (customerIntent) body.append('customerIntent', String(customerIntent).slice(0,200));
   const response = await fetch('/api/ayrovix/analyze-image', { method: 'POST', body, signal });
   return parseResponse<AyrovixImageResult>(response);
 }

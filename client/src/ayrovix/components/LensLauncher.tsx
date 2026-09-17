@@ -138,6 +138,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [liveEnabled, setLiveEnabled] = useState(false);
   const [textQuery, setTextQuery] = useState('');
   const [recentItems, setRecentItems] = useState<AyrovixHistoryItem[]>([]);
+  const [detectedProducts, setDetectedProducts] = useState<Array<{ name: string; box: [number,number,number,number] | null; category: string }>>([]);
   const lastQueryRef = useRef<{ kind:'text'|'url'|'image'|'code'|'barcode'; value:string } | null>(null);
 
   // Feature flag LIVE (AYROVIX_LENS_LIVE_ENABLED) — sans toucher les modes existants
@@ -224,6 +225,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     setPreviewUrl(null);
     setImageFile(null);
     setCandidatesView(null);
+    setDetectedProducts([]);
     setUrlResult(null);
     setProduct(null);
     setBarcode(null);
@@ -329,6 +331,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         eventId: result.eventId,
         detectedPrice: result.detectedPrice || null,
       });
+      setDetectedProducts((result.identification.products || []).map((p:any)=> ({ name: p.name || p.category || '', box: p.box || null, category: p.category || '' })));
       setVerifiedPriceUrl(false);
       setIsAnalyzing(false);
       if (stage !== 'candidates') replaceStage('candidates');
@@ -502,61 +505,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     }
   };
 
-  const handleChooseCandidate = async (candidate: AyrovixCandidate) => {
+  // DIRECT: Voir le produit → product page instantly, no re-analyze (user requested)
+  const handleChooseCandidate = (candidate: AyrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
-    if (!candidate.sourceUrl || candidate.kind === 'catalog') {
-      setProduct(candidateToProduct(candidate));
-      setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
-      enterStage('product');
-      return;
-    }
-    const { controller, token } = startRequest();
-    setIsAnalyzing(true);
-    // keep candidates visible with loading overlay (google lens keeps sheet)
-    
-      setError(null);
-      try {
-        const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal, false);
-        if (abortRef.current !== token) return;
-        const lensProduct = candidateToProduct(candidate);
-        const extractedPrice = result.product.price;
-        const proposedPrice = lensProduct.price;
-        const samePrice = proposedPrice != null && extractedPrice != null
-          && Math.abs(extractedPrice - proposedPrice) <= Math.max(0.05, proposedPrice * 0.02)
-          && result.product.currency === lensProduct.currency;
-        setUrlResult(result);
-        if (proposedPrice == null && extractedPrice != null) {
-          setProduct(result.product);
-          setVerifiedPriceUrl(result.product.priceVerificationStatus === 'VERIFIED');
-        } else {
-          setProduct({
-            ...lensProduct,
-            description: result.product.description || lensProduct.description,
-            images: lensProduct.images.length ? lensProduct.images : result.product.images,
-            image: lensProduct.image || result.product.image,
-            colors: result.product.colors.length ? result.product.colors : lensProduct.colors,
-            sizes: result.product.sizes.length ? result.product.sizes : lensProduct.sizes,
-            variantOptions: undefined,
-            availability: result.product.availability,
-            verificationProvider: result.product.verificationProvider,
-            verificationMethod: result.product.verificationMethod,
-            verificationFailureCode: samePrice ? null : (result.product.verificationFailureCode || (extractedPrice != null ? 'PRICE_MISMATCH' : 'DIRECT_PRICE_NOT_FOUND')),
-          });
-          setVerifiedPriceUrl(samePrice);
-        }
-        setIsAnalyzing(false);
-        replaceStage('product');
-        return;
-      } catch (error: any) {
-        setIsAnalyzing(false);
-        if (controller.signal.aborted || error?.name === 'AbortError') return;
-      } finally {
-        finishRequest(controller);
-      }
     setProduct(candidateToProduct(candidate));
-    setVerifiedPriceUrl(false);
-    setIsAnalyzing(false);
-    replaceStage('product');
+    setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
+    enterStage('product');
   };
 
   const handleOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
@@ -865,6 +819,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onCommandDetected={commandDetectedPrice}
               isLoading={true}
               onRoiSearch={handleRoiSearch}
+              onLassoSearch={(file)=> void runImageAnalysis(file)}
+              detectedProducts={detectedProducts}
             />
           )}
 
@@ -878,6 +834,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onCommandDetected={commandDetectedPrice}
               isLoading={isAnalyzing}
               onRoiSearch={handleRoiSearch}
+              onLassoSearch={(file)=> void runImageAnalysis(file)}
+              detectedProducts={detectedProducts}
             />
           )}
 
