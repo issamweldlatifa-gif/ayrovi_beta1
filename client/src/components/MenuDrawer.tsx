@@ -23,9 +23,9 @@ interface MenuItemProps {
 }
 
 const MenuItem: React.FC<MenuItemProps> = ({ label, onClick, badge }) => (
-  <button type="button" onClick={onClick} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-brand/5 hover:text-brand-dark">
+  <button type="button" onClick={onClick} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-surface hover:text-ink">
     <span className="min-w-0 flex-1">{label}</span>
-    {badge && <span className="rounded-full bg-brand px-2 py-0.5 text-[9px] font-black text-white">{badge}</span>}
+    {badge && <span className="rounded-full bg-ink px-2 py-0.5 text-[9px] font-black text-white">{badge}</span>}
   </button>
 );
 
@@ -77,10 +77,10 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
             <div className="flex min-w-0 items-center gap-3">
               {session?.account.avatarUrl
                 ? <img src={session.account.avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" />
-                : <span className="grid h-11 w-11 place-items-center rounded-full bg-brand text-sm font-black text-white">{session ? firstName.slice(0, 2).toUpperCase() : <User className="h-6 w-6" />}</span>}
+                : <span className="grid h-11 w-11 place-items-center rounded-full bg-ink text-sm font-black text-white">{session ? firstName.slice(0, 2).toUpperCase() : <User className="h-6 w-6" />}</span>}
               <div className="min-w-0">
                 <strong className="block truncate text-sm font-black text-ink">{session ? tr(`Bonjour, ${firstName}`, `مرحبًا، ${firstName}`) : 'AYROVI'}</strong>
-                <button type="button" onClick={() => onOpenAccount('home')} className="mt-0.5 text-xs font-bold text-brand underline-offset-4 hover:underline">{session ? tr('Mon compte', 'حسابي') : tr('Se connecter / Créer un compte', 'تسجيل الدخول / إنشاء حساب')}</button>
+                <button type="button" onClick={() => onOpenAccount('home')} className="mt-0.5 text-xs font-bold text-ink underline-offset-4 hover:underline">{session ? tr('Mon compte', 'حسابي') : tr('Se connecter / Créer un compte', 'تسجيل الدخول / إنشاء حساب')}</button>
               </div>
             </div>
             <Button variant="ghost" size="icon" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')}><X className="h-6 w-6" /></Button>
@@ -113,10 +113,10 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
 
             <MenuGroup title={tr('Aide et informations', 'المساعدة والمعلومات')}>
               {supportUrl
-                ? <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-brand/5">{tr('Contacter le support', 'التواصل مع الدعم')}</a>
+                ? <a href={supportUrl} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-surface">{tr('Contacter le support', 'التواصل مع الدعم')}</a>
                 : <MenuItem label={tr('Contacter le support via AYROVI AI', 'التواصل مع الدعم عبر AYROVI AI')} onClick={onOpenAssistant} />}
               <MenuItem label={tr('À propos d’AYROVI', 'حول AYROVI')} onClick={openAbout} />
-              <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-brand/5">{tr('Conditions de vente et retours', 'شروط البيع والإرجاع')}</a>
+              <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-surface">{tr('Conditions de vente et retours', 'شروط البيع والإرجاع')}</a>
               <div className="mt-2 flex items-center gap-2 rounded-card border border-line p-2">
                 <button type="button" onClick={() => setLocale('fr')} className={buttonClasses(locale === 'fr' ? 'primary' : 'ghost', 'sm', 'flex-1')}>FR</button>
                 <button type="button" onClick={() => setLocale('ar')} className={buttonClasses(locale === 'ar' ? 'primary' : 'ghost', 'sm', 'flex-1')}>AR</button>

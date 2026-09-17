@@ -68,7 +68,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         <JourneyProgress active={4} />
         <div className="checkout-flow-content ay-safe-bottom space-y-5 text-center">
         {/* Celebration Icon */}
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-brand/10 border border-brand/20 flex items-center justify-center text-brand mx-auto shadow-xs">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-surface border border-line flex items-center justify-center text-ink mx-auto shadow-xs">
           <PackageCheck className="w-8 h-8 sm:w-10 sm:h-10" />
         </div>
 
@@ -83,10 +83,10 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         </div>
 
         {/* Order Number Box */}
-        <div className="bg-surface border border-brand/30 rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between">
           <div className="text-left">
             <span className="text-[10px] text-muted uppercase font-bold block">{tr('Numéro de commande :', 'رقم الطلب:')}</span>
-            <span className="text-lg font-mono font-black text-brand">{result.orderNumber}</span>
+            <span className="text-lg font-mono font-black text-ink">{result.orderNumber}</span>
           </div>
           <button
             type="button"
@@ -118,7 +118,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
           </>}
           <div className="checkout-confirmation-row pt-1.5 border-t border-line font-extrabold">
             <span className="text-ink">{tr('Total de la commande :', 'إجمالي الطلب:')}</span>
-            <span className="text-brand text-sm">{formatMoney(result.totalTND)}</span>
+            <span className="text-ink text-sm">{formatMoney(result.totalTND)}</span>
           </div>
         </div>
 

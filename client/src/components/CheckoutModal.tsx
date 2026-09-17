@@ -437,7 +437,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           )}
 
           {!isPaymentStage && <>
-          <div className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-bold ${customerSession?.account.emailVerified || customerSession?.account.phoneVerified ? 'border-brand/25 bg-brand/5 text-brand-dark' : 'border-line bg-surface text-ink'}`}>
+          <div className={`flex items-center gap-2 rounded-xl border p-3 text-xs font-bold ${customerSession?.account.emailVerified || customerSession?.account.phoneVerified ? 'border-line bg-surface text-ink' : 'border-line bg-surface text-ink'}`}>
             {customerSession?.account.emailVerified || customerSession?.account.phoneVerified ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
             {customerSession?.account.emailVerified || customerSession?.account.phoneVerified
               ? tr(`Compte sécurisé par ${customerSession.account.phoneVerified ? 'téléphone vérifié' : 'e-mail vérifié'}.`, `الحساب مؤمّن عبر ${customerSession.account.phoneVerified ? 'هاتف موثّق' : 'بريد إلكتروني موثّق'}.`)
@@ -449,7 +449,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <label className="mb-2 block text-xs font-bold text-muted">{tr('Choisir une adresse enregistrée :', 'اختيار عنوان محفوظ:')}</label>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {addresses.map((address) => (
-                  <button key={address.id} type="button" onClick={() => chooseAddress(address)} className={`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-brand bg-brand/5 text-brand-dark' : 'border-line bg-white text-muted'}`}>
+                  <button key={address.id} type="button" onClick={() => chooseAddress(address)} className={`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-line bg-surface text-ink' : 'border-line bg-white text-muted'}`}>
                     <strong className="block">{address.label}{address.is_default ? ` · ${tr('Par défaut', 'الافتراضي')}` : ''}</strong>
                     <span className="mt-1 block truncate">{address.address_line}</span>
                   </button>
@@ -470,7 +470,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={tr('Ex. Anis Ben Ammar', 'مثال: أنيس بن عمار')}
-              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold"
+              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold"
             />
           </div>
 
@@ -489,7 +489,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               autoComplete="email"
               inputMode="email"
               placeholder="vous@exemple.com"
-              className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-xs font-semibold text-ink outline-none focus:border-brand read-only:bg-brand/5 sm:text-sm"
+              className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-xs font-semibold text-ink outline-none focus:border-line read-only:bg-surface sm:text-sm"
             />
             <p className="mt-1 text-[10px] font-semibold text-muted">{tr('La confirmation et la facture seront envoyées à cette adresse.', 'سيُرسل تأكيد الطلب والفاتورة إلى هذا العنوان.')}</p>
           </div>
@@ -508,7 +508,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               inputMode="tel"
               autoComplete="tel"
               placeholder="+216 98 123 456"
-              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-mono font-semibold"
+              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-mono font-semibold"
             />
             <p className="mt-1 text-[10px] text-muted font-semibold">
               {tr('Utilisé pour cette livraison uniquement — 8 chiffres, ex. 98 123 456.', 'يُستخدم لهذا التوصيل فقط — 8 أرقام، مثال: 98 123 456.')}
@@ -524,7 +524,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <select
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
+              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
             >
               {governorates.map((gov) => (
                 <option key={gov} value={gov}>
@@ -545,7 +545,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder={tr("Ex. Ennasr 2, rue Hédi Nouira, résidence l'Espoir, apt. 4", 'مثال: النصر 2، شارع الهادي نويرة، الإقامة، الشقة 4')}
-              className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3.5 py-2 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold resize-none"
+              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold resize-none"
             />
           </div>
 
@@ -553,7 +553,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             {formData.latitude != null ? tr('Position ajoutée à la livraison', 'تمت إضافة الموقع إلى بيانات التوصيل') : tr('Ajouter ma position (optionnel)', 'إضافة موقعي (اختياري)')}
           </button>
-          {formData.latitude != null && <p className="text-center text-[10px] font-bold text-brand">{formData.latitude.toFixed(5)}, {Number(formData.longitude).toFixed(5)}</p>}
+          {formData.latitude != null && <p className="text-center text-[10px] font-bold text-ink">{formData.latitude.toFixed(5)}, {Number(formData.longitude).toFixed(5)}</p>}
 
           <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={onClose} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
@@ -595,7 +595,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   }
                   setPaymentAvailabilityNotice(''); setError(null);
                   setFormData({ ...formData, paymentMethod: method.toLowerCase() });
-                }} className={`checkout-payment-option rounded-xl border transition-all ${selected ? 'border-brand bg-brand/10 text-brand' : available ? 'border-line bg-surface text-muted hover:border-brand/50' : 'border-line bg-surface text-muted'}`}>
+                }} className={`checkout-payment-option rounded-xl border transition-all ${selected ? 'border-line bg-surface text-ink' : available ? 'border-line bg-surface text-muted hover:border-line/50' : 'border-line bg-surface text-muted'}`}>
                   <span className="checkout-payment-logo-frame"><img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" /></span>
                   <span className="block text-xs font-black leading-tight">{meta[method].label}</span>
                   {!available&&<span className="checkout-payment-badge">{tr('Indisponible', 'غير متاح')}</span>}
@@ -605,9 +605,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             {!hasAvailablePaymentMethod&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] font-bold leading-5 text-muted">{tr('Aucun moyen réel n’est configuré. Vous pouvez quand même créer la commande; le paiement restera en attente dans votre profil.', 'لا توجد وسيلة دفع حقيقية مضبوطة. يمكنك إنشاء الطلب وسيبقى الدفع في الانتظار داخل حسابك.')}</p>}
             {paymentAvailabilityNotice&&<p className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-surface p-3 text-[11px] font-bold leading-5 text-ink" role="status"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted"/><span>{paymentAvailabilityNotice}</span></p>}
-            {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
-            {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
-            {formData.paymentMethod.toUpperCase()==='POSTE'&&<p className="mt-2 rounded-xl border border-brand/20 bg-brand/5 p-3 text-[11px] leading-5 text-brand-dark"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">{tr('Compte postal', 'الحساب البريدي')} : {depositInfo.posteAccount}</span><span className="mt-1 block">{tr('Après le versement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد الإيداع ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
+            {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
+            {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
+            {formData.paymentMethod.toUpperCase()==='POSTE'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">{tr('Compte postal', 'الحساب البريدي')} : {depositInfo.posteAccount}</span><span className="mt-1 block">{tr('Après le versement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد الإيداع ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
           </section>
           <div className="checkout-payment-summary rounded-xl border border-line bg-surface p-3.5 text-xs space-y-1.5">
             <div className="flex justify-between"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>
@@ -616,14 +616,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <div className="flex justify-between"><span className="text-muted">{tr('Service AYROVI', 'خدمة AYROVI')}</span><strong>{formatMoney(breakdown.service)}</strong></div>
             {breakdown.express > 0 && <div className="flex justify-between"><span className="text-muted">{tr('Express', 'السريع')}</span><strong>{formatMoney(breakdown.express)}</strong></div>}
             {breakdown.discount > 0 && <div className="flex justify-between text-success"><span>{tr('Réduction', 'التخفيض')}</span><strong>−{formatMoney(breakdown.discount)}</strong></div>}
-            <div className="flex justify-between border-t border-line pt-2 text-sm font-black"><span>{tr('Total de la commande', 'إجمالي الطلب')}</span><strong className="text-brand">{formatMoney(totalTND)}</strong></div>
+            <div className="flex justify-between border-t border-line pt-2 text-sm font-black"><span>{tr('Total de la commande', 'إجمالي الطلب')}</span><strong className="text-ink">{formatMoney(totalTND)}</strong></div>
             <div className="flex justify-between border-t border-line pt-2"><span className="font-bold text-ink">{tr(`Acompte (${depositInfo.percent}%)`, `العربون (${depositInfo.percent}%)`)}</span><strong className="text-ink">{formatMoney(selectedDepositAmount)}</strong></div>
             {depositDiscount>0&&<div className="flex justify-between text-success"><span>{tr('Remise carte sur l’acompte', 'تخفيض البطاقة على العربون')}</span><strong>−{formatMoney(depositDiscount)}</strong></div>}
             <div className="flex justify-between"><span className="text-muted">{tr('Solde restant après acompte', 'المتبقي بعد العربون')}</span><strong>{formatMoney(Math.max(0,totalTND-selectedDepositAmount))}</strong></div>
           </div>
           <label className="flex items-start gap-3 rounded-xl border border-line bg-white p-3 text-xs leading-5 text-ink">
             <input type="checkbox" required checked={formData.termsAccepted} onChange={(event) => setFormData({ ...formData, termsAccepted: event.target.checked })} className="mt-0.5 h-5 w-5 shrink-0 accent-brand" />
-            <span>{tr("J’accepte les ", 'أوافق على ')}<a href="/terms.html" target="_blank" rel="noopener noreferrer" className="font-black text-brand underline">{tr('conditions générales de vente et la politique de retour', 'شروط البيع وسياسة الإرجاع')}</a>.</span>
+            <span>{tr("J’accepte les ", 'أوافق على ')}<a href="/terms.html" target="_blank" rel="noopener noreferrer" className="font-black text-ink underline">{tr('conditions générales de vente et la politique de retour', 'شروط البيع وسياسة الإرجاع')}</a>.</span>
           </label>
           <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={() => navigation.back()} disabled={isLoading} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour', 'رجوع')}</button>

@@ -88,7 +88,7 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
           ) : (
             <div className="space-y-2.5">
               {items.map((item) => (
-                <article key={item.id} className="bg-white p-3 border border-line">
+                <article key={item.id} className="bg-white p-3">
                   <div className="flex gap-3">
                     <div className="grid h-[72px] w-[62px] flex-none place-items-center overflow-hidden bg-surface p-1 text-muted">
                       <HistoryThumbnail item={item} />

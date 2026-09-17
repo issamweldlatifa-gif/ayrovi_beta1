@@ -72,8 +72,8 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
           <div className="no-scrollbar flex gap-3 overflow-hidden px-4">
             {Array.from({ length: 6 }).map((_, index) => (
               <div key={index} className="flex w-16 shrink-0 flex-col items-center gap-1.5">
-                <div className="h-[62px] w-[62px] animate-pulse rounded-full bg-brand-light/25" />
-                <div className="h-2 w-10 animate-pulse rounded bg-brand-light/25" />
+                <div className="h-[62px] w-[62px] animate-pulse rounded-full bg-surface/25" />
+                <div className="h-2 w-10 animate-pulse rounded bg-surface/25" />
               </div>
             ))}
           </div>
@@ -86,7 +86,7 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
         )}
         {state === 'ready' && groups.length === 0 && (
           <div className="flex flex-col items-center px-4 py-8 text-center">
-            <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/10 text-brand"><ImageIcon size={27} /></span>
+            <span className="grid h-11 w-11 place-items-center rounded-full bg-surface text-ink"><ImageIcon size={27} /></span>
             <p className="mt-3 text-sm font-extrabold text-ink">{tr('Aucune story pour le moment', 'لا توجد قصص حاليًا')}</p>
             <p className="mt-1 max-w-60 text-xs leading-5 text-muted">{tr("Les stories publiées depuis l'espace Admin apparaîtront ici.", 'ستظهر هنا القصص المنشورة من لوحة الإدارة.')}</p>
           </div>
@@ -99,10 +99,10 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
       {/* ===== Reels : bande horizontale ===== */}
       {state === 'ready' && reels.length > 0 && (
         <div className="border-b border-line bg-white py-3">
-          <p className="px-4 pb-2 text-xs font-black uppercase tracking-[0.18em] text-brand">{tr('Reels', 'ريلز')}</p>
+          <p className="px-4 pb-2 text-xs font-black uppercase tracking-[0.18em] text-ink">{tr('Reels', 'ريلز')}</p>
           <div className="no-scrollbar flex gap-2 overflow-x-auto px-4">
             {reels.map((reel, index) => (
-              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-36 shrink-0 overflow-hidden rounded-card bg-brand-gradient shadow-card transition active:scale-[0.98] sm:w-40" aria-label={reel.caption || tr(`Reel ${index + 1}`, `ريل ${index + 1}`)}>
+              <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-36 shrink-0 overflow-hidden rounded-card bg-ink-gradient shadow-card transition active:scale-[0.98] sm:w-40" aria-label={reel.caption || tr(`Reel ${index + 1}`, `ريل ${index + 1}`)}>
                 <video src={reel.media[0].url} poster="/media/logo-ayrovi.png" muted playsInline preload="metadata" className="aspect-[9/16] w-full bg-white object-cover opacity-90" />
                 <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-black text-white backdrop-blur"><Eye size={15} />{reel.views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</span>
                 {reel.caption && <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-10 text-left text-[11px] font-bold leading-4 text-white">{reel.caption}</span>}
@@ -119,11 +119,11 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
             {[0, 1].map((index) => (
               <div key={index} className="animate-pulse">
                 <div className="flex items-center gap-2.5">
-                  <div className="h-11 w-11 rounded-full bg-brand-light/25" />
-                  <div className="space-y-1.5"><div className="h-2.5 w-28 rounded bg-brand-light/25" /><div className="h-2 w-16 rounded bg-brand-light/25" /></div>
+                  <div className="h-11 w-11 rounded-full bg-surface/25" />
+                  <div className="space-y-1.5"><div className="h-2.5 w-28 rounded bg-surface/25" /><div className="h-2 w-16 rounded bg-surface/25" /></div>
                 </div>
-                <div className="mt-3 aspect-[4/5] w-full rounded-xl bg-brand-light/20" />
-                <div className="mt-3 h-3 w-40 rounded bg-brand-light/25" />
+                <div className="mt-3 aspect-[4/5] w-full rounded-xl bg-surface/20" />
+                <div className="mt-3 h-3 w-40 rounded bg-surface/25" />
               </div>
             ))}
           </div>

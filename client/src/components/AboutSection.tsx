@@ -18,7 +18,7 @@ const BENEFITS = [
     description:
       "Toutes les démarches administratives, taxes d’importation et dédouanement sont entièrement prises en charge.",
     icon: ShieldCheck,
-    iconClassName: 'bg-brand text-white',
+    iconClassName: 'bg-ink text-white',
     accentClassName: 'from-brand to-brand-light',
   },
   {
@@ -37,7 +37,7 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
     <section id="about-ayrovi" className="relative scroll-mt-20 bg-white" aria-labelledby="why-ayrovi-title">
       <header className="px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
         <div className="mx-auto max-w-3xl">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-brand/20 bg-brand/10 px-3.5 py-1 text-[11px] font-bold text-brand shadow-sm sm:text-xs">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1 text-[11px] font-bold text-ink shadow-sm sm:text-xs">
             <Sparkles className="h-3.5 w-3.5" />
             <span>Pourquoi choisir AYROVI ?</span>
           </div>
@@ -83,7 +83,7 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
 
                   <div className="my-7 h-px w-full bg-gradient-to-r from-brand/55 via-line to-transparent" />
 
-                  <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-brand">
+                  <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-ink">
                     Avantage AYROVI
                   </p>
                   <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl lg:text-4xl">
@@ -99,10 +99,10 @@ export const AboutSection: React.FC<{ coverImage?: string; title?: string; subti
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-brand sm:text-xs">
-        <span className="h-px w-10 bg-brand/20" />
+      <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-[10px] font-extrabold uppercase tracking-[0.2em] text-ink sm:text-xs">
+        <span className="h-px w-10 bg-ink/20" />
         Simple · Transparent · Local
-        <span className="h-px w-10 bg-brand/20" />
+        <span className="h-px w-10 bg-ink/20" />
       </div>
     </section>
   );

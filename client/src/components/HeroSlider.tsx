@@ -66,7 +66,7 @@ export const HeroSlider: React.FC<HeroSliderProps> = ({ settings, title, subtitl
 
   return (
     <section id="home-hero" className="w-full" aria-roledescription="carousel" aria-label="Collections AYROVI">
-      <div className="interface-hero relative h-[72svh] min-h-[520px] w-full overflow-hidden bg-brand-deep shadow-overlay sm:min-h-[620px] lg:min-h-[680px] lg:max-h-[860px]">
+      <div className="interface-hero relative h-[72svh] min-h-[520px] w-full overflow-hidden bg-ink-deep shadow-overlay sm:min-h-[620px] lg:min-h-[680px] lg:max-h-[860px]">
         <div className="absolute inset-0">
           {slides.map((slide, index) => (
             <div key={slide.id} style={{ transitionDuration: `${settings?.transition || 1200}ms` }} className={`absolute inset-0 transition-[opacity,transform] ease-out ${index === activeIndex ? 'z-[1] scale-100 opacity-100' : 'z-0 scale-[1.045] opacity-0'}`} aria-hidden={index !== activeIndex}>

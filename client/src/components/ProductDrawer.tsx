@@ -328,7 +328,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       <section className="relative flex h-screen h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-white">
         <div className="flex items-center justify-between border-b border-line bg-surface px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-brand text-white flex items-center justify-center font-black text-xs">
+            <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center font-black text-xs">
               +
             </div>
             <div>
@@ -343,7 +343,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             ref={closeButtonRef}
             type="button"
             onClick={handleCloseDrawer}
-            className="w-9 h-9 rounded-full bg-white border border-line text-muted hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            className="w-9 h-9 rounded-full bg-white border border-line text-muted hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2"
             aria-label="Fermer Lens"
           >
             <X className="w-5 h-5" />
@@ -393,7 +393,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       Capture d'écran (Screenshot)
                     </h5>
                   </div>
-                  <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-brand transition-all">
+                  <div className="w-10 h-10 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center group-hover:bg-white group-hover:text-ink transition-all">
                     <ArrowUpRight className="w-5 h-5" />
                   </div>
                 </div>
@@ -406,7 +406,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   <div className="inline-flex items-center gap-2 bg-white text-ink px-4 py-2 rounded-xl text-xs font-bold shadow-xs">
                     {isUploading ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-ink" />
                         <span role="status" aria-live="polite">{progressMessage}</span>
                       </>
                     ) : (
@@ -468,7 +468,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   >
                     {isScraping ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin text-brand" />
+                        <Loader2 className="w-3.5 h-3.5 animate-spin text-ink" />
                         <span role="status" aria-live="polite">{progressMessage}</span>
                       </>
                     ) : (
@@ -490,7 +490,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   {(uploadPreview || product?.mainImage) ? (
                     <img src={uploadPreview || product?.mainImage || ''} alt={title} className="w-full h-full object-contain" />
                   ) : (
-                    <PackageCheck className="h-8 w-8 text-brand" aria-hidden="true" />
+                    <PackageCheck className="h-8 w-8 text-ink" aria-hidden="true" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
@@ -501,7 +501,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-white border border-line focus:border-brand rounded-xl px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none"
+                    className="w-full bg-white border border-line focus:border-line rounded-xl px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none"
                   />
                 </div>
               </div>
@@ -511,7 +511,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   <span className="text-xs font-bold text-ink flex items-center gap-1.5">
                     <span>Prix original sur le site :</span>
                   </span>
-                  <span className="text-xs font-extrabold text-brand">
+                  <span className="text-xs font-extrabold text-ink">
                     Conversion AYROVI
                   </span>
                 </div>
@@ -528,7 +528,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       value={sourcePrice || ''}
                       onChange={(e) => setSourcePrice(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-line focus:border-brand rounded-xl px-3 py-2 text-sm font-black text-ink focus:outline-none shadow-xs"
+                      className="w-full bg-white border border-line focus:border-line rounded-xl px-3 py-2 text-sm font-black text-ink focus:outline-none shadow-xs"
                     />
                   </div>
 
@@ -539,7 +539,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-white border border-line focus:border-brand rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none shadow-xs"
+                      className="w-full bg-white border border-line focus:border-line rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none shadow-xs"
                     >
                       <option value="EUR">Euro (€ EUR)</option>
                       <option value="USD">Dollar ($ USD)</option>
@@ -568,7 +568,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-line font-extrabold text-sm sm:text-base">
                     <span className="text-ink">Total à régler :</span>
-                    <span className="text-brand text-lg font-black">
+                    <span className="text-ink text-lg font-black">
                       {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
                     </span>
                   </div>
@@ -586,7 +586,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     value={variantNote}
                     onChange={(e) => setVariantNote(e.target.value)}
                     placeholder="Ex : M, Noir..."
-                    className="w-full bg-surface border border-line focus:border-brand rounded-xl px-3 py-2 text-xs text-ink focus:outline-none"
+                    className="w-full bg-surface border border-line focus:border-line rounded-xl px-3 py-2 text-xs text-ink focus:outline-none"
                   />
                 </div>
 
@@ -627,7 +627,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               type="button"
               onClick={() => void handleProceedToCheckoutForm()}
               disabled={sourcePrice <= 0 || !pricingPreview || isCalculatingPrice || isAddingToCart}
-              className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-brand hover:bg-brand-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-ink hover:bg-ink-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isAddingToCart ? (
                 <>
@@ -647,7 +647,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           <button
             type="button"
             onClick={handleResetForNewClient}
-            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-brand/40 bg-brand/5 hover:bg-brand/10 text-brand font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
+            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-line/40 bg-surface hover:bg-surface text-ink font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
           >
             <span>Nouvelle commande pour un autre client</span>
           </button>

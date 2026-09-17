@@ -39,7 +39,7 @@ export const CommentSheet: React.FC<{
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
           {comments.length ? comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-2.5 py-2.5">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-[10px] font-black text-brand">{comment.author.slice(0, 2).toUpperCase()}</span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-[10px] font-black text-ink">{comment.author.slice(0, 2).toUpperCase()}</span>
               <div className="min-w-0">
                 <p className="text-xs font-extrabold text-ink">{comment.author} <span className="ms-1 font-semibold text-muted">{timeAgo(comment.createdAt, locale)}</span></p>
                 <p className="mt-0.5 text-sm leading-6 text-ink/90">{comment.text}</p>
@@ -49,7 +49,7 @@ export const CommentSheet: React.FC<{
         </div>
         {isAuthenticated ? (
           <form onSubmit={(event) => void submit(event)} className="flex items-center gap-2 border-t border-line px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><User size={21} /></span>
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface text-ink"><User size={21} /></span>
             <input
               value={text}
               onChange={(event) => setText(event.target.value.slice(0, 500))}
@@ -57,7 +57,7 @@ export const CommentSheet: React.FC<{
               aria-label={tr('Votre commentaire', 'تعليقك')}
               maxLength={500}
               autoComplete="off"
-              className="min-h-12 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10"
+              className="min-h-12 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink outline-none transition focus:border-line focus:ring-2 focus:ring-black/10/10"
             />
             <button type="submit" disabled={text.trim().length < 2 || busy} className="ay-btn-primary rounded-full px-4 text-xs sm:px-5">{tr('Publier', 'نشر')}</button>
           </form>

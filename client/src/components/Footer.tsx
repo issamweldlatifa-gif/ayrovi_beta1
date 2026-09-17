@@ -108,7 +108,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <div className="mb-10 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
           {trustBadges.map(({ Icon, title, text }) => (
             <div key={title} className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-5 text-center">
-              <span className="grid h-11 w-11 place-items-center rounded-full bg-brand/10 text-brand"><Icon className="h-7 w-7" /></span>
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-surface text-ink"><Icon className="h-7 w-7" /></span>
               <strong className="text-[13px] font-black leading-tight text-ink">{title}</strong>
               <span className="text-[11px] leading-4 text-muted">{text}</span>
             </div>
@@ -122,7 +122,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
             <div className="flex items-center gap-3">
               {socials.map(({ id, url, label, Glyph }) => (
                 <a key={id} href={url} target="_blank" rel="noopener noreferrer" aria-label={label} title={label}
-                  className="grid h-11 w-11 place-items-center rounded-full border border-line bg-white text-ink transition hover:border-brand hover:text-brand">
+                  className="grid h-11 w-11 place-items-center rounded-full border border-line bg-white text-ink transition hover:border-line hover:text-ink">
                   <Glyph className="h-6 w-6" />
                 </a>
               ))}
@@ -142,9 +142,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
                 {group.links.map((link) => (
                   <li key={link.label}>
                     {link.href ? (
-                      <a href={link.href} className="text-[13px] font-medium text-muted transition hover:text-brand">{link.label}</a>
+                      <a href={link.href} className="text-[13px] font-medium text-muted transition hover:text-ink">{link.label}</a>
                     ) : (
-                      <button type="button" onClick={link.onClick} className="text-[13px] font-medium text-muted transition hover:text-brand">{link.label}</button>
+                      <button type="button" onClick={link.onClick} className="text-[13px] font-medium text-muted transition hover:text-ink">{link.label}</button>
                     )}
                   </li>
                 ))}
@@ -156,9 +156,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         {/* وسائل الدفع + الحقوق */}
         <div className="flex flex-col items-center gap-4 rounded-2xl bg-ink px-4 py-6 text-center sm:px-8">
           <div className="flex flex-wrap items-center justify-center gap-2.5">
-            <PayBadge label="VISA" className="bg-white text-brand-deep" />
+            <PayBadge label="VISA" className="bg-white text-ink-deep" />
             <PayBadge label="Mastercard" className="bg-white not-italic text-danger" />
-            <PayBadge label="Flouci" className="bg-brand not-italic text-white" />
+            <PayBadge label="Flouci" className="bg-ink not-italic text-white" />
             <PayBadge label="D17" className="bg-danger not-italic text-white" />
             <PayBadge label="Mandat postal" className="bg-white not-italic text-ink" />
           </div>
@@ -175,7 +175,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <div className="mt-6 flex flex-col items-center justify-between gap-3 text-center text-[11px] text-muted sm:flex-row sm:text-left">
           <p>Commandes confirmées après vérification de l’acompte — facture après émission et suivi après expédition.</p>
           <p className="flex items-center gap-1">
-            Conçu avec <Heart className="h-3 w-3 fill-brand text-brand" /> pour faciliter vos achats en Tunisie.
+            Conçu avec <Heart className="h-3 w-3 fill-brand text-ink" /> pour faciliter vos achats en Tunisie.
           </p>
         </div>
       </div>

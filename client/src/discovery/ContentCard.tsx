@@ -15,9 +15,9 @@ interface ContentCardProps {
 }
 
 const variantClasses: Record<ContentCardVariant, { body: string; eyebrow: string; description: string }> = {
-  arrival: { body: 'bg-brand-gradient text-white', eyebrow: 'text-white/70', description: 'text-white/75' },
-  promo: { body: 'bg-brand text-white', eyebrow: 'text-white/70', description: 'text-white/75' },
-  magazine: { body: 'bg-white text-ink', eyebrow: 'text-brand', description: 'text-muted' },
+  arrival: { body: 'bg-ink-gradient text-white', eyebrow: 'text-white/70', description: 'text-white/75' },
+  promo: { body: 'bg-ink text-white', eyebrow: 'text-white/70', description: 'text-white/75' },
+  magazine: { body: 'bg-white text-ink', eyebrow: 'text-ink', description: 'text-muted' },
 };
 
 /** One content-card geometry with token-driven variants for all discovery tabs. */

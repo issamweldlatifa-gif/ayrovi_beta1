@@ -79,7 +79,7 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
               <span className={iconClass}><Globe2 className="h-7 w-7" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Recherche Web', 'بحث الويب')}</strong><small className="text-xs text-muted">{tr('Activer ou désactiver la recherche Web', 'تشغيل بحث الويب أو إيقافه')}</small></span>
             </span>
-            <span className={`relative h-[26px] w-11 rounded-full transition ${webSearchEnabled ? 'bg-brand' : isDark ? 'bg-ink/70' : 'bg-line'}`}>
+            <span className={`relative h-[26px] w-11 rounded-full transition ${webSearchEnabled ? 'bg-ink' : isDark ? 'bg-ink/70' : 'bg-line'}`}>
               <span className={`absolute top-0.5 h-8 w-8 rounded-full bg-white shadow transition ${webSearchEnabled ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
             </span>
           </button>

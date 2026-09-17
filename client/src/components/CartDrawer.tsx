@@ -105,7 +105,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-surface border border-line rounded-2xl p-3.5 flex gap-3.5 items-start group hover:border-brand/40 transition-all"
+                  className="bg-surface border border-line rounded-2xl p-3.5 flex gap-3.5 items-start group hover:border-line/40 transition-all"
                 >
                   {/* Thumbnail */}
                   <div className="w-16 h-16 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center">
@@ -117,7 +117,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-brand/10 text-brand uppercase">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-surface text-ink uppercase">
                         {merchantLabel(item, tr('Marchand externe', 'متجر خارجي'))}
                       </span>
                       <button
@@ -147,14 +147,14 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     )}
                     {item.customerNote && <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
                     {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && (
-                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-brand underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
+                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-ink underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
                       <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-muted">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">
-                      <div className="text-xs font-black text-brand">
+                      <div className="text-xs font-black text-ink">
                         {formatMoney(item.lineTotalTND ?? item.priceTND * item.quantity)}
                       </div>
 

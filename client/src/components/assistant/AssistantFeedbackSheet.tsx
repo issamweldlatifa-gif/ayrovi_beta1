@@ -37,7 +37,7 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
   const ratingClass = (value: FeedbackValue) => `flex flex-1 items-center justify-center gap-2 rounded-[14px] border px-3 py-3 text-sm font-semibold transition ${
     rating === value
       ? value === 'up'
-        ? 'border-brand bg-brand/10 text-brand-dark'
+        ? 'border-line bg-surface text-ink'
         : 'border-danger/40 bg-danger/5 text-danger'
       : isDark
         ? 'border-white/15 bg-ink text-white/80 hover:border-muted'
@@ -68,7 +68,7 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
             onChange={(event) => setComment(event.target.value.slice(0, 1500))}
             rows={4}
             placeholder={tr('Qu’est-ce qui était utile ou à améliorer ?', 'ما الذي كان مفيدًا أو يحتاج إلى تحسين؟')}
-            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/10 ${isDark ? 'border-white/15 bg-ink text-white placeholder:text-muted' : 'border-line bg-white text-ink placeholder:text-muted'}`}
+            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-line focus:ring-2 focus:ring-black/10/10 ${isDark ? 'border-white/15 bg-ink text-white placeholder:text-muted' : 'border-line bg-white text-ink placeholder:text-muted'}`}
           />
           <span className="mt-1 block text-end text-[10px] tabular-nums text-muted">{comment.length}/1500</span>
         </label>

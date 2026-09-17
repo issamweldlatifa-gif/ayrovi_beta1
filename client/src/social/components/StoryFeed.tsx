@@ -12,12 +12,12 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
   return (
     <div className="flex items-center gap-2.5 px-4 pb-3 pt-4 sm:px-5">
       <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
-        {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-brand">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
+        {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-10 w-10 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-10 w-10 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}
       </span>
       <div className="min-w-0 flex-1 leading-tight">
         <p className={`flex items-center gap-1 text-sm font-extrabold ${light ? 'text-white' : 'text-ink'}`}>
           {post.publisher.name}
-          {post.publisher.verified && <CheckCircle2 size={14} className={`shrink-0 ${light ? 'text-brand' : 'text-white'}`} />}
+          {post.publisher.verified && <CheckCircle2 size={14} className={`shrink-0 ${light ? 'text-ink' : 'text-white'}`} />}
         </p>
         <p className={`text-[11px] font-semibold ${light ? 'text-white/70' : 'text-muted'}`}>{post.publisher.subtitle || tr('Éditeur', 'الناشر')} · {timeAgo(post.createdAt, locale)}</p>
       </div>
@@ -119,7 +119,7 @@ const PostActions: React.FC<{
     <button type="button" onClick={() => void sharePost(post)} aria-label={tr('Partager', 'مشاركة')} className="grid h-12 w-12 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90">
       <Share2 size={23} />
     </button>
-    <button type="button" onClick={toggleSave} aria-label={tr('Enregistrer', 'حفظ')} className={`ms-auto grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-brand' : 'text-ink hover:bg-surface'}`}>
+    <button type="button" onClick={toggleSave} aria-label={tr('Enregistrer', 'حفظ')} className={`ms-auto grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-ink' : 'text-ink hover:bg-surface'}`}>
       <Bookmark size={23} className={saved ? 'fill-current' : ''} />
     </button>
   </div>
@@ -167,9 +167,9 @@ export const StoryPostCard: React.FC<{
       <div className="px-4 sm:px-5">
         <p className="pt-1 text-sm font-extrabold text-ink">{likesCount.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr("j'aime", 'إعجاب')}</p>
         {post.caption && <p className="mt-1.5 text-sm leading-6 text-ink/90"><span className="font-extrabold">{post.publisher.name}</span> {post.caption}</p>}
-        {post.cta && <button type="button" onClick={() => onCta(post.cta!)} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand/10 px-4 text-xs font-extrabold text-brand-dark transition hover:bg-brand/15 active:scale-95">{post.cta.label}<ArrowRight size={16} className={direction === 'rtl' ? 'rotate-180' : ''} /></button>}
-        <button type="button" onClick={() => (isAuthenticated ? onOpenComments(post) : onRequireAuth())} className="mt-3 flex min-h-12 w-full items-center gap-3 rounded-full border border-line bg-surface px-3 text-start text-sm font-semibold text-muted transition focus:border-brand hover:border-brand/40">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand/10 text-brand"><User size={16} /></span>
+        {post.cta && <button type="button" onClick={() => onCta(post.cta!)} className="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-surface px-4 text-xs font-extrabold text-ink transition hover:bg-ink/15 active:scale-95">{post.cta.label}<ArrowRight size={16} className={direction === 'rtl' ? 'rotate-180' : ''} /></button>}
+        <button type="button" onClick={() => (isAuthenticated ? onOpenComments(post) : onRequireAuth())} className="mt-3 flex min-h-12 w-full items-center gap-3 rounded-full border border-line bg-surface px-3 text-start text-sm font-semibold text-muted transition focus:border-line hover:border-line/40">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-ink"><User size={16} /></span>
           <span className="min-w-0 flex-1 truncate">{tr('Ajouter un commentaire…', 'أضف تعليقًا…')}</span>
           {post.commentsCount > 0 && <span className="text-[11px] font-bold">{post.commentsCount}</span>}
         </button>

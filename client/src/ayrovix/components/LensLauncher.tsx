@@ -697,21 +697,15 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   return (
     <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
-        {/* Header minimal Zalando — only back button when needed, no covering */}
+        {/* Header — only back button, no covering, Zalando flat white, black action */}
         {(stage === 'home' || stage === 'preview' || stage === 'error' || stage === 'barcode') && (
-          <div className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-white px-3">
-            <button type="button" onClick={stage === 'home' ? handleClose : reset} className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink" aria-label={tr('Retour', 'رجوع')}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <span className="text-[13px] font-bold tracking-wide text-ink">AYROVIX Lens</span>
-            <button type="button" onClick={() => setMenuOpen(true)} className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink" aria-label="Menu">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
-            </button>
-          </div>
+          <button type="button" onClick={stage === 'home' ? handleClose : reset} className="absolute left-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-ink text-white shadow" aria-label={tr('Retour', 'رجوع')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
         )}
         {(stage === 'candidates' || stage === 'product') && (
-          <button type="button" onClick={stage === 'product' ? goBack : reset} className="absolute left-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-md border border-line" aria-label={tr('Retour', 'رجوع')}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M15 18l-6-6 6-6"/></svg>
+          <button type="button" onClick={stage === 'product' ? goBack : reset} className="absolute left-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-ink text-white shadow" aria-label={tr('Retour', 'رجوع')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
         )}
 
@@ -763,7 +757,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
               {/* Product name search — NEW Phase 0 */}
               <form
-                className="bg-white p-4 border-t border-line"
+                className="bg-white p-4"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (textQuery.trim().length >= 2) void runTextAnalysis(textQuery.trim());
@@ -796,7 +790,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               </form>
 
               <form
-                className="bg-white p-4 border-t border-line"
+                className="bg-white p-4"
                 onSubmit={(e) => {
                   e.preventDefault();
                   const value = new FormData(e.currentTarget).get('ayrovix-url');
@@ -888,25 +882,41 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           )}
 
           {stage === 'product' && product && (
-            <div className="mx-auto max-w-md space-y-5">
-              <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
-
-              <button type="button" onClick={reset} className="ay-btn-secondary min-h-12 w-full text-sm">
-                {tr('Calculer un autre produit', 'حساب منتج آخر')}
-              </button>
-
-              {!verifiedPriceUrl && candidatesView?.list.length ? (
-                <button type="button" onClick={goBack} className="ay-btn-secondary min-h-11 w-full text-xs">
-                  {tr('Retour aux autres résultats', 'العودة إلى النتائج الأخرى')}
-                </button>
-              ) : null}
-
-              {urlResult && urlResult.alternates.length > 0 && (
-                <section>
-                  <h3 className="mb-2.5 text-[11px] font-extrabold uppercase tracking-[0.1em] text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
-                  <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
-                </section>
-              )}
+            <div className="relative flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-white">
+              {/* Image stays visible behind - stay in Lens like Google Lens */}
+              <div className="relative flex-1 overflow-hidden bg-black">
+                {previewUrl ? (
+                  <img src={previewUrl} alt={product.title} className="h-full w-full object-contain opacity-90" />
+                ) : product.image ? (
+                  <img src={product.image} alt={product.title} className="h-full w-full object-contain opacity-90" />
+                ) : (
+                  <div className="h-full w-full bg-[#0A0A0A]" />
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+              </div>
+              {/* Bottom sheet with product - stays in Lens, no new interface */}
+              <div className="absolute bottom-0 left-0 right-0 max-h-[96%] overflow-y-auto rounded-t-[20px] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)]">
+                <div className="sticky top-0 z-10 flex justify-center bg-white py-2">
+                  <span className="h-1.5 w-10 rounded-full bg-black/15" />
+                </div>
+                <div className="px-3 pb-6">
+                  <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
+                  <button type="button" onClick={reset} className="mt-4 w-full rounded-full bg-ink py-3 text-sm font-bold text-white">
+                    {tr('Calculer un autre produit', 'حساب منتج آخر')}
+                  </button>
+                  {!verifiedPriceUrl && candidatesView?.list.length ? (
+                    <button type="button" onClick={goBack} className="mt-2 w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line">
+                      {tr('Retour aux autres résultats', 'العودة إلى النتائج الأخرى')}
+                    </button>
+                  ) : null}
+                  {urlResult && urlResult.alternates.length > 0 && (
+                    <section className="mt-4">
+                      <h3 className="mb-2.5 text-[11px] font-bold tracking-wide text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
+                      <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
+                    </section>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

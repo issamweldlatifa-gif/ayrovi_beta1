@@ -65,7 +65,7 @@ function Countdown({ target, serverOffset }: { target: string; serverOffset: num
 
 function EmptyContent({ label }: { label: string }) {
   const { tr } = useLocale();
-  return <div className="rounded-card border border-line bg-white px-6 py-16 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">{tr(`Aucun contenu ${label.toLowerCase()} pour le moment.`, `لا يوجد محتوى ${label} حاليًا.`)}</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{tr('Cette page se remplira dès qu’un contenu sera publié depuis l’espace Admin.', 'ستظهر المواد هنا فور نشرها من فضاء الإدارة.')}</p></div>;
+  return <div className="rounded-card border border-line bg-white px-6 py-16 text-center"><p className="text-xs font-black uppercase tracking-[0.2em] text-ink">AYROVI CMS</p><h2 className="mt-3 text-2xl font-black text-ink">{tr(`Aucun contenu ${label.toLowerCase()} pour le moment.`, `لا يوجد محتوى ${label} حاليًا.`)}</h2><p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted">{tr('Cette page se remplira dès qu’un contenu sera publié depuis l’espace Admin.', 'ستظهر المواد هنا فور نشرها من فضاء الإدارة.')}</p></div>;
 }
 
 function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number] }) {
@@ -73,7 +73,7 @@ function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number
   const localDirection = definition.id === 'news' ? 'rtl' : (isArabic ? 'rtl' : 'ltr');
   return (
     <div className="border-b border-line pb-8" dir={localDirection}>
-      <div><p className="text-xs font-black uppercase tracking-[0.2em] text-brand">{isArabic ? definition.eyebrowAr : definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 font-display text-4xl font-black leading-none tracking-tight text-ink sm:text-6xl">{isArabic ? definition.labelAr : definition.label}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted">{isArabic ? definition.descriptionAr : definition.description}</p></div>
+      <div><p className="text-xs font-black uppercase tracking-[0.2em] text-ink">{isArabic ? definition.eyebrowAr : definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 font-display text-4xl font-black leading-none tracking-tight text-ink sm:text-6xl">{isArabic ? definition.labelAr : definition.label}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted">{isArabic ? definition.descriptionAr : definition.description}</p></div>
     </div>
   );
 }
@@ -132,7 +132,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
   };
 
   const renderPageContent = (page: CmsPage) => {
-    if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-brand-light/20" /><div className="h-96 animate-pulse bg-brand-light/20" /></div>;
+    if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-surface/20" /><div className="h-96 animate-pulse bg-surface/20" /></div>;
 
     if (page === 'arrivals') return activeArrivals.length ? (
       <div className="grid gap-5 lg:grid-cols-2">
@@ -155,7 +155,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
     if (page === 'products') return home.products.length ? (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {home.products.map((product) => <article key={product.id} className="overflow-hidden rounded-card border border-line bg-white shadow-card"><div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-brand">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-brand-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-[9px] font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-danger' : 'text-success'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div></div></article>)}
+        {home.products.map((product) => <article key={product.id} className="overflow-hidden rounded-card border border-line bg-white shadow-card"><div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-ink-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-[9px] font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-danger' : 'text-success'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div></div></article>)}
       </div>
     ) : <EmptyContent label="Produits" />;
 
@@ -199,7 +199,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
                     type="button"
                     onClick={() => openCmsPage(definition.id)}
                     aria-label={tr(`Ouvrir ${definition.label}`, `فتح ${definition.labelAr}`)}
-                    className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-brand focus-visible:text-brand sm:text-lg"
+                    className="min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-ink focus-visible:text-ink sm:text-lg"
                   >
                     {isArabic ? definition.labelAr : definition.label}
                   </button>

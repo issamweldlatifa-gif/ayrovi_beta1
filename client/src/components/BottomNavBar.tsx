@@ -66,8 +66,8 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           <AppHeader title="AYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
           <div className="grid min-h-[calc(100dvh-5rem)] place-items-center px-5 pb-24 text-center">
             <div className="w-full max-w-sm rounded-card border border-line bg-white p-8 shadow-overlay">
-              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-brand/10 text-brand"><Eye className="h-11 w-11" /></span>
-              <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-brand">AYROVI Vision</p>
+              <span className="mx-auto grid h-11 w-11 place-items-center rounded-full bg-surface text-ink"><Eye className="h-11 w-11" /></span>
+              <p className="mt-5 text-xs font-extrabold uppercase tracking-[0.2em] text-ink">AYROVI Vision</p>
               <h2 className="mt-2 font-display text-3xl font-black text-ink">{tr('Bientôt disponible', 'قريبًا')}</h2>
               <p className="mx-auto mt-3 max-w-xs text-sm leading-6 text-muted">{tr('Une nouvelle expérience visuelle AYROVI est en préparation.', 'نعمل على تجربة بصرية جديدة من AYROVI.')}</p>
             </div>

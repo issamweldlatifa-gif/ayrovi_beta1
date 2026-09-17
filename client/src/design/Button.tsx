@@ -6,9 +6,9 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'cta';
 export type ButtonSize = 'sm' | 'md' | 'icon';
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary: 'ay-runtime-button--primary border border-brand bg-brand text-white shadow-card hover:border-brand-dark hover:bg-brand-dark',
-  secondary: 'ay-runtime-button--secondary border border-brand bg-white text-brand-dark hover:bg-brand/5',
-  ghost: 'ay-runtime-button--ghost border border-transparent bg-transparent text-brand-dark hover:bg-brand/5',
+  primary: 'ay-runtime-button--primary border border-line bg-ink text-white shadow-card hover:border-line-dark hover:bg-ink-dark',
+  secondary: 'ay-runtime-button--secondary border border-line bg-white text-ink hover:bg-surface',
+  ghost: 'ay-runtime-button--ghost border border-transparent bg-transparent text-ink hover:bg-surface',
   cta: 'ay-btn-cta border border-cta bg-cta text-white hover:border-cta-dark hover:bg-cta-dark',
 };
 
@@ -20,7 +20,7 @@ const sizeClasses: Record<ButtonSize, string> = {
 
 export function buttonClasses(variant: ButtonVariant = 'primary', size: ButtonSize = 'md', className?: string) {
   return twMerge(clsx(
-    'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+    'inline-flex items-center justify-center gap-2 rounded-control font-semibold transition active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2',
     variantClasses[variant],
     sizeClasses[size],
     className,
