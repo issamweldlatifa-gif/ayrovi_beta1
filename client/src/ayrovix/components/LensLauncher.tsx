@@ -294,7 +294,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     else enterStage('preview');
   };
 
-  const runImageAnalysis = async (fileOverride?: File) => {
+  const runImageAnalysis = async (fileOverride?: File, cropMs?: number) => {
     const file = fileOverride || imageFile;
     if (!file) return;
     lastQueryRef.current = { kind:'image', value: file.name || 'image' };
@@ -305,7 +305,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
-      const result = await analyzeImage(file, controller.signal);
+      const result = await analyzeImage(file, controller.signal, null, cropMs != null ? { cropMs } : undefined);
+      // uploadMs could be measured as tUpload diff but fetch includes network; cropMs is primary
       if (abortRef.current !== token) return;
       const usable = result.identification.confidence > 0 && result.identification.description !== 'PRODUIT_NON_IDENTIFIE';
       if (!usable && !result.detectedPrice) { fail('IDENTIFICATION_FAILED', NEW_SCAN_MESSAGE); return; }
@@ -819,7 +820,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onCommandDetected={commandDetectedPrice}
               isLoading={true}
               onRoiSearch={handleRoiSearch}
-              onLassoSearch={(file)=> void runImageAnalysis(file)}
+              onLassoSearch={(file,cropMs)=> void runImageAnalysis(file,cropMs)}
               detectedProducts={detectedProducts}
             />
           )}
@@ -834,7 +835,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onCommandDetected={commandDetectedPrice}
               isLoading={isAnalyzing}
               onRoiSearch={handleRoiSearch}
-              onLassoSearch={(file)=> void runImageAnalysis(file)}
+              onLassoSearch={(file,cropMs)=> void runImageAnalysis(file,cropMs)}
               detectedProducts={detectedProducts}
             />
           )}

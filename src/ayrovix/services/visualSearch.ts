@@ -160,6 +160,9 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       return [];
     }
     const results = toCandidates(payload, limit);
+    if (results.length === 0 && Array.isArray(payload?.visual_matches) && payload.visual_matches.length > 0) {
+      console.warn(`[AYROVIX serpapi-lens] strict filter removed ${payload.visual_matches.length} matches (no price>0) — WebSearch fallback will trigger (D2-10 lenient pending)`);
+    }
     console.log(`[AYROVIX serpapi-lens] ${results.length} visual product matches`);
     return results;
   } catch (error: any) {

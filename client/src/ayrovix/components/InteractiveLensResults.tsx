@@ -19,7 +19,7 @@ interface Props {
   onReset: () => void;
   onCommandDetected?: (detected: AyrovixDetectedPrice) => void;
   onRoiSearch?: (roi: { x: number; y: number; w: number; h: number }) => void;
-  onLassoSearch?: (file: File) => void;
+  onLassoSearch?: (file: File, cropMs?: number) => void;
   isLoading?: boolean;
   detectedProducts?: Array<{ name: string; box: [number,number,number,number] | null; category: string }>;
   customerIntent?: string;
@@ -41,7 +41,7 @@ const CandidateImage: React.FC<{ candidate?: AyrovixCandidate; fallback?: string
   const [index, setIndex] = useState(0);
   const favicon = candidate?.sourceUrl ? faviconUrl(candidate.sourceUrl) : null;
   if (urls[index]) {
-    return <img src={urls[index]} alt={alt} loading="lazy" draggable={false} referrerPolicy="no-referrer" onError={() => setIndex(c => c + 1)} className="h-full w-full object-contain" />;
+    return <img src={urls[index]} alt={alt} loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setIndex(c => c + 1)} className="h-full w-full object-contain" />;
   }
   if (candidate) {
     if (favicon) {
@@ -228,8 +228,10 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   const triggerTapSearch = useCallback(async (box: { x:number;y:number;w:number;h:number }) => {
     if (!onLassoSearch) return;
     setShowPulse(true); setTimeout(()=> setShowPulse(false), 550);
+    const t0 = performance.now();
     const file = await cropBoxToFile(box);
-    if (file) onLassoSearch(file);
+    const cropMs = Math.round(performance.now() - t0);
+    if (file) onLassoSearch(file, cropMs);
   }, [onLassoSearch, cropBoxToFile]);
 
   const handleTap = useCallback((clientX:number, clientY:number) => {
