@@ -88,7 +88,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   const [sheet, setSheet] = useState<'peek'|'half'|'full'>('peek');
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number | null>(null);
-  const sheetHeight = sheet === 'peek' ? '22%' : sheet === 'half' ? '45%' : '100%';
+  // Phase 1: peek 38% (was 22%) so results are immediately visible without pull — product stays visible above
+  const sheetHeight = sheet === 'peek' ? '38%' : sheet === 'half' ? '55%' : '100%';
   const onHandleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
   const onHandleTouchMove = (e: React.TouchEvent) => {
     if (startY.current == null) return;
@@ -418,7 +419,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           </div>
         </div>
 
-        <div className="absolute bottom-[calc(22%+10px)] left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[10px] font-medium text-white/80 backdrop-blur text-center max-w-[92%] leading-tight">
+        <div className="absolute bottom-[calc(38%+12px)] left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1.5 text-[10px] font-medium text-white/90 backdrop-blur text-center max-w-[92%] leading-tight">
           {selectedBox ? tr('Produit sélectionné • Touchez un autre', 'تم التحديد • المس منتجا آخر') : tr('Touchez un produit', 'المس منتجًا')}
           {!selectedBox && scale === 1 ? ` • ${tr('Pincez pour zoomer', 'قرّب بأصابعك')}` : ''}
         </div>
@@ -427,10 +428,11 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
       <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'} overflow-hidden`} style={{ height: sheetHeight, transition: startY.current == null ? 'height 0.25s ease' : 'none' }}>
         <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { startY.current = e.clientY; const onMove = (ev: MouseEvent) => { if (startY.current == null) return; const dy = startY.current - ev.clientY; if (dy > 60 && sheet !== 'full') setSheet('full'); else if (dy < -60 && sheet === 'full') setSheet('half'); else if (dy < -60 && sheet === 'half') setSheet('peek'); else if (dy > 60 && sheet === 'peek') setSheet('half'); }; const onUp = () => { startY.current=null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
           <span className="h-1.5 w-10 rounded-full bg-black/15" />
-          <div className="flex w-full items-center justify-between pl-14 pr-2">
-            <div>
-              <h3 className="text-[14px] font-extrabold text-ink">{tr('Résultats Lens', 'نتائج Lens')} • {visible.length}</h3>
-              <p className="text-[11px] font-medium text-muted truncate max-w-[22ch]">{name}</p>
+          <div className="flex w-full items-center justify-between pl-14 pr-2 gap-3">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[14px] font-extrabold text-ink truncate">{tr('Résultats Lens', 'نتائج Lens')} • {visible.length}</h3>
+              <p className="text-[11px] font-medium text-muted truncate max-w-[28ch]">{name}</p>
+              {previewUrl && <p className="text-[10px] font-medium text-muted/70 truncate">{tr('Votre image ci-dessus', 'صورتك أعلاه')}</p>}
             </div>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => setSheet(s => s === 'full' ? 'half' : 'full')} className="rounded-full border border-line bg-surface px-3 py-1.5 text-[11px] font-bold text-ink">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
@@ -466,7 +468,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 gap-3 auto-rows-fr">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 auto-rows-fr">
                     {visible.slice(0, 12).map(c => { const pl = priceLine(c); return (
                       <article key={c.id} className="bg-white p-2.5 rounded-xl border border-line/50 flex flex-col">
                         <div className="relative aspect-square overflow-hidden bg-surface"><CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} /><MatchBadge value={c.match} /></div>

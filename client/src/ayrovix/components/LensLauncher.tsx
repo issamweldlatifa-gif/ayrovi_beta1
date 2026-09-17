@@ -646,7 +646,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           </button>
         )}
 
-        <main className="ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8">
+        <main className={stage === 'candidates' || stage === 'analyzing' || stage === 'product' ? "flex flex-1 flex-col min-h-0 overflow-hidden" : "ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8"}>
           {stage === 'home' && (
             <div className="lens-home mx-auto max-w-md pt-2">
               <input
@@ -823,40 +823,36 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           )}
 
           {stage === 'product' && product && (
-            <div className="relative flex h-[calc(100vh-56px)] flex-col overflow-hidden bg-white">
-              {/* Image stays visible behind - stay in Lens like Google Lens */}
-              <div className="relative flex-1 overflow-hidden bg-black">
-                {previewUrl ? (
-                  <img src={previewUrl} alt={product.title} className="h-full w-full object-contain opacity-90" />
-                ) : product.image ? (
-                  <img src={product.image} alt={product.title} className="h-full w-full object-contain opacity-90" />
-                ) : (
-                  <div className="h-full w-full bg-[#0A0A0A]" />
+            <div className="flex flex-1 flex-col min-h-0 overflow-y-auto bg-white">
+              <div className="mx-auto w-full max-w-6xl px-4 py-3 pb-6 lg:px-6 lg:py-6">
+                {/* Back context — keeps Lens image reachable without wasting viewport */}
+                {previewUrl && (
+                  <button type="button" onClick={goBack} className="mb-3 inline-flex items-center gap-2 text-[12px] font-bold text-muted hover:text-ink">
+                    <span className="grid h-7 w-7 place-items-center rounded-full border border-line bg-white">‹</span>
+                    {tr('Retour aux résultats', 'العودة إلى النتائج')}
+                    <span className="hidden sm:inline-flex items-center gap-1.5 ml-2 rounded-full border border-line bg-surface px-2 py-1">
+                      <img src={previewUrl} alt="" className="h-6 w-6 object-cover rounded" />
+                      <span className="text-[11px] font-semibold text-muted">{tr('Votre image', 'صورتك')}</span>
+                    </span>
+                  </button>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
-              </div>
-              {/* Bottom sheet with product - stays in Lens, no new interface */}
-              <div className="absolute bottom-0 left-0 right-0 max-h-[96%] overflow-y-auto rounded-t-[20px] bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)]">
-                <div className="sticky top-0 z-10 flex justify-center bg-white py-2">
-                  <span className="h-1.5 w-10 rounded-full bg-black/15" />
-                </div>
-                <div className="px-3 pb-6">
-                  <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
-                  <button type="button" onClick={reset} className="mt-4 w-full rounded-full bg-ink py-3 text-sm font-bold text-white">
+                <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+                  <button type="button" onClick={reset} className="w-full rounded-full bg-ink py-3 text-sm font-bold text-white sm:w-auto sm:px-6">
                     {tr('Calculer un autre produit', 'حساب منتج آخر')}
                   </button>
                   {!verifiedPriceUrl && candidatesView?.list.length ? (
-                    <button type="button" onClick={goBack} className="mt-2 w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line">
+                    <button type="button" onClick={goBack} className="w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line sm:w-auto sm:px-6">
                       {tr('Retour aux autres résultats', 'العودة إلى النتائج الأخرى')}
                     </button>
                   ) : null}
-                  {urlResult && urlResult.alternates.length > 0 && (
-                    <section className="mt-4">
-                      <h3 className="mb-2.5 text-[11px] font-bold tracking-wide text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
-                      <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
-                    </section>
-                  )}
                 </div>
+                {urlResult && urlResult.alternates.length > 0 && (
+                  <section className="mt-8">
+                    <h3 className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
+                    <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
+                  </section>
+                )}
               </div>
             </div>
           )}
