@@ -177,14 +177,16 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover" />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
 
-      <LensContextHeader mode="camera" onExit={onClose} onMenu={onMenu} dark
-        flashControl={(
-          <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
-            className={`grid h-11 w-11 place-items-center rounded-full backdrop-blur ${torchAvailable ? '' : 'opacity-45'} ${torchOn ? 'bg-white text-ink' : 'bg-white/15'}`}>
-            <Zap size={16} strokeWidth={1.9} fill={torchOn ? 'currentColor' : 'none'} />
-          </button>
-        )}
-      />
+      {/* Header minimal — only back, no covering like Zalando */}
+      <div className="absolute left-0 right-0 top-0 z-20 flex h-14 items-center justify-between px-3 pt-1">
+        <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow border border-line" aria-label={tr('Retour', 'رجوع')}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
+          className={`grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow border border-line ${torchAvailable ? '' : 'opacity-40'} ${torchOn ? 'bg-white' : 'bg-white'}`}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+        </button>
+      </div>
 
       {torchHint && (
         <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[11px] font-semibold text-white/90">
@@ -267,7 +269,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             ))}
           </div>
           <button type="button" onClick={() => openLiveResults(selectedObjects)} disabled={!selectedObjects.length}
-            className="ay-cta-orange mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-extrabold text-white">
+            className="bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-extrabold text-white">
             {tr('Sélectionner les produits', 'اختيار المنتجات')}
           </button>
         </div>

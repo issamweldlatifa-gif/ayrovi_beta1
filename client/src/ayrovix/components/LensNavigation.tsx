@@ -32,7 +32,7 @@ export const LensContextHeader: React.FC<LensContextHeaderProps> = ({
   const { tr, direction } = useLocale();
   const camera = mode === 'camera';
   const tone = camera || dark ? 'text-white' : 'text-ink';
-  const control = camera || dark ? 'bg-white/15 hover:bg-white/25' : 'bg-surface hover:bg-brand/10';
+  const control = camera || dark ? 'bg-white/15 hover:bg-white/25' : 'bg-surface hover:bg-surface';
   const count = Math.max(0, Math.min(99, Math.trunc(cartCount)));
   return (
     <header className={`lens-context-header relative z-20 w-full border-b ${camera || dark ? 'border-white/10 bg-ink/45 backdrop-blur-md' : 'border-line bg-white'} ${tone}`} data-lens-header={mode}>
@@ -54,7 +54,7 @@ export const LensContextHeader: React.FC<LensContextHeaderProps> = ({
           {!camera && onCart && (
             <button type="button" onClick={onCart} aria-label={tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)} className={`relative grid h-11 w-11 place-items-center rounded-full ${control}`}>
               <ShoppingBag className="h-5 w-5" />
-              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-brand px-1 text-[9px] font-black leading-none text-white">{count}</span>}
+              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-ink px-1 text-[9px] font-black leading-none text-white">{count}</span>}
             </button>
           )}
           <button type="button" onClick={onMenu} aria-label={tr('Menu AYROVIX Lens', 'قائمة عدسة AYROVIX')} className={`grid h-11 w-11 place-items-center rounded-full ${control}`}>
@@ -75,7 +75,7 @@ interface LensMoreMenuProps {
 }
 
 const MenuButton: React.FC<{ label: string; onClick: () => void; trailing?: React.ReactNode }> = ({ label, onClick, trailing }) => (
-  <button type="button" onClick={onClick} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-start text-sm font-extrabold transition hover:bg-brand/10">
+  <button type="button" onClick={onClick} className="flex min-h-12 w-full items-center gap-3 rounded-xl px-3 text-start text-sm font-extrabold transition hover:bg-surface">
     <span className="min-w-0 flex-1">{label}</span>
     {trailing}
   </button>
@@ -102,10 +102,10 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
       <section className={`ayrovix-theme-scope relative max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-t-[26px] border border-line shadow-overlay sm:rounded-[26px] ${dark ? 'bg-ink text-white' : 'bg-white text-ink'}`}>
         <header className="sticky top-0 z-10 flex min-h-16 items-center justify-between gap-3 border-b border-line bg-inherit px-4">
           {section !== 'menu'
-            ? <button type="button" onClick={() => setSection('menu')} className="grid h-11 w-11 place-items-center rounded-full hover:bg-brand/10" aria-label={tr('Retour au menu', 'العودة إلى القائمة')}><ArrowLeft className={`h-5 w-5 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></button>
+            ? <button type="button" onClick={() => setSection('menu')} className="grid h-11 w-11 place-items-center rounded-full hover:bg-surface" aria-label={tr('Retour au menu', 'العودة إلى القائمة')}><ArrowLeft className={`h-5 w-5 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></button>
             : <span className="h-11 w-11" />}
           <strong className="min-w-0 flex-1 truncate text-center text-sm font-black">{title}</strong>
-          <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full hover:bg-brand/10" aria-label={tr('Fermer', 'إغلاق')}><X className="h-5 w-5" /></button>
+          <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-full hover:bg-surface" aria-label={tr('Fermer', 'إغلاق')}><X className="h-5 w-5" /></button>
         </header>
 
         <div className="p-4 sm:p-5">
@@ -114,7 +114,7 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
             <MenuButton
               label={tr('Mode sombre', 'الوضع الداكن')}
               onClick={onToggleDark}
-              trailing={<span role="switch" aria-checked={dark} className={`relative h-7 w-12 rounded-full border transition ${dark ? 'border-brand bg-brand' : 'border-line bg-surface'}`}><i className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${dark ? 'start-[1.45rem]' : 'start-0.5'}`} /></span>}
+              trailing={<span role="switch" aria-checked={dark} className={`relative h-7 w-12 rounded-full border transition ${dark ? 'border-line bg-ink' : 'border-line bg-surface'}`}><i className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition ${dark ? 'start-[1.45rem]' : 'start-0.5'}`} /></span>}
             />
             <MenuButton label={tr('Comment utiliser Lens', 'كيفية استخدام Lens')} onClick={() => setSection('help')} />
             <MenuButton label={tr("Conditions d’utilisation de Lens", 'شروط استخدام Lens')} onClick={() => setSection('terms')} />
@@ -131,7 +131,7 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
               tr('Vérifiez le résultat et les variantes.', 'تحقق من النتيجة والخيارات.'),
               tr('Ajoutez le produit au panier.', 'أضف المنتج إلى السلة.'),
               tr('Utilisez « Calculer un autre produit » pour continuer vos achats.', 'استخدم «حساب منتج آخر» لمواصلة التسوق.'),
-            ].map((item, index) => <li key={item} className="flex gap-3"><b className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand text-xs text-white">{index + 1}</b><span>{item}</span></li>)}
+            ].map((item, index) => <li key={item} className="flex gap-3"><b className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-ink text-xs text-white">{index + 1}</b><span>{item}</span></li>)}
           </ol>}
 
           {section === 'terms' && <div className="space-y-4 text-sm leading-6 text-muted">
@@ -151,9 +151,9 @@ export const LensMoreMenu: React.FC<LensMoreMenuProps> = ({ open, dark, onToggle
           </div>}
 
           {section === 'legal' && <div className="space-y-2 text-sm">
-            <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-3 font-bold hover:border-brand">{tr('Mentions légales et conditions générales', 'الإشعارات القانونية والشروط العامة')}</a>
-            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-3 font-bold hover:border-brand">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>
-            <a href="/terms.html#retours" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-3 font-bold hover:border-brand">{tr('Politique de retour', 'سياسة الإرجاع')}</a>
+            <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-3 font-bold hover:border-line">{tr('Mentions légales et conditions générales', 'الإشعارات القانونية والشروط العامة')}</a>
+            <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-3 font-bold hover:border-line">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>
+            <a href="/terms.html#retours" target="_blank" rel="noopener noreferrer" className="block rounded-xl border border-line p-3 font-bold hover:border-line">{tr('Politique de retour', 'سياسة الإرجاع')}</a>
             <div className="rounded-xl border border-dashed border-line p-3 font-bold">{tr('Contact / informations société — coordonnées officielles à compléter.', 'الاتصال / معلومات الشركة — تُستكمل بيانات الاتصال الرسمية.')}</div>
             <p className="pt-2 text-xs leading-5 text-muted">{tr('Les mentions spécifiques manquantes restent réservées à la publication du texte officiel validé.', 'تظل البيانات الخاصة غير المتوفرة محجوزة إلى حين نشر النص الرسمي المعتمد.')}</p>
           </div>}

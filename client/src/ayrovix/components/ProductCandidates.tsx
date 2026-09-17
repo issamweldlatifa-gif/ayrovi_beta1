@@ -37,9 +37,9 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.2) }}
-            className={`rounded-[20px] border bg-white p-3 transition-shadow ${index === 0 ? 'border-brand shadow-lg shadow-brand/10' : 'border-line hover:shadow-md'}`}
+            className={`bg-white p-3 transition-shadow ${index === 0 ? 'border-line shadow-lg shadow-black/5' : 'border-line hover:shadow-md'}`}
           >
-            {index === 0 && <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-brand">{tr('Meilleure correspondance', 'أفضل تطابق')}</p>}
+            {index === 0 && <p className="mb-2 text-[10px] font-extrabold uppercase tracking-[0.1em] text-ink">{tr('Meilleure correspondance', 'أفضل تطابق')}</p>}
             <div className="flex gap-3">
               <div className="relative grid h-[92px] w-[74px] flex-none place-items-center overflow-hidden rounded-xl border border-line bg-surface p-1.5">
                 <CandidateImage candidate={candidate} />

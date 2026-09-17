@@ -695,17 +695,25 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   }
 
   return (
-    <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-ink text-white' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
-      <div className="ayrovix-sheet flex h-full flex-col">
-        <LensContextHeader
-          mode={stage === 'home' ? 'camera' : stage === 'product' ? 'product' : 'result'}
-          onExit={handleClose}
-          onBack={stage === 'product' ? goBack : reset}
-          onCart={onOpenCart}
-          cartCount={cartCount}
-          onMenu={() => setMenuOpen(true)}
-          dark={darkMode}
-        />
+    <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
+      <div className="ayrovix-sheet flex h-full flex-col bg-white">
+        {/* Header minimal Zalando — only back button when needed, no covering */}
+        {(stage === 'home' || stage === 'preview' || stage === 'error' || stage === 'barcode') && (
+          <div className="flex h-14 shrink-0 items-center justify-between border-b border-line bg-white px-3">
+            <button type="button" onClick={stage === 'home' ? handleClose : reset} className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink" aria-label={tr('Retour', 'رجوع')}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M15 18l-6-6 6-6"/></svg>
+            </button>
+            <span className="text-[13px] font-bold tracking-wide text-ink">AYROVIX Lens</span>
+            <button type="button" onClick={() => setMenuOpen(true)} className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink" aria-label="Menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>
+            </button>
+          </div>
+        )}
+        {(stage === 'candidates' || stage === 'product') && (
+          <button type="button" onClick={stage === 'product' ? goBack : reset} className="absolute left-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-md border border-line" aria-label={tr('Retour', 'رجوع')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+        )}
 
         <main className="ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8">
           {stage === 'home' && (
@@ -755,7 +763,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
               {/* Product name search — NEW Phase 0 */}
               <form
-                className="space-y-2.5 rounded-[22px] border border-line bg-white p-4"
+                className="bg-white p-4 border-t border-line"
                 onSubmit={(e) => {
                   e.preventDefault();
                   if (textQuery.trim().length >= 2) void runTextAnalysis(textQuery.trim());
@@ -763,7 +771,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 aria-label={tr('Recherche par nom de produit', 'بحث باسم المنتج')}
               >
                 <label htmlFor="ayrovix-text-input" className="flex items-center gap-3 text-start">
-                  <span className="grid h-10 w-10 place-items-center rounded-xl bg-surface text-brand"><Search size={18} /></span>
+                  <span className="grid h-10 w-10 place-items-center bg-surface text-ink"><Search size={18} /></span>
                   <span>
                     <span className="block text-sm font-extrabold text-ink">{tr('Nom du produit', 'اسم المنتج')}</span>
                     <span className="mt-0.5 block text-[11px] font-medium text-muted">{tr('Marque + modèle. Ex. Nike Air Max 270', 'الماركة + الموديل. مثال: Nike Air Max 270')}</span>
@@ -778,7 +786,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                     value={textQuery}
                     onChange={(e) => setTextQuery(e.target.value.slice(0, 200))}
                     placeholder={tr('Ex. robe d’été verte, iPhone 15…', 'مثال: فستان صيفي أخضر، iPhone 15…')}
-                    className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none"
+                    className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none"
                     maxLength={200}
                     autoComplete="off"
                   />
@@ -788,7 +796,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               </form>
 
               <form
-                className="space-y-2.5 rounded-[22px] border border-line bg-white p-4"
+                className="bg-white p-4 border-t border-line"
                 onSubmit={(e) => {
                   e.preventDefault();
                   const value = new FormData(e.currentTarget).get('ayrovix-url');
@@ -803,17 +811,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 </label>
                 <div className="flex gap-2">
                   <input ref={urlInputRef} id="ayrovix-url-input" name="ayrovix-url" type="url" inputMode="url" placeholder="https://…"
-                    className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-brand focus:outline-none" />
+                    className="min-h-[46px] min-w-0 flex-1 rounded-xl border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none" />
                   <button type="submit" className="ay-btn-primary flex-none text-xs">{tr('Analyser', 'تحليل')}</button>
                 </div>
               </form>
 
               {/* Recent searches — local history */}
               {recentItems.length > 0 && (
-                <div className="rounded-[22px] border border-line bg-surface p-4">
+                <div className="bg-white p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-extrabold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</p>
-                    <button type="button" onClick={openHistory} className="text-[11px] font-bold text-brand underline">{tr('Voir tout', 'عرض الكل')}</button>
+                    <button type="button" onClick={openHistory} className="text-[11px] font-bold text-ink underline">{tr('Voir tout', 'عرض الكل')}</button>
                   </div>
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {recentItems.map((item) => (
@@ -821,7 +829,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                         key={item.id}
                         type="button"
                         onClick={() => repeatHistoryItem(item)}
-                        className="max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-brand/30"
+                        className="max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30"
                         title={item.queryLabel || item.title}
                       >
                         <span className="inline-flex items-center gap-1.5">
@@ -842,7 +850,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'preview' && previewUrl && (
             <div className="mx-auto max-w-md space-y-4">
-              <div className="relative overflow-hidden rounded-[22px] border border-line">
+              <div className="relative overflow-hidden bg-white">
                 <img src={previewUrl} alt={tr('Aperçu du produit à analyser', 'معاينة المنتج المراد تحليله')} className="max-h-[62vh] w-full bg-surface object-contain" />
                 <div className="lens-scan-dots absolute inset-0" aria-hidden="true" />
               </div>
@@ -905,7 +913,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           {stage === 'barcode' && barcode && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <p className="text-sm font-extrabold text-ink">{tr('Code-barres détecté', 'تم اكتشاف الرمز الشريطي')}</p>
-              <p className="mx-auto w-fit rounded-xl bg-surface px-5 py-3 font-mono text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
+              <p className="mx-auto w-fit bg-surface px-5 py-3 font-mono text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">
                 {tr("Aucune offre en ligne ne correspond à ce code pour le moment. Photographiez le produit : AYROVIX l'identifiera par l'image.", 'لا يطابق هذا الرمز أي عرض عبر الإنترنت حاليًا. صوّر المنتج وستتعرّف عليه AYROVIX من الصورة.')}
               </p>

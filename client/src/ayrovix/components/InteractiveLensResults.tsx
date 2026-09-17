@@ -68,7 +68,7 @@ const CandidateImage: React.FC<{ candidate?: AyrovixCandidate; fallback?: string
 
 const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
   <span className="absolute left-1.5 top-1.5 rounded-lg bg-white/95 px-1.5 py-1 text-center shadow-sm">
-    <span className="block text-[12px] font-extrabold leading-none text-brand">{value}%</span>
+    <span className="block text-[12px] font-extrabold leading-none text-ink">{value}%</span>
     <span className="block text-[8px] font-bold text-ink">Match</span>
   </span>
 );
@@ -307,12 +307,12 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           {isLoading ? (
             <div className="space-y-3 py-4">
               <div className="flex items-center gap-2 text-[12px] font-bold text-muted">
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-transparent" />
                 {tr('Analyse en cours…', 'جارٍ التحليل…')}
               </div>
               <div className="grid grid-cols-2 gap-2.5">
                 {[0,1,2,3].map(i => (
-                  <div key={i} className="animate-pulse rounded-[16px] border border-line bg-surface p-2">
+                  <div key={i} className="animate-pulse bg-white p-2">
                     <div className="aspect-square rounded-xl bg-line" />
                     <div className="mt-2 h-3 rounded bg-line" />
                     <div className="mt-1 h-2 rounded bg-line w-2/3" />
@@ -325,7 +325,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             <>
               {/* Detected price if exists */}
               {detected && detected.sourcePrice > 0 && (
-                <div className="mb-3 rounded-[16px] border border-brand bg-brand/5 p-3">
+                <div className="mb-3 bg-white p-3">
                   <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix repéré', 'سعر مكتشف')}</p>
                   <p className="text-[13px] font-bold text-ink line-clamp-2">{detected.title || name}</p>
                   <p className="text-[18px] font-black text-ink">{detected.totalPriceTND?.toFixed(2) || '—'} DT <span className="text-[11px] font-medium text-muted">{detected.sourcePrice.toFixed(2)} {detected.sourceCurrency}</span></p>
@@ -348,8 +348,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
               ) : (
                 <div className="grid grid-cols-2 gap-2.5">
                   {visible.slice(0, 12).map(c => (
-                    <article key={c.id} className="rounded-[16px] border border-line bg-white p-2">
-                      <div className="relative aspect-square overflow-hidden rounded-xl bg-surface">
+                    <article key={c.id} className="bg-white p-2">
+                      <div className="relative aspect-square overflow-hidden bg-surface">
                         <CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} />
                         <MatchBadge value={c.match} />
                       </div>
@@ -361,7 +361,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                       )}
                       <p className="truncate text-[10px] font-medium text-muted">{c.source}</p>
                       <div className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-ink"><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
-                      <div className="mt-1 rounded-lg bg-surface border border-line px-2 py-1.5">
+                      <div className="mt-1 bg-surface px-2 py-1.5">
                         <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
                         <p className="text-[13px] font-black text-ink">{priceLine(c).tnd}</p>
                         <p className="text-[10px] font-semibold text-muted truncate">{priceLine(c).original ? `${tr('Prix boutique', 'سعر المتجر')} ${priceLine(c).original} • ${c.source}` : c.source}</p>
@@ -375,7 +375,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             </>
           )}
 
-          <div className="mt-3 flex items-center gap-2 rounded-xl bg-surface p-2.5">
+          <div className="mt-3 flex items-center gap-2 bg-surface p-2.5">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-white text-ink border border-line"><ShieldCheck size={16} /></span>
             <div className="min-w-0 flex-1">
               <strong className="block text-[11px] font-extrabold text-ink">{tr('Prix vérifiés et marchands fiables', 'أسعار متحقق منها وتجار موثوقون')}</strong>

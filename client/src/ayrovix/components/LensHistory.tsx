@@ -75,10 +75,10 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
           </div>
 
           {loading && items.length === 0 ? (
-            <div className="grid h-40 place-items-center"><span className="h-7 w-7 animate-spin rounded-full border-[3px] border-brand border-r-transparent" /></div>
+            <div className="grid h-40 place-items-center"><span className="h-7 w-7 animate-spin rounded-full border-[3px] border-line border-r-transparent" /></div>
           ) : items.length === 0 ? (
-            <div className="rounded-[22px] border border-dashed border-line bg-white p-7 text-center">
-              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-brand-light text-brand">
+            <div className="bg-white p-7 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-surface text-ink">
                 <History size={25} strokeWidth={1.8} />
               </div>
               <h3 className="mt-3 text-sm font-extrabold">{tr('Aucune recherche pour le moment', 'لا يوجد بحث حتى الآن')}</h3>
@@ -88,14 +88,14 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
           ) : (
             <div className="space-y-2.5">
               {items.map((item) => (
-                <article key={item.id} className="rounded-[20px] border border-line bg-white p-3">
+                <article key={item.id} className="bg-white p-3 border border-line">
                   <div className="flex gap-3">
-                    <div className="grid h-[72px] w-[62px] flex-none place-items-center overflow-hidden rounded-xl bg-surface p-1 text-muted">
+                    <div className="grid h-[72px] w-[62px] flex-none place-items-center overflow-hidden bg-surface p-1 text-muted">
                       <HistoryThumbnail item={item} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-full bg-brand-light px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-brand">{KIND_LABELS[item.kind][isArabic ? 1 : 0]}</span>
+                        <span className="rounded-full bg-surface px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-ink">{KIND_LABELS[item.kind][isArabic ? 1 : 0]}</span>
                         <time className="text-[9px] font-semibold text-muted">{formatDate(item.createdAt, locale)}</time>
                       </div>
                       <h3 className="mt-1 line-clamp-2 text-xs font-extrabold leading-snug">{item.title}</h3>

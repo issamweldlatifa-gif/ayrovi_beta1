@@ -21,7 +21,7 @@ interface ProductResultProps {
 }
 
 const AVAILABILITY: Record<string, { fr: string; ar: string; cls: string }> = {
-  in_stock: { fr: 'Disponible', ar: 'متوفر', cls: 'bg-brand/10 text-brand-dark' },
+  in_stock: { fr: 'Disponible', ar: 'متوفر', cls: 'bg-surface text-ink' },
   limited: { fr: 'Stock limité', ar: 'مخزون محدود', cls: 'bg-surface text-ink border border-line' },
   out_of_stock: { fr: 'Rupture signalée', ar: 'غير متوفر', cls: 'bg-danger/5 text-danger' },
   unknown: { fr: 'Disponibilité à confirmer', ar: 'التوفر يحتاج إلى تأكيد', cls: 'bg-surface text-muted' },
@@ -108,7 +108,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
   return (
     <div className="space-y-4" dir={direction}>
-      <div className="ayrovix-product-gallery overflow-hidden rounded-[22px] border border-line bg-white">
+      <div className="ayrovix-product-gallery overflow-hidden bg-white">
         <div className="ayrovix-product-gallery-stage bg-surface">
           {activeImage
             ? <img
@@ -138,7 +138,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                   key={`${url}-${index}`}
                   type="button"
                   onClick={() => setImageIndex(index)}
-                  className={`ayrovix-thumbnail shrink-0 rounded-xl border-2 bg-surface ${selected ? 'border-brand ring-2 ring-brand/15' : 'border-line'}`}
+                  className={`ayrovix-thumbnail shrink-0 rounded-xl border-2 bg-surface ${selected ? 'border-line ring-2 ring-black/10' : 'border-line'}`}
                   aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}
                   aria-current={selected ? 'true' : undefined}
                 >
@@ -154,12 +154,12 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <p className="mt-0.5 text-xs font-semibold text-muted">{[product.brand, product.model].filter(Boolean).join(' · ') || tr('Produit identifié par AYROVIX', 'منتج تعرّفت عليه AYROVIX')}</p>
             <div className="mt-2 flex flex-wrap items-center gap-3">
               <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-ink" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Qualité de la fiche AYROVIX', 'جودة بطاقة AYROVIX')}><Star size={14} fill="currentColor" />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('fiche AYROVIX', 'بطاقة AYROVIX')}</span></span>
-              {validProductUrl(product.sourceUrl) && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 text-[11px] font-extrabold text-brand underline decoration-brand/30 underline-offset-4">{tr('Page du marchand', 'صفحة المتجر')}<ArrowUpRight size={14} /></a>}
+              {validProductUrl(product.sourceUrl) && <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-8 items-center gap-1 text-[11px] font-extrabold text-ink underline decoration-ink/20 underline-offset-4">{tr('Page du marchand', 'صفحة المتجر')}<ArrowUpRight size={14} /></a>}
             </div>
           </div>
 
           <div className="rounded-2xl bg-surface p-3.5 ayrovix-glass price-morph">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-brand">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-ink">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
             <p className="mt-1 text-[28px] font-black leading-none tracking-tight text-ink price-pulse">
               {selectedPriceTnd != null ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}
             </p>
@@ -171,7 +171,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           </div>
 
           {priceVerified ? (
-            <p className="flex items-center gap-1.5 rounded-xl border border-brand/25 bg-brand/5 px-3 py-2 text-[11px] font-bold text-brand-dark"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
+            <p className="flex items-center gap-1.5 rounded-xl border border-line/25 bg-surface px-3 py-2 text-[11px] font-bold text-ink"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
           ) : (
             <div className="rounded-xl border border-line bg-surface px-3 py-2 text-[11px] font-semibold text-ink">
               <p className="flex items-start gap-1.5"><Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tr(`Prix estimé — vérification manuelle par notre équipe après l’acompte de ${depositPercent}%.`, `السعر تقديري — يتحقق منه فريقنا يدويًا بعد دفع عربون ${depositPercent}%.`)}</p>
@@ -182,7 +182,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         </div>
       </div>
 
-      <div className="space-y-3 rounded-[22px] border border-line bg-white p-4">
+      <div className="bg-white p-4">
         <div>
           <h4 className="text-sm font-extrabold text-ink">{tr('Détails de votre demande', 'تفاصيل طلبك')}</h4>
           <p className="mt-0.5 text-[11px] leading-relaxed text-muted">{tr("Ces informations seront transmises à l'équipe d'achat avec votre commande.", 'ستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.')}</p>
@@ -198,7 +198,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             placeholder="https://boutique.com/produit-exact"
             autoComplete="url"
             maxLength={4096}
-            className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-brand"
+            className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-line"
             aria-invalid={submitted && !isUrlValid}
             required
           />
@@ -220,19 +220,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div className="mt-3 space-y-3">
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Couleur', 'اللون')}</span>
-              <input list="ayrovix-colors" value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder={tr('Ex. Noir', 'مثال: أسود')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
+              <input list="ayrovix-colors" value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder={tr('Ex. Noir', 'مثال: أسود')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-line" />
               {product.colors.length > 0 && <datalist id="ayrovix-colors">{product.colors.map((item) => <option key={item} value={item} />)}</datalist>}
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Taille', 'المقاس')}</span>
-              <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand">
+              <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-line">
                 <option value="">{tr('Sans préférence', 'دون تفضيل')}</option>
                 {sizeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                 <option value="__other__">{tr('Autre', 'مقاس آخر')}</option>
               </select>
             </label>
             {sizeChoice === '__other__' && (
-              <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-brand" />
+              <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-line" />
             )}
             {product.sizes.length > 0 || product.colors.length > 0 ? (
               <p className="rounded-xl bg-white px-3 py-2 text-[10px] leading-relaxed text-muted">
@@ -251,7 +251,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             )}
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold text-ink">{tr('Commentaire spécial', 'ملاحظة خاصة')}</span>
-              <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder={tr('Ex. emballage cadeau, variante précise…', 'مثال: تغليف هدية أو مواصفة دقيقة…')} className="w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand" />
+              <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder={tr('Ex. emballage cadeau, variante précise…', 'مثال: تغليف هدية أو مواصفة دقيقة…')} className="w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-line" />
             </label>
           </div>
         </details>
