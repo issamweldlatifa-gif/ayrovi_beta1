@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
-import { LensResults } from '../client/src/ayrovix/components/LensResults';
+import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import type { AyrovixCandidate } from '../client/src/ayrovix/types';
 
@@ -51,12 +51,12 @@ describe('Lens Phase 0 UI improvements', () => {
       detectedPrice:null,
     };
     const html = renderToStaticMarkup(
-      <LocaleProvider><LensResults view={view as any} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
     // Should NOT contain invented product image but should show merchant source name
     expect(html).toContain('Zalando');
     // Should contain favicon fallback logic (google s2 favicons) in source file
-    const src = readFileSync('client/src/ayrovix/components/LensResults.tsx','utf8');
+    const src = readFileSync('client/src/ayrovix/components/InteractiveLensResults.tsx','utf8');
     expect(src).toContain('favicon');
     expect(src).toContain('google.com/s2/favicons');
   });
@@ -69,7 +69,7 @@ describe('Lens Phase 0 UI improvements', () => {
       detectedPrice:null,
     };
     const html = renderToStaticMarkup(
-      <LocaleProvider><LensResults view={view as any} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
     expect(html).toContain('Tailles/couleurs');
     expect(html).toContain('fiche marchand');
@@ -83,7 +83,7 @@ describe('Lens Phase 0 UI improvements', () => {
       detectedPrice:null,
     };
     const html = renderToStaticMarkup(
-      <LocaleProvider><LensResults view={view as any} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
     expect(html).toContain('Prix final estimé');
     expect(html).toContain('598.00 DT');
@@ -91,7 +91,7 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(html).toContain('84');
     expect(html).toContain('EUR');
     // Must not contain invented breakdown numbers not in API
-    const src = readFileSync('client/src/ayrovix/components/LensResults.tsx','utf8');
+    const src = readFileSync('client/src/ayrovix/components/InteractiveLensResults.tsx','utf8');
     // Ensure we show estimation note but not raw breakdown fields that API doesn't return
     expect(src).toContain('Estimation tout inclus');
   });
@@ -99,7 +99,7 @@ describe('Lens Phase 0 UI improvements', () => {
   it('empty state CTA is enriched and links to history', () => {
     const view = { queryLabel:'Introuvable XYZ', list:[], eventId:'ev4', detectedPrice:null };
     const html = renderToStaticMarkup(
-      <LocaleProvider><LensResults view={view as any} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} onOpenHistory={()=>{}} /></LocaleProvider>
+      <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
     expect(html).toContain('Aucune correspondance');
     expect(html).toContain('Nouvelle recherche');

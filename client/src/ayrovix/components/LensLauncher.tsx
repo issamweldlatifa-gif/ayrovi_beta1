@@ -18,7 +18,7 @@ import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
-import { LensResults } from './LensResults';
+import { InteractiveLensResults } from './InteractiveLensResults';
 import { Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles } from '../../components/QatafoIcons';
 
 interface LensLauncherProps {
@@ -544,6 +544,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         priceToken,
         quantity,
       });
+      // Le panier s'ouvre, mais le résultat Lens reste monté pour un retour sans perte d'état.
       setOrdering(false);
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
@@ -839,13 +840,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           )}
 
           {stage === 'candidates' && candidatesView && (
-            <LensResults
+            <InteractiveLensResults
               view={candidatesView}
+              previewUrl={previewUrl}
               fallbackImage={previewUrl}
               onChoose={handleChooseCandidate}
               onReset={reset}
               onCommandDetected={commandDetectedPrice}
-              onOpenHistory={openHistory}
             />
           )}
 
