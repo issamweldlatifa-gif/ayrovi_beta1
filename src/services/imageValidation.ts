@@ -67,8 +67,8 @@ export async function normalizeUploadedImage(
     const output = format === 'png'
       ? pipeline.png({ compressionLevel: 9 }).toBuffer({ resolveWithObject: true })
       : format === 'webp'
-        ? pipeline.webp({ quality: 90, smartSubsample: true }).toBuffer({ resolveWithObject: true })
-        : pipeline.flatten({ background: '#ffffff' }).jpeg({ quality: 88, mozjpeg: true }).toBuffer({ resolveWithObject: true });
+        ? pipeline.webp({ quality: 85, smartSubsample: true }).toBuffer({ resolveWithObject: true })
+        : pipeline.flatten({ background: '#ffffff' }).jpeg({ quality: 85, mozjpeg: true }).toBuffer({ resolveWithObject: true });
     const { data, info } = await output;
 
     if (!data.length || !info.width || !info.height || data.length > 5 * 1024 * 1024) {

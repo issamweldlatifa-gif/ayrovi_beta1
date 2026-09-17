@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
 import { ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw } from '../../components/QatafoIcons';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
-import { displayRating, isDisplayableCandidate } from '../services/resultPolicy';
+import { displayRating, isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
 export interface InteractiveLensView {
@@ -75,7 +75,12 @@ const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
 
 export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, customerIntent }) => {
   const { tr, direction } = useLocale();
-  const visible = useMemo(() => view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0)), [view.list]);
+  const visible = useMemo(() => {
+    const strict = view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
+    if (strict.length) return strict;
+    // D2-10 lenient PENDING — show "Prix à confirmer" instead of 0 results when lens has matches without price
+    return view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
+  }, [view.list]);
   const best = visible[0];
   const name = view.queryLabel || best?.title || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX');
   const detected = view.detectedPrice;
@@ -322,10 +327,21 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   };
   const onMouseLeave = () => { panStart.current = null; setIsPanning(false); tapStart.current = null; };
 
-  const priceLine = (c: AyrovixCandidate) => ({
-    tnd: c.priceTnd != null ? `${c.priceTnd.toFixed(2)} DT` : '—',
-    original: c.price != null ? `${Number(c.price).toFixed(Number(c.price)%1?2:0)} ${c.currency||''}` : null,
-  });
+  const priceLine = (c: AyrovixCandidate) => {
+    const isPending = c.priceVerificationStatus === 'PENDING_MANUAL' || (c.price == null && c.priceTnd == null);
+    if (isPending && c.priceTnd == null) {
+      return {
+        tnd: tr('Prix à confirmer', 'السعر قيد التأكيد'),
+        original: c.price != null ? `${Number(c.price).toFixed(Number(c.price)%1?2:0)} ${c.currency||''}` : null,
+        pending: true as const,
+      };
+    }
+    return {
+      tnd: c.priceTnd != null ? `${c.priceTnd.toFixed(2)} DT` : '—',
+      original: c.price != null ? `${Number(c.price).toFixed(Number(c.price)%1?2:0)} ${c.currency||''}` : null,
+      pending: false as const,
+    };
+  };
 
   return (
     <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#0A0A0A]" dir={direction}>
@@ -451,22 +467,22 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
               ) : (
                 <>
                   <div className="grid grid-cols-2 gap-3 auto-rows-fr">
-                    {visible.slice(0, 12).map(c => (
+                    {visible.slice(0, 12).map(c => { const pl = priceLine(c); return (
                       <article key={c.id} className="bg-white p-2.5 rounded-xl border border-line/50 flex flex-col">
                         <div className="relative aspect-square overflow-hidden bg-surface"><CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} /><MatchBadge value={c.match} /></div>
                         <h4 className="mt-1.5 line-clamp-2 break-words text-[12px] font-bold leading-snug text-ink">{c.title}</h4>
                         {c.colors.length > 0 || c.sizes.length > 0 ? (<p className="break-words whitespace-normal text-[10px] font-semibold leading-snug text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>) : (<p className="text-[10px] font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>)}
                         <p className="break-words whitespace-normal text-[10px] font-medium leading-snug text-muted">{c.source}</p>
                         <div className="mt-0.5 flex items-center gap-1 text-[10px] font-bold" style={{color:'#FFC107'}}><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
-                        <div className="mt-1 bg-surface px-2 py-1.5">
-                          <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-                          <p className="text-[13px] font-black text-ink">{priceLine(c).tnd}</p>
-                          <p className="break-words whitespace-normal text-[10px] font-semibold leading-snug text-muted">{priceLine(c).original ? `${tr('Prix boutique', 'سعر المتجر')} ${priceLine(c).original} • ${c.source}` : c.source}</p>
-                          <p className="text-[9px] font-medium text-muted">{tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
+                        <div className={`mt-1 px-2 py-1.5 ${pl.pending ? 'bg-amber-50 border border-amber-200' : 'bg-surface'}`}>
+                          <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{pl.pending ? tr('Prix sur devis', 'سعر عند الطلب') : tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
+                          <p className={`text-[13px] font-black ${pl.pending ? 'text-amber-700' : 'text-ink'}`}>{pl.tnd}</p>
+                          <p className="break-words whitespace-normal text-[10px] font-semibold leading-snug text-muted">{pl.original ? `${tr('Prix boutique', 'سعر المتجر')} ${pl.original} • ${c.source}` : c.source}</p>
+                          <p className="text-[9px] font-medium text-muted">{pl.pending ? tr('AYROVIX confirmera le prix avant commande.', 'سيؤكد AYROVIX السعر قبل الطلب.') : tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
                         </div>
-                        <button type="button" onClick={() => onChoose(c)} className="mt-2 w-full rounded-full bg-ink py-2 text-[11px] font-bold text-white">{tr('Voir le produit', 'عرض المنتج')}</button>
+                        <button type="button" onClick={() => onChoose(c)} className={`mt-2 w-full rounded-full py-2 text-[11px] font-bold text-white ${pl.pending ? 'bg-amber-600' : 'bg-ink'}`}>{pl.pending ? tr('Demander le prix', 'طلب السعر') : tr('Voir le produit', 'عرض المنتج')}</button>
                       </article>
-                    ))}
+                    );})}
                   </div>
                   <div className="mt-3 flex items-center justify-center gap-1.5 py-2 text-[11px] font-medium text-muted"><ShieldCheck size={14} />{tr('Prix vérifiés et marchands fiables', 'أسعار متحقق منها وتجار موثوقون')}</div>
                 </>

@@ -27,6 +27,17 @@ export function isDisplayableCandidate(candidate: AyrovixCandidate): boolean {
     && validProductUrl(candidate.sourceUrl);
 }
 
+// D2-10 lenient PENDING — valid URL + title, price à confirmer (no 0-result when lens has matches without price)
+export function isLenientCandidate(candidate: AyrovixCandidate): boolean {
+  return validProductUrl(candidate.sourceUrl)
+    && typeof candidate.title === 'string'
+    && candidate.title.trim().length >= 4;
+}
+
+export function isDisplayableOrPending(candidate: AyrovixCandidate): boolean {
+  return isDisplayableCandidate(candidate) || isLenientCandidate(candidate);
+}
+
 export function isDisplayableProduct(product: AyrovixProduct): boolean {
   return Number.isFinite(Number(product.price))
     && Number(product.price) > 0

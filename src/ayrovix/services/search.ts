@@ -1,7 +1,7 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { estimateTnd } from './currency';
-import { filterDisplayableCandidates } from './candidatePolicy';
+import { filterDisplayableCandidates, filterWithFallback } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
 
@@ -226,14 +226,16 @@ export async function searchCandidates(
     : await externalProductSearch(query, 6, deadline);
   const rules = db.getPricingRules();
   const rescored = external.map((candidate) => {
-    const estimated = estimateTnd(rules, candidate.price, candidate.currency || 'EUR');
+    const estimated = candidate.price != null ? estimateTnd(rules, candidate.price, candidate.currency || 'EUR') : null;
     return {
       ...candidate,
       priceTnd: candidate.priceTnd ?? estimated?.priceTnd ?? null,
+      priceVerificationStatus: candidate.price != null ? candidate.priceVerificationStatus : ('PENDING_MANUAL' as const),
       match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)),
     };
   });
-  return filterDisplayableCandidates(
+  // D2-10: strict first, lenient PENDING fallback — never return 0 when lens/web has matches
+  return filterWithFallback(
     [...catalog, ...rescored].filter((candidate) => candidate.match >= 20),
     8,
   );

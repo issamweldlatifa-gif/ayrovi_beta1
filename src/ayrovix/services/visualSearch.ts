@@ -68,6 +68,15 @@ async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
 
 function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
   const rows = Array.isArray(payload?.visual_matches) ? payload.visual_matches : [];
+  // D2-10: strict pass first (price>0 auditable), lenient fallback (PENDING) if strict empty — avoids zero results
+  const strict = collectCandidates(rows, limit, true);
+  if (strict.length > 0) return strict;
+  const lenient = collectCandidates(rows, limit, false);
+  if (lenient.length) console.warn(`[AYROVIX serpapi-lens] strict 0 → lenient fallback ${lenient.length} PENDING (no price) — client shows "Prix à confirmer"`);
+  return lenient;
+}
+
+function collectCandidates(rows: any[], limit: number, strict: boolean): AyrovixCandidate[] {
   const seen = new Set<string>();
   const results: AyrovixCandidate[] = [];
   for (const row of rows) {
@@ -77,17 +86,16 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
     seen.add(sourceUrl);
     const extractedPrice = Number(row?.price?.extracted_value ?? row?.extracted_price);
     const currency = normalizeCurrency(row?.price?.currency ?? row?.currency);
-    // Never expose a visual match that cannot be purchased from an auditable
-    // priced listing. Continue scanning later Lens rows instead.
-    if (!Number.isFinite(extractedPrice) || extractedPrice <= 0 || !currency) continue;
+    if (strict) {
+      if (!Number.isFinite(extractedPrice) || extractedPrice <= 0 || !currency) continue;
+    }
     const merchantRating = Number(row?.rating ?? row?.product_rating);
     const ratingCount = Number(row?.reviews ?? row?.reviews_count);
-    // Google-hosted thumbnails are less likely to reject browser hotlinking;
-    // keep the merchant image as a fallback for the resilient client image.
     const images = [...new Set([row?.thumbnail, row?.image]
       .map((value) => String(value || '').trim())
       .filter((value) => /^https?:\/\//i.test(value)))].slice(0, 2);
     const index = results.length;
+    const hasPrice = Number.isFinite(extractedPrice) && extractedPrice > 0 && !!currency;
     results.push({
       id: `lens_${index}_${createHash('sha1').update(sourceUrl).digest('hex').slice(0, 10)}`,
       kind: 'external',
@@ -100,9 +108,10 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
       sourceUrl,
       image: images[0] || '',
       images,
-      price: extractedPrice,
-      currency,
+      price: hasPrice ? extractedPrice : null,
+      currency: hasPrice ? currency! : null,
       priceTnd: null,
+      priceVerificationStatus: hasPrice ? undefined : 'PENDING_MANUAL' as const,
       rating: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? merchantRating : null,
       ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
       ratingKind: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? 'merchant' : 'match',

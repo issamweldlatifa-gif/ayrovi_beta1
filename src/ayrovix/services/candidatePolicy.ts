@@ -27,6 +27,14 @@ export function isDisplayableCandidate(candidate: AyrovixCandidate): boolean {
     && hasValidProductUrl(candidate.sourceUrl);
 }
 
+// D2-10: lenient fallback — visual matches without price are still useful
+// (user can request manual quote PENDING_MANUAL instead of zero results)
+export function isLenientCandidate(candidate: AyrovixCandidate): boolean {
+  return hasValidProductUrl(candidate.sourceUrl)
+    && typeof candidate.title === 'string'
+    && candidate.title.trim().length >= 4;
+}
+
 export function withDisplayRating(candidate: AyrovixCandidate): AyrovixCandidate {
   const merchantRating = Number(candidate.rating);
   if (Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5) {
@@ -53,4 +61,27 @@ export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 8
     })
     .sort((left, right) => right.match - left.match)
     .slice(0, limit);
+}
+
+export function filterLenientCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+  const seen = new Set<string>();
+  return items
+    .filter(isLenientCandidate)
+    .map(withDisplayRating)
+    .filter((item) => {
+      const key = `${item.sourceUrl}|${item.title.toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .sort((left, right) => right.match - left.match)
+    .slice(0, limit);
+}
+
+export function filterWithFallback(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
+  const strict = filterDisplayableCandidates(items, limit);
+  if (strict.length > 0) return strict;
+  const lenient = filterLenientCandidates(items, limit);
+  if (lenient.length) console.warn(`[AYROVIX candidatePolicy] strict filter empty — lenient fallback ${lenient.length} PENDING candidates`);
+  return lenient;
 }

@@ -16,7 +16,7 @@ import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
-import { filterDisplayableCandidates, withDisplayRating } from './services/candidatePolicy';
+import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
@@ -112,7 +112,9 @@ function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
 }
 
 function tokenizedCandidates(items: AyrovixCandidate[]): AyrovixCandidate[] {
-  return filterDisplayableCandidates(items, 8).map(tokenizedCandidate);
+  // D2-10: strict first, lenient PENDING fallback — never 0 when lens has matches without price
+  const filtered = filterWithFallback(items, 8);
+  return filtered.map(tokenizedCandidate);
 }
 
 function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
@@ -150,7 +152,7 @@ function rememberAuthenticatedHistory(
 }
 
 function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
-  return filterDisplayableCandidates(items, limit);
+  return filterWithFallback(items, limit);
 }
 
 async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {
@@ -232,7 +234,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
             if (padY + padH > ny) padH = ny - padY;
             if (padW >= 20 && padH >= 20) {
               const tCrop = Date.now();
-              effectiveBuffer = await sharp(effectiveBuffer).extract({ left: padX, top: padY, width: padW, height: padH }).jpeg({ quality: 86, mozjpeg: true }).toBuffer();
+              effectiveBuffer = await sharp(effectiveBuffer).extract({ left: padX, top: padY, width: padW, height: padH }).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
               effectiveMime = 'image/jpeg';
               mark(trace, 'cropMs', Date.now() - tCrop as any);
             }
