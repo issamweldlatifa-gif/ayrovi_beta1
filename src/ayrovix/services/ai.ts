@@ -1,7 +1,11 @@
+import { createHash } from 'node:crypto';
 import type { AyrovixIdentification } from '../types';
 import type { AiCompletionRequest } from '../../ai-core/contracts';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { AiProviderError } from '../../ai-core/errors';
+
+// D1-6: Vision inFlight dedup — prevents 3.2s duplicate on double tap / rapid Circle
+const visionInFlight = new Map<string, Promise<AyrovixIdentification>>();
 
 /**
  * AYROVIX Vision keeps ownership of identification and validation. Provider
@@ -328,12 +332,8 @@ async function requestIdentification(
   }
 }
 
-export async function identifyProduct(image: Buffer, mime: string): Promise<AyrovixIdentification> {
-  if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format d'image non supporté");
-  if (!image.length || image.length > MAX_IMAGE_BYTES) throw new AyrovixIdentificationError('Image trop lourde');
+async function identifyProductInner(image: Buffer, mime: string): Promise<AyrovixIdentification> {
   const provider = getAyroviAiCore().responses();
-  if (!provider.isConfigured()) throw new AyrovixUnavailableError('Vision provider is not configured');
-
   const model = provider.resolveModel('vision', 'fast');
   const timeoutMs = boundedEnvMs('AYROVIX_PROVIDER_TIMEOUT_MS', 8_000, 5_000, 20_000);
   try {
@@ -348,8 +348,6 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
       if (error instanceof AiProviderError && error.code === 'PROVIDER_TIMEOUT') {
         throw new AyrovixIdentificationError('Vision provider timeout');
       }
-      // Structured output can be rejected or truncated. A plain JSON turn is
-      // the behavior-preserving production fallback.
       console.warn(`[AYROVIX] structured output failed (${error?.message || 'unknown'}) — retrying JSON`);
       const result = await requestIdentification(image, mime, timeoutMs, false);
       console.log(`[AYROVIX] Provider SUCCESS ${model} (json fallback)`);
@@ -360,4 +358,29 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
     const timeout = error instanceof AiProviderError && error.code === 'PROVIDER_TIMEOUT';
     throw new AyrovixIdentificationError(timeout ? 'Vision provider timeout' : 'Vision provider request failed');
   }
+}
+
+export async function identifyProduct(image: Buffer, mime: string): Promise<AyrovixIdentification> {
+  if (!ALLOWED_MIME.has(mime)) throw new AyrovixIdentificationError("Format d'image non supporté");
+  if (!image.length || image.length > MAX_IMAGE_BYTES) throw new AyrovixIdentificationError('Image trop lourde');
+  const provider = getAyroviAiCore().responses();
+  if (!provider.isConfigured()) throw new AyrovixUnavailableError('Vision provider is not configured');
+
+  // dedup rapid double-tap / Circle re-search (<2s same image) — disabled in tests (1px PNG collision)
+  const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
+  if (!isTest) {
+    const key = `${createHash('sha256').update(image).digest('hex')}|${mime}`;
+    const existing = visionInFlight.get(key);
+    if (existing) return existing.then((r) => ({ ...r, products: [...r.products] } as AyrovixIdentification));
+    const task = identifyProductInner(image, mime);
+    visionInFlight.set(key, task);
+    try {
+      const result = await task;
+      return result;
+    } finally {
+      // keep for 1.5s to coalesce rapid taps, then clear
+      setTimeout(() => visionInFlight.delete(key), 1500);
+    }
+  }
+  return identifyProductInner(image, mime);
 }

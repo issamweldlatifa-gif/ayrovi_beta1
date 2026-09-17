@@ -17,6 +17,7 @@ import { InvalidImageError, normalizeUploadedImage } from '../services/imageVali
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
 import { filterDisplayableCandidates, withDisplayRating } from './services/candidatePolicy';
+import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 
 /**
  * AYROVIX public API — AI Core provides visual understanding, visible-price
@@ -35,6 +36,17 @@ function pipelineKey(buf: Buffer, intent: string | null): string {
   const head = buf.subarray(0, 2048).toString('base64url').slice(0, 48);
   const tail = buf.subarray(Math.max(0, buf.length - 2048)).toString('base64url').slice(0, 48);
   return `${head}|${tail}|${buf.length}|${intent||''}`;
+}
+// D1-9: pricing rules cache 5min — avoids 7× DB read per Lens request (disabled in tests: VITEST uses fresh DB per test)
+let pricingCache: { at: number; rules: ReturnType<QatafoDatabase['getPricingRules']> | null } = { at: 0, rules: null };
+const PRICING_CACHE_TTL_MS = 5 * 60_000;
+function getCachedPricingRules(db: QatafoDatabase) {
+  const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
+  if (isTest) return db.getPricingRules();
+  if (pricingCache.rules && Date.now() - pricingCache.at < PRICING_CACHE_TTL_MS) return pricingCache.rules;
+  const rules = db.getPricingRules();
+  pricingCache = { at: Date.now(), rules };
+  return rules;
 }
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
@@ -175,6 +187,14 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
   });
 
   router.post('/analyze-image', upload.single('image'), async (req: Request, res: Response) => {
+    const requestId = `ayx_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,8)}`;
+    const trace = startTrace(requestId);
+    // expose requestId for client correlation (no PII)
+    res.setHeader('X-Ayrovix-Request-Id', requestId);
+    const tStart = Date.now();
+    // Frontend may send crop timing via header
+    const headerCrop = Number(req.headers['x-lens-crop-ms']);
+    if (Number.isFinite(headerCrop)) mark(trace, 'cropMs', Math.max(0, Math.round(headerCrop)));
     const file = req.file;
     if (!file?.buffer?.length) {
       return res.status(400).json({ success: false, code: 'IMAGE_REQUIRED', error: 'Veuillez envoyer une image du produit.' });
@@ -183,7 +203,10 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       return res.status(415).json({ success: false, code: 'UNSUPPORTED_IMAGE', error: 'Format non supporté — JPEG, PNG ou WebP uniquement.' });
     }
     try {
+      const tNorm = Date.now();
       const normalized = await normalizeUploadedImage(file.buffer, file.mimetype);
+      mark(trace, 'normalizeMs', Date.now() - tNorm);
+      mark(trace, 'imageBytesIn', normalized.buffer.length as any);
       if (!ayrovixAiReady() && !serpApiVisualReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
@@ -191,10 +214,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       // Vision and reverse-image must not take each other down. A provider
       // timeout/schema error used to abort the whole Lens request even when
       // Google Lens had already found priced matches.
+      const tParallel = Date.now();
       const [visionResult, visualResult] = await Promise.allSettled([
         identifyProduct(normalized.buffer, normalized.mimeType),
         serpApiVisualSearch(normalized.buffer, 8),
       ]);
+      mark(trace, 'anthropicVisionMs', Date.now() - tParallel as any); // approx parallel total, serpApiTotalMs overlaps
+      mark(trace, 'serpApiTotalMs', Date.now() - tParallel as any);
       const visualCandidates = visualResult.status === 'fulfilled' ? visualResult.value : [];
       let identification = visionResult.status === 'fulfilled' ? visionResult.value : null;
       if (!identification) {
@@ -205,9 +231,11 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         console.warn('[AYROVIX analyze-image] vision failed — continuing with visual matches');
       }
       if (identification.products?.length) {
+        const tPricing = Date.now();
+        const rules = getCachedPricingRules(db);
         identification.products = identification.products.map((p) => {
           if (p.price != null && p.price > 0 && p.currency) {
-            const calc = calculatePrice(db.getPricingRules(), p.price, p.currency);
+            const calc = calculatePrice(rules, p.price, p.currency);
             return {
               ...p,
               priceTnd: calc?.totalTND ?? null,
@@ -215,6 +243,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           }
           return p;
         });
+        mark(trace, 'pricingMs', Date.now() - tPricing as any);
       }
 
       const visiblePrice = identification.detected_price;
@@ -223,7 +252,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         && Boolean(visiblePrice.currency)
         && (visiblePrice.label === 'product_price' || visiblePrice.label === 'cart_total');
       const calculated = usablePrice
-        ? calculatePrice(db.getPricingRules(), visiblePrice.amount, visiblePrice.currency)
+        ? calculatePrice(getCachedPricingRules(db), visiblePrice.amount, visiblePrice.currency)
         : null;
       const isCartScreenshot = identification.input_kind === 'cart_screenshot'
         || visiblePrice.label === 'cart_total';
@@ -250,30 +279,42 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const pCached = isTest ? null : pipelineCache.get(pKey);
       if (pCached && Date.now() - pCached.at < PIPELINE_TTL_MS) {
         // instant repeat for 1000+ users — same image hash
+        mark(trace, 'pipelineCacheHit', true as any);
+        mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0) as any);
+        endTrace(trace);
         return res.json({ success: true, data: pCached.data });
       }
+      mark(trace, 'pipelineCacheHit', false as any);
       const baseQuery = buildSearchQuery(identification);
       // ULTRA-FAST: baseQuery instantly — no 2.2s block. AI warms cache in background for next time.
       let effectiveQuery = baseQuery;
       if (!isTest && visualCandidates.length < 6) {
-        // Fire-and-forget AI optimize (600ms race) — do NOT block search, just warm cache
+        // Fire-and-forget AI optimize (650ms race) — do NOT block search, just warm cache
+        const tOpt = Date.now();
         Promise.race([
           generateOptimizedSearch(identification, customerIntentText ? understandCustomerIntent(identification, customerIntentText) : null, customerIntentText),
           new Promise<null>((_, rej) => setTimeout(() => rej(new Error('ai-timeout')), 650)),
-        ]).then((opt:any)=> { if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0,40)); }).catch(()=>{});
+        ]).then((opt:any)=> {
+          if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0,40));
+          mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any);
+        }).catch(()=>{ mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any); });
       }
+      const tSearch = Date.now();
       const rawCandidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && effectiveQuery
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
-      // Relevance: ultra-fast 700ms race, else heuristic — never block >1s
+      mark(trace, 'searchCandidatesMs', Date.now() - tSearch as any);
+      // Relevance: ultra-fast 750ms race, else heuristic — never block >1s
       let relevanceMap: Map<string, any> | null = null;
       if (rawCandidates.length) {
+        const tRel = Date.now();
         try {
           relevanceMap = await Promise.race([
             analyzeResultRelevance(identification, rawCandidates, effectiveQuery),
             new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
           ]) as any;
         } catch { relevanceMap = null; }
+        mark(trace, 'anthropicRelevanceMs', Date.now() - tRel as any);
       }
       let rescoredCandidates = rawCandidates.map((c) => {
         if (relevanceMap && relevanceMap.has(c.id)) {
@@ -290,7 +331,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         const filtered = rescoredCandidates.filter((c:any) => c.relevance !== 'irrelevant');
         if (filtered.length >= 2 || filtered.length === rescoredCandidates.length) rescoredCandidates = filtered;
       }
+      const tDedup = Date.now();
       const deduped = deduplicateCandidates(rescoredCandidates);
+      mark(trace, 'dedupMs', Date.now() - tDedup as any);
       const candidates = deduped;
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(candidates);
@@ -332,6 +375,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         if (pipelineCache.size > 300) pipelineCache.delete(pipelineCache.keys().next().value as string);
         pipelineCache.set(pKey, { at: Date.now(), data: responseData });
       }
+      mark(trace, 'candidatesCount', candidates.length as any);
+      mark(trace, 'totalBackendMs', Date.now() - tStart as any);
+      endTrace(trace);
       return res.json({ success: true, data: responseData });
     } catch (error: any) {
       if (error instanceof InvalidImageError || error?.code === 'INVALID_IMAGE') {
