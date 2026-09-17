@@ -20,6 +20,8 @@ interface Props {
   onCommandDetected?: (detected: AyrovixDetectedPrice) => void;
   onROISelect?: (roi: { x: number; y: number; w: number; h: number } | null) => void;
   onReSearch?: (croppedFile: File | null) => void;
+  isLoading?: boolean;
+  onRoiSearch?: (roi: { x: number; y: number; w: number; h: number }) => void;
 }
 
 // Reuse image helper
@@ -71,7 +73,7 @@ const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
   </span>
 );
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, isLoading, onRoiSearch }) => {
   const { tr, direction } = useLocale();
   const visible = useMemo(() => view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0)), [view.list]);
   const best = visible[0];
@@ -84,7 +86,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   const startY = useRef<number | null>(null);
   const startHeight = useRef<number>(0);
 
-  const sheetHeight = sheet === 'peek' ? '32%' : sheet === 'half' ? '55%' : '88%';
+  const sheetHeight = sheet === 'peek' ? '30%' : sheet === 'half' ? '48%' : '96%';
 
   const onHandleTouchStart = (e: React.TouchEvent) => {
     startY.current = e.touches[0].clientY;
@@ -228,7 +230,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           )}
         </div>
 
-        {/* ROI overlay */}
+        {/* ROI overlay - google lens square */}
         {roi && roi.w > 2 && roi.h > 2 && (
           <div
             className="absolute border-2 border-white shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]"
@@ -238,6 +240,11 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             <span className="absolute -right-1 -top-1 h-2 w-2 bg-white" />
             <span className="absolute -left-1 -bottom-1 h-2 w-2 bg-white" />
             <span className="absolute -right-1 -bottom-1 h-2 w-2 bg-white" />
+            {onRoiSearch && (
+              <button type="button" onClick={() => onRoiSearch(roi)} className="absolute -bottom-10 left-1/2 -translate-x-1/2 rounded-full bg-white px-4 py-1.5 text-[11px] font-bold text-ink shadow-lg">
+                {tr('Rechercher cette zone', 'بحث في هذه المنطقة')}
+              </button>
+            )}
           </div>
         )}
 
@@ -295,56 +302,77 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content - google lens: sheet slides over image, image stays visible */}
         <div className="flex-1 overflow-y-auto px-3 py-3">
-          {/* Detected price if exists */}
-          {detected && detected.sourcePrice > 0 && (
-            <div className="mb-3 rounded-[16px] border border-brand bg-brand/5 p-3">
-              <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix repéré', 'سعر مكتشف')}</p>
-              <p className="text-[13px] font-bold text-ink line-clamp-2">{detected.title || name}</p>
-              <p className="text-[18px] font-black text-ink">{detected.totalPriceTND?.toFixed(2) || '—'} DT <span className="text-[11px] font-medium text-muted">{detected.sourcePrice.toFixed(2)} {detected.sourceCurrency}</span></p>
-              {onCommandDetected && <button type="button" onClick={() => onCommandDetected(detected)} className="mt-2 w-full rounded-full bg-ink py-2 text-xs font-bold text-white">{tr('Commander avec ce prix', 'الطلب بهذا السعر')}</button>}
-            </div>
-          )}
-
-          {visible.length === 0 ? (
-            <div className="py-8 text-center">
-              <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface text-muted"><ImageIcon size={22} /></div>
-              <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance', 'لا توجد نتائج')}</p>
-              <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
-              <p className="mx-auto mt-1 max-w-[28ch] text-xs text-muted">{tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
-              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
-                <button type="button" onClick={onReset} className="rounded-full bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button>
-                <button type="button" onClick={onReset} className="rounded-full border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button>
+          {isLoading ? (
+            <div className="space-y-3 py-4">
+              <div className="flex items-center gap-2 text-[12px] font-bold text-muted">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
+                {tr('Analyse en cours…', 'جارٍ التحليل…')}
               </div>
-              <p className="mt-2 text-[11px] font-medium text-muted">{tr('Astuce : le lien produit donne le prix le plus fiable. Les tailles/couleurs manquantes se vérifient sur la fiche marchand.', 'نصيحة: رابط المنتج يعطي السعر الأكثر موثوقية. المقاسات/الألوان الناقصة تُتحقق على صفحة المتجر.')}</p>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[0,1,2,3].map(i => (
+                  <div key={i} className="animate-pulse rounded-[16px] border border-line bg-surface p-2">
+                    <div className="aspect-square rounded-xl bg-line" />
+                    <div className="mt-2 h-3 rounded bg-line" />
+                    <div className="mt-1 h-2 rounded bg-line w-2/3" />
+                  </div>
+                ))}
+              </div>
+              <p className="text-center text-[11px] text-muted">{tr("AYROVIX analyse l'image…", 'تحلل AYROVIX الصورة…')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2.5">
-              {visible.slice(0, 12).map(c => (
-                <article key={c.id} className="rounded-[16px] border border-line bg-white p-2">
-                  <div className="relative aspect-square overflow-hidden rounded-xl bg-surface">
-                    <CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} />
-                    <MatchBadge value={c.match} />
+            <>
+              {/* Detected price if exists */}
+              {detected && detected.sourcePrice > 0 && (
+                <div className="mb-3 rounded-[16px] border border-brand bg-brand/5 p-3">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix repéré', 'سعر مكتشف')}</p>
+                  <p className="text-[13px] font-bold text-ink line-clamp-2">{detected.title || name}</p>
+                  <p className="text-[18px] font-black text-ink">{detected.totalPriceTND?.toFixed(2) || '—'} DT <span className="text-[11px] font-medium text-muted">{detected.sourcePrice.toFixed(2)} {detected.sourceCurrency}</span></p>
+                  {onCommandDetected && <button type="button" onClick={() => onCommandDetected(detected)} className="mt-2 w-full rounded-full bg-ink py-2 text-xs font-bold text-white">{tr('Commander avec ce prix', 'الطلب بهذا السعر')}</button>}
+                </div>
+              )}
+
+              {visible.length === 0 ? (
+                <div className="py-8 text-center">
+                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface text-muted"><ImageIcon size={22} /></div>
+                  <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance', 'لا توجد نتائج')}</p>
+                  <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
+                  <p className="mx-auto mt-1 max-w-[28ch] text-xs text-muted">{tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                    <button type="button" onClick={onReset} className="rounded-full bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button>
+                    <button type="button" onClick={onReset} className="rounded-full border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button>
                   </div>
-                  <h4 className="mt-1.5 line-clamp-2 text-[12px] font-bold leading-snug text-ink">{c.title}</h4>
-                  {c.colors.length > 0 || c.sizes.length > 0 ? (
-                    <p className="truncate text-[10px] font-semibold text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>
-                  ) : (
-                    <p className="text-[10px] font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>
-                  )}
-                  <p className="truncate text-[10px] font-medium text-muted">{c.source}</p>
-                  <div className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-ink"><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
-                  <div className="mt-1 rounded-lg bg-surface border border-line px-2 py-1.5">
-                    <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-                    <p className="text-[13px] font-black text-ink">{priceLine(c).tnd}</p>
-                    <p className="text-[10px] font-semibold text-muted truncate">{priceLine(c).original ? `${tr('Prix boutique', 'سعر المتجر')} ${priceLine(c).original} • ${c.source}` : c.source}</p>
-                    <p className="text-[9px] font-medium text-muted">{tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
-                  </div>
-                  <button type="button" onClick={() => onChoose(c)} className="mt-2 w-full rounded-full bg-ink py-2 text-[11px] font-bold text-white">{tr('Voir le produit', 'عرض المنتج')}</button>
-                </article>
-              ))}
-            </div>
+                  <p className="mt-2 text-[11px] font-medium text-muted">{tr('Astuce : le lien produit donne le prix le plus fiable. Les tailles/couleurs manquantes se vérifient sur la fiche marchand.', 'نصيحة: رابط المنتج يعطي السعر الأكثر موثوقية. المقاسات/الألوان الناقصة تُتحقق على صفحة المتجر.')}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2.5">
+                  {visible.slice(0, 12).map(c => (
+                    <article key={c.id} className="rounded-[16px] border border-line bg-white p-2">
+                      <div className="relative aspect-square overflow-hidden rounded-xl bg-surface">
+                        <CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} />
+                        <MatchBadge value={c.match} />
+                      </div>
+                      <h4 className="mt-1.5 line-clamp-2 text-[12px] font-bold leading-snug text-ink">{c.title}</h4>
+                      {c.colors.length > 0 || c.sizes.length > 0 ? (
+                        <p className="truncate text-[10px] font-semibold text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>
+                      ) : (
+                        <p className="text-[10px] font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>
+                      )}
+                      <p className="truncate text-[10px] font-medium text-muted">{c.source}</p>
+                      <div className="mt-0.5 flex items-center gap-1 text-[10px] font-bold text-ink"><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
+                      <div className="mt-1 rounded-lg bg-surface border border-line px-2 py-1.5">
+                        <p className="text-[9px] font-extrabold uppercase tracking-wide text-muted">{tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
+                        <p className="text-[13px] font-black text-ink">{priceLine(c).tnd}</p>
+                        <p className="text-[10px] font-semibold text-muted truncate">{priceLine(c).original ? `${tr('Prix boutique', 'سعر المتجر')} ${priceLine(c).original} • ${c.source}` : c.source}</p>
+                        <p className="text-[9px] font-medium text-muted">{tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
+                      </div>
+                      <button type="button" onClick={() => onChoose(c)} className="mt-2 w-full rounded-full bg-ink py-2 text-[11px] font-bold text-white">{tr('Voir le produit', 'عرض المنتج')}</button>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-3 flex items-center gap-2 rounded-xl bg-surface p-2.5">

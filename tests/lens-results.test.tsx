@@ -75,10 +75,13 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(html).toContain('Voir le produit');
   });
 
-  it('the analyzing frame keeps only the xray line (no orange dots overlay)', () => {
+  it('the analyzing stage uses Google Lens style (image stays visible + sheet loading, no separate dots page)', () => {
     const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
     expect(source).not.toContain('lens-frame__dots');
-    expect(source).toContain('lens-frame__beam');
+    // Google Lens: no separate analyzing page — image stays visible + bottom sheet shows Analyse en cours
+    expect(source).toContain('isAnalyzing');
+    expect(source).toContain('InteractiveLensResults');
+    expect(source).toContain('isLoading');
   });
 
   it('keeps the results view in the correct flow stage (candidates), not the first page', () => {

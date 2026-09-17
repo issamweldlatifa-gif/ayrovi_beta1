@@ -133,6 +133,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [copied, setCopied] = useState(false);
   const [verifiedPriceUrl, setVerifiedPriceUrl] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [liveEnabled, setLiveEnabled] = useState(false);
   const [textQuery, setTextQuery] = useState('');
@@ -178,11 +179,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   }, [stage]);
 
   useEffect(() => {
-    if (stage !== 'analyzing') { setAnalysisProgress(0); return undefined; }
+    if (!isAnalyzing) { setAnalysisProgress(0); return undefined; }
     setAnalysisProgress(0);
     const timer = window.setInterval(() => setAnalysisProgress((current) => Math.min(current + 1, 3)), 1400);
     return () => window.clearInterval(timer);
-  }, [stage]);
+  }, [isAnalyzing]);
 
   // Recent searches for home — local only, no secrets
   useEffect(() => {
@@ -230,6 +231,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     setOrdering(false);
     setCopied(false);
     setVerifiedPriceUrl(false);
+    setIsAnalyzing(false);
   };
 
   const reset = () => {
@@ -239,6 +241,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     setError(null);
     setOrdering(false);
     setCopied(false);
+    setIsAnalyzing(false);
     replaceStage(cameraCapable ? 'live' : 'home');
   };
 
@@ -248,12 +251,36 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     abortRef.current += 1;
     setError(null);
     setOrdering(false);
+    setIsAnalyzing(false);
     navigation.back();
   };
 
   const handleClose = () => { clearRuntime(); onClose(); };
 
-  const fail = (code: string, message: string) => { setError({ code, message }); replaceStage('error'); };
+  const fail = (code: string, message: string) => { setError({ code, message }); setIsAnalyzing(false); replaceStage('error'); };
+  const handleRoiSearch = async (roi: { x: number; y: number; w: number; h: number }) => {
+    if (!imageFile || !previewUrl) return;
+    try {
+      const img = new Image();
+      img.src = previewUrl;
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; });
+      const canvas = document.createElement('canvas');
+      const sx = (roi.x / 100) * img.naturalWidth;
+      const sy = (roi.y / 100) * img.naturalHeight;
+      const sw = (roi.w / 100) * img.naturalWidth;
+      const sh = (roi.h / 100) * img.naturalHeight;
+      if (sw < 10 || sh < 10) return;
+      canvas.width = sw;
+      canvas.height = sh;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.9));
+      if (!blob) return;
+      const cropped = new File([blob], 'roi.jpg', { type: 'image/jpeg' });
+      void runImageAnalysis(cropped);
+    } catch {}
+  };
   const handleImage = async (file: File, autoAnalyze: boolean) => {
     setError(null);
     const prepared = await prepareImage(file);
@@ -270,7 +297,10 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (!file) return;
     lastQueryRef.current = { kind:'image', value: file.name || 'image' };
     const { controller, token } = startRequest();
-    enterStage('analyzing');
+    setIsAnalyzing(true);
+    // Google Lens style: no separate analyzing page, image stays visible + bottom sheet shows loading
+    if (stage !== 'candidates') enterStage('candidates');
+    if (!candidatesView) setCandidatesView({ queryLabel: null, list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
       const result = await analyzeImage(file, controller.signal);
@@ -300,7 +330,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         detectedPrice: result.detectedPrice || null,
       });
       setVerifiedPriceUrl(false);
-      replaceStage('candidates');
+      setIsAnalyzing(false);
+      if (stage !== 'candidates') replaceStage('candidates');
     } catch (err: any) {
       if (controller.signal.aborted || err?.name === 'AbortError' || abortRef.current !== token) return;
       const apiError = err instanceof AyrovixApiError ? err : null;
@@ -313,7 +344,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const runUrlAnalysis = async (url: string, channel: 'url' | 'qr') => {
     lastQueryRef.current = { kind: channel==='qr'?'code':'url', value: url };
     const { controller, token } = startRequest();
-    enterStage('analyzing');
+    setIsAnalyzing(true);
+    if (stage !== 'candidates' && stage !== 'product') enterStage('candidates');
+    if (!candidatesView) setCandidatesView({ queryLabel: url.slice(0,40), list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
       const result = await analyzeUrl(url, channel, controller.signal);
@@ -329,6 +362,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         resultsCount: 1 + result.alternates.length, createdAt: new Date().toISOString(),
       }, historyScope);
       setUrlResult(result);
+      setIsAnalyzing(false);
       if (isDisplayableProduct(result.product)) {
         setProduct(result.product);
         setVerifiedPriceUrl(merchantPriceVerified);
@@ -360,7 +394,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (clean.length < 2) { fail('INVALID_TEXT', 'Saisissez au moins 2 caractères.'); return; }
     lastQueryRef.current = { kind:'text', value: clean };
     const { controller, token } = startRequest();
-    enterStage('analyzing');
+    setIsAnalyzing(true);
+    if (stage !== 'candidates') enterStage('candidates');
+    setCandidatesView({ queryLabel: clean, list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
       const result = await analyzeText(clean, controller.signal);
@@ -374,6 +410,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
         resultsCount: result.candidates.length, createdAt: new Date().toISOString(),
       }, historyScope);
+      setIsAnalyzing(false);
       if (result.candidates.length) {
         setCandidatesView({ queryLabel: clean, list: result.candidates, eventId: result.eventId });
         replaceStage('candidates');
@@ -394,7 +431,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const runCodeTextAnalysis = async (value: string) => {
     lastQueryRef.current = { kind:'code', value };
     const { controller, token } = startRequest();
-    enterStage('analyzing');
+    setIsAnalyzing(true);
+    if (stage !== 'candidates') enterStage('candidates');
+    setCandidatesView({ queryLabel: value.slice(0,30), list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
       const result = await analyzeCode(value, controller.signal);
@@ -408,11 +447,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
         resultsCount: result.candidates.length, createdAt: new Date().toISOString(),
       }, historyScope);
+      setIsAnalyzing(false);
       if (result.candidates.length) {
         setCandidatesView({ queryLabel: `QR ${result.code}`, list: result.candidates, eventId: result.eventId });
         replaceStage('candidates');
       } else {
         setBarcode({ code: result.code, eventId: result.eventId });
+        setIsAnalyzing(false);
         replaceStage('barcode');
       }
     } catch (err: any) {
@@ -427,7 +468,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const runBarcodeAnalysis = async (code: string) => {
     lastQueryRef.current = { kind:'barcode', value: code };
     const { controller, token } = startRequest();
-    enterStage('analyzing');
+    setIsAnalyzing(true);
+    if (stage !== 'candidates') enterStage('candidates');
+    setCandidatesView({ queryLabel: code, list: [], eventId: '', detectedPrice: null });
     setError(null);
     try {
       const result = await analyzeBarcode(code, controller.signal);
@@ -441,11 +484,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
         resultsCount: result.candidates.length, createdAt: new Date().toISOString(),
       }, historyScope);
+      setIsAnalyzing(false);
       if (result.candidates.length) {
         setCandidatesView({ queryLabel: `Code-barres ${result.code}`, list: result.candidates, eventId: result.eventId });
         replaceStage('candidates');
       } else {
         setBarcode({ code: result.code, eventId: result.eventId });
+        setIsAnalyzing(false);
         replaceStage('barcode');
       }
     } catch (err: any) {
@@ -466,7 +511,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       return;
     }
     const { controller, token } = startRequest();
-    enterStage('analyzing');
+    setIsAnalyzing(true);
+    // keep candidates visible with loading overlay (google lens keeps sheet)
+    
       setError(null);
       try {
         const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal, false);
@@ -497,15 +544,18 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           });
           setVerifiedPriceUrl(samePrice);
         }
+        setIsAnalyzing(false);
         replaceStage('product');
         return;
       } catch (error: any) {
+        setIsAnalyzing(false);
         if (controller.signal.aborted || error?.name === 'AbortError') return;
       } finally {
         finishRequest(controller);
       }
     setProduct(candidateToProduct(candidate));
     setVerifiedPriceUrl(false);
+    setIsAnalyzing(false);
     replaceStage('product');
   };
 
@@ -804,39 +854,16 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           )}
 
           {stage === 'analyzing' && (
-            <div className="lens-analyzing mx-auto max-w-md pt-2">
-              <div className="lens-frame">
-                {previewUrl
-                  ? <img src={previewUrl} alt="" className="lens-frame__img" />
-                  : <div className="lens-frame__empty"><span className="lens-spinner" /></div>}
-                <span className="lens-frame__corner tl" /><span className="lens-frame__corner tr" />
-                <span className="lens-frame__corner bl" /><span className="lens-frame__corner br" />
-                <span className="lens-frame__beam" aria-hidden="true" />
-              </div>
-
-              <div className="lens-analyzing__head" role="status" aria-live="polite">
-                <Sparkles size={18} />
-                <strong>{[tr('Analyse du produit…', 'جارٍ تحليل المنتج…'), tr('Recherche en cours…', 'جارٍ البحث…'), tr('Vérification du produit…', 'جارٍ التحقق من المنتج…'), tr('Récupération du prix…', 'جارٍ جلب السعر…')][Math.min(analysisProgress, 3)]}</strong>
-              </div>
-              <p className="lens-analyzing__sub">{tr("AYROVIX analyse l'image et recherche les meilleures correspondances.", 'تحلل AYROVIX الصورة وتبحث عن أفضل التطابقات.')}</p>
-
-              <ol className="lens-steps" aria-label={tr("Étapes de l'analyse", 'مراحل التحليل')}>
-                {[tr('Analyse', 'تحليل'), tr('Recherche', 'بحث'), tr('Vérification', 'تحقق'), tr('Prix', 'السعر')].map((label, index) => (
-                  <li key={label} className={`lens-step ${index < analysisProgress ? 'is-done' : index === analysisProgress ? 'is-active' : ''}`}>
-                    <span className="lens-step__dot">{index < analysisProgress ? <Check size={12} /> : null}</span>
-                    <span className="lens-step__label">{label}</span>
-                  </li>
-                ))}
-              </ol>
-
-              <div className="lens-analyzing__card">
-                <span className="lens-analyzing__cardicon"><Sparkles size={18} /></span>
-                <div>
-                  <strong>{tr('AYROVI analyse votre produit', 'AYROVI تحلّل منتجك')}</strong>
-                  <p>{tr('Recherche de correspondances fiables et vérification des marchands en cours…', 'جارٍ البحث عن تطابقات موثوقة والتحقق من التجار…')}</p>
-                </div>
-              </div>
-            </div>
+            <InteractiveLensResults
+              view={candidatesView || { queryLabel: null, list: [], eventId: '', detectedPrice: null }}
+              previewUrl={previewUrl}
+              fallbackImage={previewUrl}
+              onChoose={handleChooseCandidate}
+              onReset={reset}
+              onCommandDetected={commandDetectedPrice}
+              isLoading={true}
+              onRoiSearch={handleRoiSearch}
+            />
           )}
 
           {stage === 'candidates' && candidatesView && (
@@ -847,6 +874,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               onChoose={handleChooseCandidate}
               onReset={reset}
               onCommandDetected={commandDetectedPrice}
+              isLoading={isAnalyzing}
+              onRoiSearch={handleRoiSearch}
             />
           )}
 
