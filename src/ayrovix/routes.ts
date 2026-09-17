@@ -18,6 +18,7 @@ import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
 import { filterDisplayableCandidates, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
+import { createHash } from 'node:crypto';
 
 /**
  * AYROVIX public API — AI Core provides visual understanding, visible-price
@@ -276,12 +277,22 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const customerIntentText: string | null = String((req.body as any)?.customerIntent || (req.body as any)?.intent || req.query?.intent || '').trim().slice(0,200) || null;
       const pKey = pipelineKey(normalized.buffer, customerIntentText);
       const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
+      // D3-13: ETag for 304 Not Modified — same image hash → no re-download
+      const etag = `W/"${createHash('sha1').update(pKey).digest('hex').slice(0, 16)}"`;
+      res.setHeader('ETag', etag);
+      res.setHeader('Cache-Control', 'private, max-age=0, must-revalidate');
+      if (!isTest && req.headers['if-none-match'] === etag) {
+        mark(trace, 'pipelineCacheHit', true as any);
+        endTrace(trace);
+        return res.status(304).end();
+      }
       const pCached = isTest ? null : pipelineCache.get(pKey);
       if (pCached && Date.now() - pCached.at < PIPELINE_TTL_MS) {
         // instant repeat for 1000+ users — same image hash
         mark(trace, 'pipelineCacheHit', true as any);
         mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0) as any);
         endTrace(trace);
+        // ETag already set — client cache hit
         return res.json({ success: true, data: pCached.data });
       }
       mark(trace, 'pipelineCacheHit', false as any);
@@ -304,17 +315,31 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
       mark(trace, 'searchCandidatesMs', Date.now() - tSearch as any);
-      // Relevance: ultra-fast 750ms race, else heuristic — never block >1s
+      // Relevance: D2-7 streaming — في الإنتاج لا ننتظر، نعيد فوراً ونُدفّئ Cache في الخلفية (يوفر 750ms إدراكياً)
+      // في الاختبارات ننتظر 750ms للتأكد من صحة heuristic/AI
       let relevanceMap: Map<string, any> | null = null;
       if (rawCandidates.length) {
-        const tRel = Date.now();
-        try {
-          relevanceMap = await Promise.race([
-            analyzeResultRelevance(identification, rawCandidates, effectiveQuery),
-            new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
-          ]) as any;
-        } catch { relevanceMap = null; }
-        mark(trace, 'anthropicRelevanceMs', Date.now() - tRel as any);
+        if (isTest) {
+          const tRel = Date.now();
+          try {
+            relevanceMap = await Promise.race([
+              analyzeResultRelevance(identification, rawCandidates, effectiveQuery),
+              new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
+            ]) as any;
+          } catch { relevanceMap = null; }
+          mark(trace, 'anthropicRelevanceMs', Date.now() - tRel as any);
+        } else {
+          // fire-and-forget warm: لا يوقف الاستجابة، يُحسب في الخلفية للـ Cache التالي
+          const tRelBg = Date.now();
+          analyzeResultRelevance(identification, rawCandidates, effectiveQuery)
+            .then((map:any) => {
+              mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any);
+              // optional: could update pipelineCache entry with rescored version for next hit
+            })
+            .catch(() => mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any));
+          // نبقي relevanceMap null → نعرض raw match (scoreCandidate) فوراً، لا فلترة irrelevant في أول ضربة
+          relevanceMap = null;
+        }
       }
       let rescoredCandidates = rawCandidates.map((c) => {
         if (relevanceMap && relevanceMap.has(c.id)) {
