@@ -17,16 +17,15 @@ Aucun chemin dupliqué — `isNativeApp()` garde les ponts natifs hors du web.
 | CI : debug APK à chaque push utile, AAB signé si secrets présents | `.github/workflows/android-apk.yml` |
 | Contrat testé (config, permissions, pont, gradle) | `tests/android-shell.test.ts` |
 
-## Prérequis Render (une fois)
+## Mode de chargement : coque vivante (décision verrouillée par test)
 
-L'API valide les origines via allowlist (`src/server.ts` → `CORS_ORIGINS`).
-Dans Render → Environment Variables, ajouter à `CORS_ORIGINS` :
+L'app charge **le site en direct** depuis `https://eta1-1.onrender.com` (page et API même origine →
+**aucune config CORS requise**, et chaque push sur main est dans l'app sans rebuild).
+Le client appelle l'API en chemins relatifs (`fetch('/api/…', credentials:'same-origin')`) — c'est
+pourquoi un bundle local seul afficherait une page vide : ne pas retirer `server.url` sans ajouter
+avant un `apiBase` absolu côté client (palier offline éventuel, voir plus bas).
 
-```
-https://localhost
-```
-
-(l'origine de la WebView Capacitor sur Android). Sans ça : l'UI s'ouvre hors-ligne mais les appels API échouent.
+À l'ouverture hors connexion : l'app affiche l'écran de chargement du réseau — comportement voulu pour une beta.
 
 ## Build local (Android Studio)
 

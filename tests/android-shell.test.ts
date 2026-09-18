@@ -14,11 +14,12 @@ const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 
 const gradle = readFileSync('android/app/build.gradle', 'utf8');
 
 describe('AYROVI Android shell (Capacitor)', () => {
-  it('config: bundle embarqué, back système géré, appId stable', () => {
+  it('config: coque vivante (live shell sur Render), back système géré, appId stable', () => {
     expect(cfg).toContain("webDir: 'public'");
     expect(cfg).toContain('handleBackButton: true');
     expect(cfg).toContain("appId: 'app.ayrovi.mobile'");
-    expect(cfg).not.toContain('server.url'); // offline shell — pas de remote load
+    // live mode EST la décision (API en chemins relatifs côté client)
+    expect(cfg).toContain("url: 'https://eta1-1.onrender.com'");
   });
 
   it('manifest: INTERNET + CAMERA requis pour Lens, caméra optionnelle (feature not required)', () => {
