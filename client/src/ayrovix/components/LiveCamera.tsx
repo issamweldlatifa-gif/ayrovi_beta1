@@ -25,7 +25,6 @@ interface LiveCameraProps {
   onLiveResults?: (view: LiveResultsView) => void;
   /** Single-path Google/Amazon Lens : l'image importée reste DANS cette même coque — back + flash + Auto visibles, sheet résultats par-dessus. */
   photoUrl?: string | null;
-  analyzing?: boolean;
   overlay?: React.ReactNode;
   onPhotoClose?: () => void;
 }
@@ -38,7 +37,7 @@ type CamMode = 'photo' | 'video';
  * الواجهة كما هي؛ الـ runtime يوفّر detection/tracking/confidence/temporal.
  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, analyzing = false, overlay = null, onPhotoClose }) => {
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, overlay = null, onPhotoClose }) => {
   const { direction, tr } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -186,6 +185,10 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {photoUrl && overlay && (
         <div className="absolute inset-0 z-[15] overflow-hidden">{overlay}</div>
       )}
+      {/* Bande de lisibilité comme la référence (← + marque seulement, aucun contrôle) */}
+      {photoUrl && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[16] h-20 bg-gradient-to-b from-black/55 to-transparent" />
+      )}
 
       {/* Header — icônes blanches à intérieur transparent + nom de la surface, comme « lens ai » sur la photo de référence */}
       <div className="absolute left-0 right-0 top-0 z-20 flex h-14 items-center justify-between px-3 pt-1">
@@ -193,10 +196,12 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <p aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[17px] font-extrabold lowercase tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">ayrovix</p>
-        <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
-          className={`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
-        </button>
+        {photoUrl ? null : (
+          <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
+            className={`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          </button>
+        )}
       </div>
 
       {torchHint && (
@@ -205,19 +210,6 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </p>
       )}
 
-      {/* حالة التحليل فقط — « Auto » وإيكونتها محذوفتان نهائياً (طلب 2026-09-18) */}
-      {photoUrl && analyzing && (
-        <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
-          <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30">
-            <span className="flex gap-0.5" aria-hidden="true">
-              <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.3s' }} />
-              <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.15s' }} />
-              <span className="h-1 w-1 animate-bounce rounded-full bg-white" />
-            </span>
-            {tr('Analyse en cours…', 'جارٍ التحليل…')}
-          </p>
-        </div>
-      )}
       {mode === 'search' && !photoUrl && isVideo && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
           {liveState.status === 'ai-unavailable'

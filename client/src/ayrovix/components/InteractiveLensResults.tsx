@@ -128,9 +128,17 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
     const img = imgRef.current;
     if (!container || !img) { setImgBox(null); return; }
     const cRect = container.getBoundingClientRect();
+    if (shell && img.naturalWidth && img.naturalHeight) {
+      // object-cover : le contenu visible déborde du conteneur — rect réel = image centrée, échelle max, + pan/zoom
+      const k = Math.max(cRect.width / img.naturalWidth, cRect.height / img.naturalHeight) * scale;
+      const w = img.naturalWidth * k;
+      const h = img.naturalHeight * k;
+      setImgBox({ x: (cRect.width - w) / 2 + offset.x, y: (cRect.height - h) / 2 + offset.y, w, h });
+      return;
+    }
     const iRect = img.getBoundingClientRect();
     setImgBox({ x: iRect.left - cRect.left, y: iRect.top - cRect.top, w: iRect.width, h: iRect.height });
-  }, []);
+  }, [shell, scale, offset.x, offset.y]);
 
   useEffect(() => {
     updateImgBox();
@@ -351,7 +359,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
       <style>{`@keyframes pulseBox{0%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:0.95}100%{transform:scale(1);opacity:1}}`}</style>
       <div
         ref={containerRef}
-        className="relative flex-1 overflow-hidden bg-[#FAFAFA] select-none"
+        className={`relative flex-1 overflow-hidden ${shell ? 'bg-black' : 'bg-[#FAFAFA]'} select-none`}
         onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
@@ -361,10 +369,10 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         onMouseLeave={onMouseLeave}
         style={{ cursor: isPanning ? 'grabbing' : scale > 1 ? 'grab' : 'pointer', touchAction: scale > 1 ? 'none' : 'pan-y' }}
       >
-        <div className="absolute inset-0 flex items-start justify-center pt-2 sm:pt-3">
-          <div className="relative w-full h-full flex items-start justify-center">
+        <div className={`absolute inset-0 flex justify-center ${shell ? 'items-center' : 'items-start pt-2 sm:pt-3'}`}>
+          <div className="relative h-full w-full flex items-center justify-center">
             {previewUrl ? (
-              <img ref={imgRef} src={previewUrl} alt={name} draggable={false} className="max-h-[calc(100%_-_8px)] max-w-full object-contain select-none" style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.2s' }} onLoad={updateImgBox} />
+              <img ref={imgRef} src={previewUrl} alt={name} draggable={false} className={shell ? 'h-full w-full object-cover select-none' : 'max-h-[calc(100%_-_8px)] max-w-full object-contain select-none'} style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.2s' }} onLoad={updateImgBox} />
             ) : (
               <div className="h-full w-full bg-[#111] grid place-items-center text-white/50"><ImageIcon size={40} /></div>
             )}
@@ -406,22 +414,24 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           </div>
         )}
 
-        <div className={`absolute left-2 right-2 ${shell ? 'top-16' : 'top-12'} flex items-center justify-between pointer-events-none`}>
+        {!shell && (
+        <div className={`absolute left-2 right-2 top-12 flex items-center justify-between pointer-events-none`}>
           {/* shell: icônes blanches à intérieur transparent posées directement sur l'image, comme la référence */}
           <div className="pointer-events-auto flex gap-1.5 items-center">
             <span className="hidden">Sélectionner</span>
             {selectedBox && (
-              <button type="button" onClick={clearSelection} className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}><X size={12} /> {tr('Effacer', 'مسح')}</button>
+              <button type="button" onClick={clearSelection} className="flex items-center gap-1 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-[11px] font-bold text-white backdrop-blur"><X size={12} /> {tr('Effacer', 'مسح')}</button>
             )}
           </div>
           <div className="pointer-events-auto flex gap-1.5">
-            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className={`grid h-8 w-8 place-items-center rounded-full text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}>+</button>
-            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className={`grid h-8 w-8 place-items-center rounded-full text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}>−</button>
-            <button type="button" onClick={() => { resetView(); clearSelection(); }} className={`grid h-8 w-8 place-items-center rounded-full text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}><RefreshCw size={14} /></button>
+            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur">+</button>
+            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur">−</button>
+            <button type="button" onClick={() => { resetView(); clearSelection(); }} className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur"><RefreshCw size={14} /></button>
           </div>
         </div>
+        )}
 
-        <div className="absolute bottom-[calc(38%+12px)] left-1/2 -translate-x-1/2 rounded-full bg-black/60 px-3 py-1.5 text-[10px] font-medium text-white/90 backdrop-blur text-center max-w-[92%] leading-tight">
+        <div className={`absolute bottom-[calc(38%+12px)] left-1/2 -translate-x-1/2 rounded-full px-3 py-1.5 text-[10px] font-medium text-center max-w-[92%] leading-tight ${shell ? 'bg-black/55 text-white backdrop-blur' : 'bg-black/60 text-white/90 backdrop-blur'}`}>
           {selectedBox ? tr('Produit sélectionné • Touchez un autre', 'تم التحديد • المس منتجا آخر') : tr('Touchez un produit', 'المس منتجًا')}
           {!selectedBox && scale === 1 ? ` • ${tr('Pincez pour zoomer', 'قرّب بأصابعك')}` : ''}
         </div>
@@ -436,7 +446,17 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
               <p className="text-[11px] font-medium text-muted break-words line-clamp-2 leading-snug">{name}</p>
               {previewUrl && <p className="text-[10px] font-medium text-muted/70 break-words">{tr('Votre image ci-dessus — touchez pour sélectionner', 'صورتك أعلاه — المس للتحديد')}</p>}
             </div>
-            <div className="flex gap-1.5 shrink-0 flex-wrap justify-end">
+            <div className="flex gap-1.5 shrink-0 flex-wrap items-center justify-end">
+              {shell && selectedBox && (
+                <button type="button" onClick={clearSelection} className="grid h-8 place-items-center shrink-0 rounded-full border border-line bg-surface px-2.5 text-[11px] font-bold text-ink"><X size={12} /> {tr('Effacer', 'مسح')}</button>
+              )}
+              {shell && (
+                <span className="flex gap-1">
+                  <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} aria-label={tr('Zoomer', 'تكبير')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-[13px] font-bold text-ink">+</button>
+                  <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} aria-label={tr('Dézoomer', 'تصغير')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-[13px] font-bold text-ink">−</button>
+                  <button type="button" onClick={() => { resetView(); clearSelection(); }} aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-ink"><RefreshCw size={13} /></button>
+                </span>
+              )}
               <button type="button" onClick={() => setSheet(s => s === 'full' ? 'half' : 'full')} className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1.5 text-[11px] font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
               <button type="button" onClick={() => { clearSelection(); onReset(); }} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white whitespace-nowrap">{tr('Nouvelle recherche', 'بحث جديد')}</button>
             </div>

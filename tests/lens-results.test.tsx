@@ -115,8 +115,8 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(camera).toContain("tr('Barcode', 'باركود')");
     expect(camera).toContain('rounded-2xl bg-transparent');
     expect(camera).not.toContain("tr('Code', 'رمز')");
-    // Shell chips: transparent interiors over the image
-    expect(irl).toContain("shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]'");
+    // Reference literal (2026-09-18): in shell mode NOTHING floats over the photo — controls live in the sheet strip
+    expect(irl).toContain("{!shell && (");
   });
 
   it('keeps the results view in the correct flow stage (candidates), not the first page', () => {

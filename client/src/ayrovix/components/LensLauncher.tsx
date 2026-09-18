@@ -639,7 +639,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           onCameraFailed={() => { if (!previewUrl) replaceStage('home'); }}
           liveEnabled={liveEnabled}
           photoUrl={inImageFlow ? previewUrl : null}
-          analyzing={inImageFlow ? isAnalyzing : false}
           onPhotoClose={closeImage}
           overlay={inImageFlow ? (
             <InteractiveLensResults
