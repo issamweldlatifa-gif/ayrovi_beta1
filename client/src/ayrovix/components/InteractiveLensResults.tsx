@@ -23,6 +23,8 @@ interface Props {
   isLoading?: boolean;
   detectedProducts?: Array<{ name: string; box: [number,number,number,number] | null; category: string }>;
   customerIntent?: string;
+  /** true = rendu à l'intérieur de la coque caméra (jamais une page séparée) : plein conteneur parent, pas de 100dvh. */
+  shell?: boolean;
 }
 
 function faviconUrl(sourceUrl: string): string | null {
@@ -73,7 +75,7 @@ const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
   </span>
 );
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, customerIntent }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, customerIntent, shell }) => {
   const { tr, direction } = useLocale();
   const visible = useMemo(() => {
     const strict = view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
@@ -345,7 +347,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   };
 
   return (
-    <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden bg-[#0A0A0A]" dir={direction}>
+    <div className={`relative flex ${shell ? 'h-full' : 'h-[100dvh]'} w-full flex-col overflow-hidden bg-[#0A0A0A]`} dir={direction}>
       <style>{`@keyframes pulseBox{0%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:0.95}100%{transform:scale(1);opacity:1}}`}</style>
       <div
         ref={containerRef}
@@ -404,7 +406,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           </div>
         )}
 
-        <div className="absolute left-2 right-2 top-12 flex items-center justify-between pointer-events-none">
+        <div className={`absolute left-2 right-2 ${shell ? 'top-16' : 'top-12'} flex items-center justify-between pointer-events-none`}>
           <div className="pointer-events-auto flex gap-1.5 items-center">
             <span className="hidden">Sélectionner</span>
             {selectedBox && (

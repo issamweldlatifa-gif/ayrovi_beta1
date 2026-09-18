@@ -84,6 +84,24 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(source).toContain('isLoading');
   });
 
+  it('keeps the imported image INSIDE the camera shell (Amazon single path — no separate page, no preview interstitial)', () => {
+    const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
+    const camera = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
+    // Launcher: image stages render through the camera shell, not the white page
+    expect(source).toContain("if (stage === 'live' || inImageFlow) {");
+    expect(source).toContain('photoUrl={inImageFlow ? previewUrl : null}');
+    expect(source).toContain('onPhotoClose={closeImage}');
+    expect(source).toContain('overlay={inImageFlow ? (');
+    expect(source).toContain('shell');
+    // Shell: back/flash header stays, overlays the results, hides live-only chrome in photo mode
+    expect(camera).toContain('photoUrl && onPhotoClose ? onPhotoClose : onClose');
+    expect(camera).toContain("{photoUrl && overlay && (");
+    expect(camera).toContain("<div className=\"absolute inset-0 z-[15] overflow-hidden\">{overlay}</div>");
+    // The two-path preview interstitial is gone — ONE path only
+    expect(source).not.toContain("enterStage('preview')");
+    expect(source).not.toContain('Analyser ce produit');
+  });
+
   it('keeps the results view in the correct flow stage (candidates), not the first page', () => {
     const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
     const camera = readFileSync('client/src/ayrovix/components/LensCamera.tsx', 'utf8');

@@ -23,6 +23,11 @@ interface LiveCameraProps {
   onCameraFailed: () => void;
   liveEnabled?: boolean;
   onLiveResults?: (view: LiveResultsView) => void;
+  /** Single-path Google/Amazon Lens : l'image importée reste DANS cette même coque — back + flash + Auto visibles, sheet résultats par-dessus. */
+  photoUrl?: string | null;
+  analyzing?: boolean;
+  overlay?: React.ReactNode;
+  onPhotoClose?: () => void;
 }
 
 type CameraMode = 'search' | 'upload' | 'code';
@@ -33,7 +38,7 @@ type CamMode = 'photo' | 'video';
  * الواجهة كما هي؛ الـ runtime يوفّر detection/tracking/confidence/temporal.
  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.
  */
-export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults }) => {
+export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, analyzing = false, overlay = null, onPhotoClose }) => {
   const { direction, tr } = useLocale();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -174,12 +179,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
   return (
     <div className="fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')}>
-      <video ref={videoRef} muted playsInline className="absolute inset-0 h-full w-full object-cover" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60" />
+      <video ref={videoRef} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${photoUrl ? 'invisible' : ''}`} />
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 ${photoUrl ? 'hidden' : ''}`} />
+
+      {/* Photo mode : l'image + la sheet de résultats vivent ICI, dans la coque — aucune page séparée. */}
+      {photoUrl && overlay && (
+        <div className="absolute inset-0 z-[15] overflow-hidden">{overlay}</div>
+      )}
 
       {/* Header minimal — only back, no covering like Zalando */}
       <div className="absolute left-0 right-0 top-0 z-20 flex h-14 items-center justify-between px-3 pt-1">
-        <button type="button" onClick={onClose} className="grid h-10 w-10 place-items-center rounded-full bg-ink text-white shadow" aria-label={tr('Retour', 'رجوع')}>
+        <button type="button" onClick={photoUrl && onPhotoClose ? onPhotoClose : onClose} className="grid h-10 w-10 place-items-center rounded-full bg-ink text-white shadow" aria-label={tr('Retour', 'رجوع')}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
         <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
@@ -197,7 +207,18 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {/* indicator الحالة (صغير، لا يغطي المنتج) */}
       {mode === 'search' && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
-          {isVideo
+          {photoUrl
+            ? (analyzing
+              ? <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30">
+                  <span className="flex gap-0.5" aria-hidden="true">
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.3s' }} />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.15s' }} />
+                    <span className="h-1 w-1 animate-bounce rounded-full bg-white" />
+                  </span>
+                  {tr('Analyse en cours…', 'جارٍ التحليل…')}
+                </p>
+              : <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-white/85 backdrop-blur"><Sparkles size={13} className="text-white" />{tr('Auto', 'تلقائي')}</p>)
+            : isVideo
             ? liveState.status === 'ai-unavailable'
               ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[10.5px] font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
               : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>
@@ -206,6 +227,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
 
       {/* Viewfinder + bounding boxes من الـ runtime */}
+      {!photoUrl && (
       <div className="pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">
         <div className="relative aspect-square w-full max-w-[300px]">
           <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-[20px] border-l-2 border-t-2 border-white/90" />
@@ -249,9 +271,10 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           {!isVideo && <div className="lens-scan absolute inset-5 rounded-[18px]" aria-hidden="true" />}
         </div>
       </div>
+      )}
 
       {/* Scan Collection */}
-      {isVideo && lockedObjects.length > 1 && (
+      {isVideo && !photoUrl && lockedObjects.length > 1 && (
         <div className="relative z-10 mx-4 mb-2 rounded-2xl bg-black/60 p-3 backdrop-blur">
           <div className="flex items-center justify-between">
             <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-white/85">
@@ -276,7 +299,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
 
       {/* Hint contextuel */}
-      {hint && mode === 'search' && (
+      {hint && mode === 'search' && !photoUrl && (
         <div className="pointer-events-none relative z-10 mx-auto mb-3 flex w-fit items-center gap-2.5 rounded-2xl bg-black/55 px-4 py-2.5 backdrop-blur">
           {isVideo ? <ScanSearch size={16} className="text-white" /> : <Sparkles size={16} className="text-white" />}
           <span>
@@ -290,7 +313,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
 
       {/* PHOTO | VIDÉO selector */}
-      {mode !== 'code' && (
+      {mode !== 'code' && !photoUrl && (
         <div className="relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')}>
           {(['photo', 'video'] as CamMode[]).map((m) => {
             const disabled = m === 'video' && !liveEnabled;
@@ -307,6 +330,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       )}
 
       {/* Controls: Importer | Capture/Live-Action | Code */}
+      {!photoUrl && (
       <div className="relative z-10 flex items-end justify-between px-8 pb-2">
         <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-white/80">
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/12 backdrop-blur"><ImageIcon size={22} strokeWidth={1.8} /></span>
@@ -330,6 +354,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           {tr('Code', 'رمز')}
         </button>
       </div>
+      )}
 
       {mode === 'code' && (
         <form className="relative z-10 mx-5 mb-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (linkInput.trim()) onLink(linkInput.trim()); }}>

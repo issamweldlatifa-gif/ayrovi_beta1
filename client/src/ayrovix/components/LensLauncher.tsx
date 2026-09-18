@@ -32,7 +32,7 @@ interface LensLauncherProps {
   onToggleDarkMode: () => void;
 }
 
-type Stage = 'live' | 'home' | 'preview' | 'analyzing' | 'candidates' | 'product' | 'barcode' | 'error';
+type Stage = 'live' | 'home' | 'analyzing' | 'candidates' | 'product' | 'barcode' | 'error';
 
 interface CandidatesView {
   queryLabel: string | null;
@@ -118,7 +118,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
   const stageLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('lens:') && layer.id !== 'lens:history');
   const stageValue = stageLayer?.id.slice('lens:'.length);
-  const stage: Stage = ['live', 'home', 'preview', 'analyzing', 'candidates', 'product', 'barcode', 'error'].includes(String(stageValue))
+  const stage: Stage = ['live', 'home', 'analyzing', 'candidates', 'product', 'barcode', 'error'].includes(String(stageValue))
     ? stageValue as Stage
     : (cameraCapable ? 'live' : 'home');
   const historyOpen = navigation.stack.some((layer) => layer.id === 'lens:history');
@@ -259,21 +259,36 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
   const handleClose = () => { clearRuntime(); onClose(); };
 
+  // Sortie du mode photo : on reste DANS la coque, retour au direct — aucune page intermédiaire.
+  const closeImage = () => {
+    requestAbortRef.current?.abort();
+    requestAbortRef.current = null;
+    abortRef.current += 1;
+    if (previewRef.current) { URL.revokeObjectURL(previewRef.current); previewRef.current = null; }
+    setPreviewUrl(null);
+    setImageFile(null);
+    setCandidatesView(null);
+    setDetectedProducts([]);
+    setError(null);
+    setIsAnalyzing(false);
+    replaceStage(cameraCapable ? 'live' : 'home');
+  };
+
   const fail = (code: string, message: string) => { setError({ code, message }); setIsAnalyzing(false); replaceStage('error'); };
   // D2-8 backend ROI: no canvas crop, just send roi% + original file → backend sharp crops (saves 80-150ms + 60KB upload)
   const handleRoiSearch = (roi: { x: number; y: number; w: number; h: number }) => {
     if (!imageFile) return;
     void runImageAnalysis(imageFile, undefined, roi);
   };
-  const handleImage = async (file: File, autoAnalyze: boolean) => {
+  // Voie unique (Amazon Lens) : chaque image importée/papillonnée reste DANS la coque caméra et part directement en analyse.
+  const handleImage = async (file: File) => {
     setError(null);
     const prepared = await prepareImage(file);
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     previewRef.current = prepared.previewUrl;
     setPreviewUrl(prepared.previewUrl);
     setImageFile(prepared.file);
-    if (autoAnalyze) void runImageAnalysis(prepared.file);
-    else enterStage('preview');
+    void runImageAnalysis(prepared.file);
   };
 
   const runImageAnalysis = async (fileOverride?: File, cropMs?: number, roi?: { x:number; y:number; w:number; h:number }) => {
@@ -606,19 +621,41 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     />
   );
 
-  if (stage === 'live') {
+  // Google/Amazon Lens single path : l'image analysée reste DANS la coque caméra (back + flash + Auto visibles),
+  // la sheet résultats glisse par-dessus — jamais de page séparée, jamais de re-upload au retour.
+  const inImageFlow = (stage === 'candidates' || stage === 'analyzing') && Boolean(previewUrl);
+
+  if (stage === 'live' || inImageFlow) {
     return (
       <>
         {!historyOpen && <LiveCamera
-          onPhoto={(file) => void handleImage(file, true)}
+          onPhoto={(file) => void handleImage(file)}
           onQrUrl={(url) => void runUrlAnalysis(url, 'qr')}
           onBarcode={(code) => void runBarcodeAnalysis(code)}
           onCodeText={(value) => void runCodeTextAnalysis(value)}
           onLink={(url) => void runUrlAnalysis(url, 'url')}
           onClose={handleClose}
           onMenu={() => setMenuOpen(true)}
-          onCameraFailed={() => replaceStage('home')}
+          onCameraFailed={() => { if (!previewUrl) replaceStage('home'); }}
           liveEnabled={liveEnabled}
+          photoUrl={inImageFlow ? previewUrl : null}
+          analyzing={inImageFlow ? isAnalyzing : false}
+          onPhotoClose={closeImage}
+          overlay={inImageFlow ? (
+            <InteractiveLensResults
+              shell
+              view={candidatesView || { queryLabel: null, list: [], eventId: '', detectedPrice: null }}
+              previewUrl={previewUrl}
+              fallbackImage={previewUrl}
+              onChoose={handleChooseCandidate}
+              onReset={closeImage}
+              onCommandDetected={commandDetectedPrice}
+              isLoading={isAnalyzing}
+              onRoiSearch={handleRoiSearch}
+              onLassoSearch={(file, cropMs) => void runImageAnalysis(file, cropMs)}
+              detectedProducts={detectedProducts}
+            />
+          ) : null}
           onLiveResults={(view) => {
             setCandidatesView(view);
             setVerifiedPriceUrl(false);
@@ -635,7 +672,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
         {/* Header — only back button, no covering, Zalando flat white, black action */}
-        {(stage === 'home' || stage === 'preview' || stage === 'error' || stage === 'barcode') && (
+        {(stage === 'home' || stage === 'error' || stage === 'barcode') && (
           <button type="button" onClick={stage === 'home' ? handleClose : reset} className="absolute left-3 top-3 z-30 grid h-10 w-10 place-items-center rounded-full bg-ink text-white shadow" aria-label={tr('Retour', 'رجوع')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
@@ -656,7 +693,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 className="hidden"
                 aria-hidden="true"
                 tabIndex={-1}
-                onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImage(file, true); e.target.value = ''; }}
+                onChange={(e) => { const file = e.target.files?.[0]; if (file) void handleImage(file); e.target.value = ''; }}
               />
 
               {/* Intro — ماذا يفعل Lens؟ ماذا أضع؟ ماذا سيحدث؟ */}
@@ -680,7 +717,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 className="lens-drop"
                 onClick={() => dropInputRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files?.[0]; if (file) void handleImage(file, true); }}
+                onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files?.[0]; if (file) void handleImage(file); }}
               >
                 <span className="lens-drop__icon"><GalleryIcon size={22} /></span>
                 <strong>{tr('Glissez une image ici', 'أفلِت صورة هنا')}</strong>
@@ -688,8 +725,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               </button>
 
               <div className="lens-home__actions">
-                <LensCamera onImage={(file) => void handleImage(file, true)} />
-                <LensUpload onImage={(file) => void handleImage(file, true)} />
+                <LensCamera onImage={(file) => void handleImage(file)} />
+                <LensUpload onImage={(file) => void handleImage(file)} />
               </div>
 
               {/* Product name search — NEW Phase 0 */}
@@ -776,19 +813,6 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <p className="px-2 pt-1 text-center text-[11px] leading-relaxed text-muted">
                 {tr('Caméra inaccessible ? Importez une photo, saisissez un nom ou collez un lien — AYROVIX calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو اكتب اسمًا أو ألصق رابطًا — تحسب AYROVIX سعره النهائي بالدينار.')}
               </p>
-            </div>
-          )}
-
-          {stage === 'preview' && previewUrl && (
-            <div className="mx-auto max-w-md space-y-4">
-              <div className="relative overflow-hidden bg-white">
-                <img src={previewUrl} alt={tr('Aperçu du produit à analyser', 'معاينة المنتج المراد تحليله')} className="max-h-[62vh] w-full bg-surface object-contain" />
-                <div className="lens-scan-dots absolute inset-0" aria-hidden="true" />
-              </div>
-              <div className="flex gap-2.5">
-                <button type="button" onClick={reset} className="ay-btn-secondary text-sm">{tr('Reprendre', 'إعادة الالتقاط')}</button>
-                <button type="button" onClick={() => void runImageAnalysis()} className="ay-btn-primary flex-1 text-sm">{tr('Analyser ce produit', 'تحليل هذا المنتج')}</button>
-              </div>
             </div>
           )}
 
@@ -887,7 +911,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <p className="text-[11px] font-mono text-muted">{error.code}</p>
               <div className="flex flex-wrap justify-center gap-2.5">
                 {showPreview && (
-                  <button type="button" onClick={() => replaceStage('preview')} className="ay-btn-secondary text-xs">{tr("Revoir l'image", 'مراجعة الصورة')}</button>
+                  <button type="button" onClick={() => void runImageAnalysis()} className="ay-btn-secondary text-xs">{tr('Relancer l’analyse', 'إعادة التحليل')}</button>
                 )}
                 {['INVALID_URL','EXTRACTION_FAILED'].includes(error.code) && (
                   <button type="button" onClick={()=> { reset(); setTimeout(()=> urlInputRef.current?.focus(), 120); }} className="ay-btn-secondary text-xs">{tr('Corriger le lien', 'صحح الرابط')}</button>
