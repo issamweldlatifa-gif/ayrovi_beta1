@@ -12,7 +12,10 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.client.json --noEmit",
     "test": "vitest run",
     "audit:design": "node verify/zalando-audit.mjs",
-    "backup": "node scripts/backup-sqlite.mjs"
+    "backup": "node scripts/backup-sqlite.mjs",
+    "android:assets": "node scripts/cap-assets.mjs && capacitor-assets generate --android",
+    "android:sync": "npm run build:client && cap sync android",
+    "android:open": "cap open android"
   },
   "keywords": [
     "ayrovi",
@@ -27,6 +30,10 @@
   "author": "AYROVI Team",
   "license": "ISC",
   "dependencies": {
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/status-bar": "^7.0.6",
     "@tailwindcss/vite": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
     "@vitejs/plugin-react": "^6.0.5",
@@ -57,6 +64,8 @@
     "vite": "^8.2.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.6.9",
     "@types/better-sqlite3": "^7.6.10",
     "@types/compression": "^1.8.1",
     "@types/cors": "^2.8.17",

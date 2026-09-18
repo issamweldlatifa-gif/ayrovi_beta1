@@ -20,3 +20,10 @@ uploads/
 
 # état des tests E2E locaux (regénéré à chaque exécution)
 verify/.e2e-marker.json
+
+# Capacitor/Android — sorties de build (le projet android/ lui-même est versionné)
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/capacitor-cordova-android-plugins/build/

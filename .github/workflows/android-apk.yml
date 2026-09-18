@@ -1,0 +1,65 @@
+name: Android APK/AAB
+
+on:
+  workflow_dispatch:
+    inputs:
+      versionCode:
+        description: 'Play versionCode (incrémenter à chaque AAB)'
+        required: false
+        default: '1'
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - 'client/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      AYROVI_VERSION_CODE: ${{ github.event.inputs.versionCode || '1' }}
+      AYROVI_VERSION_NAME: ${{ github.event.inputs.versionCode && format('1.0.{0}', github.event.inputs.versionCode) || '1.0' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install web deps
+        run: npm ci
+
+      - name: Build web (vite → public/) + sync into android assets
+        run: npm run build:client && npx cap sync android
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: Debug APK (test direct sur téléphone)
+        run: cd android && ./gradlew assembleDebug --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AYROVI-debug.apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Release AAB signé (Play Store) — seulement si le keystore est configuré
+        if: ${{ secrets.AYROVI_KEYSTORE_BASE64 != '' }}
+        env:
+          AYROVI_KEYSTORE_BASE64: ${{ secrets.AYROVI_KEYSTORE_BASE64 }}
+          AYROVI_KEYSTORE_PASSWORD: ${{ secrets.AYROVI_KEYSTORE_PASSWORD }}
+          AYROVI_KEY_ALIAS: ${{ secrets.AYROVI_KEY_ALIAS }}
+          AYROVI_KEY_PASSWORD: ${{ secrets.AYROVI_KEY_PASSWORD }}
+        run: cd android && ./gradlew bundleRelease --no-daemon
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ secrets.AYROVI_KEYSTORE_BASE64 != '' }}
+        with:
+          name: AYROVI-release.aab
+          path: android/app/build/outputs/bundle/release/app-release.aab

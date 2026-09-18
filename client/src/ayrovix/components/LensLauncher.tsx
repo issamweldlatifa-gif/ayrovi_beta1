@@ -7,6 +7,7 @@ import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, mar
 import { prepareImage } from '../services/imagePrep';
 import { readLocalAyrovixHistory, rememberAyrovixHistory } from '../services/history';
 import { getCommerceConfig } from '../../services/publicApi';
+import { setNativeStatusBarForSurface } from '../../services/nativeShell';
 
 import { useLocale } from '../../i18n/LocaleContext';
 import { LiveCamera } from './LiveCamera';
@@ -164,6 +165,13 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   useEffect(() => {
     if (!isOpen) setMenuOpen(false);
   }, [isOpen]);
+
+  // Coque native uniquement : la barre système suit la surface (coque caméra sombre ⇄ pages blanches)
+  useEffect(() => {
+    if (!isOpen) return;
+    const cameraSurface = stage === 'live' || ((stage === 'candidates' || stage === 'analyzing') && Boolean(previewUrl));
+    void setNativeStatusBarForSurface(cameraSurface);
+  }, [isOpen, stage, previewUrl]);
 
   useEffect(() => () => {
     requestAbortRef.current?.abort();
