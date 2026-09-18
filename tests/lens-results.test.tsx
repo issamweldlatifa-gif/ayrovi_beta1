@@ -102,6 +102,23 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(source).not.toContain('Analyser ce produit');
   });
 
+  it('header chrome: white flat icons, transparent interiors, ayrovix wordmark, no Auto pill, Barcode label', () => {
+    const camera = readFileSync('client/src/ayrovix/components/LiveCamera.tsx', 'utf8');
+    const irl = readFileSync('client/src/ayrovix/components/InteractiveLensResults.tsx', 'utf8');
+    // « Auto » and its star are gone for good
+    expect(camera).not.toContain("tr('Auto'");
+    expect(camera).not.toContain('Sparkles');
+    // Wordmark + white flat header icons (no bg circle)
+    expect(camera).toContain('>ayrovix</p>');
+    expect(camera).toContain('place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]');
+    // Bottom: Barcode label + transparent tiles
+    expect(camera).toContain("tr('Barcode', 'باركود')");
+    expect(camera).toContain('rounded-2xl bg-transparent');
+    expect(camera).not.toContain("tr('Code', 'رمز')");
+    // Shell chips: transparent interiors over the image
+    expect(irl).toContain("shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]'");
+  });
+
   it('keeps the results view in the correct flow stage (candidates), not the first page', () => {
     const source = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
     const camera = readFileSync('client/src/ayrovix/components/LensCamera.tsx', 'utf8');

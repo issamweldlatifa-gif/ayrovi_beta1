@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Sparkles, Zap } from '../../components/QatafoIcons';
+import { ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import { LensContextHeader } from './LensNavigation';
 import { LiveVisionRuntime, type LiveDetection, type LiveVisionState } from '../services/liveVisionRuntime';
@@ -187,14 +187,15 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <div className="absolute inset-0 z-[15] overflow-hidden">{overlay}</div>
       )}
 
-      {/* Header minimal — only back, no covering like Zalando */}
+      {/* Header — icônes blanches à intérieur transparent + nom de la surface, comme « lens ai » sur la photo de référence */}
       <div className="absolute left-0 right-0 top-0 z-20 flex h-14 items-center justify-between px-3 pt-1">
-        <button type="button" onClick={photoUrl && onPhotoClose ? onPhotoClose : onClose} className="grid h-10 w-10 place-items-center rounded-full bg-ink text-white shadow" aria-label={tr('Retour', 'رجوع')}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6"/></svg>
+        <button type="button" onClick={photoUrl && onPhotoClose ? onPhotoClose : onClose} className="grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]" aria-label={tr('Retour', 'رجوع')}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
+        <p aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[17px] font-extrabold lowercase tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">ayrovix</p>
         <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
-          className={`grid h-10 w-10 place-items-center rounded-full shadow ${torchOn ? 'bg-ink text-white' : 'bg-white text-ink'} ${torchAvailable ? '' : 'opacity-40'}`}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+          className={`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
         </button>
       </div>
 
@@ -204,25 +205,24 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </p>
       )}
 
-      {/* indicator الحالة (صغير، لا يغطي المنتج) */}
-      {mode === 'search' && (
+      {/* حالة التحليل فقط — « Auto » وإيكونتها محذوفتان نهائياً (طلب 2026-09-18) */}
+      {photoUrl && analyzing && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
-          {photoUrl
-            ? (analyzing
-              ? <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30">
-                  <span className="flex gap-0.5" aria-hidden="true">
-                    <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.3s' }} />
-                    <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.15s' }} />
-                    <span className="h-1 w-1 animate-bounce rounded-full bg-white" />
-                  </span>
-                  {tr('Analyse en cours…', 'جارٍ التحليل…')}
-                </p>
-              : <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-white/85 backdrop-blur"><Sparkles size={13} className="text-white" />{tr('Auto', 'تلقائي')}</p>)
-            : isVideo
-            ? liveState.status === 'ai-unavailable'
-              ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[10.5px] font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
-              : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>
-            : <p className="flex items-center gap-1.5 rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-extrabold text-white/85 backdrop-blur"><Sparkles size={13} className="text-white" />{tr('Auto', 'تلقائي')}</p>}
+          <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30">
+            <span className="flex gap-0.5" aria-hidden="true">
+              <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.3s' }} />
+              <span className="h-1 w-1 animate-bounce rounded-full bg-white" style={{ animationDelay: '-0.15s' }} />
+              <span className="h-1 w-1 animate-bounce rounded-full bg-white" />
+            </span>
+            {tr('Analyse en cours…', 'جارٍ التحليل…')}
+          </p>
+        </div>
+      )}
+      {mode === 'search' && !photoUrl && isVideo && (
+        <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
+          {liveState.status === 'ai-unavailable'
+            ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[10.5px] font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
+            : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>}
         </div>
       )}
 
@@ -301,7 +301,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {/* Hint contextuel */}
       {hint && mode === 'search' && !photoUrl && (
         <div className="pointer-events-none relative z-10 mx-auto mb-3 flex w-fit items-center gap-2.5 rounded-2xl bg-black/55 px-4 py-2.5 backdrop-blur">
-          {isVideo ? <ScanSearch size={16} className="text-white" /> : <Sparkles size={16} className="text-white" />}
+          {isVideo ? <ScanSearch size={16} className="text-white" /> : <Camera size={16} className="text-white" />}
           <span>
             <span className="block text-[12px] font-extrabold text-white">{isVideo ? tr('Déplacez la caméra', 'حرّك الكاميرا') : tr('Cadrez le produit', 'ضع المنتج في الإطار')}</span>
             <span className="block text-[10.5px] font-semibold text-white/70">{isVideo ? tr('pour détecter les produits', 'لاكتشاف المنتجات') : tr('Nous détectons automatiquement', 'نكتشف تلقائيًا')}</span>
@@ -332,15 +332,15 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {/* Controls: Importer | Capture/Live-Action | Code */}
       {!photoUrl && (
       <div className="relative z-10 flex items-end justify-between px-8 pb-2">
-        <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-white/80">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-white/12 backdrop-blur"><ImageIcon size={22} strokeWidth={1.8} /></span>
+        <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} strokeWidth={1.8} /></span>
           {tr('Importer', 'استيراد')}
         </button>
 
         {mode !== 'code' ? (
           <button type="button" onClick={handleCentralAction} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}
-            className={`grid h-[78px] w-[78px] place-items-center rounded-full border-4 border-white/90 backdrop-blur transition active:scale-95 ${capturing ? 'scale-90 bg-white' : isVideo ? 'bg-black/30' : 'bg-white/10'}`}>
-            <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-black/40 text-white ring-2 ring-white' : 'bg-white'}`}>
+            className={`grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}>
+            <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-transparent text-white ring-2 ring-white' : 'bg-white/95'}`}>
               {isVideo && !capturing && <ScanSearch size={22} strokeWidth={1.9} />}
             </span>
           </button>
@@ -349,9 +349,9 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         )}
 
         <button type="button" onClick={() => { setNotice(null); setMode(mode === 'code' ? 'search' : 'code'); }} aria-pressed={mode === 'code'}
-          className={`flex flex-col items-center gap-1 text-[10px] font-extrabold ${mode === 'code' ? 'text-white' : 'text-white/80'}`}>
-          <span className={`grid h-14 w-14 place-items-center rounded-2xl backdrop-blur ${mode === 'code' ? 'bg-white text-ink' : 'bg-white/12'}`}><Barcode size={22} strokeWidth={1.8} /></span>
-          {tr('Code', 'رمز')}
+          className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+          <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent ${mode === 'code' ? 'ring-2 ring-white' : ''}`}><Barcode size={22} strokeWidth={1.8} /></span>
+          {tr('Barcode', 'باركود')}
         </button>
       </div>
       )}

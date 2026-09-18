@@ -407,16 +407,17 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         )}
 
         <div className={`absolute left-2 right-2 ${shell ? 'top-16' : 'top-12'} flex items-center justify-between pointer-events-none`}>
+          {/* shell: icônes blanches à intérieur transparent posées directement sur l'image, comme la référence */}
           <div className="pointer-events-auto flex gap-1.5 items-center">
             <span className="hidden">Sélectionner</span>
             {selectedBox && (
-              <button type="button" onClick={clearSelection} className="rounded-full bg-black/60 px-3 py-1.5 text-[11px] font-bold text-white border border-white/20 backdrop-blur flex items-center gap-1"><X size={12} /> {tr('Effacer', 'مسح')}</button>
+              <button type="button" onClick={clearSelection} className={`flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-bold text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}><X size={12} /> {tr('Effacer', 'مسح')}</button>
             )}
           </div>
           <div className="pointer-events-auto flex gap-1.5">
-            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white border border-white/20 backdrop-blur">+</button>
-            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white border border-white/20 backdrop-blur">−</button>
-            <button type="button" onClick={() => { resetView(); clearSelection(); }} className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-white border border-white/20 backdrop-blur"><RefreshCw size={14} /></button>
+            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className={`grid h-8 w-8 place-items-center rounded-full text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}>+</button>
+            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className={`grid h-8 w-8 place-items-center rounded-full text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}>−</button>
+            <button type="button" onClick={() => { resetView(); clearSelection(); }} className={`grid h-8 w-8 place-items-center rounded-full text-white ${shell ? 'bg-transparent drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]' : 'border border-white/20 bg-black/60 backdrop-blur'}`}><RefreshCw size={14} /></button>
           </div>
         </div>
 
