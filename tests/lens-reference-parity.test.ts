@@ -53,4 +53,24 @@ describe('AYROVIX Lens ↔ Amazon reference parity', () => {
   it('P6 — readability gradient band under the photo-mode header', () => {
     expect(camera).toContain('inset-x-0 top-0 z-[16] h-20 bg-gradient-to-b from-black/55 to-transparent');
   });
+
+  it('P7 — real drawer: follows the finger, magnets peek↔full, pull down under peek returns to Lens camera', () => {
+    // deux positions seulement, plus de « half » accumulé
+    expect(irl).toContain("useState<'peek'|'full'>('peek')");
+    expect(irl).not.toContain("'half'");
+    // hauteur live pendant le drag (le doigt tire la sheet, pas de saut à seuils)
+    expect(irl).toContain('setDragH(Math.max(0, Math.min(ch + 36, base + dy)))');
+    expect(irl).toContain('dragH != null ? `${dragH}px`');
+    // sous le peek → onReset() = retour caméra Lens
+    expect(irl).toContain("} else if (h < peek * 0.55) {");
+    expect(irl).toContain('onReset(); // tiré vers le bas sous le peek');
+    // page complète : bouton Réduire + back toujours présent (chip sombre lisible sur blanc comme sur l'image)
+    expect(irl).toContain("setSheet(s => s === 'full' ? 'peek' : 'full')");
+    expect(camera).toContain("photoUrl ? 'bg-black/55 backdrop-blur' : ''");
+  });
+
+  it('P8 — analysis is alive: bouncing scan dots on the photo, pulsing rings on detected products', () => {
+    expect(irl).toContain('animate-bounce rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.25)]');
+    expect(irl).toContain('strokeWidth=\"0.25\" opacity=\"0.5\" className=\"animate-pulse\"');
+  });
 });

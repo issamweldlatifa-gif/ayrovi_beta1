@@ -87,21 +87,46 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   const name = view.queryLabel || best?.title || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX');
   const detected = view.detectedPrice;
 
-  const [sheet, setSheet] = useState<'peek'|'half'|'full'>('peek');
+  const [sheet, setSheet] = useState<'peek'|'full'>('peek');
   const sheetRef = useRef<HTMLDivElement>(null);
   const startY = useRef<number | null>(null);
   // Phase 1: peek 38% (was 22%) so results are immediately visible without pull — product stays visible above
-  const sheetHeight = sheet === 'peek' ? '38%' : sheet === 'half' ? '55%' : '100%';
-  const onHandleTouchStart = (e: React.TouchEvent) => { startY.current = e.touches[0].clientY; };
-  const onHandleTouchMove = (e: React.TouchEvent) => {
-    if (startY.current == null) return;
-    const dy = startY.current - e.touches[0].clientY;
-    if (dy > 60 && sheet !== 'full') setSheet('full');
-    else if (dy < -60 && sheet === 'full') setSheet('half');
-    else if (dy < -60 && sheet === 'half') setSheet('peek');
-    else if (dy > 60 && sheet === 'peek') setSheet('half');
+  // Drawer vrai (référence) : suit le doigt, aimante entre peek (38 %) et page complète (100 %).
+  // Tirer vers le bas sous le peek = fermer le tiroir → retour à la caméra Lens (onReset).
+  const [dragH, setDragH] = useState<number | null>(null);
+  const dragDy = useRef(0);
+  const sheetGeom = () => {
+    const host = sheetRef.current?.parentElement;
+    const ch = host?.clientHeight ?? window.innerHeight;
+    return { ch, peek: Math.round(ch * 0.38) };
   };
-  const onHandleTouchEnd = () => { startY.current = null; };
+  const dragStart = (clientY: number) => { startY.current = clientY; dragDy.current = 0; };
+  const dragMove = (clientY: number) => {
+    if (startY.current == null) return;
+    const dy = startY.current - clientY;
+    dragDy.current = dy;
+    const { ch, peek } = sheetGeom();
+    const base = sheet === 'full' ? ch : peek;
+    // petit caoutchouc aux bornes, jamais sous 0
+    setDragH(Math.max(0, Math.min(ch + 36, base + dy)));
+  };
+  const dragEnd = () => {
+    startY.current = null;
+    const { ch, peek } = sheetGeom();
+    const h = dragH;
+    setDragH(null);
+    if (h == null) return;
+    if (sheet === 'full') {
+      if (h < ch * 0.74) setSheet('peek');
+    } else if (h < peek * 0.55) {
+      onReset(); // tiré vers le bas sous le peek → on retourne dans Lens (caméra)
+    } else if (h > peek * 1.35) {
+      setSheet('full');
+    }
+  };
+  const onHandleTouchStart = (e: React.TouchEvent) => { dragStart(e.touches[0].clientY); };
+  const onHandleTouchMove = (e: React.TouchEvent) => { dragMove(e.touches[0].clientY); };
+  const onHandleTouchEnd = () => { dragEnd(); };
 
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -378,10 +403,10 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             )}
           </div>
           {isLoading && !selectedBox && (
-            <div className="absolute inset-0 pointer-events-none">
-              <span className="absolute h-2 w-2 rounded-full bg-white/80" style={{left:'22%', top:'28%'}} />
-              <span className="absolute h-2 w-2 rounded-full bg-white/70" style={{left:'68%', top:'42%'}} />
-              <span className="absolute h-2 w-2 rounded-full bg-white/60" style={{left:'45%', top:'62%'}} />
+            <div className="absolute inset-0 pointer-events-none" aria-label={tr('Analyse en cours', 'جارٍ التحليل')}>
+              <span className="absolute h-2.5 w-2.5 animate-bounce rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.25)]" style={{left:'22%', top:'28%', animationDelay:'-0.3s'}} />
+              <span className="absolute h-2.5 w-2.5 animate-bounce rounded-full bg-white/90 shadow-[0_0_0_4px_rgba(255,255,255,0.2)]" style={{left:'68%', top:'42%', animationDelay:'-0.15s'}} />
+              <span className="absolute h-2.5 w-2.5 animate-bounce rounded-full bg-white/80 shadow-[0_0_0_4px_rgba(255,255,255,0.15)]" style={{left:'45%', top:'62%'}} />
             </div>
           )}
         </div>
@@ -407,7 +432,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                 <g key={i}>
                   {/* subtle dot at center — Google Lens style */}
                   <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="1.1" fill="white" opacity="0.9" />
-                  <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="2.2" fill="none" stroke="white" strokeWidth="0.25" opacity="0.5" />
+                  <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="2.2" fill="none" stroke="white" strokeWidth="0.25" opacity="0.5" className="animate-pulse" />
                 </g>
               ) : null)}
             </svg>
@@ -437,8 +462,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         </div>
       </div>
 
-      <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'} overflow-hidden`} style={{ height: sheetHeight, transition: startY.current == null ? 'height 0.25s ease' : 'none' }}>
-        <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { startY.current = e.clientY; const onMove = (ev: MouseEvent) => { if (startY.current == null) return; const dy = startY.current - ev.clientY; if (dy > 60 && sheet !== 'full') setSheet('full'); else if (dy < -60 && sheet === 'full') setSheet('half'); else if (dy < -60 && sheet === 'half') setSheet('peek'); else if (dy > 60 && sheet === 'peek') setSheet('half'); }; const onUp = () => { startY.current=null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
+      <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' && dragH == null ? 'rounded-none' : 'rounded-t-[20px]'} overflow-hidden`} style={{ height: dragH != null ? `${dragH}px` : sheet === 'full' ? '100%' : '38%', transition: dragH == null ? 'height 0.25s ease' : 'none' }}>
+        <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { dragStart(e.clientY); const onMove = (ev: MouseEvent) => dragMove(ev.clientY); const onUp = () => { dragEnd(); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
           <span className="h-1.5 w-10 rounded-full bg-black/15" />
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pl-2 pr-2">
             <div className="min-w-0 flex-1">
@@ -457,7 +482,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                   <button type="button" onClick={() => { resetView(); clearSelection(); }} aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-ink"><RefreshCw size={13} /></button>
                 </span>
               )}
-              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'half' : 'full')} className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1.5 text-[11px] font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
+              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'peek' : 'full')} className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1.5 text-[11px] font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
               <button type="button" onClick={() => { clearSelection(); onReset(); }} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-[11px] font-bold text-white whitespace-nowrap">{tr('Nouvelle recherche', 'بحث جديد')}</button>
             </div>
           </div>
