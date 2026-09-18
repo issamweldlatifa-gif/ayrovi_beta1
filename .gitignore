@@ -30,3 +30,4 @@ android/capacitor-cordova-android-plugins/build/
 
 # APK livrables — jamais versionnés (régénérés par la CI : artifact AYROVI-debug.apk)
 apk/
+build-out/
