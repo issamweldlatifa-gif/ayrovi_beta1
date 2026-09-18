@@ -50,7 +50,8 @@
   }
 
   :focus-visible {
-    outline: 2px solid var(--ayrovi-purple);
+    outline: 2px solid var(--ayrovi-focus-ring);
+    outline-offset: 2px;
     outline-offset: 3px;
   }
 
@@ -118,17 +119,15 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 }
 
 /* Neutral Lens surfaces keep violet as a precise brand accent instead of a full-page wash. */
-.hostinger-purple-card {
-  border: 1px solid color-mix(in srgb, var(--ayrovi-primary) 32%, #17151f);
-  background: #17151f;
-  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 42%);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.ay-dark-feature-card {
+  background: var(--ayrovi-ink-deep);
+  border: 1px solid var(--ayrovi-ink-soft);
+  color: var(--ayrovi-white);
+  transition: border-color var(--ayrovi-motion-fast) ease, transform var(--ayrovi-motion-fast) ease;
 }
-
-.hostinger-purple-card:hover {
-  transform: translateY(-3px);
-  border-color: color-mix(in srgb, var(--ayrovi-primary) 58%, #17151f);
-  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 55%);
+.ay-dark-feature-card:hover {
+  border-color: var(--ayrovi-ink-soft);
+  transform: translateY(-2px);
 }
 
 /* Marquee Infinite Animation */
@@ -237,7 +236,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   100% { transform: translate(0, 0) scale(1); opacity: 1; }
 }
 
-/* Purple assistant identity used in the navbar, replies and active generation state. */
+/* Assistant (SONIM) : identité neutre, sur l'encre de la plateforme. */
 .assistant-motion-badge {
   position: relative;
   display: inline-grid;
@@ -670,7 +669,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .link-analyze { position: relative; overflow: hidden; }
 .link-analyze::after {
   content: ""; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(110deg, transparent 30%, color-mix(in oklab, var(--ayrovi-purple) 16%, transparent) 50%, transparent 70%);
+  background: linear-gradient(110deg, transparent 30%, color-mix(in oklab, var(--ayrovi-ink-deep) 16%, transparent) 50%, transparent 70%);
   animation: link-shimmer 1.4s linear infinite;
 }
 @keyframes link-shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
@@ -725,7 +724,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .public-site-header.is-over-hero .public-site-header-icon:hover,
 .public-site-header.is-over-hero .public-site-header-icon:focus-visible,
 .public-site-header.is-over-hero .public-site-header-icon:active { color: var(--ayrovi-color-brand-orange) !important; }
-.public-site-header.is-over-hero .public-site-header-icon { color: #fff !important; }
+.public-site-header.is-over-hero .public-site-header-icon { color: var(--ayrovi-bg-main) !important; }
 
 /* الهيدر فوق الـ Hero: شفاف تماماً بلا زجاجية — بخصوصية أعلى من قاعدة public-site-header */
 .public-site-header.is-over-hero {
@@ -791,7 +790,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 
 /* ============ BRANDS SHOWCASE — عنوان مستقل + slider بعرض الشاشة ============ */
 /* الهيكل: Section → Heading block → Title → Subtitle → 32px → Full-width slider */
-.brands-section { width: 100%; background: #ffffff; padding-block: var(--ay-section-y) 12px; }
+.brands-section { width: 100%; background: var(--ayrovi-bg-main); padding-block: var(--ay-section-y) 12px; }
 
 .brands-heading { padding-inline: var(--ay-gutter); text-align: left; }
 .brands-heading__title {
@@ -801,7 +800,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   font-weight: 800;
   line-height: 1.08;
   letter-spacing: -0.025em;
-  color: #111217;
+  color: var(--ayrovi-ink-deep);
 }
 .brands-heading__subtitle {
   margin: var(--ay-heading-to-text) 0 0;
@@ -816,7 +815,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 }
 
 /* الوحدة البصرية: شريط داكن بعرض الشاشة على الهاتف، محصور ومُدوّر على Desktop */
-.brands-rail { position: relative; width: 100%; background: #111217; padding-block: 22px; margin-top: var(--ay-heading-to-slider); }
+.brands-rail { position: relative; width: 100%; background: var(--ayrovi-ink-deep); padding-block: 22px; margin-top: var(--ay-heading-to-slider); }
 @media (max-width: 1023px) {
   /* الوحدة البصرية تخرج من أي container وتصل إلى حواف الشاشة */
   .brands-rail {
@@ -883,13 +882,13 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   flex-shrink: 0;
 }
 
-.brand-tile:hover { border-color: rgba(255, 122, 0, 0.65); background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
+.brand-tile:hover { border-color: color-mix(in srgb, var(--ayrovi-color-brand-orange) 65%, transparent); background: rgba(255, 255, 255, 0.09); transform: translateY(-2px); }
 
 .brand-tile__logo { display: grid; place-items: center; width: 100%; height: 34px; }
 .brand-tile__logo img { max-height: 34px; max-width: 84px; object-fit: contain; }
-.brand-tile__letter { font-size: 18px; font-weight: 900; color: #ffffff; }
+.brand-tile__letter { font-size: 18px; font-weight: 900; color: var(--ayrovi-bg-main)fff; }
 
-.brand-tile__name { font-size: 12.5px; font-weight: 700; color: #ffffff; text-align: center; }
+.brand-tile__name { font-size: 12.5px; font-weight: 700; color: var(--ayrovi-bg-main)fff; text-align: center; }
 .brand-tile__cat { font-size: 10.5px; font-weight: 500; color: rgba(255, 255, 255, 0.55); }
 
 @media (prefers-reduced-motion: reduce) {
@@ -898,82 +897,18 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
   .brands-marquee::-webkit-scrollbar { display: none; }
 }
 
-/* ============ LENS SECTION — عرض كامل + mockup كبير ============ */
-@keyframes lensIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.lens-hero__content { animation: lensIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
-
-/* القسم يستغل عرض الهاتف بالكامل — لا max-width بنمط Desktop على الهاتف */
-.lens-hero { width: 100%; }
-@media (max-width: 1023px) {
-  .lens-hero { width: 100vw; max-width: 100vw; margin-left: calc(50% - 50vw); margin-right: calc(50% - 50vw); }
-  .lens-hero__bg { border-radius: 0; }
-  .lens-hero__inner { padding-inline: var(--ay-gutter); padding-block: 44px 48px; gap: var(--ay-cta-to-visual); }
-  /* حاوية الـ mockup بعرض الشاشة حتى يتوسط الـ mockup بمسافات جانبية متساوية */
-  .lens-hero__mockup { margin-inline: calc(-1 * var(--ay-gutter)); }
-}
-
-/* iPhone Mockup — 88–92% من عرض الشاشة على الهاتف (مargins جانبية 20px فقط).
-   المرجع هو الـ viewport لا الـ container (الذي يحمل padding القراءة 24px). */
-.lens-phone { width: calc(100vw - 40px); max-width: none; flex: 0 0 auto; margin-inline: auto; }
-@media (min-width: 640px) and (max-width: 1023px) {
-  .lens-phone { width: min(340px, calc(100vw - 40px)); }
-}
-@media (min-width: 1024px) {
-  .lens-phone { width: min(300px, 32vw); margin-inline: 0; }
-}
-
-.lens-phone__frame {
-  position: relative;
-  border-radius: 38px;
-  background: #111217;
-  padding: 10px;
-  box-shadow: 0 24px 48px -24px rgba(17, 18, 23, 0.35);
-  animation: lensIn 460ms cubic-bezier(0.22, 1, 0.36, 1) 90ms both;
-}
-.lens-phone__island { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 84px; height: 22px; border-radius: 999px; background: #000; z-index: 3; }
-.lens-phone__screen { position: relative; border-radius: 30px; overflow: hidden; background: #fff; aspect-ratio: 9 / 17.2; display: flex; flex-direction: column; }
-.lens-phone__status { display: flex; justify-content: space-between; padding: 14px 18px 4px; font-size: 10px; font-weight: 800; color: #111318; }
-.lens-phone__scan { position: relative; flex: 1; margin: 10px 12px 8px; border-radius: 18px; overflow: hidden; background: #23242c; }
-.lens-phone__photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.lens-phone__corner { position: absolute; width: 20px; height: 20px; border: 2.5px solid var(--ayrovi-white); z-index: 2; }
-.lens-phone__corner.tl { top: 10px; left: 10px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
-.lens-phone__corner.tr { top: 10px; right: 10px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
-.lens-phone__corner.bl { bottom: 10px; left: 10px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
-.lens-phone__corner.br { bottom: 10px; right: 10px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
-.lens-phone__beam { position: absolute; left: 9%; right: 9%; top: 42%; height: 2px; background: var(--ayrovi-white); box-shadow: 0 0 14px color-mix(in srgb, var(--ayrovi-white) 65%, transparent); z-index: 2; animation: lensBeam 2.8s ease-in-out infinite; }
-@keyframes lensBeam { 0%, 100% { top: 24%; } 50% { top: 62%; } }
-.lens-phone__result { padding: 8px 14px 14px; }
-.lens-phone__result strong { display: block; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ayrovi-text-secondary); }
-.lens-phone__name { display: block; margin-top: 3px; font-size: 13px; font-weight: 800; color: #111318; }
-.lens-phone__meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
-.lens-phone__chip { font-size: 10px; font-weight: 700; color: #374151; background: #f3f4f6; border-radius: 999px; padding: 4px 9px; }
-/* chip sélectionné : encre noire sur gris clair — un badge n'est jamais une pastille orange pleine */
-.lens-phone__chip.is-on { background: var(--ayrovi-text-primary); color: #fff; }
-.lens-phone__cta { display: flex; align-items: center; justify-content: center; margin-top: 10px; border-radius: 999px; background: #111318; color: #fff; font-size: 11.5px; font-weight: 800; padding: 9px 12px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .lens-hero__content, .lens-phone__frame { animation: none; }
-  .lens-phone__beam { animation: none; top: 40%; }
-}
-
 /* ============ العناوين التحريرية للأقسام — تتغلب على قواعد h2 العامة ============ */
-.ay-edit-32 { font-size: 32px !important; font-weight: 800 !important; line-height: 1.02 !important; letter-spacing: -0.025em !important; }
-.ay-edit-30 { font-size: 30px !important; font-weight: 800 !important; line-height: 1.05 !important; letter-spacing: -0.02em !important; }
-.ay-edit-36 { font-size: 36px !important; font-weight: 800 !important; line-height: 1.04 !important; letter-spacing: -0.025em !important; }
-.ay-edit-26 { font-size: 26px !important; font-weight: 800 !important; line-height: 1.05 !important; letter-spacing: -0.02em !important; }
+.ay-edit-26 { font-size: var(--text-2xl); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; }
+.ay-edit-30 { font-size: var(--text-3xl); font-weight: 800; line-height: 1.12; letter-spacing: -0.022em; }
+.ay-edit-32 { font-size: var(--text-3xl); font-weight: 800; line-height: 1.12; letter-spacing: -0.022em; }
+.ay-edit-36 { font-size: var(--text-4xl); font-weight: 800; line-height: 1.1; letter-spacing: -0.025em; }
 @media (min-width: 640px) {
-  .ay-edit-32 { font-size: 34px !important; }
-  .ay-edit-36 { font-size: 38px !important; }
-  .ay-edit-26 { font-size: 28px !important; }
+  .ay-edit-26 { font-size: var(--text-3xl); }
 }
 @media (min-width: 1024px) {
-  .ay-edit-32 { font-size: 36px !important; }
-  .ay-edit-30 { font-size: 32px !important; }
-  .ay-edit-36 { font-size: 46px !important; }
-  .ay-edit-26 { font-size: 32px !important; }
+  .ay-edit-30 { font-size: var(--text-4xl); }
+  .ay-edit-32 { font-size: var(--text-4xl); }
+  .ay-edit-36 { font-size: var(--text-display); }
 }
 
 /* ============ LENS v2 — مطابق للنموذج المرجعي ============ */
@@ -989,72 +924,40 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 @media (min-width: 1024px) { .lens2 { padding-block: 64px; } .lens2__grid { grid-template-columns: 1.05fr 0.95fr; gap: 48px; } }
 
 .lens2__eyebrow { margin: 0 0 10px; font-size: 12px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ayrovi-text-secondary); }
-.lens2__title { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; color: #17181c; }
+.lens2__title { margin: 0; font-size: 34px; line-height: 1.12; font-weight: 800; letter-spacing: -0.02em; color: var(--ayrovi-text-primary); }
 @media (min-width: 640px) { .lens2__title { font-size: 42px; } }
 @media (min-width: 1024px) { .lens2__title { font-size: 46px; } }
-.lens2__desc { margin: 12px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.6; color: rgba(23, 24, 28, 0.62); }
+.lens2__desc { margin: 12px 0 0; max-width: 46ch; font-size: 15px; line-height: 1.6; color: color-mix(in srgb, var(--ayrovi-text-primary) 62%, transparent); }
 /* CTA principal unique de l'écran : le seul orange plein autorisé (ex. « Ouvrir LENS »). */
-.lens2__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; padding: 14px 26px; border: 0; border-radius: 999px; background: var(--ayrovi-color-brand-orange); color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 26px -14px color-mix(in srgb, var(--ayrovi-color-brand-orange) 70%, transparent); }
+.lens2__cta { display: inline-flex; align-items: center; gap: 9px; margin-top: 18px; padding: 14px 26px; border: 0; border-radius: 999px; background: var(--ayrovi-color-brand-orange); color: var(--ayrovi-bg-main); font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 12px 26px -14px color-mix(in srgb, var(--ayrovi-color-brand-orange) 70%, transparent); }
 .lens2__cta:hover { filter: brightness(0.95); }
 
 .lens2__minis { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-top: 20px; }
-.lens2__mini { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 700; color: #17181c; }
+.lens2__mini { display: flex; align-items: center; gap: 9px; font-size: 13.5px; font-weight: 700; color: var(--ayrovi-text-primary); }
 .lens2__mini svg { color: var(--ayrovi-text-primary); flex-shrink: 0; }
 
-.lens2__ai { display: flex; gap: 12px; margin-top: 18px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); border: 1px solid rgba(23, 24, 28, 0.06); }
+.lens2__ai { display: flex; gap: 12px; margin-top: 18px; padding: 14px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); border: 1px solid color-mix(in srgb, var(--ayrovi-text-primary) 6%, transparent); }
 .lens2__ai svg { color: var(--ayrovi-text-primary); flex-shrink: 0; margin-top: 2px; }
-.lens2__ai strong { display: block; font-size: 14.5px; font-weight: 800; color: #17181c; }
-.lens2__ai p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: rgba(23, 24, 28, 0.6); }
+.lens2__ai strong { display: block; font-size: 14.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__ai p { margin: 6px 0 0; font-size: 12.5px; line-height: 1.6; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
 
-/* mockup الهاتف */
-.lens2__phone { display: flex; justify-content: center; }
-.lens2__phone-frame { position: relative; width: min(340px, 88vw); border-radius: 40px; background: #14151a; padding: 10px; box-shadow: 0 30px 60px -30px rgba(20, 21, 26, 0.5); }
-.lens2__phone-island { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); width: 90px; height: 24px; border-radius: 999px; background: #000; z-index: 3; }
-.lens2__phone-screen { border-radius: 32px; overflow: hidden; background: #fff; display: flex; flex-direction: column; }
-.lens2__phone-top { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 10px; font-size: 12px; font-weight: 800; color: #17181c; }
-.lens2__phone-top svg:last-child { color: var(--ayrovi-text-primary); }
-.lens2__phone-scan { position: relative; margin: 0 14px; border-radius: 16px; overflow: hidden; background: #d9c4b2; aspect-ratio: 1 / 0.85; }
-.lens2__phone-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-/* coins de visée neutres : blanc sur la photo, comme Google Lens */
-.lens2__corner { position: absolute; width: 22px; height: 22px; border: 2.5px solid var(--ayrovi-white); z-index: 2; }
-.lens2__corner.tl { top: 12px; left: 12px; border-right: 0; border-bottom: 0; border-radius: 8px 0 0 0; }
-.lens2__corner.tr { top: 12px; right: 12px; border-left: 0; border-bottom: 0; border-radius: 0 8px 0 0; }
-.lens2__corner.bl { bottom: 12px; left: 12px; border-right: 0; border-top: 0; border-radius: 0 0 0 8px; }
-.lens2__corner.br { bottom: 12px; right: 12px; border-left: 0; border-top: 0; border-radius: 0 0 8px 0; }
-.lens2__phone-gallery { position: absolute; left: 12px; bottom: 12px; width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.85); display: grid; place-items: center; color: #8a6a4f; z-index: 2; }
-.lens2__phone-shutter { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%); width: 40px; height: 40px; border-radius: 999px; background: #fff; border: 4px solid rgba(0,0,0,0.08); z-index: 2; }
-.lens2__phone-result { padding: 12px 16px 16px; }
-.lens2__phone-resultlabel { font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ayrovi-text-secondary); }
-.lens2__phone-name { display: block; margin-top: 4px; font-size: 15px; font-weight: 800; color: #17181c; }
-.lens2__phone-price { display: block; margin-top: 2px; font-size: 20px; font-weight: 800; color: #17181c; }
-.lens2__phone-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.lens2__phone-chips .chip { font-size: 10.5px; font-weight: 700; border-radius: 999px; padding: 5px 10px; background: #f1f1f2; color: #4a4b52; }
-/* badge sélectionné : encre noire, pas de pastille orange pleine */
-.lens2__phone-chips .chip.is-accent { background: var(--ayrovi-text-primary); color: #fff; }
-.lens2__phone-chips .chip.is-ok { background: #e3f4e8; color: #1d7a3d; }
-.lens2__phone-options { display: block; margin-top: 14px; font-size: 11.5px; font-weight: 800; color: #17181c; }
-.lens2__phone-merchants { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
-.lens2__merchant { display: flex; align-items: center; gap: 9px; border: 1px solid rgba(23,24,28,0.08); border-radius: 12px; padding: 8px 10px; }
-.lens2__merchant-logo { width: 26px; height: 26px; border-radius: 7px; background: #17181c; color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
-.lens2__merchant-name { flex: 1; font-size: 12.5px; font-weight: 700; color: #17181c; }
-.lens2__merchant-price { font-size: 12.5px; font-weight: 800; color: #17181c; }
 /* Règle « flèches des prix marchands » : plus de pastille orange à côté de chaque prix.
    Cercle transparent, filet fin 1px, flèche noire — confort visuel pendant la comparaison. */
 .lens2__merchant-go { width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--ayrovi-border-soft); background: transparent; color: var(--ayrovi-text-primary); display: grid; place-items: center; }
 
 /* Comment ça marche */
-.lens2__steps { margin-top: 28px; background: #fff; border-radius: 20px; padding: 22px 18px; box-shadow: 0 16px 40px -30px rgba(23,24,28,0.3); }
-.lens2__steps-title { margin: 0 0 18px; text-align: center; font-size: 19px; font-weight: 800; color: #17181c; }
+.lens2__steps { margin-top: 28px; background: var(--ayrovi-bg-main); border-radius: 20px; padding: 22px 18px; box-shadow: 0 16px 40px -30px color-mix(in srgb, var(--ayrovi-text-primary) 30%, transparent); }
+.lens2__steps-title { margin: 0 0 18px; text-align: center; font-size: 19px; font-weight: 800; color: var(--ayrovi-text-primary); }
 .lens2__steps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
 @media (min-width: 900px) { .lens2__steps-grid { grid-template-columns: repeat(4, 1fr); } }
 .lens2__step { position: relative; text-align: center; }
 /* Tracker : seule l'étape active est orange, les suivantes restent gris pâle. */
 .lens2__step-num { position: absolute; top: -8px; left: 50%; transform: translateX(-34px); width: 20px; height: 20px; border-radius: 999px; background: var(--ayrovi-border-soft); color: var(--ayrovi-text-secondary); font-size: 11px; font-weight: 800; display: grid; place-items: center; z-index: 2; }
-.lens2__step.is-active .lens2__step-num { background: var(--ayrovi-color-brand-orange); color: #fff; }
+.lens2__step.is-active .lens2__step-num { background: var(--ayrovi-color-brand-orange); color: var(--ayrovi-bg-main); }
 .lens2__step-icon { width: 52px; height: 52px; border-radius: 14px; margin-inline: auto; display: grid; place-items: center; background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
 .lens2__step.is-active .lens2__step-icon { color: var(--ayrovi-color-brand-orange); }
-.lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 800; color: #17181c; }
-.lens2__step p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: rgba(23,24,28,0.6); }
+.lens2__step strong { display: block; margin-top: 12px; font-size: 13.5px; font-weight: 800; color: var(--ayrovi-text-primary); }
+.lens2__step p { margin: 6px 0 0; font-size: 11.5px; line-height: 1.5; color: color-mix(in srgb, var(--ayrovi-text-primary) 60%, transparent); }
 
 /* banner */
 /* Bannière dépréciée en tant que bloc orange plein : elle devient une carte de surface
@@ -1116,7 +1019,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 /* Tracker d'étapes — norme figée : trait ET point de l'étape active en orange,
    étapes futures en gris pâle. Aucun autre orange dans le rail. */
 .lens-step.is-done:not(:first-child)::before, .lens-step.is-active:not(:first-child)::before { background: var(--ayrovi-color-brand-orange); }
-.lens-step__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); color: #fff; z-index: 1; }
+.lens-step__dot { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; border: 2px solid color-mix(in srgb, currentColor 25%, transparent); color: var(--ayrovi-bg-main); z-index: 1; }
 .lens-step.is-active .lens-step__dot { border-color: var(--ayrovi-color-brand-orange); background: var(--ayrovi-color-brand-orange); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ayrovi-color-brand-orange) 18%, transparent); }
 .lens-step.is-done .lens-step__dot { border-color: var(--ayrovi-color-brand-orange); background: var(--ayrovi-color-brand-orange); }
 .lens-step__label { font-size: 10px; font-weight: 700; color: color-mix(in srgb, currentColor 66%, transparent); }

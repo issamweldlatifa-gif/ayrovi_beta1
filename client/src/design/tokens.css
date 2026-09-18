@@ -1,29 +1,51 @@
-/* AYROVI design tokens — the only source of brand, semantic, spacing and shape values.
-   ZALANDO STRATEGY (P4/T1) — Muted & Punchy UI: the platform is strictly monochromatic
-   (white / black); black (#0A0A0A) is the sole ACTION trigger, never a decoration.
-   Black (#0A0A0A) is allowed on: the single primary CTA of a screen, the active step of
-   a progress tracker, the active nav dot, the 3px accent rule of a surface card, and thin
-   micro-interaction glows. It is FORBIDDEN as: a page/container background, a gradient,
-   a full card wash, a thick border around a product or a list row, or a filled
-   badge. Budget: ≤ 3% of any screen's surface, one filled black button per screen. */
+/* AYROVI DESIGN SYSTEM v1.0 — the ONLY source of brand, semantic, spacing,
+   shape and motion values. Charte : « Monochrome Premium × Orange d'action ».
+
+   1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
+      #FFFFFF canvas · #F8F9FA surface · #EAEAEA filet · #111111 encre ·
+      #666666 encre secondaire · #0A0A0A surface sombre premium · #3F3F46
+      élément doux sur sombre. Toute l'échelle slate héritée
+      (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505) est absorbée ;
+      les anciens noms survivent UNIQUEMENT comme alias sans valeur propre.
+   2. L'ORANGE (#FF6900, couleur du logo) n'est jamais décoratif : c'est le
+      déclencheur d'action UNIQUE — CTA principal, étape active, point actif,
+      filet d'identité 3px. Texte sur orange : #111111 (6.54:1, WCAG AAA).
+      Budget : ≤ 3 % de la surface d'un écran (verify/zalando-audit.mjs).
+   3. Le NOIR (#0A0A0A) est l'encre premium des SURFACES : hero, announcement
+      bar, coquille Lens, rails. Jamais une dixième nuance de noir.
+   4. États : vert (#15803D) succès, rouge (#DC2626) erreur, neutre sinon.
+      Le token --ayrovi-warning (kهرماني) est supprimé : 0 usage UI (P4/T2 §1.2).
+   5. Rayons : 12 px contrôle · 16 px carte · 999 px chip. Ombres : xs/card/
+      overlay (+dark). Mouvement : 140/200/320 ms, ease-out (.22, 1, .36, 1).
+      Documentation complète : docs/DESIGN_SYSTEM.md. */
 @theme inline {
   --color-brand: var(--ayrovi-primary);
   --color-brand-dark: var(--ayrovi-primary-dark);
   --color-brand-light: var(--ayrovi-primary-light);
   --color-brand-deep: var(--ayrovi-neutral-950);
+  --color-ink-deep: var(--ayrovi-ink-deep);
+  --color-ink-soft: var(--ayrovi-ink-soft);
   --color-cta: var(--ayrovi-cta);
   --color-cta-dark: var(--ayrovi-cta-dark);
+  --color-cta-hover: var(--ayrovi-cta-hover);
+  --color-cta-active: var(--ayrovi-cta-active);
+  --color-cta-ink: var(--ayrovi-cta-ink);
   --color-accent: var(--ayrovi-accent);
-  --color-accent-deep: var(--ayrovi-accent-dark);
+  --color-accent-deep: var(--ayrovi-accent-deep);
   --color-success: var(--ayrovi-success);
+  --color-success-soft: var(--ayrovi-success-soft);
   --color-danger: var(--ayrovi-danger);
-  --color-warning: var(--ayrovi-warning);
+  --color-danger-soft: var(--ayrovi-danger-soft);
   --color-whatsapp: var(--ayrovi-whatsapp);
   --color-whatsapp-hover: var(--ayrovi-whatsapp-hover);
   --color-ink: var(--ayrovi-neutral-900);
   --color-muted: var(--ayrovi-neutral-500);
   --color-surface: var(--ayrovi-neutral-50);
   --color-line: var(--ayrovi-neutral-200);
+  --radius-chip: var(--ayrovi-radius-chip);
+  --radius-icon: var(--ayrovi-radius-icon);
+  --shadow-xs: var(--ayrovi-shadow-xs);
+  --shadow-card-dark: var(--ayrovi-shadow-card-dark);
   --font-sans: var(--font-primary);
   --font-display: var(--font-primary);
   --font-body: var(--font-primary);
@@ -97,43 +119,55 @@ html[data-theme='dark'] {
 :root {
     color-scheme: light;
 
-    /* ───────────────────────────────────────────────────────────────────────
-       ZALANDO STRATEGY — les six jetons canoniques (source unique de vérité).
-       La plateforme est monochrome : le noir (#0A0A0A) est le seul déclencheur
-       d'action (Action-Driven Trigger), pas un outil de décoration.
-       Interdit en fond de page, en dégradé, en pleine carte ou en bordure
-       épaisse ; réservé au CTA principal, à l'étape active et aux
-       micro-interactions, soit ≤ 3 % de la surface d'un écran.
-       ─────────────────────────────────────────────────────────────────────── */
-    --ayrovi-bg-main: #ffffff;              /* Canvas 95 % — fond pur de toutes les pages */
+    /* — les six jetons canoniques de la charte (verrouillés par tests/design-zalando.test.ts) — */
+    --ayrovi-bg-main: #ffffff;              /* Canvas — fond pur de toutes les pages */
     --ayrovi-bg-surface: #f8f9fa;           /* Cartes, listes, écrans de comparaison */
     --ayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
-    --ayrovi-text-primary: #111111;         /* Noir premium : titres, marques, prix */
-    --ayrovi-text-secondary: #666666;       /* Gris équilibré : légendes, prix secondaires */
-    --ayrovi-color-brand-orange: #ff6900;   /* Orange pur — CTA principal unique (token historique gardé) */
+    --ayrovi-text-primary: #111111;         /* Encre : titres, marques, prix, texte */
+    --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
+    --ayrovi-color-brand-orange: #ff6900;   /* Orange de marque (logo) — déclencheur d'action UNIQUE */
 
-    --ayrovi-primary: #111318;
-    --ayrovi-primary-dark: #050505;
-    --ayrovi-primary-light: #3f3f46;
+    /* — surfaces sombres premium : la SEULE famille de noir — */
+    --ayrovi-ink-deep: #0a0a0a;             /* Hero, announcement, coquille Lens, rails */
+    --ayrovi-ink-soft: #3f3f46;             /* Éléments doux sur sombre (liseré, icône au repos) */
+
+    /* — chaîne accent : une seule source de vérité, dérivations incluses — */
     --ayrovi-cta: var(--ayrovi-color-brand-orange);
-    --ayrovi-cta-dark: #d95a00;
     --ayrovi-orange: var(--ayrovi-color-brand-orange);
     --ayrovi-accent: var(--ayrovi-color-brand-orange);
     --ayrovi-accent-soft: var(--ayrovi-bg-surface);
-    --ayrovi-accent-dark: var(--ayrovi-cta-dark);
+    --ayrovi-cta-ink: var(--ayrovi-text-primary);      /* texte SUR orange : 6.54:1, AAA */
+    --ayrovi-cta-hover: color-mix(in srgb, var(--ayrovi-color-brand-orange) 87%, var(--ayrovi-text-primary));
+    --ayrovi-cta-active: color-mix(in srgb, var(--ayrovi-color-brand-orange) 72%, var(--ayrovi-text-primary));
+    --ayrovi-cta-dark: var(--ayrovi-cta-hover);        /* alias compat (hover) */
+    --ayrovi-accent-dark: var(--ayrovi-cta-hover);     /* alias compat */
+    --ayrovi-accent-deep: var(--ayrovi-cta-active);    /* alias compat (pressé) */
+
+    /* — états : succès / erreur uniquement ; le kهرماني est retiré (0 usage UI) — */
     --ayrovi-success: #15803d;
+    --ayrovi-success-soft: #e6f5ec;
     --ayrovi-danger: #dc2626;
-    --ayrovi-warning: #b77900;
-    --ayrovi-neutral-50: #f8f9fe;
-    --ayrovi-neutral-200: #e2e8f0;
-    --ayrovi-neutral-500: #6b7280;
-    --ayrovi-neutral-900: #1d2130;
-    --ayrovi-neutral-950: #111318;
+    --ayrovi-danger-soft: #fdecec;
+
+    /* — échelle neutre : alias de la canonique (la slate est absorbée, P0 P4/T2) — */
+    --ayrovi-primary: var(--ayrovi-text-primary);
+    --ayrovi-primary-dark: var(--ayrovi-ink-deep);
+    --ayrovi-primary-light: var(--ayrovi-ink-soft);
+    --ayrovi-neutral-50: var(--ayrovi-bg-surface);
+    --ayrovi-neutral-200: var(--ayrovi-border-soft);
+    --ayrovi-neutral-500: var(--ayrovi-text-secondary);
+    --ayrovi-neutral-900: var(--ayrovi-text-primary);
+    --ayrovi-neutral-950: var(--ayrovi-ink-deep);
     --ayrovi-white: #ffffff;
-    --ayrovi-black: #050505;
+    --ayrovi-black: var(--ayrovi-ink-deep);
     --ayrovi-whatsapp: #25d366;
     --ayrovi-whatsapp-hover: #1fae53;
-    --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-neutral-950) 0%, var(--ayrovi-primary) 100%);
+    --ayrovi-gradient: linear-gradient(135deg, var(--ayrovi-ink-deep) 0%, var(--ayrovi-text-primary) 100%);
+
+    /* — focus ring (remplace l'alias mensonger --ayrovi-purple) — */
+    --ayrovi-focus-ring: var(--ayrovi-text-primary);
+    --ayrovi-focus-ring-inverse: var(--ayrovi-white);
+
     --font-primary: 'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif;
     --font-weight-regular: 400;
     --font-weight-medium: 500;
@@ -163,21 +197,51 @@ html[data-theme='dark'] {
     --text-nav--line-height: 1.25rem;
     --ayrovi-font-display: var(--font-primary);
     --ayrovi-font-body: var(--font-primary);
-    --ayrovi-radius-control: 0.75rem;
-    --ayrovi-radius-card: 1rem;
+    /* — forme : 3 rayons, c'est tout (contrôle / carte / chip) — */
+    --ayrovi-radius-control: 0.75rem;      /* boutons, champs, tuiles  */
+    --ayrovi-radius-card: 1rem;            /* cartes, panneaux, modales */
+    --ayrovi-radius-chip: 999px;           /* badges, pills, pastilles  */
+    --ayrovi-radius-icon: 0.625rem;        /* boutons-icônes carrés     */
     --ayrovi-icon-stroke: 1.5;
-    
+
+    /* — élévation : 3 niveaux clairs + 1 sombre — */
+    --ayrovi-shadow-xs: 0 1px 2px rgb(17 19 24 / 6%);
     --ayrovi-shadow-card: 0 12px 30px -22px rgb(17 19 24 / 22%);
     --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(17 19 24 / 35%);
+    --ayrovi-shadow-card-dark: 0 12px 30px -18px rgb(0 0 0 / 55%);
+
+    /* — rythme de page : gouttières et sections — */
+    --ayrovi-gutter: 1rem;
+    --ayrovi-gutter-md: 1.5rem;
+    --ayrovi-gutter-lg: 2rem;
+    --ayrovi-container: 75rem;
+    --ayrovi-container-narrow: 56rem;
+    --ayrovi-section-y-mobile: 3rem;
+    --ayrovi-section-y-desktop: 4.5rem;
     --ayrovi-page-gap-mobile: 2rem;
     --ayrovi-page-gap-desktop: 3rem;
 
-    /* Backward-compatible aliases for runtime Admin theme configuration. */
+    /* — mouvement : 3 durées, 2 courbes ; respect de prefers-reduced-motion — */
+    --ayrovi-motion-fast: 140ms;
+    --ayrovi-motion-base: 200ms;
+    --ayrovi-motion-slow: 320ms;
+    --ayrovi-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ayrovi-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+
+    /* — calques : la seule échelle z autorisée dans la vitrine — */
+    --ayrovi-z-header: 20;
+    --ayrovi-z-fab: 25;
+    --ayrovi-z-bottomnav: 30;
+    --ayrovi-z-drawer: 40;
+    --ayrovi-z-lens: 45;
+    --ayrovi-z-modal: 50;
+    --ayrovi-z-toast: 60;
+
+    /* Alias d'historique (Admin legacy) : sans valeur propre, en voie de retrait. */
     --ayrovi-purple: var(--ayrovi-primary);
     --ayrovi-purple-dark: var(--ayrovi-primary-dark);
     --ayrovi-purple-light: var(--ayrovi-primary-light);
     --ayrovi-yellow: var(--ayrovi-accent);
-    --ayrovi-accent-deep: var(--ayrovi-accent-dark);
     --ayrovi-deep: var(--ayrovi-neutral-950);
     --ayrovi-ink: var(--ayrovi-neutral-900);
     --ayrovi-muted: var(--ayrovi-neutral-500);

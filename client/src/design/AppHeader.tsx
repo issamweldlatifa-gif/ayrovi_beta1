@@ -52,7 +52,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
           ))}
           <div className="min-w-0" dir={direction}>
             <strong className={`block truncate font-display text-base font-black sm:text-lg ${tone === 'dark' ? 'text-white' : 'text-ink'}`}>{title}</strong>
-            {subtitle && <span className={`block truncate text-[10px] font-bold sm:text-xs ${tone === 'dark' ? 'text-white/60' : 'text-muted'}`}>{subtitle}</span>}
+            {subtitle && <span className={`block truncate text-xs font-bold sm:text-xs ${tone === 'dark' ? 'text-white/60' : 'text-muted'}`}>{subtitle}</span>}
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-1.5" dir={direction}>

@@ -71,7 +71,7 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
         <div className="mx-auto max-w-md">
           <div className="mb-4">
             <h2 className="text-lg font-extrabold">{tr('Vos recherches Lens', 'عمليات بحث Lens')}</h2>
-            <p className="mt-1 text-[11px] leading-relaxed text-muted">{tr('Synchronisées avec votre compte quand vous êtes connecté, disponibles sur cet appareil sinon. Les photos originales ne sont jamais conservées.', 'تتزامن مع حسابك عند تسجيل الدخول، أو تبقى متاحة على هذا الجهاز. لا نحتفظ أبدًا بالصور الأصلية.')}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted">{tr('Synchronisées avec votre compte quand vous êtes connecté, disponibles sur cet appareil sinon. Les photos originales ne sont jamais conservées.', 'تتزامن مع حسابك عند تسجيل الدخول، أو تبقى متاحة على هذا الجهاز. لا نحتفظ أبدًا بالصور الأصلية.')}</p>
           </div>
 
           {loading && items.length === 0 ? (
@@ -95,17 +95,17 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="rounded-full bg-surface px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wide text-ink">{KIND_LABELS[item.kind][isArabic ? 1 : 0]}</span>
-                        <time className="text-[9px] font-semibold text-muted">{formatDate(item.createdAt, locale)}</time>
+                        <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-ink">{KIND_LABELS[item.kind][isArabic ? 1 : 0]}</span>
+                        <time className="text-xs font-semibold text-muted">{formatDate(item.createdAt, locale)}</time>
                       </div>
                       <h3 className="mt-1 line-clamp-2 text-xs font-extrabold leading-snug">{item.title}</h3>
-                      <p className="mt-0.5 truncate text-[10px] text-muted">{item.source || item.queryLabel || `${item.resultsCount} ${tr('résultat(s)', 'نتيجة')}`}</p>
+                      <p className="mt-0.5 truncate text-xs text-muted">{item.source || item.queryLabel || `${item.resultsCount} ${tr('résultat(s)', 'نتيجة')}`}</p>
                       <div className="mt-1 flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-extrabold text-ink">{item.price != null && item.currency ? `${item.price.toFixed(2)} ${item.currency}` : tr('Prix à confirmer', 'السعر يحتاج إلى تأكيد')}</span>
+                        <span className="text-xs font-extrabold text-ink">{item.price != null && item.currency ? `${item.price.toFixed(2)} ${item.currency}` : tr('Prix à confirmer', 'السعر يحتاج إلى تأكيد')}</span>
                         {canRepeat(item) ? (
-                          <button type="button" onClick={() => onRepeat(item)} className="ay-btn-primary min-h-11 px-3 py-1.5 text-[10px]">{tr('Relancer', 'إعادة')}</button>
+                          <button type="button" onClick={() => onRepeat(item)} className="ay-btn-primary min-h-11 px-3 py-1.5 text-xs">{tr('Relancer', 'إعادة')}</button>
                         ) : (
-                          <button type="button" onClick={onNewScan} className="ay-btn-secondary min-h-11 px-3 py-1.5 text-[10px]">{tr('Nouvelle photo', 'صورة جديدة')}</button>
+                          <button type="button" onClick={onNewScan} className="ay-btn-secondary min-h-11 px-3 py-1.5 text-xs">{tr('Nouvelle photo', 'صورة جديدة')}</button>
                         )}
                       </div>
                     </div>

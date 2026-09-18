@@ -45,7 +45,7 @@ const TABS = [
 const media = (value: unknown, fallback: string) => String(value || fallback);
 
 const Cta: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
-  <button type="button" onClick={onClick} className="mt-5 inline-flex items-center gap-1.5 text-[15px] font-bold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-muted">
+  <button type="button" onClick={onClick} className="mt-5 inline-flex items-center gap-1.5 text-base font-bold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-muted">
     {children}
   </button>
 );
@@ -87,7 +87,7 @@ export const DiscoveryHub: React.FC = () => {
     <section aria-label="Discovery AYROVI" className="mt-20 lg:mt-24">
       <div className="mx-6 lg:mx-auto lg:max-w-7xl lg:px-8">
         {/* مقدمة تحريرية مضغوطة */}
-        <p className="text-[11px] font-black uppercase tracking-[0.22em] text-muted">DISCOVERY</p>
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-muted">DISCOVERY</p>
         <h2 className="ay-edit-32 mt-2 max-w-[300px] text-ink lg:max-w-none">Ce qui mérite votre attention.</h2>
       </div>
 
@@ -103,7 +103,7 @@ export const DiscoveryHub: React.FC = () => {
             aria-selected={active === tab.key}
             tabIndex={active === tab.key ? 0 : -1}
             onClick={() => setActive(tab.key)}
-            className={`relative shrink-0 whitespace-nowrap pb-2.5 text-[12.5px] font-bold tracking-[0.02em] transition-colors sm:text-[13.5px] ${active === tab.key ? 'text-ink' : 'text-muted hover:text-ink'}`}
+            className={`relative shrink-0 whitespace-nowrap pb-2.5 text-xs font-bold tracking-[0.02em] transition-colors sm:text-sm ${active === tab.key ? 'text-ink' : 'text-muted hover:text-ink'}`}
           >
             {tab.label}
             <span aria-hidden className={`absolute inset-x-0 bottom-0 h-[2.5px] rounded-full transition-opacity duration-300 ${active === tab.key ? 'bg-ink opacity-100' : 'opacity-0'}`} />
@@ -124,8 +124,8 @@ export const DiscoveryHub: React.FC = () => {
               <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-white/90" />
             </div>
             <div className="px-5 sm:px-8">
-              <h3 className="mt-6 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-[28px]">Les nouveautés viennent d’arriver.</h3>
-            <p className="mt-3 max-w-md text-[15.5px] leading-[1.6] text-muted sm:text-base">Découvrez une sélection de produits récemment disponibles.</p>
+              <h3 className="mt-6 text-3xl font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-3xl">Les nouveautés viennent d’arriver.</h3>
+            <p className="mt-3 max-w-md text-base leading-[1.6] text-muted sm:text-base">Découvrez une sélection de produits récemment disponibles.</p>
               <Cta onClick={() => open('arrivals')}>Explorer les arrivages →</Cta>
             </div>
           </div>
@@ -138,12 +138,12 @@ export const DiscoveryHub: React.FC = () => {
               <img src={media(promo?.image, heroHomme)} alt={promo?.name || 'Offre du moment'} className="aspect-[16/10] w-full object-cover sm:aspect-[16/9]" loading="lazy" />
               <span aria-hidden className="absolute start-0 top-5 h-8 w-[5px] rounded-e-full bg-white/90" />
               {/* badge : fond blanc, filet fin, encre noire — jamais de pastille orange pleine */}
-              <span className="absolute bottom-3 start-4 rounded-full border border-white/70 bg-white px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-ink">OFFRE DU MOMENT</span>
+              <span className="absolute bottom-3 start-4 rounded-full border border-white/70 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.14em] text-ink">OFFRE DU MOMENT</span>
             </div>
             <div className="p-5">
-              <h3 className="text-[22px] font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-[24px]">{promo?.name || 'Les offres AYROVI'}</h3>
-              {promo?.description && <p className="mt-1.5 text-[13.5px] leading-[1.55] text-muted sm:text-sm">{String(promo.description).slice(0, 110)}</p>}
-              {promo?.ends_at && <p className="mt-2 text-[11.5px] font-semibold text-muted">Jusqu’au {new Date(promo.ends_at).toLocaleDateString('fr-TN')}</p>}
+              <h3 className="text-xl font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-2xl">{promo?.name || 'Les offres AYROVI'}</h3>
+              {promo?.description && <p className="mt-1.5 text-sm leading-[1.55] text-muted sm:text-sm">{String(promo.description).slice(0, 110)}</p>}
+              {promo?.ends_at && <p className="mt-2 text-xs font-semibold text-muted">Jusqu’au {new Date(promo.ends_at).toLocaleDateString('fr-TN')}</p>}
               <Cta onClick={() => open('promotions')}>Explorer les promotions →</Cta>
             </div>
           </div>
@@ -154,29 +154,29 @@ export const DiscoveryHub: React.FC = () => {
           <div>
             <div className="no-scrollbar flex gap-3 overflow-x-auto">
               {(stories.length ? stories : [{ id: 'r1', media_url: heroFemme, title: 'Sélection communauté' }, { id: 'r2', media_url: heroHomme, title: 'Découverte' }, { id: 'r3', media_url: heroEnfants, title: 'Style du jour' }]).map((story: any, index: number) => (
-                <div key={story.id || index} className="relative aspect-[9/16] w-[64%] shrink-0 overflow-hidden rounded-[18px] bg-[#111217] sm:w-[240px]">
+                <div key={story.id || index} className="relative aspect-[9/16] w-[64%] shrink-0 overflow-hidden rounded-card bg-ink-deep sm:w-[240px]">
                   <img src={media(story.media_url, heroFemme)} alt={story.title || ''} className="absolute inset-0 h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
                   <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                   <span aria-hidden className="absolute left-1/2 top-1/2 grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-lg text-ink">▶</span>
-                  {story.title && <p className="absolute inset-x-0 bottom-0 line-clamp-2 p-3 text-[11.5px] font-bold leading-snug text-white">{story.title}</p>}
+                  {story.title && <p className="absolute inset-x-0 bottom-0 line-clamp-2 p-3 text-xs font-bold leading-snug text-white">{story.title}</p>}
                 </div>
               ))}
             </div>
-            <h3 className="mt-6 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-[28px]">Ce que la communauté découvre.</h3>
+            <h3 className="mt-6 text-3xl font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-3xl">Ce que la communauté découvre.</h3>
             <Cta onClick={() => open('stories')}>Découvrir la communauté →</Cta>
           </div>
         )}
 
         {/* MAGAZINE — قصة تحريرية بعرض كامل */}
         {active === 'magazine' && (
-          <div className="relative overflow-hidden bg-[#111217]">
+          <div className="relative overflow-hidden bg-ink-deep">
             <img src={media(article?.image, heroFemme)} alt={article?.title || 'Magazine AYROVI'} className="aspect-[4/3] w-full object-cover opacity-95 sm:aspect-[21/10]" loading="lazy" />
             <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/5" />
             <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7">
-              <span className="text-[10.5px] font-black uppercase tracking-[0.2em] text-white/70">{article?.category || 'STYLE'}</span>
-              <h3 className="mt-2 max-w-xl text-[24px] font-extrabold leading-[1.08] tracking-[-0.02em] text-white sm:text-[28px]">{article?.title || 'Les tendances qui méritent votre attention.'}</h3>
-              <p className="mt-2 max-w-lg text-[12.5px] leading-relaxed text-white/80 sm:text-[14px]">{article?.summary || 'Découvrez les inspirations et nouveautés sélectionnées par AYROVI.'}</p>
-              <button type="button" onClick={() => open('news')} className="mt-3.5 inline-flex items-center gap-1.5 text-[14.5px] font-bold text-white underline decoration-1 underline-offset-4 transition-colors hover:text-white/70">
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-white/70">{article?.category || 'STYLE'}</span>
+              <h3 className="mt-2 max-w-xl text-2xl font-extrabold leading-[1.08] tracking-[-0.02em] text-white sm:text-3xl">{article?.title || 'Les tendances qui méritent votre attention.'}</h3>
+              <p className="mt-2 max-w-lg text-xs leading-relaxed text-white/80 sm:text-sm">{article?.summary || 'Découvrez les inspirations et nouveautés sélectionnées par AYROVI.'}</p>
+              <button type="button" onClick={() => open('news')} className="mt-3.5 inline-flex items-center gap-1.5 text-base font-bold text-white underline decoration-1 underline-offset-4 transition-colors hover:text-white/70">
                 Explorer le magazine →
               </button>
             </div>

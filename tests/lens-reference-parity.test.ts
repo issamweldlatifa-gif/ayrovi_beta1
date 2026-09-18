@@ -19,7 +19,7 @@ const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 
 
 describe('AYROVIX Lens ↔ Amazon reference parity', () => {
   it('P1 — full-bleed photo on black (no grey frame, no card)', () => {
-    expect(irl).toContain("shell ? 'bg-black' : 'bg-[#FAFAFA]'");
+    expect(irl).toContain("shell ? 'bg-black' : 'bg-surface'"); // DS v1.0 : surface canonique (token bg-surface)
     expect(irl).toContain("'h-full w-full object-cover select-none'");
   });
 

@@ -40,7 +40,7 @@ export const LensCamera: React.FC<LensCameraProps> = ({ onImage }) => {
         </span>
         <span>
           <span className="block text-sm font-extrabold">{tr('Prendre une photo', 'التقاط صورة')}</span>
-          <span className="mt-0.5 block text-[11px] font-medium text-white/80">{tr("La caméra s'ouvre directement — cadrez le produit", 'تفتح الكاميرا مباشرة — صوّر المنتج')}</span>
+          <span className="mt-0.5 block text-xs font-medium text-white/80">{tr("La caméra s'ouvre directement — cadrez le produit", 'تفتح الكاميرا مباشرة — صوّر المنتج')}</span>
         </span>
       </button>
     </>

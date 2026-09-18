@@ -54,7 +54,7 @@ export const LensContextHeader: React.FC<LensContextHeaderProps> = ({
           {!camera && onCart && (
             <button type="button" onClick={onCart} aria-label={tr(`Panier, ${count} article(s)`, `السلة، ${count} منتج`)} className={`relative grid h-11 w-11 place-items-center rounded-full ${control}`}>
               <ShoppingBag className="h-5 w-5" />
-              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-ink px-1 text-[9px] font-black leading-none text-white">{count}</span>}
+              {count > 0 && <span className="absolute -end-0.5 -top-0.5 grid min-h-5 min-w-5 place-items-center rounded-full border-2 border-white bg-ink px-1 text-xs font-black leading-none text-white">{count}</span>}
             </button>
           )}
           <button type="button" onClick={onMenu} aria-label={tr('Menu AYROVIX Lens', 'قائمة عدسة AYROVIX')} className={`grid h-11 w-11 place-items-center rounded-full ${control}`}>

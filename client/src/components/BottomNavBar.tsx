@@ -14,7 +14,7 @@ interface BottomNavBarProps {
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
-const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-[10px] rounded-2xl text-[11px] font-extrabold text-[#1d2130] transition duration-200 hover:bg-black/[0.05] active:scale-[0.96]';
+const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-2.5 rounded-2xl text-xs font-extrabold text-ink transition duration-200 hover:bg-ink-deep/5 active:scale-[0.96]';
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
   const navigation = useNavigationHistory();
@@ -26,7 +26,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   const iconStyle = (active = false): React.CSSProperties => ({
     width: Math.max(iconConfig.size, 30),
     height: Math.max(iconConfig.size, 30),
-    color: active ? (iconConfig.activeColor || '#ff6900') : (iconConfig.color || '#5b6472'),
+    color: active ? (iconConfig.activeColor || '#ff6900') : (iconConfig.color || '#666666'),
     fill: 'none',
   });
   useBodyScrollLock(isVisionOpen);
@@ -62,7 +62,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
   return (
     <>
       {isVisionOpen && (
-        <section className="fixed inset-0 z-[90] overflow-y-auto bg-surface" role="dialog" aria-modal="true" aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} dir={direction}>
+        <section className="fixed inset-0 z-50 overflow-y-auto bg-surface" role="dialog" aria-modal="true" aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} dir={direction}>
           <AppHeader title="AYROVI Vision" subtitle={tr('Nouveau module visuel', 'وحدة بصرية جديدة')} onClose={() => navigation.back()} />
           <div className="grid min-h-[calc(100dvh-5rem)] place-items-center px-5 pb-24 text-center">
             <div className="w-full max-w-sm rounded-card border border-line bg-white p-8 shadow-overlay">

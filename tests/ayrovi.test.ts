@@ -984,7 +984,7 @@ describe('AYSONIC platform', () => {
     expect(commerce.body.data.deposit).toHaveProperty('flouciNumber');
     expect(commerce.body.data.deposit.cardDiscountPercent).toBe(5);
     expect(commerce.body.data.channels).toEqual({ facebook: '', instagram: '', tiktok: '', whatsapp: '' });
-    expect(commerce.body.data.theme.primary).toBe('#111318');
+    expect(commerce.body.data.theme.primary).toBe('#111111'); // DS v1.0 : encre = #111111
     expect(commerce.body.data.pricing.version).toBe(1);
 
     const preview = await request(app).post('/api/public/pricing/preview').send({ originalPrice: 21.99, currency: 'EUR', quantity: 2 });
@@ -1030,9 +1030,9 @@ describe('AYSONIC platform', () => {
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(row.setting_value.typography.preset).toBe('ayrovi-modern');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111318', heroBackground: '#111318', announcementBackground: '#111318', accent: '#ff6900' });
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111111', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
     expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
-    expect(row.setting_value.navigation.color).toBe('#111318');
+    expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
 
     const malformed = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({
       value: { ...row.setting_value, sections: row.setting_value.sections.slice(0, 4) },

@@ -749,7 +749,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   <span className="grid h-10 w-10 place-items-center bg-surface text-ink"><Search size={18} /></span>
                   <span>
                     <span className="block text-sm font-extrabold text-ink">{tr('Nom du produit', 'اسم المنتج')}</span>
-                    <span className="mt-0.5 block text-[11px] font-medium text-muted">{tr('Marque + modèle. Ex. Nike Air Max 270', 'الماركة + الموديل. مثال: Nike Air Max 270')}</span>
+                    <span className="mt-0.5 block text-xs font-medium text-muted">{tr('Marque + modèle. Ex. Nike Air Max 270', 'الماركة + الموديل. مثال: Nike Air Max 270')}</span>
                   </span>
                 </label>
                 <div className="flex gap-2">
@@ -767,7 +767,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   />
                   <button type="submit" disabled={textQuery.trim().length < 2} className="ay-btn-primary flex-none text-xs disabled:opacity-40">{tr('Rechercher', 'بحث')}</button>
                 </div>
-                <p className="text-[11px] font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue AYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة AYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
+                <p className="text-xs font-medium text-muted leading-relaxed">{tr('Recherche dans le catalogue AYROVI + web marchand (même moteur que QR/lien). Aucun prix inventé.', 'بحث في مجموعة AYROVI + وِب المتاجر (نفس محرك QR/الرابط). لا سعر مخترع.')}</p>
               </form>
 
               <form
@@ -781,7 +781,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 <label htmlFor="ayrovix-url-input" className="flex items-center gap-3 text-start">
                   <span>
                     <span className="block text-sm font-extrabold text-ink">{tr('Lien du produit', 'رابط المنتج')}</span>
-                    <span className="mt-0.5 block text-[11px] font-medium text-muted">SHEIN, Zara, Amazon, AliExpress…</span>
+                    <span className="mt-0.5 block text-xs font-medium text-muted">SHEIN, Zara, Amazon, AliExpress…</span>
                   </span>
                 </label>
                 <div className="flex gap-2">
@@ -796,7 +796,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 <div className="bg-white p-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-extrabold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</p>
-                    <button type="button" onClick={openHistory} className="text-[11px] font-bold text-ink underline">{tr('Voir tout', 'عرض الكل')}</button>
+                    <button type="button" onClick={openHistory} className="text-xs font-bold text-ink underline">{tr('Voir tout', 'عرض الكل')}</button>
                   </div>
                   <div className="mt-2.5 flex flex-wrap gap-2">
                     {recentItems.map((item) => (
@@ -808,7 +808,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                         title={item.queryLabel || item.title}
                       >
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="grid h-5 w-5 place-items-center rounded-full bg-surface text-[10px] font-black text-muted">{item.kind==='image'?'◉':item.kind==='text'?'Aa':item.kind==='url'?'↗':'◎'}</span>
+                          <span className="grid h-5 w-5 place-items-center rounded-full bg-surface text-xs font-black text-muted">{item.kind==='image'?'◉':item.kind==='text'?'Aa':item.kind==='url'?'↗':'◎'}</span>
                           <span className="truncate max-w-[18ch]">{item.queryLabel || item.title}</span>
                         </span>
                       </button>
@@ -817,7 +817,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 </div>
               )}
 
-              <p className="px-2 pt-1 text-center text-[11px] leading-relaxed text-muted">
+              <p className="px-2 pt-1 text-center text-xs leading-relaxed text-muted">
                 {tr('Caméra inaccessible ? Importez une photo, saisissez un nom ou collez un lien — AYROVIX calcule son prix final en dinars.', 'الكاميرا غير متاحة؟ ارفع صورة أو اكتب اسمًا أو ألصق رابطًا — تحسب AYROVIX سعره النهائي بالدينار.')}
               </p>
             </div>
@@ -858,12 +858,12 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <div className="mx-auto w-full max-w-6xl px-4 py-3 pb-6 lg:px-6 lg:py-6">
                 {/* Back context — keeps Lens image reachable without wasting viewport */}
                 {previewUrl && (
-                  <button type="button" onClick={goBack} className="mb-3 inline-flex items-center gap-2 text-[12px] font-bold text-muted hover:text-ink">
+                  <button type="button" onClick={goBack} className="mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-ink">
                     <span className="grid h-7 w-7 place-items-center rounded-full border border-line bg-white">‹</span>
                     {tr('Retour aux résultats', 'العودة إلى النتائج')}
                     <span className="hidden sm:inline-flex items-center gap-1.5 ml-2 rounded-full border border-line bg-surface px-2 py-1">
                       <img src={previewUrl} alt="" className="h-6 w-6 object-cover rounded" />
-                      <span className="text-[11px] font-semibold text-muted">{tr('Votre image', 'صورتك')}</span>
+                      <span className="text-xs font-semibold text-muted">{tr('Votre image', 'صورتك')}</span>
                     </span>
                   </button>
                 )}
@@ -880,7 +880,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 </div>
                 {urlResult && urlResult.alternates.length > 0 && (
                   <section className="mt-8">
-                    <h3 className="mb-3 text-[11px] font-extrabold uppercase tracking-wide text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
+                    <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
                     <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
                   </section>
                 )}
@@ -915,7 +915,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <p className="text-sm font-extrabold text-ink">{g.title}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{g.hint}</p>
-              <p className="text-[11px] font-mono text-muted">{error.code}</p>
+              <p className="text-xs font-mono text-muted">{error.code}</p>
               <div className="flex flex-wrap justify-center gap-2.5">
                 {showPreview && (
                   <button type="button" onClick={() => void runImageAnalysis()} className="ay-btn-secondary text-xs">{tr('Relancer l’analyse', 'إعادة التحليل')}</button>

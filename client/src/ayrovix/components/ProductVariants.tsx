@@ -30,7 +30,7 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors,
     <div className="space-y-3">
       {colors.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{tr('Couleur', 'اللون')}</p>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.08em] text-muted">{tr('Couleur', 'اللون')}</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tr('Couleur', 'اللون')}>
             {colors.slice(0, 10).map((c) => {
               const enabled = colorAvailable(c);
@@ -41,7 +41,7 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors,
       )}
       {sizes.length > 0 && (
         <div>
-          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-[0.08em] text-muted">{tr('Taille', 'المقاس')}</p>
+          <p className="mb-1.5 text-xs font-bold uppercase tracking-[0.08em] text-muted">{tr('Taille', 'المقاس')}</p>
           <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={tr('Taille', 'المقاس')}>
             {sizes.slice(0, 20).map((s) => {
               const enabled = sizeAvailable(s);

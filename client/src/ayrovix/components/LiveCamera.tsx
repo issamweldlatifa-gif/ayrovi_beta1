@@ -195,7 +195,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <button type="button" onClick={photoUrl && onPhotoClose ? onPhotoClose : onClose} className={`grid h-10 w-10 place-items-center rounded-full text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'bg-black/55 backdrop-blur' : ''}`} aria-label={tr('Retour', 'رجوع')}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         </button>
-        <p aria-hidden="true" className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-[17px] font-extrabold lowercase tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'rounded-full bg-black/40 px-3 py-0.5 backdrop-blur' : ''}`}>ayrovix</p>
+        <p aria-hidden="true" className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-extrabold lowercase tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'rounded-full bg-black/40 px-3 py-0.5 backdrop-blur' : ''}`}>ayrovix</p>
         {photoUrl ? null : (
           <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
             className={`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}>
@@ -205,7 +205,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       </div>
 
       {torchHint && (
-        <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-[11px] font-semibold text-white/90">
+        <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white/90">
           {tr('Flash non disponible — utilisez un bon éclairage.', 'الفلاش غير متاح — استخدم إضاءة جيدة.')}
         </p>
       )}
@@ -213,8 +213,8 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {mode === 'search' && !photoUrl && isVideo && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
           {liveState.status === 'ai-unavailable'
-            ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-[10.5px] font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
-            : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-[11px] font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>}
+            ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
+            : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-xs font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>}
         </div>
       )}
 
@@ -235,7 +235,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
                 className={`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-white bg-white/20 ring-2 ring-white' : 'border-white/90 hover:border-white hover:bg-white/10'}`}
                 style={{ left: `${o.box!.x * 100}%`, top: `${o.box!.y * 100}%`, width: `${o.box!.w * 100}%`, height: `${o.box!.h * 100}%` }}
                 aria-label={o.label}>
-                <span className="absolute -top-5 left-0 truncate rounded bg-white px-1.5 py-0.5 text-[9px] font-extrabold text-ink max-w-[120px]">
+                <span className="absolute -top-5 left-0 truncate rounded bg-white px-1.5 py-0.5 text-xs font-extrabold text-ink max-w-[120px]">
                   {o.label} · {o.confidence}%{priceText}
                 </span>
               </button>
@@ -244,17 +244,17 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
           {isVideo && active && !active.box && (
             <span className="absolute inset-6 rounded-[16px] border-2 border-white" aria-hidden="true">
-              <span className="absolute -top-6 left-0 rounded-md bg-white px-2 py-0.5 text-[10px] font-extrabold text-ink">{active.label} · {active.confidence}%</span>
+              <span className="absolute -top-6 left-0 rounded-md bg-white px-2 py-0.5 text-xs font-extrabold text-ink">{active.label} · {active.confidence}%</span>
             </span>
           )}
 
           {isVideo && active && (
             <button type="button" onClick={() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}
               className="pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg">
-              <span className="h-11 w-11 flex-none overflow-hidden rounded-lg bg-surface">{active.image && <img src={active.image} alt="" className="h-full w-full object-cover" />}</span>
+              <span className="h-11 w-11 flex-none overflow-hidden rounded-icon bg-surface">{active.image && <img src={active.image} alt="" className="h-full w-full object-cover" />}</span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[12.5px] font-extrabold text-white">{active.label}</span>
-                <span className="block text-[11px] font-bold text-white">{active.confidence}%{active.candidates[0]?.priceTnd != null ? ` · ${active.candidates[0].priceTnd.toFixed(2)} DT` : active.detectedPrice?.totalPriceTND != null ? ` · ${active.detectedPrice.totalPriceTND.toFixed(2)} DT` : ''}</span>
+                <span className="block truncate text-xs font-extrabold text-white">{active.label}</span>
+                <span className="block text-xs font-bold text-white">{active.confidence}%{active.candidates[0]?.priceTnd != null ? ` · ${active.candidates[0].priceTnd.toFixed(2)} DT` : active.detectedPrice?.totalPriceTND != null ? ` · ${active.detectedPrice.totalPriceTND.toFixed(2)} DT` : ''}</span>
               </span>
               <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white/12"><ArrowRight size={15} className={`text-white/80 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></span>
             </button>
@@ -269,22 +269,22 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {isVideo && !photoUrl && lockedObjects.length > 1 && (
         <div className="relative z-10 mx-4 mb-2 rounded-2xl bg-black/60 p-3 backdrop-blur">
           <div className="flex items-center justify-between">
-            <p className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wide text-white/85">
+            <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-white/85">
               <ShoppingBag size={13} className="text-white" />{lockedObjects.length} {tr('produits détectés', 'منتجات مكتشفة')} · {selectedObjects.length} {tr('sél.', 'محدّد')}
             </p>
-            <p className="text-[12px] font-black text-white">{collectionTotal.toFixed(2)} DT</p>
+            <p className="text-xs font-black text-white">{collectionTotal.toFixed(2)} DT</p>
           </div>
           <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">
             {lockedObjects.map((obj) => (
               <button key={obj.trackingId} type="button" onClick={() => setSelected((s) => ({ ...s, [obj.trackingId]: !s[obj.trackingId] }))} aria-pressed={Boolean(selected[obj.trackingId])}
-                className={`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-[11px] font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}>
+                className={`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}>
                 <span className={`grid h-4 w-4 place-items-center rounded ${selected[obj.trackingId] ? 'bg-white text-ink' : 'bg-white/20'}`}>{selected[obj.trackingId] && <Check size={11} />}</span>
                 {obj.label}
               </button>
             ))}
           </div>
           <button type="button" onClick={() => openLiveResults(selectedObjects)} disabled={!selectedObjects.length}
-            className="bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-[13px] font-extrabold text-white">
+            className="bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold text-white">
             {tr('Sélectionner les produits', 'اختيار المنتجات')}
           </button>
         </div>
@@ -295,13 +295,13 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <div className="pointer-events-none relative z-10 mx-auto mb-3 flex w-fit items-center gap-2.5 rounded-2xl bg-black/55 px-4 py-2.5 backdrop-blur">
           {isVideo ? <ScanSearch size={16} className="text-white" /> : <Camera size={16} className="text-white" />}
           <span>
-            <span className="block text-[12px] font-extrabold text-white">{isVideo ? tr('Déplacez la caméra', 'حرّك الكاميرا') : tr('Cadrez le produit', 'ضع المنتج في الإطار')}</span>
-            <span className="block text-[10.5px] font-semibold text-white/70">{isVideo ? tr('pour détecter les produits', 'لاكتشاف المنتجات') : tr('Nous détectons automatiquement', 'نكتشف تلقائيًا')}</span>
+            <span className="block text-xs font-extrabold text-white">{isVideo ? tr('Déplacez la caméra', 'حرّك الكاميرا') : tr('Cadrez le produit', 'ضع المنتج في الإطار')}</span>
+            <span className="block text-xs font-semibold text-white/70">{isVideo ? tr('pour détecter les produits', 'لاكتشاف المنتجات') : tr('Nous détectons automatiquement', 'نكتشف تلقائيًا')}</span>
           </span>
         </div>
       )}
       {hint && mode === 'code' && (
-        <p className="relative z-10 mx-auto mb-2 w-fit rounded-full bg-black/50 px-4 py-1.5 text-[11px] font-semibold text-white/85 backdrop-blur">{hint}</p>
+        <p className="relative z-10 mx-auto mb-2 w-fit rounded-full bg-black/50 px-4 py-1.5 text-xs font-semibold text-white/85 backdrop-blur">{hint}</p>
       )}
 
       {/* PHOTO | VIDÉO selector */}
@@ -312,7 +312,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             return (
               <button key={m} type="button" role="tab" aria-selected={camMode === m} disabled={disabled}
                 onClick={() => { setCamMode(m); setMode('search'); }}
-                className={`relative rounded-full px-5 py-2 text-[11px] font-extrabold uppercase tracking-[0.08em] transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>
+                className={`relative rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-[0.08em] transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>
                 {m === 'photo' ? tr('Photo', 'تصوير') : tr('Vidéo (Live)', 'فيديو (مباشر)')}
                 {camMode === m && <span className="absolute -bottom-0.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-white" />}
               </button>
@@ -324,7 +324,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {/* Controls: Importer | Capture/Live-Action | Code */}
       {!photoUrl && (
       <div className="relative z-10 flex items-end justify-between px-8 pb-2">
-        <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+        <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} strokeWidth={1.8} /></span>
           {tr('Importer', 'استيراد')}
         </button>
@@ -341,7 +341,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         )}
 
         <button type="button" onClick={() => { setNotice(null); setMode(mode === 'code' ? 'search' : 'code'); }} aria-pressed={mode === 'code'}
-          className="flex flex-col items-center gap-1 text-[10px] font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+          className="flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
           <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent ${mode === 'code' ? 'ring-2 ring-white' : ''}`}><Barcode size={22} strokeWidth={1.8} /></span>
           {tr('Barcode', 'باركود')}
         </button>

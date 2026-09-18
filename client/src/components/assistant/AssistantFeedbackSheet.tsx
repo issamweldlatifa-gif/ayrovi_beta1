@@ -68,9 +68,9 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
             onChange={(event) => setComment(event.target.value.slice(0, 1500))}
             rows={4}
             placeholder={tr('Qu’est-ce qui était utile ou à améliorer ?', 'ما الذي كان مفيدًا أو يحتاج إلى تحسين؟')}
-            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-line focus:ring-2 focus:ring-black/10/10 ${isDark ? 'border-white/15 bg-ink text-white placeholder:text-muted' : 'border-line bg-white text-ink placeholder:text-muted'}`}
+            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 ${isDark ? 'border-white/15 bg-ink text-white placeholder:text-muted' : 'border-line bg-white text-ink placeholder:text-muted'}`}
           />
-          <span className="mt-1 block text-end text-[10px] tabular-nums text-muted">{comment.length}/1500</span>
+          <span className="mt-1 block text-end text-xs tabular-nums text-muted">{comment.length}/1500</span>
         </label>
 
         <button

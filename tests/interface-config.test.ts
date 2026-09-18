@@ -7,15 +7,15 @@ describe('واجهتي full interface configuration', () => {
   test('locks the 70/25/5 AYROVI palette on public defaults', () => {
     expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
       pageBackground: '#ffffff',
-      primary: '#111318',
+      primary: '#111111',
       accent: '#ff6900',
-      announcementBackground: '#111318',
+      announcementBackground: '#0a0a0a',
       announcementText: '#ffffff',
-      heroBackground: '#111318',
+      heroBackground: '#0a0a0a',
     });
     expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#ff6900');
-    expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#111318' });
-    expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#111318');
+    expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#111111' });
+    expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#111111');
   });
 
   test('uses a single Inter / Noto Sans Arabic stack on the default preset', () => {
@@ -49,7 +49,7 @@ describe('واجهتي full interface configuration', () => {
     expect(normalized.typography.baseSize).toBe(17);
     expect(normalized.typography.headingColor).toBe('#112233');
     expect(normalized.colors.pageBackground).toBe('#ffffff');
-    expect(normalized.buttons.secondaryColor).toBe('#111318');
+    expect(normalized.buttons.secondaryColor).toBe('#111111');
     // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système AYROVI.
     expect(normalized.icons).toMatchObject({ library: 'ayrovi', color: '#654321', activeColor: '#ff6900' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });

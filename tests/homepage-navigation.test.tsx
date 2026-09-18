@@ -65,10 +65,10 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(bottomNavSource).toContain("window.addEventListener('scroll', onScroll, { passive: true })");
     expect(bottomNavSource).toContain('else if (delta > 8) setIsVisible(false)');
     expect(bottomNavSource).toContain('else if (delta < -8) setIsVisible(true)');
-    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*rgba\(255,255,255,\.72\)[^}]*backdrop-filter:blur\(22px\)/);
+    expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\{[^}]*color-mix\(in srgb,var\(--ayrovi-white\) 72%,transparent\)[^}]*backdrop-filter:blur\(22px\)/); // DS v1.0 : fond du rail en token
     expect(runtimeCss).toMatch(/\.ayrovi-glass-bottom-nav\.is-hidden\{[^}]*translate3d/);
     // الأيقونات غير النشطة رمادية هادئة والنشطة برتقالية (الهوية الحالية)
-    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:#5b6472}');
+    expect(runtimeCss).toContain('.ayrovi-glass-bottom-nav .interface-runtime-icon{color:var(--ayrovi-text-secondary)}'); // DS v1.0
     expect(runtimeCss).toContain("[aria-pressed='true'] .interface-runtime-icon");
   });
 

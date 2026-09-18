@@ -256,6 +256,52 @@ describe('primitives de la charte', () => {
   });
 });
 
+describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
+  /**
+   * P0 de P4/T2 enfin verrouillé : l'échelle slate héritée est absorbée par la
+   * canonique (#111111/#666666/#F8F9FA/#EAEAEA + surfaces #0A0A0A). La couche
+   * admin a sa propre palette verrouillée par design-tokens.test.ts : hors périmètre.
+   */
+  test('aucun résidu de l’échelle slate dans la vitrine (CSS, TSX, TS)', () => {
+    const SLATE = /#(1d2130|6b7280|f8f9fe|e2e8f0|5b6472|111318|050505|17181c|111217|171717|23242c)\b/gi;
+    const offenders: string[] = [];
+    for (const rel of clientFiles(/\.(tsx|ts|css)$/)) {
+      if (rel.startsWith('client/src/admin/') || rel === TOKENS) continue;
+      const hits = withoutComments(read(rel)).match(SLATE) ?? [];
+      if (hits.length) offenders.push(`${rel} → ${[...new Set(hits)].join(' ')}`);
+    }
+    expect(offenders.join(' | ')).toBe('');
+  });
+
+  test('le CTA principal porte le texte ENCRE (6.54:1, AAA) — jamais de blanc', () => {
+    const primitives = withoutComments(read(PRIMITIVES));
+    const rule = primitives.match(/\.ay-btn-cta\s*\{[^}]*\}/)?.[0] ?? '';
+    expect(rule).toMatch(/color:\s*var\(--ayrovi-cta-ink\)/);
+    const runtime = withoutComments(read('client/src/styles/interface-runtime.css'));
+    expect(runtime.match(/\.ay-btn-cta\{[^}]*color:#fff/g) ?? []).toEqual([]);
+  });
+
+  test('aucune taille de police hors échelle dans la vitrine (ratchet à zéro)', () => {
+    // L'échelle est dans tokens.css (text-micro…text-display). Un text-[Npx] dans un
+    // composant public est une régression : le ratchet est à 0 et ne monte jamais.
+    const offenders: string[] = [];
+    for (const rel of clientFiles(/\.tsx$/)) {
+      if (rel.startsWith('client/src/admin/')) continue;
+      const hits = read(rel).match(/text-\[\d+(?:\.\d+)?px\]/g) ?? [];
+      if (hits.length) offenders.push(`${rel} → ${hits.length}`);
+    }
+    expect(offenders.join(' | ')).toBe('');
+  });
+
+  test('le runtime n’override plus l’orange de marque (bug b96f027 corrigé)', () => {
+    const app = withoutComments(read('client/src/App.tsx'));
+    expect(app).not.toMatch(/color-brand-orange',\s*'#0A0A0A'/i);
+    expect(app).not.toMatch(/--ayrovi-cta',\s*'#0A0A0A'/i);
+    // et l'accent CMS alimente le jeton canonique (source unique)
+    expect(app).toMatch(/color-brand-orange',\s*String\(visual\.colors\.accent/);
+  });
+});
+
 describe('budget orange — l’orange reste un déclencheur d’action', () => {
   /**
    * Allowlist fermée. Chaque entrée est un ÉTAT ACTIF ou le CTA PRINCIPAL d'un écran —
@@ -269,6 +315,8 @@ describe('budget orange — l’orange reste un déclencheur d’action', () => 
     ['client/src/components/assistant/AssistantVoiceOrb.tsx', 'pastille d’écoute, égaliseur et bouton « Terminer et envoyer »'],
     ['client/src/social/components/FullscreenActionRail.tsx', 'icône active du rail plein écran'],
     ['client/src/social/components/StoryFeed.tsx', 'cœur aimé (état actif)'],
+    ['client/src/components/assistant/AssistantComposer.tsx', 'bouton d’envoi : CTA principal de l’écran conversation'],
+    ['client/src/components/assistant/AssistantVoiceModeScreen.tsx', 'bouton d’écoute : CTA principal de l’écran vocal'],
   ]);
 
   test('aucun conteneur ne repeint sa surface en orange', () => {
@@ -284,8 +332,10 @@ describe('budget orange — l’orange reste un déclencheur d’action', () => 
   });
 
   test('le compte d’usages orange reste sous le plafond mesuré après refonte', () => {
-    //MESURÉ après P4/T1 ; le relever exige de justifier chaque nouvel usage.
-    const CEILING = 14;
+    // MESURÉ après DS v1.0 (2026-09-18) : les variantes cta de la bibliothèque
+    // (design/Button.tsx, 7 classes) + CTA assistant (envoi, écoute, orbe) + rail.
+    // Le relever exige de justifier chaque nouvel usage.
+    const CEILING = 23;
     let used = 0;
     for (const rel of clientFiles(/\.(tsx|css|ts)$/)) {
       if (rel.startsWith('client/src/admin/')) continue;

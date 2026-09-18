@@ -155,15 +155,14 @@ export const App: React.FC = () => {
         root.style.setProperty('--ayrovi-primary-dark', colors.primaryDark);
         root.style.setProperty('--ayrovi-primary-light', colors.primaryLight);
         root.style.setProperty('--ayrovi-accent', colors.accent);
-        // Zalando strategy : une seule valeur d'orange, portée par le jeton canonique.
-        root.style.setProperty('--ayrovi-color-brand-orange', '#0A0A0A');
-        root.style.setProperty('--ayrovi-cta', '#0A0A0A');
-        root.style.setProperty('--ayrovi-cta-dark', '#d95a00');
-        root.style.setProperty('--ayrovi-orange', '#0A0A0A');
-        root.style.setProperty('--ayrovi-accent-soft', '#f8f9fa');
+        // AYROVI DESIGN SYSTEM v1.0 — l'accent du CMS est la SEULE source de l'orange
+        // (canon de la charte : #FF6900, couleur du logo). Les alias --ayrovi-cta /
+        // --ayrovi-orange / --ayrovi-accent dérivent du jeton canonique en CSS.
+        // Plus aucun override « noir » : l'orange est l'identité de la marque.
+        root.style.setProperty('--ayrovi-color-brand-orange', String(visual.colors.accent || '#ff6900').toLowerCase());
+        root.style.setProperty('--ayrovi-accent-soft', 'var(--ayrovi-bg-surface)');
         root.style.setProperty('--ayrovi-neutral-950', colors.heroBackground);
         root.style.setProperty('--ayrovi-success', colors.success);
-        root.style.setProperty('--ayrovi-warning', colors.warning);
         root.style.setProperty('--ayrovi-danger', colors.danger);
         root.style.setProperty('--ayrovi-header-bg', colors.headerBackground);
         root.style.setProperty('--ayrovi-header-text', colors.headerText);

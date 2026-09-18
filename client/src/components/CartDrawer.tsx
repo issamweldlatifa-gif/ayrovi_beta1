@@ -117,7 +117,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-surface text-ink uppercase">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-surface text-ink uppercase">
                         {merchantLabel(item, tr('Marchand externe', 'متجر خارجي'))}
                       </span>
                       <button
@@ -136,21 +136,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     </h4>
 
                     {item.variant && (
-                      <p className="text-[11px] text-muted truncate mt-0.5">
+                      <p className="text-xs text-muted truncate mt-0.5">
                         {item.variant}
                       </p>
                     )}
                     {(item.requestedSize || item.requestedColor) && (
-                      <p className="mt-0.5 text-[10px] font-semibold text-muted">
+                      <p className="mt-0.5 text-xs font-semibold text-muted">
                         {[item.requestedSize && `${tr('Taille', 'المقاس')} ${item.requestedSize}`, item.requestedColor && `${tr('Couleur', 'اللون')} ${item.requestedColor}`].filter(Boolean).join(' · ')}
                       </p>
                     )}
-                    {item.customerNote && <p className="mt-1 line-clamp-2 text-[10px] leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
+                    {item.customerNote && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
                     {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && (
-                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-[10px] font-bold text-ink underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
+                      <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-bold text-ink underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
-                      <p className="mt-1 flex items-center gap-1 text-[10px] font-bold text-muted">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
+                      <p className="mt-1 flex items-center gap-1 text-xs font-bold text-muted">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">
@@ -164,7 +164,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
-                          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
+                          className="flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={tr(`Diminuer la quantité de ${item.title}`, `تقليل كمية ${item.title}`)}
                         >
                           <Minus className="w-3 h-3" />
@@ -176,7 +176,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
                           disabled={item.quantity >= 99}
-                          className="flex h-11 w-11 items-center justify-center rounded-lg text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
+                          className="flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35"
                           aria-label={tr(`Augmenter la quantité de ${item.title}`, `زيادة كمية ${item.title}`)}
                         >
                           <Plus className="w-3 h-3" />
@@ -192,7 +192,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           {/* Footer & Checkout */}
           {items.length > 0 && (
             <div className="ay-safe-bottom p-4 sm:p-6 border-t border-line bg-surface space-y-3">
-              <div className="rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink">
+              <div className="rounded-xl border border-line bg-surface p-3 text-xs leading-5 text-ink">
                 <p className="font-black">{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</p>
                 {pendingManual && <p className="font-bold">{tr('Le prix du produit sera vérifié par l’équipe avant l’achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}
                 <p>{tr(depositPolicy.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</p>

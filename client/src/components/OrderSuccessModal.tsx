@@ -68,7 +68,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         <JourneyProgress active={4} />
         <div className="checkout-flow-content ay-safe-bottom space-y-5 text-center">
         {/* Celebration Icon */}
-        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-surface border border-line flex items-center justify-center text-ink mx-auto shadow-xs">
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-card bg-surface border border-line flex items-center justify-center text-ink mx-auto shadow-xs">
           <PackageCheck className="w-8 h-8 sm:w-10 sm:h-10" />
         </div>
 
@@ -85,7 +85,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         {/* Order Number Box */}
         <div className="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between">
           <div className="text-left">
-            <span className="text-[10px] text-muted uppercase font-bold block">{tr('Numéro de commande :', 'رقم الطلب:')}</span>
+            <span className="text-xs text-muted uppercase font-bold block">{tr('Numéro de commande :', 'رقم الطلب:')}</span>
             <span className="text-lg font-mono font-black text-ink">{result.orderNumber}</span>
           </div>
           <button
@@ -129,7 +129,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
               <span className="text-xs font-black text-ink uppercase tracking-wide">{tr(`Acompte de confirmation (${result.deposit.percent}%) :`, `عربون التأكيد (${result.deposit.percent}%):`)}</span>
               <span className="text-lg font-black text-ink">{result.deposit.amountTnd.toFixed(3)} {tr('DT', 'د.ت')}</span>
             </div>
-            <p className="text-[11px] leading-5 text-ink">
+            <p className="text-xs leading-5 text-ink">
               {manualDeposit ? tr(
                 'Le moyen manuel est enregistré. Effectuez le virement/versement avec les coordonnées affichées, puis envoyez uniquement son justificatif depuis Mon compte → Mes commandes.',
                 'تم حفظ وسيلة الدفع اليدوية. أنجز التحويل/الإيداع بالبيانات المعروضة ثم أرسل إثباته فقط من حسابي ← طلباتي.',
@@ -138,16 +138,16 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
                 'الطلب موجود في حسابي ← طلباتي. يجب أن تؤكد بوابة الدفع عملية البطاقة قبل تأكيد الطلب.',
               )}
             </p>
-            <p className="rounded-full border border-line bg-surface px-3 py-2 text-center text-[10px] font-black text-ink">
+            <p className="rounded-full border border-line bg-surface px-3 py-2 text-center text-xs font-black text-ink">
               {tr('Commande en attente d’acompte', 'الطلب في انتظار العربون')}
             </p>
-            <ol className="space-y-1 rounded-xl border border-line bg-surface p-3 text-[10px] font-semibold leading-5 text-muted">
+            <ol className="space-y-1 rounded-xl border border-line bg-surface p-3 text-xs font-semibold leading-5 text-muted">
               <li>1. {tr('Commande visible immédiatement dans Mes commandes.', 'الطلب ظاهر فورًا في طلباتي.')}</li>
               <li>2. {manualDeposit ? tr('Envoyer le justificatif manuel depuis le profil.', 'إرسال إثبات الدفع اليدوي من الحساب.') : tr('Finaliser la carte sur la page sécurisée.', 'إتمام دفع البطاقة في الصفحة الآمنة.')}</li>
               <li>3. {tr('Paiement vérifié, puis commande confirmée.', 'التحقق من الدفع ثم تأكيد الطلب.')}</li>
               <li>4. {tr('Suivi visible après expédition; facture visible après émission.', 'يظهر التتبع بعد الشحن والفاتورة بعد إصدارها.')}</li>
             </ol>
-            <p className="text-[11px] text-ink">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')} <strong>{result.deposit.balanceTnd.toFixed(3)} {tr('DT', 'د.ت')}</strong></p>
+            <p className="text-xs text-ink">{tr('Solde restant à la livraison :', 'المبلغ المتبقي عند التوصيل:')} <strong>{result.deposit.balanceTnd.toFixed(3)} {tr('DT', 'د.ت')}</strong></p>
             {onOpenAccount && (
               <button type="button" onClick={onOpenAccount} className="ay-btn-primary w-full text-xs">
                 <Share className="h-4 w-4" />

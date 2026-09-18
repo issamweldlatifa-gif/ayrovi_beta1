@@ -470,7 +470,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={tr('Ex. Anis Ben Ammar', 'مثال: أنيس بن عمار')}
-              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold"
+              className="w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15"
             />
           </div>
 
@@ -489,9 +489,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               autoComplete="email"
               inputMode="email"
               placeholder="vous@exemple.com"
-              className="w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-xs font-semibold text-ink outline-none focus:border-line read-only:bg-surface sm:text-sm"
+              className="w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 read-only:bg-surface/60"
             />
-            <p className="mt-1 text-[10px] font-semibold text-muted">{tr('La confirmation et la facture seront envoyées à cette adresse.', 'سيُرسل تأكيد الطلب والفاتورة إلى هذا العنوان.')}</p>
+            <p className="mt-1 text-xs font-semibold text-muted">{tr('La confirmation et la facture seront envoyées à cette adresse.', 'سيُرسل تأكيد الطلب والفاتورة إلى هذا العنوان.')}</p>
           </div>
 
           {/* Phone */}
@@ -508,9 +508,9 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               inputMode="tel"
               autoComplete="tel"
               placeholder="+216 98 123 456"
-              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-mono font-semibold"
+              className="w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 font-mono"
             />
-            <p className="mt-1 text-[10px] text-muted font-semibold">
+            <p className="mt-1 text-xs text-muted font-semibold">
               {tr('Utilisé pour cette livraison uniquement — 8 chiffres, ex. 98 123 456.', 'يُستخدم لهذا التوصيل فقط — 8 أرقام، مثال: 98 123 456.')}
             </p>
           </div>
@@ -524,7 +524,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             <select
               value={formData.city}
               onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-ink focus:outline-none font-semibold"
+              className="w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15"
             >
               {governorates.map((gov) => (
                 <option key={gov} value={gov}>
@@ -545,7 +545,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               placeholder={tr("Ex. Ennasr 2, rue Hédi Nouira, résidence l'Espoir, apt. 4", 'مثال: النصر 2، شارع الهادي نويرة، الإقامة، الشقة 4')}
-              className="w-full bg-surface border border-line focus:border-line rounded-xl px-3.5 py-2 text-xs sm:text-sm text-ink focus:outline-none placeholder:text-muted font-semibold resize-none"
+              className="w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 resize-none py-2"
             />
           </div>
 
@@ -553,7 +553,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             {locating ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
             {formData.latitude != null ? tr('Position ajoutée à la livraison', 'تمت إضافة الموقع إلى بيانات التوصيل') : tr('Ajouter ma position (optionnel)', 'إضافة موقعي (اختياري)')}
           </button>
-          {formData.latitude != null && <p className="text-center text-[10px] font-bold text-ink">{formData.latitude.toFixed(5)}, {Number(formData.longitude).toFixed(5)}</p>}
+          {formData.latitude != null && <p className="text-center text-xs font-bold text-ink">{formData.latitude.toFixed(5)}, {Number(formData.longitude).toFixed(5)}</p>}
 
           <div className="checkout-flow-actions grid grid-cols-2 gap-2">
             <button type="button" onClick={onClose} className="ay-btn-secondary min-w-0 px-2 text-xs">{tr('Retour au panier', 'العودة إلى السلة')}</button>
@@ -599,15 +599,15 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <span className="checkout-payment-logo-frame"><img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" /></span>
                   <span className="block text-xs font-black leading-tight">{meta[method].label}</span>
                   {!available&&<span className="checkout-payment-badge">{tr('Indisponible', 'غير متاح')}</span>}
-                  <span className="block text-[9px] font-semibold leading-tight opacity-80">{meta[method].hint}</span>
+                  <span className="block text-xs font-semibold leading-tight opacity-80">{meta[method].hint}</span>
                 </button>;
               })}
             </div>
-            {!hasAvailablePaymentMethod&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] font-bold leading-5 text-muted">{tr('Aucun moyen réel n’est configuré. Vous pouvez quand même créer la commande; le paiement restera en attente dans votre profil.', 'لا توجد وسيلة دفع حقيقية مضبوطة. يمكنك إنشاء الطلب وسيبقى الدفع في الانتظار داخل حسابك.')}</p>}
-            {paymentAvailabilityNotice&&<p className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-surface p-3 text-[11px] font-bold leading-5 text-ink" role="status"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted"/><span>{paymentAvailabilityNotice}</span></p>}
-            {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
-            {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
-            {formData.paymentMethod.toUpperCase()==='POSTE'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-[11px] leading-5 text-ink"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">{tr('Compte postal', 'الحساب البريدي')} : {depositInfo.posteAccount}</span><span className="mt-1 block">{tr('Après le versement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد الإيداع ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
+            {!hasAvailablePaymentMethod&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-xs font-bold leading-5 text-muted">{tr('Aucun moyen réel n’est configuré. Vous pouvez quand même créer la commande; le paiement restera en attente dans votre profil.', 'لا توجد وسيلة دفع حقيقية مضبوطة. يمكنك إنشاء الطلب وسيبقى الدفع في الانتظار داخل حسابك.')}</p>}
+            {paymentAvailabilityNotice&&<p className="mt-2 flex items-start gap-2 rounded-xl border border-line bg-surface p-3 text-xs font-bold leading-5 text-ink" role="status"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted"/><span>{paymentAvailabilityNotice}</span></p>}
+            {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-xs leading-5 text-ink">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
+            {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-xs leading-5 text-ink"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
+            {formData.paymentMethod.toUpperCase()==='POSTE'&&<p className="mt-2 rounded-xl border border-line bg-surface p-3 text-xs leading-5 text-ink"><strong>{depositInfo.companyName}</strong><span className="mt-1 block break-all">{tr('Compte postal', 'الحساب البريدي')} : {depositInfo.posteAccount}</span><span className="mt-1 block">{tr('Après le versement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد الإيداع ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
           </section>
           <div className="checkout-payment-summary rounded-xl border border-line bg-surface p-3.5 text-xs space-y-1.5">
             <div className="flex justify-between"><span className="text-muted">{tr('Produits convertis', 'قيمة المنتجات')}</span><strong>{formatMoney(breakdown.subtotal)}</strong></div>

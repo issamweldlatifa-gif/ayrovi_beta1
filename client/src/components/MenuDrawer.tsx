@@ -25,13 +25,13 @@ interface MenuItemProps {
 const MenuItem: React.FC<MenuItemProps> = ({ label, onClick, badge }) => (
   <button type="button" onClick={onClick} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-surface hover:text-ink">
     <span className="min-w-0 flex-1">{label}</span>
-    {badge && <span className="rounded-full bg-ink px-2 py-0.5 text-[9px] font-black text-white">{badge}</span>}
+    {badge && <span className="rounded-full bg-ink px-2 py-0.5 text-xs font-black text-white">{badge}</span>}
   </button>
 );
 
 const MenuGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <section className="border-t border-line px-4 py-4 first:border-t-0">
-    <h2 className="mb-1.5 px-3 text-[10px] font-black uppercase tracking-[0.16em] text-muted">{title}</h2>
+    <h2 className="mb-1.5 px-3 text-xs font-black uppercase tracking-[0.16em] text-muted">{title}</h2>
     <div className="space-y-0.5">{children}</div>
   </section>
 );

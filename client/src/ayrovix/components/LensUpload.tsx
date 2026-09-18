@@ -35,7 +35,7 @@ export const LensUpload: React.FC<LensUploadProps> = ({ onImage }) => {
         </span>
         <span>
           <span className="block text-sm font-extrabold text-ink">{tr('Importer une image', 'رفع صورة')}</span>
-          <span className="mt-0.5 block text-[11px] font-medium text-muted">{tr("Capture d'écran ou photo déjà dans votre galerie", 'لقطة شاشة أو صورة موجودة في معرضك')}</span>
+          <span className="mt-0.5 block text-xs font-medium text-muted">{tr("Capture d'écran ou photo déjà dans votre galerie", 'لقطة شاشة أو صورة موجودة في معرضك')}</span>
         </span>
       </button>
     </>

@@ -41,7 +41,7 @@ export const StoryCircle: React.FC<{ group: StoryGroup; onOpen: () => void }> = 
         <Avatar publisher={group.publisher} size={44} />
       </span>
     </span>
-    <span className="w-full truncate text-center text-[10px] font-bold text-ink">{group.publisher.name}</span>
+    <span className="w-full truncate text-center text-xs font-bold text-ink">{group.publisher.name}</span>
   </button>;
 };
 

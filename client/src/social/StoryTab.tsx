@@ -104,8 +104,8 @@ export const StoryTab: React.FC<SocialProps> = ({ isAuthenticated, onRequireAuth
             {reels.map((reel, index) => (
               <button key={reel.id} type="button" onClick={() => openReels(index)} className="relative w-36 shrink-0 overflow-hidden rounded-card bg-ink-gradient shadow-card transition active:scale-[0.98] sm:w-40" aria-label={reel.caption || tr(`Reel ${index + 1}`, `ريل ${index + 1}`)}>
                 <video src={reel.media[0].url} poster="/media/logo-ayrovi.png" muted playsInline preload="metadata" className="aspect-[9/16] w-full bg-white object-cover opacity-90" />
-                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[10px] font-black text-white backdrop-blur"><Eye size={15} />{reel.views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</span>
-                {reel.caption && <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-10 text-left text-[11px] font-bold leading-4 text-white">{reel.caption}</span>}
+                <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-xs font-black text-white backdrop-blur"><Eye size={15} />{reel.views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</span>
+                {reel.caption && <span className="absolute inset-x-0 bottom-0 line-clamp-2 bg-gradient-to-t from-black/85 to-transparent px-3 pb-3 pt-10 text-left text-xs font-bold leading-4 text-white">{reel.caption}</span>}
               </button>
             ))}
           </div>

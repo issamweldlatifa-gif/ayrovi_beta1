@@ -12,7 +12,7 @@ export const AssistantHeader: React.FC<AssistantHeaderProps> = ({ isDark, onOpen
   const { tr } = useLocale();
   const chip = isDark
     ? 'border-white/10 bg-white/10 text-white shadow-[0_8px_24px_-16px_rgba(0,0,0,.7)]'
-    : 'border-black/[0.04] bg-white/72 text-[#111318] shadow-[0_8px_24px_-18px_rgba(17,19,24,.45)]';
+    : 'border-black/[0.04] bg-white/72 text-ink shadow-[0_8px_24px_-18px_rgba(17,19,24,.45)]';
   const iconBtn = 'flex h-11 w-11 items-center justify-center rounded-full transition active:scale-95';
 
   return (

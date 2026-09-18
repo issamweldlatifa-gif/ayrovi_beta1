@@ -19,7 +19,7 @@ const PostHeader: React.FC<{ post: StoryPost; light?: boolean }> = ({ post, ligh
           {post.publisher.name}
           {post.publisher.verified && <CheckCircle2 size={14} className={`shrink-0 ${light ? 'text-ink' : 'text-white'}`} />}
         </p>
-        <p className={`text-[11px] font-semibold ${light ? 'text-white/70' : 'text-muted'}`}>{post.publisher.subtitle || tr('Éditeur', 'الناشر')} · {timeAgo(post.createdAt, locale)}</p>
+        <p className={`text-xs font-semibold ${light ? 'text-white/70' : 'text-muted'}`}>{post.publisher.subtitle || tr('Éditeur', 'الناشر')} · {timeAgo(post.createdAt, locale)}</p>
       </div>
       <div className="relative">
         <button type="button" aria-label={tr('Options du post', 'خيارات المنشور')} onClick={() => setMenuOpen((open) => !open)} className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${light ? 'text-white hover:bg-white/15' : 'text-muted hover:bg-surface'}`}>
@@ -66,7 +66,7 @@ const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => 
             <img key={index} src={media.url} alt="" loading="lazy" className="aspect-[4/5] w-full shrink-0 snap-center object-cover" />
           ))}
         </div>
-        <span className="absolute end-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-black text-white">{slide + 1} / {post.media.length}</span>
+        <span className="absolute end-3 top-3 rounded-full bg-black/60 px-2.5 py-1 text-xs font-black text-white">{slide + 1} / {post.media.length}</span>
       </div>
     );
   }
@@ -81,7 +81,7 @@ const PostMedia: React.FC<{ post: StoryPost; onOpenReels?: (post: StoryPost) => 
           playsInline
           className="aspect-[9/14] w-full bg-ink object-cover"
         />
-        <span className="absolute bottom-2 end-2 rounded-full bg-black/45 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-white">{tr('Reels', 'ريلز')}</span>
+        <span className="absolute bottom-2 end-2 rounded-full bg-black/45 px-2.5 py-1 text-xs font-black uppercase tracking-widest text-white">{tr('Reels', 'ريلز')}</span>
       </button>
     );
   }
@@ -171,7 +171,7 @@ export const StoryPostCard: React.FC<{
         <button type="button" onClick={() => (isAuthenticated ? onOpenComments(post) : onRequireAuth())} className="mt-3 flex min-h-12 w-full items-center gap-3 rounded-full border border-line bg-surface px-3 text-start text-sm font-semibold text-muted transition focus:border-line hover:border-line/40">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-surface text-ink"><User size={16} /></span>
           <span className="min-w-0 flex-1 truncate">{tr('Ajouter un commentaire…', 'أضف تعليقًا…')}</span>
-          {post.commentsCount > 0 && <span className="text-[11px] font-bold">{post.commentsCount}</span>}
+          {post.commentsCount > 0 && <span className="text-xs font-bold">{post.commentsCount}</span>}
         </button>
       </div>
     </motion.article>

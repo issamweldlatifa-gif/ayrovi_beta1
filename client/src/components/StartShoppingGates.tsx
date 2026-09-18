@@ -32,7 +32,7 @@ export const StartShoppingGates: React.FC<StartShoppingGatesProps> = ({ onOpenLe
   return (
     <section className="start-shopping-gates border-b border-line bg-white px-4 py-6 sm:px-6 sm:py-8" dir={direction} aria-label={tr('Commencer une commande', 'ابدأ طلبًا')}>
       <div className="mx-auto w-full max-w-7xl">
-        <p className="text-center text-[11px] font-extrabold uppercase tracking-[0.18em] text-ink">{tr('Comment commander', 'كيف تطلب')}</p>
+        <p className="text-center text-xs font-extrabold uppercase tracking-[0.18em] text-ink">{tr('Comment commander', 'كيف تطلب')}</p>
         <h2 className="mx-auto mt-2 max-w-xl text-center font-display text-2xl font-black leading-tight text-ink sm:text-3xl">
           {tr('Envoyez une photo ou un lien. On confirme le prix et on livre en Tunisie.', 'أرسل صورة أو رابطًا. نؤكد السعر ونوصل إلى تونس.')}
         </h2>
@@ -48,7 +48,7 @@ export const StartShoppingGates: React.FC<StartShoppingGatesProps> = ({ onOpenLe
                 <span className="grid h-11 w-11 place-items-center rounded-2xl bg-ink text-white shadow-card">
                 </span>
                 <strong className="mt-3 text-sm font-black text-ink">{gate.title[isArabic ? 1 : 0]}</strong>
-                <span className="mt-1 text-[12px] font-semibold leading-5 text-muted">{gate.subtitle[isArabic ? 1 : 0]}</span>
+                <span className="mt-1 text-xs font-semibold leading-5 text-muted">{gate.subtitle[isArabic ? 1 : 0]}</span>
               </button>
             );
           })}

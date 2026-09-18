@@ -12,7 +12,7 @@ interface FooterProps {
 }
 
 const PayBadge: React.FC<{ label: string; className?: string }> = ({ label, className = '' }) => (
-  <span className={`inline-flex h-8 min-w-[62px] items-center justify-center rounded-md px-2.5 text-[11px] font-black italic tracking-wide shadow-sm ${className}`}>{label}</span>
+  <span className={`inline-flex h-8 min-w-[62px] items-center justify-center rounded-md px-2.5 text-xs font-black italic tracking-wide shadow-sm ${className}`}>{label}</span>
 );
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, logoUrl = '/media/logo-ayrovi.png', introTitle, introText }) => {
@@ -109,8 +109,8 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
           {trustBadges.map(({ Icon, title, text }) => (
             <div key={title} className="flex flex-col items-center gap-2 rounded-2xl border border-line bg-surface px-4 py-5 text-center">
               <span className="grid h-11 w-11 place-items-center rounded-full bg-surface text-ink"><Icon className="h-7 w-7" /></span>
-              <strong className="text-[13px] font-black leading-tight text-ink">{title}</strong>
-              <span className="text-[11px] leading-4 text-muted">{text}</span>
+              <strong className="text-sm font-black leading-tight text-ink">{title}</strong>
+              <span className="text-xs leading-4 text-muted">{text}</span>
             </div>
           ))}
         </div>
@@ -134,7 +134,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <nav className="mb-10 grid grid-cols-1 gap-0 border-t border-line sm:grid-cols-2 sm:gap-6 sm:border-t-0 lg:grid-cols-5" aria-label="Pied de page">
           {groups.map((group) => (
             <details key={group.title} className="group border-b border-line sm:border-b-0" open={false}>
-              <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-[15px] font-bold text-ink sm:cursor-default sm:py-0 sm:pb-3 [&::-webkit-details-marker]:hidden">
+              <summary className="flex cursor-pointer list-none items-center justify-between py-4 text-base font-bold text-ink sm:cursor-default sm:py-0 sm:pb-3 [&::-webkit-details-marker]:hidden">
                 {group.title}
                 <span className="text-xl font-light text-muted transition group-open:rotate-45 sm:hidden">+</span>
               </summary>
@@ -142,9 +142,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
                 {group.links.map((link) => (
                   <li key={link.label}>
                     {link.href ? (
-                      <a href={link.href} className="text-[13px] font-medium text-muted transition hover:text-ink">{link.label}</a>
+                      <a href={link.href} className="text-sm font-medium text-muted transition hover:text-ink">{link.label}</a>
                     ) : (
-                      <button type="button" onClick={link.onClick} className="text-[13px] font-medium text-muted transition hover:text-ink">{link.label}</button>
+                      <button type="button" onClick={link.onClick} className="text-sm font-medium text-muted transition hover:text-ink">{link.label}</button>
                     )}
                   </li>
                 ))}
@@ -162,17 +162,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
             <PayBadge label="D17" className="bg-danger not-italic text-white" />
             <PayBadge label="Mandat postal" className="bg-white not-italic text-ink" />
           </div>
-          <p className="text-[11px] font-semibold text-white/70">
+          <p className="text-xs font-semibold text-white/70">
             <a href="/privacy.html" className="hover:text-white">Politique de confidentialité</a>
             <span className="mx-2 text-white/35">|</span>
             <a href="/data-deletion.html" className="hover:text-white">Suppression des données</a>
             <span className="mx-2 text-white/35">|</span>
             <a href="mailto:contact@ayrovi.tn?subject=CGV" className="hover:text-white">CGV</a>
           </p>
-          <p className="text-[11px] text-white/60">© AYROVI — Tous droits réservés {new Date().getFullYear()}</p>
+          <p className="text-xs text-white/60">© AYROVI — Tous droits réservés {new Date().getFullYear()}</p>
         </div>
 
-        <div className="mt-6 flex flex-col items-center justify-between gap-3 text-center text-[11px] text-muted sm:flex-row sm:text-left">
+        <div className="mt-6 flex flex-col items-center justify-between gap-3 text-center text-xs text-muted sm:flex-row sm:text-left">
           <p>Commandes confirmées après vérification de l’acompte — facture après émission et suivi après expédition.</p>
           <p className="flex items-center gap-1">
             Conçu avec <Heart className="h-3 w-3 fill-brand text-ink" /> pour faciliter vos achats en Tunisie.

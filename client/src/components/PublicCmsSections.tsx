@@ -56,7 +56,7 @@ function Countdown({ target, serverOffset }: { target: string; serverOffset: num
       {labels.map((label, index) => (
         <div key={label} className="min-w-12 rounded-control bg-white/10 px-2 py-2 text-center backdrop-blur-sm">
           {ready ? <strong className="block text-lg font-black tabular-nums">{pad(values[index])}</strong> : <span className="mx-auto mb-1 block h-5 w-8 animate-pulse rounded bg-white/20" />}
-          <span className="text-[8px] font-black uppercase tracking-[0.12em] text-white/60">{label}</span>
+          <span className="text-xs font-black uppercase tracking-[0.12em] text-white/60">{label}</span>
         </div>
       ))}
     </div>
@@ -155,7 +155,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
     if (page === 'products') return home.products.length ? (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {home.products.map((product) => <article key={product.id} className="overflow-hidden rounded-card border border-line bg-white shadow-card"><div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-[10px] font-black uppercase tracking-[0.16em] text-ink">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-ink-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-[9px] font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-danger' : 'text-success'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div></div></article>)}
+        {home.products.map((product) => <article key={product.id} className="overflow-hidden rounded-card border border-line bg-white shadow-card"><div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-ink">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-ink-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-xs font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-danger' : 'text-success'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div></div></article>)}
       </div>
     ) : <EmptyContent label="Produits" />;
 

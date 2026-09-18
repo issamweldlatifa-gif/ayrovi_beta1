@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { buttonClasses } from '../design/Button';
 
 /**
  * AYROVI HERO — FULL-BLEED DYNAMIC IMAGE HERO (mobile-first)
@@ -191,7 +192,7 @@ export const EvergreenHero: React.FC = () => {
       data-hero
       id="home-hero"
       aria-label="AYROVI — achat international et livraison en Tunisie"
-      className="evergreen-hero-section relative -mt-16 w-full overflow-hidden bg-[#111217] text-white sm:-mt-20"
+      className="evergreen-hero-section relative -mt-16 w-full overflow-hidden bg-ink-deep text-white sm:-mt-20"
       style={{ ...positionVars, '--hero-ratio': String(visual.imageWidth && visual.imageHeight ? visual.imageWidth / visual.imageHeight : 1.6) } as React.CSSProperties}
     >
       {/* ===== طبقة الصورة — الصورة هي الـHero (Full-Bleed) ===== */}
@@ -210,7 +211,7 @@ export const EvergreenHero: React.FC = () => {
             {keys.map((key) => {
               if (key === 'eyebrow') {
                 return content?.eyebrow
-                  ? <p key="eyebrow" className="hero-anim-up-1 mb-3 text-[11px] font-black uppercase tracking-[0.24em]" style={{ color: accent }}>{content.eyebrow}</p>
+                  ? <p key="eyebrow" className="hero-anim-up-1 mb-3 text-xs font-black uppercase tracking-[0.24em]" style={{ color: accent }}>{content.eyebrow}</p>
                   : <span key="rule" aria-hidden className="mb-4 block h-1 w-24 rounded-full lg:w-[120px]" style={{ background: accent }} />;
               }
               if (key === 'title') {
@@ -235,11 +236,11 @@ export const EvergreenHero: React.FC = () => {
                   : null;
               }
               if (!content?.ctaLabel) return null;
-              const ctaClass = 'hero-anim-up-3 mt-7 inline-flex items-center gap-2 rounded-full px-7 py-3.5 text-[15px] font-bold text-white transition-transform hover:-translate-y-0.5';
-              const ctaStyle = { background: accent, boxShadow: '0 10px 26px -14px rgba(0,0,0,0.6)' } as React.CSSProperties;
+              // CTA principal du hero = variante `cta` du système (orange unique, texte encre 6.54:1).
+              const ctaClass = buttonClasses('cta', 'md', 'hero-anim-up-3 mt-7 min-h-12 px-7 py-3.5 text-base shadow-overlay');
               return /^(\/[^/]|#)/.test(content.ctaUrl) || /^https?:\/\//i.test(content.ctaUrl)
-                ? <a key="cta" href={content.ctaUrl} className={ctaClass} style={ctaStyle}>{content.ctaLabel}</a>
-                : <button key="cta" type="button" className={ctaClass} style={ctaStyle}>{content.ctaLabel}</button>;
+                ? <a key="cta" href={content.ctaUrl} className={ctaClass}>{content.ctaLabel}</a>
+                : <button key="cta" type="button" className={ctaClass}>{content.ctaLabel}</button>;
             })}
           </div>
         )}

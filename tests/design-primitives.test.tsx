@@ -40,14 +40,24 @@ const normalize = (markup: string) => markup.replace(/<([a-zA-Z][\w-]*)((?:"[^"]
 )).replace(/\s+/g, ' ');
 
 describe('couche des primitives — une implémentation par concept', () => {
-  it('garde chaque primitive définie une seule fois, dans client/src/design/admin', () => {
-    // `Button` est le seul nom porté par deux couches distinctes : son inventaire est fait par le
-    // test suivant, qui refuse un troisième porteur.
+  it('garde chaque primitive à un porteur par couche (admin / vitrine)', () => {
+    // DS v1.0 : les concepts partagés entre back-office et vitrine existent UNE fois par
+    // couche (design/admin et design/ui) — jamais un troisième porteur. La couche vitrine
+    // ne duplique rien d'autre : tout le reste reste unique, dans design/admin.
+    const DUAL_LAYER: Record<string, string[]> = {
+      Badge: ['design/admin/Badge.tsx', 'design/ui/Badge.tsx'],
+      EmptyState: ['design/admin/EmptyState.tsx', 'design/ui/EmptyState.tsx'],
+      Field: ['design/admin/Field.tsx', 'design/ui/Field.tsx'],
+      Modal: ['design/admin/Modal.tsx', 'design/ui/Modal.tsx'],
+      Select: ['design/admin/Select.tsx', 'design/ui/Field.tsx'], // Select public = famille de champs Field.tsx
+      StatusBadge: ['design/admin/StatusBadge.tsx', 'design/ui/StatusBadge.tsx'],
+      Toast: ['design/admin/Toast.tsx', 'design/ui/Toast.tsx'],
+    };
     for (const name of PRIMITIVES.filter((n) => n !== 'Button')) {
       const definedIn = walk('client/src').filter((file) => new RegExp(`export (?:const|function|interface|type) ${name}\\b`).test(readFileSync(file, 'utf8')));
-      // une seule collision assumée : `QatafoIcons` exporte 95 icônes et l'une d'elles s'appelle
-      // `Search`. La primitive ne renomme rien, elle importe l'icône sous alias — c'est vérifié ici.
-      const allowed = name === 'Search' ? ['components/QatafoIcons.tsx', 'design/admin/Search.tsx'] : [`design/admin/${name}.tsx`];
+      // une seule collision assumée hors dual-couches : `QatafoIcons` exporte 95 icônes et
+      // l'une d'elles s'appelle `Search`. La primitive importe l'icône sous alias — vérifié.
+      const allowed = DUAL_LAYER[name] ?? (name === 'Search' ? ['components/QatafoIcons.tsx', 'design/admin/Search.tsx'] : [`design/admin/${name}.tsx`]);
       expect(definedIn.map((file) => file.replace('client/src/', '')).sort(), name).toEqual(allowed);
       if (name === 'Search') expect(readFileSync(`${DESIGN}/Search.tsx`, 'utf8')).toContain('import { Search as SearchIcon');
     }

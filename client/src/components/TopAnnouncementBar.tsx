@@ -77,7 +77,7 @@ export const TopAnnouncementBar: React.FC<TopAnnouncementBarProps> = () => {
     >
       {/* الرسالة الحالية — Fade + translate عمودي فقط */}
       <span
-        className={`block whitespace-nowrap text-[14px] font-bold leading-none tracking-tight text-white sm:text-[15px] ${leaving ? 'announcement-out' : 'announcement-in'}`}
+        className={`block whitespace-nowrap text-sm font-bold leading-none tracking-tight text-white sm:text-base ${leaving ? 'announcement-out' : 'announcement-in'}`}
       >
         {message}
       </span>

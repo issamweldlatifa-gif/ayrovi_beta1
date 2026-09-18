@@ -2050,6 +2050,7 @@ export class QatafoDatabase {
     });
     this.rebrandNoirOrangePalette();
     this.rebrandZalandoOrange();
+    this.rebrandNeutralScaleV1();
     this.seedStoriesShowcasePosition();
     this.seedStoriesDemoContent();
     this.seedLensFeatureMedia();
@@ -2188,6 +2189,82 @@ export class QatafoDatabase {
     );
   }
 
+  /**
+   * AYROVI DESIGN SYSTEM v1.0 — unification de l'échelle neutre (P0 P4/T2).
+   * Les réglages persistés avant cette migration portent l'échelle slate
+   * (#111318/#1d2130/#6b7280/#f8f9fe/#e2e8f0/#5b6472/#050505). Ils sont
+   * ré-écrits UNE SEULE FOIS vers la canonique : #0A0A0A (surfaces sombres),
+   * #111111 (encre texte), #666666 (secondaire), #F8F9FA (surface), #EAEAEA
+   * (filets). Le #111318 est ambigu (texte OU surface) : la résolution est
+   * par rôle de champ, jamais un remplacement aveugle.
+   */
+  private rebrandNeutralScaleV1(): void {
+    this.runOnceDataMigration('rebrand_neutral_scale_v1', () => this.applyNeutralScale());
+  }
+
+  private applyNeutralScale(): void {
+    const now = new Date().toISOString();
+    const DEEP = '#0a0a0a';
+    const INK = '#111111';
+    const paint = (raw: string): string => {
+      let next = raw
+        .replace(/#1d2130/gi, INK)
+        .replace(/#6b7280/gi, '#666666')
+        .replace(/#f8f9fe/gi, '#f8f9fa')
+        .replace(/#e2e8f0/gi, '#eaeaea')
+        .replace(/#5b6472/gi, '#666666')
+        .replace(/#050505/gi, DEEP);
+      try {
+        const parsed = JSON.parse(next);
+        const isSlate = (value: unknown): boolean => String(value || '').toLowerCase() === '#111318';
+        if (Array.isArray(parsed?.sections)) {
+          for (const section of parsed.sections) {
+            if (section && typeof section === 'object') {
+              if (isSlate(section.backgroundColor)) section.backgroundColor = DEEP;
+              if (isSlate(section.textColor)) section.textColor = INK;
+            }
+          }
+        }
+        if (parsed?.colors && typeof parsed.colors === 'object') {
+          const c = parsed.colors;
+          if (isSlate(c.heroBackground)) c.heroBackground = DEEP;
+          if (isSlate(c.announcementBackground)) c.announcementBackground = DEEP;
+          if (isSlate(c.footerBackground)) c.footerBackground = DEEP;
+          if (isSlate(c.primary)) c.primary = INK;
+          if (isSlate(c.headerText)) c.headerText = INK;
+          if (isSlate(c.footerText)) c.footerText = INK;
+        }
+        if (parsed?.buttons && typeof parsed.buttons === 'object') {
+          if (isSlate(parsed.buttons.background)) parsed.buttons.background = INK;
+          if (isSlate(parsed.buttons.borderColor)) parsed.buttons.borderColor = INK;
+          if (String(parsed.buttons.secondaryColor || '').toLowerCase() === DEEP) parsed.buttons.secondaryColor = INK;
+        }
+        if (parsed?.navigation && typeof parsed.navigation === 'object') {
+          if (isSlate(parsed.navigation.color)) parsed.navigation.color = INK;
+          if (isSlate(parsed.navigation.activeBackground)) parsed.navigation.activeBackground = DEEP;
+        }
+        // site_theme : le « noir » de la palette est une surface (primary = encre).
+        if (parsed?.preset !== undefined) {
+          if (isSlate(parsed.primary)) parsed.primary = INK;
+          if (isSlate(parsed.primaryDark)) parsed.primaryDark = DEEP;
+          if (typeof parsed.gradient === 'string' && parsed.gradient.toLowerCase().includes('#111318')) {
+            parsed.gradient = 'linear-gradient(135deg,#0a0a0a 0%,#111111 100%)';
+          }
+        }
+        next = JSON.stringify(parsed);
+      } catch {
+        /* valeur non JSON : le remplacement littéral suffit */
+      }
+      return next;
+    };
+    for (const key of ['interface_config', 'site_theme']) {
+      const row = this.get<any>('SELECT id,setting_value FROM settings WHERE setting_key=?', key);
+      if (!row?.setting_value) continue;
+      const next = paint(String(row.setting_value));
+      if (next !== row.setting_value) this.run('UPDATE settings SET setting_value=?,updated_at=? WHERE id=?', next, now, row.id);
+    }
+  }
+
   /** Public chrome: 70% white / 25% black / 5% orange. Rewrites old purple/yellow/orange-wash defaults. */
   private rebrandNoirOrangePalette() {
     // One-shot legacy palette rewrite. (was: executed on every boot, so an admin
@@ -2287,24 +2364,24 @@ export class QatafoDatabase {
       ['setting_tiktok_url', 'CHANNELS', 'tiktok_url', '', 'STRING', 'Lien profil TikTok'],
       ['setting_whatsapp_url', 'CHANNELS', 'whatsapp_url', '', 'STRING', 'Lien/numéro WhatsApp (https://wa.me/…)'],
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
-        preset: 'noir', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46',
-        accent: '#ff6900', ink: '#1d2130', gradient: 'linear-gradient(135deg,#111318 0%,#050505 100%)',
+        preset: 'noir', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46',
+        accent: '#ff6900', ink: '#111111', gradient: 'linear-gradient(135deg,#0a0a0a 0%,#111111 100%)',
         font: 'jakarta', radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
         logoUrl: '/media/logo-ayrovi.png',
         sections: [
-          { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#111318', textColor: '#ffffff', paddingY: 0, contained: false },
-          { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
-          { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fe', textColor: '#1d2130', paddingY: 0, contained: false },
-          { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
-          { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#1d2130', paddingY: 0, contained: false },
+          { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#0a0a0a', textColor: '#ffffff', paddingY: 0, contained: false },
+          { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
+          { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#111111', paddingY: 0, contained: false },
+          { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
+          { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
         ],
-        typography: { preset: 'ayrovi-modern', body: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", display: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#1d2130', textColor: '#6b7280', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
-        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fe', borderColor: '#e2e8f0', primary: '#111318', primaryDark: '#050505', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#1d2130', announcementBackground: '#111318', announcementText: '#ffffff', heroBackground: '#111318', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#1d2130', success: '#15803d', warning: '#b77900', danger: '#dc2626' },
-        buttons: { background: '#111318', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#050505', borderColor: '#111318', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#5b6472', activeColor: '#ff6900', size: 28, style: 'outline' },
-        navigation: { background: '#ffffff', color: '#111318', activeBackground: '#ffffff', showLabels: true, height: 80, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
+        typography: { preset: 'ayrovi-modern', body: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", display: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
+        colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },
+        buttons: { background: '#111111', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111111', borderColor: '#111111', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
+        icons: { library: 'ayrovi', color: '#666666', activeColor: '#ff6900', size: 28, style: 'outline' },
+        navigation: { background: '#ffffff', color: '#111111', activeBackground: '#0a0a0a', showLabels: true, height: 80, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
       }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],
@@ -2416,6 +2493,7 @@ export class QatafoDatabase {
     }
     this.rebrandNoirOrangePalette();
     this.rebrandZalandoOrange();
+    this.rebrandNeutralScaleV1();
   }
 
   public all<T = any>(sql: string, ...params: any[]): T[] {

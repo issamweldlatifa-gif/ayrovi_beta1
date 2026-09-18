@@ -52,9 +52,9 @@ export const AssistantVoiceOrb: React.FC<AssistantVoiceOrbProps> = ({
   }[state];
 
   const orbTheme = {
-    listening: 'from-[#ff6900] via-[#ff8a3d] to-[#d95a00]',
-    processing: 'from-[#3b82f6] via-[#60a5fa] to-[#2563eb]',
-    speaking: 'from-[#10b981] via-[#34d399] to-[#059669]',
+    listening: 'from-[#FF6900] via-[#e05e00] to-[#c75200]',
+    processing: 'from-[#111111] via-[#3f3f46] to-[#0A0A0A]',
+    speaking: 'from-[#3f3f46] via-[#111111] to-[#0A0A0A]',
   }[state];
 
   return (

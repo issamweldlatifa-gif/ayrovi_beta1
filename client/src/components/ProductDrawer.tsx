@@ -335,7 +335,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
                 {step === 'input' ? "AYROVIX Lens — Nouvelle commande" : "AYROVIX Lens — Prix en dinars"}
               </h3>
-              <p className="text-[11px] text-muted font-medium">Conversion transparente et garantie</p>
+              <p className="text-xs text-muted font-medium">Conversion transparente et garantie</p>
             </div>
           </div>
 
@@ -373,7 +373,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={isUploading || isScraping}
-                className="hostinger-purple-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-3xl p-6 text-left text-white disabled:cursor-wait disabled:opacity-90"
+                className="ay-dark-feature-card group relative flex min-h-[190px] w-full cursor-pointer flex-col justify-between overflow-hidden rounded-card p-6 text-left text-white disabled:cursor-wait disabled:opacity-90"
               >
                 {/* تجربة AYROVI Lens: معاينة الصورة مع مسح ضوئي أثناء التحليل */}
                 {isUploading && uploadPreview && (
@@ -385,7 +385,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 )}
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
                       <Camera className="w-3.5 h-3.5 text-yellow-300" />
                       <span>Méthode Recommandée</span>
                     </span>
@@ -419,10 +419,10 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </button>
 
               {/* Card 2: Link Direct */}
-              <div className={`hostinger-purple-card rounded-3xl p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[190px] ${isScraping ? 'link-analyze' : ''}`}>
+              <div className={`ay-dark-feature-card rounded-card p-6 text-white relative overflow-hidden flex flex-col justify-between min-h-[190px] ${isScraping ? 'link-analyze' : ''}`}>
                 <div className="relative z-10 flex items-start justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
+                    <span className="text-xs font-bold text-purple-200 uppercase tracking-wider flex items-center gap-1">
                       <Link2 className="w-3.5 h-3.5 text-yellow-300" />
                       <span>Lien URL Direct</span>
                     </span>
@@ -494,14 +494,14 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                   )}
                 </div>
                 <div className="flex-1 min-w-0 space-y-1">
-                  <label className="block text-[10px] font-bold text-muted uppercase tracking-wider">
+                  <label className="block text-xs font-bold text-muted uppercase tracking-wider">
                     Titre de l'article :
                   </label>
                   <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-white border border-line focus:border-line rounded-xl px-2.5 py-1.5 text-xs font-bold text-ink focus:outline-none"
+                    className="w-full rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15"
                   />
                 </div>
               </div>
@@ -518,7 +518,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-[11px] text-muted font-semibold mb-1">
+                    <label className="block text-xs text-muted font-semibold mb-1">
                       Montant devise :
                     </label>
                     <input
@@ -528,18 +528,18 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       value={sourcePrice || ''}
                       onChange={(e) => setSourcePrice(parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
-                      className="w-full bg-white border border-line focus:border-line rounded-xl px-3 py-2 text-sm font-black text-ink focus:outline-none shadow-xs"
+                      className="w-full rounded-control border border-line bg-surface px-3 py-2 text-sm font-black text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 shadow-xs"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] text-muted font-semibold mb-1">
+                    <label className="block text-xs text-muted font-semibold mb-1">
                       Devise :
                     </label>
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full bg-white border border-line focus:border-line rounded-xl px-3 py-2 text-xs font-bold text-ink focus:outline-none shadow-xs"
+                      className="w-full rounded-control border border-line bg-surface px-3 py-2 text-xs font-bold text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 shadow-xs"
                     >
                       <option value="EUR">Euro (€ EUR)</option>
                       <option value="USD">Dollar ($ USD)</option>
@@ -572,7 +572,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
                     </span>
                   </div>
-                  {pricingPreview && <p className="text-right text-[10px] text-muted">Tarification serveur v{pricingPreview.pricingVersion}</p>}
+                  {pricingPreview && <p className="text-right text-xs text-muted">Tarification serveur v{pricingPreview.pricingVersion}</p>}
                 </div>
               </div>
 
@@ -586,7 +586,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     value={variantNote}
                     onChange={(e) => setVariantNote(e.target.value)}
                     placeholder="Ex : M, Noir..."
-                    className="w-full bg-surface border border-line focus:border-line rounded-xl px-3 py-2 text-xs text-ink focus:outline-none"
+                    className="w-full rounded-control border border-line bg-surface px-3 py-2 text-xs text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15"
                   />
                 </div>
 

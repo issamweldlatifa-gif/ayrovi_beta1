@@ -123,10 +123,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                     className="ayrovix-product-gallery-image"
                   />
                 : <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={40} strokeWidth={1.4} /></div>}
-              <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide ${availability.cls}`}>
+              <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availability.cls}`}>
                 {availability[isArabic ? 'ar' : 'fr']}
               </span>
-              <span className="absolute right-3 top-3 max-w-[45%] truncate rounded-full bg-ink/85 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-white">
+              <span className="absolute right-3 top-3 max-w-[45%] truncate rounded-full bg-ink/85 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
                 {product.source}
               </span>
             </div>
@@ -156,16 +156,16 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         <div className="flow-info min-w-0 space-y-3">
           <div className="space-y-2">
             {/* title — wraps naturally, never clipped */}
-            <h1 className="break-words text-[20px] font-black leading-tight text-ink lg:text-[22px]">{product.title}</h1>
-            <p className="break-words text-[13px] font-semibold leading-snug text-muted">
+            <h1 className="break-words text-xl font-black leading-tight text-ink lg:text-xl">{product.title}</h1>
+            <p className="break-words text-sm font-semibold leading-snug text-muted">
               {[product.brand, product.model].filter(Boolean).join(' · ') || tr('Produit identifié par AYROVIX', 'منتج تعرّفت عليه AYROVIX')}
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1 text-[12px] font-extrabold text-ink" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Qualité de la fiche AYROVIX', 'جودة بطاقة AYROVIX')}>
-                <Star size={14} fill="currentColor" style={{color:'#FFC107'}} />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('fiche AYROVIX', 'بطاقة AYROVIX')}</span>
+              <span className="inline-flex items-center gap-1 text-xs font-extrabold text-ink" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Qualité de la fiche AYROVIX', 'جودة بطاقة AYROVIX')}>
+                <Star size={14} fill="currentColor" style={{color:'#FF6900'}} />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('fiche AYROVIX', 'بطاقة AYROVIX')}</span>
               </span>
               {validProductUrl(product.sourceUrl) && (
-                <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[12px] font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink">
+                <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink">
                   {tr('Page du marchand', 'صفحة المتجر')}<ArrowUpRight size={14} />
                 </a>
               )}
@@ -176,27 +176,27 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
           {/* Price — no card, just hierarchy + subtle left rule */}
           <div className="border-l-2 border-ink pl-4 py-1">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
-            <p className="mt-1 break-words text-[30px] font-black leading-none tracking-tight text-ink">
+            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
+            <p className="mt-1 break-words text-3xl font-black leading-none tracking-tight text-ink">
               {selectedPriceTnd != null ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}
             </p>
-            <p className="mt-1 break-words text-[12px] font-semibold leading-snug text-muted">
+            <p className="mt-1 break-words text-xs font-semibold leading-snug text-muted">
               {selectedPrice != null && selectedCurrency
                 ? `${tr('Prix boutique', 'سعر المتجر')} ${selectedPrice.toFixed(2)} ${selectedCurrency}`
                 : tr('Prix boutique à confirmer', 'سعر المتجر بانتظار التأكيد')}
             </p>
             {/* verification — subtle, not card */}
             {priceVerified ? (
-              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-[11px] font-bold text-ink"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold text-ink"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
             ) : (
-              <div className="mt-2 space-y-1 text-[11px] leading-snug text-muted">
+              <div className="mt-2 space-y-1 text-xs leading-snug text-muted">
                 <p className="inline-flex items-start gap-1.5 font-semibold text-ink"><Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tr(`Prix estimé — vérification manuelle par notre équipe après l’acompte de ${depositPercent}%.`, `السعر تقديري — يتحقق منه فريقنا يدويًا بعد دفع عربون ${depositPercent}%.`)}</p>
                 {verificationReason(product.verificationFailureCode, isArabic) && <p className="break-words text-muted">{tr('Motif :', 'السبب:')} {verificationReason(product.verificationFailureCode, isArabic)}.</p>}
               </div>
             )}
           </div>
 
-          {product.description ? <p className="break-words text-[13px] leading-relaxed text-muted">{product.description}</p> : null}
+          {product.description ? <p className="break-words text-sm leading-relaxed text-muted">{product.description}</p> : null}
         </div>
       </div>
 
@@ -205,8 +205,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
       {/* ── 2. DETAILS — no card-on-card, just spacing + inputs ── */}
       <div className="space-y-4">
         <div>
-          <h2 className="text-[14px] font-extrabold text-ink">{tr('Détails de votre demande', 'تفاصيل طلبك')}</h2>
-          <p className="mt-1 break-words text-[11px] leading-relaxed text-muted">{tr("Ces informations seront transmises à l'équipe d'achat avec votre commande.", 'ستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.')}</p>
+          <h2 className="text-sm font-extrabold text-ink">{tr('Détails de votre demande', 'تفاصيل طلبك')}</h2>
+          <p className="mt-1 break-words text-xs leading-relaxed text-muted">{tr("Ces informations seront transmises à l'équipe d'achat avec votre commande.", 'ستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.')}</p>
         </div>
 
         <label className="block">
@@ -223,8 +223,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             aria-invalid={submitted && !isUrlValid}
             required
           />
-          <span className="mt-1 block break-words text-[10px] leading-snug text-muted">{tr("Ce lien sert à l’achat manuel et ne relance pas l’extraction du prix.", 'يُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.')}</span>
-          {submitted && !isUrlValid && <span className="mt-1 block break-words text-[11px] font-semibold text-danger">{tr('Ajoutez un lien public complet commençant par http:// ou https://.', 'أضف رابطًا عامًا كاملًا يبدأ بـ http:// أو https://.')}</span>}
+          <span className="mt-1 block break-words text-xs leading-snug text-muted">{tr("Ce lien sert à l’achat manuel et ne relance pas l’extraction du prix.", 'يُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.')}</span>
+          {submitted && !isUrlValid && <span className="mt-1 block break-words text-xs font-semibold text-danger">{tr('Ajoutez un lien public complet commençant par http:// ou https://.', 'أضف رابطًا عامًا كاملًا يبدأ بـ http:// أو https://.')}</span>}
         </label>
 
         <div className="grid gap-4 sm:grid-cols-[180px_1fr] sm:items-start">
@@ -257,15 +257,15 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                 <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink" />
               )}
               {product.sizes.length > 0 || product.colors.length > 0 ? (
-                <p className="break-words rounded-lg bg-surface px-3 py-2 text-[11px] leading-relaxed text-muted">
+                <p className="break-words rounded-icon bg-surface px-3 py-2 text-xs leading-relaxed text-muted">
                   {tr('Options détectées sur la fiche :', 'المواصفات المكتشفة في الصفحة:')} {[product.sizes.length ? `${tr('tailles', 'المقاسات')} ${product.sizes.join(', ')}` : '', product.colors.length ? `${tr('couleurs', 'الألوان')} ${product.colors.join(', ')}` : ''].filter(Boolean).join(' · ')}.
                 </p>
               ) : (
-                <div className="break-words rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-relaxed text-amber-900">
+                <div className="break-words rounded-icon border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs leading-relaxed text-amber-900">
                   <p className="font-bold">{tr('Tailles/couleurs non listées par le marchand', 'المقاسات/الألوان غير مدرجة لدى المتجر')}</p>
                   <p className="mt-1 font-medium text-amber-800/80">{tr('Aucune variante n’a été trouvée sur la fiche. Vérifiez les options disponibles sur la page marchand et précisez votre choix ci-dessus. Votre lien sera utilisé pour la commande manuelle.', 'لم يُعثر على أي متغير في الصفحة. تحقق من الخيارات المتاحة على صفحة المتجر وحدد اختيارك أعلاه. سيُستخدم رابطك للطلب اليدوي.')}</p>
                   {validProductUrl(product.sourceUrl) && (
-                    <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 break-words text-[11px] font-extrabold text-amber-900 underline">
+                    <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline">
                       {tr('Ouvrir la fiche marchand', 'فتح صفحة المتجر')} <ArrowUpRight size={12} />
                     </a>
                   )}
@@ -300,7 +300,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`)}</>}
           </button>
         </div>
-        <p className="break-words text-center text-[11px] font-bold text-muted">{tr(`Acompte ${depositPercent}% · Suivi après expédition réelle`, `عربون ${depositPercent}% · التتبع بعد الشحن الفعلي`)}</p>
+        <p className="break-words text-center text-xs font-bold text-muted">{tr(`Acompte ${depositPercent}% · Suivi après expédition réelle`, `عربون ${depositPercent}% · التتبع بعد الشحن الفعلي`)}</p>
       </div>
     </div>
   );

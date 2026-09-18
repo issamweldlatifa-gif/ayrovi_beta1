@@ -43,7 +43,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
   const mainItem = `flex w-full items-center gap-3 rounded-[14px] px-3 py-3 text-start text-sm font-semibold transition ${
     isDark ? 'text-white hover:bg-white/7' : 'text-ink hover:bg-ink/5'
   }`;
-  const sectionLabel = 'px-3 pb-2 pt-5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-muted';
+  const sectionLabel = 'px-3 pb-2 pt-5 text-xs font-extrabold uppercase tracking-[0.12em] text-muted';
 
   return (
     <>
@@ -69,8 +69,8 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
               {conversations.map((conversation) => (
                 <div key={conversation.id} className={`group flex items-center rounded-[14px] pe-1 transition ${conversation.id === activeConversationId ? (isDark ? 'bg-white/9' : 'bg-black/[0.04]') : (isDark ? 'hover:bg-white/6' : 'hover:bg-ink/5')}`}>
                   <button type="button" onClick={() => onSelectConversation(conversation)} className={`min-w-0 flex-1 px-3 py-2.5 text-start ${isDark ? 'text-white' : 'text-ink'}`}>
-                    <span className="block truncate text-[13px] font-semibold">{conversation.title}</span>
-                    <span className="mt-0.5 block text-[10px] text-muted">{formatDate(conversation.updatedAt)}</span>
+                    <span className="block truncate text-sm font-semibold">{conversation.title}</span>
+                    <span className="mt-0.5 block text-xs text-muted">{formatDate(conversation.updatedAt)}</span>
                   </button>
                   <button type="button" onClick={() => onDeleteConversation(conversation.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-danger/5 hover:text-danger" aria-label={tr(`Supprimer ${conversation.title}`, `حذف ${conversation.title}`)}>
                     <Trash2 className="h-3.5 w-3.5" />
@@ -79,7 +79,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
               ))}
             </div>
           ) : (
-            <p className={`rounded-[14px] px-3 py-4 text-center text-xs leading-5 ${isDark ? 'bg-white/5 text-muted' : 'bg-[#F7F7F7] text-muted'}`}>{tr('Votre première conversation apparaîtra ici.', 'ستظهر محادثتك الأولى هنا.')}</p>
+            <p className={`rounded-[14px] px-3 py-4 text-center text-xs leading-5 ${isDark ? 'bg-white/5 text-muted' : 'bg-surface text-muted'}`}>{tr('Votre première conversation apparaîtra ici.', 'ستظهر محادثتك الأولى هنا.')}</p>
           )}
 
           <button type="button" onClick={onOpenOrders} className={mainItem}>{tr('Mes commandes', 'طلباتي')}</button>
@@ -89,7 +89,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
           <button type="button" onClick={onOpenAccount} className={mainItem}>{isAuthenticated ? tr('Mon compte', 'حسابي') : tr('Se connecter', 'تسجيل الدخول')}</button>
           <button type="button" onClick={onToggleDark} className={`${mainItem} justify-between`}>
             <span className="flex items-center gap-3">{tr('Mode sombre', 'الوضع الداكن')}</span>
-            <span className={`relative h-[26px] w-11 rounded-full transition ${isDark ? 'bg-[#111318]' : 'bg-line'}`} aria-hidden="true">
+            <span className={`relative h-[26px] w-11 rounded-full transition ${isDark ? 'bg-ink' : 'bg-line'}`} aria-hidden="true">
               <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow transition ${isDark ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
             </span>
           </button>

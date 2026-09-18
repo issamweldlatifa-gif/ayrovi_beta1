@@ -39,7 +39,7 @@ export const CommentSheet: React.FC<{
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3">
           {comments.length ? comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-2.5 py-2.5">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-[10px] font-black text-ink">{comment.author.slice(0, 2).toUpperCase()}</span>
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface text-xs font-black text-ink">{comment.author.slice(0, 2).toUpperCase()}</span>
               <div className="min-w-0">
                 <p className="text-xs font-extrabold text-ink">{comment.author} <span className="ms-1 font-semibold text-muted">{timeAgo(comment.createdAt, locale)}</span></p>
                 <p className="mt-0.5 text-sm leading-6 text-ink/90">{comment.text}</p>
