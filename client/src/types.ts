@@ -352,9 +352,10 @@ export interface CustomerNotification {
 }
 
 export interface CustomerSecuritySummary {
+  hasPassword: boolean;
   emailVerified: boolean;
   phoneVerified: boolean;
-  identities: Array<{ provider: 'PHONE' | 'GOOGLE' | 'FACEBOOK'; created_at: string }>;
+  identities: Array<{ provider: 'PHONE' | 'GOOGLE' | 'FACEBOOK' | 'APPLE'; created_at: string }>;
   activeSessions: number;
   lastLoginAt: string | null;
 }

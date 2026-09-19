@@ -1,0 +1,14 @@
+import React from 'react';
+import { CartItem, CustomerFavorite } from '../../types';
+import { useLocale } from '../../i18n/LocaleContext';
+import { ShoppingBag, Trash2 } from '../QatafoIcons';
+import { Button } from '../../design/Button';
+export function safeAccountLink(value:string|undefined){try{const url=new URL(value||'');return ['http:','https:'].includes(url.protocol)?url.href:'';}catch{return '';}}
+export function AccountFavorites({items,busyId,onRemove}:{items:CustomerFavorite[];busyId:string;onRemove:(id:string)=>void}){
+ const {tr,formatMoney}=useLocale();
+ return <div className="ac-favorites">{items.map(item=>{const href=safeAccountLink(item.source_url);const media=item.image_url?<img src={item.image_url} alt="" loading="lazy"/>:<ShoppingBag className="h-8 w-8" aria-hidden/>;return <article key={item.id} className="ac-favorite">{href?<a className="ac-product-media" href={href} target="_blank" rel="noreferrer" aria-label={tr(`Voir ${item.title} sur le site source`, `عرض ${item.title} في موقع المصدر`)}>{media}</a>:<div className="ac-product-media">{media}</div>}<div className="ac-favorite-body"><h2>{item.title}</h2>{item.price_tnd!=null&&<strong>{formatMoney(item.price_tnd)}</strong>}<button type="button" disabled={Boolean(busyId)} onClick={()=>onRemove(item.id)} className="ac-text-button ac-danger-text">{tr('Retirer','إزالة')}</button></div></article>;})}</div>;
+}
+export function AccountCart({items,busyId,onQuantity,onOpenCart}:{items:CartItem[];busyId:string;onQuantity:(item:CartItem,quantity:number)=>void;onOpenCart:()=>void}){
+ const {tr,formatMoney}=useLocale();
+ return <div className="ac-form-stack">{items.map(item=><article key={item.id} className="ac-panel ac-cart-item"><div className="ac-cart-image">{item.imageUrl?<img src={item.imageUrl} alt="" loading="lazy"/>:<ShoppingBag className="h-7 w-7" aria-hidden/>}</div><div className="ac-cart-description"><h2>{item.title}</h2><p className="ac-note">{item.variant||item.store}</p><strong>{formatMoney(item.lineTotalTND??item.priceTND*item.quantity)}</strong></div><div className="ac-cart-controls"><button type="button" className="ac-icon-button ac-danger-text" disabled={Boolean(busyId)} aria-label={tr(`Supprimer ${item.title}`,`حذف ${item.title}`)} onClick={()=>onQuantity(item,0)}><Trash2 className="h-5 w-5" aria-hidden/></button><div className="ac-quantity"><button type="button" disabled={Boolean(busyId)} aria-label={tr(`Diminuer la quantité de ${item.title}`,`تقليل كمية ${item.title}`)} onClick={()=>onQuantity(item,Math.max(0,item.quantity-1))}>−</button><span aria-live="polite">{item.quantity}</span><button type="button" disabled={Boolean(busyId)||item.quantity>=99} aria-label={tr(`Augmenter la quantité de ${item.title}`,`زيادة كمية ${item.title}`)} onClick={()=>onQuantity(item,item.quantity+1)}>+</button></div></div></article>)}<Button type="button" onClick={onOpenCart}>{tr('Ouvrir le panier','فتح السلة')}</Button></div>;
+}

@@ -1,4 +1,9 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { AccountAvatar, AccountHeader, AccountHome, AccountOrderNavigation } from './account/AccountHome';
+import { AccountCart, AccountFavorites, safeAccountLink } from './account/AccountCommerce';
+import { AccountPreferences, AccountSecurity } from './account/AccountSettings';
+import { AccountSection, accountSections } from './account/model';
+import '../styles/customer-account.css';
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple, FaFacebookF } from 'react-icons/fa6';
 import {
@@ -38,42 +43,8 @@ import { useLocale } from '../i18n/LocaleContext';
 import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
 import { AppHeader } from '../design/AppHeader';
 import { Button, buttonClasses } from '../design/Button';
-import { Field as FormField } from '../design/ui/Field';
+import { Input, Field as FormField } from '../design/ui/Field';
 import { ManualAuthInput } from '../design/ui/ManualAuthInput';
-
-/* ===== آفاتار حديث: صورة مرفوعة > آفاتار مولّد حسب الجنس ===== */
-type AvatarGender = 'female' | 'male';
-const AVATAR_GRADIENT: Record<AvatarGender, string> = {
-  female: 'bg-gradient-to-br from-pink-500 to-fuchsia-600',
-  male: 'bg-gradient-to-br from-sky-500 to-indigo-600',
-};
-const genderFromName = (name?: string | null): AvatarGender => {
-  const s = (name || '').trim().toLowerCase();
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-  return h % 2 === 0 ? 'female' : 'male';
-};
-const AccountAvatar: React.FC<{ account: any; size?: string; uploadedUrl?: string | null; gender?: AvatarGender | null }> = ({ account, size = 'h-11 w-11', uploadedUrl, gender }) => {
-  const src = uploadedUrl || account?.avatarUrl;
-  if (src) return <img src={src} alt="" className={`${size} rounded-2xl object-cover`} />;
-  const g: AvatarGender = gender || genderFromName(account?.displayName || account?.email || 'AY');
-  return (
-    <span className={`grid ${size} shrink-0 place-items-center overflow-hidden rounded-2xl text-white ${AVATAR_GRADIENT[g]}`} aria-hidden="true">
-      <Person className="h-3/5 w-3/5" strokeWidth={1.6} />
-    </span>
-  );
-};
-
-/* ===== رفع صورة الحساب (حفظ محلي في المعاينة) ===== */
-const avatarStorageKey = (account: any) => `ayrovi-avatar:${account?.id || account?.email || 'guest'}`;
-const genderStorageKey = (account: any) => `ayrovi-gender:${account?.id || account?.email || 'guest'}`;
-
-/* ===== قائمة الولايات التونسية (حقل الموقع بأسلوب Zalando) ===== */
-const TUNISIAN_GOVERNORATES = [
-  'Tunis', 'Ariana', 'Ben Arous', 'Manouba', 'Nabeul', 'Zaghouan', 'Bizerte', 'Béja',
-  'Jendouba', 'Le Kef', 'Siliana', 'Sousse', 'Monastir', 'Mahdia', 'Sfax', 'Kairouan',
-  'Kasserine', 'Sidi Bouzid', 'Gabès', 'Médenine', 'Tataouine', 'Gafsa', 'Tozeur', 'Kébili',
-];
 
 interface CustomerAccountPageProps {
   isOpen: boolean;
@@ -84,12 +55,13 @@ interface CustomerAccountPageProps {
   onClose: () => void;
   onSession: (session: CustomerSession) => void;
   onLoggedOut: () => void;
+  onThemeChange: (dark: boolean) => void;
   onOpenCart: () => void;
   onCartChanged: () => void;
   initialMessage?: string;
 }
 
-type Section = 'home' | 'profile' | 'orders' | 'payments' | 'invoices' | 'tracking' | 'addresses' | 'favorites' | 'cart' | 'notifications' | 'appearance' | 'security' | 'settings' | 'lensHelp' | 'terms';
+type Section = AccountSection;
 type AuthConfig = {
   phoneOtp: { enabled: boolean };
   google: { enabled: boolean };
@@ -117,23 +89,7 @@ const emptyAddress: AddressDraft = {
   addressLine: '', deliveryNotes: '', isDefault: false,
 };
 
-const sectionItems: Array<{ id: Section; label: string; labelAr: string; icon: React.ComponentType<any> }> = [
-  { id: 'home', label: 'Aperçu', labelAr: 'نظرة عامة', icon: Home },
-  { id: 'profile', label: 'Informations personnelles', labelAr: 'المعلومات الشخصية', icon: User },
-  { id: 'orders', label: 'Mes commandes', labelAr: 'طلباتي', icon: Package },
-  { id: 'payments', label: 'Paiements & transactions', labelAr: 'المدفوعات والمعاملات', icon: CreditCard },
-  { id: 'invoices', label: 'Factures', labelAr: 'الفواتير', icon: ReceiptText },
-  { id: 'tracking', label: 'Suivi des colis', labelAr: 'تتبع الشحنات', icon: Truck },
-  { id: 'addresses', label: 'Adresses', labelAr: 'العناوين', icon: MapPin },
-  { id: 'favorites', label: 'Favoris', labelAr: 'المفضلة', icon: Heart },
-  { id: 'cart', label: 'Panier', labelAr: 'السلة', icon: ShoppingBag },
-  { id: 'notifications', label: 'Notifications', labelAr: 'الإشعارات', icon: Bell },
-  { id: 'appearance', label: 'Mode sombre', labelAr: 'الوضع الداكن', icon: Moon },
-  { id: 'security', label: 'Sécurité', labelAr: 'الأمان', icon: Lock },
-  { id: 'settings', label: 'Paramètres', labelAr: 'الإعدادات', icon: Settings },
-  { id: 'lensHelp', label: 'Aide AYROVIX Lens', labelAr: 'مساعدة عدسة AYROVIX', icon: ScanSearch },
-  { id: 'terms', label: 'Conditions & confidentialité', labelAr: 'الشروط والخصوصية', icon: FileText },
-];
+const sectionItems = accountSections;
 
 const statusLabels: Record<string, string> = {
   CREATED: 'Créée', AWAITING_DEPOSIT: 'Acompte attendu', AWAITING_PAYMENT_VERIFICATION: 'Paiement à vérifier',
@@ -158,31 +114,18 @@ function Status({ value }: { value: string }) {
   return <span className={`inline-flex px-2.5 py-1 text-xs font-black uppercase tracking-wide ${complete ? 'bg-surface text-ink' : cancelled ? 'bg-danger/5 text-danger' : 'bg-surface text-ink border border-line'}`}>{(isArabic ? statusLabelsAr[value] : statusLabels[value]) || value.replaceAll('_', ' ')}</span>;
 }
 
-function Empty({ title, text }: { title: string; text: string }) {
-  return <div className="border border-line bg-white px-6 py-14 text-center"><h3 className="mt-4 text-lg font-black text-ink">{title}</h3><p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-muted">{text}</p></div>;
+function Empty({ title, text, actionLabel, onAction }: { title: string; text: string; actionLabel?: string; onAction?: () => void }) {
+  return <div className="ac-empty"><Package className="h-8 w-8" aria-hidden/><h2>{title}</h2><p>{text}</p>{onAction&&<Button type="button" onClick={onAction}>{actionLabel}</Button>}</div>;
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return <label className="block"><span className="mb-1.5 block text-xs font-black text-ink">{label}</span>{children}</label>;
 }
 
-const AccountTabs: React.FC<{
-  section: Section;
-  unread: number;
-  onOpen: (section: Section) => void;
-  onLogout: () => void;
-}> = ({ section, unread, onOpen, onLogout }) => {
-  const { isArabic, tr } = useLocale();
-  return <nav className="grid gap-1" aria-label={isArabic ? 'أقسام الحساب' : 'Rubriques du compte'}>
-    {sectionItems.map(({ id, label, labelAr, icon: Icon }) => <button key={id} onClick={() => onOpen(id)} className={`flex min-h-12 w-full items-center gap-3 rounded-xl px-3.5 py-3 text-start text-sm font-black transition ${section === id ? 'bg-ink text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}><Icon className="h-7 w-7 shrink-0" /><span className="min-w-0 flex-1">{isArabic ? labelAr : label}</span>{id === 'notifications' && unread > 0 ? <span className="rounded-full bg-ink px-2 py-0.5 text-xs text-white">{unread}</span> : <ChevronRight className={`h-7 w-7 opacity-50 ${isArabic ? 'rotate-180' : ''}`} />}</button>)}
-    <button onClick={onLogout} className="mt-2 flex min-h-12 w-full items-center gap-3 border-t border-line px-3.5 pt-4 text-start text-sm font-black text-danger"><LogOut className="h-7 w-7" />{tr('Se déconnecter', 'تسجيل الخروج')}</button>
-  </nav>;
-};
-
 const inputClass = 'min-h-12 w-full rounded-control border border-line bg-surface px-3.5 py-3 text-sm font-semibold text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 disabled:bg-surface/60 disabled:text-muted';
 
 export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
-  isOpen, session, loadingSession, onClose, onSession, onLoggedOut, onOpenCart, onCartChanged, initialMessage, initialSection = 'home', initialOrderId = '',
+  isOpen, session, loadingSession, onClose, onSession, onLoggedOut, onThemeChange, onOpenCart, onCartChanged, initialMessage, initialSection = 'home', initialOrderId = '',
 }) => {
   const { tr, direction, formatDate, formatMoney, isArabic } = useLocale();
   const date = formatDate;
@@ -197,12 +140,13 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const phoneLoginOpen = navigation.stack.some((layer) => layer.id === 'account:phone-login');
   const otpOpen = navigation.stack.some((layer) => layer.id === 'account:otp-code');
   const openSection = (target: Section) => {
+    orderRequestRef.current+=1;
     if (target !== section) navigation.pushLayer({ id: 'account:section', payload: { section: target } });
     setOrderDetail(null);
     setAddressDraft(null);
     setError('');
   };
-  const closeAccountLayer = () => navigation.back();
+  const closeAccountLayer = () => {orderRequestRef.current+=1;navigation.back();};
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [phone, setPhone] = useState('');
   const [emailMode, setEmailMode] = useState<'login' | 'register'>('login');
@@ -225,32 +169,17 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   // A section owns this slot at a time; every endpoint response is typed at its load site.
   const [rows, setRows] = useState<any>([]);
   const [loading, setLoading] = useState(false);
-  const [accountDark, setAccountDark] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [loadedSection,setLoadedSection]=useState<Section|null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [transferReference, setTransferReference] = useState('');
   const [paymentBusy, setPaymentBusy] = useState(false);
   const [profile, setProfile] = useState({ displayName: '', email: '', marketingOptIn: false });
-  const [uploadedAvatar, setUploadedAvatar] = useState<string | null>(() => { try { return localStorage.getItem(avatarStorageKey(session?.account)) || null; } catch { return null; } });
-  const [selectedGender, setSelectedGender] = useState<AvatarGender | null>(() => { try { return (localStorage.getItem(genderStorageKey(session?.account)) as AvatarGender) || null; } catch { return null; } });
-  const [governorate, setGovernorate] = useState<string>(() => { try { return localStorage.getItem('ayrovi-gov') || ''; } catch { return ''; } });
-  const chooseGovernorate = (g: string) => { setGovernorate(g); try { localStorage.setItem('ayrovi-gov', g); } catch { /* ignore */ } };
-  const avatarFileRef = useRef<HTMLInputElement>(null);
-  const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = String(reader.result);
-      setUploadedAvatar(dataUrl);
-      try { localStorage.setItem(avatarStorageKey(session?.account), dataUrl); } catch { /* ignore */ }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = '';
-  };
-  const chooseGender = (g: AvatarGender) => { setSelectedGender(g); try { localStorage.setItem(genderStorageKey(session?.account), g); } catch { /* ignore */ } };
   const [addressDraft, setAddressDraft] = useState<AddressDraft | null>(null);
   const [orderDetail, setOrderDetail] = useState<CustomerOrderDetail | null>(null);
   const [busyId, setBusyId] = useState('');
   const sectionRequestRef = useRef(0);
+  const orderRequestRef=useRef(0);
   const initialOrderOpenedRef = useRef('');
   const isOpenRef = useRef(isOpen);
   isOpenRef.current = isOpen;
@@ -306,7 +235,9 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     if (!session) return;
     const requestId = ++sectionRequestRef.current;
     setLoading(true);
-    setError('');
+    setLoadError('');
+    setRows(null);
+    if(target==='home')setOverview(null);
     try {
       if (target === 'home') {
         const result = await customerApi<{ data: CustomerAccountOverview }>('/api/customer/account/overview');
@@ -331,7 +262,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         if (requestId === sectionRequestRef.current) setRows(result.data);
       } else if (target === 'settings' || target === 'appearance') {
         const result = await customerApi<{ data: CustomerPreferences }>('/api/customer/account/preferences');
-        if (requestId === sectionRequestRef.current) { setRows(result.data); setAccountDark(Boolean(result.data.dark_mode)); }
+        if (requestId === sectionRequestRef.current) { setRows(result.data); onThemeChange(Boolean(result.data.dark_mode)); }
       } else if (target === 'favorites') {
         const result = await customerApi<{ data: CustomerFavorite[] }>('/api/customer/account/favorites');
         if (requestId === sectionRequestRef.current) setRows(result.data);
@@ -343,9 +274,9 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         if (requestId === sectionRequestRef.current) setRows(result.data);
       }
     } catch (reason: any) {
-      if (requestId === sectionRequestRef.current) setError(reason.message || 'Impossible de charger cette rubrique.');
+      if (requestId === sectionRequestRef.current) setLoadError(tr(reason.message || 'Impossible de charger cette rubrique.','تعذر تحميل هذا القسم. تحقق من اتصالك ثم أعد المحاولة.'));
     } finally {
-      if (requestId === sectionRequestRef.current) setLoading(false);
+      if (requestId === sectionRequestRef.current) {setLoadedSection(target);setLoading(false);}
     }
   };
 
@@ -355,8 +286,18 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   }, [isOpen, session?.account.id]);
 
   useEffect(() => {
+    setError(''); setNotice(''); setBusyId('');
+    contentRef.current?.scrollTo({top:0});
+    if(session)document.getElementById('account-heading')?.focus({preventScroll:true});
     if (isOpen && session) void loadSection(section);
+    return ()=>{sectionRequestRef.current+=1;orderRequestRef.current+=1;};
   }, [isOpen, session?.account.id, section]);
+
+  useEffect(()=>{
+    if(!notice)return;
+    const timer=window.setTimeout(()=>setNotice(''),6500);
+    return()=>window.clearTimeout(timer);
+  },[notice]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -428,14 +369,33 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   };
 
   const logout = async () => {
-    try { await customerApi('/api/customer/auth/logout', { method: 'POST' }, session?.csrfToken || ''); } catch {}
-    onLoggedOut();
-    navigation.navigate([{ id: 'app:account' }], { replace: true }); setRows([]); setOverview(null); setPhone(''); setChallengeId(''); setCode(''); setDevelopmentCode('');
-    setNotice('Vous êtes déconnecté.');
+    if(busyId||!session)return;
+    setBusyId('logout');setError('');
+    try {
+      await customerApi('/api/customer/auth/logout', { method: 'POST', body: '{}' }, session.csrfToken);
+      onLoggedOut(); navigation.navigate([{id:'app:account'}],{replace:true});
+    } catch(reason:any) {
+      if(reason.status===401){onLoggedOut();navigation.navigate([{id:'app:account'}],{replace:true});}
+      else setError(tr(reason.message||'Déconnexion impossible. Réessayez.','تعذر تسجيل الخروج. تحقق من اتصالك ثم أعد المحاولة.'));
+    } finally {setBusyId('');}
+  };
+
+  const saveAvatar=async(file:File|null)=>{
+    if(!session||busyId)return;
+    if(file&&(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>2*1024*1024)){
+      setError(tr('Choisissez une image JPEG, PNG ou WebP de 2 Mo maximum.','اختر صورة JPEG أو PNG أو WebP لا تتجاوز 2 ميغابايت.'));return;
+    }
+    setBusyId('avatar');setError('');setNotice('');
+    try{
+      const form=new FormData();if(file)form.append('avatar',file);
+      const result=await customerApi<{data:CustomerSession['account']}>('/api/customer/account/avatar',{method:file?'POST':'DELETE',...(file?{body:form}:{})},session.csrfToken);
+      onSession({...session,account:result.data});
+      setNotice(file?tr('Photo enregistrée.','تم حفظ الصورة.'):tr('Photo supprimée.','تم حذف الصورة.'));
+    }catch(reason:any){setError(reason.message);}finally{setBusyId('');}
   };
 
   const deleteAccount = async () => {
-    if (!session || !confirm('Supprimer définitivement votre compte AYROVI ? Vos commandes comptables déjà créées seront conservées sans accès au compte.')) return;
+    if (!session || !confirm(tr('Supprimer définitivement votre compte AYROVI ? Les commandes et factures seront conservées pour les obligations légales.','هل تريد حذف حسابك نهائيًا؟ ستُحفظ الطلبات والفواتير للالتزامات القانونية.'))) return;
     setBusyId('delete-account'); setError('');
     try {
       await customerApi('/api/customer/account', {
@@ -443,7 +403,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       }, session.csrfToken);
       onLoggedOut();
       navigation.navigate([{ id: 'app:account' }], { replace: true }); setRows([]); setOverview(null);
-      setNotice('Votre compte et vos données de profil ont été supprimés.');
+      setNotice(tr('Votre compte a été supprimé.','تم حذف حسابك.'));
     } catch (reason: any) { setError(reason.message); }
     finally { setBusyId(''); }
   };
@@ -453,7 +413,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     try {
       const result = await customerApi<any>('/api/customer/account/profile', { method: 'PUT', body: JSON.stringify(profile) }, session!.csrfToken);
       onSession({ ...session!, account: result.data });
-      setNotice('Votre profil a été enregistré.');
+      setNotice(tr('Votre profil a été enregistré.','تم حفظ معلومات حسابك.'));
     } catch (reason: any) { setError(reason.message); }
     finally { setBusyId(''); }
   };
@@ -474,13 +434,13 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       await customerApi(`/api/customer/account/addresses${addressDraft.id ? `/${addressDraft.id}` : ''}`, {
         method: addressDraft.id ? 'PUT' : 'POST', body: JSON.stringify(addressDraft),
       }, session!.csrfToken);
-      setAddressDraft(null); closeAccountLayer(); setNotice('Adresse enregistrée.'); await loadSection('addresses');
+      setAddressDraft(null); closeAccountLayer(); setNotice(tr('Adresse enregistrée.','تم حفظ العنوان.')); await loadSection('addresses');
     } catch (reason: any) { setError(reason.message); }
     finally { setBusyId(''); }
   };
 
   const deleteAddress = async (id: string) => {
-    if (!confirm('Supprimer cette adresse ?')) return;
+    if (!confirm(tr('Supprimer cette adresse ?','هل تريد حذف هذا العنوان؟'))) return;
     setBusyId(id);
     try { await customerApi(`/api/customer/account/addresses/${id}`, { method: 'DELETE' }, session!.csrfToken); await loadSection('addresses'); }
     catch (reason: any) { setError(reason.message); }
@@ -488,15 +448,17 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   };
 
   const loadOrderDetail = async (id: string) => {
+    const requestId=++orderRequestRef.current;
     setBusyId(id); setError('');
     try {
       const result = await customerApi<{ data: CustomerOrderDetail }>(`/api/customer/account/orders/${id}`);
+      if(requestId!==orderRequestRef.current||!isOpenRef.current)return null;
       setOrderDetail(result.data);
       return result.data;
     } catch (reason: any) {
-      setError(reason.message);
+      if(requestId===orderRequestRef.current&&isOpenRef.current)setError(reason.message);
       return null;
-    } finally { setBusyId(''); }
+    } finally { if(requestId===orderRequestRef.current&&isOpenRef.current)setBusyId(''); }
   };
 
   const openOrder = async (id: string) => {
@@ -602,20 +564,15 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     } catch (reason: any) { setError(reason.message); setPaymentBusy(false); }
   };
 
-  const savePreferences = async (next: any) => {
-    if (!session || busyId === 'preferences') return;
-    setBusyId('preferences'); setError('');
+  const savePreferences = async (next: CustomerPreferences) => {
+    if(!session||busyId)return;
+    setBusyId('preferences');setError('');setNotice('');
     try {
-      const payload = {
-        darkMode: Boolean(next.dark_mode), orderUpdates: Boolean(next.order_updates), paymentUpdates: Boolean(next.payment_updates),
-        shippingUpdates: Boolean(next.shipping_updates), invoiceUpdates: Boolean(next.invoice_updates),
-      };
-      const result = await customerApi<{ data: CustomerPreferences }>('/api/customer/account/preferences', { method: 'PUT', body: JSON.stringify(payload) }, session.csrfToken);
-      setRows(result.data); setAccountDark(Boolean(result.data.dark_mode));
-      document.documentElement.dataset.ayrovixTheme = result.data.dark_mode ? 'dark' : 'light';
-      setNotice(tr('Préférences enregistrées.', 'تم حفظ الإعدادات.'));
-    } catch (reason: any) { setError(reason.message); }
-    finally { setBusyId(''); }
+      const result=await customerApi<{ data: CustomerPreferences }>('/api/customer/account/preferences', {
+        method: 'PUT', body: JSON.stringify({ orderUpdates: Boolean(next.order_updates), paymentUpdates: Boolean(next.payment_updates), shippingUpdates: Boolean(next.shipping_updates), invoiceUpdates: Boolean(next.invoice_updates), darkMode: Boolean(next.dark_mode) }),
+      }, session.csrfToken);
+      setRows(result.data);onThemeChange(Boolean(result.data.dark_mode));setNotice(tr('Préférences enregistrées.','تم حفظ التفضيلات.'));
+    }catch(reason:any){setError(reason.message);}finally{setBusyId('');}
   };
 
   const unreadCount = useMemo(() => Array.isArray(rows) ? rows.filter((item) => !item.read_at).length : 0, [rows]);
@@ -776,53 +733,35 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     </div>
   );
 
-  const renderHome = () => {
-    const cards = [
-      { label: tr('Commandes', 'الطلبات'), value: overview?.counts.orders ?? 0, icon: Package, section: 'orders' as Section },
-      { label: tr('Panier', 'السلة'), value: overview?.counts.cartItems ?? 0, icon: ShoppingBag, section: 'cart' as Section },
-      { label: tr('Favoris', 'المفضلة'), value: overview?.counts.favorites ?? 0, icon: Heart, section: 'favorites' as Section },
-      { label: tr('Notifications', 'الإشعارات'), value: overview?.counts.unreadNotifications ?? 0, icon: Bell, section: 'notifications' as Section },
-    ];
-    return <div className="space-y-5">
-      <section className="relative overflow-hidden rounded-card bg-ink-gradient p-5 text-white sm:p-7"><div className="relative flex items-center gap-4"><AccountAvatar account={session!.account} size="h-11 w-11" uploadedUrl={uploadedAvatar} gender={selectedGender} /><div className="min-w-0"><p className="text-xs font-black uppercase tracking-[0.18em] text-white/70">{tr('Mon compte', 'حسابي')}</p><h2 className="mt-1 truncate text-2xl font-black">{session!.account.displayName || tr('Client AYROVI', 'حريف AYROVI')}</h2><p className="truncate text-xs text-white/70">{session!.account.email || session!.account.phone}</p></div></div></section>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{cards.map(({label,value,section:target})=><button key={target} onClick={()=>openSection(target)} className="min-w-0 rounded-2xl border border-line bg-white p-4 text-start"><strong className="mt-3 block text-2xl font-black text-ink">{value}</strong><span className="block truncate text-xs font-bold text-muted">{label}</span></button>)}</div>
-      <section><div className="mb-3 flex items-center justify-between"><h3 className="text-lg font-black text-ink">{tr('Commandes récentes', 'الطلبات الأخيرة')}</h3><button onClick={()=>openSection('orders')} className="text-xs font-black text-ink">{tr('Tout voir', 'عرض الكل')}</button></div>{overview?.recentOrders?.length?<div className="divide-y divide-line rounded-2xl border border-line bg-white">{overview.recentOrders.map((order: CustomerOrderSummary)=><button key={order.id} onClick={()=>openOrder(order.id)} className="flex w-full min-w-0 items-center gap-3 p-4 text-start"><div className="grid h-11 w-11 shrink-0 place-items-center bg-surface">{order.image_url?<img src={order.image_url} alt="" className="h-full w-full object-contain"/>:null}</div><div className="min-w-0 flex-1"><strong className="block truncate text-sm">{order.order_number}</strong><span className="text-xs text-muted">{date(order.created_at)} · {order.item_count} {tr('article(s)','منتج')}</span></div><Status value={order.status}/></button>)}</div>:<Empty title={tr('Aucune commande','لا توجد طلبات')} text={tr('Votre première commande apparaîtra ici dès sa création.','سيظهر طلبك الأول هنا فور إنشائه.')}/>}</section>
-    </div>;
-  };
+  const renderHome = () => <AccountHome account={session!.account} overview={overview} loading={loading} error={Boolean(loadError)} onRetry={()=>void loadSection('home')} onOpen={openSection} onLogout={()=>void logout()} logoutBusy={busyId==='logout'}/>;
 
-  const renderProfile = () => <form onSubmit={saveProfile} className="mx-auto max-w-2xl space-y-5 rounded-card border border-line bg-white p-5 sm:p-7">
-    <div className="flex items-start gap-4 border-b border-line pb-5">
-  <div className="relative shrink-0">
-    <AccountAvatar account={session!.account} size="h-16 w-16" uploadedUrl={uploadedAvatar} gender={selectedGender} />
-    <button type="button" onClick={() => avatarFileRef.current?.click()} aria-label={tr('Changer la photo', 'تغيير الصورة')} className="absolute -bottom-1 -end-1 grid h-7 w-7 place-items-center rounded-full bg-ink text-white shadow"><Camera className="h-4 w-4" /></button>
-  </div>
-  <div className="min-w-0 flex-1">
-    <h3 className="font-black">{tr('Informations personnelles', 'المعلومات الشخصية')}</h3>
-    <p className="truncate text-xs text-muted">{session!.account.email || session!.account.phone}</p>
-    <div className="mt-2 flex gap-2">
-      <button type="button" onClick={() => chooseGender('female')} className={`rounded-full px-3 py-1 text-xs font-black transition ${selectedGender === 'female' ? 'bg-pink-500 text-white' : 'border border-line text-muted hover:border-line'}`}>{tr('Femme', 'أنثى')}</button>
-      <button type="button" onClick={() => chooseGender('male')} className={`rounded-full px-3 py-1 text-xs font-black transition ${selectedGender === 'male' ? 'bg-sky-500 text-white' : 'border border-line text-muted hover:border-line'}`}>{tr('Homme', 'ذكر')}</button>
-    </div>
-  </div>
-</div>
-<input ref={avatarFileRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-    <Field label={tr('Nom et prénom','الاسم واللقب')}><input className={inputClass} value={profile.displayName} onChange={(e)=>setProfile({...profile,displayName:e.target.value.slice(0,120)})} required/></Field>
-    <Field label={tr('Adresse e-mail','البريد الإلكتروني')}><input type="email" className={inputClass} value={profile.email} onChange={(e)=>setProfile({...profile,email:e.target.value.slice(0,180)})}/></Field>
-    <div className="rounded-2xl border border-line bg-surface p-4 text-sm"><div className="flex items-center gap-2"><Phone className="h-7 w-7 text-ink"/><strong>{session!.account.phone||tr('Téléphone non renseigné','الهاتف غير مسجل')}</strong>{session!.account.phoneVerified&&<CheckCircle2 className="ms-auto h-7 w-7 text-success"/>}</div>{!session!.account.phoneVerified&&<button type="button" onClick={()=>navigation.pushLayer({id:'account:phone-link'})} className="ay-btn-secondary mt-3 w-full text-xs"><ShieldCheck className="h-7 w-7"/>{tr('Vérifier mon téléphone','توثيق هاتفي')}</button>}</div>
-    <label className="flex items-start gap-3 rounded-2xl border border-line p-4"><input type="checkbox" checked={profile.marketingOptIn} onChange={(e)=>setProfile({...profile,marketingOptIn:e.target.checked})} className="mt-0.5 h-7 w-7 accent-brand"/><span><strong className="block text-sm">{tr('Magazine et offres AYROVI','مجلتي وعروض AYROVI')}</strong><small className="text-xs text-muted">{tr('Recevoir les nouveaux arrivages et offres.','استلام أخبار المنتجات والعروض.')}</small></span></label>
-    <button disabled={busyId==='profile'} className="ay-btn-primary w-full text-sm">{busyId==='profile'&&<Loader2 className="h-7 w-7 animate-spin"/>}{tr('Enregistrer','حفظ')}</button>
-    <section className="border-t border-danger/15 pt-5"><h4 className="text-sm font-black text-danger">{tr('Supprimer mon compte','حذف حسابي')}</h4><p className="mt-1 text-xs leading-5 text-muted">{tr('Le profil est supprimé; les documents comptables déjà créés restent archivés.','يُحذف الملف وتبقى الوثائق المحاسبية السابقة مؤرشفة.')}</p><button type="button" onClick={deleteAccount} disabled={busyId==='delete-account'} className="mt-3 flex min-h-11 items-center gap-2 rounded-xl border border-danger/30 px-4 text-xs font-black text-danger"><Trash2 className="h-7 w-7"/>{tr('Supprimer définitivement','حذف نهائي')}</button></section>
-  </form>;
+  const renderProfile = () => <div className="ac-form-stack">
+    <section className="ac-panel ac-photo-editor" aria-busy={busyId==='avatar'}>
+      <AccountAvatar account={session!.account}/><div><h2>{tr('Photo de profil','صورة الحساب')}</h2><p className="ac-note">{tr('JPEG, PNG ou WebP · 2 Mo max.','JPEG أو PNG أو WebP · حتى 2 ميغابايت')}</p></div>
+      <div className="ac-photo-actions"><label className={`ac-photo-upload ${busyId?'is-disabled':''}`}><Camera className="h-5 w-5" aria-hidden/><span>{tr('Choisir une photo','اختيار صورة')}</span><input aria-label={tr('Choisir une photo','اختيار صورة')} type="file" accept="image/jpeg,image/png,image/webp" disabled={Boolean(busyId)} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void saveAvatar(file);}}/></label>{session!.account.avatarUrl&&<button type="button" disabled={Boolean(busyId)} className="ac-text-button ac-danger-text" onClick={()=>void saveAvatar(null)}>{tr('Supprimer','حذف الصورة')}</button>}{busyId==='avatar'&&<Loader2 className="h-5 w-5 animate-spin" aria-label={tr('Enregistrement','جارٍ الحفظ')}/>}</div>
+    </section>
+    <form onSubmit={saveProfile} className="ac-panel ac-form-stack" aria-busy={busyId==='profile'}>
+      <h2>{tr('Informations personnelles','المعلومات الشخصية')}</h2>
+      <fieldset className="ac-form-stack" disabled={Boolean(busyId)}><legend className="sr-only">{tr('Informations personnelles','المعلومات الشخصية')}</legend>
+        <FormField label={tr('Nom complet','الاسم الكامل')} htmlFor="account-display-name"><Input id="account-display-name" autoComplete="name" maxLength={100} required value={profile.displayName} onChange={e=>setProfile({...profile,displayName:e.target.value})}/></FormField>
+        <FormField label={tr('Adresse e-mail','البريد الإلكتروني')} htmlFor="account-email"><Input id="account-email" type="email" autoComplete="email" dir="ltr" maxLength={254} required={Boolean(session!.account.email)} value={profile.email} onChange={e=>setProfile({...profile,email:e.target.value})}/></FormField>
+        <p className="ac-note">{tr('La modification de l’e-mail retire son statut vérifié.','تغيير البريد الإلكتروني يُلغي حالة توثيقه.')}</p>
+        <label className="ac-checkbox-row"><input type="checkbox" checked={profile.marketingOptIn} onChange={e=>setProfile({...profile,marketingOptIn:e.target.checked})}/><span>{tr('Recevoir les offres AYROVI (facultatif)','تلقي عروض AYROVI (اختياري)')}</span></label>
+        <Button type="submit" disabled={Boolean(busyId)}>{busyId==='profile'&&<Loader2 className="h-5 w-5 animate-spin" aria-hidden/>}{tr('Enregistrer','حفظ المعلومات')}</Button>
+      </fieldset>
+    </form>
+    <section className="ac-panel"><h2>{tr('Numéro de téléphone','رقم الهاتف')}</h2><p className="ac-contact-value" dir="ltr">{session!.account.phone||tr('Non renseigné','غير مسجل')}</p><p className="ac-note">{session!.account.phoneVerified?tr('Numéro vérifié.','الرقم موثّق.'):tr('La vérification par SMS dépend de la disponibilité du service.','التوثيق عبر SMS يتطلب توفر خدمة الرسائل.')}</p><Button type="button" variant="secondary" onClick={()=>navigation.pushLayer({id:'account:phone-link'})} disabled={!config?.phoneOtp.enabled}>{session!.account.phone?tr('Modifier le numéro','تغيير الرقم'):tr('Ajouter un numéro','إضافة رقم')}</Button>{!config?.phoneOtp.enabled&&<p className="ac-note">{tr('La vérification SMS n’est pas disponible actuellement.','خدمة التوثيق بالرسائل غير متاحة حاليًا.')}</p>}</section>
+    <section className="ac-panel ac-danger-zone"><h2>{tr('Supprimer mon compte','حذف حسابي')}</h2><p className="ac-note">{tr('Votre compte sera désactivé et anonymisé. Les commandes et factures seront conservées pour les obligations légales. Cette action est irréversible.','يُعطّل حسابك وتُزال بياناته التعريفية، وتُحفظ الطلبات والفواتير للالتزامات القانونية. لا يمكن التراجع عن هذا الإجراء.')}</p><button type="button" disabled={Boolean(busyId)} onClick={()=>void deleteAccount()} className="ac-text-button ac-danger-text"><Trash2 className="h-5 w-5" aria-hidden/>{tr('Supprimer définitivement','الحذف النهائي')}</button></section>
+  </div>;
 
   const renderAddresses = () => <div className="space-y-4"><button onClick={()=>editAddress()} className="ay-btn-primary text-sm">{tr('Ajouter une adresse','إضافة عنوان')}</button>{Array.isArray(rows)&&rows.length?<div className="grid gap-4 lg:grid-cols-2">{rows.map((address:CustomerAddress)=><article key={address.id} className="min-w-0 rounded-2xl border border-line bg-white p-5"><div className="flex justify-between gap-3"><div className="min-w-0"><h3 className="font-black">{address.label}{Boolean(address.is_default)&&<span className="ms-2 rounded-full bg-surface px-2 py-1 text-xs text-ink">{tr('Par défaut','الافتراضي')}</span>}</h3><p className="mt-3 text-sm font-bold">{address.recipient_name}</p><p className="mt-1 break-words text-sm leading-6 text-muted">{address.address_line}<br/>{address.city?`${address.city}, `:''}{address.governorate}{address.postal_code?` ${address.postal_code}`:''}<br/>{address.phone}</p></div></div><div className="mt-4 flex gap-2 border-t border-line pt-3"><button onClick={()=>editAddress(address)} className="px-3 py-2 text-xs font-black text-ink">{tr('Modifier','تعديل')}</button><button onClick={()=>deleteAddress(address.id)} className="px-3 py-2 text-xs font-black text-danger">{tr('Supprimer','حذف')}</button></div></article>)}</div>:<Empty title={tr('Aucune adresse enregistrée','لا يوجد عنوان محفوظ')} text={tr('Ajoutez une adresse de livraison réelle.','أضف عنوان تسليم حقيقيًا.')}/>}</div>;
 
   const renderOrders = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((order: CustomerOrderSummary)=><button key={order.id} onClick={()=>openOrder(order.id)} className="grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-line bg-white p-3 text-start sm:p-4"><div className="grid h-11 w-11 place-items-center overflow-hidden bg-surface">{order.image_url?<img src={order.image_url} alt="" className="h-full w-full object-contain"/>:null}</div><div className="min-w-0"><strong className="block truncate text-sm">{order.order_number}</strong><span className="block text-xs text-muted">{date(order.created_at)} · {order.item_count} {tr('article(s)','منتج')}</span><span className="mt-2 block"><Status value={order.status}/></span></div><div className="text-end"><strong className="block whitespace-nowrap text-sm">{money(order.total_tnd)}</strong><ArrowRight className={`ms-auto mt-2 h-7 w-7 text-muted ${isArabic?'rotate-180':''}`}/></div></button>)}</div>:<Empty title={tr('Aucune commande','لا توجد طلبات')} text={tr('Une commande apparaît ici immédiatement après sa création.','يظهر الطلب هنا فور إنشائه.')}/>;
 
-  const renderFavorites = () => Array.isArray(rows)&&rows.length?<div className="grid grid-cols-2 gap-3 lg:grid-cols-3">{rows.map((favorite: CustomerFavorite)=><article key={favorite.id} className="min-w-0 overflow-hidden rounded-2xl border border-line bg-white"><a href={favorite.source_url||'#'} target={favorite.source_url?'_blank':undefined} rel="noreferrer" className="block aspect-square bg-surface">{favorite.image_url?<img src={favorite.image_url} alt={favorite.title} className="h-full w-full object-contain"/>:null}</a><div className="p-3"><h3 className="line-clamp-2 text-sm font-black">{favorite.title}</h3>{favorite.price_tnd!=null&&<strong className="mt-2 block text-sm text-ink">{money(favorite.price_tnd)}</strong>}<button onClick={()=>removeFavorite(favorite.id)} className="mt-3 text-xs font-black text-danger">{tr('Retirer','إزالة')}</button></div></article>)}</div>:<Empty title={tr('Aucun favori','لا توجد مفضلة')} text={tr('Vos favoris réels seront conservés ici.','ستُحفظ مفضلاتك الحقيقية هنا.')}/>;
+  const renderFavorites = () => Array.isArray(rows)&&rows.length?<AccountFavorites items={rows} busyId={busyId} onRemove={id=>void removeFavorite(id)}/>:<Empty title={tr('Aucun favori','لا توجد مفضلة')} text={tr('Retrouvez ici les articles que vous aimez.','تجد هنا المنتجات التي تعجبك.')} actionLabel={tr('Découvrir la boutique','اكتشاف المتجر')} onAction={onClose}/>;
+  const renderCart = () => Array.isArray(rows)&&rows.length?<AccountCart items={rows} busyId={busyId} onQuantity={(item,quantity)=>void updateCart(item,quantity)} onOpenCart={onOpenCart}/>:<Empty title={tr('Votre panier est vide','سلّتك فارغة')} text={tr('Les articles ajoutés apparaîtront ici.','ستظهر المنتجات المضافة هنا.')} actionLabel={tr('Découvrir la boutique','اكتشاف المتجر')} onAction={onClose}/>;
 
-  const renderCart = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((item:CartItem)=><article key={item.id} className="flex min-w-0 gap-3 rounded-2xl border border-line bg-white p-4"><div className="h-11 w-11 shrink-0 bg-surface">{item.imageUrl?<img src={item.imageUrl} alt="" className="h-full w-full object-contain"/>:<ShoppingBag className="m-5 h-7 w-7 text-ink"/>}</div><div className="min-w-0 flex-1"><h3 className="truncate text-sm font-black">{item.title}</h3><p className="text-xs text-muted">{item.variant||item.store}</p><strong className="text-sm text-ink">{money(item.lineTotalTND??item.priceTND)}</strong></div><div className="flex shrink-0 flex-col items-end justify-between"><button onClick={()=>updateCart(item,0)}><Trash2 className="h-7 w-7 text-danger"/></button><div className="flex border border-line"><button onClick={()=>updateCart(item,Math.max(0,item.quantity-1))} className="h-9 w-9">−</button><span className="grid min-w-7 place-items-center text-xs font-black">{item.quantity}</span><button onClick={()=>updateCart(item,item.quantity+1)} className="h-9 w-9">+</button></div></div></article>)}<button onClick={onOpenCart} className="ay-btn-primary w-full text-sm">{tr('Ouvrir le panier','فتح السلة')}</button></div>:<Empty title={tr('Votre panier est vide','سلّتك فارغة')} text={tr('Les articles ajoutés apparaîtront ici.','ستظهر المنتجات المضافة هنا.')}/>;
-
-  const renderNotifications = () => <div className="space-y-3">{Array.isArray(rows)&&rows.length&&unreadCount>0?<button onClick={markNotificationsRead} className="ay-btn-secondary text-xs"><Check className="h-7 w-7"/>{tr('Tout marquer comme lu','تحديد الكل كمقروء')}</button>:null}{Array.isArray(rows)&&rows.length?rows.map((item: CustomerNotification)=><article key={item.id} className={`flex gap-3 rounded-2xl border p-4 ${item.read_at?'border-line bg-white':'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink text-white">{item.type==='ORDER'?<Package className="h-7 w-7"/>:<Bell className="h-7 w-7"/>}</span><div className="min-w-0"><h3 className="text-sm font-black">{item.title}</h3><p className="mt-1 break-words text-sm leading-5 text-muted">{item.message}</p><time className="text-xs text-muted">{date(item.created_at,true)}</time></div></article>):<Empty title={tr('Aucune notification','لا توجد إشعارات')} text={tr('Les événements de commande, paiement, facture et livraison apparaîtront ici.','ستظهر أحداث الطلب والدفع والفاتورة والتسليم هنا.')}/>}</div>;
+  const renderNotifications = () => <div className="space-y-3">{Array.isArray(rows)&&rows.length&&unreadCount>0?<button disabled={busyId==='notifications'} onClick={markNotificationsRead} className="ay-btn-secondary text-xs"><Check className="h-7 w-7"/>{tr('Tout marquer comme lu','تحديد الكل كمقروء')}</button>:null}{Array.isArray(rows)&&rows.length?rows.map((item: CustomerNotification)=><article key={item.id} className={`flex gap-3 rounded-2xl border p-4 ${item.read_at?'border-line bg-white':'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink text-white">{item.type==='ORDER'?<Package className="h-7 w-7"/>:<Bell className="h-7 w-7"/>}</span><div className="min-w-0"><h3 className="text-sm font-black">{item.title}</h3><p className="mt-1 break-words text-sm leading-5 text-muted">{item.message}</p><time className="text-xs text-muted">{date(item.created_at,true)}</time></div></article>):<Empty title={tr('Aucune notification','لا توجد إشعارات')} text={tr('Les événements de commande, paiement, facture et livraison apparaîtront ici.','ستظهر أحداث الطلب والدفع والفاتورة والتسليم هنا.')}/>}</div>;
 
   const renderPayments = () => {
     const payments=Array.isArray(rows?.payments)?rows.payments:[]; const transactions=Array.isArray(rows?.transactions)?rows.transactions:[];
@@ -832,35 +771,37 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
 
   const renderInvoices = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((invoice: CustomerInvoice)=><article key={invoice.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-line bg-white p-4"><div className="min-w-0 flex-1"><strong className="block truncate font-mono text-sm">{invoice.invoice_number}</strong><p className="text-xs text-muted">{invoice.order_number} · {date(invoice.issued_at,true)}</p></div><a href={`/api/customer/account/orders/${invoice.order_id}/invoice`} className="ay-btn-secondary shrink-0 px-3 text-xs">{tr('PDF','PDF')}</a></article>)}</div>:<Empty title={tr('Aucune facture émise','لا توجد فواتير صادرة')} text={tr('Une facture apparaît uniquement après son émission par AYROVI.','تظهر الفاتورة فقط بعد إصدارها من AYROVI.')}/>;
 
-  const renderTracking = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((shipment: CustomerDelivery)=><article key={shipment.id} className="rounded-2xl border border-line bg-white p-5"><div className="flex items-start justify-between gap-3"><div><strong>{shipment.order_number}</strong><div className="mt-2"><Status value={shipment.status}/></div></div></div><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-xs text-muted">{tr('Transporteur','الناقل')}</dt><dd className="font-black">{shipment.carrier}</dd></div><div><dt className="text-xs text-muted">{tr('Numéro de suivi','رقم التتبع')}</dt><dd className="break-all font-mono font-black">{shipment.tracking_number}</dd></div><div><dt className="text-xs text-muted">{tr('Expédié le','تاريخ الشحن')}</dt><dd>{date(shipment.shipped_at,true)}</dd></div></dl>{shipment.tracking_url&&<a href={shipment.tracking_url} target="_blank" rel="noreferrer" className="ay-btn-secondary mt-4 w-full text-xs">{tr('Suivre chez le transporteur','التتبع لدى الناقل')}</a>}</article>)}</div>:<Empty title={tr('Aucun colis expédié','لا توجد شحنة مرسلة')} text={tr('Le suivi apparaît seulement après SHIPPED avec un transporteur et un numéro réels.','يظهر التتبع فقط بعد الشحن برقم وناقل حقيقيين.')}/>;
+  const renderTracking = () => Array.isArray(rows)&&rows.length?<div className="space-y-3">{rows.map((shipment: CustomerDelivery)=><article key={shipment.id} className="rounded-2xl border border-line bg-white p-5"><div className="flex items-start justify-between gap-3"><div><strong>{shipment.order_number}</strong><div className="mt-2"><Status value={shipment.status}/></div></div></div><dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2"><div><dt className="text-xs text-muted">{tr('Transporteur','الناقل')}</dt><dd className="font-black">{shipment.carrier}</dd></div><div><dt className="text-xs text-muted">{tr('Numéro de suivi','رقم التتبع')}</dt><dd className="break-all font-mono font-black">{shipment.tracking_number}</dd></div><div><dt className="text-xs text-muted">{tr('Expédié le','تاريخ الشحن')}</dt><dd>{date(shipment.shipped_at,true)}</dd></div></dl>{safeAccountLink(shipment.tracking_url)&&<a href={safeAccountLink(shipment.tracking_url)} target="_blank" rel="noreferrer" className="ay-btn-secondary mt-4 w-full text-xs">{tr('Suivre chez le transporteur','التتبع لدى الناقل')}</a>}</article>)}</div>:<Empty title={tr('Aucun colis expédié','لا توجد شحنة مرسلة')} text={tr('Le suivi apparaît seulement après SHIPPED avec un transporteur et un numéro réels.','يظهر التتبع فقط بعد الشحن برقم وناقل حقيقيين.')}/>;
 
-  const renderSecurity = () => <div className="mx-auto max-w-2xl space-y-4"><article className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Canaux vérifiés','قنوات موثقة')}</h3><div className="mt-4 space-y-3 text-sm"><div className="flex items-center justify-between"><span>{tr('E-mail','البريد الإلكتروني')}</span><Status value={rows?.emailVerified?'APPROVED':'PENDING'}/></div><div className="flex items-center justify-between"><span>{tr('Téléphone','الهاتف')}</span><Status value={rows?.phoneVerified?'APPROVED':'PENDING'}/></div></div></article><article className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Sessions actives','الجلسات النشطة')}</h3><strong className="mt-3 block text-3xl text-ink">{Number(rows?.activeSessions||0)}</strong>{rows?.lastLoginAt&&<p className="mt-2 text-xs text-muted">{tr('Dernière connexion','آخر دخول')} : {date(rows.lastLoginAt,true)}</p>}</article></div>;
-
-  const renderSettings = () => {
-    const toggles=[['order_updates',tr('Commandes','الطلبات')],['payment_updates',tr('Paiements','المدفوعات')],['shipping_updates',tr('Livraison','التسليم')],['invoice_updates',tr('Factures','الفواتير')]];
-    return <div className="mx-auto max-w-2xl rounded-card border border-line bg-white p-5 sm:p-7"><h3 className="font-black">{tr('Préférences de notification','إعدادات الإشعارات')}</h3><div className="mt-5 space-y-3">{toggles.map(([key,label])=><label key={key} className="flex min-h-12 items-center justify-between gap-4 rounded-2xl border border-line px-4"><span className="text-sm font-bold">{label}</span><input type="checkbox" checked={Boolean(rows?.[key])} onChange={(e)=>setRows({...rows,[key]:e.target.checked?1:0})} className="h-7 w-7 accent-brand"/></label>)}</div><button onClick={()=>savePreferences(rows)} disabled={busyId==='preferences'} className="ay-btn-primary mt-5 w-full text-sm">{tr('Enregistrer les paramètres','حفظ الإعدادات')}</button></div>;
-  };
-
-  const renderAppearance = () => <div className="mx-auto max-w-xl rounded-card border border-line bg-white p-6"><Moon className="h-9 w-9 text-ink"/><h3 className="mt-4 text-xl font-black">{tr('Mode sombre','الوضع الداكن')}</h3><p className="mt-2 text-sm leading-6 text-muted">{tr('Cette préférence est enregistrée dans votre compte et reste après reconnexion.','يُحفظ هذا الخيار في حسابك ويبقى بعد تسجيل الدخول مجددًا.')}</p><button onClick={()=>savePreferences({...rows,dark_mode:accountDark?0:1})} className="ay-btn-primary mt-5 w-full text-sm">{accountDark?tr('Passer au mode clair','الانتقال للوضع الفاتح'):tr('Activer le mode sombre','تفعيل الوضع الداكن')}</button></div>;
+  const renderSettings = () => rows?<AccountPreferences preferences={rows} busy={busyId==='preferences'} onSave={savePreferences}/>:null;
+  const renderSecurity = () => rows?<AccountSecurity summary={rows} session={session!} onSession={onSession} onChanged={()=>{setNotice(tr('Mot de passe modifié. Les autres sessions ont été fermées.','تم تغيير كلمة المرور وإغلاق الجلسات الأخرى.'));void loadSection('security');}}/>:null;
 
   const renderSection = () => {
-    if(loading)return <div className="grid min-h-64 place-items-center"><Loader2 className="h-8 w-8 animate-spin text-ink"/></div>;
-    if(section==='home')return renderHome(); if(section==='profile')return renderProfile(); if(section==='orders')return renderOrders();
+    if(section==='home')return renderHome();
+    if(loading||(!['profile','lensHelp','terms'].includes(section)&&loadedSection!==section))return <div className="ac-loading" role="status"><Loader2 className="h-7 w-7 animate-spin" aria-hidden/><span>{tr('Chargement…','جارٍ التحميل…')}</span></div>;
+    if(loadError)return <div className="ac-load-error" role="alert"><p>{loadError}</p><button type="button" onClick={()=>void loadSection(section)}>{tr('Réessayer','إعادة المحاولة')}</button></div>; if(section==='profile')return renderProfile(); if(section==='orders')return renderOrders();
     if(section==='payments')return renderPayments(); if(section==='invoices')return renderInvoices(); if(section==='tracking')return renderTracking();
     if(section==='addresses')return renderAddresses(); if(section==='favorites')return renderFavorites(); if(section==='cart')return renderCart();
-    if(section==='notifications')return renderNotifications(); if(section==='appearance')return renderAppearance(); if(section==='security')return renderSecurity(); if(section==='settings')return renderSettings();
-    if(section==='lensHelp')return <div className="mx-auto max-w-2xl rounded-card border border-line bg-white p-6"><ScanSearch className="h-9 w-9 text-ink"/><h3 className="mt-4 text-xl font-black">{tr('Aide AYROVIX Lens','مساعدة عدسة AYROVIX')}</h3><p className="mt-3 text-sm leading-7 text-muted">{tr('Photographiez le produit entier, gardez le prix et la variante visibles, puis vérifiez le lien source avant de l’ajouter au panier.','صوّر المنتج كاملًا وأبقِ السعر والخصائص ظاهرة ثم تحقق من رابط المصدر قبل إضافته للسلة.')}</p></div>;
+    if(section==='notifications')return renderNotifications(); if(section==='appearance')return renderSettings(); if(section==='security')return renderSecurity(); if(section==='settings')return renderSettings();
+    if(section==='lensHelp')return <div className="mx-auto max-w-2xl rounded-card border border-line bg-white p-6"><ScanSearch className="h-9 w-9 text-ink"/><h3 className="mt-4 text-xl font-black">{tr('Aide AYROVIX Lens','مساعدة عدسة AYROVIX')}</h3><p className="mt-3 text-sm leading-7 text-muted">{tr('Photographiez le produit entier, gardez le prix et la variante visibles, puis vérifiez le lien source avant de l’ajouter au panier.','صوّر المنتج كاملًا وأبقِ السعر والخصائص ظاهرة ثم تحقق من رابط المصدر قبل إضافته للسلة.')}</p><div className="ac-form-stack mt-5"><Button onClick={()=>navigation.navigate([{id:'app:lens'},{id:'lens:home'}])}>{tr('Ouvrir AYROVIX Lens','فتح AYROVIX Lens')}</Button><Button variant="secondary" onClick={()=>navigation.navigate([{id:'app:assistant'}])}>{tr('Ouvrir l’assistant','فتح المساعد')}</Button></div></div>;
     return <div className="mx-auto max-w-2xl space-y-3"><a href="/terms.html" target="_blank" rel="noreferrer" className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black"><span>{tr('Conditions générales','الشروط العامة')}</span><ExternalLink className="h-7 w-7"/></a><a href="/privacy.html" target="_blank" rel="noreferrer" className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black"><span>{tr('Politique de confidentialité','سياسة الخصوصية')}</span><ExternalLink className="h-7 w-7"/></a></div>;
   };
 
-  return <div className={`${session ? 'ayrovix-theme-scope ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte AYROVI','حسابي في AYROVI'):tr('Connexion client AYROVI','تسجيل الدخول إلى AYROVI')}>
-    {(!session || phoneLinkOpen || phoneLoginOpen) && !loadingSession ? null : <AppHeader title="AYROVI" subtitle={tr('Espace client','فضاء العميل')} onClose={onClose} actionLabel={tr('Fermer','إغلاق')}/>}
-    <div className={`${(!session || phoneLinkOpen || phoneLoginOpen) && !loadingSession ? 'h-[100dvh]' : 'h-[calc(100dvh-4.25rem)] sm:h-[calc(100dvh-5.25rem)]'} overflow-y-auto`}>{loadingSession?<div className="grid h-full place-items-center"><Loader2 className="h-9 w-9 animate-spin text-ink"/></div>:(!session||phoneLinkOpen||phoneLoginOpen)?authPanel:<div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
-      <aside className={`${section==='home'?'block':'hidden'} order-2 min-w-0 border-t border-line bg-white p-4 lg:order-1 lg:block lg:border-e lg:border-t-0 lg:p-5`}><div className="mb-4 hidden items-center gap-3 border-b border-line pb-5 lg:flex"><div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-ink text-sm font-black text-white">{session.account.avatarUrl?<img src={session.account.avatarUrl} alt="" className="h-full w-full object-cover"/>:(session.account.displayName||'AY').slice(0,2).toUpperCase()}</div><div className="min-w-0"><strong className="block truncate text-sm">{session.account.displayName}</strong><span className="block truncate text-xs text-muted">{session.account.email||session.account.phone}</span></div></div><AccountTabs section={section} unread={Number(overview?.counts?.unreadNotifications||0)} onOpen={openSection} onLogout={logout}/></aside>
-      <main className="order-1 min-w-0 px-4 py-5 sm:px-7 lg:order-2 lg:px-10"><div className="mb-5 flex items-center gap-3">{section!=='home'&&<button onClick={()=>openSection('home')} className="grid h-11 w-11 place-items-center rounded-xl border border-line bg-white lg:hidden"><ArrowLeft className={`h-7 w-7 ${isArabic?'rotate-180':''}`}/></button>}<div className="min-w-0"><p className="text-xs font-black uppercase tracking-[0.18em] text-ink">{tr('Mon compte','حسابي')}</p><h1 className="truncate text-2xl font-black">{(()=>{const item=sectionItems.find((entry)=>entry.id===section);return item?(isArabic?item.labelAr:item.label):''})()}</h1></div></div>{notice&&<div className="mb-5 flex items-start gap-2 rounded-2xl border border-success/20 bg-success/5 p-3 text-sm font-bold text-success"><CheckCircle2 className="h-7 w-7 shrink-0"/><span>{notice}</span><button onClick={()=>setNotice('')} className="ms-auto"><X className="h-7 w-7"/></button></div>}{error&&<div className="mb-5 rounded-2xl border border-danger/20 bg-danger/5 p-3 text-sm font-bold text-danger">{error}</div>}{renderSection()}</main>
-    </div>}</div>
+  const accountBack=()=>{
+    if(section==='home'){onClose();return;}
+    if(sectionLayer)navigation.back();else openSection('home');
+  };
+  const authVisible=!session||phoneLinkOpen||phoneLoginOpen;
+  return <div className={`${session ? 'ayrovix-theme-scope customer-account ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte AYROVI','حسابي في AYROVI'):tr('Connexion client AYROVI','تسجيل الدخول إلى AYROVI')}>
+    {!authVisible&&<AccountHeader section={section} onBack={accountBack}/>}
+    <div ref={contentRef} className={authVisible?'h-[100dvh] overflow-y-auto':'ac-scroll'}>{loadingSession?<div className="ac-loading" role="status"><Loader2 className="h-8 w-8 animate-spin" aria-hidden/><span>{tr('Chargement…','جارٍ التحميل…')}</span></div>:authVisible?authPanel:<main className="ac-main">
+      {notice&&<div className="ac-notice" role="status"><CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden/><span>{notice}</span><button type="button" aria-label={tr('Fermer le message','إغلاق الرسالة')} onClick={()=>setNotice('')}><X className="h-5 w-5" aria-hidden/></button></div>}
+      {error&&<div className="ac-error" role="alert"><span>{error}</span><button type="button" aria-label={tr('Fermer le message','إغلاق الرسالة')} onClick={()=>setError('')}><X className="h-5 w-5" aria-hidden/></button></div>}
+      {['orders','tracking','payments','invoices'].includes(section)&&<AccountOrderNavigation section={section} onOpen={openSection}/>}
+      <div key={section} className="ac-section">{renderSection()}</div>
+    </main>}</div>
 
-    {addressLayer&&addressDraft&&session&&<div className="fixed inset-0 z-[110] grid place-items-end bg-black/45 sm:place-items-center" onMouseDown={(e)=>{if(e.target===e.currentTarget)closeAccountLayer()}}><form onSubmit={saveAddress} className="max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:rounded-card sm:p-7"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black">{addressDraft.id?tr('Modifier l’adresse','تعديل العنوان'):tr('Nouvelle adresse','عنوان جديد')}</h2><button type="button" onClick={closeAccountLayer}><X className="h-7 w-7"/></button></div><div className="grid gap-4 sm:grid-cols-2"><Field label={tr('Libellé','التسمية')}><input className={inputClass} value={addressDraft.label} onChange={(e)=>setAddressDraft({...addressDraft,label:e.target.value})}/></Field><Field label={tr('Destinataire','المستلم')}><input className={inputClass} value={addressDraft.recipientName} onChange={(e)=>setAddressDraft({...addressDraft,recipientName:e.target.value})} required/></Field><Field label={tr('Téléphone','الهاتف')}><input className={inputClass} value={addressDraft.phone} onChange={(e)=>setAddressDraft({...addressDraft,phone:e.target.value})} required/></Field><Field label={tr('Gouvernorat','الولاية')}><input className={inputClass} value={addressDraft.governorate} onChange={(e)=>setAddressDraft({...addressDraft,governorate:e.target.value})} required/></Field><Field label={tr('Ville','المدينة')}><input className={inputClass} value={addressDraft.city} onChange={(e)=>setAddressDraft({...addressDraft,city:e.target.value})}/></Field><Field label={tr('Code postal','الترقيم البريدي')}><input className={inputClass} value={addressDraft.postalCode} onChange={(e)=>setAddressDraft({...addressDraft,postalCode:e.target.value})}/></Field><div className="sm:col-span-2"><Field label={tr('Adresse complète','العنوان الكامل')}><textarea rows={3} className={inputClass} value={addressDraft.addressLine} onChange={(e)=>setAddressDraft({...addressDraft,addressLine:e.target.value})} required/></Field></div><div className="sm:col-span-2"><Field label={tr('Instructions','التعليمات')}><textarea rows={2} className={inputClass} value={addressDraft.deliveryNotes} onChange={(e)=>setAddressDraft({...addressDraft,deliveryNotes:e.target.value})}/></Field></div><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={addressDraft.isDefault} onChange={(e)=>setAddressDraft({...addressDraft,isDefault:e.target.checked})}/>{tr('Adresse par défaut','العنوان الافتراضي')}</label></div><div className="mt-6 flex gap-3"><button className="ay-btn-primary flex-1 text-sm">{tr('Enregistrer','حفظ')}</button><button type="button" onClick={closeAccountLayer} className="ay-btn-secondary text-sm">{tr('Annuler','إلغاء')}</button></div></form></div>}
+    {addressLayer&&addressDraft&&session&&<div className="fixed inset-0 z-[110] grid place-items-end bg-black/45 sm:place-items-center" onMouseDown={(e)=>{if(e.target===e.currentTarget)closeAccountLayer()}}><form onSubmit={saveAddress} role="dialog" aria-modal="true" aria-label={tr('Adresse de livraison','عنوان التسليم')} className="max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:rounded-card sm:p-7"><div className="mb-5 flex items-center justify-between"><h2 className="text-xl font-black">{addressDraft.id?tr('Modifier l’adresse','تعديل العنوان'):tr('Nouvelle adresse','عنوان جديد')}</h2><button type="button" aria-label={tr('Fermer','إغلاق')} onClick={closeAccountLayer}><X className="h-7 w-7"/></button></div>{error&&<p role="alert" className="ac-error">{error}</p>}<div className="grid gap-4 sm:grid-cols-2"><Field label={tr('Libellé','التسمية')}><input className={inputClass} value={addressDraft.label} onChange={(e)=>setAddressDraft({...addressDraft,label:e.target.value})}/></Field><Field label={tr('Destinataire','المستلم')}><input className={inputClass} value={addressDraft.recipientName} onChange={(e)=>setAddressDraft({...addressDraft,recipientName:e.target.value})} required/></Field><Field label={tr('Téléphone','الهاتف')}><input className={inputClass} value={addressDraft.phone} onChange={(e)=>setAddressDraft({...addressDraft,phone:e.target.value})} required/></Field><Field label={tr('Gouvernorat','الولاية')}><input className={inputClass} value={addressDraft.governorate} onChange={(e)=>setAddressDraft({...addressDraft,governorate:e.target.value})} required/></Field><Field label={tr('Ville','المدينة')}><input className={inputClass} value={addressDraft.city} onChange={(e)=>setAddressDraft({...addressDraft,city:e.target.value})}/></Field><Field label={tr('Code postal','الترقيم البريدي')}><input className={inputClass} value={addressDraft.postalCode} onChange={(e)=>setAddressDraft({...addressDraft,postalCode:e.target.value})}/></Field><div className="sm:col-span-2"><Field label={tr('Adresse complète','العنوان الكامل')}><textarea rows={3} className={inputClass} value={addressDraft.addressLine} onChange={(e)=>setAddressDraft({...addressDraft,addressLine:e.target.value})} required/></Field></div><div className="sm:col-span-2"><Field label={tr('Instructions','التعليمات')}><textarea rows={2} className={inputClass} value={addressDraft.deliveryNotes} onChange={(e)=>setAddressDraft({...addressDraft,deliveryNotes:e.target.value})}/></Field></div><label className="flex items-center gap-2 text-sm font-bold"><input type="checkbox" checked={addressDraft.isDefault} onChange={(e)=>setAddressDraft({...addressDraft,isDefault:e.target.checked})}/>{tr('Adresse par défaut','العنوان الافتراضي')}</label></div><div className="mt-6 flex gap-3"><button disabled={busyId==='address'} className="ay-btn-primary flex-1 text-sm">{tr('Enregistrer','حفظ')}</button><button type="button" onClick={closeAccountLayer} className="ay-btn-secondary text-sm">{tr('Annuler','إلغاء')}</button></div></form></div>}
 
     {orderLayer&&orderDetail&&<div className="fixed inset-0 z-[110] overflow-y-auto bg-surface"><AppHeader sticky title={orderDetail.order_number} subtitle={tr('Détail de la commande','تفاصيل الطلب')} onBack={closeAccountLayer}/><main className="mx-auto max-w-5xl space-y-5 px-4 py-5 sm:px-7">
       <section className="rounded-card bg-ink-gradient p-5 text-white"><div className="flex flex-wrap justify-between gap-4"><div><p className="text-xs text-white/65">{date(orderDetail.created_at,true)}</p><h2 className="mt-1 text-2xl font-black">{orderDetail.order_number}</h2><div className="mt-3"><Status value={orderDetail.status}/></div></div><strong className="text-2xl font-black text-white">{money(orderDetail.total_tnd)}</strong></div></section>
@@ -869,7 +810,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
         <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Articles','المنتجات')}</h3><div className="mt-3 divide-y divide-line">{orderDetail.items.map((item: CustomerOrderItem)=><div key={item.id} className="flex min-w-0 gap-3 py-3"><div className="h-11 w-11 shrink-0 bg-surface">{item.image_url&&<img src={item.image_url} alt="" className="h-full w-full object-contain"/>}</div><div className="min-w-0 flex-1"><strong className="block break-words text-sm">{item.product_name}</strong><span className="text-xs text-muted">{item.quantity} × {item.original_price} {item.currency}</span></div><strong className="shrink-0 text-sm">{money(item.total_tnd)}</strong></div>)}</div></section>
         <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Historique vérifié','السجل الموثق')}</h3><div className="mt-4 space-y-4">{orderDetail.history.map((item: CustomerOrderHistoryEntry)=><div key={item.id} className="flex gap-3"><span className="mt-1 h-3 w-3 shrink-0 rounded-full bg-ink"/><div className="min-w-0"><Status value={item.to_status}/><p className="mt-1 break-words text-xs text-muted">{item.note}</p><time className="text-xs text-muted">{date(item.created_at,true)}</time></div></div>)}</div></section>
       </div><div className="space-y-5">
-        <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Montants','المبالغ')}</h3><div className="mt-4 space-y-2 text-sm">{[['Sous-total',orderDetail.subtotal_tnd],['Douane',orderDetail.customs_tnd],['Livraison',orderDetail.shipping_tnd],['Service',orderDetail.service_tnd],['Express',orderDetail.express_tnd]].map(([label,value])=>Number(value)>0&&<div key={String(label)} className="flex justify-between gap-3"><span className="text-muted">{label}</span><strong>{money(value as number)}</strong></div>)}{Number(orderDetail.discount_tnd)>0&&<div className="flex justify-between text-success"><span>{tr('Réduction','التخفيض')}</span><strong>−{money(orderDetail.discount_tnd)}</strong></div>}<div className="flex justify-between border-t border-line pt-2 font-black"><span>Total</span><strong>{money(orderDetail.total_tnd)}</strong></div><div className="flex justify-between"><span className="text-muted">{tr('Acompte demandé','العربون المطلوب')} ({orderDetail.deposit_percent}%)</span><strong>{money(orderDetail.deposit_amount_tnd)}</strong></div><div className="flex justify-between text-success"><span>{tr('Payé','المدفوع')}</span><strong>{money(orderDetail.paid_amount_tnd)}</strong></div><div className="flex justify-between text-ink"><span>{tr('Reste à payer','المتبقي')}</span><strong>{money(orderDetail.remainder_tnd)}</strong></div></div></section>
+        <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Montants','المبالغ')}</h3><div className="mt-4 space-y-2 text-sm">{[[tr('Sous-total','المجموع الفرعي'),orderDetail.subtotal_tnd],[tr('Douane','الديوانة'),orderDetail.customs_tnd],[tr('Livraison','التوصيل'),orderDetail.shipping_tnd],[tr('Service','الخدمة'),orderDetail.service_tnd],[tr('Express','الشحن السريع'),orderDetail.express_tnd]].map(([label,value])=>Number(value)>0&&<div key={String(label)} className="flex justify-between gap-3"><span className="text-muted">{label}</span><strong>{money(value as number)}</strong></div>)}{Number(orderDetail.discount_tnd)>0&&<div className="flex justify-between text-success"><span>{tr('Réduction','التخفيض')}</span><strong>−{money(orderDetail.discount_tnd)}</strong></div>}<div className="flex justify-between border-t border-line pt-2 font-black"><span>{tr('Total','الإجمالي')}</span><strong>{money(orderDetail.total_tnd)}</strong></div><div className="flex justify-between"><span className="text-muted">{tr('Acompte demandé','العربون المطلوب')} ({orderDetail.deposit_percent}%)</span><strong>{money(orderDetail.deposit_amount_tnd)}</strong></div><div className="flex justify-between text-success"><span>{tr('Payé','المدفوع')}</span><strong>{money(orderDetail.paid_amount_tnd)}</strong></div><div className="flex justify-between text-ink"><span>{tr('Reste à payer','المتبقي')}</span><strong>{money(orderDetail.remainder_tnd)}</strong></div></div></section>
         <section className="rounded-2xl border border-line bg-white p-5"><div className="flex items-center justify-between gap-2"><h3 className="font-black">{tr('Paiement de l’acompte','دفع العربون')}</h3><Status value={orderDetail.payment_status}/></div><p className="mt-2 text-xs text-muted">{tr('Méthode','الطريقة')} : {orderDetail.payment_method==='PENDING_SELECTION'?tr('À choisir','اختر الطريقة'):orderDetail.payment_method}</p>
           {orderDetail.status==='AWAITING_DEPOSIT'&&orderDetail.payment_status!=='PAID'&&<div className="mt-4 grid gap-3">
             <article className={`rounded-2xl border p-4 ${orderDetail.payment_method==='CARD'?'border-line bg-surface':'border-line'}`}><CreditCard className="h-7 w-7 text-ink"/><strong className="mt-2 block text-sm">{tr('Carte bancaire','بطاقة بنكية')}</strong><p className="mt-1 text-xs leading-5 text-muted">{orderDetail.paymentOptions?.cardGatewayAvailable?tr('Paiement immédiat sécurisé; seul le serveur confirme le résultat.','دفع فوري آمن ولا يؤكد النتيجة إلا الخادم.'):tr('Passerelle non configurée : aucun paiement carte ne peut être lancé.','بوابة الدفع غير مضبوطة ولا يمكن بدء دفع بالبطاقة.')}</p><button onClick={startCardPayment} disabled={paymentBusy||!orderDetail.paymentOptions?.cardGatewayAvailable} className="ay-btn-primary mt-3 w-full text-xs">{paymentBusy&&<Loader2 className="h-7 w-7 animate-spin"/>}{tr('Payer l’acompte par carte','دفع العربون بالبطاقة')}</button></article>
@@ -892,7 +833,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
           {orderDetail.proofs?.length>0&&<div className="mt-4 space-y-2 border-t border-line pt-4"><h4 className="text-xs font-black">{tr('Historique des justificatifs','سجل الإثباتات')}</h4>{orderDetail.proofs.map((proof: CustomerPaymentProof)=><div key={proof.id} className="rounded-xl bg-surface p-3 text-xs"><div className="flex justify-between gap-2"><span className="min-w-0 truncate">{proof.original_name}</span><Status value={proof.status}/></div><p className="mt-1 break-all text-muted">{proof.transfer_reference} · {date(proof.submitted_at,true)}</p>{proof.rejection_reason&&<p className="mt-2 font-bold text-danger">{proof.rejection_reason}</p>}</div>)}</div>}
           {orderDetail.transactions?.length>0&&<div className="mt-4 space-y-2 border-t border-line pt-4">{orderDetail.transactions.map((tx: CustomerPaymentTransaction)=><div key={tx.id} className="flex min-w-0 justify-between gap-3 text-xs"><span className="min-w-0 break-all font-mono">{tx.transaction_number}</span><Status value={tx.status}/></div>)}</div>}
         </section>
-        <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Facture & suivi','الفاتورة والتتبع')}</h3>{orderDetail.invoice?<a href={`/api/customer/account/orders/${orderDetail.id}/invoice`} className="ay-btn-secondary mt-4 w-full text-xs"><ArrowDown className="h-7 w-7"/>{orderDetail.invoice.invoice_number}</a>:<p className="mt-3 text-xs leading-5 text-muted">{tr('Aucune facture émise pour le moment.','لم تصدر فاتورة حتى الآن.')}</p>}{orderDetail.delivery?.tracking_number?<div className="mt-4 rounded-2xl border border-line bg-surface p-4 text-xs"><strong className="block">{orderDetail.delivery.carrier}</strong><span className="mt-1 block break-all font-mono">{orderDetail.delivery.tracking_number}</span>{orderDetail.delivery.tracking_url&&<a href={orderDetail.delivery.tracking_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 font-black text-ink"><ExternalLink className="h-3.5 w-3.5"/>{tr('Ouvrir le suivi','فتح التتبع')}</a>}</div>:<p className="mt-3 text-xs leading-5 text-muted">{tr('Le suivi apparaîtra après l’expédition réelle.','سيظهر التتبع بعد الشحن الفعلي.')}</p>}</section>
+        <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Facture & suivi','الفاتورة والتتبع')}</h3>{orderDetail.invoice?<a href={`/api/customer/account/orders/${orderDetail.id}/invoice`} className="ay-btn-secondary mt-4 w-full text-xs"><ArrowDown className="h-7 w-7"/>{orderDetail.invoice.invoice_number}</a>:<p className="mt-3 text-xs leading-5 text-muted">{tr('Aucune facture émise pour le moment.','لم تصدر فاتورة حتى الآن.')}</p>}{orderDetail.delivery?.tracking_number?<div className="mt-4 rounded-2xl border border-line bg-surface p-4 text-xs"><strong className="block">{orderDetail.delivery.carrier}</strong><span className="mt-1 block break-all font-mono">{orderDetail.delivery.tracking_number}</span>{safeAccountLink(orderDetail.delivery.tracking_url)&&<a href={safeAccountLink(orderDetail.delivery.tracking_url)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 font-black text-ink"><ExternalLink className="h-3.5 w-3.5"/>{tr('Ouvrir le suivi','فتح التتبع')}</a>}</div>:<p className="mt-3 text-xs leading-5 text-muted">{tr('Le suivi apparaîtra après l’expédition réelle.','سيظهر التتبع بعد الشحن الفعلي.')}</p>}</section>
         <section className="rounded-2xl border border-line bg-white p-5"><h3 className="font-black">{tr('Adresse de livraison','عنوان التسليم')}</h3><p className="mt-3 break-words text-sm leading-6 text-muted">{orderDetail.address}<br/>{orderDetail.governorate}<br/>{orderDetail.phone}</p></section>
       </div></div>
     </main></div>}

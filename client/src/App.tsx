@@ -211,6 +211,18 @@ export const App: React.FC = () => {
     catch { /* Storage can be blocked without disabling Lens. */ }
   }, [lensDarkMode]);
 
+  // Account preferences are authoritative; ignore a late response from a previous identity.
+  useEffect(() => {
+    let cancelled = false;
+    if (customerSession) {
+      setLensDarkMode(false);
+      customerApi<{data:{dark_mode:number}}>('/api/customer/account/preferences')
+        .then(result => { if (!cancelled) setLensDarkMode(Boolean(result.data.dark_mode)); })
+        .catch(() => { /* Account preferences screen exposes loading failures and retry. */ });
+    }
+    return () => { cancelled = true; };
+  }, [customerSession?.account.id]);
+
   useEffect(() => {
     const restoreCustomer = async () => {
       const returnParams = new URLSearchParams(window.location.search);
@@ -635,6 +647,8 @@ export const App: React.FC = () => {
       {isAccountOpen && (
         <Suspense fallback={null}>
           <CustomerAccountPage
+            key={customerSession?.account.id || 'guest'}
+            onThemeChange={setLensDarkMode}
             isOpen
             session={customerSession}
             loadingSession={isCustomerSessionLoading}
@@ -643,7 +657,7 @@ export const App: React.FC = () => {
             initialMessage={accountMessage}
             onClose={() => { navigation.goHome(); setResumeCheckoutAfterAuth(false); setAccountMessage(''); setAccountInitialOrderId(''); setAccountInitialSection('home'); }}
             onSession={handleCustomerSession}
-            onLoggedOut={() => { setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
+            onLoggedOut={() => { setLensDarkMode(false); setCustomerSession(null); setResumeCheckoutAfterAuth(false); void fetchCart(); }}
             onCartChanged={() => { void fetchCart(); }}
             onOpenCart={() => openAppView('app:cart')}
           />

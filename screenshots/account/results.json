@@ -1,0 +1,21 @@
+{
+  "checks": 82,
+  "browsers": [
+    "Chromium",
+    "Firefox"
+  ],
+  "locales": [
+    "fr",
+    "ar"
+  ],
+  "widths": [
+    320,
+    360,
+    390,
+    414,
+    768,
+    1280
+  ],
+  "errors": [],
+  "fixtures": "isolated SQLite, fictional accounts; external services disabled"
+}

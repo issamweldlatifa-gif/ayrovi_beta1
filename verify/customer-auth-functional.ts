@@ -51,7 +51,7 @@ async function run() {
     await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Original-password-1!');
     await page.locator('.ay-auth__submit').click();
-    await page.getByRole('heading',{name:'Aperçu',exact:true}).waitFor();
+    await page.getByRole('heading',{name:'Mon compte',exact:true}).waitFor();
     check(db.get<any>("SELECT count(*) n FROM customer_auth_mail_jobs WHERE kind='WELCOME'")?.n===1,'welcome queued by actual registration');
     await processCustomerAuthMail(db);
     check(mails.length===1 && mails[0].to[0]==='functional@example.com','welcome handed to provider adapter');
@@ -102,7 +102,7 @@ async function run() {
     await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Updated-password-2!');
     await page.locator('.ay-auth__submit').click();
-    await page.getByRole('heading',{name:'Aperçu',exact:true}).waitFor();
+    await page.getByRole('heading',{name:'Mon compte',exact:true}).waitFor();
     check(true,'new password logs in through real backend');
     await page.goto(link);
     await page.getByRole('button',{name:'Demander un nouveau lien',exact:true}).waitFor();

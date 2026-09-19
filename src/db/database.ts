@@ -1624,6 +1624,7 @@ export class QatafoDatabase {
     this.ensureColumn('customers', 'normalized_phone', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('customer_otp_challenges', 'provider', "TEXT NOT NULL DEFAULT 'local'");
     this.ensureColumn('customer_accounts', 'password_hash', 'TEXT');
+    this.ensureColumn('customer_accounts', 'avatar_source', "TEXT NOT NULL DEFAULT 'provider'");
     this.ensureColumn('hero_visuals', 'mobile_focal_x', 'REAL NOT NULL DEFAULT 0.5');
     this.ensureColumn('hero_visuals', 'mobile_focal_y', 'REAL NOT NULL DEFAULT 0.5');
     this.ensureColumn('hero_visuals', 'overlay_mode', "TEXT NOT NULL DEFAULT 'AUTO' CHECK(overlay_mode IN ('AUTO','MANUAL'))");

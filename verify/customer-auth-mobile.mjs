@@ -18,7 +18,7 @@ async function open(browser, { width = 390, height = 844, locale = 'fr', provide
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/api/customer/auth/config', route => failConfig ? route.abort() : route.fulfill({ json: { success: true, data: providers } }));
-  await page.goto(base);
+  await page.goto(base, {waitUntil:'domcontentloaded'});
   await page.locator('.ay-auth__card').waitFor();
   if (!failConfig && providers.email.enabled) await page.locator('#auth-email').waitFor();
   return { context, page, errors };

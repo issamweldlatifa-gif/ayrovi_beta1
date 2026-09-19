@@ -60,10 +60,11 @@ describe('order-backed mobile checkout and customer account', () => {
   });
 
   it('uses a vertical account menu and min-width guards for 320–414 px', () => {
-    expect(accountSource).toContain('className="grid gap-1"');
+    expect(accountSource).toContain('<AccountHome');
+    expect(accountSource).toContain('<AccountOrderNavigation');
     expect(accountSource).toContain('min-w-0');
-    expect(accountSource).toContain("section==='home'?'block':'hidden'");
-    expect(accountSource).toContain("lg:grid-cols-[280px_minmax(0,1fr)]");
+    expect(accountSource).not.toContain('<AccountTabs');
+    expect(accountSource).toContain('className="ac-main"');
     expect(accountSource).toContain('object-contain');
   });
 

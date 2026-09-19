@@ -7,6 +7,7 @@ import { QatafoDatabase } from '../db/database';
 import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '../services/invoice';
 import { servePrivateDocument } from '../documents/fileAccess';
 import { sendMail } from '../services/mailer';
+import { createAccountSettingsRouter } from './accountSettings';
 import { hashPassword, verifyPassword } from './passwords';
 import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
 import { createPasswordRecoveryRouter, customerAuthRateAllowed } from './passwordRecovery';
@@ -342,6 +343,7 @@ function validateAddress(body: any) {
 export function createCustomerRouter(db: QatafoDatabase): Router {
   const router = Router();
   router.use(createPasswordRecoveryRouter(db));
+  router.use(createAccountSettingsRouter(db, publicAccount));
   cleanupCustomerAuth(db);
 
   // Konnect sends only a payment reference. AYROVI always fetches the payment
@@ -738,7 +740,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         if (!currentAccount) throw new Error('ACCOUNT_MERGE_FAILED');
         const adoptGoogleEmail = !currentAccount.email || !currentAccount.email_verified_at || currentAccount.email.toLowerCase() === email;
         db.run(`UPDATE customer_accounts SET display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
-          email=?,avatar_url=CASE WHEN ?!='' THEN ? ELSE avatar_url END,email_verified_at=?,last_login_at=?,updated_at=? WHERE id=?`,
+          email=?,avatar_url=CASE WHEN avatar_source='provider' AND ?!='' THEN ? ELSE avatar_url END,email_verified_at=?,last_login_at=?,updated_at=? WHERE id=?`,
         String(profile.name || 'Client AYROVI').slice(0, 100), adoptGoogleEmail ? email : currentAccount.email,
         String(profile.picture || ''), String(profile.picture || '').slice(0, 1000),
         adoptGoogleEmail ? now : currentAccount.email_verified_at, now, now, accountId);
@@ -865,7 +867,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           ? db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE AND id!=?', email, accountId)
           : null;
         const nextEmail = !currentAccount.email && email && !emailOwner ? email : currentAccount.email;
-        const nextAvatar = currentAccount.avatar_url || avatarUrl;
+        const nextAvatar = currentAccount.avatar_source === 'provider' ? currentAccount.avatar_url || avatarUrl : currentAccount.avatar_url;
         db.run(`UPDATE customer_accounts SET
           display_name=CASE WHEN display_name='' OR display_name='Client AYROVI' THEN ? ELSE display_name END,
           email=?,avatar_url=?,last_login_at=?,updated_at=? WHERE id=?`,
@@ -944,6 +946,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const existingEmail = email ? db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE AND id!=?', email, account.id) : null;
     if (existingEmail) return res.status(409).json({ success: false, error: 'Cette adresse e-mail est déjà utilisée.' });
     const current = accountRow(db, account.id);
+    if (current?.password_hash && !email) return res.status(400).json({success:false,error:'Une adresse e-mail est nécessaire pour vous connecter avec votre mot de passe.'});
     const emailChanged = String(current?.email || '') !== String(email || '');
     db.run(`UPDATE customer_accounts SET display_name=?,email=?,email_verified_at=CASE WHEN ? THEN NULL ELSE email_verified_at END,
       marketing_opt_in=?,updated_at=? WHERE id=?`, displayName, email, emailChanged ? 1 : 0, req.body?.marketingOptIn ? 1 : 0, new Date().toISOString(), account.id);
@@ -1173,6 +1176,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const row = accountRow(db, account.id);
     return res.json({ success: true, data: {
       emailVerified: Boolean(row?.email_verified_at), phoneVerified: Boolean(row?.phone_verified_at),
+      hasPassword: Boolean(row?.password_hash),
       identities: db.all<any>('SELECT provider,created_at FROM customer_auth_identities WHERE account_id=? ORDER BY created_at', account.id),
       activeSessions: Number(db.get<any>('SELECT COUNT(*) count FROM customer_sessions WHERE account_id=? AND expires_at>?', account.id, new Date().toISOString())?.count || 0),
       lastLoginAt: row?.last_login_at || null,
@@ -1189,7 +1193,11 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
 
   router.put('/account/preferences', requireCustomer(db), (req, res) => {
     const account = customerFromRequest(req);
-    const value = (key: string, fallback = true) => req.body?.[key] === undefined ? (fallback ? 1 : 0) : (req.body[key] ? 1 : 0);
+    const previous = db.get<any>('SELECT * FROM customer_preferences WHERE account_id=?', account.id);
+    const keys = ['darkMode','orderUpdates','paymentUpdates','shippingUpdates','invoiceUpdates'];
+    if (keys.some(key => req.body?.[key] !== undefined && typeof req.body[key] !== 'boolean')) return res.status(400).json({ success: false, error: 'Préférence invalide.' });
+    const columns: Record<string,string> = { darkMode:'dark_mode', orderUpdates:'order_updates', paymentUpdates:'payment_updates', shippingUpdates:'shipping_updates', invoiceUpdates:'invoice_updates' };
+    const value = (key: string, fallback = true) => req.body?.[key] === undefined ? (previous?.[columns[key]] ?? (fallback ? 1 : 0)) : (req.body[key] ? 1 : 0);
     const now = new Date().toISOString();
     db.run(`INSERT INTO customer_preferences (account_id,dark_mode,order_updates,payment_updates,shipping_updates,invoice_updates,updated_at)
       VALUES (?,?,?,?,?,?,?) ON CONFLICT(account_id) DO UPDATE SET dark_mode=excluded.dark_mode,order_updates=excluded.order_updates,
