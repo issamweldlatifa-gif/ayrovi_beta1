@@ -1,4 +1,4 @@
-# AYROVI DESIGN SYSTEM v1.0
+# AYROVI DESIGN SYSTEM v1.1
 
 **Charte : « Monochrome Premium × Orange d'action »**
 Date : 2026-09-18 · Statut : appliquée à la vitrine, verrouillée par tests.
@@ -236,3 +236,53 @@ tests/design-*.test.ts (verrous) + verify/zalando-audit.mjs (pixels)
 - [ ] `verify/contrast.mjs` : matrice de contraste générée depuis les tokens
 - [ ] Audit pixel dans le CI (exige un serveur de build)
 - [ ] Retrait progressif des alias morts (`--ayrovi-purple*`, `--hostinger-*`)
+
+
+## 12. Écrans client — mobile first (2026-09-19)
+
+### Portée et référence
+
+La nouvelle direction validée par les références utilisateur est appliquée **uniquement
+à la connexion et à l’inscription**, pas au compte connecté, à la vitrine ou à l’Admin.
+Les deux références montrent une tête colorée et une carte blanche arrondie. Elles ne
+sont pas copiées à l’identique : labels persistants, français/arabe, vrais moyens de
+connexion configurés et CTA correct (« Se connecter » sur la connexion).
+
+**Exception explicite à la règle orange ≤3 % et aux rayons génériques :** `.ay-auth`
+peut avoir un en-tête orange de marque, une sheet 32px et des contrôles pill (alias du
+token chip). Le texte sur orange reste noir pour le contraste. Ce n’est pas une
+modification des règles de la vitrine et ne justifie pas de recolorer les autres pages.
+
+### Contrat à réutiliser écran par écran
+
+- Palette existante, aucune nouvelle couleur brute. Pas de dégradé lourd ou de fond photo.
+- Inter / Noto Sans Arabic existants, labels 14px, champs **16px minimum**, titre auth 28px.
+- Échelle d’espacement : 4, 8, 12, 16, 20, 24, 32px (`--ayrovi-space-*`).
+- Champs et CTA : 48px minimum ; cible icône/lien d’action : 44px minimum.
+- Marge latérale 24px (16px sous 360px) ; largeur formulaire max 460px.
+- Mobile plein écran avec défilement naturel. Ne jamais centrer verticalement un
+  formulaire trop haut : le clavier et les petits écrans doivent pouvoir défiler.
+- Zones sûres `env(safe-area-inset-*)`, direction RTL et propriétés logiques CSS.
+- Un CTA principal noir, alternatives blanches bordées, lien explicite de changement
+  de mode. Ombre xs uniquement sur le CTA.
+- Composants canoniques : `design/Button.tsx`, `design/ui/Field.tsx` (`Field`, `Input`).
+- Labels reliés aux IDs ; contrôle afficher/masquer nommé selon son état ; erreurs
+  `role=alert`, chargement `role=status`, soumission bloquée pendant le traitement.
+- Réduction du mouvement respectée. Ne pas empêcher le gestionnaire de mots de passe.
+- Les identifiants ne viennent jamais de données démo, du profil précédent ou du
+  stockage local. Nettoyage à la fermeture et au changement de session ; mot de passe
+  masqué et vidé au changement de mode.
+- Les boutons OAuth/SMS n’existent que si l’API auth les annonce disponibles.
+- Aucune fausse promesse fonctionnelle : « Mot de passe oublié ? » montre actuellement
+  un vrai formulaire de récupération lorsque le mailer est configuré. Sans configuration,
+  l’interface explique l’indisponibilité et ne simule aucun envoi. Voir `AUTH_EMAIL_SETUP_AR.md`.
+
+### Validation avant passage à l’écran suivant
+
+1. Vérifier le diff : aucune modification imprévue des autres écrans.
+2. `npm run typecheck`, `npm test`, `npm run build`.
+3. Serveur démarré : `node verify/customer-auth-mobile.mjs` (Chromium + Firefox).
+4. Vérifier 320, 360, 390, 430 et 1280px, français/arabe, clavier, erreurs et état vide.
+5. Présenter les captures et attendre l’approbation utilisateur.
+
+Voir `docs/AUTH_MOBILE_IMPLEMENTATION_AR.md` pour le bilan et les limites.

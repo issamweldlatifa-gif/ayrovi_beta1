@@ -253,6 +253,11 @@ export const App: React.FC = () => {
           setAccountMessage(tr(`Erreur : la connexion ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'} n’a pas abouti. Réessayez ou utilisez le code SMS.`, `تعذر تسجيل الدخول عبر ${customerAuthResult === 'facebook_error' ? 'Facebook' : 'Google'}. أعد المحاولة أو استخدم رمز SMS.`));
         }
       } finally {
+        if (customerAuthResult === 'password_reset' || customerAuthResult === 'login') {
+          setAccountInitialSection('home');
+          openAppView('app:account', true);
+          setAccountMessage(customerAuthResult === 'password_reset' ? tr('Mot de passe modifié. Connectez-vous avec le nouveau mot de passe.', 'تم تغيير كلمة المرور. سجّل دخولك بكلمة المرور الجديدة.') : '');
+        }
         if (customerAuthResult || cardPaymentReturn) {
           const url = new URL(window.location.href);
           ['customerAuth','cardPayment','orderId','transaction'].forEach((key) => url.searchParams.delete(key));

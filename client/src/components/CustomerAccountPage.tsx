@@ -35,7 +35,10 @@ import { customerApi } from '../customer/api';
 import { getSessionId } from '../utils/session';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
+import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
 import { AppHeader } from '../design/AppHeader';
+import { Button, buttonClasses } from '../design/Button';
+import { Field as FormField, Input } from '../design/ui/Field';
 
 /* ===== آفاتار حديث: صورة مرفوعة > آفاتار مولّد حسب الجنس ===== */
 type AvatarGender = 'female' | 'male';
@@ -206,6 +209,9 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [emailPassword, setEmailPassword] = useState('');
   const [emailName, setEmailName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [configError, setConfigError] = useState(false);
+  const [configRetry, setConfigRetry] = useState(0);
   const [challengeId, setChallengeId] = useState('');
   const [maskedPhone, setMaskedPhone] = useState('');
   const [code, setCode] = useState('');
@@ -260,10 +266,25 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
       setError('');
       setNotice(initialMessage || '');
     }
-    customerApi<any>('/api/customer/auth/config').then((result) => setConfig(result.data)).catch(() => setConfig({
-      phoneOtp: { enabled: false }, google: { enabled: false }, facebook: { enabled: false }, apple: { enabled: false }, email: { enabled: true }, checkoutRequiresAuthentication: true,
-    }));
-  }, [isOpen, initialMessage, initialSection]);
+    let cancelled = false;
+    setConfig(null);
+    setConfigError(false);
+    customerApi<{ data: AuthConfig }>('/api/customer/auth/config')
+      .then((result) => { if (!cancelled) setConfig(result.data); })
+      .catch(() => { if (!cancelled) setConfigError(true); });
+    return () => { cancelled = true; };
+  }, [isOpen, initialMessage, initialSection, configRetry]);
+
+  // Credentials are transient: never hydrate from a profile, storage or demo data.
+  // Browser-managed autofill remains available to the device owner.
+  useEffect(() => {
+    setEmailAddress('');
+    setEmailPassword('');
+    setEmailName('');
+    setShowPassword(false);
+    setRecoveryOpen(false);
+    setEmailMode('login');
+  }, [isOpen, session?.account.id]);
 
   useEffect(() => {
     if (!session) return;
@@ -347,11 +368,14 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     try {
       const endpoint = emailMode === 'register' ? '/api/customer/auth/email/register' : '/api/customer/auth/email/login';
       const payload = emailMode === 'register'
-        ? { displayName: emailName.trim(), email: emailAddress.trim(), password: emailPassword, cartSessionId: getSessionId() }
-        : { email: emailAddress.trim(), password: emailPassword, cartSessionId: getSessionId() };
+        ? { displayName: emailName.trim(), email: emailAddress.trim(), password: emailPassword, locale: isArabic ? 'ar' : 'fr', cartSessionId: getSessionId() }
+        : { email: emailAddress.trim(), password: emailPassword, locale: isArabic ? 'ar' : 'fr', cartSessionId: getSessionId() };
       const result = await customerApi<any>(endpoint, { method: 'POST', body: JSON.stringify(payload) });
       onSession({ account: result.data.account, csrfToken: result.data.csrfToken });
+      setEmailAddress('');
       setEmailPassword('');
+      setEmailName('');
+      setShowPassword(false);
       setNotice(emailMode === 'register'
         ? tr('Bienvenue ! Votre compte AYROVI est actif.', 'مرحباً بك! تم تفعيل حسابك في AYROVI.')
         : tr('Content de vous revoir !', 'سعداء بعودتك!'));
@@ -589,17 +613,16 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
 
   const googleEnabled = Boolean(config?.google.enabled);
   const facebookEnabled = Boolean(config?.facebook.enabled);
-  const socialLoginEnabled = googleEnabled || facebookEnabled;
+  const socialLoginEnabled = googleEnabled || facebookEnabled || Boolean(config?.apple.enabled);
   const oauthQuery = `cartSessionId=${encodeURIComponent(getSessionId())}&returnTo=${encodeURIComponent('/')}`;
   const googleStartHref = `/api/customer/auth/google/start?${oauthQuery}`;
   const facebookStartHref = `/api/customer/auth/facebook/start?${oauthQuery}`;
 
   const appleEnabled = Boolean(config?.apple.enabled);
   const appleStartHref = `/api/customer/auth/apple/start?${oauthQuery}`;
-  const authPanel = (
-    /* صفحة الدخول/التسجيل — تصميم فخم على نمط المتاجر الكبرى */
-    <div className="relative flex min-h-full flex-col bg-white">
-      <div className="mx-auto flex w-full max-w-[460px] flex-1 flex-col px-6 pb-5 pt-6">
+  const authPanel = recoveryOpen ? <CustomerPasswordRecovery initialEmail={emailAddress} onBack={() => setRecoveryOpen(false)} /> : (
+    <div className="ay-auth relative flex min-h-full flex-col">
+      <div className={`ay-auth__container ${otpOpen || phoneLoginOpen || phoneLinkOpen ? 'ay-auth__container--utility' : ''}`}>
         {otpOpen && challengeId ? (
           /* ===== شاشة رمز التحقق ===== */
           <form onSubmit={verifyCode} className="flex flex-1 flex-col">
@@ -642,98 +665,99 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
             <p className="mt-auto pt-8 text-center text-xs leading-5 text-muted">{tr('Connexion sécurisée. AYROVI ne vous demandera jamais votre code par téléphone.', 'دخول آمن. لن تطلب منك AYROVI رمزك عبر مكالمة أو رسالة.')}</p>
           </form>
         ) : (
-          /* ===== الشاشة الرئيسية ===== */
-          <div className="flex flex-1 flex-col">
-            {/* زر رجوع عائم — لا يستهلك مساحة عمودية */}
-            <button type="button" onClick={onClose} aria-label={tr('Retour', 'رجوع')} className="absolute start-2 top-2.5 z-10 grid h-10 w-10 place-items-center text-ink transition hover:opacity-70">
-              <ArrowLeft className={`h-6 w-6 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />
-            </button>
-
-            {/* شعار بارز في الوسط — بدون مربع */}
-            <img src="/media/logo-ayrovi.png" alt="AYROVI" className="mx-auto h-[68px] w-auto object-contain" />
-            <h1 className="mt-3 text-center font-display text-3xl font-black leading-8 tracking-[-0.02em] text-ink">{tr('Bienvenue chez AYROVI', 'مرحباً بك في AYROVI')}</h1>
-            <p className="mt-1.5 text-center text-sm leading-6 text-muted">{tr('Connectez-vous ou créez votre compte en quelques secondes.', 'سجّل دخولك أو أنشئ حسابك في ثوانٍ معدودة.')}</p>
-
-            {/* أزرار التواصل الاجتماعي */}
-            <div className="mt-6 grid grid-cols-3 gap-3">
-              <a href={googleEnabled ? googleStartHref : undefined} aria-disabled={!googleEnabled} title={googleEnabled ? undefined : tr('Google sera disponible après sa configuration.', 'سيتاح Google بعد إعداده.')} className={`group flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${googleEnabled ? '' : 'pointer-events-none opacity-40'}`}>
-                <FcGoogle size={26} aria-hidden />
-              </a>
-              <a href={facebookEnabled ? facebookStartHref : undefined} aria-disabled={!facebookEnabled} title={facebookEnabled ? undefined : tr('Facebook sera disponible après sa configuration.', 'سيتاح Facebook بعد إعداده.')} className={`flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${facebookEnabled ? '' : 'pointer-events-none opacity-40'}`}>
-                <FaFacebookF size={24} className="text-[#1877F2]" aria-hidden />
-              </a>
-              <a href={appleEnabled ? appleStartHref : undefined} aria-disabled={!appleEnabled} title={appleEnabled ? undefined : tr('Apple sera disponible après sa configuration.', 'سيتاح Apple بعد إعداده.')} className={`flex h-[54px] items-center justify-center rounded-2xl border border-line bg-white transition hover:border-ink/30 hover:shadow-card ${appleEnabled ? '' : 'pointer-events-none opacity-40'}`}>
-                <FaApple size={28} className="text-ink" aria-hidden />
-              </a>
-            </div>
-
-            {/* فاصل */}
-            <div className="my-5 flex items-center gap-3 text-xs font-black uppercase tracking-[0.16em] text-muted">
-              <span className="h-px flex-1 bg-line" />
-              {tr('ou par e-mail', 'أو عبر البريد الإلكتروني')}
-              <span className="h-px flex-1 bg-line" />
-            </div>
-
-            {/* مبدّل دخول/تسجيل */}
-            <div className="mb-4 grid grid-cols-2 rounded-full border border-line bg-surface p-1">
-              {(['login', 'register'] as const).map((mode) => (
-                <button key={mode} type="button" onClick={() => { setEmailMode(mode); setError(''); }}
-                  className={`h-10 rounded-full text-sm font-black transition ${emailMode === mode ? 'bg-white text-ink shadow-card' : 'text-muted hover:text-ink'}`}>
-                  {mode === 'login' ? tr('Connexion', 'تسجيل الدخول') : tr('Créer un compte', 'إنشاء حساب')}
-                </button>
-              ))}
-            </div>
-
-            {error && <div className="mb-4 border border-danger/20 bg-danger/5 px-4 py-3 text-center text-sm font-bold text-danger">{error}</div>}
-
-            {/* نموذج البريد الإلكتروني */}
-            <form onSubmit={submitEmailAuth} className="space-y-4">
-              {emailMode === 'register' && (
-                <Field label={tr('Nom et prénom', 'الاسم واللقب')}>
-                  <div className="relative">
-                    <User className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-                    <input autoFocus type="text" autoComplete="name" maxLength={100} value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Votre nom complet', 'اسمك الكامل')} className={`${inputClass} pl-11 text-base`} required />
-                  </div>
-                </Field>
-              )}
-              <Field label={tr('Adresse e-mail', 'البريد الإلكتروني')}>
-                <input type="email" autoComplete="email" maxLength={180} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={emailMode === 'login' ? tr('Votre adresse e-mail', 'بريدك الإلكتروني') : 'vous@exemple.com'} className={`${inputClass} text-base`} required />
-              </Field>
-              <Field label={tr('Mot de passe', 'كلمة المرور')}>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted" />
-                  <input type={showPassword ? 'text' : 'password'} autoComplete={emailMode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={100} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} placeholder={tr('Au moins 8 caractères', '8 أحرف على الأقل')} className={`${inputClass} pl-11 pr-12 text-base`} required />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} aria-label={tr('Afficher le mot de passe', 'إظهار كلمة المرور')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted transition hover:text-ink">
-                    {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
-                  </button>
+          <div className="ay-auth__main">
+            <header className="ay-auth__hero">
+              <div className="ay-auth__header">
+                <Button variant="ghost" size="icon" onClick={onClose} aria-label={tr('Retour', 'رجوع')}>
+                  <ArrowLeft className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />
+                </Button>
+                <div className="ay-auth__brand" dir="ltr">
+                  <img src="/media/logo-ayrovi.png" alt="" width={32} height={32} className="ay-auth__logo" />
+                  <span>AYROVI</span>
                 </div>
-              </Field>
-              <button disabled={authBusy} className="ay-btn-primary h-12 w-full text-base font-black">
-                {authBusy && <Loader2 className="h-5 w-5 animate-spin" />}
-                {emailMode === 'login' ? tr('Se connecter', 'تسجيل الدخول') : tr('Créer mon compte', 'إنشاء حسابي')}
-              </button>
-            </form>
+                <span aria-hidden />
+              </div>
+              <div className="ay-auth__intro">
+                <h1 id="auth-title" tabIndex={-1}>{emailMode === 'login' ? tr('Connectez-vous.', 'تسجيل الدخول') : tr('Créez votre compte.', 'أنشئ حسابك.')}</h1>
+                <p>{emailMode === 'login' ? tr('Connectez-vous à votre univers AYROVI.', 'سجّل دخولك إلى عالم AYROVI.') : tr('Le monde du shopping vous attend.', 'عالم من التسوّق بانتظارك.')}</p>
+              </div>
+            </header>
+            <div className="ay-auth__card">
 
-            {emailMode === 'register' && (
-              <p className="mt-4 text-center text-xs leading-5 text-muted">
+            {!config && <div className="ay-auth__config" role={configError ? 'alert' : 'status'}>
+              {configError ? <>
+                <p>{tr('Impossible de charger les moyens de connexion.', 'تعذّر تحميل وسائل تسجيل الدخول.')}</p>
+                <Button variant="secondary" onClick={() => setConfigRetry((value) => value + 1)}>{tr('Réessayer', 'إعادة المحاولة')}</Button>
+              </> : <><Loader2 className="h-5 w-5 animate-spin" aria-hidden /><span>{tr('Chargement…', 'جارٍ التحميل…')}</span></>}
+            </div>}
+
+            {socialLoginEnabled && <div className="ay-auth__social" aria-label={tr('Autres moyens de connexion', 'وسائل دخول أخرى')}>
+              {googleEnabled && <a href={googleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Google', 'المتابعة عبر Google')}>
+                <FcGoogle size={22} aria-hidden /><span>{!facebookEnabled && !appleEnabled ? tr('Continuer avec Google', 'المتابعة عبر Google') : 'Google'}</span>
+              </a>}
+              {facebookEnabled && <a href={facebookStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Facebook', 'المتابعة عبر Facebook')}>
+                <FaFacebookF size={20} aria-hidden /><span>Facebook</span>
+              </a>}
+              {appleEnabled && <a href={appleStartHref} className={buttonClasses('secondary', 'md', 'ay-auth__provider')} aria-label={tr('Continuer avec Apple', 'المتابعة عبر Apple')}>
+                <FaApple size={24} aria-hidden /><span>Apple</span>
+              </a>}
+            </div>}
+            {socialLoginEnabled && config?.email.enabled && <div className="ay-auth__divider"><span>{tr('ou par e-mail', 'أو بالبريد الإلكتروني')}</span></div>}
+
+            {config?.email.enabled && <>
+              <section id="auth-email-panel" aria-labelledby="auth-title">
+                {error && <div id="auth-error" role="alert" className="ay-auth__message ay-auth__message--error">{error}</div>}
+                {notice && <div role="status" className="ay-auth__message">{notice}</div>}
+                <form onSubmit={submitEmailAuth} aria-busy={authBusy} aria-describedby={error ? 'auth-error' : undefined}>
+                  <fieldset disabled={authBusy} className="ay-auth__fields">
+                    <legend className="sr-only">{emailMode === 'login' ? tr('Connexion par e-mail', 'الدخول بالبريد الإلكتروني') : tr('Créer un compte par e-mail', 'إنشاء حساب بالبريد الإلكتروني')}</legend>
+                    {emailMode === 'register' && <FormField label={tr('Nom et prénom', 'الاسم واللقب')} htmlFor="auth-name">
+                      <Input id="auth-name" name="name" autoComplete="name" maxLength={100} value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Votre nom complet', 'اسمك الكامل')} required />
+                    </FormField>}
+                    <FormField label={tr('Adresse e-mail', 'البريد الإلكتروني')} htmlFor="auth-email">
+                      <Input id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} autoComplete={emailMode === 'login' ? 'username' : 'email'} maxLength={180} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('Votre adresse e-mail', 'بريدك الإلكتروني')} required />
+                    </FormField>
+                    <FormField label={tr('Mot de passe', 'كلمة المرور')} htmlFor="auth-password">
+                      <div className="ay-auth__password">
+                        <Lock className="ay-auth__lock h-5 w-5" aria-hidden />
+                        <Input id="auth-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={emailMode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={100} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} placeholder={tr('Votre mot de passe', 'كلمة المرور الخاصة بك')} aria-describedby={emailMode === 'register' ? 'auth-password-hint' : undefined} required />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} aria-controls="auth-password" aria-pressed={showPassword} aria-label={showPassword ? tr('Masquer le mot de passe', 'إخفاء كلمة المرور') : tr('Afficher le mot de passe', 'إظهار كلمة المرور')} className="ay-auth__password-toggle">
+                          {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
+                        </button>
+                      </div>
+                      {emailMode === 'register' && <p id="auth-password-hint" className="ay-auth__hint">{tr('Au moins 8 caractères.', '8 أحرف على الأقل.')}</p>}
+                    </FormField>
+                    <Button type="submit" disabled={authBusy} className="ay-auth__submit">
+                      {authBusy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
+                      {authBusy ? tr('Veuillez patienter…', 'يرجى الانتظار…') : emailMode === 'login' ? tr('Se connecter', 'تسجيل الدخول') : tr('Créer mon compte', 'إنشاء حسابي')}
+                    </Button>
+                    {emailMode === 'login' && <button type="button" className="ay-auth__recovery-link" onClick={() => setRecoveryOpen(!recoveryOpen)}>{tr('Mot de passe oublié ?', 'نسيت كلمة المرور؟')}</button>}
+
+                  </fieldset>
+                </form>
+              </section>
+              {emailMode === 'register' && <p className="ay-auth__consent">
                 {tr('En créant un compte, vous acceptez nos ', 'بإنشاء حسابك فأنت توافق على ')}
-                <a href="/terms.html" target="_blank" rel="noreferrer" className="font-bold text-ink hover:underline">{tr("Conditions d'utilisation", 'شروط الاستخدام')}</a>
-                {tr(' et notre ', ' و')}
-                <a href="/privacy.html" target="_blank" rel="noreferrer" className="font-bold text-ink hover:underline">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>.
-              </p>
-            )}
-
-            {/* خيار الهاتف */}
-            <button type="button" onClick={() => navigation.pushLayer({ id: 'account:phone-login' })} className="mt-5 flex w-full items-center justify-center gap-2 border-t border-line pt-4 text-xs font-black text-ink transition hover:text-muted">
-              <Phone className="h-4.5 w-4.5" aria-hidden />
-              {tr('Utiliser mon numéro de téléphone (SMS)', 'الدخول برقم الهاتف (SMS)')}
-            </button>
-
-            {/* تذييل */}
-            <div className="mt-auto flex flex-wrap items-center justify-center gap-x-5 gap-y-2 border-t border-line pt-4 text-xs text-muted">
-              <a href="/terms.html" target="_blank" rel="noreferrer" className="hover:text-ink hover:underline">{tr("Conditions d'utilisation", 'شروط الاستخدام')}</a>
-              <a href="/privacy.html" target="_blank" rel="noreferrer" className="hover:text-ink hover:underline">{tr('Confidentialité', 'الخصوصية')}</a>
-              <span className="inline-flex items-center gap-1"><ShieldCheck className="h-4 w-4 text-success" aria-hidden />{tr('Paiement sécurisé', 'دفع آمن')}</span>
+                <a href="/terms.html" target="_blank" rel="noreferrer">{tr("Conditions d’utilisation", 'شروط الاستخدام')}</a>
+                {tr(' et notre ', ' و')}<a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Politique de confidentialité', 'سياسة الخصوصية')}</a>.
+              </p>}
+            </>}
+            {config?.phoneOtp.enabled && <Button variant="secondary" onClick={() => { setError(''); navigation.pushLayer({ id: 'account:phone-login' }); }} className="ay-auth__phone" disabled={authBusy}>
+              <Phone className="h-5 w-5" aria-hidden />{tr('Continuer par SMS', 'المتابعة عبر SMS')}
+            </Button>}
+            {config && !config.email.enabled && !socialLoginEnabled && !config.phoneOtp.enabled && <p role="status" className="ay-auth__message">{tr('La connexion est momentanément indisponible. Veuillez réessayer plus tard.', 'تسجيل الدخول غير متاح حاليًا. يرجى المحاولة لاحقًا.')}</p>}
+            {config?.email.enabled && <p className="ay-auth__switch">
+              <span>{emailMode === 'login' ? tr('Nouveau chez AYROVI ?', 'جديد في AYROVI؟') : tr('Déjà un compte ?', 'لديك حساب؟')}</span>
+              <button type="button" disabled={authBusy} aria-controls="auth-email-panel" onClick={() => {
+                setEmailMode(emailMode === 'login' ? 'register' : 'login');
+                setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');
+                document.getElementById('auth-title')?.focus();
+              }}>{emailMode === 'login' ? tr('Créer un compte', 'إنشاء حساب') : tr('Se connecter', 'تسجيل الدخول')}</button>
+            </p>}
+            {emailMode === 'login' && <footer className="ay-auth__footer">
+              <a href="/terms.html" target="_blank" rel="noreferrer">{tr("Conditions d’utilisation", 'شروط الاستخدام')}</a>
+              <a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Confidentialité', 'الخصوصية')}</a>
+            </footer>}
             </div>
           </div>
         )}
@@ -818,7 +842,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     return <div className="mx-auto max-w-2xl space-y-3"><a href="/terms.html" target="_blank" rel="noreferrer" className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black"><span>{tr('Conditions générales','الشروط العامة')}</span><ExternalLink className="h-7 w-7"/></a><a href="/privacy.html" target="_blank" rel="noreferrer" className="flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black"><span>{tr('Politique de confidentialité','سياسة الخصوصية')}</span><ExternalLink className="h-7 w-7"/></a></div>;
   };
 
-  return <div className="ayrovix-theme-scope fixed inset-0 z-[95] overflow-hidden bg-surface" dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte AYROVI','حسابي في AYROVI'):tr('Connexion client AYROVI','تسجيل الدخول إلى AYROVI')}>
+  return <div className={`${session ? 'ayrovix-theme-scope ' : ''}fixed inset-0 z-[95] overflow-hidden bg-surface`} dir={direction} role="dialog" aria-modal="true" aria-label={session?tr('Mon compte AYROVI','حسابي في AYROVI'):tr('Connexion client AYROVI','تسجيل الدخول إلى AYROVI')}>
     {(!session || phoneLinkOpen || phoneLoginOpen) && !loadingSession ? null : <AppHeader title="AYROVI" subtitle={tr('Espace client','فضاء العميل')} onClose={onClose} actionLabel={tr('Fermer','إغلاق')}/>}
     <div className={`${(!session || phoneLinkOpen || phoneLoginOpen) && !loadingSession ? 'h-[100dvh]' : 'h-[calc(100dvh-4.25rem)] sm:h-[calc(100dvh-5.25rem)]'} overflow-y-auto`}>{loadingSession?<div className="grid h-full place-items-center"><Loader2 className="h-9 w-9 animate-spin text-ink"/></div>:(!session||phoneLinkOpen||phoneLoginOpen)?authPanel:<div className="mx-auto grid min-h-full w-full min-w-0 max-w-7xl grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
       <aside className={`${section==='home'?'block':'hidden'} order-2 min-w-0 border-t border-line bg-white p-4 lg:order-1 lg:block lg:border-e lg:border-t-0 lg:p-5`}><div className="mb-4 hidden items-center gap-3 border-b border-line pb-5 lg:flex"><div className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-ink text-sm font-black text-white">{session.account.avatarUrl?<img src={session.account.avatarUrl} alt="" className="h-full w-full object-cover"/>:(session.account.displayName||'AY').slice(0,2).toUpperCase()}</div><div className="min-w-0"><strong className="block truncate text-sm">{session.account.displayName}</strong><span className="block truncate text-xs text-muted">{session.account.email||session.account.phone}</span></div></div><AccountTabs section={section} unread={Number(overview?.counts?.unreadNotifications||0)} onOpen={openSection} onLogout={logout}/></aside>

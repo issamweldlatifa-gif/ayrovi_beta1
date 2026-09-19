@@ -1,4 +1,4 @@
-import { createSign, randomBytes, randomInt, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createSign, randomBytes, randomInt, randomUUID } from 'node:crypto';
 import path from 'node:path';
 import fs from 'node:fs';
 import multer from 'multer';
@@ -7,6 +7,9 @@ import { QatafoDatabase } from '../db/database';
 import { invoiceAbsolutePath, depositWriteDir, proofRoots, invoiceRoots } from '../services/invoice';
 import { servePrivateDocument } from '../documents/fileAccess';
 import { sendMail } from '../services/mailer';
+import { hashPassword, verifyPassword } from './passwords';
+import { enqueueWelcomeMail, passwordRecoveryReady } from './accountMail';
+import { createPasswordRecoveryRouter, customerAuthRateAllowed } from './passwordRecovery';
 import { cardGatewayAvailable, initiateKonnectCardPayment, verifyKonnectCardPayment } from '../services/paymentGateway';
 import { normalizeTunisianPhone } from './phone';
 import {
@@ -143,22 +146,6 @@ function appleClientSecretJwt(apple: ReturnType<typeof appleConfig>): string {
   };
   const rawSignature = Buffer.concat([readInteger(), readInteger()]);
   return `${signingInput}.${rawSignature.toString('base64url')}`;
-}
-
-/** Mots de passe e-mail — scrypt avec sel unique et comparaison en temps constant. */
-function hashPassword(password: string): string {
-  const salt = randomBytes(16).toString('hex');
-  const derived = scryptSync(password, salt, 64).toString('hex');
-  return `scrypt$${salt}$${derived}`;
-}
-
-function verifyPassword(password: string, stored: string | null | undefined): boolean {
-  if (typeof stored !== 'string' || !stored) return false;
-  const [scheme, salt, digest] = stored.split('$');
-  if (scheme !== 'scrypt' || !salt || !digest) return false;
-  const derived = scryptSync(password, salt, 64);
-  const expected = Buffer.from(digest, 'hex');
-  return derived.length === expected.length && timingSafeEqual(derived, expected);
 }
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
@@ -354,6 +341,7 @@ function validateAddress(body: any) {
 
 export function createCustomerRouter(db: QatafoDatabase): Router {
   const router = Router();
+  router.use(createPasswordRecoveryRouter(db));
   cleanupCustomerAuth(db);
 
   // Konnect sends only a payment reference. AYROVI always fetches the payment
@@ -391,6 +379,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
       facebook: { enabled: customerAuthReady() && facebook.ready },
       apple: { enabled: customerAuthReady() && apple.ready },
       email: { enabled: customerAuthReady() },
+      passwordReset: { enabled: passwordRecoveryReady() },
       checkoutRequiresAuthentication: true,
     } });
   });
@@ -499,28 +488,33 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
 
   router.post('/auth/email/register', (req, res) => {
     if (!customerAuthReady()) return res.status(503).json({ success: false, error: 'Authentification client non configurée.' });
+    if (!customerAuthRateAllowed(db, 'register-ip', req.ip || '', 10)) return res.status(429).json({ success: false, code: 'REGISTER_RATE_LIMITED', error: 'Trop de créations de compte. Réessayez dans 15 minutes.' });
     const displayName = String(req.body?.displayName || '').trim().slice(0, 100);
     const email = normalizedEmail(req.body?.email);
     const password = String(req.body?.password || '');
     const marketingOptIn = Boolean(req.body?.marketingOptIn);
     if (displayName.length < 2) return res.status(400).json({ success: false, code: 'NAME_INVALID', error: 'Indiquez votre nom complet.' });
     if (!EMAIL_PATTERN.test(email)) return res.status(400).json({ success: false, code: 'EMAIL_INVALID', error: 'Adresse e-mail invalide.' });
-    if (password.length < 8) return res.status(400).json({ success: false, code: 'PASSWORD_WEAK', error: 'Le mot de passe doit contenir au moins 8 caractères.' });
+    if (password.length < 8 || password.length > 100) return res.status(400).json({ success: false, code: 'PASSWORD_WEAK', error: 'Le mot de passe doit contenir au moins 8 caractères.' });
     const existing = db.get<any>('SELECT id FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
     if (existing) return res.status(409).json({ success: false, code: 'EMAIL_TAKEN', error: 'Un compte existe déjà avec cette adresse e-mail.' });
     try {
       const now = new Date().toISOString();
       const accountId = `account_${randomUUID()}`;
-      db.run(`INSERT INTO customer_accounts
-        (id,display_name,email,password_hash,marketing_opt_in,status,last_login_at,created_at,updated_at)
-        VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`,
-        accountId, displayName, email, hashPassword(password), marketingOptIn ? 1 : 0, now, now, now);
-      notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
-      const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
-      if (cartSession) db.attachCartToAccount(cartSession, accountId);
-      const prior = resolveCustomer(db, req) as any;
-      if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
-      const session = createCustomerSession(db, accountId, req);
+      const session = db.transaction(() => {
+        db.run(`INSERT INTO customer_accounts
+          (id,display_name,email,password_hash,marketing_opt_in,status,last_login_at,created_at,updated_at)
+          VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`,
+          accountId, displayName, email, hashPassword(password), marketingOptIn ? 1 : 0, now, now, now);
+        db.run('UPDATE customer_accounts SET locale=? WHERE id=?', req.body?.locale === 'ar' ? 'ar-TN' : 'fr-TN', accountId);
+        enqueueWelcomeMail(db, accountId);
+        notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
+        const cartSession = validCartSession(req.body?.cartSessionId || req.headers['x-session-id']);
+        if (cartSession) db.attachCartToAccount(cartSession, accountId);
+        const prior = resolveCustomer(db, req) as any;
+        if (prior?.sessionId) db.run('DELETE FROM customer_sessions WHERE id=?', prior.sessionId);
+        return createCustomerSession(db, accountId, req);
+      });
       setCustomerCookie(res, session.token);
       return res.json({ success: true, data: {
         account: publicAccount(accountRow(db, accountId)),
@@ -538,7 +532,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
     const email = normalizedEmail(req.body?.email);
     const password = String(req.body?.password || '');
     const fail = () => res.status(401).json({ success: false, code: 'INVALID_CREDENTIALS', error: 'E-mail ou mot de passe incorrect.' });
-    if (!EMAIL_PATTERN.test(email) || password.length < 8) return fail();
+    if (!EMAIL_PATTERN.test(email) || password.length < 8 || password.length > 100) return fail();
     if (!emailLoginAllowed(req.ip || '')) return res.status(429).json({ success: false, code: 'LOGIN_RATE_LIMITED', error: 'Trop de tentatives. Réessayez dans un quart d’heure.' });
     const account = db.get<any>('SELECT * FROM customer_accounts WHERE email=? COLLATE NOCASE', email);
     if (!account || !verifyPassword(password, account.password_hash)) { registerEmailFailure(req.ip || ''); return fail(); }
@@ -622,6 +616,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           (id,display_name,email,email_verified_at,status,last_login_at,created_at,updated_at)
           VALUES (?,?,?,?, 'ACTIVE', ?, ?, ?)`,
           accountId, 'Client AYROVI', emailVerifiedHere ? email : null, emailVerifiedHere ? nowIso : null, nowIso, nowIso, nowIso);
+        enqueueWelcomeMail(db, accountId);
         notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Apple est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);
@@ -733,6 +728,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
           (id,display_name,email,avatar_url,email_verified_at,status,last_login_at,created_at,updated_at)
           VALUES (?,?,?,?,?,'ACTIVE',?,?,?)`, accountId, String(profile.name || 'Client AYROVI').slice(0, 100), email,
         String(profile.picture || '').slice(0, 1000), now, now, now, now);
+        enqueueWelcomeMail(db, accountId);
         notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Google est actif. Vérifiez votre téléphone avant votre première commande.', '/compte');
       } else {
         for (const ownerId of new Set([identityOwnerId, verifiedLegacyEmailOwnerId].filter((id): id is string => Boolean(id)))) {
@@ -860,6 +856,7 @@ export function createCustomerRouter(db: QatafoDatabase): Router {
         db.run(`INSERT INTO customer_accounts
           (id,display_name,email,avatar_url,status,last_login_at,created_at,updated_at)
           VALUES (?,?,?,?, 'ACTIVE',?,?,?)`, accountId, displayName, email && !emailOwner ? email : null, avatarUrl, now, now, now);
+        enqueueWelcomeMail(db, accountId);
         notification(db, accountId, 'ACCOUNT', 'Bienvenue chez AYROVI', 'Votre compte Facebook est actif. Vous pouvez ajouter un téléphone à votre profil à tout moment.', '/compte');
       } else {
         const currentAccount = accountRow(db, accountId);

@@ -5,6 +5,8 @@ import './styles/journey.css';
 import { NavigationHistoryProvider } from './navigation/NavigationHistory';
 import { LocaleProvider } from './i18n/LocaleContext';
 
+const isRecoveryPath = window.location.pathname === '/reset-password';
+const PasswordRecovery = lazy(() => import('./components/CustomerPasswordRecovery').then(module => ({ default: module.CustomerPasswordRecovery })));
 const isAdminPath = window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/');
 const PublicApp = lazy(() => import('./App').then((module) => ({ default: module.App })));
 const AdminApp = lazy(() => import('./admin/AdminApp').then((module) => ({ default: module.AdminApp })));
@@ -20,7 +22,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <LocaleProvider>
       <NavigationHistoryProvider>
         <Suspense fallback={loading}>
-          {isAdminPath ? <AdminApp /> : <PublicApp />}
+          {isAdminPath ? <AdminApp /> : isRecoveryPath ? <PasswordRecovery reset /> : <PublicApp />}
         </Suspense>
       </NavigationHistoryProvider>
     </LocaleProvider>

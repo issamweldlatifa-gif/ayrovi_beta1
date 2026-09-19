@@ -893,6 +893,39 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_customer_sessions_account ON customer_sessions(account_id);
       CREATE INDEX IF NOT EXISTS idx_customer_sessions_expiry ON customer_sessions(expires_at);
 
+      CREATE TABLE IF NOT EXISTS customer_password_resets (
+        token_hash TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        password_snapshot TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        consumed_at TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_resets_account ON customer_password_resets(account_id);
+      CREATE TABLE IF NOT EXISTS customer_auth_rate_limits (
+        bucket TEXT PRIMARY KEY,
+        count INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS customer_auth_mail_jobs (
+        id TEXT PRIMARY KEY,
+        dedup_key TEXT NOT NULL UNIQUE,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        kind TEXT NOT NULL CHECK(kind IN ('WELCOME','PASSWORD_RESET','PASSWORD_CHANGED')),
+        reset_hash TEXT,
+        payload TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'PENDING',
+        attempts INTEGER NOT NULL DEFAULT 0,
+        next_attempt_at TEXT NOT NULL,
+        lease_until TEXT,
+        expires_at TEXT NOT NULL,
+        last_error TEXT,
+        created_at TEXT NOT NULL,
+        sent_at TEXT
+      );
+      CREATE INDEX IF NOT EXISTS idx_customer_auth_mail_due ON customer_auth_mail_jobs(status,next_attempt_at);
+
       CREATE TABLE IF NOT EXISTS customer_otp_challenges (
         id TEXT PRIMARY KEY,
         phone TEXT NOT NULL,

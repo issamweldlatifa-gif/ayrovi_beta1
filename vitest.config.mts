@@ -8,6 +8,9 @@ export default defineConfig({
     // .env (dotenv n'écrase pas les variables déjà définies) cannot leak into the suite.
     env: {
       NODE_ENV: 'test',
+      MAIL_PROVIDER: '',
+      MAIL_API_KEY: '',
+      MAIL_FROM: '',
       DATABASE_PATH: ':memory:',
       ADMIN_EMAIL: 'admin@ayrovi.tn',
       ADMIN_PASSWORD: 'AyroviBeta2026!',

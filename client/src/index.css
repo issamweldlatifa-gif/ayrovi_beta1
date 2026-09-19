@@ -6,6 +6,7 @@
 @import "./styles/zalando-ui.css";
 @import "./styles/ayrovix-theme.css";
 @import "./styles/checkout-flow.css";
+@import "./styles/customer-auth.css";
 
 @layer base {
   html,

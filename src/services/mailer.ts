@@ -13,7 +13,8 @@
 import fs from 'node:fs';
 
 export interface MailAttachment { filename: string; path: string; type?: string }
-export interface MailInput { to: string; subject: string; html: string; attachments?: MailAttachment[] }
+export interface MailInput { to: string; subject: string; html: string; attachments?: MailAttachment[]; idempotencyKey?: string }
+/** delivered means the provider accepted the request, not guaranteed inbox placement. */
 export interface MailResult { provider: string; delivered: boolean; error?: string }
 
 const SUPPORTED = new Set(['resend', 'brevo', 'sendgrid']);
@@ -53,7 +54,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     if (provider === 'resend') {
       response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...(input.idempotencyKey && provider === 'resend' ? { 'Idempotency-Key': input.idempotencyKey } : {}) },
         body: JSON.stringify({
           from,
           to: [input.to],
@@ -79,7 +80,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     } else {
       response = await fetch('https://api.sendgrid.com/v3/mail/send', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json', ...(input.idempotencyKey && provider === 'resend' ? { 'Idempotency-Key': input.idempotencyKey } : {}) },
         body: JSON.stringify({
           personalizations: [{ to: [{ email: input.to }] }],
           from: parseFrom(from),
@@ -92,8 +93,7 @@ export async function sendMail(input: MailInput): Promise<MailResult> {
     }
 
     if (!response.ok) {
-      const details = await response.text().catch(() => '');
-      console.warn(`[Mail] فشل الإرسال عبر ${provider}: HTTP ${response.status} ${details.slice(0, 200)}`);
+      console.warn(`[Mail] فشل الإرسال عبر ${provider}: HTTP ${response.status}`);
       return { provider, delivered: false, error: `HTTP_${response.status}` };
     }
     console.info(`[Mail] أُرسل عبر ${provider} إلى ${input.to} — "${input.subject}"`);

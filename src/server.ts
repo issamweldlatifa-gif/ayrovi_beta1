@@ -17,6 +17,7 @@ import { createPublicRouter } from './public/routes';
 import { createCustomerRouter, facebookOAuthAvailable, googleOAuthAvailable } from './customer/routes';
 import { phoneOtpAvailable } from './customer/otp';
 import { mailerReady } from './services/mailer';
+import { processCustomerAuthMail } from './customer/accountMail';
 import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
 import { cardGatewayAvailable } from './services/paymentGateway';
@@ -172,6 +173,12 @@ const visionExtractor = new VisualProductExtractor();
 
 // Static Assets (React Vite build outputs to public/)
 const publicDir = path.resolve(process.cwd(), 'public');
+app.use('/reset-password', (_req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+  next();
+});
 app.use(express.static(publicDir, {
   setHeaders: (res, filePath) => {
     if (path.basename(filePath) === 'index.html') {
@@ -340,6 +347,12 @@ if (backupIntervalMs && process.env.NODE_ENV !== 'test') {
   backupTimer.unref?.();
 }
 
+// Durable welcome/reset mail: retries survive process restarts. Never run delivery in tests.
+const customerMailTimer = process.env.NODE_ENV !== 'test'
+  ? setInterval(() => { void processCustomerAuthMail(db).catch(() => console.warn('[Customer Auth Mail] Worker unavailable')); }, 15_000)
+  : null;
+customerMailTimer?.unref();
+
 // Start Server
 let httpServer: Server | null = null;
 let shutdownStarted = false;
@@ -349,6 +362,7 @@ function shutdown(exitCode: number, reason: string) {
   shutdownStarted = true;
   console.error(`[shutdown] ${reason} — fermeture propre…`);
   clearInterval(housekeeping);
+  if (customerMailTimer) clearInterval(customerMailTimer);
   clearInterval(rateSweeper);
   if (backupTimer) clearInterval(backupTimer);
   const finish = () => {

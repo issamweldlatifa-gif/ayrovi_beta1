@@ -40,6 +40,10 @@ npm run build
 
 La suite automatisée couvre notamment l’authentification, CSRF, RBAC, le CMS, l’OMS, les snapshots tarifaires, les paiements configurés, les 24 gouvernorats, les quantités, les dates, le CORS et les API publiques.
 
+## البريد والترحيب واسترجاع كلمة المرور
+
+تمت إضافة رسائل ترحيب وطابور بريد مشفّر واسترجاع كلمة المرور بروابط مؤقتة. الإرسال يحتاج إعداد مزوّد بريد. دليل التفعيل والأزرار والاختبارات: [AUTH_EMAIL_SETUP_AR.md](./docs/AUTH_EMAIL_SETUP_AR.md).
+
 ## Configuration
 
 Consultez [`.env.example`](./.env.example). Les origines CORS externes sont une liste séparée par des virgules dans `CORS_ORIGINS`; aucune origine externe n’est autorisée par défaut. Les requêtes same-origin restent disponibles.

@@ -1,4 +1,4 @@
-/* AYROVI DESIGN SYSTEM v1.0 — the ONLY source of brand, semantic, spacing,
+/* AYROVI DESIGN SYSTEM v1.1 — the ONLY source of brand, semantic, spacing,
    shape and motion values. Charte : « Monochrome Premium × Orange d'action ».
 
    1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
@@ -10,7 +10,9 @@
    2. L'ORANGE (#FF6900, couleur du logo) n'est jamais décoratif : c'est le
       déclencheur d'action UNIQUE — CTA principal, étape active, point actif,
       filet d'identité 3px. Texte sur orange : #111111 (6.54:1, WCAG AAA).
-      Budget : ≤ 3 % de la surface d'un écran (verify/zalando-audit.mjs).
+      Budget vitrine : ≤ 3 % (verify/zalando-audit.mjs).
+      Exception v1.1 demandée pour l'auth mobile : en-tête orange de marque,
+      contrôles pill et sheet 32px, strictement limités à .ay-auth.
    3. Le NOIR (#0A0A0A) est l'encre premium des SURFACES : hero, announcement
       bar, coquille Lens, rails. Jamais une dixième nuance de noir.
    4. États : vert (#15803D) succès, rouge (#DC2626) erreur, neutre sinon.
@@ -209,6 +211,20 @@ html[data-theme='dark'] {
     --ayrovi-shadow-card: 0 12px 30px -22px rgb(17 19 24 / 22%);
     --ayrovi-shadow-overlay: 0 24px 70px -32px rgb(17 19 24 / 35%);
     --ayrovi-shadow-card-dark: 0 12px 30px -18px rgb(0 0 0 / 55%);
+
+    /* Customer screens v1.1 — opt-in sizing, no global restyling. */
+    --ayrovi-space-1: 0.25rem;
+    --ayrovi-space-2: 0.5rem;
+    --ayrovi-space-3: 0.75rem;
+    --ayrovi-space-4: 1rem;
+    --ayrovi-space-5: 1.25rem;
+    --ayrovi-space-6: 1.5rem;
+    --ayrovi-space-8: 2rem;
+    --ayrovi-control-height: 3rem;
+    --ayrovi-touch-target: 2.75rem;
+    --ayrovi-form-max-width: 28.75rem;
+    --ayrovi-radius-sheet: 2rem;
+    --ayrovi-auth-title-size: 1.75rem;
 
     /* — rythme de page : gouttières et sections — */
     --ayrovi-gutter: 1rem;

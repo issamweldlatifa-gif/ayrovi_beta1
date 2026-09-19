@@ -1,0 +1,92 @@
+/* Customer authentication — DS v1.1, deliberately scoped to this screen.
+   Shared Button / Field / Input remain the component source of truth. */
+.ay-auth {
+  --ayrovi-radius-control: var(--ayrovi-radius-chip);
+  color-scheme: light;
+  color: var(--ayrovi-text-primary);
+  background: var(--ayrovi-bg-main);
+  --ayrovi-button-height: var(--ayrovi-control-height);
+  --ayrovi-button-bg: var(--ayrovi-text-primary);
+  --ayrovi-button-color: var(--ayrovi-bg-main);
+  --ayrovi-button-border: var(--ayrovi-border-soft);
+  --ayrovi-button-border-width: 1px;
+  --ayrovi-button-secondary-bg: var(--ayrovi-bg-main);
+  --ayrovi-button-secondary-color: var(--ayrovi-text-primary);
+}
+.ay-auth__container { width: 100%; max-width: var(--ayrovi-form-max-width); margin-inline: auto; }
+.ay-auth__container--utility { padding: max(var(--ayrovi-space-5), env(safe-area-inset-top)) var(--ayrovi-space-5) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)); }
+.ay-auth__main { display: flex; flex-direction: column; min-width: 0; }
+/* Reference-driven brand header: documented exception to the storefront orange budget. */
+.ay-auth__hero {
+  position: relative; isolation: isolate; overflow: hidden;
+  background: var(--ayrovi-color-brand-orange); color: var(--ayrovi-text-primary);
+  padding: max(var(--ayrovi-space-3), env(safe-area-inset-top)) max(var(--ayrovi-space-5), env(safe-area-inset-right)) 52px max(var(--ayrovi-space-5), env(safe-area-inset-left));
+}
+.ay-auth__hero::before, .ay-auth__hero::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; }
+.ay-auth__hero::before { width: 200px; height: 200px; inset-inline-start: -140px; bottom: -60px; background: color-mix(in srgb, var(--ayrovi-bg-main) 22%, transparent); }
+.ay-auth__hero::after { width: 250px; height: 250px; inset-inline-end: -160px; top: -130px; border: 36px solid color-mix(in srgb, var(--ayrovi-bg-main) 15%, transparent); }
+.ay-auth__header { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; min-height: 44px; }
+.ay-auth__header .ay-runtime-button--ghost { color: var(--ayrovi-text-primary) !important; }
+.ay-auth__brand { display: flex; align-items: center; justify-self: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: .1em; }
+.ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--ayrovi-bg-main); border-radius: 50%; flex-shrink: 0; }
+.ay-auth__intro { text-align: center; margin-block-start: var(--ayrovi-space-4); }
+.ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-size: var(--ayrovi-auth-title-size); line-height: 1.2; font-weight: 700; letter-spacing: -0.025em; }
+.ay-auth__intro p { font-size: var(--text-small); line-height: 1.5; margin-block-start: var(--ayrovi-space-2); }
+.ay-auth__card { position: relative; margin-block-start: -28px; border-radius: var(--ayrovi-radius-sheet) var(--ayrovi-radius-sheet) 0 0; padding: var(--ayrovi-space-8) max(var(--ayrovi-space-6), env(safe-area-inset-right)) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)) max(var(--ayrovi-space-6), env(safe-area-inset-left)); background: var(--ayrovi-bg-main); }
+.ay-auth__social { display: flex; flex-wrap: wrap; gap: var(--ayrovi-space-2); }
+.ay-auth__provider { flex: 1 1 100px; padding-inline: var(--ayrovi-space-3); min-height: var(--ayrovi-control-height); font-size: var(--text-small); box-shadow: none; }
+.ay-auth__provider svg { flex-shrink: 0; }
+.ay-auth__divider { display: flex; align-items: center; gap: var(--ayrovi-space-3); margin-block: var(--ayrovi-space-5); color: var(--ayrovi-text-secondary); font-size: var(--text-caption); }
+.ay-auth__divider::before, .ay-auth__divider::after { content: ''; flex: 1; height: 1px; background: var(--ayrovi-border-soft); }
+.ay-auth__fields { display: flex; flex-direction: column; gap: var(--ayrovi-space-4); border: 0; padding: 0; margin: 0; min-width: 0; }
+.ay-auth__fields label { color: var(--ayrovi-text-primary); font-size: var(--text-small); font-weight: 600; }
+.ay-auth__fields input { padding-inline: var(--ayrovi-space-5); min-height: var(--ayrovi-control-height); font-size: var(--text-body); font-weight: 400; background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
+.ay-auth__fields input::placeholder { color: var(--ayrovi-text-secondary); opacity: 1; }
+/* Do not disable password managers. Only normalize the browser's autofill paint. */
+.ay-auth input:autofill {
+  background-color: var(--ayrovi-bg-surface);
+  color: var(--ayrovi-text-primary);
+  box-shadow: 0 0 0 1000px var(--ayrovi-bg-surface) inset;
+}
+.ay-auth input:-webkit-autofill {
+  -webkit-text-fill-color: var(--ayrovi-text-primary);
+  -webkit-box-shadow: 0 0 0 1000px var(--ayrovi-bg-surface) inset;
+  caret-color: var(--ayrovi-text-primary);
+}
+.ay-auth input:focus-visible { outline: 2px solid var(--ayrovi-focus-ring); outline-offset: 2px; }
+.ay-auth__password { position: relative; }
+.ay-auth__fields .ay-auth__password input { padding-inline: 44px 48px; }
+.ay-auth__lock { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ayrovi-text-secondary); }
+.ay-auth__password-toggle { position: absolute; inset-inline-end: 2px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: var(--ayrovi-touch-target); height: var(--ayrovi-touch-target); color: var(--ayrovi-text-secondary); border-radius: var(--ayrovi-radius-control); }
+.ay-auth__password-toggle:hover { color: var(--ayrovi-text-primary); }
+.ay-auth__recovery-link { align-self: center; min-height: var(--ayrovi-touch-target); margin-block: -8px; font-size: var(--text-small); text-decoration: underline; text-underline-offset: 3px; }
+.ay-auth__hint { margin-block-start: var(--ayrovi-space-2); font-size: var(--text-caption); color: var(--ayrovi-text-secondary); }
+.ay-auth__submit { width: 100%; font-size: var(--text-body); box-shadow: var(--ayrovi-shadow-xs); }
+.ay-auth__phone { width: 100%; margin-block-start: var(--ayrovi-space-4); box-shadow: none; }
+.ay-auth__message { padding: var(--ayrovi-space-4); border: 1px solid var(--ayrovi-border-soft); border-radius: var(--ayrovi-radius-card); background: var(--ayrovi-bg-surface); font-size: var(--text-small); line-height: 1.6; overflow-wrap: anywhere; }
+.ay-auth__message p { margin-block: var(--ayrovi-space-2); }
+.ay-auth__message a { display: inline-flex; align-items: center; min-height: var(--ayrovi-touch-target); font-weight: 600; text-decoration: underline; }
+.ay-auth__message--error { border-color: var(--ayrovi-danger); color: var(--ayrovi-danger); background: var(--ayrovi-danger-soft); }
+.ay-auth__message + form { margin-block-start: var(--ayrovi-space-4); }
+.ay-auth__consent { font-size: var(--text-caption); line-height: 1.65; text-align: center; color: var(--ayrovi-text-secondary); margin-block-start: var(--ayrovi-space-4); }
+.ay-auth__consent a { text-decoration: underline; text-underline-offset: 2px; }
+.ay-auth__switch { display: flex; flex-wrap: wrap; gap: 0 var(--ayrovi-space-2); align-items: center; justify-content: center; margin-block-start: var(--ayrovi-space-4); font-size: var(--text-small); }
+.ay-auth__switch button { min-height: var(--ayrovi-touch-target); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
+.ay-auth__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--ayrovi-space-5); border-top: 1px solid var(--ayrovi-border-soft); margin-block-start: var(--ayrovi-space-3); padding-block-start: var(--ayrovi-space-2); color: var(--ayrovi-text-secondary); font-size: var(--text-caption); }
+.ay-auth__footer a { display: inline-flex; align-items: center; min-height: var(--ayrovi-touch-target); }
+.ay-auth__footer a:hover { text-decoration: underline; color: var(--ayrovi-text-primary); }
+.ay-auth__config { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--ayrovi-space-3); font-size: var(--text-small); }
+.ay-auth button, .ay-auth a, .ay-auth input { transition-duration: var(--ayrovi-motion-fast); }
+.ay-auth button:disabled { cursor: wait; opacity: 0.6; }
+@media (min-width: 600px) {
+  .ay-auth { background: var(--ayrovi-bg-surface); padding-block: var(--ayrovi-space-8); }
+  .ay-auth__container { border-radius: var(--ayrovi-radius-sheet); overflow: hidden; background: var(--ayrovi-bg-main); box-shadow: var(--ayrovi-shadow-card); }
+}
+@media (max-width: 359px) { .ay-auth__card { padding-inline: var(--ayrovi-space-4); } }
+@media (prefers-reduced-motion: reduce) {
+  .ay-auth *, .ay-auth *::before, .ay-auth *::after { transition: none !important; animation: none !important; }
+}
+
+.ay-auth__recovery { display: flex; flex-direction: column; gap: var(--ayrovi-space-5); }
+.ay-auth__explanation { color: var(--ayrovi-text-secondary); font-size: var(--text-small); line-height: 1.7; }
+.ay-auth__recovery .ay-auth__message + form { margin-block-start: 0; }
