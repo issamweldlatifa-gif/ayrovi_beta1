@@ -7,6 +7,8 @@
 @import "./styles/ayrovix-theme.css";
 @import "./styles/checkout-flow.css";
 @import "./styles/customer-auth.css";
+@import "./design/editorial/tokens.generated.css";
+@import "./design/editorial/primitives.css";
 
 @layer base {
   html,

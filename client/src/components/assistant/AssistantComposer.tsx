@@ -2,6 +2,7 @@ import React from 'react';
 import { ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X } from '../QatafoIcons';
 import { AssistantAttachment } from './types';
 import { useLocale } from '../../i18n/LocaleContext';
+import { recordingTime, shouldSubmitComposer } from './composerPolicy';
 
 interface AssistantComposerProps {
   value: string;
@@ -31,13 +32,13 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   isRecording,
   isTranscribing,
   voiceMode = false,
-  recordSeconds: _recordSeconds,
+  recordSeconds,
   onChange,
   onOpenAttachments,
   onRemoveAttachment,
   onStartRecording,
   onFinishRecording,
-  onCancelRecording: _onCancelRecording,
+  onCancelRecording,
   onToggleVoiceMode,
   onSend,
   onStop,
@@ -49,10 +50,13 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
     : 'bg-surface text-muted hover:bg-line hover:text-ink';
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (shouldSubmitComposer({
+      key: event.key, shiftKey: event.shiftKey, ctrlKey: event.ctrlKey,
+      altKey: event.altKey, metaKey: event.metaKey,
+      isComposing: event.nativeEvent.isComposing, keyCode: event.nativeEvent.keyCode,
+    }, { canSend, isGenerating, isRecording, isTranscribing })) {
       event.preventDefault();
-      if (isGenerating) onStop();
-      else if (canSend) onSend();
+      onSend();
     }
   };
 
@@ -71,7 +75,19 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           </div>
         )}
 
-        {isTranscribing ? (
+        {isRecording ? (
+          <div className="mb-3 flex min-h-11 items-center justify-between gap-3">
+            <span className={`text-sm ${isDark ? 'text-white' : 'text-ink'}`}>
+              <span role="status">{tr('Enregistrement en cours', 'جارٍ التسجيل')}</span>{' '}
+              <bdi className="tabular-nums" dir="ltr">{recordingTime(recordSeconds)}</bdi>
+            </span>
+            <button type="button" onClick={onCancelRecording}
+              className={`flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-sm ${isDark ? 'text-white' : 'text-ink'}`}
+              aria-label={tr('Annuler l’enregistrement', 'إلغاء التسجيل')}>
+              <X size={20} />{tr('Annuler', 'إلغاء')}
+            </button>
+          </div>
+        ) : isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
             <span className="h-6 w-6 shrink-0 animate-spin rounded-full border-2 border-ink/25 border-t-[#111111]" />
             <span className={`text-sm ${isDark ? 'text-white/80' : 'text-muted'}`}>{tr('Transcription en cours…', 'جارٍ تحويل الصوت إلى نص…')}</span>
@@ -93,7 +109,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           <button
             type="button"
             onClick={onOpenAttachments}
-            disabled={isGenerating || isTranscribing}
+            disabled={isGenerating || isTranscribing || isRecording}
             className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`}
             aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}
           >
@@ -123,7 +139,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               <button
                 type="button"
                 onClick={isGenerating ? onStop : onSend}
-                disabled={isTranscribing}
+                disabled={isTranscribing || isRecording}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30"
                 aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
               >

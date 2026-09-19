@@ -1,0 +1,532 @@
+{
+  "scope": "Standalone design reference only; does not certify migrated application screens or live provider integrations",
+  "checks": [
+    {
+      "label": "all four self-hosted families load from embedded WOFF2",
+      "pass": true
+    },
+    {
+      "label": "complete 92-glyph reference",
+      "pass": true
+    },
+    {
+      "label": "ar/320: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320,
+        "body": 320,
+        "targets": [
+          {
+            "h": 48,
+            "w": 82
+          },
+          {
+            "h": 48,
+            "w": 103
+          },
+          {
+            "h": 48.390625,
+            "w": 260
+          },
+          {
+            "h": 48,
+            "w": 126
+          },
+          {
+            "h": 48,
+            "w": 74
+          },
+          {
+            "h": 48.390625,
+            "w": 238
+          },
+          {
+            "h": 48.390625,
+            "w": 238
+          }
+        ]
+      }
+    },
+    {
+      "label": "ar/320: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "ar/320: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY Amiri\", serif"
+    },
+    {
+      "label": "ar/360: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 360,
+        "scroll": 360,
+        "body": 360,
+        "targets": [
+          {
+            "h": 48,
+            "w": 82
+          },
+          {
+            "h": 48,
+            "w": 103
+          },
+          {
+            "h": 48.390625,
+            "w": 260
+          },
+          {
+            "h": 48,
+            "w": 126
+          },
+          {
+            "h": 48,
+            "w": 74
+          },
+          {
+            "h": 48.390625,
+            "w": 278
+          },
+          {
+            "h": 48.390625,
+            "w": 278
+          }
+        ]
+      }
+    },
+    {
+      "label": "ar/360: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "ar/360: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY Amiri\", serif"
+    },
+    {
+      "label": "ar/390: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 390,
+        "body": 390,
+        "targets": [
+          {
+            "h": 48,
+            "w": 82
+          },
+          {
+            "h": 48,
+            "w": 103
+          },
+          {
+            "h": 48.390625,
+            "w": 260
+          },
+          {
+            "h": 48,
+            "w": 126
+          },
+          {
+            "h": 48,
+            "w": 74
+          },
+          {
+            "h": 48.390625,
+            "w": 308
+          },
+          {
+            "h": 48.390625,
+            "w": 308
+          }
+        ]
+      }
+    },
+    {
+      "label": "ar/390: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "ar/390: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY Amiri\", serif"
+    },
+    {
+      "label": "ar/768: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 768,
+        "scroll": 768,
+        "body": 768,
+        "targets": [
+          {
+            "h": 48,
+            "w": 98
+          },
+          {
+            "h": 48,
+            "w": 119
+          },
+          {
+            "h": 48.390625,
+            "w": 260
+          },
+          {
+            "h": 48,
+            "w": 142
+          },
+          {
+            "h": 48,
+            "w": 90
+          },
+          {
+            "h": 69.796875,
+            "w": 298
+          },
+          {
+            "h": 69.796875,
+            "w": 298
+          }
+        ]
+      }
+    },
+    {
+      "label": "ar/768: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "ar/768: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY Amiri\", serif"
+    },
+    {
+      "label": "ar/1360: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 1360,
+        "scroll": 1360,
+        "body": 1360,
+        "targets": [
+          {
+            "h": 48,
+            "w": 98
+          },
+          {
+            "h": 48,
+            "w": 119
+          },
+          {
+            "h": 48.390625,
+            "w": 260
+          },
+          {
+            "h": 48,
+            "w": 142
+          },
+          {
+            "h": 48,
+            "w": 90
+          },
+          {
+            "h": 74.84375,
+            "w": 554
+          },
+          {
+            "h": 74.84375,
+            "w": 554
+          }
+        ]
+      }
+    },
+    {
+      "label": "ar/1360: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY Amiri\", serif"
+    },
+    {
+      "label": "fr/320: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320,
+        "body": 320,
+        "targets": [
+          {
+            "h": 48,
+            "w": 83
+          },
+          {
+            "h": 48,
+            "w": 78
+          },
+          {
+            "h": 48.390625,
+            "w": 217
+          },
+          {
+            "h": 48,
+            "w": 139
+          },
+          {
+            "h": 48,
+            "w": 111
+          },
+          {
+            "h": 48.390625,
+            "w": 238
+          },
+          {
+            "h": 48.390625,
+            "w": 238
+          }
+        ]
+      }
+    },
+    {
+      "label": "fr/320: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "fr/320: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY DM Serif Display\", Georgia, serif"
+    },
+    {
+      "label": "fr/360: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 360,
+        "scroll": 360,
+        "body": 360,
+        "targets": [
+          {
+            "h": 48,
+            "w": 83
+          },
+          {
+            "h": 48,
+            "w": 78
+          },
+          {
+            "h": 48.390625,
+            "w": 217
+          },
+          {
+            "h": 48,
+            "w": 139
+          },
+          {
+            "h": 48,
+            "w": 111
+          },
+          {
+            "h": 48.390625,
+            "w": 278
+          },
+          {
+            "h": 48.390625,
+            "w": 278
+          }
+        ]
+      }
+    },
+    {
+      "label": "fr/360: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "fr/360: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY DM Serif Display\", Georgia, serif"
+    },
+    {
+      "label": "fr/390: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 390,
+        "body": 390,
+        "targets": [
+          {
+            "h": 48,
+            "w": 83
+          },
+          {
+            "h": 48,
+            "w": 78
+          },
+          {
+            "h": 48.390625,
+            "w": 217
+          },
+          {
+            "h": 48,
+            "w": 139
+          },
+          {
+            "h": 48,
+            "w": 111
+          },
+          {
+            "h": 48.390625,
+            "w": 308
+          },
+          {
+            "h": 48.390625,
+            "w": 308
+          }
+        ]
+      }
+    },
+    {
+      "label": "fr/390: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "fr/390: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY DM Serif Display\", Georgia, serif"
+    },
+    {
+      "label": "fr/768: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 768,
+        "scroll": 768,
+        "body": 768,
+        "targets": [
+          {
+            "h": 48,
+            "w": 99
+          },
+          {
+            "h": 48,
+            "w": 94
+          },
+          {
+            "h": 48.390625,
+            "w": 217
+          },
+          {
+            "h": 48,
+            "w": 155
+          },
+          {
+            "h": 48,
+            "w": 127
+          },
+          {
+            "h": 79.3125,
+            "w": 298
+          },
+          {
+            "h": 79.3125,
+            "w": 298
+          }
+        ]
+      }
+    },
+    {
+      "label": "fr/768: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "fr/768: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY DM Serif Display\", Georgia, serif"
+    },
+    {
+      "label": "fr/1360: no horizontal page overflow",
+      "pass": true,
+      "details": {
+        "width": 1360,
+        "scroll": 1360,
+        "body": 1360,
+        "targets": [
+          {
+            "h": 48,
+            "w": 99
+          },
+          {
+            "h": 48,
+            "w": 94
+          },
+          {
+            "h": 48.390625,
+            "w": 217
+          },
+          {
+            "h": 48,
+            "w": 155
+          },
+          {
+            "h": 48,
+            "w": 127
+          },
+          {
+            "h": 76.4375,
+            "w": 554
+          },
+          {
+            "h": 76.4375,
+            "w": 554
+          }
+        ]
+      }
+    },
+    {
+      "label": "fr/1360: controls have at least 44px targets",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: language-specific editorial face",
+      "pass": true,
+      "details": "\"AY DM Serif Display\", Georgia, serif"
+    },
+    {
+      "label": "language control switches the document to Arabic RTL",
+      "pass": true
+    },
+    {
+      "label": "icon search works",
+      "pass": true
+    },
+    {
+      "label": "empty search is announced",
+      "pass": true
+    },
+    {
+      "label": "sample action reports its real demonstration state",
+      "pass": true
+    },
+    {
+      "label": "keyboard focus has an outline",
+      "pass": true
+    },
+    {
+      "label": "dark mode uses its own semantic tokens",
+      "pass": true
+    },
+    {
+      "label": "reduced motion removes button transitions",
+      "pass": true
+    },
+    {
+      "label": "no external requests",
+      "pass": true,
+      "details": []
+    },
+    {
+      "label": "no browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

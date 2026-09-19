@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import { cleanAssistantText } from './composerPolicy';
 import { ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
@@ -42,12 +43,6 @@ const secondaryActions = [
   { text: ['Découvrir AYROVI', 'اكتشف AYROVI'], prompt: ['Présente-moi les services AYROVI.', 'عرّفني بخدمات AYROVI.'] },
   { text: ['Contacter le support', 'التواصل مع الدعم'], prompt: ['J’ai besoin d’aide du support AYROVI.', 'أحتاج إلى مساعدة دعم AYROVI.'] },
 ] as const;
-
-const cleanAssistantText = (text: string) => text
-  .replaceAll('[[OPEN_LENS]]', '')
-  .replace(/\p{Extended_Pictographic}/gu, '')
-  .replace(/\s{2,}/g, ' ')
-  .trim();
 
 const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   const images = [...new Set([product.image, ...(product.images || [])].filter(Boolean))] as string[];

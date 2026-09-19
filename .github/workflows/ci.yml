@@ -21,11 +21,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check generated identity and source inventory
+        run: npm run design:check
+
       - name: Typecheck
         run: npm run typecheck
 
       - name: Test
         run: npx vitest run
+
+      - name: Install reference browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify editorial reference
+        run: npm run design:browser
+
+      - name: Upload editorial reference evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-reference-evidence
+          path: docs/editorial/verification/
 
       - name: Build
         run: npm run build
