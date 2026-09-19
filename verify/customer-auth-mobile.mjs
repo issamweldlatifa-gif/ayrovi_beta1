@@ -42,7 +42,7 @@ for (const engine of [chromium, firefox]) {
     await page.locator('.ay-auth__switch button').click();
     await page.locator('#auth-name').waitFor();
     await layout(page);
-    check(await page.locator('#auth-password').getAttribute('autocomplete') === 'new-password', 'register autocomplete');
+    check(await page.locator('#auth-password').getAttribute('autocomplete') === 'off', 'registration requests manual credentials');
     if (width === 390 && name === 'chromium') await page.screenshot({path: `${output}/register-fr.png`});
     check(errors.length === 0, `no runtime errors ${errors}`);
     await context.close();
@@ -52,6 +52,7 @@ for (const engine of [chromium, firefox]) {
     check(await page.getByRole('dialog').getAttribute('dir') === 'rtl', 'RTL dialog');
     await layout(page);
     if (name === 'chromium') await page.screenshot({path: `${output}/login-ar.png`});
+    await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Test-only-Password!');
     await page.locator('.ay-auth__password-toggle').click();
     check(await page.locator('#auth-password').getAttribute('type') === 'text', 'password reveal');
@@ -72,7 +73,9 @@ for (const engine of [chromium, firefox]) {
       check(route.request().postDataJSON().email === 'ui-test@example.com', 'entered email submitted');
       await route.fulfill({status: 401, json: { success: false, error: 'Identifiants incorrects.' }});
     });
+    await page.locator('#auth-email').click();
     await page.locator('#auth-email').fill('ui-test@example.com');
+    await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Test-only-Password!');
     await page.locator('.ay-auth__submit').click();
     await page.locator('#auth-error').waitFor();
@@ -108,8 +111,11 @@ for (const engine of [chromium, firefox]) {
   {
     const {page, context} = await open(browser, {height: 480});
     await page.locator('.ay-auth__switch button').click();
+    await page.locator('#auth-name').click();
     await page.locator('#auth-name').fill('Client Test');
+    await page.locator('#auth-email').click();
     await page.locator('#auth-email').fill('ui-test@example.com');
+    await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Test-only-Password!');
     await page.locator('#auth-password').press('Tab');
     check(await page.locator('.ay-auth__password-toggle').evaluate(el => el === document.activeElement), 'password toggle reachable by keyboard');
@@ -129,6 +135,43 @@ for (const engine of [chromium, firefox]) {
     check(await page.locator('.ay-auth__submit').isEnabled(), 'can retry after error');
     await page.locator('.ay-auth__switch button').click();
     check(await page.locator('#auth-password').inputValue() === '', 'switch from failed registration clears secret');
+    await context.close();
+  }
+  {
+    const {page, context} = await open(browser);
+    check(await page.locator('#auth-email').getAttribute('autocomplete') === 'off', 'email autofill disabled');
+    check(await page.locator('#auth-password').getAttribute('autocomplete') === 'off', 'password autofill disabled');
+    check(await page.locator('#auth-email').evaluate(el => el.readOnly), 'email protected before interaction');
+    check(await page.locator('#auth-password').evaluate(el => el.readOnly), 'password protected before interaction');
+    check(await page.locator('.ay-auth__submit').isDisabled(), 'empty protected form cannot submit');
+    // Simulate a saved credential being injected before any visitor interaction.
+    await page.locator('#auth-email').evaluate(el => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, 'saved-person@example.com');
+      el.dispatchEvent(new Event('input', {bubbles:true}));
+    });
+    check(await page.locator('#auth-email').inputValue() === '', 'unsolicited email injection discarded');
+    await page.locator('#auth-email').focus();
+    check(await page.locator('#auth-email').isEditable(), 'keyboard focus enables normal entry');
+    await page.locator('#auth-email').fill('visitor@example.com');
+    await page.locator('#auth-password').focus();
+    await page.locator('#auth-password').fill('Visitor-only-password!');
+    check(await page.locator('.ay-auth__submit').isEnabled(), 'manual entry permits login');
+    await page.locator('.ay-auth__password-toggle').click();
+    check(await page.locator('#auth-email').inputValue() === 'visitor@example.com', 'unrelated render preserves manual typing');
+    await page.locator('.ay-auth__switch button').click();
+    check(await page.locator('#auth-email').inputValue() === '', 'switch to registration clears email');
+    check(await page.locator('#auth-name').inputValue() === '', 'registration starts with no name');
+    await page.locator('#auth-name').focus();
+    await page.locator('#auth-name').fill('Another Visitor');
+    await page.locator('#auth-email').focus();
+    await page.locator('#auth-email').fill('another-visitor@example.com');
+    await page.locator('.ay-auth__switch button').click();
+    check(await page.locator('#auth-email').inputValue() === '', 'switch back to login clears email');
+    await page.locator('#auth-email').focus();
+    await page.locator('#auth-email').fill('visitor@example.com');
+    await page.evaluate(() => window.dispatchEvent(new PageTransitionEvent('pageshow', {persisted:true})));
+    check(await page.locator('#auth-email').inputValue() === '', 'back-forward restoration clears identity');
+    check(await page.locator('#auth-email').evaluate(el => el.readOnly), 'restoration re-arms manual-entry guard');
     await context.close();
   }
   await browser.close();

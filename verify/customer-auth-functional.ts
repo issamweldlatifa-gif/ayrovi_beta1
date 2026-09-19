@@ -44,8 +44,11 @@ async function run() {
     await page.locator('#auth-email').waitFor();
     check(await page.locator('.ay-auth__provider').count()===0, 'unconfigured social providers hidden');
     await page.locator('.ay-auth__switch button').click();
+    await page.locator('#auth-name').click();
     await page.locator('#auth-name').fill('Client Test');
+    await page.locator('#auth-email').click();
     await page.locator('#auth-email').fill('functional@example.com');
+    await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Original-password-1!');
     await page.locator('.ay-auth__submit').click();
     await page.getByRole('heading',{name:'Aperçu',exact:true}).waitFor();
@@ -89,11 +92,14 @@ async function run() {
     await page.screenshot({path:`${output}/success-fr.png`});
     await page.getByRole('button',{name:'Se connecter',exact:true}).click();
     await page.locator('#auth-email').waitFor();
+    await page.locator('#auth-email').click();
     await page.locator('#auth-email').fill('functional@example.com');
+    await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Original-password-1!');
     await page.locator('.ay-auth__submit').click();
     await page.locator('#auth-error').waitFor();
     check((await page.locator('#auth-error').innerText()).includes('incorrect'),'old password rejected');
+    await page.locator('#auth-password').click();
     await page.locator('#auth-password').fill('Updated-password-2!');
     await page.locator('.ay-auth__submit').click();
     await page.getByRole('heading',{name:'Aperçu',exact:true}).waitFor();

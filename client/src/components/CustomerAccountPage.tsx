@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FcGoogle } from 'react-icons/fc';
 import { FaApple, FaFacebookF } from 'react-icons/fa6';
 import {
@@ -38,7 +38,8 @@ import { useLocale } from '../i18n/LocaleContext';
 import { CustomerPasswordRecovery } from './CustomerPasswordRecovery';
 import { AppHeader } from '../design/AppHeader';
 import { Button, buttonClasses } from '../design/Button';
-import { Field as FormField, Input } from '../design/ui/Field';
+import { Field as FormField } from '../design/ui/Field';
+import { ManualAuthInput } from '../design/ui/ManualAuthInput';
 
 /* ===== آفاتار حديث: صورة مرفوعة > آفاتار مولّد حسب الجنس ===== */
 type AvatarGender = 'female' | 'male';
@@ -208,6 +209,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
   const [emailAddress, setEmailAddress] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [emailName, setEmailName] = useState('');
+  const [authFormEpoch, setAuthFormEpoch] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [configError, setConfigError] = useState(false);
@@ -275,15 +277,23 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
     return () => { cancelled = true; };
   }, [isOpen, initialMessage, initialSection, configRetry]);
 
-  // Credentials are transient: never hydrate from a profile, storage or demo data.
-  // Browser-managed autofill remains available to the device owner.
-  useEffect(() => {
-    setEmailAddress('');
-    setEmailPassword('');
-    setEmailName('');
-    setShowPassword(false);
-    setRecoveryOpen(false);
-    setEmailMode('login');
+  // Never restore a previous identity. A fresh form also resets browser DOM state.
+  useLayoutEffect(() => {
+    const clearCredentials = () => {
+      setEmailAddress('');
+      setEmailPassword('');
+      setEmailName('');
+      setShowPassword(false);
+      setRecoveryOpen(false);
+      setEmailMode('login');
+      setAuthFormEpoch(epoch => epoch + 1);
+    };
+    clearCredentials();
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) clearCredentials();
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
   }, [isOpen, session?.account.id]);
 
   useEffect(() => {
@@ -708,26 +718,26 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               <section id="auth-email-panel" aria-labelledby="auth-title">
                 {error && <div id="auth-error" role="alert" className="ay-auth__message ay-auth__message--error">{error}</div>}
                 {notice && <div role="status" className="ay-auth__message">{notice}</div>}
-                <form onSubmit={submitEmailAuth} aria-busy={authBusy} aria-describedby={error ? 'auth-error' : undefined}>
+                <form key={`${emailMode}:${authFormEpoch}`} autoComplete="off" onSubmit={submitEmailAuth} aria-busy={authBusy} aria-describedby={error ? 'auth-error' : undefined}>
                   <fieldset disabled={authBusy} className="ay-auth__fields">
                     <legend className="sr-only">{emailMode === 'login' ? tr('Connexion par e-mail', 'الدخول بالبريد الإلكتروني') : tr('Créer un compte par e-mail', 'إنشاء حساب بالبريد الإلكتروني')}</legend>
                     {emailMode === 'register' && <FormField label={tr('Nom et prénom', 'الاسم واللقب')} htmlFor="auth-name">
-                      <Input id="auth-name" name="name" autoComplete="name" maxLength={100} value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Votre nom complet', 'اسمك الكامل')} required />
+                      <ManualAuthInput id="auth-name" name="name" maxLength={100} value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Votre nom complet', 'اسمك الكامل')} required />
                     </FormField>}
                     <FormField label={tr('Adresse e-mail', 'البريد الإلكتروني')} htmlFor="auth-email">
-                      <Input id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} autoComplete={emailMode === 'login' ? 'username' : 'email'} maxLength={180} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('Votre adresse e-mail', 'بريدك الإلكتروني')} required />
+                      <ManualAuthInput id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('Votre adresse e-mail', 'بريدك الإلكتروني')} required />
                     </FormField>
                     <FormField label={tr('Mot de passe', 'كلمة المرور')} htmlFor="auth-password">
                       <div className="ay-auth__password">
                         <Lock className="ay-auth__lock h-5 w-5" aria-hidden />
-                        <Input id="auth-password" name="password" type={showPassword ? 'text' : 'password'} autoComplete={emailMode === 'login' ? 'current-password' : 'new-password'} minLength={8} maxLength={100} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} placeholder={tr('Votre mot de passe', 'كلمة المرور الخاصة بك')} aria-describedby={emailMode === 'register' ? 'auth-password-hint' : undefined} required />
+                        <ManualAuthInput id="auth-password" name="password" type={showPassword ? 'text' : 'password'} minLength={8} maxLength={100} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} placeholder={tr('Votre mot de passe', 'كلمة المرور الخاصة بك')} aria-describedby={emailMode === 'register' ? 'auth-password-hint' : undefined} required />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} aria-controls="auth-password" aria-pressed={showPassword} aria-label={showPassword ? tr('Masquer le mot de passe', 'إخفاء كلمة المرور') : tr('Afficher le mot de passe', 'إظهار كلمة المرور')} className="ay-auth__password-toggle">
                           {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
                         </button>
                       </div>
                       {emailMode === 'register' && <p id="auth-password-hint" className="ay-auth__hint">{tr('Au moins 8 caractères.', '8 أحرف على الأقل.')}</p>}
                     </FormField>
-                    <Button type="submit" disabled={authBusy} className="ay-auth__submit">
+                    <Button type="submit" disabled={authBusy || !emailAddress.trim() || !emailPassword || (emailMode === 'register' && !emailName.trim())} className="ay-auth__submit">
                       {authBusy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
                       {authBusy ? tr('Veuillez patienter…', 'يرجى الانتظار…') : emailMode === 'login' ? tr('Se connecter', 'تسجيل الدخول') : tr('Créer mon compte', 'إنشاء حسابي')}
                     </Button>
@@ -750,6 +760,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               <span>{emailMode === 'login' ? tr('Nouveau chez AYROVI ?', 'جديد في AYROVI؟') : tr('Déjà un compte ?', 'لديك حساب؟')}</span>
               <button type="button" disabled={authBusy} aria-controls="auth-email-panel" onClick={() => {
                 setEmailMode(emailMode === 'login' ? 'register' : 'login');
+                setEmailAddress(''); setEmailName('');
                 setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');
                 document.getElementById('auth-title')?.focus();
               }}>{emailMode === 'login' ? tr('Créer un compte', 'إنشاء حساب') : tr('Se connecter', 'تسجيل الدخول')}</button>

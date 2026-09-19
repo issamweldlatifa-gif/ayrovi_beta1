@@ -268,10 +268,16 @@ modification des règles de la vitrine et ne justifie pas de recolorer les autre
 - Composants canoniques : `design/Button.tsx`, `design/ui/Field.tsx` (`Field`, `Input`).
 - Labels reliés aux IDs ; contrôle afficher/masquer nommé selon son état ; erreurs
   `role=alert`, chargement `role=status`, soumission bloquée pendant le traitement.
-- Réduction du mouvement respectée. Ne pas empêcher le gestionnaire de mots de passe.
+- Réduction du mouvement respectée.
+- Politique demandée pour connexion/inscription : saisie manuelle par défaut. Formulaire
+  et champs `autocomplete=off`, champs protégés jusqu’au focus (clavier ou toucher),
+  sans faux champs cachés ni blacklist d’adresse. La saisie et le collage restent possibles.
+  Les extensions peuvent ignorer les indications du navigateur ; ne pas promettre un
+  blocage universel des gestionnaires de mots de passe.
 - Les identifiants ne viennent jamais de données démo, du profil précédent ou du
   stockage local. Nettoyage à la fermeture et au changement de session ; mot de passe
-  masqué et vidé au changement de mode.
+  masqué et vidé au changement de mode, ainsi que le nom et l’e-mail. La restauration
+  depuis le cache de navigation (`pageshow.persisted`) recrée un formulaire vierge.
 - Les boutons OAuth/SMS n’existent que si l’API auth les annonce disponibles.
 - Aucune fausse promesse fonctionnelle : « Mot de passe oublié ? » montre actuellement
   un vrai formulaire de récupération lorsque le mailer est configuré. Sans configuration,

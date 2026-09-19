@@ -90,3 +90,6 @@
 .ay-auth__recovery { display: flex; flex-direction: column; gap: var(--ayrovi-space-5); }
 .ay-auth__explanation { color: var(--ayrovi-text-secondary); font-size: var(--text-small); line-height: 1.7; }
 .ay-auth__recovery .ay-auth__message + form { margin-block-start: 0; }
+
+/* Read-only-until-focus prevents eager saved-credential fill, not manual editing. */
+.ay-auth__fields input[readonly] { cursor: text; opacity: 1; }
