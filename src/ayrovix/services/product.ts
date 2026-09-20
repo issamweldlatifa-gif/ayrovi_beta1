@@ -1,3 +1,4 @@
+import { isSelectableVariant } from '../../../shared/variantPolicy';
 import type { QatafoDatabase } from '../../db/database';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
@@ -32,7 +33,7 @@ export function sanitizeProductUrl(raw: unknown): string | null {
 
 function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixProduct {
   const tnd = estimateWithDb(db, scraped.sourcePrice, scraped.sourceCurrency);
-  const variantOptions = (scraped.variants?.details || []).filter((detail) => detail.available).map((detail) => {
+  const variantOptions = (scraped.variants?.details || []).filter(isSelectableVariant).map((detail) => {
     const variantTnd = estimateWithDb(db, detail.price || null, scraped.sourceCurrency);
     return {
       id: detail.id || null,

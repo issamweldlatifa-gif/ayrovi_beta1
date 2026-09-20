@@ -73,6 +73,7 @@ export interface AyrovixVariantOption {
   label: string;
   size: string | null;
   color: string | null;
+  /** Eligible for a variant-specific choice; not a live stock guarantee. */
   available: boolean;
   price: number | null;
   currency: string | null;

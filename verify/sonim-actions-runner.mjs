@@ -1,13 +1,15 @@
 import express from 'express';
 import { build } from 'esbuild';
-import { readFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 mkdirSync('.cache', { recursive: true });
-await build({ entryPoints: ['verify/sonim-actions-fixture.tsx'], outfile: '.cache/sonim-actions.js', bundle: true, format: 'iife', platform: 'browser', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } });
+rmSync('.cache/sonim-actions.css', {force:true});
+await build({ entryPoints: [process.argv[3] || 'verify/sonim-actions-fixture.tsx'], outfile: '.cache/sonim-actions.js', bundle: true, format: 'iife', platform: 'browser', jsx: 'automatic', define: { 'process.env.NODE_ENV': '"production"' } });
+const componentStyles = existsSync('.cache/sonim-actions.css') ? '<link rel="stylesheet" href="/__verify/sonim.css">' : '';
 const styles = [...readFileSync('public/index.html', 'utf8').matchAll(/href="([^\"]+\.css)"/g)].map(m => `<link rel="stylesheet" href="${m[1]}">`).join('');
 const app = express();
-app.get('/__verify/sonim', (_req, res) => res.type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${styles}<link rel="stylesheet" href="/__verify/sonim.css"></head><body><div id="root"></div><script src="/__verify/sonim.js"></script></body></html>`));
+app.get('/__verify/sonim', (_req, res) => res.type('html').send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">${styles}${componentStyles}</head><body><div id="root"></div><script src="/__verify/sonim.js"></script></body></html>`));
 app.get('/__verify/sonim.js', (_req, res) => res.sendFile(path.resolve('.cache/sonim-actions.js')));
 // esbuild emits imported component styles separately from the fixture JS.
 // Production loads these as lazy-chunk CSS; the fixture must load them too.

@@ -28,7 +28,8 @@
     "verify:sonim-history": "node verify/sonim-actions-runner.mjs verify/sonim-history.mjs",
     "verify:sonim-media": "node verify/sonim-actions-runner.mjs verify/sonim-media.mjs",
     "verify:sonim-playback": "node verify/sonim-actions-runner.mjs verify/sonim-playback.mjs",
-    "verify:sonim-handsfree": "node verify/sonim-actions-runner.mjs verify/sonim-handsfree.mjs"
+    "verify:sonim-handsfree": "node verify/sonim-actions-runner.mjs verify/sonim-handsfree.mjs",
+    "verify:variant-availability": "node verify/sonim-actions-runner.mjs verify/variant-availability.mjs verify/variant-availability-fixture.tsx"
   },
   "keywords": [
     "ayrovi",

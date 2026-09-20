@@ -11451,9 +11451,10 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "39e5e3e75544c6faf23fbcfb143d3360abf742c26a742008dd8d09d62b3e53f3",
-      "lines": 319,
+      "sha256": "253193d0110745208781885f05c6101677502302b3fc844b714f0999b1154109",
+      "lines": 321,
       "imports": [
+        "../../../../shared/variantPolicy",
         "./MerchantRating",
         "../../components/QatafoIcons",
         "react",
@@ -11468,7 +11469,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 150,
+          "line": 151,
           "className": "{`ayrovix-thumbnail shrink-0 rounded-control border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}",
           "type": "\"button\"",
           "role": null,
@@ -11478,7 +11479,7 @@
         },
         {
           "tag": "a",
-          "line": 178,
+          "line": 179,
           "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
@@ -11488,7 +11489,7 @@
         },
         {
           "tag": "input",
-          "line": 224,
+          "line": 226,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
           "type": "\"url\"",
           "role": null,
@@ -11498,8 +11499,8 @@
         },
         {
           "tag": "button",
-          "line": 245,
-          "className": "\"inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30\"",
+          "line": 247,
+          "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Diminuer la quantité', 'تقليل الكمية')}",
@@ -11508,7 +11509,7 @@
         },
         {
           "tag": "input",
-          "line": 246,
+          "line": 248,
           "className": "\"h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none\"",
           "type": "\"number\"",
           "role": null,
@@ -11518,8 +11519,8 @@
         },
         {
           "tag": "button",
-          "line": 247,
-          "className": "\"inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30\"",
+          "line": 249,
+          "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Augmenter la quantité', 'زيادة الكمية')}",
@@ -11528,7 +11529,7 @@
         },
         {
           "tag": "summary",
-          "line": 252,
+          "line": 254,
           "className": "\"cursor-pointer list-none break-words text-xs font-extrabold text-ink\"",
           "type": null,
           "role": null,
@@ -11538,7 +11539,7 @@
         },
         {
           "tag": "input",
-          "line": 256,
+          "line": 258,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -11548,7 +11549,7 @@
         },
         {
           "tag": "select",
-          "line": 261,
+          "line": 263,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -11558,7 +11559,7 @@
         },
         {
           "tag": "input",
-          "line": 268,
+          "line": 270,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -11568,7 +11569,7 @@
         },
         {
           "tag": "a",
-          "line": 279,
+          "line": 281,
           "className": "\"mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline\"",
           "type": null,
           "role": null,
@@ -11578,7 +11579,7 @@
         },
         {
           "tag": "textarea",
-          "line": 287,
+          "line": 289,
           "className": "\"w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -11588,7 +11589,7 @@
         },
         {
           "tag": "a",
-          "line": 298,
+          "line": 300,
           "className": "\"ay-btn-secondary min-h-[52px] px-4 text-sm break-words\"",
           "type": null,
           "role": null,
@@ -11598,7 +11599,7 @@
         },
         {
           "tag": "button",
-          "line": 302,
+          "line": 304,
           "className": "\"ay-btn-cta min-h-[52px] flex-1 px-5 text-sm break-words\"",
           "type": "\"button\"",
           "role": null,
@@ -11608,7 +11609,7 @@
         },
         {
           "tag": "button",
-          "line": 314,
+          "line": 316,
           "className": "\"ay-btn-secondary mt-2 min-h-11\"",
           "type": "\"button\"",
           "role": null,
@@ -11621,12 +11622,12 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Plus, Minus }",
-          "line": 2
+          "line": 3
         },
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star }",
-          "line": 5
+          "line": 6
         }
       ],
       "inlineSvg": [],
@@ -11639,9 +11640,10 @@
     {
       "file": "client/src/ayrovix/components/ProductVariants.tsx",
       "domain": "lens",
-      "sha256": "e68c39d2e2266d0436589dbbc4fd0f62f72dfbf8e36a4e28ca5c02173977e6a5",
-      "lines": 56,
+      "sha256": "1e1e21e25e3f61713cd80b3d2fc73c0756ad8218d0fb72fbddd91b95c561a6f1",
+      "lines": 57,
       "imports": [
+        "../../../../shared/variantPolicy",
         "react",
         "../types",
         "../../i18n/LocaleContext"
@@ -11652,7 +11654,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 37,
+          "line": 38,
           "className": "{chip(color === c, enabled)}",
           "type": "\"button\"",
           "role": "\"radio\"",
@@ -11662,7 +11664,7 @@
         },
         {
           "tag": "button",
-          "line": 48,
+          "line": 49,
           "className": "{chip(size === s, enabled)}",
           "type": "\"button\"",
           "role": "\"radio\"",
@@ -11862,8 +11864,8 @@
     {
       "file": "client/src/ayrovix/types.ts",
       "domain": "lens",
-      "sha256": "a3b2143be2f1d5160a3a5389c01ae623ed89c3f26255dd6e9fdc361a4f5a34fe",
-      "lines": 198,
+      "sha256": "5b91dc7d778c8a480ba9ec1ca89101abe936a38c9647074a054d2fd29bd07f1c",
+      "lines": 199,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -13464,9 +13466,10 @@
     {
       "file": "client/src/components/assistant/conversationCodec.ts",
       "domain": "sonim",
-      "sha256": "e46d7cbde1b988e8521e4cc837546ec2923d1b3648196cfdc612c032856497cf",
-      "lines": 107,
+      "sha256": "e412e9e9e32082da8371200c865c6c76d2e76e338f635ffc8b422be695c691b3",
+      "lines": 108,
       "imports": [
+        "../../../../shared/variantPolicy",
         "../../ayrovix/types",
         "./types",
         "../../utils/publicLinks"

@@ -1,3 +1,4 @@
+import { allowsMerchantVariantChoice, reportedVariantStock } from '../../shared/variantPolicy';
 import { JSDOM, VirtualConsole } from 'jsdom';
 import type { ProductVariantDetail, ProductVariants, StoreType } from '../types';
 
@@ -192,7 +193,7 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
   const names = optionNames(product);
   const details: ProductVariantDetail[] = [];
   for (const variant of product.variants.slice(0, 300)) {
-    if (!variant || variant.available === false || variant.inStock === false || variant.isInStock === false) continue;
+    if (!allowsMerchantVariantChoice(variant)) continue;
     const values = rawVariantValues(variant);
     if (!values.length) continue;
     let size: string | null = null;
@@ -271,14 +272,27 @@ function absoluteImages(values: unknown[], baseUrl: string): string[] {
   return output;
 }
 
-function availabilityFrom(productLd: any, details: ProductVariantDetail[]): ParsedProductPage['availability'] {
-  if (details.length) return 'in_stock';
-  const offers = Array.isArray(productLd?.offers) ? productLd.offers : [productLd?.offers];
-  const availability = offers.map((offer: any) => String(offer?.availability || '')).join(' ').toLowerCase();
-  if (availability.includes('outofstock')) return 'out_of_stock';
-  if (availability.includes('limitedavailability')) return 'limited';
-  if (availability.includes('instock')) return 'in_stock';
-  return 'unknown';
+function availabilityFrom(productLd: any, embeddedProduct: any): ParsedProductPage['availability'] {
+  // An extracted size/color is a manual choice, not positive stock evidence.
+  const variants = Array.isArray(embeddedProduct?.variants) ? embeddedProduct.variants : [];
+  const flags = variants.slice(0, 300).map(reportedVariantStock);
+  const variantStock = flags.includes(true) ? 'in_stock'
+    : flags.length && variants.length <= 300 && flags.every(flag => flag === false) ? 'out_of_stock' : 'unknown';
+  const offers = Array.isArray(productLd?.offers) ? productLd.offers : productLd?.offers ? [productLd.offers] : [];
+  if (offers.length > 300) return 'unknown'; // No certainty from a partial oversized offer collection.
+  const known = new Set<ParsedProductPage['availability']>();
+  let unreportedOffer = false;
+  for (const offer of offers) {
+    const raw = typeof offer?.availability === 'string' ? offer.availability.trim() : '';
+    const match = /^(?:https?:\/\/schema\.org\/)?(InStock|OutOfStock|LimitedAvailability)$/i.exec(raw);
+    if (!match) unreportedOffer = true;
+    if (match) known.add(match[1].toLowerCase() === 'instock' ? 'in_stock' : match[1].toLowerCase() === 'outofstock' ? 'out_of_stock' : 'limited');
+  }
+  if (known.size > 1 || (known.size > 0 && unreportedOffer)) return 'unknown'; // Mixed offers must not be flattened into a promise.
+  const schemaStock = [...known][0];
+  if (!schemaStock) return variantStock;
+  if (variantStock !== 'unknown' && (variantStock === 'out_of_stock') !== (schemaStock === 'out_of_stock')) return 'unknown';
+  return schemaStock; // In particular, keep an explicit limited-stock report.
 }
 
 export function parseProductPageHtml(html: string, baseUrl: string, storeType: StoreType): ParsedProductPage {
@@ -398,7 +412,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       images,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
-      availability: availabilityFrom(productLd, details),
+      availability: availabilityFrom(productLd, embeddedProduct),
       priceSource,
     };
   } finally {

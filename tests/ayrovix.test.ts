@@ -8,6 +8,7 @@ import { buildSearchQuery } from '../src/ayrovix/services/ai';
 import { providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
+import { extractProductFromUrl } from '../src/ayrovix/services/product';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
 import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
@@ -681,4 +682,13 @@ describe('AYROVIX Lens', () => {
     expect(valid.body.data.eventId).toMatch(/^ayx_/);
     expect(db.get<any>('SELECT query FROM ayrovix_events WHERE id=?', valid.body.data.eventId).query).toBe('barcode:619125062532');
   });
+});
+
+test('product extraction admits only explicitly eligible variant quotes without inventing stock',async()=>{
+ const variants=[true,false,'false','true',null,undefined,1,{}].map((available,i)=>({id:String(i),label:'M '+i,size:'M',color:'Noir',available,price:20+i}));
+ const scraper={cleanPastedUrl:(value:string)=>value,scrapeProduct:async()=>({title:'Eligibility fixture',url:'https://shop.example.org/eligibility',sourcePrice:20,sourceCurrency:'EUR',storeName:'Fixture',variants:{details:variants},availability:'unknown'})};
+ const result=await extractProductFromUrl(db,scraper as any,'https://shop.example.org/eligibility');
+ expect(result.product.variantOptions?.map(option=>option.id)).toEqual(['0']);
+ expect(result.product.variantOptions?.[0]).toMatchObject({available:true,price:20,currency:'EUR'});
+ expect(result.product.availability).toBe('unknown');
 });

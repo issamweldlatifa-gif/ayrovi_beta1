@@ -1,3 +1,4 @@
+import { isSelectableVariant } from '../../../../shared/variantPolicy';
 import type { AyrovixCandidate, AyrovixProduct, AyrovixVariantOption } from '../../ayrovix/types';
 import type { AssistantMessage, AssistantOrderStatus, AssistantPriceBreakdown } from './types';
 import { safePublicHref } from '../../utils/publicLinks';
@@ -48,7 +49,7 @@ function candidate(value: unknown): AyrovixCandidate {
 }
 function variant(value: unknown): AyrovixVariantOption {
   const source = object(value);
-  return { id: nullableText(source.id), label: text(source.label), size: nullableText(source.size), color: nullableText(source.color), available: source.available !== false,
+  return { id: nullableText(source.id), label: text(source.label), size: nullableText(source.size), color: nullableText(source.color), available: isSelectableVariant(source),
     price: nullableNumber(source.price), currency: nullableText(source.currency), priceTnd: nullableNumber(source.priceTnd), priceToken: nullableText(source.priceToken) };
 }
 function product(value: unknown): AyrovixProduct {

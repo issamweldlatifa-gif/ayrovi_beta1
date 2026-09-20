@@ -117,3 +117,25 @@ describe('complete, validated local conversation snapshots', () => {
     expect(readAssistantHistory('customer-A').conversations.map(c => c.id)).toEqual(['private-A']); expect(readAssistantHistory('customer-B').conversations.map(c => c.id)).toEqual(['private-B']); expect(readAssistantHistory().conversations).toHaveLength(20);
   });
 });
+
+describe('historical variant eligibility is not coerced from untrusted values',()=>{
+  it.each([undefined,null,'false',0,{},[]].map(available=>({available})))('does not enable an option from %j',({available})=>{
+    const input=conversation();
+    input.selectedProduct={messageId:'assistant',priceVerified:true,product:{...product,variantOptions:[{...product.variantOptions![0],available:available as any}]}};
+    const restored=decodeConversation(input);
+    expect(restored.selectedProduct?.product.variantOptions?.[0].available).not.toBe(true);
+    expect(restored.messages).toMatchObject(input.messages);
+    expect(restored.messages).toHaveLength(input.messages.length);
+    expect(restored.selectedProduct?.product.variantOptions?.[0].label).toBe(product.variantOptions![0].label);
+  });
+});
+
+it('canonicalizes invalid eligibility without deleting text/options or rewriting raw history on read',()=>{
+ const input=conversation();input.selectedProduct={messageId:'assistant',priceVerified:false,product:{...product,availability:'unknown',variantOptions:[{...product.variantOptions![0],available:'false' as any}]}};
+ const raw=JSON.stringify([input]);localStorage.setItem(key,raw);
+ const result=readAssistantHistory();expect(result.status).toBe('ready');expect(localStorage.getItem(key)).toBe(raw);
+ const restored=result.conversations[0];expect(restored.messages[0].text).toBe(input.messages[0].text);
+ expect(restored.selectedProduct?.product.variantOptions).toHaveLength(1);
+ expect(restored.selectedProduct?.product.variantOptions?.[0]).toEqual({...input.selectedProduct.product.variantOptions![0],available:false});
+ expect(restored.selectedProduct?.product.availability).toBe('unknown');
+});

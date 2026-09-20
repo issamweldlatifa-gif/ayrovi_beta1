@@ -1,3 +1,4 @@
+import { isSelectableVariant } from '../../../../shared/variantPolicy';
 import React from 'react';
 import type { AyrovixVariantOption } from '../types';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -17,10 +18,10 @@ export const ProductVariants: React.FC<ProductVariantsProps> = ({ sizes, colors,
   const { tr } = useLocale();
   if (!sizes.length && !colors.length) return null;
   const sizeAvailable = (value: string) => !options.length || options.some((option) =>
-    option.available && option.size === value && (!color || !option.color || option.color === color),
+    isSelectableVariant(option) && option.size === value && (!color || !option.color || option.color === color),
   );
   const colorAvailable = (value: string) => !options.length || options.some((option) =>
-    option.available && option.color === value && (!size || !option.size || option.size === size),
+    isSelectableVariant(option) && option.color === value && (!size || !option.size || option.size === size),
   );
   const chip = (active: boolean, enabled = true) =>
     `min-h-[44px] rounded-full border px-4 text-xs font-bold transition ${enabled ? 'active:scale-95' : 'cursor-not-allowed opacity-35'} ${

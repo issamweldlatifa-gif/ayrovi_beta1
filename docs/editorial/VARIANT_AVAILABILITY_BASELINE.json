@@ -1,0 +1,130 @@
+{
+  "revision": "9c9d5729c5096a6c6961948b956157dc66a4fd27",
+  "existingPassed": 48,
+  "newPassed": 5,
+  "newFailed": 28,
+  "cases": [
+    {
+      "test": "does not enable an option from {}",
+      "failure": "AssertionError: expected true not to be true // Object.is equality"
+    },
+    {
+      "test": "does not enable an option from {\"available\":null}",
+      "failure": "AssertionError: expected true not to be true // Object.is equality"
+    },
+    {
+      "test": "does not enable an option from {\"available\":\"false\"}",
+      "failure": "AssertionError: expected true not to be true // Object.is equality"
+    },
+    {
+      "test": "does not enable an option from {\"available\":0}",
+      "failure": "AssertionError: expected true not to be true // Object.is equality"
+    },
+    {
+      "test": "does not enable an option from {\"available\":{}}",
+      "failure": "AssertionError: expected true not to be true // Object.is equality"
+    },
+    {
+      "test": "does not enable an option from {\"available\":[]}",
+      "failure": "AssertionError: expected true not to be true // Object.is equality"
+    },
+    {
+      "test": "canonicalizes invalid eligibility without deleting text/options or rewriting raw history on read",
+      "failure": "AssertionError: expected { id: 'v1', label: 'M — أسود', …(7) } to deeply equal { id: 'v1', label: 'M — أسود', …(7) }"
+    },
+    {
+      "test": "product extraction admits only explicitly eligible variant quotes without inventing stock",
+      "failure": "AssertionError: expected [ '0', '2', '3', '6', '7' ] to deeply equal [ '0' ]"
+    },
+    {
+      "test": "does not infer stock from an option with {}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":null}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":\"false\"}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":\"true\"}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":0}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":1}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":[]}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not infer stock from an option with {\"available\":{}}",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {} with schema \"https://schema.org/OutOfStock\" as out_of_stock",
+      "failure": "AssertionError: expected 'in_stock' to be 'out_of_stock' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {} with schema \"https://schema.org/LimitedAvailability\" as limited",
+      "failure": "AssertionError: expected 'in_stock' to be 'limited' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {\"available\":true} with schema \"https://schema.org/OutOfStock\" as unknown",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {\"available\":false} with schema \"https://schema.org/InStock\" as unknown",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {\"available\":true} with schema \"https://schema.org/LimitedAvailability\" as limited",
+      "failure": "AssertionError: expected 'in_stock' to be 'limited' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {\"available\":false} with schema \"https://schema.org/LimitedAvailability\" as unknown",
+      "failure": "AssertionError: expected 'limited' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {\"available\":true} with schema [\"https://schema.org/InStock\",\"https://schema.org/OutOfStock\"] as unknown",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "reconciles variant {} with schema \"https://evil.example/NotInStock\" as unknown",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "recognizes a fully negative explicit variant list without a positive assertion",
+      "failure": "AssertionError: expected 'unknown' to be 'out_of_stock' // Object.is equality"
+    },
+    {
+      "test": "does not generalize negative evidence over unreported variants",
+      "failure": "AssertionError: expected 'in_stock' to be 'unknown' // Object.is equality"
+    },
+    {
+      "test": "does not generalize https://schema.org/OutOfStock over unreported offers",
+      "failure": "AssertionError: expected { title: 'Stock fixture', …(7) } to match object { availability: 'unknown' }"
+    },
+    {
+      "test": "does not generalize https://schema.org/InStock over unreported offers",
+      "failure": "AssertionError: expected { title: 'Stock fixture', …(7) } to match object { availability: 'unknown' }"
+    }
+  ],
+  "quantityBrowserRegression": {
+    "rootFont": "200%",
+    "viewport": 320,
+    "inputWidthBeforeFix": 2,
+    "stepButtonWidthsBeforeFix": [
+      88,
+      88
+    ],
+    "expectedInputMinWidth": 44
+  }
+}

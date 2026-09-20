@@ -1,3 +1,4 @@
+import { isSelectableVariant } from '../../../../shared/variantPolicy';
 import { MerchantRating } from './MerchantRating';
 import { Plus, Minus } from '../../components/QatafoIcons';
 import React, { useEffect, useMemo, useState, useId } from 'react';
@@ -56,7 +57,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [configAttempt, setConfigAttempt] = useState(0);
   const formId = useId();
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
-  const options = (product.variantOptions || []).filter((option) => option.available);
+  const options = (product.variantOptions || []).filter(isSelectableVariant);
   const requestedSize = sizeChoice === '__other__' ? customSize.trim() : sizeChoice;
   const selectedOption = (requestedSize || color) ? (options.find((option) =>
     (!requestedSize || Boolean(option.size && option.size.toLocaleLowerCase() === requestedSize.toLocaleLowerCase()))
@@ -217,6 +218,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         <div>
           <h2 className="text-sm font-extrabold text-ink">{tr('Détails de votre demande', 'تفاصيل طلبك')}</h2>
           <p className="mt-1 break-words text-xs leading-relaxed text-muted">{tr("Ces informations seront transmises à l'équipe d'achat avec votre commande.", 'ستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.')}</p>
+          <p data-variant-stock-notice className="mt-1 break-words text-xs leading-relaxed text-muted">{tr('Le choix d’une taille ou couleur ne confirme pas son stock.', 'اختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.')}</p>
         </div>
 
         <label className="block">
@@ -242,9 +244,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div>
             <span className="mb-1.5 block break-words text-xs font-bold text-ink">{tr('Quantité', 'الكمية')} <span className="text-danger">*</span></span>
             <div className="flex min-h-[46px] max-w-[180px] items-center rounded-control border border-line bg-white">
-              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label={tr('Diminuer la quantité', 'تقليل الكمية')} className="inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30"><Minus size={18} /></button>
+              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label={tr('Diminuer la quantité', 'تقليل الكمية')} className="inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30"><Minus size={18} /></button>
               <input type="number" min={1} max={99} step={1} aria-invalid={!validQuantity} aria-describedby={!validQuantity ? `${formId}-quantity-error` : undefined} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} aria-label={tr('Quantité', 'الكمية')} className="h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none" required />
-              <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label={tr('Augmenter la quantité', 'زيادة الكمية')} className="inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30"><Plus size={18} /></button>
+              <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label={tr('Augmenter la quantité', 'زيادة الكمية')} className="inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30"><Plus size={18} /></button>
             </div>
           </div>
 

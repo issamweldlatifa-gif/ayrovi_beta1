@@ -1,0 +1,1422 @@
+{
+  "checks": [
+    {
+      "label": "fr/320/unknown: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "fr/320/unknown: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/negative: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "out_of_stock"
+      }
+    },
+    {
+      "label": "fr/320/negative: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/conflict: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "fr/320/conflict: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/limited: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "limited"
+      }
+    },
+    {
+      "label": "fr/320/limited: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/positive: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "in_stock"
+      }
+    },
+    {
+      "label": "fr/320/positive: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/false-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/false-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/false-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/true-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/true-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/true-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/missing: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/missing: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/missing: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/null: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/null: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/null: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/zero: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/zero: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/zero: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/object: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/object: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/object: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/array: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/array: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/array: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320/known-false: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/320/known-false: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/320/known-false: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/320: genuine boolean eligibility survives history",
+      "pass": true
+    },
+    {
+      "label": "fr/320: live result also rejects a malformed eligibility flag",
+      "pass": true
+    },
+    {
+      "label": "fr/320: shared UI explains selection versus stock",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stock explanation stays complete at 200% root font",
+      "pass": true,
+      "details": {
+        "width": 288,
+        "scroll": 288,
+        "height": 117,
+        "content": 117,
+        "overflow": "visible",
+        "textBottom": 476.890625,
+        "nextTop": 512.890625,
+        "docWidth": 320,
+        "docScroll": 320
+      }
+    },
+    {
+      "label": "fr/320: enlarged two-digit quantity has room and keeps 44px step controls",
+      "pass": true,
+      "details": {
+        "width": 90,
+        "textWidth": 20,
+        "height": 88,
+        "buttons": [
+          44,
+          44
+        ]
+      }
+    },
+    {
+      "label": "fr/320: enlarged decrement retains the exact quantity",
+      "pass": true
+    },
+    {
+      "label": "fr/320: enlarged increment preserves the 99-item boundary",
+      "pass": true
+    },
+    {
+      "label": "fr/390/unknown: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "fr/390/unknown: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/negative: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "out_of_stock"
+      }
+    },
+    {
+      "label": "fr/390/negative: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/conflict: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "fr/390/conflict: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/limited: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "limited"
+      }
+    },
+    {
+      "label": "fr/390/limited: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/positive: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "in_stock"
+      }
+    },
+    {
+      "label": "fr/390/positive: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/false-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/false-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/false-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/true-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/true-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/true-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/missing: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/missing: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/missing: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/null: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/null: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/null: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/zero: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/zero: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/zero: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/object: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/object: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/object: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/array: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/array: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/array: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390/known-false: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "fr/390/known-false: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "fr/390/known-false: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "fr/390: genuine boolean eligibility survives history",
+      "pass": true
+    },
+    {
+      "label": "fr/390: live result also rejects a malformed eligibility flag",
+      "pass": true
+    },
+    {
+      "label": "fr/390: shared UI explains selection versus stock",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stock explanation stays complete at 200% root font",
+      "pass": true,
+      "details": {
+        "width": 358,
+        "scroll": 358,
+        "height": 117,
+        "content": 117,
+        "overflow": "visible",
+        "textBottom": 476.921875,
+        "nextTop": 512.921875,
+        "docWidth": 390,
+        "docScroll": 390
+      }
+    },
+    {
+      "label": "fr/390: enlarged two-digit quantity has room and keeps 44px step controls",
+      "pass": true,
+      "details": {
+        "width": 90,
+        "textWidth": 20,
+        "height": 88,
+        "buttons": [
+          44,
+          44
+        ]
+      }
+    },
+    {
+      "label": "fr/390: enlarged decrement retains the exact quantity",
+      "pass": true
+    },
+    {
+      "label": "fr/390: enlarged increment preserves the 99-item boundary",
+      "pass": true
+    },
+    {
+      "label": "ar/320/unknown: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "ar/320/unknown: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/negative: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "out_of_stock"
+      }
+    },
+    {
+      "label": "ar/320/negative: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/conflict: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "ar/320/conflict: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/limited: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "limited"
+      }
+    },
+    {
+      "label": "ar/320/limited: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/positive: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "in_stock"
+      }
+    },
+    {
+      "label": "ar/320/positive: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/false-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/false-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/false-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/true-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/true-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/true-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/missing: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/missing: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/missing: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/null: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/null: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/null: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/zero: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/zero: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/zero: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/object: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/object: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/object: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/array: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/array: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/array: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320/known-false: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/320/known-false: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/320/known-false: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/320: genuine boolean eligibility survives history",
+      "pass": true
+    },
+    {
+      "label": "ar/320: live result also rejects a malformed eligibility flag",
+      "pass": true
+    },
+    {
+      "label": "ar/320: shared UI explains selection versus stock",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stock explanation stays complete at 200% root font",
+      "pass": true,
+      "details": {
+        "width": 288,
+        "scroll": 288,
+        "height": 78,
+        "content": 84,
+        "overflow": "visible",
+        "textBottom": 466.890625,
+        "nextTop": 492.890625,
+        "docWidth": 320,
+        "docScroll": 320
+      }
+    },
+    {
+      "label": "ar/320: enlarged two-digit quantity has room and keeps 44px step controls",
+      "pass": true,
+      "details": {
+        "width": 90,
+        "textWidth": 18,
+        "height": 88,
+        "buttons": [
+          44,
+          44
+        ]
+      }
+    },
+    {
+      "label": "ar/320: enlarged decrement retains the exact quantity",
+      "pass": true
+    },
+    {
+      "label": "ar/320: enlarged increment preserves the 99-item boundary",
+      "pass": true
+    },
+    {
+      "label": "ar/390/unknown: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "ar/390/unknown: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/negative: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "out_of_stock"
+      }
+    },
+    {
+      "label": "ar/390/negative: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/conflict: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "unknown"
+      }
+    },
+    {
+      "label": "ar/390/conflict: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/limited: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "limited"
+      }
+    },
+    {
+      "label": "ar/390/limited: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/positive: production-parser evidence reaches the stock badge",
+      "pass": true,
+      "details": {
+        "availability": "in_stock"
+      }
+    },
+    {
+      "label": "ar/390/positive: manual choice is preserved without inventing stock",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "variant-M-blue",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "VARIANT_QUOTE_FIXTURE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/false-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/false-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/false-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/true-string: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/true-string: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/true-string: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/missing: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/missing: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/missing: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/null: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/null: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/null: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/zero: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/zero: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/zero: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/object: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/object: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/object: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/array: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/array: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/array: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390/known-false: invalid history cannot select a variant-specific quote",
+      "pass": true,
+      "details": {
+        "size": "M",
+        "color": "Bleu",
+        "option": null,
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "ar/390/known-false: message and complete variant metadata survive normalization",
+      "pass": true
+    },
+    {
+      "label": "ar/390/known-false: reading history never rewrites stored evidence",
+      "pass": true
+    },
+    {
+      "label": "ar/390: genuine boolean eligibility survives history",
+      "pass": true
+    },
+    {
+      "label": "ar/390: live result also rejects a malformed eligibility flag",
+      "pass": true
+    },
+    {
+      "label": "ar/390: shared UI explains selection versus stock",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stock explanation stays complete at 200% root font",
+      "pass": true,
+      "details": {
+        "width": 358,
+        "scroll": 358,
+        "height": 78,
+        "content": 84,
+        "overflow": "visible",
+        "textBottom": 239.4375,
+        "nextTop": 265.4375,
+        "docWidth": 390,
+        "docScroll": 390
+      }
+    },
+    {
+      "label": "ar/390: enlarged two-digit quantity has room and keeps 44px step controls",
+      "pass": true,
+      "details": {
+        "width": 90,
+        "textWidth": 18,
+        "height": 88,
+        "buttons": [
+          44,
+          44
+        ]
+      }
+    },
+    {
+      "label": "ar/390: enlarged decrement retains the exact quantity",
+      "pass": true
+    },
+    {
+      "label": "ar/390: enlarged increment preserves the 99-item boundary",
+      "pass": true
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}
