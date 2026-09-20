@@ -41,6 +41,7 @@ class FakeUtterance {
   pitch = 1;
   volume = 1;
   voice: SpeechSynthesisVoice | null = null;
+  onstart: (() => void) | null = null;
   onend: (() => void) | null = null;
   onerror: ((event: { error: string }) => void) | null = null;
   constructor(public text: string) {}
@@ -87,6 +88,54 @@ afterEach(() => {
 });
 
 describe('VoiceOutput single-shot playback', () => {
+  it('waits for the actual browser start and never fabricates audio measurements', async () => {
+    output = new VoiceOutput(); output.setServerTtsAvailable(false);
+    const onStart = vi.fn(), onLevel = vi.fn();
+    const playback = output.speak('Texte', 'fr', { onStart, onLevel });
+    const utterance = speechSynthesis.speak.mock.calls[0][0] as FakeUtterance;
+    expect(onStart).not.toHaveBeenCalled();
+    utterance.onstart?.(); expect(onStart).toHaveBeenCalledOnce();
+    expect(onLevel).toHaveBeenCalledWith(0);
+    expect(requestAnimationFrame).not.toHaveBeenCalled();
+    utterance.onend?.(); await expect(playback).resolves.toBe('ended');
+  });
+
+  it('preserves the displayed message including URL, braces, punctuation and paragraphs when requested', async () => {
+    output = new VoiceOutput(); output.setServerTtsAvailable(false);
+    const text = 'A {30 TND} _identifiant_\n\nhttps://example.test/item#size';
+    const playback = output.speak(text, 'fr', {}, { preserveText: true });
+    const utterance = speechSynthesis.speak.mock.calls[0][0] as FakeUtterance;
+    expect(utterance.text).toBe(text); utterance.onend?.(); await playback;
+  });
+
+  it('settles interrupted ownership and ignores late start/end events after replacement', async () => {
+    output = new VoiceOutput(); output.setServerTtsAvailable(false);
+    const onStart = vi.fn();
+    const first = output.speak('Première', 'fr', { onStart });
+    const old = speechSynthesis.speak.mock.calls[0][0] as FakeUtterance;
+    const second = output.speak('Deuxième', 'fr');
+    await expect(first).resolves.toBe('cancelled');
+    old.onstart?.(); old.onend?.(); expect(onStart).not.toHaveBeenCalled();
+    expect(output.busy).toBe(true);
+    output.dispose(); await expect(second).resolves.toBe('cancelled');
+    expect(output.busy).toBe(false);
+  });
+
+  it('reports unavailable when there is no local speech API', async () => {
+    vi.stubGlobal('window', {});
+    output = new VoiceOutput(); output.setServerTtsAvailable(false);
+    await expect(output.speak('Test', 'fr')).resolves.toBe('unavailable');
+  });
+
+  it('reports a device failure without ever announcing successful playback', async () => {
+    output = new VoiceOutput(); output.setServerTtsAvailable(false);
+    const onStart = vi.fn();
+    const playback = output.speak('Test', 'fr', { onStart });
+    const utterance = speechSynthesis.speak.mock.calls[0][0] as FakeUtterance;
+    utterance.onerror?.({ error: 'not-allowed' });
+    await expect(playback).resolves.toBe('unavailable'); expect(onStart).not.toHaveBeenCalled();
+  });
+
   it('plays one server audio response and completes only when that source ends', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array(128), {
       headers: { 'content-type': 'audio/wav' },

@@ -1,6 +1,6 @@
 # دليل النظام التحريري
 
-> الحالة الحالية: [مراجعة التعميم والوظائف](FEATURES_CONTENT_REVIEW_AR.md). تقارير الأساس والدفعة 02 سجلات تاريخية، وليست وصفًا للحالة الحالية.
+> أحدث دفعة: [إجراءات SONIM والنوافذ المتداخلة](SONIM_ACTIONS_REVIEW_AR.md)، وتسبقها [مراجعة التعميم والوظائف](FEATURES_CONTENT_REVIEW_AR.md). تقارير الأساس والدفعة 02 سجلات تاريخية، وليست وصفًا للحالة الحالية.
 
 ## أين المصدر؟
 - `client/src/design/editorial/identity.json`: الألوان الدلالية النهارية/الداكنة، هندسة المكونات، حد مساحة البرتقالي، الخطوط مع checksums وتراخيصها.
@@ -23,6 +23,7 @@ npx playwright install --with-deps chromium firefox
 npm run design:browser
 npm run verify:editorial-customer
 npm run verify:editorial-states
+npm run verify:sonim-actions
 npm run verify:editorial-account
 ```
 

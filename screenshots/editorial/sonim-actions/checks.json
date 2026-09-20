@@ -1,0 +1,802 @@
+{
+  "checks": [
+    {
+      "label": "fr/320: duplicate copy is admitted once",
+      "pass": true
+    },
+    {
+      "label": "fr/320: copy uses complete displayed prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: textless tool actions disabled",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed copy is reported in the selected locale",
+      "pass": true
+    },
+    {
+      "label": "fr/320: double share is admitted once and is visibly busy",
+      "pass": true
+    },
+    {
+      "label": "fr/320: native share payload matches display",
+      "pass": true
+    },
+    {
+      "label": "fr/320: cancel is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "fr/320: error is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unsupported native share explicitly reports clipboard fallback",
+      "pass": true
+    },
+    {
+      "label": "fr/320: speech stays pending until actual engine start",
+      "pass": true
+    },
+    {
+      "label": "fr/320: speech preserves exact text and correct language",
+      "pass": true
+    },
+    {
+      "label": "fr/320: switching cancels old read rather than queuing",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stale engine callbacks do not stop new read",
+      "pass": true
+    },
+    {
+      "label": "fr/320: explicit stop releases owned playback",
+      "pass": true
+    },
+    {
+      "label": "fr/320: device errors are visible",
+      "pass": true
+    },
+    {
+      "label": "fr/320: missing speech API is visible",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Ajouter au chat: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Ajouter au chat: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Ajouter au chat: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Ajouter au chat: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "fr/320: web search exposes changed state",
+      "pass": true
+    },
+    {
+      "label": "fr/320: switch thumb fits track",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Ajouter au chat: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Menu SONIM: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Menu SONIM: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Menu SONIM: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Menu SONIM: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Menu SONIM: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Commenter la réponse: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Commenter la réponse: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Commenter la réponse: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Commenter la réponse: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "fr/320/Commenter la réponse: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/320: pending rating is disabled and not falsely confirmed",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed rating remains unselected",
+      "pass": true
+    },
+    {
+      "label": "fr/320: late save cannot close a different layer",
+      "pass": true
+    },
+    {
+      "label": "fr/320: late save cannot close same-message reopened layer or replace its draft",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed comment preserves editable draft and open layer",
+      "pass": true
+    },
+    {
+      "label": "fr/320: confirmed current save closes only its own sheet and restores focus",
+      "pass": true
+    },
+    {
+      "label": "fr/320: confirmed feedback is selected",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stale toast leaves no empty visible overlay on the new form",
+      "pass": true
+    },
+    {
+      "label": "fr/320: enlarged feedback fits phone without clipped controls",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 270,
+        "client": 270,
+        "top": 48,
+        "bottom": 844,
+        "height": 844
+      }
+    },
+    {
+      "label": "fr/320: enlarged form last action can be scrolled into view",
+      "pass": true,
+      "details": {
+        "x": 65,
+        "y": 628.34375,
+        "width": 190,
+        "height": 170
+      }
+    },
+    {
+      "label": "fr/320: closing view cancels its reader",
+      "pass": true
+    },
+    {
+      "label": "fr/320: changing conversation cancels reader",
+      "pass": true
+    },
+    {
+      "label": "fr/320: closing SONIM restores its external opener",
+      "pass": true
+    },
+    {
+      "label": "fr/390: duplicate copy is admitted once",
+      "pass": true
+    },
+    {
+      "label": "fr/390: copy uses complete displayed prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: textless tool actions disabled",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed copy is reported in the selected locale",
+      "pass": true
+    },
+    {
+      "label": "fr/390: double share is admitted once and is visibly busy",
+      "pass": true
+    },
+    {
+      "label": "fr/390: native share payload matches display",
+      "pass": true
+    },
+    {
+      "label": "fr/390: cancel is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "fr/390: error is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unsupported native share explicitly reports clipboard fallback",
+      "pass": true
+    },
+    {
+      "label": "fr/390: speech stays pending until actual engine start",
+      "pass": true
+    },
+    {
+      "label": "fr/390: speech preserves exact text and correct language",
+      "pass": true
+    },
+    {
+      "label": "fr/390: switching cancels old read rather than queuing",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stale engine callbacks do not stop new read",
+      "pass": true
+    },
+    {
+      "label": "fr/390: explicit stop releases owned playback",
+      "pass": true
+    },
+    {
+      "label": "fr/390: device errors are visible",
+      "pass": true
+    },
+    {
+      "label": "fr/390: missing speech API is visible",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Ajouter au chat: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Ajouter au chat: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Ajouter au chat: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Ajouter au chat: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "fr/390: web search exposes changed state",
+      "pass": true
+    },
+    {
+      "label": "fr/390: switch thumb fits track",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Ajouter au chat: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Menu SONIM: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Menu SONIM: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Menu SONIM: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Menu SONIM: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Menu SONIM: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Commenter la réponse: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Commenter la réponse: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Commenter la réponse: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Commenter la réponse: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "fr/390/Commenter la réponse: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/390: pending rating is disabled and not falsely confirmed",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed rating remains unselected",
+      "pass": true
+    },
+    {
+      "label": "fr/390: late save cannot close a different layer",
+      "pass": true
+    },
+    {
+      "label": "fr/390: late save cannot close same-message reopened layer or replace its draft",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed comment preserves editable draft and open layer",
+      "pass": true
+    },
+    {
+      "label": "fr/390: confirmed current save closes only its own sheet and restores focus",
+      "pass": true
+    },
+    {
+      "label": "fr/390: confirmed feedback is selected",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stale toast leaves no empty visible overlay on the new form",
+      "pass": true
+    },
+    {
+      "label": "fr/390: enlarged feedback fits phone without clipped controls",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 340,
+        "client": 340,
+        "top": 48,
+        "bottom": 844,
+        "height": 844
+      }
+    },
+    {
+      "label": "fr/390: enlarged form last action can be scrolled into view",
+      "pass": true,
+      "details": {
+        "x": 65,
+        "y": 668.34375,
+        "width": 260,
+        "height": 130
+      }
+    },
+    {
+      "label": "fr/390: closing view cancels its reader",
+      "pass": true
+    },
+    {
+      "label": "fr/390: changing conversation cancels reader",
+      "pass": true
+    },
+    {
+      "label": "fr/390: closing SONIM restores its external opener",
+      "pass": true
+    },
+    {
+      "label": "ar/320: duplicate copy is admitted once",
+      "pass": true
+    },
+    {
+      "label": "ar/320: copy uses complete displayed prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: textless tool actions disabled",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed copy is reported in the selected locale",
+      "pass": true
+    },
+    {
+      "label": "ar/320: double share is admitted once and is visibly busy",
+      "pass": true
+    },
+    {
+      "label": "ar/320: native share payload matches display",
+      "pass": true
+    },
+    {
+      "label": "ar/320: cancel is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "ar/320: error is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unsupported native share explicitly reports clipboard fallback",
+      "pass": true
+    },
+    {
+      "label": "ar/320: speech stays pending until actual engine start",
+      "pass": true
+    },
+    {
+      "label": "ar/320: speech preserves exact text and correct language",
+      "pass": true
+    },
+    {
+      "label": "ar/320: switching cancels old read rather than queuing",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stale engine callbacks do not stop new read",
+      "pass": true
+    },
+    {
+      "label": "ar/320: explicit stop releases owned playback",
+      "pass": true
+    },
+    {
+      "label": "ar/320: device errors are visible",
+      "pass": true
+    },
+    {
+      "label": "ar/320: missing speech API is visible",
+      "pass": true
+    },
+    {
+      "label": "ar/320/إضافة إلى المحادثة: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "ar/320/إضافة إلى المحادثة: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/320/إضافة إلى المحادثة: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/320/إضافة إلى المحادثة: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "ar/320: web search exposes changed state",
+      "pass": true
+    },
+    {
+      "label": "ar/320: switch thumb fits track",
+      "pass": true
+    },
+    {
+      "label": "ar/320/إضافة إلى المحادثة: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/320/قائمة SONIM: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "ar/320/قائمة SONIM: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/320/قائمة SONIM: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/320/قائمة SONIM: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "ar/320/قائمة SONIM: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/320/التعليق على الرد: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "ar/320/التعليق على الرد: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/320/التعليق على الرد: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/320/التعليق على الرد: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "ar/320/التعليق على الرد: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/320: pending rating is disabled and not falsely confirmed",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed rating remains unselected",
+      "pass": true
+    },
+    {
+      "label": "ar/320: late save cannot close a different layer",
+      "pass": true
+    },
+    {
+      "label": "ar/320: late save cannot close same-message reopened layer or replace its draft",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed comment preserves editable draft and open layer",
+      "pass": true
+    },
+    {
+      "label": "ar/320: confirmed current save closes only its own sheet and restores focus",
+      "pass": true
+    },
+    {
+      "label": "ar/320: confirmed feedback is selected",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stale toast leaves no empty visible overlay on the new form",
+      "pass": true
+    },
+    {
+      "label": "ar/320: enlarged feedback fits phone without clipped controls",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 270,
+        "client": 270,
+        "top": 48,
+        "bottom": 844,
+        "height": 844
+      }
+    },
+    {
+      "label": "ar/320: enlarged form last action can be scrolled into view",
+      "pass": true,
+      "details": {
+        "x": 65,
+        "y": 668.359375,
+        "width": 190,
+        "height": 130
+      }
+    },
+    {
+      "label": "ar/320: closing view cancels its reader",
+      "pass": true
+    },
+    {
+      "label": "ar/320: changing conversation cancels reader",
+      "pass": true
+    },
+    {
+      "label": "ar/320: closing SONIM restores its external opener",
+      "pass": true
+    },
+    {
+      "label": "ar/390: duplicate copy is admitted once",
+      "pass": true
+    },
+    {
+      "label": "ar/390: copy uses complete displayed prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: textless tool actions disabled",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed copy is reported in the selected locale",
+      "pass": true
+    },
+    {
+      "label": "ar/390: double share is admitted once and is visibly busy",
+      "pass": true
+    },
+    {
+      "label": "ar/390: native share payload matches display",
+      "pass": true
+    },
+    {
+      "label": "ar/390: cancel is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "ar/390: error is distinct and never writes clipboard",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unsupported native share explicitly reports clipboard fallback",
+      "pass": true
+    },
+    {
+      "label": "ar/390: speech stays pending until actual engine start",
+      "pass": true
+    },
+    {
+      "label": "ar/390: speech preserves exact text and correct language",
+      "pass": true
+    },
+    {
+      "label": "ar/390: switching cancels old read rather than queuing",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stale engine callbacks do not stop new read",
+      "pass": true
+    },
+    {
+      "label": "ar/390: explicit stop releases owned playback",
+      "pass": true
+    },
+    {
+      "label": "ar/390: device errors are visible",
+      "pass": true
+    },
+    {
+      "label": "ar/390: missing speech API is visible",
+      "pass": true
+    },
+    {
+      "label": "ar/390/إضافة إلى المحادثة: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "ar/390/إضافة إلى المحادثة: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/390/إضافة إلى المحادثة: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/390/إضافة إلى المحادثة: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "ar/390: web search exposes changed state",
+      "pass": true
+    },
+    {
+      "label": "ar/390: switch thumb fits track",
+      "pass": true
+    },
+    {
+      "label": "ar/390/إضافة إلى المحادثة: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/390/قائمة SONIM: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "ar/390/قائمة SONIM: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/390/قائمة SONIM: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/390/قائمة SONIM: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "ar/390/قائمة SONIM: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/390/التعليق على الرد: focus enters only the top layer",
+      "pass": true
+    },
+    {
+      "label": "ar/390/التعليق على الرد: Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/390/التعليق على الرد: Shift+Tab wraps inside panel",
+      "pass": true
+    },
+    {
+      "label": "ar/390/التعليق على الرد: background controls inert",
+      "pass": true
+    },
+    {
+      "label": "ar/390/التعليق على الرد: Escape restores trigger without closing SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/390: pending rating is disabled and not falsely confirmed",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed rating remains unselected",
+      "pass": true
+    },
+    {
+      "label": "ar/390: late save cannot close a different layer",
+      "pass": true
+    },
+    {
+      "label": "ar/390: late save cannot close same-message reopened layer or replace its draft",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed comment preserves editable draft and open layer",
+      "pass": true
+    },
+    {
+      "label": "ar/390: confirmed current save closes only its own sheet and restores focus",
+      "pass": true
+    },
+    {
+      "label": "ar/390: confirmed feedback is selected",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stale toast leaves no empty visible overlay on the new form",
+      "pass": true
+    },
+    {
+      "label": "ar/390: enlarged feedback fits phone without clipped controls",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 340,
+        "client": 340,
+        "top": 48,
+        "bottom": 844,
+        "height": 844
+      }
+    },
+    {
+      "label": "ar/390: enlarged form last action can be scrolled into view",
+      "pass": true,
+      "details": {
+        "x": 65,
+        "y": 708.359375,
+        "width": 260,
+        "height": 90
+      }
+    },
+    {
+      "label": "ar/390: closing view cancels its reader",
+      "pass": true
+    },
+    {
+      "label": "ar/390: changing conversation cancels reader",
+      "pass": true
+    },
+    {
+      "label": "ar/390: closing SONIM restores its external opener",
+      "pass": true
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

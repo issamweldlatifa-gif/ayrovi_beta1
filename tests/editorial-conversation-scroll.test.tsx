@@ -26,7 +26,7 @@ describe('SONIM preserves the reader position while responses stream',()=>{
   await render([{id:'safe',role:'assistant',text:'<img src=x onerror=alert(1)>\n\nمرحبا ✅'},{id:'user',role:'user',text:'question'}]);
   expect(host.querySelector('img')).toBeNull();expect(host.textContent).toContain('<img src=x onerror=alert(1)>');
   expect(host.querySelector('.whitespace-pre-wrap')?.textContent).toContain('\n\nمرحبا ✅');
-  expect(host.querySelector('.assistant-message-actions')?.className).toContain('flex-wrap');
+  expect(host.querySelector('.assistant-message-actions > div')?.className).toContain('flex-wrap');
  });
  it('keeps every warning and full product title instead of clamping card content',async()=>{
   const title='Un titre complet — المقاس واللون والمواصفة الأخيرة';

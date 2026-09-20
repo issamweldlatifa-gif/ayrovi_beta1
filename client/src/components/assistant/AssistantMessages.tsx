@@ -1,7 +1,9 @@
 import { MerchantRating } from '../../ayrovix/components/MerchantRating';
 import React, { useEffect, useRef } from 'react';
+import { AssistantMessageActions } from './AssistantMessageActions';
+import { useMessageReader } from './useMessageReader';
 import { cleanAssistantText } from './composerPolicy';
-import { Mic, ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, LensBox, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
+import { Mic, ArrowUpRight, MessageSquare, PackageCheck, ShoppingBag, LensBox } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
 import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
@@ -16,6 +18,7 @@ interface AssistantMessagesProps {
   motionState: AyroviMotionState;
   isDark: boolean;
   copiedId: string | null;
+  feedbackPending?: Record<string, boolean>;
   feedback: Record<string, FeedbackValue | undefined>;
   selectedProduct: { messageId: string; product: AyrovixProduct; priceVerified: boolean } | null;
   productBusyId: string;
@@ -52,17 +55,6 @@ const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="ayrovix-product-media-contain" loading="lazy" decoding="async" draggable={false}/>;
 };
 
-const ShareAction = ({ message, isDark }: { message: AssistantMessage; isDark: boolean }) => {
-  const { tr } = useLocale();
-  const share = async () => {
-    try {
-      if (navigator.share) await navigator.share({ title: 'AYROVI', text: cleanAssistantText(message.text) });
-      else await navigator.clipboard.writeText(cleanAssistantText(message.text));
-    } catch { /* cancelled */ }
-  };
-  return <button type="button" onClick={() => void share()} aria-label={tr('Partager', 'مشاركة')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}><Share2 size={26} /></button>;
-};
-
 const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, isOrdering, onSelectProduct, onProductOrder }: Pick<AssistantMessagesProps, 'selectedProduct' | 'productBusyId' | 'isOrdering' | 'onSelectProduct' | 'onProductOrder'> & { message: AssistantMessage; isDark: boolean }) => {
   const { locale, tr } = useLocale();
   return <div className="ay-readable-label mt-3 space-y-3">
@@ -92,11 +84,12 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 };
 
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
-  messages, isGenerating, motionState, isDark, copiedId, feedback, selectedProduct, productBusyId, isOrdering,
+  messages, isGenerating, motionState, isDark, copiedId, feedbackPending = {}, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
   customerFirstName, assistantReady,
 }) => {
   const { locale, direction, isArabic, tr } = useLocale();
+  const reader = useMessageReader(messages, locale);
   const scrollRef = useRef<HTMLElement>(null);
   const followRef = useRef(true);
   const lastUserRef = useRef('');
@@ -203,7 +196,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                     {message.role === 'assistant' && !isGenerating && Boolean(message.suggestedActions?.length) && <div className="mt-2.5 flex flex-wrap gap-2">{(message.suggestedActions || []).map((action) => <button key={action.label} type="button" onClick={() => onPrompt(action.prompt)} className={`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}>{action.label}</button>)}</div>}
                     {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="ay-btn-primary mt-3 w-full text-xs"><LensBox size={19}/>{tr('Ouvrir AYROVIX Lens', 'فتح عدسة AYROVIX')}</button>}
                   </div>
-                  {message.role === 'assistant' && !isLastAssistantStreaming && <div className="assistant-message-actions mt-1.5 flex flex-wrap items-center gap-1 px-1"><button type="button" onClick={() => onCopy(message)} aria-label={tr('Copier', 'نسخ')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}>{copiedId === message.id ? <Check size={26}/> : <Copy size={26}/>}</button><button type="button" onClick={() => onRegenerate(message.id)} aria-label={tr('Régénérer', 'إعادة التوليد')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}><RefreshCw size={26}/></button><button type="button" aria-label={tr('Lire', 'استماع')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`} onClick={() => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(assistantText))}><Volume2 size={26}/></button><ShareAction message={message} isDark={isDark}/><span className={`mx-1 h-4 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`}/><button type="button" onClick={() => onFeedback(message, 'up')} aria-label={tr('Utile', 'مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'up' ? 'bg-success/10 text-success' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsUp size={26}/></button><button type="button" onClick={() => onFeedback(message, 'down')} aria-label={tr('Pas utile', 'غير مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'down' ? 'bg-danger/10 text-danger' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsDown size={26}/></button><button type="button" onClick={() => onOpenComment(message)} className={`ms-1 rounded-icon px-2 py-1 text-xs font-bold ${isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}>{tr('Commenter', 'تعليق')}</button></div>}
+                  {message.role === 'assistant' && !isLastAssistantStreaming && <AssistantMessageActions message={message} isDark={isDark} copied={copiedId === message.id} generating={isGenerating} feedback={feedback[message.id]} feedbackPending={feedbackPending[message.id]} reader={reader} onCopy={onCopy} onRegenerate={onRegenerate} onFeedback={onFeedback} onOpenComment={onOpenComment}/>}
                 </div>
               </div>;
             })}

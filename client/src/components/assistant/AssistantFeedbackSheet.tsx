@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import React, { useEffect, useState } from 'react';
 import { ThumbsDown, ThumbsUp, X } from '../QatafoIcons';
 import { FeedbackValue } from './types';
@@ -32,9 +33,11 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
     setComment(initialComment);
   }, [isOpen, initialRating, initialComment]);
 
+  const panelRef = React.useRef<HTMLElement>(null);
+  useDialogFocus(panelRef, isOpen);
   if (!isOpen) return null;
 
-  const ratingClass = (value: FeedbackValue) => `flex flex-1 items-center justify-center gap-2 rounded-[14px] border px-3 py-3 text-sm font-semibold transition ${
+  const ratingClass = (value: FeedbackValue) => `flex min-w-0 flex-wrap items-center justify-center gap-2 rounded-control border px-3 py-3 text-sm font-semibold transition ${
     rating === value
       ? value === 'up'
         ? 'border-line bg-surface text-ink'
@@ -47,28 +50,30 @@ export const AssistantFeedbackSheet: React.FC<AssistantFeedbackSheetProps> = ({
   return (
     <div className="absolute inset-0 z-[65] flex items-end justify-center bg-ink/40 px-3 backdrop-blur-[2px] sm:items-center" dir={direction} role="dialog" aria-modal="true" aria-label={tr('Commenter la réponse', 'التعليق على الرد')}>
       <button type="button" className="absolute inset-0" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')} />
-      <section className={`assistant-sheet relative z-10 w-full max-w-md rounded-t-[26px] p-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] shadow-overlay sm:rounded-[24px] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <section ref={panelRef} tabIndex={-1} className={`assistant-sheet ay-readable-label border border-line relative z-10 max-h-[calc(100%-1.5rem)] overflow-y-auto w-full min-w-0 max-w-md rounded-card p-5 pb-[max(1.4rem,env(safe-area-inset-bottom))] shadow-overlay sm:rounded-card ${isDark ? 'bg-ink' : 'bg-surface'}`}>
+        <div className="flex flex-wrap-reverse items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 basis-48">
             <h3 className={`text-base font-bold ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Votre avis nous aide', 'رأيك يساعدنا')}</h3>
             <p className="mt-1 text-xs leading-5 text-muted">{tr('Évaluez la réponse et laissez un commentaire facultatif.', 'قيّم الرد واترك تعليقًا اختياريًا.')}</p>
           </div>
-          <button type="button" onClick={onClose} className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${isDark ? 'bg-white/7 text-white/80' : 'bg-surface text-muted'}`} aria-label={tr('Fermer', 'إغلاق')}><X className="h-7 w-7" /></button>
+          <button type="button" onClick={onClose} className={`ms-auto flex h-[44px] w-[44px] shrink-0 items-center justify-center rounded-full ${isDark ? 'bg-white/7 text-white/80' : 'bg-surface text-muted'}`} aria-label={tr('Fermer', 'إغلاق')}><X size={24} /></button>
         </div>
 
-        <div className="mt-5 flex gap-2">
-          <button type="button" onClick={() => setRating('up')} className={ratingClass('up')}><ThumbsUp className="h-7 w-7" />{tr('Utile', 'مفيد')}</button>
-          <button type="button" onClick={() => setRating('down')} className={ratingClass('down')}><ThumbsDown className="h-7 w-7" />{tr('À améliorer', 'يحتاج إلى تحسين')}</button>
+        <div className="mt-5 grid grid-cols-1 gap-2 min-[420px]:grid-cols-2">
+          <button type="button" aria-pressed={rating === 'up'} disabled={isSaving} onClick={() => setRating('up')} className={ratingClass('up')}><ThumbsUp className="h-7 w-7" />{tr('Utile', 'مفيد')}</button>
+          <button type="button" aria-pressed={rating === 'down'} disabled={isSaving} onClick={() => setRating('down')} className={ratingClass('down')}><ThumbsDown className="h-7 w-7" />{tr('À améliorer', 'يحتاج إلى تحسين')}</button>
         </div>
 
         <label className="mt-4 block">
           <span className={`mb-1.5 block text-xs font-semibold ${isDark ? 'text-white/80' : 'text-ink'}`}>{tr('Commentaire', 'تعليق')} <span className="font-normal text-muted">{tr('(facultatif)', '(اختياري)')}</span></span>
           <textarea
+            disabled={isSaving}
+            maxLength={1500}
             value={comment}
             onChange={(event) => setComment(event.target.value.slice(0, 1500))}
             rows={4}
             placeholder={tr('Qu’est-ce qui était utile ou à améliorer ?', 'ما الذي كان مفيدًا أو يحتاج إلى تحسين؟')}
-            className={`w-full resize-none rounded-[14px] border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 ${isDark ? 'border-white/15 bg-ink text-white placeholder:text-muted' : 'border-line bg-white text-ink placeholder:text-muted'}`}
+            className={`w-full resize-none rounded-control border px-3.5 py-3 text-sm leading-5 outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 ${isDark ? 'border-white/15 bg-ink text-white placeholder:text-muted' : 'border-line bg-white text-ink placeholder:text-muted'}`}
           />
           <span className="mt-1 block text-end text-xs tabular-nums text-muted">{comment.length}/1500</span>
         </label>

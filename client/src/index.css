@@ -1214,3 +1214,8 @@
 @media (prefers-reduced-motion: reduce) {
   .ay-editorial-icon { animation: none !important; transition: none !important; }
 }
+
+/* Nested SONIM panels respect the same reduced-motion policy as the voice view. */
+@media (prefers-reduced-motion: reduce) {
+  .assistant-sheet, .assistant-side-menu { animation: none; }
+}

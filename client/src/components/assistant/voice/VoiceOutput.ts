@@ -65,10 +65,11 @@ export class VoiceOutput {
     text: string,
     locale: string,
     callbacks: VoicePlaybackCallbacks = {},
+    options: { preserveText?: boolean } = {},
   ): Promise<VoicePlaybackResult> {
     this.stop();
     const generation = this.generation;
-    const cleanText = this.cleanText(text);
+    const cleanText = options.preserveText ? text.trim() : this.cleanText(text);
     if (!cleanText) return 'unavailable';
 
     // The server endpoint accepts at most 4096 characters. Never let it
@@ -230,10 +231,10 @@ export class VoiceOutput {
         this.finishActive = finish;
         source.onended = () => finish('ended');
 
-        callbacks.onStart?.();
-        this.startLevelAnimation(callbacks.onLevel, generation, true);
         try {
           source.start(0);
+          callbacks.onStart?.();
+          this.startLevelAnimation(callbacks.onLevel, generation, true);
         } catch {
           finish('unavailable');
         }
@@ -288,6 +289,11 @@ export class VoiceOutput {
         resolve(result);
       };
       this.finishActive = finish;
+      utterance.onstart = () => {
+        if (settled || generation !== this.generation) return;
+        callbacks.onStart?.();
+        this.startLevelAnimation(callbacks.onLevel, generation, false);
+      };
       utterance.onend = () => finish('ended');
       utterance.onerror = (event) => {
         if (generation !== this.generation || event.error === 'canceled' || event.error === 'interrupted') {
@@ -308,8 +314,6 @@ export class VoiceOutput {
 
       try {
         if (window.speechSynthesis.paused) window.speechSynthesis.resume();
-        callbacks.onStart?.();
-        this.startLevelAnimation(callbacks.onLevel, generation, false);
         window.speechSynthesis.speak(utterance);
       } catch {
         finish('unavailable');
@@ -337,7 +341,8 @@ export class VoiceOutput {
     readAnalyser: boolean,
   ): void {
     this.stopLevelAnimation();
-    let phase = 0;
+    // Web Speech exposes no audio samples. Do not invent a measured level.
+    if (!onLevel || !readAnalyser || !this.analyser) { onLevel?.(0); return; }
     const animate = () => {
       if (generation !== this.generation || !this.finishActive) {
         this.animationFrame = null;
@@ -349,9 +354,6 @@ export class VoiceOutput {
         this.analyser.getByteFrequencyData(values);
         const average = values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
         onLevel?.(Math.min(1, average / 90));
-      } else {
-        phase += 0.22;
-        onLevel?.(0.34 + Math.sin(phase) * 0.16);
       }
       this.animationFrame = requestAnimationFrame(animate);
     };

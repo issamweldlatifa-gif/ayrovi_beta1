@@ -86,6 +86,7 @@ class FakeUtterance {
   pitch = 1;
   volume = 1;
   voice: SpeechSynthesisVoice | null = null;
+  onstart: (() => void) | null = null;
   onend: (() => void) | null = null;
   onerror: ((event: { error: string }) => void) | null = null;
   constructor(public text: string) {}
@@ -113,7 +114,7 @@ beforeEach(() => {
     paused: false,
     cancel: vi.fn(),
     resume: vi.fn(),
-    speak: vi.fn(),
+    speak: vi.fn((utterance: FakeUtterance) => utterance.onstart?.()),
     getVoices: vi.fn(() => []),
   };
 

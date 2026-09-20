@@ -63,7 +63,7 @@ try{
  const extra=await browser.newContext({viewport:{width:390,height:480},locale:'fr'});const p=await extra.newPage();p.on('pageerror',e=>errors.push(e.message));
  await p.goto(base,{waitUntil:'domcontentloaded'});await p.getByRole('button',{name:"SONIM — l'assistant IA d'AYROVI",exact:true}).click();await p.locator('[data-assistant-composer]').waitFor();
  await p.locator('.assistant-editorial-header').getByRole('button',{name:'Menu',exact:true}).click();
- await p.getByRole('button',{name:'Mode sombre',exact:true}).click();
+ await p.getByRole('switch',{name:'Mode sombre',exact:true}).click();
  await p.keyboard.press('Escape');await p.locator('[data-sonim-tone="dark"]').waitFor();
  await p.locator('[data-assistant-composer] textarea').fill('Un brouillon, sans envoi.');
  const bounds=await p.locator('[data-assistant-composer]').boundingBox();check('short viewport: composer remains reachable',bounds.y+bounds.height<=481,bounds);

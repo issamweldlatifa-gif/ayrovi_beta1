@@ -23,7 +23,8 @@
     "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs",
     "icons:check": "node scripts/check-icon-contract.mjs",
     "verify:editorial-states": "esbuild verify/editorial-states-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-states-runner.cjs && node .cache/editorial-states-runner.cjs",
-    "verify:editorial-account": "esbuild verify/customer-account-functional.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-account-runner.cjs && AYROVI_ACCOUNT_OUTPUT=screenshots/editorial/icon-correction/account node .cache/editorial-account-runner.cjs"
+    "verify:editorial-account": "esbuild verify/customer-account-functional.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-account-runner.cjs && AYROVI_ACCOUNT_OUTPUT=screenshots/editorial/icon-correction/account node .cache/editorial-account-runner.cjs",
+    "verify:sonim-actions": "node verify/sonim-actions-runner.mjs"
   },
   "keywords": [
     "ayrovi",

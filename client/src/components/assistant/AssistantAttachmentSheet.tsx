@@ -1,3 +1,4 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus';
 import React, { useRef } from 'react';
 import { Camera, ChevronRight, Globe2, Image, Plug, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -25,9 +26,11 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
   const imageInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const panelRef = React.useRef<HTMLElement>(null);
+  useDialogFocus(panelRef, isOpen);
   if (!isOpen) return null;
 
-  const rowClass = `flex w-full items-center justify-between rounded-[18px] p-3 text-start transition ${
+  const rowClass = `flex w-full items-center justify-between rounded-control p-3 text-start transition ${
     isDark ? 'bg-ink hover:bg-ink' : 'bg-surface hover:bg-line'
   }`;
   const iconClass = `flex h-10 w-10 shrink-0 items-center justify-center rounded-full shadow-sm ${
@@ -48,7 +51,7 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
   return (
     <>
       <button type="button" onClick={onClose} className="absolute inset-0 z-40 bg-ink/45 backdrop-blur-[2px]" aria-label={tr('Fermer', 'إغلاق')} />
-      <section className={`assistant-sheet absolute inset-x-0 bottom-0 z-50 max-h-[82%] overflow-y-auto rounded-t-[28px] px-5 pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-overlay ${isDark ? 'bg-ink' : 'bg-white'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}>
+      <section ref={panelRef} tabIndex={-1} className={`assistant-sheet ay-readable-label border border-line absolute inset-x-0 bottom-0 z-50 max-h-[82%] overflow-y-auto rounded-card px-5 pt-2 pb-[max(1.75rem,env(safe-area-inset-bottom))] shadow-overlay ${isDark ? 'bg-ink' : 'bg-white'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}>
         <div className={`mx-auto my-2 h-1 w-10 rounded-full ${isDark ? 'bg-ink/70' : 'bg-line'}`} />
         <div className="relative mb-5 flex items-center justify-center">
           <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Ajouter au chat', 'إضافة إلى المحادثة')}</h2>
@@ -74,13 +77,13 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
             <ChevronRight className={`h-7 w-7 text-muted ${direction === 'rtl' ? 'rotate-180' : ''}`} />
           </button>
 
-          <button type="button" onClick={onToggleWebSearch} className={rowClass}>
+          <button type="button" onClick={onToggleWebSearch} role="switch" aria-checked={webSearchEnabled} className={rowClass}>
             <span className="flex items-center gap-3">
               <span className={iconClass}><Globe2 className="h-7 w-7" /></span>
               <span><strong className={`block text-sm font-medium ${isDark ? 'text-white' : 'text-ink'}`}>{tr('Recherche Web', 'بحث الويب')}</strong><small className="text-xs text-muted">{tr('Activer ou désactiver la recherche Web', 'تشغيل بحث الويب أو إيقافه')}</small></span>
             </span>
-            <span className={`relative h-[26px] w-11 rounded-full transition ${webSearchEnabled ? 'bg-ink' : isDark ? 'bg-ink/70' : 'bg-line'}`}>
-              <span className={`absolute top-0.5 h-8 w-8 rounded-full bg-white shadow transition ${webSearchEnabled ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
+            <span className={`relative h-[26px] w-11 shrink-0 rounded-full transition ${webSearchEnabled ? 'bg-ink' : isDark ? 'bg-ink/70' : 'bg-line'}`}>
+              <span className={`absolute top-0.5 h-[22px] w-[22px] rounded-full bg-white shadow transition ${webSearchEnabled ? (direction === 'rtl' ? 'right-5' : 'left-5') : (direction === 'rtl' ? 'right-0.5' : 'left-0.5')}`} />
             </span>
           </button>
 

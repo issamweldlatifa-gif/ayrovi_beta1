@@ -1,3 +1,5 @@
+import { useDialogFocus } from '../../hooks/useDialogFocus';
+import { copyAssistantText, textActionLabels } from './messageActions';
 import React, { useEffect, useRef, useState } from 'react';
 import { AssistantAttachmentSheet } from './AssistantAttachmentSheet';
 import { AssistantComposer } from './AssistantComposer';
@@ -115,7 +117,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [feedback, setFeedback] = useState<Record<string, FeedbackValue | undefined>>({});
   const [feedbackComments, setFeedbackComments] = useState<Record<string, string>>({});
   const [feedbackMessage, setFeedbackMessage] = useState<AssistantMessage | null>(null);
-  const [isFeedbackSaving, setIsFeedbackSaving] = useState(false);
+  const [feedbackPending, setFeedbackPending] = useState<Record<string, boolean>>({});
   const [conversationId, setConversationId] = useState(createConversationId);
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: AyrovixProduct; priceVerified: boolean } | null>(null);
@@ -164,7 +166,19 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const viewportFrameRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
 
+  useEffect(() => {
+    if (!feedbackLayer && !isMenuOpen && !isAttachmentSheetOpen) return;
+    // Do not carry a previous screen's transient notice over a newly opened form.
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = null;
+    setToast('');
+  }, [feedbackLayer, isMenuOpen, isAttachmentSheetOpen]);
+
   useBodyScrollLock(isOpen);
+  useDialogFocus(pageRef, isOpen);
+  const feedbackRequests = useRef(new Set<string>());
+  const feedbackContext = useRef({ isOpen, historyScope, conversationId, layer: feedbackLayer, top: navigation.current });
+  feedbackContext.current = { isOpen, historyScope, conversationId, layer: feedbackLayer, top: navigation.current };
 
   useEffect(() => {
     if (!isOpen) return;
@@ -484,7 +498,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    window.requestAnimationFrame(() => pageRef.current?.focus({ preventScroll: true }));
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !event.defaultPrevented) {
         if (feedbackLayer || productLayer || isAttachmentSheetOpen || isMenuOpen) closeAssistantLayer();
@@ -538,6 +551,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => () => {
     isOpenRef.current = false;
+    feedbackContext.current = { ...feedbackContext.current, isOpen: false };
     generationAbortRef.current?.abort();
     transcriptionAbortRef.current?.abort();
     stopVoiceMode();
@@ -821,16 +835,17 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const handleCopy = async (message: AssistantMessage) => {
     try {
-      await navigator.clipboard.writeText(message.text);
+      const result = await copyAssistantText(message.text);
+      showToast(tr(...textActionLabels[result]));
+      if (result !== 'copied') { setCopiedId(null); return; }
       setCopiedId(message.id);
-      showToast('Réponse copiée');
       if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       copiedTimerRef.current = setTimeout(() => {
         setCopiedId(null);
         copiedTimerRef.current = null;
       }, 1800);
     } catch {
-      showToast('Copie indisponible dans ce navigateur');
+      showToast(tr(...textActionLabels.error));
     }
   };
 
@@ -935,30 +950,43 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (!response.ok || !payload.success) throw new Error(payload.error || 'Avis non envoyé');
   };
 
-  const handleFeedback = (message: AssistantMessage, value: FeedbackValue) => {
-    const previous = feedback[message.id];
-    setFeedback((current) => ({ ...current, [message.id]: value }));
-    void persistFeedback(message, value, feedbackComments[message.id] || '').catch(() => {
-      setFeedback((current) => ({ ...current, [message.id]: previous }));
-      showToast(tr('Impossible d’envoyer votre avis', 'تعذّر إرسال رأيك'));
-    });
+  // A confirmed write only updates its original conversation. Per-message admission
+  // prevents double submission and out-of-order thumb/comment writes in this view.
+  const submitFeedback = async (message: AssistantMessage, rating: FeedbackValue, comment: string, fromSheet: boolean) => {
+    if (feedbackRequests.current.has(message.id)) return;
+    feedbackRequests.current.add(message.id);
+    setFeedbackPending(current => ({ ...current, [message.id]: true }));
+    const context = feedbackContext.current;
+    const sameConversation = () => {
+      const current = feedbackContext.current;
+      return current.isOpen && current.historyScope === context.historyScope && current.conversationId === context.conversationId;
+    };
+    const sameSheet = () => feedbackContext.current.layer === context.layer && feedbackContext.current.top === context.layer;
+    try {
+      await persistFeedback(message, rating, comment);
+      if (!sameConversation()) return;
+      if (fromSheet && !sameSheet()) return;
+      setFeedback(current => ({ ...current, [message.id]: rating }));
+      setFeedbackComments(current => ({ ...current, [message.id]: comment }));
+      if (fromSheet && sameSheet()) {
+        setFeedbackMessage(null);
+        closeAssistantLayer();
+        showToast(tr('Merci pour votre avis', 'شكرًا على رأيك'));
+      }
+    } catch {
+      if (sameConversation() && (!fromSheet || sameSheet())) showToast(tr('Impossible d’envoyer votre avis', 'تعذّر إرسال رأيك'));
+    } finally {
+      feedbackRequests.current.delete(message.id);
+      setFeedbackPending(current => { const next = { ...current }; delete next[message.id]; return next; });
+    }
   };
 
-  const saveFeedbackComment = async (rating: FeedbackValue, comment: string) => {
-    if (!feedbackMessage) return;
-    setIsFeedbackSaving(true);
-    try {
-      await persistFeedback(feedbackMessage, rating, comment);
-      setFeedback((current) => ({ ...current, [feedbackMessage.id]: rating }));
-      setFeedbackComments((current) => ({ ...current, [feedbackMessage.id]: comment }));
-      setFeedbackMessage(null);
-      closeAssistantLayer();
-      showToast(tr('Merci pour votre avis', 'شكرًا على رأيك'));
-    } catch {
-      showToast(tr('Impossible d’envoyer votre avis', 'تعذّر إرسال رأيك'));
-    } finally {
-      setIsFeedbackSaving(false);
-    }
+  const handleFeedback = (message: AssistantMessage, value: FeedbackValue) => {
+    void submitFeedback(message, value, feedbackComments[message.id] || '', false);
+  };
+
+  const saveFeedbackComment = (rating: FeedbackValue, comment: string) => {
+    if (feedbackMessage && feedbackLayer) void submitFeedback(feedbackMessage, rating, comment, true);
   };
 
   return (
@@ -973,6 +1001,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       aria-label={tr('SONIM', 'SONIM')}
     >
       <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
+        <div className="contents" inert={Boolean(isMenuOpen || isAttachmentSheetOpen || (feedbackLayer && feedbackMessage))}>
         {voiceMode ? (
           <AssistantVoiceModeScreen
             state={isMuted ? 'muted' : voiceState}
@@ -1031,6 +1060,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 isDark={isDark}
                 copiedId={copiedId}
                 feedback={feedback}
+                feedbackPending={feedbackPending}
                 selectedProduct={productLayer ? selectedProduct : null}
                 productBusyId={productBusyId}
                 isOrdering={isOrdering}
@@ -1071,6 +1101,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           </>
         )}
 
+        </div>
         <AssistantSideMenu
           isOpen={isMenuOpen}
           isDark={isDark}
@@ -1096,7 +1127,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           onClose={closeAssistantLayer}
           onPickFile={handleFilePicked}
           onToggleWebSearch={() => setWebSearchEnabled((enabled) => !enabled)}
-          onConnectors={() => showToast('Les connecteurs seront bientôt disponibles')}
+          onConnectors={() => showToast(tr('Les connecteurs seront bientôt disponibles', 'الخدمات المتصلة ستتوفر قريبًا'))}
         />
 
         <AssistantFeedbackSheet
@@ -1104,12 +1135,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isDark={isDark}
           initialRating={feedbackMessage ? feedback[feedbackMessage.id] : undefined}
           initialComment={feedbackMessage ? feedbackComments[feedbackMessage.id] : ''}
-          isSaving={isFeedbackSaving}
+          isSaving={Boolean(feedbackMessage && feedbackPending[feedbackMessage.id])}
           onClose={closeAssistantLayer}
           onSave={saveFeedbackComment}
         />
 
-        <div className={`pointer-events-none absolute bottom-24 left-1/2 z-[70] -translate-x-1/2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs shadow-lg transition ${toast ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0'} ${isDark ? 'bg-surface text-ink' : 'bg-ink text-white'}`} role="status">
+        <div className={`pointer-events-none absolute bottom-24 left-1/2 z-[70] -translate-x-1/2 w-max max-w-[calc(100%-2rem)] whitespace-normal ay-readable text-center rounded-card px-4 py-2.5 text-xs shadow-lg transition ${toast ? 'translate-y-0 opacity-100' : 'translate-y-2 opacity-0 invisible'} ${isDark ? 'bg-surface text-ink' : 'bg-ink text-white'}`} role="status">
           {toast}
         </div>
       </section>
