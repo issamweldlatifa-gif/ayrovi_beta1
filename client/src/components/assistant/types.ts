@@ -44,6 +44,8 @@ export interface AssistantMessage {
   role: 'user' | 'assistant';
   text: string;
   fromVoice?: boolean;
+  /** New streamed turns remain incomplete until the server emits done. */
+  incomplete?: boolean;
   attachments?: AssistantAttachment[];
   products?: import('../../ayrovix/types').AyrovixCandidate[];
   priceBreakdown?: AssistantPriceBreakdown;

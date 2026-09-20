@@ -15,7 +15,7 @@ try {
       localStorage.setItem('ayrovi_assistant_conversations_v1_guest', JSON.stringify([{ id: 'conversation-fixture', title: 'Titre complet / عنوان كامل pour vérifier le retour au menu et la lisibilité de toutes les conversations', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [
         { id: 'first', role: 'assistant', text: text + ' [[OPEN_LENS]]' },
         { id: 'second', role: 'assistant', text: locale === 'ar' ? 'رد ثان كامل' : 'Deuxième réponse complète' },
-        { id: 'tool', role: 'assistant', text: '[[OPEN_LENS]]', priceBreakdown: { totalTND: 30, convertedPriceTND: 20, customsFeeTND: 2, shippingFeeTND: 4, serviceFeeTND: 4, expressFeeTND: 0 } },
+        { id: 'tool', role: 'assistant', text: '[[OPEN_LENS]]', priceBreakdown: { originalPrice: 20, currency: 'TND', exchangeRate: 1, pricingVersion: 1, totalTND: 30, convertedPriceTND: 20, customsFeeTND: 2, shippingFeeTND: 4, serviceFeeTND: 4, expressFeeTND: 0 } },
       ] }]));
       window.actionTest = { copied: [], shares: [], mode: 'native', clipboardError: false, resolveShare: null };
       Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async text => { if (window.actionTest.clipboardError) throw new Error('denied'); window.actionTest.copied.push(text); } } });

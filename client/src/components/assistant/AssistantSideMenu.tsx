@@ -1,3 +1,5 @@
+import { AssistantHistoryNotice } from './AssistantHistoryNotice';
+import type { HistoryStatus } from './conversationHistory';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import React from 'react';
 import { ArrowLeft, Trash2 } from '../QatafoIcons';
@@ -8,6 +10,7 @@ interface AssistantSideMenuProps {
   isOpen: boolean;
   isDark: boolean;
   conversations: AssistantConversation[];
+  historyStatus?: HistoryStatus;
   activeConversationId: string;
   isAuthenticated: boolean;
   onClose: () => void;
@@ -26,6 +29,7 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
   isOpen,
   isDark,
   conversations,
+  historyStatus = 'ready',
   activeConversationId,
   isAuthenticated,
   onClose,
@@ -67,6 +71,8 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
 
         <div className="min-h-0 flex-1 overflow-y-auto pb-3">
           <p className={sectionLabel}>{tr('Historique', 'السجل')}</p>
+          <p className="ay-readable-label px-3 pb-3 text-xs leading-5 text-muted">{tr('Les 20 conversations les plus récentes sont conservées sur cet appareil, dans la limite de son stockage. Les images jointes ne sont pas conservées.', 'تُحفظ أحدث 20 محادثة على هذا الجهاز ضمن مساحة التخزين المتاحة. لا تُحفظ صور المرفقات.')}</p>
+          <AssistantHistoryNotice status={historyStatus}/>
           {conversations.length ? (
             <div className="space-y-1">
               {conversations.map((conversation) => (
@@ -75,15 +81,15 @@ export const AssistantSideMenu: React.FC<AssistantSideMenuProps> = ({
                     <span className="ay-readable-label block text-sm font-semibold">{conversation.title}</span>
                     <span className="mt-0.5 block text-xs text-muted">{formatDate(conversation.updatedAt)}</span>
                   </button>
-                  <button type="button" onClick={() => onDeleteConversation(conversation.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-danger/5 hover:text-danger" aria-label={tr(`Supprimer ${conversation.title}`, `حذف ${conversation.title}`)}>
+                  <button type="button" disabled={['corrupt', 'unavailable'].includes(historyStatus)} onClick={() => onDeleteConversation(conversation.id)} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-danger/5 hover:text-danger" aria-label={tr(`Supprimer ${conversation.title}`, `حذف ${conversation.title}`)}>
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 </div>
               ))}
             </div>
-          ) : (
+          ) : historyStatus === 'ready' ? (
             <p className={`rounded-control px-3 py-4 text-center text-xs leading-5 ${isDark ? 'bg-white/5 text-muted' : 'bg-surface text-muted'}`}>{tr('Votre première conversation apparaîtra ici.', 'ستظهر محادثتك الأولى هنا.')}</p>
-          )}
+          ) : null}
 
           <button type="button" onClick={onOpenOrders} className={mainItem}>{tr('Mes commandes', 'طلباتي')}</button>
           <button type="button" onClick={onOpenLens} className={mainItem}>AYROVIX</button>

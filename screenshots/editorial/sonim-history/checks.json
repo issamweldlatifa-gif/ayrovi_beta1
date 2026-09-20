@@ -1,0 +1,650 @@
+{
+  "checks": [
+    {
+      "label": "fr/320: initial legacy long text is complete",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restores WARNING_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restores ACTION_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restores TICKET_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restores ORDER_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restores HISTORY_7 without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restores ATTACHMENT_LAST.png without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/320: historical price card is present",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selected-only message has a recovery action",
+      "pass": true
+    },
+    {
+      "label": "fr/320: restored prices are explicitly historical",
+      "pass": true
+    },
+    {
+      "label": "fr/320: loading a snapshot does not mint a new save timestamp",
+      "pass": true
+    },
+    {
+      "label": "fr/320: entire stored title is displayed",
+      "pass": true
+    },
+    {
+      "label": "fr/320: retention and attachment policy is visible",
+      "pass": true
+    },
+    {
+      "label": "fr/320: historical selection is not sent as a currently configured product",
+      "pass": true
+    },
+    {
+      "label": "fr/320: persistence retains paragraphs and full title",
+      "pass": true
+    },
+    {
+      "label": "fr/320: completed server turn is not labelled partial",
+      "pass": true
+    },
+    {
+      "label": "fr/320: persistence retains all tool-only IDs",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selected-product metadata round-trips",
+      "pass": true
+    },
+    {
+      "label": "fr/320: actual browser reload preserves the full response",
+      "pass": true
+    },
+    {
+      "label": "fr/320: actual browser reload preserves Lens warnings and actions",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed refresh preserves full stored product and allows retry",
+      "pass": true
+    },
+    {
+      "label": "fr/320: refresh adopts authoritative current title and price together",
+      "pass": true
+    },
+    {
+      "label": "fr/320: reload with a product navigation layer still requires fresh verification",
+      "pass": true
+    },
+    {
+      "label": "fr/320: refreshing restored product layer opens without duplicating navigation",
+      "pass": true
+    },
+    {
+      "label": "fr/320: quote-bound fields are never overwritten by stale candidate data",
+      "pass": true
+    },
+    {
+      "label": "fr/320: candidate resolution does not restore its stale price/title",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed save is visible while current content remains",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed deletion retains the item and active conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/320: retry stores the untruncated active conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/320: old product result cannot reopen in new conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selecting saved conversation restores full text",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selecting active history neither rolls back nor retimestamps",
+      "pass": true
+    },
+    {
+      "label": "fr/320: browser-back unmount persists the partial response and its question",
+      "pass": true
+    },
+    {
+      "label": "fr/320: partial response is identified, not presented as a completed answer",
+      "pass": true
+    },
+    {
+      "label": "fr/320: partial turn can actually be reopened",
+      "pass": true
+    },
+    {
+      "label": "fr/320: damaged raw data is protected from autosave",
+      "pass": true
+    },
+    {
+      "label": "fr/320: history notices and content do not overflow phone",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "fr/320: malformed JSON cannot crash reopening",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unreadable history is not presented as an empty successful history",
+      "pass": true
+    },
+    {
+      "label": "fr/390: initial legacy long text is complete",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restores WARNING_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restores ACTION_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restores TICKET_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restores ORDER_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restores HISTORY_7 without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restores ATTACHMENT_LAST.png without prose",
+      "pass": true
+    },
+    {
+      "label": "fr/390: historical price card is present",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selected-only message has a recovery action",
+      "pass": true
+    },
+    {
+      "label": "fr/390: restored prices are explicitly historical",
+      "pass": true
+    },
+    {
+      "label": "fr/390: loading a snapshot does not mint a new save timestamp",
+      "pass": true
+    },
+    {
+      "label": "fr/390: entire stored title is displayed",
+      "pass": true
+    },
+    {
+      "label": "fr/390: retention and attachment policy is visible",
+      "pass": true
+    },
+    {
+      "label": "fr/390: historical selection is not sent as a currently configured product",
+      "pass": true
+    },
+    {
+      "label": "fr/390: persistence retains paragraphs and full title",
+      "pass": true
+    },
+    {
+      "label": "fr/390: completed server turn is not labelled partial",
+      "pass": true
+    },
+    {
+      "label": "fr/390: persistence retains all tool-only IDs",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selected-product metadata round-trips",
+      "pass": true
+    },
+    {
+      "label": "fr/390: actual browser reload preserves the full response",
+      "pass": true
+    },
+    {
+      "label": "fr/390: actual browser reload preserves Lens warnings and actions",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed refresh preserves full stored product and allows retry",
+      "pass": true
+    },
+    {
+      "label": "fr/390: refresh adopts authoritative current title and price together",
+      "pass": true
+    },
+    {
+      "label": "fr/390: reload with a product navigation layer still requires fresh verification",
+      "pass": true
+    },
+    {
+      "label": "fr/390: refreshing restored product layer opens without duplicating navigation",
+      "pass": true
+    },
+    {
+      "label": "fr/390: quote-bound fields are never overwritten by stale candidate data",
+      "pass": true
+    },
+    {
+      "label": "fr/390: candidate resolution does not restore its stale price/title",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed save is visible while current content remains",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed deletion retains the item and active conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/390: retry stores the untruncated active conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/390: old product result cannot reopen in new conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selecting saved conversation restores full text",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selecting active history neither rolls back nor retimestamps",
+      "pass": true
+    },
+    {
+      "label": "fr/390: browser-back unmount persists the partial response and its question",
+      "pass": true
+    },
+    {
+      "label": "fr/390: partial response is identified, not presented as a completed answer",
+      "pass": true
+    },
+    {
+      "label": "fr/390: partial turn can actually be reopened",
+      "pass": true
+    },
+    {
+      "label": "fr/390: damaged raw data is protected from autosave",
+      "pass": true
+    },
+    {
+      "label": "fr/390: history notices and content do not overflow phone",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "fr/390: malformed JSON cannot crash reopening",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unreadable history is not presented as an empty successful history",
+      "pass": true
+    },
+    {
+      "label": "ar/320: initial legacy long text is complete",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restores WARNING_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restores ACTION_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restores TICKET_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restores ORDER_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restores HISTORY_7 without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restores ATTACHMENT_LAST.png without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/320: historical price card is present",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selected-only message has a recovery action",
+      "pass": true
+    },
+    {
+      "label": "ar/320: restored prices are explicitly historical",
+      "pass": true
+    },
+    {
+      "label": "ar/320: loading a snapshot does not mint a new save timestamp",
+      "pass": true
+    },
+    {
+      "label": "ar/320: entire stored title is displayed",
+      "pass": true
+    },
+    {
+      "label": "ar/320: retention and attachment policy is visible",
+      "pass": true
+    },
+    {
+      "label": "ar/320: historical selection is not sent as a currently configured product",
+      "pass": true
+    },
+    {
+      "label": "ar/320: persistence retains paragraphs and full title",
+      "pass": true
+    },
+    {
+      "label": "ar/320: completed server turn is not labelled partial",
+      "pass": true
+    },
+    {
+      "label": "ar/320: persistence retains all tool-only IDs",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selected-product metadata round-trips",
+      "pass": true
+    },
+    {
+      "label": "ar/320: actual browser reload preserves the full response",
+      "pass": true
+    },
+    {
+      "label": "ar/320: actual browser reload preserves Lens warnings and actions",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed refresh preserves full stored product and allows retry",
+      "pass": true
+    },
+    {
+      "label": "ar/320: refresh adopts authoritative current title and price together",
+      "pass": true
+    },
+    {
+      "label": "ar/320: reload with a product navigation layer still requires fresh verification",
+      "pass": true
+    },
+    {
+      "label": "ar/320: refreshing restored product layer opens without duplicating navigation",
+      "pass": true
+    },
+    {
+      "label": "ar/320: quote-bound fields are never overwritten by stale candidate data",
+      "pass": true
+    },
+    {
+      "label": "ar/320: candidate resolution does not restore its stale price/title",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed save is visible while current content remains",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed deletion retains the item and active conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/320: retry stores the untruncated active conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/320: old product result cannot reopen in new conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selecting saved conversation restores full text",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selecting active history neither rolls back nor retimestamps",
+      "pass": true
+    },
+    {
+      "label": "ar/320: browser-back unmount persists the partial response and its question",
+      "pass": true
+    },
+    {
+      "label": "ar/320: partial response is identified, not presented as a completed answer",
+      "pass": true
+    },
+    {
+      "label": "ar/320: partial turn can actually be reopened",
+      "pass": true
+    },
+    {
+      "label": "ar/320: damaged raw data is protected from autosave",
+      "pass": true
+    },
+    {
+      "label": "ar/320: history notices and content do not overflow phone",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "ar/320: malformed JSON cannot crash reopening",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unreadable history is not presented as an empty successful history",
+      "pass": true
+    },
+    {
+      "label": "ar/390: initial legacy long text is complete",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restores WARNING_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restores ACTION_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restores TICKET_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restores ORDER_LAST without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restores HISTORY_7 without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restores ATTACHMENT_LAST.png without prose",
+      "pass": true
+    },
+    {
+      "label": "ar/390: historical price card is present",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selected-only message has a recovery action",
+      "pass": true
+    },
+    {
+      "label": "ar/390: restored prices are explicitly historical",
+      "pass": true
+    },
+    {
+      "label": "ar/390: loading a snapshot does not mint a new save timestamp",
+      "pass": true
+    },
+    {
+      "label": "ar/390: entire stored title is displayed",
+      "pass": true
+    },
+    {
+      "label": "ar/390: retention and attachment policy is visible",
+      "pass": true
+    },
+    {
+      "label": "ar/390: historical selection is not sent as a currently configured product",
+      "pass": true
+    },
+    {
+      "label": "ar/390: persistence retains paragraphs and full title",
+      "pass": true
+    },
+    {
+      "label": "ar/390: completed server turn is not labelled partial",
+      "pass": true
+    },
+    {
+      "label": "ar/390: persistence retains all tool-only IDs",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selected-product metadata round-trips",
+      "pass": true
+    },
+    {
+      "label": "ar/390: actual browser reload preserves the full response",
+      "pass": true
+    },
+    {
+      "label": "ar/390: actual browser reload preserves Lens warnings and actions",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed refresh preserves full stored product and allows retry",
+      "pass": true
+    },
+    {
+      "label": "ar/390: refresh adopts authoritative current title and price together",
+      "pass": true
+    },
+    {
+      "label": "ar/390: reload with a product navigation layer still requires fresh verification",
+      "pass": true
+    },
+    {
+      "label": "ar/390: refreshing restored product layer opens without duplicating navigation",
+      "pass": true
+    },
+    {
+      "label": "ar/390: quote-bound fields are never overwritten by stale candidate data",
+      "pass": true
+    },
+    {
+      "label": "ar/390: candidate resolution does not restore its stale price/title",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed save is visible while current content remains",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed deletion retains the item and active conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/390: retry stores the untruncated active conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/390: old product result cannot reopen in new conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selecting saved conversation restores full text",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selecting active history neither rolls back nor retimestamps",
+      "pass": true
+    },
+    {
+      "label": "ar/390: browser-back unmount persists the partial response and its question",
+      "pass": true
+    },
+    {
+      "label": "ar/390: partial response is identified, not presented as a completed answer",
+      "pass": true
+    },
+    {
+      "label": "ar/390: partial turn can actually be reopened",
+      "pass": true
+    },
+    {
+      "label": "ar/390: damaged raw data is protected from autosave",
+      "pass": true
+    },
+    {
+      "label": "ar/390: history notices and content do not overflow phone",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "ar/390: malformed JSON cannot crash reopening",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unreadable history is not presented as an empty successful history",
+      "pass": true
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

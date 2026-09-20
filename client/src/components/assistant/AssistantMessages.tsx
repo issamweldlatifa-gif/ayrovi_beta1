@@ -14,6 +14,7 @@ import { useLocale } from '../../i18n/LocaleContext';
 
 interface AssistantMessagesProps {
   messages: AssistantMessage[];
+  historyNotice?: React.ReactNode;
   isGenerating: boolean;
   motionState: AyroviMotionState;
   isDark: boolean;
@@ -84,7 +85,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
 };
 
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
-  messages, isGenerating, motionState, isDark, copiedId, feedbackPending = {}, feedback, selectedProduct, productBusyId, isOrdering,
+  messages, historyNotice, isGenerating, motionState, isDark, copiedId, feedbackPending = {}, feedback, selectedProduct, productBusyId, isOrdering,
   onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
   customerFirstName, assistantReady,
 }) => {
@@ -97,7 +98,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   const lastMessage = messages.at(-1);
   const lastAssistantHasContent = Boolean(lastMessage?.role === 'assistant' && (
     cleanAssistantText(lastMessage.text) || lastMessage.products?.length || lastMessage.priceBreakdown
-    || lastMessage.orderStatuses?.length || lastMessage.supportTicket
+    || lastMessage.orderStatuses?.length || lastMessage.supportTicket || lastMessage.attachments?.length || lastMessage.suggestedActions?.length || lastMessage.lensSummary
   ));
   useEffect(() => {
     const view = scrollRef.current;
@@ -112,6 +113,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
       followRef.current = view.scrollHeight - view.scrollTop - view.clientHeight < 64;
     }} dir={direction} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-ink text-white' : 'bg-surface text-ink'}`}>
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-10 pt-8 sm:px-7 sm:pb-12">
+        {historyNotice}
         {!hasMessages ? (
           <div className="assistant-welcome flex flex-1 flex-col">
             {/* Identité AI + accueil personnalisé */}
@@ -165,7 +167,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
           <div className="space-y-5">
             {messages.map((message, index) => {
               const assistantText = cleanAssistantText(message.text);
-              const hasPresentation = Boolean(message.products?.length || message.priceBreakdown || message.orderStatuses?.length || message.supportTicket || selectedProduct?.messageId === message.id);
+              const hasPresentation = Boolean(message.products?.length || message.priceBreakdown || message.orderStatuses?.length || message.supportTicket || message.attachments?.length || message.suggestedActions?.length || message.lensSummary || selectedProduct?.messageId === message.id || (message.incomplete && !(isGenerating && index === messages.length - 1)));
               if (message.role === 'assistant' && !assistantText && !hasPresentation) return null;
               const isLastAssistantStreaming = isGenerating && index === messages.length - 1 && message.role === 'assistant';
               return <div key={message.id} className={`flex flex-wrap gap-y-2 items-start ${message.role === 'user' ? 'justify-end' : 'justify-start gap-2.5'}`}>
@@ -185,6 +187,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                         <span>{tr('Vocal', 'صوتي')}</span>
                       </span>
                     )}
+                    {message.role === 'assistant' && message.incomplete && !isLastAssistantStreaming && <p data-incomplete-response role="status" className="ay-readable mb-2 text-xs text-muted">{tr('Réponse interrompue avant sa fin. Vous pouvez la régénérer.', 'توقف الرد قبل اكتماله. يمكنك إعادة توليده.')}</p>}
                     {assistantText && <p className="ay-readable whitespace-pre-wrap">{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="ay-readable px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder}/>}

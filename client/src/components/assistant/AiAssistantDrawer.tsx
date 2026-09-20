@@ -1,3 +1,6 @@
+import { AssistantHistoryNotice } from './AssistantHistoryNotice';
+import { validProductUrl } from '../../ayrovix/services/resultPolicy';
+import type { HistoryStatus } from './conversationHistory';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { copyAssistantText, textActionLabels } from './messageActions';
 import React, { useEffect, useRef, useState } from 'react';
@@ -20,7 +23,7 @@ import { streamAssistantChat, transcribeAssistantAudio } from './assistantApi';
 import {
   AssistantConversation,
   deleteAssistantConversation,
-  listAssistantConversations,
+  readAssistantHistory,
   saveAssistantConversation,
 } from './conversationHistory';
 import { AssistantAttachment, AssistantMessage, FeedbackValue } from './types';
@@ -100,6 +103,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const closeAssistantLayer = () => navigation.back();
   const [messages, setMessages] = useState<AssistantMessage[]>([]);
   const [isBooting, setIsBooting] = useState(true);
+  const [historyStatus, setHistoryStatus] = useState<HistoryStatus>('ready');
+  const [historyRestored, setHistoryRestored] = useState(false);
+  const [historySaveAttempt, setHistorySaveAttempt] = useState(0);
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<AssistantAttachment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -121,6 +127,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [conversationId, setConversationId] = useState(createConversationId);
   const [conversations, setConversations] = useState<AssistantConversation[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<{ messageId: string; product: AyrovixProduct; priceVerified: boolean } | null>(null);
+  const [isStoredProduct, setIsStoredProduct] = useState(false);
   const [productBusyId, setProductBusyId] = useState('');
   const [isOrdering, setIsOrdering] = useState(false);
   const [voiceMode, setVoiceMode] = useState(false);
@@ -146,6 +153,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   isOpenRef.current = isOpen;
   const openAssistantProduct = (next: { messageId: string; product: AyrovixProduct; priceVerified: boolean }) => {
     if (!isOpenRef.current) return;
+    setIsStoredProduct(false);
     setSelectedProduct(next);
     if (!productLayer) navigation.pushLayer({ id: 'assistant:product', payload: { messageId: next.messageId } });
   };
@@ -163,8 +171,23 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const voiceCapturePendingRef = useRef(false);
   const transcriptionAbortRef = useRef<AbortController | null>(null);
   const historyReadyRef = useRef(false);
+  const restoredMessageIdsRef = useRef(new Set<string>());
+  const saveOnExitRef = useRef<(updateView?: boolean) => HistoryStatus>(() => 'ready');
+  const savedSnapshotRef = useRef<{ id: string; scope: typeof historyScope; messages: AssistantMessage[]; product: typeof selectedProduct; attempt: number } | null>(null);
+  const rememberSnapshot = (conversation: AssistantConversation) => {
+    savedSnapshotRef.current = { id: conversation.id, scope: historyScope, messages: conversation.messages, product: conversation.selectedProduct || null, attempt: historySaveAttempt };
+  };
   const viewportFrameRef = useRef<HTMLDivElement>(null);
   const pageRef = useRef<HTMLElement>(null);
+  const previousHistoryScope = useRef(historyScope);
+  const productRequestRef = useRef<AbortController | null>(null);
+  const productContextRef = useRef({ isOpen, conversationId, historyScope, entry: navigation.entry });
+  productContextRef.current = { isOpen, conversationId, historyScope, entry: navigation.entry };
+  useEffect(() => {
+    productRequestRef.current?.abort(); productRequestRef.current = null;
+    setProductBusyId('');
+    return () => { productRequestRef.current?.abort(); productRequestRef.current = null; };
+  }, [isOpen, conversationId, historyScope]);
 
   useEffect(() => {
     if (!feedbackLayer && !isMenuOpen && !isAttachmentSheetOpen) return;
@@ -229,9 +252,20 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (!isOpen) return;
     setIsBooting(true);
     historyReadyRef.current = false;
-    const stored = listAssistantConversations(historyScope);
+    if (previousHistoryScope.current !== historyScope) {
+      previousHistoryScope.current = historyScope;
+      stopGeneration(); stopVoiceMode();
+      setInput(''); setAttachments([]);
+    }
+    const result = readAssistantHistory(historyScope);
+    const stored = result.conversations;
+    setHistoryStatus(result.status);
+    setHistoryRestored(Boolean(stored[0]));
+    setIsStoredProduct(Boolean(stored[0]?.selectedProduct));
+    restoredMessageIdsRef.current = new Set(stored[0]?.messages.map(message => message.id) || []);
     setConversations(stored);
     if (stored[0]) {
+      rememberSnapshot(stored[0]);
       setConversationId(stored[0].id);
       setMessages(stored[0].messages);
       setSelectedProduct(stored[0].selectedProduct || null);
@@ -249,21 +283,33 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     return () => window.clearTimeout(readyTimer);
   }, [isOpen, historyScope]);
 
-  useEffect(() => {
-    if (!isOpen || isGenerating || !historyReadyRef.current || !messages.length) return;
+  const saveActiveConversation = (updateView = true): HistoryStatus => {
+    if (!historyReadyRef.current || !messages.length) return 'ready';
+    // Never write a previous account's view under a newly supplied scope.
+    if (previousHistoryScope.current !== historyScope) return 'unavailable';
+    const saved = savedSnapshotRef.current;
+    if (saved?.id === conversationId && saved.scope === historyScope && saved.messages === messages && saved.product === selectedProduct && saved.attempt === historySaveAttempt) return 'ready' as const;
     const existing = conversations.find((item) => item.id === conversationId);
-    const firstUserMessage = messages.find((message) => message.role === 'user')?.text || 'Nouvelle conversation';
+    const firstUserMessage = messages.find((message) => message.role === 'user')?.text || tr('Nouvelle conversation', 'محادثة جديدة');
     const now = new Date().toISOString();
     const next = saveAssistantConversation(historyScope, {
       id: conversationId,
-      title: existing?.title || firstUserMessage.slice(0, 80),
+      title: existing?.title || firstUserMessage,
       messages,
       selectedProduct,
       createdAt: existing?.createdAt || now,
       updatedAt: now,
     });
-    setConversations(next);
-  }, [messages, selectedProduct, conversationId, historyScope, isOpen, isGenerating]);
+    if (updateView) { setConversations(next.conversations); setHistoryStatus(next.status); }
+    if (next.status === 'ready') savedSnapshotRef.current = { id: conversationId, scope: historyScope, messages, product: selectedProduct, attempt: historySaveAttempt };
+    return next.status;
+  };
+  saveOnExitRef.current = saveActiveConversation;
+
+  useEffect(() => {
+    if (!isOpen || isGenerating) return;
+    saveActiveConversation();
+  }, [messages, selectedProduct, conversationId, historyScope, isOpen, isGenerating, historySaveAttempt]);
 
   const voiceControllerRef = useRef<VoiceChatController | null>(null);
 
@@ -407,10 +453,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         conversationId,
         messages: sourceMessages,
         state: {
-          orderStage: selectedProduct ? 'PRODUCT_CONFIGURATION' : 'CONVERSATION',
+          orderStage: selectedProduct && !isStoredProduct ? 'PRODUCT_CONFIGURATION' : 'CONVERSATION',
           webSearchEnabled,
           isAuthenticated,
-          activeProduct: selectedProduct ? {
+          activeProduct: selectedProduct && !isStoredProduct ? {
             messageId: selectedProduct.messageId,
             title: selectedProduct.product.title,
             brand: selectedProduct.product.brand,
@@ -427,6 +473,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         csrfToken: customerCsrfToken,
         signal: controller.signal,
         onEvent: (event) => {
+          if (controller.signal.aborted || generationAbortRef.current !== controller) return;
+          if (event.type === 'done') {
+            setMessages(current => current.map(message => message.id === responseId ? { ...message, incomplete: false } : message));
+          }
           if (event.type === 'state') {
             setMotionState(event.state);
           }
@@ -472,7 +522,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         },
       });
     } catch (error: any) {
-      if (error?.name !== 'AbortError') {
+      if (generationAbortRef.current === controller && !controller.signal.aborted && error?.name !== 'AbortError') {
         const fallback = error?.message || 'Je rencontre un problème de connexion. Réessayez dans un instant.';
         if (!spokenResponse.trim()) spokenResponse = fallback;
         setMessages((current) => current.map((message) => (
@@ -530,6 +580,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   useEffect(() => {
     if (isOpen) return;
+    saveActiveConversation();
     generationAbortRef.current?.abort();
     generationAbortRef.current = null;
     setIsGenerating(false);
@@ -550,6 +601,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   }, [isOpen]);
 
   useEffect(() => () => {
+    saveOnExitRef.current(false);
     isOpenRef.current = false;
     feedbackContext.current = { ...feedbackContext.current, isOpen: false };
     generationAbortRef.current?.abort();
@@ -566,6 +618,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   }, []);
 
   const handleCloseAssistant = () => {
+    saveActiveConversation();
     stopGeneration();
     stopVoiceMode();
     transcriptionAbortRef.current?.abort();
@@ -600,7 +653,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     };
     const responseId = `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const sourceMessages = [...messages, userMessage];
-    setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '' }]);
+    setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '', incomplete: true }]);
     setInput('');
     setAttachments([]);
     void startAssistantReply(sourceMessages, responseId);
@@ -733,7 +786,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const resetConversation = () => {
+    saveActiveConversation();
     stopGeneration();
+    setHistoryRestored(false);
+    restoredMessageIdsRef.current.clear();
     setConversationId(createConversationId());
     setMessages([]);
     setInput('');
@@ -742,25 +798,36 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setFeedbackComments({});
     setSelectedProduct(null);
     if (isMenuOpen) closeAssistantLayer();
-    showToast('Nouvelle conversation');
+    showToast(tr('Nouvelle conversation', 'محادثة جديدة'));
   };
 
   const selectConversation = (conversation: AssistantConversation) => {
+    if (conversation.id === conversationId) { closeAssistantLayer(); return; }
+    saveActiveConversation();
     stopGeneration();
+    rememberSnapshot(conversation);
+    restoredMessageIdsRef.current = new Set(conversation.messages.map(message => message.id));
+    setHistoryRestored(true);
     setConversationId(conversation.id);
     setMessages(conversation.messages);
     setInput('');
     setAttachments([]);
     setFeedback({});
     setFeedbackComments({});
+    setIsStoredProduct(Boolean(conversation.selectedProduct));
     setSelectedProduct(conversation.selectedProduct || null);
     closeAssistantLayer();
   };
 
   const removeConversation = (id: string) => {
     const next = deleteAssistantConversation(historyScope, id);
-    setConversations(next);
+    setHistoryStatus(next.status);
+    if (next.status !== 'ready') return;
+    setConversations(next.conversations);
     if (id === conversationId) {
+      stopGeneration();
+      setHistoryRestored(false);
+      setInput(''); setAttachments([]);
       setConversationId(createConversationId());
       setMessages([]);
       setFeedback({});
@@ -855,51 +922,56 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (messageIndex < 0) return;
     const sourceMessages = messages.slice(0, messageIndex);
     const responseId = `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '' }]);
+    setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '', incomplete: true }]);
     void startAssistantReply(sourceMessages, responseId);
   };
 
-  const handleSelectProduct = async (messageId: string, candidate: AyrovixCandidate) => {
-    if (productBusyId) return;
+  const handleSelectProduct = async (messageId: string, candidate: AyrovixCandidate, restoring = false) => {
+    if (productRequestRef.current) return;
+    if (!validProductUrl(candidate.sourceUrl)) {
+      showToast(tr('Lien produit indisponible. Relancez la recherche.', 'رابط المنتج غير متاح. أعد البحث.'));
+      return;
+    }
+    const refreshRequired = restoring || restoredMessageIdsRef.current.has(messageId);
+    const controller = new AbortController();
+    productRequestRef.current = controller;
+    const context = productContextRef.current;
+    const current = () => {
+      const latest = productContextRef.current;
+      return !controller.signal.aborted && productRequestRef.current === controller && latest.isOpen
+        && latest.conversationId === context.conversationId && latest.historyScope === context.historyScope
+        && latest.entry === context.entry;
+    };
     setProductBusyId(candidate.id);
     try {
       let product = candidateToProduct(candidate);
-      if (candidate.kind === 'external' && candidate.sourceUrl) {
-        const result = await analyzeUrl(candidate.sourceUrl, 'url', undefined, false);
+      if (refreshRequired || candidate.kind === 'external') {
+        const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal, false);
+        if (!current()) return;
         if (result.eventId) void markChosen(result.eventId);
-        product = {
-          ...result.product,
-          title: candidate.title || result.product.title,
-          image: result.product.image || candidate.image,
-          images: result.product.images.length ? result.product.images : (candidate.images || []),
-          source: candidate.source || result.product.source,
-          sourceUrl: candidate.sourceUrl,
-          price: candidate.price ?? result.product.price,
-          currency: candidate.currency ?? result.product.currency,
-          priceTnd: candidate.priceTnd ?? result.product.priceTnd,
-          rating: candidate.rating ?? result.product.rating ?? null,
-          ratingCount: candidate.ratingCount ?? result.product.ratingCount ?? null,
-          ratingKind: candidate.ratingKind || result.product.ratingKind || 'match',
-          priceToken: candidate.priceToken || result.product.priceToken,
-          colors: result.product.colors.length ? result.product.colors : candidate.colors,
-          sizes: result.product.sizes.length ? result.product.sizes : candidate.sizes,
-        };
+        // Quote-bound fields (title, URL, price, currency, status, token) must all
+        // come from the same new response. Never overwrite them with history.
+        product = result.product;
       }
-      openAssistantProduct({ messageId, product, priceVerified: product.priceVerificationStatus === 'VERIFIED' });
+      if (current()) openAssistantProduct({ messageId, product, priceVerified: product.priceVerificationStatus === 'VERIFIED' });
     } catch (error: any) {
-      openAssistantProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
-      showToast(error?.message || 'Le lien sera vérifié manuellement par AYROVI.');
-    } finally { setProductBusyId(''); }
+      if (!current()) return;
+      if (!refreshRequired) openAssistantProduct({ messageId, product: candidateToProduct(candidate), priceVerified: false });
+      showToast(refreshRequired ? tr('Actualisation impossible. Le produit conservé n’a pas été remplacé. Réessayez.', 'تعذّر التحديث. لم يُستبدل المنتج المحفوظ. أعد المحاولة.') : error?.message || tr('Le lien sera vérifié manuellement par AYROVI.', 'ستتحقق AYROVI من الرابط يدويًا.'));
+    } finally {
+      if (productRequestRef.current === controller) { productRequestRef.current = null; setProductBusyId(''); }
+    }
   };
 
   const handleProductOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
     const product = selectedProduct?.product;
     if (!product) return;
+    if (isStoredProduct) { showToast(tr('Actualisez d’abord le produit conservé.', 'حدّث المنتج المحفوظ أولًا.')); return; }
     const finalPrice = option?.price ?? product.price;
     const finalCurrency = option?.currency ?? product.currency;
     const priceToken = option?.priceToken || product.priceToken || '';
     if (finalPrice == null || !priceToken) {
-      showToast('Le devis sécurisé a expiré. Relancez la recherche produit dans le chat.');
+      showToast(tr('Le devis sécurisé a expiré. Relancez la recherche produit dans le chat.', 'انتهت صلاحية عرض السعر الآمن. أعد البحث عن المنتج في المحادثة.'));
       return;
     }
     const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
@@ -1011,7 +1083,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             isSpeakerMuted={isSpeakerMuted}
             liveTranscript={liveTranscript}
             attachments={attachments}
-            activeProduct={selectedProduct ? {
+            activeProduct={selectedProduct && !isStoredProduct ? {
               title: selectedProduct.product.title,
               brand: selectedProduct.product.brand || undefined,
               price: selectedProduct.product.price ?? undefined,
@@ -1054,6 +1126,14 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             ) : (
               <AssistantMessages
                 messages={messages}
+                historyNotice={<>
+                  <AssistantHistoryNotice status={historyStatus} restored={historyRestored} busy={isGenerating} onRetry={messages.length ? () => setHistorySaveAttempt(value => value + 1) : undefined}/>
+                  {historyRestored && selectedProduct && (!productLayer || isStoredProduct) && <div data-restored-product className="ay-readable-label mb-4 border border-line p-3 text-sm">
+                    <p>{tr('Produit conservé :', 'المنتج المحفوظ:')} {selectedProduct.product.title}</p>
+                    <button type="button" disabled={Boolean(productBusyId) || !validProductUrl(selectedProduct.product.sourceUrl)} className="ay-btn-secondary mt-2 min-h-11 px-3 text-xs" onClick={() => void handleSelectProduct(selectedProduct.messageId, { ...selectedProduct.product, id: 'restored-product', kind: 'external', match: 0, ratingKind: selectedProduct.product.ratingKind === 'merchant' ? 'merchant' : 'match' }, true)}>{productBusyId === 'restored-product' ? tr('Vérification…', 'جارٍ التحقق…') : tr('Actualiser et ouvrir le produit', 'تحديث المنتج وفتحه')}</button>
+                    {!validProductUrl(selectedProduct.product.sourceUrl) && <p className="mt-2 text-xs">{tr('Lien produit indisponible. Relancez la recherche.', 'رابط المنتج غير متاح. أعد البحث.')}</p>}
+                  </div>}
+                </>}
                 isGenerating={isGenerating}
                 motionState={motionState}
                 assistantReady={assistantReady}
@@ -1061,7 +1141,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 copiedId={copiedId}
                 feedback={feedback}
                 feedbackPending={feedbackPending}
-                selectedProduct={productLayer ? selectedProduct : null}
+                selectedProduct={productLayer && !isStoredProduct ? selectedProduct : null}
                 productBusyId={productBusyId}
                 isOrdering={isOrdering}
                 analyzingImage={lensActive}
@@ -1106,6 +1186,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isOpen={isMenuOpen}
           isDark={isDark}
           conversations={conversations}
+          historyStatus={historyStatus}
           activeConversationId={conversationId}
           isAuthenticated={isAuthenticated}
           onClose={closeAssistantLayer}

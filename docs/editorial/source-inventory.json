@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 189,
-    "customerAndSharedFiles": 140,
-    "controls": 406,
+    "files": 191,
+    "customerAndSharedFiles": 142,
+    "controls": 408,
     "iconAliases": 99,
     "uniqueGlyphs": 96
   },
@@ -12326,9 +12326,12 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "43ed4ad816a99c96630c8b294016cecfd604e96c74fc7e731e06f41913fd2eb7",
-      "lines": 1150,
+      "sha256": "5bf7ebfca73454c85af4440f8d86e05df8b15160cd93f5f6e974beafe49161b7",
+      "lines": 1231,
       "imports": [
+        "./AssistantHistoryNotice",
+        "../../ayrovix/services/resultPolicy",
+        "./conversationHistory",
         "../../hooks/useDialogFocus",
         "./messageActions",
         "react",
@@ -12359,7 +12362,7 @@
       "controls": [
         {
           "tag": "AssistantVoiceModeScreen",
-          "line": 1006,
+          "line": 1078,
           "className": null,
           "type": null,
           "role": null,
@@ -12368,8 +12371,18 @@
           "disabled": null
         },
         {
+          "tag": "button",
+          "line": 1133,
+          "className": "\"ay-btn-secondary mt-2 min-h-11 px-3 text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => void handleSelectProduct(selectedProduct.messageId, { ...selectedProduct.product, id: 'restored-product', kind: 'external', match: 0, ratingKind: selectedProduct.product.ratingKind === 'merchant' ? 'merchant' : 'match' }, true)}",
+          "disabled": "{Boolean(productBusyId) || !validProductUrl(selectedProduct.product.sourceUrl)}"
+        },
+        {
           "tag": "AssistantAttachmentSheet",
-          "line": 1123,
+          "line": 1204,
           "className": null,
           "type": null,
           "role": null,
@@ -12379,7 +12392,7 @@
         },
         {
           "tag": "AssistantFeedbackSheet",
-          "line": 1133,
+          "line": 1214,
           "className": null,
           "type": null,
           "role": null,
@@ -12785,6 +12798,37 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/components/assistant/AssistantHistoryNotice.tsx",
+      "domain": "sonim",
+      "sha256": "6e792bf904baa185458ad1b3eae8acb07072a9793d9b3df01056a474db09fe8b",
+      "lines": 21,
+      "imports": [
+        "react",
+        "../../i18n/LocaleContext",
+        "./conversationHistory"
+      ],
+      "exports": [
+        "AssistantHistoryNotice"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 17,
+          "className": "\"ay-btn-secondary mt-2 min-h-11 px-3 text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRetry}",
+          "disabled": "{busy}"
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/assistant/AssistantMessageActions.tsx",
       "domain": "sonim",
       "sha256": "20e42070d136fae345c3925c6dc4972433f8212100139c77e4dfce4f81a7e154",
@@ -12888,8 +12932,8 @@
     {
       "file": "client/src/components/assistant/AssistantMessages.tsx",
       "domain": "sonim",
-      "sha256": "baef0aaffc99718c26c4d86b937dbae5cb83170fa9fd53b10d4b0e2d1d1f4391",
-      "lines": 211,
+      "sha256": "13e663e271a61c3cc3d695a8a9c5e30081af43b6bea6a576685a628f1d6f4a5e",
+      "lines": 214,
       "imports": [
         "../../ayrovix/components/MerchantRating",
         "react",
@@ -12911,7 +12955,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 77,
+          "line": 78,
           "className": "{`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}",
           "type": null,
           "role": null,
@@ -12921,7 +12965,7 @@
         },
         {
           "tag": "button",
-          "line": 77,
+          "line": 78,
           "className": "\"ay-btn-primary min-h-10 flex-1 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12931,7 +12975,7 @@
         },
         {
           "tag": "button",
-          "line": 136,
+          "line": 138,
           "className": "\"assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-card p-4 text-start text-ink transition active:scale-[0.98]\"",
           "type": "\"button\"",
           "role": null,
@@ -12941,7 +12985,7 @@
         },
         {
           "tag": "button",
-          "line": 153,
+          "line": 155,
           "className": "{`flex min-h-11 items-center rounded-control px-3 text-xs font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12951,7 +12995,7 @@
         },
         {
           "tag": "button",
-          "line": 196,
+          "line": 199,
           "className": "{`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12961,7 +13005,7 @@
         },
         {
           "tag": "button",
-          "line": 197,
+          "line": 200,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12985,9 +13029,11 @@
     {
       "file": "client/src/components/assistant/AssistantSideMenu.tsx",
       "domain": "sonim",
-      "sha256": "d8361d3f76bc2cb2dc065213ff307e6058cf28ad90909f16837fed807a8d54f1",
-      "lines": 104,
+      "sha256": "78789490addb6eba45491eae72e28d0960210fe19bf943039d349107bce53084",
+      "lines": 110,
       "imports": [
+        "./AssistantHistoryNotice",
+        "./conversationHistory",
         "../../hooks/useDialogFocus",
         "react",
         "../QatafoIcons",
@@ -13000,7 +13046,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 53,
+          "line": 57,
           "className": "\"absolute inset-0 z-30 bg-ink/40 backdrop-blur-[2px]\"",
           "type": "\"button\"",
           "role": null,
@@ -13010,7 +13056,7 @@
         },
         {
           "tag": "button",
-          "line": 60,
+          "line": 64,
           "className": "{mainItem}",
           "type": "\"button\"",
           "role": null,
@@ -13020,7 +13066,7 @@
         },
         {
           "tag": "button",
-          "line": 64,
+          "line": 68,
           "className": "\"ay-btn-primary mt-1 w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -13030,7 +13076,7 @@
         },
         {
           "tag": "button",
-          "line": 74,
+          "line": 80,
           "className": "{`min-w-0 flex-1 px-3 py-2.5 text-start ${isDark ? 'text-white' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -13040,17 +13086,17 @@
         },
         {
           "tag": "button",
-          "line": 78,
+          "line": 84,
           "className": "\"flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-danger/5 hover:text-danger\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr(`Supprimer ${conversation.title}`, `حذف ${conversation.title}`)}",
           "onClick": "{() => onDeleteConversation(conversation.id)}",
-          "disabled": null
+          "disabled": "{['corrupt', 'unavailable'].includes(historyStatus)}"
         },
         {
           "tag": "button",
-          "line": 88,
+          "line": 94,
           "className": "{mainItem}",
           "type": "\"button\"",
           "role": null,
@@ -13060,7 +13106,7 @@
         },
         {
           "tag": "button",
-          "line": 89,
+          "line": 95,
           "className": "{mainItem}",
           "type": "\"button\"",
           "role": null,
@@ -13070,7 +13116,7 @@
         },
         {
           "tag": "button",
-          "line": 92,
+          "line": 98,
           "className": "{mainItem}",
           "type": "\"button\"",
           "role": null,
@@ -13080,7 +13126,7 @@
         },
         {
           "tag": "button",
-          "line": 93,
+          "line": 99,
           "className": "{`${mainItem} justify-between`}",
           "type": "\"button\"",
           "role": "\"switch\"",
@@ -13093,7 +13139,7 @@
         {
           "module": "../QatafoIcons",
           "bindings": "{ ArrowLeft, Trash2 }",
-          "line": 3
+          "line": 5
         }
       ],
       "inlineSvg": [],
@@ -13373,16 +13419,37 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/assistant/conversationHistory.ts",
+      "file": "client/src/components/assistant/conversationCodec.ts",
       "domain": "sonim",
-      "sha256": "1bd5488d697ad9a2d1e30f4a96c655ac782036936c447836849f02f5adcd9834",
-      "lines": 156,
+      "sha256": "e46d7cbde1b988e8521e4cc837546ec2923d1b3648196cfdc612c032856497cf",
+      "lines": 107,
       "imports": [
         "../../ayrovix/types",
-        "./types"
+        "./types",
+        "../../utils/publicLinks"
       ],
       "exports": [
-        "listAssistantConversations",
+        "decodeConversation"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/conversationHistory.ts",
+      "domain": "sonim",
+      "sha256": "a33bb838694472b587f344b387eae497783629c9aebac13e19ef858a1a4b3b46",
+      "lines": 73,
+      "imports": [
+        "./conversationCodec"
+      ],
+      "exports": [
+        "MAX_CONVERSATIONS",
+        "MAX_HISTORY_CHARACTERS",
+        "readAssistantHistory",
         "saveAssistantConversation",
         "deleteAssistantConversation"
       ],
@@ -13416,8 +13483,8 @@
     {
       "file": "client/src/components/assistant/types.ts",
       "domain": "sonim",
-      "sha256": "ef6e48e2afb3f03ab1af5efcb799d5a14ac606bec7953e0ed8c97f3c15b013f5",
-      "lines": 57,
+      "sha256": "63e06b97867fc17e5928f82f41b4c1d86ed854641c03dbfc4dac798b84f929bf",
+      "lines": 59,
       "imports": [],
       "exports": [],
       "controls": [],
