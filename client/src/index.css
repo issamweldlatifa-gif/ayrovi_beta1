@@ -9,6 +9,7 @@
 @import "./styles/customer-auth.css";
 @import "./design/editorial/tokens.generated.css";
 @import "./design/editorial/primitives.css";
+@import "./design/editorial/customer.css";
 
 @layer base {
   html,

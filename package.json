@@ -19,7 +19,8 @@
     "design:inventory": "node scripts/inventory-customer-design.mjs",
     "design:build": "node scripts/build-editorial-design.mjs",
     "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check",
-    "design:browser": "node verify/editorial-system.mjs"
+    "design:browser": "node verify/editorial-system.mjs",
+    "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs"
   },
   "keywords": [
     "ayrovi",

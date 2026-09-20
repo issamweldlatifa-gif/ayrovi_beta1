@@ -1,109 +1,26 @@
 import React from 'react';
-import { ArrowRightLeft, ShieldCheck, Sparkles, Truck } from './QatafoIcons';
-import aboutParallaxImage from '../assets/about-parallax.jpg';
+import { ArrowRightLeft, ShieldCheck, Truck } from './QatafoIcons';
+import { useLocale } from '../i18n/LocaleContext';
+import aboutImage from '../assets/about-parallax.jpg';
 
-const BENEFITS = [
-  {
-    step: '01',
-    title: 'Taux Fixe & Garanti',
-    description:
-      'Un taux clair et garanti vous permet de connaître le montant exact en Dinars dès la validation de votre panier.',
-    icon: ArrowRightLeft,
-    iconClassName: 'bg-surface border border-line text-ink',
-    accentClassName: 'from-accent to-accent-deep',
-  },
-  {
-    step: '02',
-    title: 'Dédouanement Inclus',
-    description:
-      "Toutes les démarches administratives, taxes d’importation et dédouanement sont entièrement prises en charge.",
-    icon: ShieldCheck,
-    iconClassName: 'bg-ink text-white',
-    accentClassName: 'from-brand to-brand-light',
-  },
-  {
-    step: '03',
-    title: 'Livraison 24 Gouvernorats',
-    description:
-      "Expédition sécurisée jusqu’à votre domicile partout en Tunisie après validation et préparation de la commande.",
-    icon: Truck,
-    iconClassName: 'bg-ink text-white',
-    accentClassName: 'from-ink to-brand',
-  },
-];
+const benefits = [
+  { icon: ArrowRightLeft, title: ['Taux fixe & garanti', 'سعر صرف ثابت ومضمون'], description: ['Un taux clair et garanti vous permet de connaître le montant exact en dinars dès la validation de votre panier.', 'سعر صرف واضح ومضمون يتيح لك معرفة المبلغ بالدينار عند تأكيد سلّتك.'] },
+  { icon: ShieldCheck, title: ['Dédouanement inclus', 'التخليص الجمركي مشمول'], description: ['Les démarches administratives, taxes d’importation et le dédouanement sont pris en charge.', 'نتولى الإجراءات الإدارية ورسوم الاستيراد والتخليص الجمركي.'] },
+  { icon: Truck, title: ['Livraison — 24 gouvernorats', 'التوصيل إلى 24 ولاية'], description: ['Expédition jusqu’à votre domicile partout en Tunisie après validation et préparation de la commande.', 'شحن إلى منزلك في كامل تونس بعد تأكيد الطلب وتجهيزه.'] },
+] as const;
 
 export const AboutSection: React.FC<{ coverImage?: string; title?: string; subtitle?: string }> = ({ coverImage, title, subtitle }) => {
-  return (
-    <section id="about-ayrovi" className="relative scroll-mt-20 bg-white" aria-labelledby="why-ayrovi-title">
-      <header className="px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8">
-        <div className="mx-auto max-w-3xl">
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3.5 py-1 text-xs font-bold text-ink shadow-sm sm:text-xs">
-            <Sparkles className="h-3.5 w-3.5" />
-            <span>Pourquoi choisir AYROVI ?</span>
-          </div>
-          <h2
-            id="why-ayrovi-title"
-            className="mt-5 text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl"
-          >
-            {title || 'La simplicité d’un achat local pour vos marques mondiales'}
-          </h2>
-          <p className="mx-auto mt-5 max-w-2xl text-sm font-medium leading-7 text-muted sm:text-base">
-            {subtitle || 'Plus besoin de carte bancaire internationale ni de formalités douanières complexes. AYROVI s’occupe de l’importation de A à Z.'}
-          </p>
-        </div>
-      </header>
-
-      {/* One fixed portrait remains visible while the three cards scroll over it. */}
-      <div className="ayrovi-parallax relative isolate min-h-[300svh] bg-surface">
-        <div className="ayrovi-parallax-media sticky top-0 h-[100svh] overflow-hidden" aria-hidden="true">
-          <img
-            src={coverImage || aboutParallaxImage}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover object-[38%_center] sm:object-center lg:object-[34%_center]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/10 via-transparent to-ink/40 sm:bg-gradient-to-r sm:from-transparent sm:via-white/10 sm:to-surface/90" />
-          <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-white/65 to-transparent" />
-        </div>
-
-        <div className="relative z-10 -mt-[100svh]">
-          {BENEFITS.map(
-            ({ step, title, description, icon: Icon, iconClassName, accentClassName }) => (
-              <article key={title} className="flex min-h-[100svh] w-full items-center py-16 sm:py-20">
-                <div className="relative w-full overflow-hidden border-y border-white/85 bg-white/85 p-7 shadow-overlay backdrop-blur-xl transition-[box-shadow,background-color] duration-500 ease-out hover:bg-white/90 hover:shadow-overlay sm:p-10 lg:p-14">
-                  <div className={`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${accentClassName}`} />
-
-                  <div className="flex items-start justify-between gap-5">
-                    <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl shadow-md sm:h-11 sm:w-11 ${iconClassName}`}>
-                      <Icon className="h-8 w-8 sm:h-9 sm:w-9" />
-                    </span>
-                    <span className="text-5xl font-black leading-none text-ink/[0.07] sm:text-6xl">
-                      {step}
-                    </span>
-                  </div>
-
-                  <div className="my-7 h-px w-full bg-gradient-to-r from-brand/55 via-line to-transparent" />
-
-                  <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-ink">
-                    Avantage AYROVI
-                  </p>
-                  <h3 className="mt-2 text-2xl font-extrabold tracking-tight text-ink sm:text-3xl lg:text-4xl">
-                    {title}
-                  </h3>
-                  <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-muted sm:text-base sm:leading-8">
-                    {description}
-                  </p>
-                </div>
-              </article>
-            ),
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-3 bg-white px-4 py-16 text-xs font-extrabold uppercase tracking-[0.2em] text-ink sm:text-xs">
-        <span className="h-px w-10 bg-ink/20" />
-        Simple · Transparent · Local
-        <span className="h-px w-10 bg-ink/20" />
-      </div>
-    </section>
-  );
+  const { tr, isArabic } = useLocale();
+  return <section id="about-ayrovi" aria-labelledby="why-ayrovi-title" className="mx-auto w-full max-w-4xl px-5 py-8 sm:px-8 sm:py-12">
+    <p className="mb-4 flex items-center gap-2 text-sm text-muted"><span className="ay-e-marker" aria-hidden />{tr('Pourquoi choisir AYROVI ?', 'لماذا تختار AYROVI؟')}</p>
+    <h2 id="why-ayrovi-title" className="ay-e-display">{title || tr('La simplicité d’un achat local pour vos marques mondiales', 'سهولة الشراء المحلي لعلاماتك العالمية')}</h2>
+    <p className="my-6 max-w-2xl text-base leading-8 text-muted">{subtitle || tr('Plus besoin de carte bancaire internationale ni de formalités douanières complexes. AYROVI s’occupe de l’importation de A à Z.', 'لا حاجة إلى بطاقة بنكية دولية أو إجراءات جمركية معقدة. تتولى AYROVI الاستيراد من البداية إلى النهاية.')}</p>
+    <img src={coverImage || aboutImage} alt="" className="mb-8 aspect-[3/2] w-full object-cover" loading="lazy" />
+    <div className="divide-y divide-line border-y border-line">
+      {benefits.map(({ icon: Icon, title, description }, index) => <article key={title[0]} className="grid grid-cols-[32px_minmax(0,1fr)] gap-4 py-6">
+        <Icon size={24} aria-hidden />
+        <div><span className="ay-e-caption ay-e-number">0{index + 1}</span><h3 className="mb-2 mt-1 text-lg font-medium">{title[isArabic ? 1 : 0]}</h3><p className="text-sm leading-7 text-muted">{description[isArabic ? 1 : 0]}</p></div>
+      </article>)}
+    </div>
+  </section>;
 };

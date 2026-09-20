@@ -6,7 +6,7 @@ import sharp from 'sharp';
 async function run(){
  Object.assign(process.env,{NODE_ENV:'test',DATABASE_PATH:':memory:',CUSTOMER_AUTH_SECRET:'account-browser-test-only-secret-01234567890123456789',ADMIN_EMAIL:'admin@example.com',ADMIN_PASSWORD:'Test-admin-password-123!',MAIL_PROVIDER:'',MAIL_API_KEY:'',MAIL_FROM:'',GOOGLE_CLIENT_ID:'',FACEBOOK_APP_ID:'',APPLE_CLIENT_ID:'',CUSTOMER_OTP_PROVIDER:'console'});
  const {app,db}=await import('../src/server');const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));const base=`http://127.0.0.1:${(server.address() as any).port}`;
- const browser=await chromium.launch({headless:true});let checks=0;const errors:string[]=[];const check=(v:unknown,m:string)=>{assert.ok(v,m);checks++;};const output='screenshots/account';await mkdir(output,{recursive:true});
+ const browser=await chromium.launch({headless:true});let checks=0;const errors:string[]=[];const check=(v:unknown,m:string)=>{assert.ok(v,m);checks++;};const output=process.env.AYROVI_ACCOUNT_OUTPUT || 'screenshots/account';await mkdir(output,{recursive:true});
  const context=await browser.newContext({viewport:{width:390,height:844},locale:'fr'});const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
  const password='Original-password-1!';const email='account-demo@example.com';
  const openHome=async()=>{await page.goto(`${base}/?customerAuth=login`);await page.locator('.ac-profile-card').waitFor();await page.locator('.ac-home>.ac-loading').waitFor({state:'hidden'});};

@@ -1,3 +1,5 @@
+import { ArrowRight } from './QatafoIcons';
+import { safePublicHref } from '../utils/publicLinks';
 import React, { useEffect, useMemo, useState } from 'react';
 
 /**
@@ -75,15 +77,8 @@ export const LensFeature: React.FC<{ onOpenLens: () => void }> = ({ onOpenLens }
 
   const ratio = String(media.ratio || '16/9').replace('/', ' / ');
 
-  /** Le lien d'action : URL externe si elle est renseignée, sinon ouverture de LENS. */
-  const activate = () => {
-    if (data.ctaUrl) {
-      if (data.ctaUrl.startsWith('/')) return; // laissé à la navigation du routeur
-      window.open(data.ctaUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    onOpenLens();
-  };
+  const href = safePublicHref(data.ctaUrl);
+  const Action = href ? 'a' : 'button';
 
   return (
     <section className="lens-feature" aria-labelledby="lens-feature-title">
@@ -127,13 +122,11 @@ export const LensFeature: React.FC<{ onOpenLens: () => void }> = ({ onOpenLens }
           </div>
         ) : null}
 
-        {data.ctaLabel ? (
-          <button type="button" className="lens-feature__cta" onClick={activate}>
+        {data.ctaLabel && (!data.ctaUrl || href) ? (
+          <Action type={href ? undefined : "button"} href={href || undefined} target={href && /^https?:/i.test(href) ? '_blank' : undefined} rel={href ? 'noopener noreferrer' : undefined} className="lens-feature__cta" onClick={href ? undefined : onOpenLens}>
             <span>{data.ctaLabel}</span>
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
-              <path d="M5 12h13M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+            <ArrowRight size={20} />
+          </Action>
         ) : null}
       </div>
     </section>

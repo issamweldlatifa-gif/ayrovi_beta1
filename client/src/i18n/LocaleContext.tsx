@@ -19,8 +19,10 @@ const LocaleContext = createContext<LocaleValue | null>(null);
 function initialLocale(): AyroviLocale {
   if (typeof window === 'undefined') return 'fr';
   if (window.location.pathname === '/admin' || window.location.pathname.startsWith('/admin/')) return 'fr';
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (stored === 'ar' || stored === 'fr') return stored;
+  try {
+    const stored = window.localStorage.getItem(STORAGE_KEY);
+    if (stored === 'ar' || stored === 'fr') return stored;
+  } catch { /* Restricted browser storage must not prevent the app from opening. */ }
   return window.navigator.language.toLowerCase().startsWith('ar') ? 'ar' : 'fr';
 }
 

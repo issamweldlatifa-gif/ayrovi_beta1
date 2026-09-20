@@ -66,27 +66,27 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
   const { locale, tr } = useLocale();
   return <div className="mt-3 space-y-3">
     {message.orderStatuses?.map((order) => (
-      <article key={order.orderId} className={`rounded-2xl border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line/15 bg-surface'}`}>
-        <div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-ink text-white"><PackageCheck size={30}/></span><div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-[.12em] text-ink">{tr('Commande', 'طلب')} {order.orderId}</p><h3 className="mt-0.5 text-sm font-extrabold">{order.statusLabel}</h3><p className={`mt-1 text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{order.carrier && `${order.carrier} · `}{order.trackingCode || tr('Suivi en préparation', 'التتبع قيد الإعداد')}</p></div></div>
+      <article key={order.orderId} className={`rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line/15 bg-surface'}`}>
+        <div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-ink text-white"><PackageCheck size={30}/></span><div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-[.12em] text-ink">{tr('Commande', 'طلب')} {order.orderId}</p><h3 className="mt-0.5 text-sm font-extrabold">{order.statusLabel}</h3><p className={`mt-1 text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{order.carrier && `${order.carrier} · `}{order.trackingCode || tr('Suivi en préparation', 'التتبع قيد الإعداد')}</p></div></div>
         {order.history?.length > 0 && <div className={`mt-3 border-t pt-3 text-xs ${isDark ? 'border-white/10 text-muted' : 'border-line/15 text-muted'}`}>{order.history.slice(-3).reverse().map((item) => <div key={`${item.status}-${item.at}`} className="flex justify-between gap-3 py-1"><span>{item.label}</span><time>{new Date(item.at).toLocaleDateString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</time></div>)}</div>}
       </article>
     ))}
-    {message.priceBreakdown && <article className={`rounded-2xl border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-success/15 bg-success/5'}`}>
-      <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-xl bg-success text-lg text-white">د.ت</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-success">{tr('Estimation AYROVI', 'تقدير AYROVI')}</p><strong className="text-xl">{message.priceBreakdown.totalTND.toFixed(2)} TND</strong></div></div>
+    {message.priceBreakdown && <article className={`rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-success/15 bg-success/5'}`}>
+      <div className="flex items-center gap-3"><span className="grid h-11 w-11 place-items-center rounded-card bg-success text-lg text-white">د.ت</span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-success">{tr('Estimation AYROVI', 'تقدير AYROVI')}</p><strong className="text-xl">{message.priceBreakdown.totalTND.toFixed(2)} TND</strong></div></div>
       <dl className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t pt-3 text-xs ${isDark ? 'border-white/10 text-muted' : 'border-success/15 text-muted'}`}><dt>{tr('Produit converti', 'سعر المنتج المحوّل')}</dt><dd className="text-end">{message.priceBreakdown.convertedPriceTND.toFixed(2)} TND</dd><dt>{tr('Douane', 'الديوانة')}</dt><dd className="text-end">{message.priceBreakdown.customsFeeTND.toFixed(2)} TND</dd><dt>{tr('Livraison', 'التسليم')}</dt><dd className="text-end">{message.priceBreakdown.shippingFeeTND.toFixed(2)} TND</dd><dt>{tr('Service', 'الخدمة')}</dt><dd className="text-end">{message.priceBreakdown.serviceFeeTND.toFixed(2)} TND</dd>{message.priceBreakdown.expressFeeTND > 0 && <><dt>{tr('Express', 'السريع')}</dt><dd className="text-end">{message.priceBreakdown.expressFeeTND.toFixed(2)} TND</dd></>}</dl>
     </article>}
     {message.products?.some(isDisplayableCandidate) ? <div className="grid gap-3 sm:grid-cols-2">
-      {message.products.filter(isDisplayableCandidate).map((product) => <article key={product.id} className={`overflow-hidden rounded-2xl border ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-white'}`}>
+      {message.products.filter(isDisplayableCandidate).map((product) => <article key={product.id} className={`overflow-hidden rounded-card border ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-white'}`}>
         <div className={`relative aspect-[4/3] p-2 ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/><span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-1 text-xs font-bold text-white">{product.source}</span></div>
         <div className="p-3">
           <h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className={`text-base font-black ${isDark ? 'text-white' : 'text-ink'}`}>{product.priceTnd != null ? `${product.priceTnd.toFixed(2)} DT` : '—'}</p><p className={`text-xs font-semibold ${isDark ? 'text-muted' : 'text-muted'}`}>{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p><p className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-ink"><Star size={22} fill="currentColor" />{displayRating(product).toFixed(1)}/5 <span className={isDark ? 'text-muted' : 'text-muted'}>{product.ratingKind === 'merchant' ? tr('marchand', 'المتجر') : tr('pertinence', 'التطابق')}</span></p></div></div>
-          <div className="mt-3 flex gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-xl border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}>{tr('Lien', 'الرابط')}<ArrowUpRight size={17} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="ay-btn-primary min-h-10 flex-1 px-3 text-xs">{productBusyId === product.id ? tr('Vérification…', 'جارٍ التحقق…') : tr('Choisir', 'اختيار')}</button></div>
+          <div className="mt-3 flex gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}>{tr('Lien', 'الرابط')}<ArrowUpRight size={17} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="ay-btn-primary min-h-10 flex-1 px-3 text-xs">{productBusyId === product.id ? tr('Vérification…', 'جارٍ التحقق…') : tr('Choisir', 'اختيار')}</button></div>
         </div>
       </article>)}
     </div> : null}
-    {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-2xl border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder}/></div>}
-    {message.supportTicket && <article className={`flex items-start gap-3 rounded-2xl border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support AYROVI', 'دعم AYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
+    {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder}/></div>}
+    {message.supportTicket && <article className={`flex items-start gap-3 rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support AYROVI', 'دعم AYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
   </div>;
 };
 
@@ -96,23 +96,33 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   customerFirstName, assistantReady,
 }) => {
   const { locale, direction, isArabic, tr } = useLocale();
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement>(null);
+  const followRef = useRef(true);
+  const lastUserRef = useRef('');
   const hasMessages = messages.length > 0;
   const lastMessage = messages.at(-1);
   const lastAssistantHasContent = Boolean(lastMessage?.role === 'assistant' && (
     cleanAssistantText(lastMessage.text) || lastMessage.products?.length || lastMessage.priceBreakdown
     || lastMessage.orderStatuses?.length || lastMessage.supportTicket
   ));
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' }); }, [messages, isGenerating, motionState, selectedProduct]);
+  useEffect(() => {
+    const view = scrollRef.current;
+    const newUserMessage = lastMessage?.role === 'user' && lastMessage.id !== lastUserRef.current;
+    if (view && (followRef.current || newUserMessage)) view.scrollTop = view.scrollHeight;
+    if (lastMessage?.role === 'user') lastUserRef.current = lastMessage.id;
+  }, [messages, isGenerating, selectedProduct, lastMessage]);
 
   return (
-    <main dir={direction} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-ink text-white' : 'bg-surface text-ink'}`}>
-      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-10 pt-[max(4.75rem,calc(env(safe-area-inset-top)+3.25rem))] sm:px-7 sm:pb-12">
+    <main ref={scrollRef} data-assistant-messages onScroll={event => {
+      const view = event.currentTarget;
+      followRef.current = view.scrollHeight - view.scrollTop - view.clientHeight < 64;
+    }} dir={direction} className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isDark ? 'bg-ink text-white' : 'bg-surface text-ink'}`}>
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col px-4 pb-10 pt-8 sm:px-7 sm:pb-12">
         {!hasMessages ? (
           <div className="assistant-welcome flex flex-1 flex-col">
             {/* Identité AI + accueil personnalisé */}
             <div className="flex flex-col items-center text-center">
-              <h2 className={`text-3xl font-black leading-tight tracking-tight sm:text-3xl ${isDark ? 'text-white' : 'text-ink'}`}>
+              <h2 className={`assistant-editorial-greeting text-3xl font-normal leading-tight sm:text-3xl ${isDark ? 'text-white' : 'text-ink'}`}>
                 {tr('Bonjour', 'مرحبًا')}{customerFirstName ? ` ${customerFirstName}` : ''}
               </h2>
               <p className={`mt-1.5 text-sm font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{tr('Que souhaitez-vous faire aujourd’hui ?', 'ماذا تريد أن تفعل اليوم؟')}</p>
@@ -120,7 +130,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                 {tr('Je peux analyser vos produits, vérifier les prix, rechercher des articles et vous accompagner dans vos commandes.', 'يمكنني تحليل منتجاتك والتحقق من الأسعار والبحث عن المنتجات ومساعدتك في طلباتك.')}
               </p>
               {assistantReady === false && (
-                <p className="mt-4 max-w-sm rounded-2xl border border-line bg-surface px-4 py-3 text-xs font-semibold leading-5 text-ink">
+                <p className="mt-4 max-w-sm rounded-card border border-line bg-surface px-4 py-3 text-xs font-semibold leading-5 text-ink">
                   {tr('L’assistant n’est pas encore activé sur ce serveur. Vous pouvez toujours utiliser Lens, le panier et le suivi de commande.', 'المساعد غير مفعّل بعد على هذا الخادم. يمكنك استخدام Lens والسلة وتتبع الطلب.')}
                 </p>
               )}
@@ -133,7 +143,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   key={item.title[0]}
                   type="button"
                   onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                  className="assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-2xl p-4 text-start text-ink transition active:scale-[0.98]"
+                  className="assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-card p-4 text-start text-ink transition active:scale-[0.98]"
                 >
                   <span className="relative z-[1] block text-sm font-extrabold leading-5">{item.title[isArabic ? 1 : 0]}</span>
                   <span className="relative z-[1] mt-1 block text-xs font-semibold leading-4 text-muted">{item.subtitle[isArabic ? 1 : 0]}</span>
@@ -149,7 +159,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   <button
                     type="button"
                     onClick={() => onPrompt(item.prompt[isArabic ? 1 : 0])}
-                    className={`flex min-h-10 items-center rounded-full px-3 text-xs font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}
+                    className={`flex min-h-11 items-center rounded-control px-3 text-xs font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}
                   >
                     {item.text[isArabic ? 1 : 0]}
                   </button>
@@ -174,7 +184,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   />
                 )}
                 <div className={message.role === 'user' ? 'max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 max-w-[92%]' : 'min-w-0 max-w-[82%]'}>
-                  <div className={`rounded-[22px] px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'rounded-br-md bg-ink text-white shadow-card' : isDark ? 'rounded-bl-md border border-white/10 bg-white/[0.055] text-white' : 'rounded-bl-md border border-line bg-white text-ink shadow-card'}`}>
+                  <div className={`rounded-card px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-ink text-white shadow-card' : isDark ? 'border border-white/10 bg-white/[0.055] text-white' : 'border border-line bg-white text-ink shadow-card'}`}>
                     {message.role === 'user' && message.fromVoice && (
                       <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black text-white">
                         <span>🎙️</span>
@@ -182,20 +192,20 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                       </span>
                     )}
                     {assistantText && <p className="whitespace-pre-wrap">{assistantText}</p>}
-                    {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-xl border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
+                    {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder}/>}
                     {message.role === 'assistant' && message.lensSummary && <p className={`mt-2 text-xs font-bold uppercase tracking-[0.12em] ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Lecture image : confiance', 'قراءة الصورة: الثقة')} {Math.round(message.lensSummary.confidence * 100)}%{message.lensSummary.verified ? tr(' · vérifiée', ' · مؤكدة') : ''}{message.lensSummary.warnings.length ? ` · ${message.lensSummary.warnings[0]}` : ''}</p>}
-                    {message.role === 'assistant' && !isGenerating && Boolean(message.suggestedActions?.length) && <div className="mt-2.5 flex flex-wrap gap-2">{(message.suggestedActions || []).map((action) => <button key={action.label} type="button" onClick={() => onPrompt(action.prompt)} className={`min-h-9 rounded-full border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}>{action.label}</button>)}</div>}
+                    {message.role === 'assistant' && !isGenerating && Boolean(message.suggestedActions?.length) && <div className="mt-2.5 flex flex-wrap gap-2">{(message.suggestedActions || []).map((action) => <button key={action.label} type="button" onClick={() => onPrompt(action.prompt)} className={`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}>{action.label}</button>)}</div>}
                     {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="ay-btn-primary mt-3 w-full text-xs"><Sparkles size={19}/>{tr('Ouvrir AYROVIX Lens', 'فتح عدسة AYROVIX')}</button>}
                   </div>
-                  {message.role === 'assistant' && !isLastAssistantStreaming && <div className="mt-1.5 flex items-center gap-0.5 px-1"><button type="button" onClick={() => onCopy(message)} aria-label={tr('Copier', 'نسخ')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}>{copiedId === message.id ? <Check size={26}/> : <Copy size={26}/>}</button><button type="button" onClick={() => onRegenerate(message.id)} aria-label={tr('Régénérer', 'إعادة التوليد')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}><RefreshCw size={26}/></button><button type="button" aria-label={tr('Lire', 'استماع')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`} onClick={() => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(assistantText))}><Volume2 size={26}/></button><ShareAction message={message} isDark={isDark}/><span className={`mx-1 h-4 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`}/><button type="button" onClick={() => onFeedback(message, 'up')} aria-label={tr('Utile', 'مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'up' ? 'bg-success/10 text-success' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsUp size={26}/></button><button type="button" onClick={() => onFeedback(message, 'down')} aria-label={tr('Pas utile', 'غير مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'down' ? 'bg-danger/10 text-danger' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsDown size={26}/></button><button type="button" onClick={() => onOpenComment(message)} className={`ms-1 rounded-icon px-2 py-1 text-xs font-bold ${isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}>{tr('Commenter', 'تعليق')}</button></div>}
+                  {message.role === 'assistant' && !isLastAssistantStreaming && <div className="assistant-message-actions mt-1.5 flex flex-wrap items-center gap-1 px-1"><button type="button" onClick={() => onCopy(message)} aria-label={tr('Copier', 'نسخ')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}>{copiedId === message.id ? <Check size={26}/> : <Copy size={26}/>}</button><button type="button" onClick={() => onRegenerate(message.id)} aria-label={tr('Régénérer', 'إعادة التوليد')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}><RefreshCw size={26}/></button><button type="button" aria-label={tr('Lire', 'استماع')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`} onClick={() => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(assistantText))}><Volume2 size={26}/></button><ShareAction message={message} isDark={isDark}/><span className={`mx-1 h-4 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`}/><button type="button" onClick={() => onFeedback(message, 'up')} aria-label={tr('Utile', 'مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'up' ? 'bg-success/10 text-success' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsUp size={26}/></button><button type="button" onClick={() => onFeedback(message, 'down')} aria-label={tr('Pas utile', 'غير مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'down' ? 'bg-danger/10 text-danger' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsDown size={26}/></button><button type="button" onClick={() => onOpenComment(message)} className={`ms-1 rounded-icon px-2 py-1 text-xs font-bold ${isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}>{tr('Commenter', 'تعليق')}</button></div>}
                 </div>
               </div>;
             })}
             {isGenerating && !lastAssistantHasContent && <div className="flex items-center gap-3 px-1 py-1"><AssistantBrandMark state={motionState} size={43} label={tr('AYROVI prépare la réponse', 'AYROVI تحضّر الرد')}/><div><p className={`text-xs font-bold ${isDark ? 'text-white/80' : 'text-ink'}`}>{motionState === 'thinking' ? tr('Recherche en cours…', 'جارٍ البحث…') : motionState === 'analyzing' ? tr('Vérification du produit…', 'جارٍ التحقق من المنتج…') : motionState === 'reasoning' ? tr('Récupération du prix…', 'جارٍ جلب السعر…') : tr('Création de la réponse…', 'جارٍ إنشاء الرد…')}</p><span className={`text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Les données de commande et de prix ne sont jamais inventées.', 'لا تُختلق أبدًا بيانات الطلبات والأسعار.')}</span></div></div>}
           </div>
         )}
-        <div ref={bottomRef}/>
+        <div aria-hidden="true" />
       </div>
     </main>
   );

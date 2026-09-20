@@ -72,13 +72,16 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     expect(runtimeCss).toContain("[aria-pressed='true'] .interface-runtime-icon");
   });
 
-  it('removes the exchange-rate card and restores the sticky parallax scene', () => {
+  it('keeps the exchange-rate card removed and exposes the compact editorial About screen', () => {
     expect(footerSource).not.toContain('ratesTransparencyImage');
     expect(footerSource).not.toContain('exchangeRates');
     expect(footerSource).not.toContain('Taux &amp; Transparence');
     expect(footerSource).not.toContain('rates-title');
     expect(footerSource).not.toContain('Code de suivi AYR-TN dès la confirmation');
-    expect(aboutSource).toContain('className="ayrovi-parallax relative isolate min-h-[300svh] bg-surface"');
+    expect(aboutSource).toContain('className="ay-e-display"');
+    expect(appSource).toContain("appView === 'app:about'");
+    expect(readFileSync('client/src/components/MenuDrawer.tsx', 'utf8')).toContain("navigate([{ id: 'app:about' }])");
+    expect(aboutSource).not.toContain('300svh');
     expect(aboutSource).not.toContain('min-h-[300svh] overflow-clip');
     expect(aboutSource).not.toContain('paiement en espèces à la livraison');
     expect(runtimeCss).toContain('.ayrovi-parallax{overflow:visible!important;contain:none}');

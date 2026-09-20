@@ -1,3 +1,5 @@
+import { customerTheme, preservedNavigationTheme } from './design/editorial/customerTheme';
+import { IconFamily } from './design/editorial/IconFamily';
 import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
@@ -20,6 +22,7 @@ import { replaceUrlPreservingNavigation, useNavigationHistory } from './navigati
 import { useLocale } from './i18n/LocaleContext';
 import { DEFAULT_INTERFACE_CONFIG, normalizeInterfaceConfig, type InterfaceSectionConfig, type PublicInterfaceConfig } from './config/interfaceConfig';
 
+const AboutPage = lazy(() => import('./components/AboutPage').then(module => ({ default: module.AboutPage })));
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
 const LensLauncher = lazy(() => import('./ayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
@@ -41,10 +44,10 @@ export const DEFAULT_HOME_BLOCKS: string[] = [];
 
 const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children: React.ReactNode }> = ({ section, children }) => {
   const style = {
-    '--ayrovi-section-background': section.backgroundColor,
-    '--ayrovi-section-text': section.textColor,
-    backgroundColor: section.backgroundColor,
-    color: section.textColor,
+    '--ayrovi-section-background': 'var(--ayrovi-bg-main)',
+    '--ayrovi-section-text': 'var(--ayrovi-text-primary)',
+    backgroundColor: 'var(--ayrovi-bg-main)',
+    color: 'var(--ayrovi-text-primary)',
     paddingBlock: `${section.paddingY}px`,
   } as React.CSSProperties;
   return <div className="managed-public-section" data-public-section={section.id} style={style}>
@@ -63,7 +66,7 @@ const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children:
 
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
-  const { tr } = useLocale();
+  const { tr, locale } = useLocale();
   const appView = navigation.stack[0]?.id || 'home';
   const isProductDrawerOpen = appView === 'app:product';
   const isLensOpen = appView === 'app:lens';
@@ -122,78 +125,8 @@ export const App: React.FC = () => {
     getCommerceConfig()
       .then((payload) => {
         if (!active) return;
-        const root = document.documentElement;
-        const theme = payload?.data?.theme;
-        if (theme && typeof theme === 'object' && theme.primary) {
-          root.style.setProperty('--ayrovi-primary', String(theme.primary));
-          root.style.setProperty('--ayrovi-primary-dark', String(theme.primaryDark || theme.primary));
-          root.style.setProperty('--ayrovi-primary-light', String(theme.primaryLight || theme.primary));
-          if (theme.accent) root.style.setProperty('--ayrovi-accent', String(theme.accent));
-          if (theme.gradient) root.style.setProperty('--ayrovi-gradient', String(theme.gradient));
-        }
-        const visual = normalizeInterfaceConfig(payload?.data?.interfaceConfig);
-        setInterfaceConfig(visual);
-        const { colors, typography, buttons, icons, navigation, layout } = visual;
-        root.style.setProperty('--ayrovi-font-body', typography.body);
-        root.style.setProperty('--ayrovi-font-display', typography.display);
-        root.style.setProperty('--font-primary', typography.body);
-        root.style.setProperty('--ayrovi-base-font-size', `${typography.baseSize}px`);
-        root.style.setProperty('--ayrovi-body-line-height', String(typography.lineHeight));
-        root.style.setProperty('--ayrovi-letter-spacing', `${typography.letterSpacing}em`);
-        root.style.setProperty('--ayrovi-heading-scale', String(typography.headingScale));
-        ([['--text-xl', 1.25], ['--text-2xl', 1.5], ['--text-3xl', 1.875], ['--text-4xl', 2.25], ['--text-5xl', 3], ['--text-6xl', 3.75], ['--text-7xl', 4.5]] as const)
-          .forEach(([token, rem]) => root.style.setProperty(token, `${rem * typography.headingScale}rem`));
-        root.style.setProperty('--ayrovi-heading-color', typography.headingColor);
-        root.style.setProperty('--ayrovi-text-color', typography.textColor);
-        root.style.setProperty('--ayrovi-neutral-900', typography.headingColor);
-        root.style.setProperty('--ayrovi-neutral-500', typography.textColor);
-        root.style.setProperty('--ayrovi-page-bg', colors.pageBackground);
-        root.style.setProperty('--ayrovi-surface-raised', colors.surfaceBackground);
-        root.style.setProperty('--ayrovi-neutral-50', colors.surfaceAlt);
-        root.style.setProperty('--ayrovi-neutral-200', colors.borderColor);
-        root.style.setProperty('--ayrovi-primary', colors.primary);
-        root.style.setProperty('--ayrovi-primary-dark', colors.primaryDark);
-        root.style.setProperty('--ayrovi-primary-light', colors.primaryLight);
-        root.style.setProperty('--ayrovi-accent', colors.accent);
-        // AYROVI DESIGN SYSTEM v1.0 — l'accent du CMS est la SEULE source de l'orange
-        // (canon de la charte : #FF6900, couleur du logo). Les alias --ayrovi-cta /
-        // --ayrovi-orange / --ayrovi-accent dérivent du jeton canonique en CSS.
-        // Plus aucun override « noir » : l'orange est l'identité de la marque.
-        root.style.setProperty('--ayrovi-color-brand-orange', String(visual.colors.accent || '#ff6900').toLowerCase());
-        root.style.setProperty('--ayrovi-accent-soft', 'var(--ayrovi-bg-surface)');
-        root.style.setProperty('--ayrovi-neutral-950', colors.heroBackground);
-        root.style.setProperty('--ayrovi-success', colors.success);
-        root.style.setProperty('--ayrovi-danger', colors.danger);
-        root.style.setProperty('--ayrovi-header-bg', colors.headerBackground);
-        root.style.setProperty('--ayrovi-header-text', colors.headerText);
-        root.style.setProperty('--ayrovi-announcement-bg', colors.announcementBackground);
-        root.style.setProperty('--ayrovi-announcement-text', colors.announcementText);
-        root.style.setProperty('--ayrovi-hero-bg', colors.heroBackground);
-        root.style.setProperty('--ayrovi-hero-text', colors.heroText);
-        root.style.setProperty('--ayrovi-footer-bg', colors.footerBackground);
-        root.style.setProperty('--ayrovi-footer-text', colors.footerText);
-        root.style.setProperty('--ayrovi-gradient', `linear-gradient(135deg, ${colors.heroBackground} 0%, ${colors.primary} 100%)`);
-        root.style.setProperty('--ayrovi-button-bg', buttons.background);
-        root.style.setProperty('--ayrovi-button-color', buttons.color);
-        root.style.setProperty('--ayrovi-button-secondary-bg', buttons.secondaryBackground);
-        root.style.setProperty('--ayrovi-button-secondary-color', buttons.secondaryColor);
-        root.style.setProperty('--ayrovi-button-border', buttons.borderColor);
-        root.style.setProperty('--ayrovi-button-border-width', `${buttons.borderWidth}px`);
-        root.style.setProperty('--ayrovi-button-height', `${buttons.height}px`);
-        root.style.setProperty('--ayrovi-radius-control', `${buttons.shape === 'pill' ? 999 : buttons.shape === 'square' ? 0 : buttons.radius}px`);
-        root.style.setProperty('--ayrovi-icon-color', icons.color);
-        root.style.setProperty('--ayrovi-icon-active-color', icons.activeColor);
-        root.style.setProperty('--ayrovi-icon-size', `${icons.size}px`);
-        root.dataset.ayroviIconStyle = icons.style;
-        root.dataset.ayroviIconLibrary = icons.library;
-        root.style.setProperty('--ayrovi-bottom-nav-height', `${navigation.height}px`);
-        root.style.setProperty('--ayrovi-section-gap', `${layout.sectionGap}px`);
-        root.style.setProperty('--ayrovi-content-max', `${layout.maxWidth}px`);
-        root.style.setProperty('--ayrovi-page-padding', `${layout.pagePadding}px`);
-        root.style.setProperty('--ayrovi-radius-card', `${layout.cardRadius}px`);
-        root.style.setProperty('--ayrovi-card-border-width', `${layout.cardBorderWidth}px`);
-        root.style.setProperty('--ayrovi-text-align', typography.align);
-        root.dataset.ayroviShadow = layout.shadow;
+        // CMS retains content/layout/navigation. Customer presentation is isolated below.
+        setInterfaceConfig(normalizeInterfaceConfig(payload?.data?.interfaceConfig));
       })
       .catch(() => undefined);
     return () => { active = false; };
@@ -493,12 +426,13 @@ export const App: React.FC = () => {
     });
 
   return (
-    <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative">
+    <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
       
       {/* Top Yellow Notice Bar */}
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />
 
       {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
+      <IconFamily family="legacy"><div data-preserved-navigation style={{ ...preservedNavigationTheme, display: 'contents' }}>
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
         onGoHome={() => {
@@ -516,6 +450,9 @@ export const App: React.FC = () => {
         isAuthenticated={Boolean(customerSession)}
         logoUrl={interfaceConfig.logoUrl}
       />
+      </div></IconFamily>
+
+      {appView === 'app:about' && <Suspense fallback={null}><AboutPage section={interfaceConfig.sections.find(section => section.id === 'about')} onClose={closeAppView} /></Suspense>}
 
       {/* Sliding Side Menu Drawer */}
       {isMenuDrawerOpen && (
@@ -539,9 +476,10 @@ export const App: React.FC = () => {
       <div className="managed-public-sections">{publicSections}</div>
 
       {/* Floating Scroll To Top FAB Button */}
-      <ScrollToTopButton />
+      <ScrollToTopButton hidden={navigation.stack.length > 0} />
 
       {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
+      <IconFamily family="legacy"><div data-preserved-navigation style={{ ...preservedNavigationTheme, display: 'contents' }}>
       <BottomNavBar
         isAiDrawerOpen={isAiDrawerOpen}
         onToggleAiDrawer={handleToggleAiDrawer}
@@ -549,6 +487,7 @@ export const App: React.FC = () => {
         config={interfaceConfig.navigation}
         iconConfig={interfaceConfig.icons}
       />
+      </div></IconFamily>
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}
       {isProductDrawerOpen && (

@@ -1,4 +1,7 @@
 import * as React from 'react';
+import { useIconFamily } from '../../../design/editorial/IconFamily';
+import { EditorialIcon, type EditorialIconName } from '../../../design/editorial/Icon';
+import glyphs from '../../../design/editorial/glyphs.json';
 
 /**
  * AYROVI Icon System — base.
@@ -41,6 +44,11 @@ AyroviSvg.displayName = 'AyroviSvg';
 
 export function createAyroviIcon(name: string, body: React.ReactNode) {
   const Icon = React.forwardRef<SVGSVGElement, AyroviIconProps>(function AyroviNamed(props, ref) {
+    const { family, direction } = useIconFamily();
+    if (family === 'editorial' && Object.hasOwn(glyphs, name)) {
+      return <EditorialIcon {...props} ref={ref} name={name as EditorialIconName} direction={direction} data-ayrovi-icon={name}
+        className={glyphs[name as EditorialIconName].mirrorRtl ? props.className?.replace(/(^|\s)rotate-180(?=\s|$)/g, ' ').trim() : props.className} />;
+    }
     return (
       <AyroviSvg ref={ref} data-ayrovi-icon={name} {...props}>
         {body}

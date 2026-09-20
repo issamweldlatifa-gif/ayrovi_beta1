@@ -33,7 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     let raf = 0;
     const update = () => {
       const hero = document.querySelector('[data-hero]');
-      if (!hero) { setOverHero(false); return; }
+      if (!hero || (hero as HTMLElement).dataset.heroLayout === 'editorial') { setOverHero(false); return; }
       const rect = hero.getBoundingClientRect();
       setOverHero(rect.bottom > 8);
     };

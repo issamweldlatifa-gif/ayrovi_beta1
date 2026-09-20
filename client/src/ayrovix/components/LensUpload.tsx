@@ -30,7 +30,7 @@ export const LensUpload: React.FC<LensUploadProps> = ({ onImage }) => {
         onClick={() => inputRef.current?.click()}
         className="ay-btn-secondary h-auto w-full justify-start gap-4 rounded-card p-4 text-start"
       >
-        <span className="grid h-12 w-12 flex-none place-items-center rounded-2xl bg-surface text-ink">
+        <span className="grid h-12 w-12 flex-none place-items-center rounded-control bg-surface text-ink">
           <ImageIcon size={24} strokeWidth={1.8} />
         </span>
         <span>

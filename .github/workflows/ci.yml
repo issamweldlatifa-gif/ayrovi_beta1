@@ -44,3 +44,12 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Verify real customer screens (isolated providers and SQLite)
+        run: npm run verify:editorial-customer
+
+      - name: Upload customer-screen evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: editorial-customer-evidence
+          path: screenshots/editorial/customer/

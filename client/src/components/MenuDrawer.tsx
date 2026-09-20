@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { X, User } from './QatafoIcons';
+import { useDialogFocus } from '../hooks/useDialogFocus';
+import { safePublicHref } from '../utils/publicLinks';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useLocale } from '../i18n/LocaleContext';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -39,6 +41,8 @@ const MenuGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ tit
 export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session, onOpenAccount, onOpenAssistant, onOpenLens }) => {
   const { tr, direction, locale, setLocale } = useLocale();
   const navigation = useNavigationHistory();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(panelRef, isOpen);
   const [supportUrl, setSupportUrl] = useState('');
   useBodyScrollLock(isOpen);
 
@@ -46,7 +50,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
     if (!isOpen) return;
     let active = true;
     getCommerceConfig().then((payload) => {
-      if (active) setSupportUrl(String(payload.data?.channels?.whatsapp || ''));
+      if (active) setSupportUrl(safePublicHref(payload.data?.channels?.whatsapp) || '');
     }).catch(() => undefined);
     return () => { active = false; };
   }, [isOpen]);
@@ -61,10 +65,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
   if (!isOpen) return null;
 
   const openCms = (page: 'arrivals' | 'promotions' | 'stories' | 'news' | 'products') => navigation.navigate([{ id: `cms:${page}` }]);
-  const openAbout = () => {
-    navigation.navigate([]);
-    window.setTimeout(() => document.getElementById('about-ayrovi')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
-  };
+  const openAbout = () => navigation.navigate([{ id: 'app:about' }]);
   const firstName = session?.account.displayName?.trim().split(/\s+/)[0] || tr('Client', 'حريف');
 
   return (
@@ -72,7 +73,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
       <button type="button" onClick={onClose} className="absolute inset-0 h-full w-full cursor-default bg-ink/55 backdrop-blur-sm" aria-label={tr('Fermer le menu', 'إغلاق القائمة')} />
 
       <div className={`fixed inset-y-0 flex max-w-full ${direction === 'rtl' ? 'right-0' : 'left-0'}`}>
-        <div className={`flex w-screen max-w-sm flex-col bg-white shadow-overlay ${direction === 'rtl' ? 'border-l' : 'border-r'} border-line`}>
+        <div ref={panelRef} tabIndex={-1} className={`outline-none flex w-screen max-w-sm flex-col bg-white shadow-overlay ${direction === 'rtl' ? 'border-l' : 'border-r'} border-line`}>
           <header className="flex items-center justify-between gap-3 border-b border-line px-5 pb-4 pt-[max(1rem,env(safe-area-inset-top))]">
             <div className="flex min-w-0 items-center gap-3">
               {session?.account.avatarUrl
@@ -80,10 +81,10 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
                 : <span className="grid h-11 w-11 place-items-center rounded-full bg-ink text-sm font-black text-white">{session ? firstName.slice(0, 2).toUpperCase() : <User className="h-6 w-6" />}</span>}
               <div className="min-w-0">
                 <strong className="block truncate text-sm font-black text-ink">{session ? tr(`Bonjour, ${firstName}`, `مرحبًا، ${firstName}`) : 'AYROVI'}</strong>
-                <button type="button" onClick={() => onOpenAccount('home')} className="mt-0.5 text-xs font-bold text-ink underline-offset-4 hover:underline">{session ? tr('Mon compte', 'حسابي') : tr('Se connecter / Créer un compte', 'تسجيل الدخول / إنشاء حساب')}</button>
+                <button type="button" onClick={() => onOpenAccount('home')} className="mt-0.5 min-h-11 text-xs font-bold text-ink underline-offset-4 hover:underline">{session ? tr('Mon compte', 'حسابي') : tr('Se connecter / Créer un compte', 'تسجيل الدخول / إنشاء حساب')}</button>
               </div>
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')}><X className="h-6 w-6" /></Button>
+            <Button data-dialog-autofocus variant="ghost" size="icon" onClick={onClose} aria-label={tr('Fermer', 'إغلاق')}><X className="h-6 w-6" /></Button>
           </header>
 
           <div className="flex-1 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">

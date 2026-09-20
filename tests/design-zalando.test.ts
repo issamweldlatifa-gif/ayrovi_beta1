@@ -293,12 +293,13 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
     expect(offenders.join(' | ')).toBe('');
   });
 
-  test('le runtime n’override plus l’orange de marque (bug b96f027 corrigé)', () => {
+  test('editorial customer tokens are scoped; legacy admin orange is not overwritten', () => {
     const app = withoutComments(read('client/src/App.tsx'));
     expect(app).not.toMatch(/color-brand-orange',\s*'#0A0A0A'/i);
     expect(app).not.toMatch(/--ayrovi-cta',\s*'#0A0A0A'/i);
-    // et l'accent CMS alimente le jeton canonique (source unique)
-    expect(app).toMatch(/color-brand-orange',\s*String\(visual\.colors\.accent/);
+    // v2 deliberately replaces global CMS writes with the approved customer boundary.
+    expect(app).not.toContain('root.style.setProperty');
+    expect(app).toContain('style={customerTheme(locale, interfaceConfig)}');
   });
 });
 

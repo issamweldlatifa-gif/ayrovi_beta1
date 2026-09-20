@@ -3,7 +3,7 @@ import { chromium, firefox } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 const base = process.env.AUTH_TEST_URL || 'http://127.0.0.1:3000';
-const output = 'screenshots/auth-mobile';
+const output = process.env.AYROVI_AUTH_OUTPUT || 'screenshots/auth-mobile';
 await mkdir(output, { recursive: true });
 const config = { passwordReset: { enabled: true }, google: { enabled: true }, facebook: { enabled: false }, apple: { enabled: false }, email: { enabled: true }, phoneOtp: { enabled: true }, checkoutRequiresAuthentication: true };
 let checks = 0;

@@ -61,15 +61,15 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
   };
 
   return (
-    <footer className={`relative z-30 shrink-0 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
-      <div className={`rounded-[26px] px-4 pb-2.5 pt-3.5 shadow-card ring-1 transition ${isDark ? 'bg-ink-deep ring-white/10' : 'bg-white ring-black/5'}`}>
+    <footer data-assistant-composer className={`relative z-30 shrink-0 px-4 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))] ${isDark ? 'bg-ink' : 'bg-surface'}`}>
+      <div className={`rounded-control px-4 pb-2.5 pt-3.5 shadow-card ring-1 transition ${isDark ? 'bg-ink-deep ring-white/10' : 'bg-white ring-black/5'}`}>
         {attachments.length > 0 && (
           <div className="mb-2.5 flex flex-wrap gap-2">
             {attachments.map((attachment) => (
-              <div key={attachment.id} className={`flex max-w-[190px] items-center gap-2 rounded-[14px] py-1.5 ps-2 pe-1.5 text-xs ${isDark ? 'bg-white/10 text-white/90' : 'bg-surface text-ink'}`}>
-                {attachment.preview ? <img src={attachment.preview} alt="" className="h-7 w-7 shrink-0 rounded-md object-cover" /> : <FileText className="h-7 w-7 shrink-0 text-muted" />}
+              <div key={attachment.id} className={`flex max-w-[190px] items-center gap-2 rounded-control py-1.5 ps-2 pe-1.5 text-xs ${isDark ? 'bg-white/10 text-white/90' : 'bg-surface text-ink'}`}>
+                {attachment.preview ? <img src={attachment.preview} alt="" className="h-7 w-7 shrink-0 rounded-control object-cover" /> : <FileText className="h-7 w-7 shrink-0 text-muted" />}
                 <span className="truncate">{attachment.name}</span>
-                <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted hover:text-ink" aria-label={tr(`Retirer ${attachment.name}`, `إزالة ${attachment.name}`)}><X className="h-3.5 w-3.5" /></button>
+                <button type="button" onClick={() => onRemoveAttachment(attachment.id)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink" aria-label={tr(`Retirer ${attachment.name}`, `إزالة ${attachment.name}`)}><X className="h-3.5 w-3.5" /></button>
               </div>
             ))}
           </div>
@@ -110,7 +110,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
             type="button"
             onClick={onOpenAttachments}
             disabled={isGenerating || isTranscribing || isRecording}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`}
             aria-label={tr('Ajouter au chat', 'إضافة إلى المحادثة')}
           >
             <Plus className="h-6 w-6" />
@@ -123,7 +123,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
               type="button"
               onClick={isRecording ? onFinishRecording : onStartRecording}
               disabled={isGenerating || isTranscribing}
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
                 isRecording
                   ? 'animate-pulse bg-danger text-white'
                   : surfaceButton
@@ -140,7 +140,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
                 type="button"
                 onClick={isGenerating ? onStop : onSend}
                 disabled={isTranscribing || isRecording}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30"
                 aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
               >
                 {isGenerating ? <Pause className="h-6 w-6 fill-current" /> : <ArrowUp className="h-6 w-6 stroke-[2.5]" />}
@@ -153,7 +153,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
                 type="button"
                 onClick={onToggleVoiceMode}
                 disabled={isGenerating || isTranscribing || isRecording}
-                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-white text-ink shadow-sm transition hover:bg-surface active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
+                className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-line bg-white text-ink shadow-sm transition hover:bg-surface active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${
                   voiceMode ? 'ring-2 ring-white animate-pulse' : ''
                 }`}
                 aria-label={tr('Mode vocal', 'الوضع الصوتي')}

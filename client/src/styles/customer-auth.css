@@ -1,7 +1,7 @@
-/* Customer authentication — DS v1.1, deliberately scoped to this screen.
+/* Customer authentication — ÉDITORIAL v2, deliberately scoped to this screen.
    Shared Button / Field / Input remain the component source of truth. */
 .ay-auth {
-  --ayrovi-radius-control: var(--ayrovi-radius-chip);
+  --ayrovi-radius-control: 0px;
   color-scheme: light;
   color: var(--ayrovi-text-primary);
   background: var(--ayrovi-bg-main);
@@ -16,23 +16,21 @@
 .ay-auth__container { width: 100%; max-width: var(--ayrovi-form-max-width); margin-inline: auto; }
 .ay-auth__container--utility { padding: max(var(--ayrovi-space-5), env(safe-area-inset-top)) var(--ayrovi-space-5) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)); }
 .ay-auth__main { display: flex; flex-direction: column; min-width: 0; }
-/* Reference-driven brand header: documented exception to the storefront orange budget. */
+/* White editorial header: the orange-area budget has no auth exception. */
 .ay-auth__hero {
   position: relative; isolation: isolate; overflow: hidden;
-  background: var(--ayrovi-color-brand-orange); color: var(--ayrovi-text-primary);
-  padding: max(var(--ayrovi-space-3), env(safe-area-inset-top)) max(var(--ayrovi-space-5), env(safe-area-inset-right)) 52px max(var(--ayrovi-space-5), env(safe-area-inset-left));
+  background: var(--ayrovi-bg-main); color: var(--ayrovi-text-primary);
+  padding: max(var(--ayrovi-space-3), env(safe-area-inset-top)) max(var(--ayrovi-space-5), env(safe-area-inset-right)) 28px max(var(--ayrovi-space-5), env(safe-area-inset-left));
 }
-.ay-auth__hero::before, .ay-auth__hero::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; pointer-events: none; }
-.ay-auth__hero::before { width: 200px; height: 200px; inset-inline-start: -140px; bottom: -60px; background: color-mix(in srgb, var(--ayrovi-bg-main) 22%, transparent); }
-.ay-auth__hero::after { width: 250px; height: 250px; inset-inline-end: -160px; top: -130px; border: 36px solid color-mix(in srgb, var(--ayrovi-bg-main) 15%, transparent); }
+.ay-auth__hero::after { content: ""; position: absolute; width: 6px; height: 6px; bottom: 4px; inset-inline-start: calc(50% - 3px); background: var(--ayrovi-color-brand-orange); }
 .ay-auth__header { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; min-height: 44px; }
 .ay-auth__header .ay-runtime-button--ghost { color: var(--ayrovi-text-primary) !important; }
 .ay-auth__brand { display: flex; align-items: center; justify-self: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: .1em; }
-.ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--ayrovi-bg-main); border-radius: 50%; flex-shrink: 0; }
+.ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--ayrovi-bg-main); border-radius: 0; flex-shrink: 0; }
 .ay-auth__intro { text-align: center; margin-block-start: var(--ayrovi-space-4); }
-.ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-size: var(--ayrovi-auth-title-size); line-height: 1.2; font-weight: 700; letter-spacing: -0.025em; }
+.ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-family: var(--ayrovi-font-display); font-size: 32px; line-height: 1.5; font-weight: 400; font-synthesis: none; letter-spacing: 0; }
 .ay-auth__intro p { font-size: var(--text-small); line-height: 1.5; margin-block-start: var(--ayrovi-space-2); }
-.ay-auth__card { position: relative; margin-block-start: -28px; border-radius: var(--ayrovi-radius-sheet) var(--ayrovi-radius-sheet) 0 0; padding: var(--ayrovi-space-8) max(var(--ayrovi-space-6), env(safe-area-inset-right)) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)) max(var(--ayrovi-space-6), env(safe-area-inset-left)); background: var(--ayrovi-bg-main); }
+.ay-auth__card { position: relative; margin-block-start: 0; border-radius: var(--ayrovi-radius-sheet) var(--ayrovi-radius-sheet) 0 0; padding: var(--ayrovi-space-8) max(var(--ayrovi-space-6), env(safe-area-inset-right)) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)) max(var(--ayrovi-space-6), env(safe-area-inset-left)); background: var(--ayrovi-bg-main); }
 .ay-auth__social { display: flex; flex-wrap: wrap; gap: var(--ayrovi-space-2); }
 .ay-auth__provider { flex: 1 1 100px; padding-inline: var(--ayrovi-space-3); min-height: var(--ayrovi-control-height); font-size: var(--text-small); box-shadow: none; }
 .ay-auth__provider svg { flex-shrink: 0; }

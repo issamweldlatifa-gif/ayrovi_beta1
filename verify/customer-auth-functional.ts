@@ -37,7 +37,7 @@ async function run() {
   const check = (value: unknown, message: string) => { assert.ok(value, message); count++; };
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  const output = 'screenshots/auth-functional';
+  const output = process.env.AYROVI_AUTH_OUTPUT || 'screenshots/auth-functional';
   await mkdir(output,{recursive:true});
   try {
     await page.goto(`${base}/?customerAuth=login`);

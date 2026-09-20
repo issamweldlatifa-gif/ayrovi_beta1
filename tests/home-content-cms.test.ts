@@ -132,7 +132,8 @@ describe('Dashboard is the single source of truth for Hero, LENS and home sectio
     expect(heroSource).not.toContain('Vous le voyez.');
     expect(heroSource).not.toContain('vous le livre.');
     expect(heroSource).not.toContain('Mode, beauté, technologie');
-    expect(heroSource).toContain("fetch('/api/public/hero-content')");
+    expect(heroSource).toMatch(/fetch\('\/api\/public\/hero-content'[,)]/);
+    expect(heroSource).toContain('controller.abort()');
   });
 });
 

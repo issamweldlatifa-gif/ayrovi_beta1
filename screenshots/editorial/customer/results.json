@@ -1,0 +1,1575 @@
+{
+  "scope": "Actual locally served app, default CMS content, anonymous navigation; no external AI/OAuth/payment exercised",
+  "checks": [
+    {
+      "label": "fr/320/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "fr/320/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.011559537914691944
+    },
+    {
+      "label": "fr/320: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/320: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/320: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/320/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "fr/320/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00017772511848341231
+    },
+    {
+      "label": "fr/320: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "fr/320: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/320: square input controls",
+      "pass": true
+    },
+    {
+      "label": "fr/320/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "fr/320/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/320: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "fr/320: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "fr/320: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "fr/320: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "fr/320/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "fr/320/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/320: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 697.609375,
+        "composer": 697.609375
+      }
+    },
+    {
+      "label": "fr/320/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "fr/320/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00011848341232227489
+    },
+    {
+      "label": "fr/320: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "fr/360/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "fr/360/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.013033175355450236
+    },
+    {
+      "label": "fr/360: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/360: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/360: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/360/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "fr/360/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0001579778830963665
+    },
+    {
+      "label": "fr/360: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "fr/360: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/360: square input controls",
+      "pass": true
+    },
+    {
+      "label": "fr/360/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "fr/360/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/360: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "fr/360: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "fr/360: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "fr/360: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "fr/360/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "fr/360/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/360: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 697.609375,
+        "composer": 697.609375
+      }
+    },
+    {
+      "label": "fr/360/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "fr/360/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00010531858873091101
+    },
+    {
+      "label": "fr/360: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "fr/390/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "fr/390/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.014120792319844453
+    },
+    {
+      "label": "fr/390: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/390: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/390: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/390/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "fr/390/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00014582573824279985
+    },
+    {
+      "label": "fr/390: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "fr/390: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/390: square input controls",
+      "pass": true
+    },
+    {
+      "label": "fr/390/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "fr/390/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/390: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "fr/390: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "fr/390: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "fr/390: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "fr/390/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "fr/390/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/390: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 697.609375,
+        "composer": 697.609375
+      }
+    },
+    {
+      "label": "fr/390/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "fr/390/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00009721715882853324
+    },
+    {
+      "label": "fr/390: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "fr/768/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "fr/768/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.006760342614533965
+    },
+    {
+      "label": "fr/768: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/768: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/768: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/768/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "fr/768/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0000740521327014218
+    },
+    {
+      "label": "fr/768: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "fr/768: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/768: square input controls",
+      "pass": true
+    },
+    {
+      "label": "fr/768/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "fr/768/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0009055958728278041
+    },
+    {
+      "label": "fr/768: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "fr/768: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "fr/768: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "fr/768: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "fr/768/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "fr/768/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/768: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 689.609375,
+        "composer": 689.609375
+      }
+    },
+    {
+      "label": "fr/768/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "fr/768/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00005553909952606635
+    },
+    {
+      "label": "fr/768: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "fr/1360/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "fr/1360/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.006836318650683022
+    },
+    {
+      "label": "fr/1360: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/1360/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "fr/1360/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.000041817674937273486
+    },
+    {
+      "label": "fr/1360: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: square input controls",
+      "pass": true
+    },
+    {
+      "label": "fr/1360/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "fr/1360/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0012440758293838863
+    },
+    {
+      "label": "fr/1360: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "fr/1360: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "fr/1360/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "fr/1360/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "fr/1360: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 689.609375,
+        "composer": 689.609375
+      }
+    },
+    {
+      "label": "fr/1360/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "fr/1360/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.000031363256202955116
+    },
+    {
+      "label": "fr/1360: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "ar/320/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "ar/320/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.011559537914691944
+    },
+    {
+      "label": "ar/320: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/320: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/320: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/320/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "ar/320/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00017772511848341231
+    },
+    {
+      "label": "ar/320: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "ar/320: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/320: square input controls",
+      "pass": true
+    },
+    {
+      "label": "ar/320/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "ar/320/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/320: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "ar/320: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "ar/320: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "ar/320: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "ar/320/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "ar/320/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/320: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 697.609375,
+        "composer": 697.609375
+      }
+    },
+    {
+      "label": "ar/320/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 320,
+        "scroll": 320
+      }
+    },
+    {
+      "label": "ar/320/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00011848341232227489
+    },
+    {
+      "label": "ar/320: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "ar/360/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "ar/360/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.013033175355450236
+    },
+    {
+      "label": "ar/360: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/360: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/360: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/360/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "ar/360/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0001579778830963665
+    },
+    {
+      "label": "ar/360: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "ar/360: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/360: square input controls",
+      "pass": true
+    },
+    {
+      "label": "ar/360/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "ar/360/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/360: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "ar/360: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "ar/360: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "ar/360: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "ar/360/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "ar/360/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/360: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 697.609375,
+        "composer": 697.609375
+      }
+    },
+    {
+      "label": "ar/360/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 360,
+        "scroll": 360
+      }
+    },
+    {
+      "label": "ar/360/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00010531858873091101
+    },
+    {
+      "label": "ar/360: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "ar/390/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "ar/390/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.013993194798882003
+    },
+    {
+      "label": "ar/390: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/390: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/390: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/390/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "ar/390/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00014582573824279985
+    },
+    {
+      "label": "ar/390: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "ar/390: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/390: square input controls",
+      "pass": true
+    },
+    {
+      "label": "ar/390/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "ar/390/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/390: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "ar/390: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "ar/390: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "ar/390: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "ar/390/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "ar/390/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/390: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 697.609375,
+        "composer": 697.609375
+      }
+    },
+    {
+      "label": "ar/390/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "label": "ar/390/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00009721715882853324
+    },
+    {
+      "label": "ar/390: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "ar/768/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "ar/768/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.006760342614533965
+    },
+    {
+      "label": "ar/768: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/768: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/768: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/768/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "ar/768/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0000740521327014218
+    },
+    {
+      "label": "ar/768: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "ar/768: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/768: square input controls",
+      "pass": true
+    },
+    {
+      "label": "ar/768/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "ar/768/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0009302799170616113
+    },
+    {
+      "label": "ar/768: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "ar/768: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "ar/768: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "ar/768: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "ar/768/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "ar/768/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/768: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 689.609375,
+        "composer": 689.609375
+      }
+    },
+    {
+      "label": "ar/768/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "label": "ar/768/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.00005553909952606635
+    },
+    {
+      "label": "ar/768: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "ar/1360/home: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "ar/1360/home: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.006836318650683022
+    },
+    {
+      "label": "ar/1360: actual logo source preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: three navigation destinations preserved",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: navigation still legacy glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/1360/auth: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "ar/1360/auth: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.000041817674937273486
+    },
+    {
+      "label": "ar/1360: empty credential fields",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: auth uses new glyphs",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: square input controls",
+      "pass": true
+    },
+    {
+      "label": "ar/1360/menu: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "ar/1360/menu: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.0012440758293838863
+    },
+    {
+      "label": "ar/1360: initial menu focus is close",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: menu traps focus at the end",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: menu wraps focus to first target",
+      "pass": true
+    },
+    {
+      "label": "ar/1360: About is a reachable screen",
+      "pass": true
+    },
+    {
+      "label": "ar/1360/sonim: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "ar/1360/sonim: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "label": "ar/1360: controls do not cover conversation",
+      "pass": true,
+      "details": {
+        "header": 67.390625,
+        "messagesTop": 67.390625,
+        "messagesBottom": 689.609375,
+        "composer": 689.609375
+      }
+    },
+    {
+      "label": "ar/1360/lens: no horizontal overflow",
+      "pass": true,
+      "details": {
+        "client": 1360,
+        "scroll": 1360
+      }
+    },
+    {
+      "label": "ar/1360/lens: orange area <= 3% (no exclusions)",
+      "pass": true,
+      "details": 0.000031363256202955116
+    },
+    {
+      "label": "ar/1360: Lens imports new icon family",
+      "pass": true
+    },
+    {
+      "label": "short viewport: composer remains reachable",
+      "pass": true,
+      "details": {
+        "x": 0,
+        "y": 333.609375,
+        "width": 390,
+        "height": 146.390625
+      }
+    },
+    {
+      "label": "dark welcome cards use semantic dark surface",
+      "pass": true
+    },
+    {
+      "label": "dark muted text is readable token",
+      "pass": true
+    },
+    {
+      "label": "restricted browser storage does not crash the customer shell",
+      "pass": true
+    },
+    {
+      "label": "no page errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "orange": [
+    {
+      "locale": "fr",
+      "width": 320,
+      "screen": "home",
+      "ratio": 0.011559537914691944,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 320,
+      "screen": "auth",
+      "ratio": 0.00017772511848341231,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 320,
+      "screen": "menu",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 320,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 320,
+      "screen": "lens",
+      "ratio": 0.00011848341232227489,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 360,
+      "screen": "home",
+      "ratio": 0.013033175355450236,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 360,
+      "screen": "auth",
+      "ratio": 0.0001579778830963665,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 360,
+      "screen": "menu",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 360,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 360,
+      "screen": "lens",
+      "ratio": 0.00010531858873091101,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 390,
+      "screen": "home",
+      "ratio": 0.014120792319844453,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 390,
+      "screen": "auth",
+      "ratio": 0.00014582573824279985,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 390,
+      "screen": "menu",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 390,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 390,
+      "screen": "lens",
+      "ratio": 0.00009721715882853324,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 768,
+      "screen": "home",
+      "ratio": 0.006760342614533965,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 768,
+      "screen": "auth",
+      "ratio": 0.0000740521327014218,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 768,
+      "screen": "menu",
+      "ratio": 0.0009055958728278041,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 768,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 768,
+      "screen": "lens",
+      "ratio": 0.00005553909952606635,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 1360,
+      "screen": "home",
+      "ratio": 0.006836318650683022,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 1360,
+      "screen": "auth",
+      "ratio": 0.000041817674937273486,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 1360,
+      "screen": "menu",
+      "ratio": 0.0012440758293838863,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 1360,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "fr",
+      "width": 1360,
+      "screen": "lens",
+      "ratio": 0.000031363256202955116,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 320,
+      "screen": "home",
+      "ratio": 0.011559537914691944,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 320,
+      "screen": "auth",
+      "ratio": 0.00017772511848341231,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 320,
+      "screen": "menu",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 320,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 320,
+      "screen": "lens",
+      "ratio": 0.00011848341232227489,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 360,
+      "screen": "home",
+      "ratio": 0.013033175355450236,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 360,
+      "screen": "auth",
+      "ratio": 0.0001579778830963665,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 360,
+      "screen": "menu",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 360,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 360,
+      "screen": "lens",
+      "ratio": 0.00010531858873091101,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 390,
+      "screen": "home",
+      "ratio": 0.013993194798882003,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 390,
+      "screen": "auth",
+      "ratio": 0.00014582573824279985,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 390,
+      "screen": "menu",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 390,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 390,
+      "screen": "lens",
+      "ratio": 0.00009721715882853324,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 768,
+      "screen": "home",
+      "ratio": 0.006760342614533965,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 768,
+      "screen": "auth",
+      "ratio": 0.0000740521327014218,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 768,
+      "screen": "menu",
+      "ratio": 0.0009302799170616113,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 768,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 768,
+      "screen": "lens",
+      "ratio": 0.00005553909952606635,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 1360,
+      "screen": "home",
+      "ratio": 0.006836318650683022,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 1360,
+      "screen": "auth",
+      "ratio": 0.000041817674937273486,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 1360,
+      "screen": "menu",
+      "ratio": 0.0012440758293838863,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 1360,
+      "screen": "sonim",
+      "ratio": 0,
+      "exclusions": []
+    },
+    {
+      "locale": "ar",
+      "width": 1360,
+      "screen": "lens",
+      "ratio": 0.000031363256202955116,
+      "exclusions": []
+    }
+  ],
+  "errors": []
+}

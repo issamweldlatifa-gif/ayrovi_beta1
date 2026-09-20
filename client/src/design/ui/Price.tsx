@@ -26,9 +26,9 @@ export const Price: React.FC<PriceProps> = ({
   const hasOriginal = originalAmount != null && originalAmount > amount;
   return (
     <span className={twMerge('inline-flex flex-col items-end leading-tight', className)} {...props}>
-      <span className={twMerge('font-bold tabular-nums tracking-tight text-ink', SIZES[size])}>
-        {formatTND(amount)}
-        {showCurrency && <span className="ml-1 text-muted">{currencyLabel}</span>}
+      <span className={twMerge('ay-price-number font-bold tabular-nums tracking-tight text-ink', SIZES[size])}>
+        <bdi dir="ltr">{formatTND(amount)}</bdi>
+        {showCurrency && <span className="ms-1 text-muted">{currencyLabel}</span>}
       </span>
       {hasOriginal && (
         <span className={twMerge('font-semibold tabular-nums text-muted line-through', ORIGINAL[size])} aria-label="Prix initial">

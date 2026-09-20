@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import './styles/journey.css';
 import { NavigationHistoryProvider } from './navigation/NavigationHistory';
+import { CustomerIdentity } from './design/editorial/CustomerIdentity';
 import { LocaleProvider } from './i18n/LocaleContext';
 
 const isRecoveryPath = window.location.pathname === '/reset-password';
@@ -22,7 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <LocaleProvider>
       <NavigationHistoryProvider>
         <Suspense fallback={loading}>
-          {isAdminPath ? <AdminApp /> : isRecoveryPath ? <PasswordRecovery reset /> : <PublicApp />}
+          {isAdminPath ? <AdminApp /> : <CustomerIdentity>{isRecoveryPath ? <PasswordRecovery reset /> : <PublicApp />}</CustomerIdentity>}
         </Suspense>
       </NavigationHistoryProvider>
     </LocaleProvider>

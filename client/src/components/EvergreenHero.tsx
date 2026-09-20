@@ -1,18 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { buttonClasses } from '../design/Button';
+import { ArrowRight } from './QatafoIcons';
+import { useLocale } from '../i18n/LocaleContext';
+import { safePublicHref } from '../utils/publicLinks';
 
-/**
- * AYROVI HERO — FULL-BLEED DYNAMIC IMAGE HERO (mobile-first)
- * الصورة هي الـHero (طبقة تغطي كامل المساحة) والنص يعيش فوقها.
- * تكيف تلقائي: تحليل الإضاءة يحدد قوة الـoverlay، واللون السائد يضيف
- * لمسة atmosphere خفيفة — هوية AYROVI (أسود/أبيض/برتقالي) ثابتة دائماً.
- *
- * Dashboard = Control · CMS = Source of Truth · Frontend = Presentation:
- * العنوان، الوصف، الـ eyebrow، الـ CTA ورابطه، ترتيب العناصر والكلمة
- * المميّزة كلها من /api/public/hero-content (Admin → Contenu → Hero).
- * الصورة والمواضع والـoverlay من /api/public/hero/active.
+/** Editorial composition. CMS owns copy, order, links, images and focal points.
+ * Text lives on canvas rather than over media; historical overlay metadata stays in the API.
  */
-
 interface HeroContent {
   eyebrow: string;
   title: string;
@@ -83,171 +77,66 @@ const FALLBACK_VISUAL: HeroVisual = {
 const srcsetValue = (entries: Array<{ url: string; width: number }>): string | undefined =>
   entries.length ? entries.map((entry) => `${entry.url} ${entry.width}w`).join(', ') : undefined;
 
-/** قوة الـOverlay: AUTO من الإضاءة (فاتحة ← أقوى لضمان القراءة) أو يدوية من الـAdmin */
-const resolveOverlayStrength = (visual: HeroVisual): number => {
-  if (visual.overlayMode === 'MANUAL' && visual.overlayStrength !== null && Number.isFinite(visual.overlayStrength)) {
-    return Math.min(1, Math.max(0, visual.overlayStrength));
-  }
-  const luminance = visual.analysis?.luminance;
-  if (luminance === undefined || luminance === null) return 0.3;
-  if (luminance < 0.35) return 0.18;
-  if (luminance > 0.6) return 0.5;
-  return 0.32;
-};
-
 export const EvergreenHero: React.FC = () => {
+  const { tr } = useLocale();
   const [visual, setVisual] = useState<HeroVisual>(FALLBACK_VISUAL);
-  const [loaded, setLoaded] = useState(false);
   const [content, setContent] = useState<HeroContent | null>(null);
+  const [contentLoading, setContentLoading] = useState(true);
+  const [imageFailed, setImageFailed] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    fetch('/api/public/hero/active')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((result) => {
-        if (cancelled || !result?.data?.imageUrl) return;
-        setVisual((current) => ({ ...current, ...result.data }));
-      })
-      .catch(() => {/* الافتراضي يبقى — لا Hero مكسور أبداً */});
-    return () => { cancelled = true; };
-  }, []);
-
-  // محتوى الـ Hero من الـ CMS — لا نص ثابت في الكود
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/public/hero-content')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((result) => { if (!cancelled && result?.data) setContent(result.data as HeroContent); })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
+    const controller = new AbortController();
+    fetch('/api/public/hero/active', { signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(result => {
+        if (controller.signal.aborted || !result?.data?.imageUrl) return;
+        setVisual({ ...FALLBACK_VISUAL, ...result.data,
+          srcset: Array.isArray(result.data.srcset) ? result.data.srcset : [],
+          mobileSrcset: Array.isArray(result.data.mobileSrcset) ? result.data.mobileSrcset : [],
+        });
+      }).catch(() => undefined);
+    fetch('/api/public/hero-content', { signal: controller.signal })
+      .then(response => response.ok ? response.json() : null)
+      .then(result => { if (!controller.signal.aborted && result?.data) setContent(result.data); })
+      .catch(() => undefined)
+      .finally(() => { if (!controller.signal.aborted) setContentLoading(false); });
+    return () => controller.abort();
   }, []);
 
   const keys = useMemo(() => orderedKeys(content?.elementOrder || ''), [content?.elementOrder]);
-
-  const strength = resolveOverlayStrength(visual);
-  const dominant = visual.analysis?.dominantColor || '#302926';
-
-  // ===== تكيف الاتجاه: الـHero يتبع الصورة (لا ratio مفروض) =====
-  const orientation = visual.orientation || 'landscape';
-  const topLum = visual.analysis?.topLuminance;
-  const bottomLum = visual.analysis?.bottomLuminance;
-  // موضع النص: فوق المنطقة الأدكن إن توفر التحليل، وإلا الأعلى (الافتراضي الحالي)
-  const textAtBottom = typeof topLum === 'number' && typeof bottomLum === 'number' && bottomLum + 0.08 < topLum;
-
-  // طبقة الحماية التكيفية: أعلى أدكن (هيدر + نص) وأسفل متوسط — تحافظ على الصورة ظاهرة
-  const overlay = `linear-gradient(180deg, rgba(11,12,16,${(0.38 + strength * 0.32).toFixed(2)}) 0%, rgba(11,12,16,${(strength * 0.42).toFixed(2)}) 46%, rgba(11,12,16,${(strength * 0.8).toFixed(2)}) 100%)`;
-  // لمسة atmosphere خفيفة جداً من اللون السائد للصورة (لا تغيّر هوية العلامة)
-  const ambient = `radial-gradient(85% 65% at 22% 26%, ${dominant}2E 0%, transparent 68%)`;
-
-  const positionVars = {
-    '--hero-pos-desktop': `${Math.round(visual.focalX * 100)}% ${Math.round(visual.focalY * 100)}%`,
-    '--hero-pos-mobile': `${Math.round(visual.mobileFocalX * 100)}% ${Math.round(visual.mobileFocalY * 100)}%`,
-  } as React.CSSProperties;
-
-  // ===== المحتوى من الـ CMS =====
-  const accent = content?.accentColor || '#FF6900';
-  const highlight = (content?.highlight || '').trim();
-  const titleLines = String(content?.title || '').split('\n').map((line) => line.trim()).filter(Boolean);
-
-  /** يلوّن الكلمة المميّزة (افتراضياً AYROVI) بلون الـ accent داخل العنوان */
-  const renderHighlightedLine = (line: string, lineIndex: number): React.ReactNode => {
+  const href = safePublicHref(content?.ctaUrl);
+  const highlight = content?.highlight?.trim();
+  const titleLines = String(content?.title || '').split('\n').map(line => line.trim()).filter(Boolean);
+  const highlighted = (line: string) => {
     if (!highlight || !line.includes(highlight)) return line;
     const at = line.indexOf(highlight);
-    return (
-      <React.Fragment key={`hl-${lineIndex}`}>
-        {line.slice(0, at)}
-        <span style={{ color: accent }}>{highlight}</span>
-        {line.slice(at + highlight.length)}
-      </React.Fragment>
-    );
+    return <>{line.slice(0, at)}<span className="editorial-hero__highlight">{highlight}</span>{line.slice(at + highlight.length)}</>;
   };
+  const focal = (n: number) => Number.isFinite(n) ? Math.round(Math.max(0, Math.min(1, n)) * 100) : 50;
+  const position = {
+    '--hero-pos-desktop': `${focal(visual.focalX)}% ${focal(visual.focalY)}%`,
+    '--hero-pos-mobile': `${focal(visual.mobileFocalX)}% ${focal(visual.mobileFocalY)}%`,
+  } as React.CSSProperties;
 
-  const image = () => {
-    const mobileSet = visual.mobileSrcset.length ? srcsetValue(visual.mobileSrcset) : srcsetValue(visual.srcset);
-    return (
-      <picture>
-        {visual.mobileImageUrl && mobileSet && (
-          <source media="(max-width: 1023px)" srcSet={mobileSet} />
-        )}
-        <img
-          src={visual.imageUrl}
-          srcSet={srcsetValue(visual.srcset)}
-          sizes="100vw"
-          width={visual.imageWidth || 1600}
-          height={visual.imageHeight || 900}
-          alt={visual.altText || 'Sélection de produits internationaux livrés en Tunisie par AYROVI'}
-          fetchPriority="high"
-          decoding="async"
-          onLoad={() => setLoaded(true)}
-          onError={() => setLoaded(true)}
-          style={{ objectPosition: 'var(--hero-pos-desktop, 50% 45%)' }}
-          className={`evergreen-hero-img absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ${loaded ? 'opacity-100' : 'opacity-0'}`}
-        />
-      </picture>
-    );
-  };
-
-  return (
-    <section
-      data-hero
-      id="home-hero"
-      aria-label="AYROVI — achat international et livraison en Tunisie"
-      className="evergreen-hero-section relative -mt-16 w-full overflow-hidden bg-ink-deep text-white sm:-mt-20"
-      style={{ ...positionVars, '--hero-ratio': String(visual.imageWidth && visual.imageHeight ? visual.imageWidth / visual.imageHeight : 1.6) } as React.CSSProperties}
-    >
-      {/* ===== طبقة الصورة — الصورة هي الـHero (Full-Bleed) ===== */}
-      <div className="absolute inset-0" aria-hidden={false}>
-        {image()}
-        <span aria-hidden className="pointer-events-none absolute inset-0" style={{ background: overlay }} />
-        <span aria-hidden className="pointer-events-none absolute inset-0" style={{ background: ambient }} />
+  return <section data-hero data-hero-layout="editorial" id="home-hero" className="editorial-hero" aria-label={tr('AYROVI — achat international', 'AYROVI — التسوق الدولي')}>
+    <div className="editorial-hero__inner">
+      {content?.enabled !== false && <div className="editorial-hero__copy" aria-busy={contentLoading}>
+        {contentLoading ? <div className="editorial-hero__loading" role="status">{tr('Chargement…', 'جارٍ التحميل…')}</div> : !content ? <><h1 className="editorial-hero__title">AYROVI</h1><p className="editorial-hero__desc">{tr('Le contenu est momentanément indisponible.', 'المحتوى غير متاح مؤقتًا.')}</p></> : keys.map(key => {
+          if (key === 'eyebrow') return <p key={key} className="editorial-hero__eyebrow"><span className="ay-e-marker" aria-hidden="true" />{content.eyebrow || 'AYROVI'}</p>;
+          if (key === 'title') return titleLines.length > 0 ? <h1 key={key} className="editorial-hero__title" dir="auto">{titleLines.map((line, index) => <React.Fragment key={index}>{index > 0 && <br />}{highlighted(line)}</React.Fragment>)}</h1> : null;
+          if (key === 'description') return content.description ? <p key={key} className="editorial-hero__desc" dir="auto">{content.description}</p> : null;
+          // Invalid/unconfigured destinations never produce an apparently working button.
+          return content.ctaLabel && href ? <a key={key} href={href} className={buttonClasses('primary', 'md', 'editorial-hero__action')}>{content.ctaLabel}<ArrowRight size={20} /></a> : null;
+        })}
+      </div>}
+      <div className="editorial-hero__media" style={position}>
+        {imageFailed ? <p role="status">{tr('Image momentanément indisponible', 'الصورة غير متاحة مؤقتًا')}</p> : <picture>
+          {visual.mobileImageUrl && <source media="(max-width: 767px)" srcSet={srcsetValue(visual.mobileSrcset) || visual.mobileImageUrl} />}
+          <img src={visual.imageUrl} srcSet={srcsetValue(visual.srcset)} sizes="(min-width: 768px) 50vw, 100vw" width={visual.imageWidth || 1600} height={visual.imageHeight || 900}
+            alt={visual.altText || ''} fetchPriority="high" decoding="async"
+            onError={() => { if (!visual.isDefault) setVisual(FALLBACK_VISUAL); else setImageFailed(true); }} />
+        </picture>}
       </div>
-
-      {/* ===== المحتوى فوق الصورة — من الـ CMS، بترتيب عناصر قابل للإدارة ===== */}
-      <div
-        className={`evergreen-hero-content relative z-10 mx-auto flex h-full w-full max-w-7xl flex-col justify-center px-6 pb-12 pt-[96px] sm:pt-[104px] lg:px-8 lg:pb-14 lg:pt-[120px] ${textAtBottom ? 'justify-end' : 'justify-center'}`}
-      >
-        {content?.enabled === false ? null : (
-          <div className="relative max-w-xl" style={{ '--ay-hero-accent': accent } as React.CSSProperties}>
-            {keys.map((key) => {
-              if (key === 'eyebrow') {
-                return content?.eyebrow
-                  ? <p key="eyebrow" className="hero-anim-up-1 mb-3 text-xs font-black uppercase tracking-[0.24em]" style={{ color: accent }}>{content.eyebrow}</p>
-                  : <span key="rule" aria-hidden className="mb-4 block h-1 w-24 rounded-full lg:w-[120px]" style={{ background: accent }} />;
-              }
-              if (key === 'title') {
-                return (
-                  <h1 key="title" className="evergreen-hero-title hero-anim-up-1 text-white [text-shadow:0_2px_24px_rgba(0,0,0,0.35)]">
-                    {titleLines.map((line, index) => (
-                      <React.Fragment key={index}>
-                        {index > 0 && <br />}
-                        {renderHighlightedLine(line, index)}
-                      </React.Fragment>
-                    ))}
-                  </h1>
-                );
-              }
-              if (key === 'description') {
-                return content?.description
-                  ? (
-                    <p className="evergreen-hero-desc hero-anim-up-2 mt-4 max-w-[90%] font-medium text-white/85 [text-shadow:0_1px_16px_rgba(0,0,0,0.35)] sm:mt-5 lg:mt-6 lg:max-w-[600px]">
-                      {content.description}
-                    </p>
-                  )
-                  : null;
-              }
-              if (!content?.ctaLabel) return null;
-              // CTA principal du hero = variante `cta` du système (orange unique, texte encre 6.54:1).
-              const ctaClass = buttonClasses('cta', 'md', 'hero-anim-up-3 mt-7 min-h-12 px-7 py-3.5 text-base shadow-overlay');
-              return /^(\/[^/]|#)/.test(content.ctaUrl) || /^https?:\/\//i.test(content.ctaUrl)
-                ? <a key="cta" href={content.ctaUrl} className={ctaClass}>{content.ctaLabel}</a>
-                : <button key="cta" type="button" className={ctaClass}>{content.ctaLabel}</button>;
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* فاصل برتقالي رفيع أسفل الـHero — accent فقط */}
-      <span aria-hidden className="absolute inset-x-0 bottom-0 z-10 h-px bg-gradient-to-r from-transparent via-[var(--ayrovi-color-brand-orange)]/60 to-transparent" />
-    </section>
-  );
+    </div>
+  </section>;
 };

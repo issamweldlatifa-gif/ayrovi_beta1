@@ -71,13 +71,13 @@ export const TopAnnouncementBar: React.FC<TopAnnouncementBarProps> = () => {
 
   return (
     <div
-      className="interface-announcement relative z-10 flex h-[44px] w-full items-center justify-center overflow-hidden px-4 text-center sm:h-[48px]"
+      className="interface-announcement relative z-10 flex min-h-[44px] w-full items-center justify-center overflow-hidden px-4 text-center sm:h-[48px]"
       role="status"
       aria-live="polite"
     >
       {/* الرسالة الحالية — Fade + translate عمودي فقط */}
       <span
-        className={`block whitespace-nowrap text-sm font-bold leading-none tracking-tight text-white sm:text-base ${leaving ? 'announcement-out' : 'announcement-in'}`}
+        className={`block text-sm font-bold leading-snug tracking-tight sm:text-base ${leaving ? 'announcement-out' : 'announcement-in'}`}
       >
         {message}
       </span>
