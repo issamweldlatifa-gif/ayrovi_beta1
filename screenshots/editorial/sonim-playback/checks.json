@@ -1,0 +1,362 @@
+{
+  "checks": [
+    {
+      "label": "fr/320: cancelling a decoder settles without native completion",
+      "pass": true
+    },
+    {
+      "label": "fr/320: late decode creates no ghost source or fallback",
+      "pass": true
+    },
+    {
+      "label": "fr/320: server request keeps financial and URL content",
+      "pass": true
+    },
+    {
+      "label": "fr/320: fallback keeps the original voice/rate snapshot",
+      "pass": true
+    },
+    {
+      "label": "fr/320: queued utterance is busy but not playing",
+      "pass": true
+    },
+    {
+      "label": "fr/320: fallback is not prematurely reported as error or completion",
+      "pass": true
+    },
+    {
+      "label": "fr/320: actual start changes playing exactly once",
+      "pass": true
+    },
+    {
+      "label": "fr/320: end and late events produce one final result",
+      "pass": true
+    },
+    {
+      "label": "fr/320: server playback waits for decode and starts one source",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stop releases the running server source",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stale server end cannot settle the replacement",
+      "pass": true
+    },
+    {
+      "label": "fr/320: replacement completes normally",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unavailable output has one localized error",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unavailable output still completes once",
+      "pass": true
+    },
+    {
+      "label": "fr/320: lazy component styles are actually loaded",
+      "pass": true
+    },
+    {
+      "label": "fr/320: settings disclose next-reading timing",
+      "pass": true
+    },
+    {
+      "label": "fr/320: settings disclose the possible device-voice difference",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selected preset and rate match the controls",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selected rate settles on readable action contrast",
+      "pass": true
+    },
+    {
+      "label": "fr/320: disclosure and controls fit enlarged phone text",
+      "pass": true,
+      "details": {
+        "client": 318,
+        "scroll": 318
+      }
+    },
+    {
+      "label": "fr/320: settings completion remains reachable at 200 percent",
+      "pass": true
+    },
+    {
+      "label": "fr/390: cancelling a decoder settles without native completion",
+      "pass": true
+    },
+    {
+      "label": "fr/390: late decode creates no ghost source or fallback",
+      "pass": true
+    },
+    {
+      "label": "fr/390: server request keeps financial and URL content",
+      "pass": true
+    },
+    {
+      "label": "fr/390: fallback keeps the original voice/rate snapshot",
+      "pass": true
+    },
+    {
+      "label": "fr/390: queued utterance is busy but not playing",
+      "pass": true
+    },
+    {
+      "label": "fr/390: fallback is not prematurely reported as error or completion",
+      "pass": true
+    },
+    {
+      "label": "fr/390: actual start changes playing exactly once",
+      "pass": true
+    },
+    {
+      "label": "fr/390: end and late events produce one final result",
+      "pass": true
+    },
+    {
+      "label": "fr/390: server playback waits for decode and starts one source",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stop releases the running server source",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stale server end cannot settle the replacement",
+      "pass": true
+    },
+    {
+      "label": "fr/390: replacement completes normally",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unavailable output has one localized error",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unavailable output still completes once",
+      "pass": true
+    },
+    {
+      "label": "fr/390: lazy component styles are actually loaded",
+      "pass": true
+    },
+    {
+      "label": "fr/390: settings disclose next-reading timing",
+      "pass": true
+    },
+    {
+      "label": "fr/390: settings disclose the possible device-voice difference",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selected preset and rate match the controls",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selected rate settles on readable action contrast",
+      "pass": true
+    },
+    {
+      "label": "fr/390: disclosure and controls fit enlarged phone text",
+      "pass": true,
+      "details": {
+        "client": 388,
+        "scroll": 388
+      }
+    },
+    {
+      "label": "fr/390: settings completion remains reachable at 200 percent",
+      "pass": true
+    },
+    {
+      "label": "ar/320: cancelling a decoder settles without native completion",
+      "pass": true
+    },
+    {
+      "label": "ar/320: late decode creates no ghost source or fallback",
+      "pass": true
+    },
+    {
+      "label": "ar/320: server request keeps financial and URL content",
+      "pass": true
+    },
+    {
+      "label": "ar/320: fallback keeps the original voice/rate snapshot",
+      "pass": true
+    },
+    {
+      "label": "ar/320: queued utterance is busy but not playing",
+      "pass": true
+    },
+    {
+      "label": "ar/320: fallback is not prematurely reported as error or completion",
+      "pass": true
+    },
+    {
+      "label": "ar/320: actual start changes playing exactly once",
+      "pass": true
+    },
+    {
+      "label": "ar/320: end and late events produce one final result",
+      "pass": true
+    },
+    {
+      "label": "ar/320: server playback waits for decode and starts one source",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stop releases the running server source",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stale server end cannot settle the replacement",
+      "pass": true
+    },
+    {
+      "label": "ar/320: replacement completes normally",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unavailable output has one localized error",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unavailable output still completes once",
+      "pass": true
+    },
+    {
+      "label": "ar/320: lazy component styles are actually loaded",
+      "pass": true
+    },
+    {
+      "label": "ar/320: settings disclose next-reading timing",
+      "pass": true
+    },
+    {
+      "label": "ar/320: settings disclose the possible device-voice difference",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selected preset and rate match the controls",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selected rate settles on readable action contrast",
+      "pass": true
+    },
+    {
+      "label": "ar/320: disclosure and controls fit enlarged phone text",
+      "pass": true,
+      "details": {
+        "client": 318,
+        "scroll": 318
+      }
+    },
+    {
+      "label": "ar/320: settings completion remains reachable at 200 percent",
+      "pass": true
+    },
+    {
+      "label": "ar/390: cancelling a decoder settles without native completion",
+      "pass": true
+    },
+    {
+      "label": "ar/390: late decode creates no ghost source or fallback",
+      "pass": true
+    },
+    {
+      "label": "ar/390: server request keeps financial and URL content",
+      "pass": true
+    },
+    {
+      "label": "ar/390: fallback keeps the original voice/rate snapshot",
+      "pass": true
+    },
+    {
+      "label": "ar/390: queued utterance is busy but not playing",
+      "pass": true
+    },
+    {
+      "label": "ar/390: fallback is not prematurely reported as error or completion",
+      "pass": true
+    },
+    {
+      "label": "ar/390: actual start changes playing exactly once",
+      "pass": true
+    },
+    {
+      "label": "ar/390: end and late events produce one final result",
+      "pass": true
+    },
+    {
+      "label": "ar/390: server playback waits for decode and starts one source",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stop releases the running server source",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stale server end cannot settle the replacement",
+      "pass": true
+    },
+    {
+      "label": "ar/390: replacement completes normally",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unavailable output has one localized error",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unavailable output still completes once",
+      "pass": true
+    },
+    {
+      "label": "ar/390: lazy component styles are actually loaded",
+      "pass": true
+    },
+    {
+      "label": "ar/390: settings disclose next-reading timing",
+      "pass": true
+    },
+    {
+      "label": "ar/390: settings disclose the possible device-voice difference",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selected preset and rate match the controls",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selected rate settles on readable action contrast",
+      "pass": true
+    },
+    {
+      "label": "ar/390: disclosure and controls fit enlarged phone text",
+      "pass": true,
+      "details": {
+        "client": 388,
+        "scroll": 388
+      }
+    },
+    {
+      "label": "ar/390: settings completion remains reachable at 200 percent",
+      "pass": true
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

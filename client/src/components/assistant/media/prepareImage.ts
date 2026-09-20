@@ -1,3 +1,4 @@
+import { awaitOwned as owned } from './awaitOwned';
 export const MAX_IMAGE_FILE_BYTES = 5 * 1024 * 1024;
 export const MAX_PREPARED_IMAGE_BYTES = 2.5 * 1024 * 1024;
 export type ImageErrorCode = 'format' | 'large' | 'unreadable' | 'prepared-large' | 'timeout' | 'limit';
@@ -7,18 +8,6 @@ export class ImagePreparationError extends Error {
 const types = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const aborted = () => new DOMException('Cancelled', 'AbortError');
 
-/** Even APIs without cancellation must not keep their consumer waiting. Dispose late resources. */
-function owned<T>(promise: Promise<T>, signal: AbortSignal, dispose?: (value: T) => void): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const cancel = () => reject(signal.reason || aborted());
-    if (signal.aborted) cancel(); else signal.addEventListener('abort', cancel, { once: true });
-    promise.then(value => {
-      signal.removeEventListener('abort', cancel);
-      if (signal.aborted) { dispose?.(value); return; }
-      resolve(value);
-    }, error => { signal.removeEventListener('abort', cancel); reject(error); });
-  });
-}
 function dataUrl(blob: Blob, signal: AbortSignal): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

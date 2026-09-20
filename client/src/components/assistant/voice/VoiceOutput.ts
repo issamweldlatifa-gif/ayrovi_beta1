@@ -1,3 +1,5 @@
+import { cleanAssistantText } from '../composerPolicy';
+import { awaitOwned } from '../media/awaitOwned';
 import { getSessionId } from '../../../utils/session';
 
 import { DEFAULT_VOICE_SETTINGS, VOICE_PRESETS, type VoiceOutputSettings } from './settings';
@@ -28,6 +30,8 @@ export class VoiceOutput {
   private animationFrame: number | null = null;
   private finishActive: ((result: VoicePlaybackResult) => void) | null = null;
   private generation = 0;
+  private activeGeneration: number | null = null;
+  private playingGeneration: number | null = null;
   private serverTtsAvailable: boolean | null = null;
   private settings: VoiceOutputSettings = { ...DEFAULT_VOICE_SETTINGS };
 
@@ -46,19 +50,24 @@ export class VoiceOutput {
   }
 
   public configure(settings: Partial<VoiceOutputSettings>): void {
-    if (settings.voiceId && VOICE_PRESETS.some(preset => preset.id === settings.voiceId)) this.settings.voiceId = settings.voiceId;
-    if (settings.gender === 'female' || settings.gender === 'male') this.settings.gender = settings.gender;
+    const preset = VOICE_PRESETS.find(item => item.id === settings.voiceId);
+    if (preset) {
+      this.settings.voiceId = preset.id; this.settings.gender = preset.gender;
+    } else if ((settings.gender === 'female' || settings.gender === 'male') && settings.gender !== this.settings.gender) {
+      const matching = VOICE_PRESETS.find(item => item.gender === settings.gender)!;
+      this.settings.voiceId = matching.id; this.settings.gender = matching.gender;
+    }
     if (settings.rate != null && Number.isFinite(settings.rate)) this.settings.rate = Math.max(0.8, Math.min(1.3, settings.rate));
   }
 
   public getSettings(): VoiceOutputSettings { return { ...this.settings }; }
 
   public get busy(): boolean {
-    return Boolean(this.requestAbort || this.source || this.utterance || this.finishActive);
+    return this.activeGeneration !== null;
   }
 
   public get playing(): boolean {
-    return Boolean(this.source || this.utterance);
+    return this.playingGeneration === this.generation;
   }
 
   public async speak(
@@ -69,22 +78,43 @@ export class VoiceOutput {
   ): Promise<VoicePlaybackResult> {
     this.stop();
     const generation = this.generation;
-    const cleanText = options.preserveText ? text.trim() : this.cleanText(text);
-    if (!cleanText) return 'unavailable';
-
-    // The server endpoint accepts at most 4096 characters. Never let it
-    // silently truncate a longer answer; read that complete turn locally.
-    if (this.serverTtsAvailable !== false && cleanText.length <= 4_096) {
-      const serverResult = await this.playServer(cleanText, generation, callbacks);
-      if (serverResult !== 'unavailable') return serverResult;
-      if (generation !== this.generation) return 'cancelled';
-    }
-
-    return this.playBrowser(cleanText, locale, generation, callbacks);
+    const cleanText = options.preserveText ? text.trim() : cleanAssistantText(text);
+    const settings = this.getSettings(); // One snapshot for server and fallback; changes affect the next operation.
+    this.activeGeneration = generation;
+    let started = false;
+    const ownedCallbacks: VoicePlaybackCallbacks = {
+      onStart: () => {
+        if (generation !== this.generation || started) return;
+        started = true; this.playingGeneration = generation;
+        callbacks.onStart?.();
+      },
+      onLevel: level => { if (generation === this.generation && started) callbacks.onLevel?.(level); },
+    };
+    let result: VoicePlaybackResult = 'unavailable';
+    try {
+      if (cleanText) {
+        // The endpoint accepts at most 4096 characters. Never truncate the turn.
+        if (this.serverTtsAvailable !== false && cleanText.length <= 4_096) {
+          result = await this.playServer(cleanText, generation, ownedCallbacks, settings);
+        }
+        if (generation !== this.generation) result = 'cancelled';
+        else if (result === 'unavailable' && !started) result = await this.playBrowser(cleanText, locale, generation, ownedCallbacks, settings);
+      }
+    } catch { result = generation === this.generation ? 'unavailable' : 'cancelled'; }
+    if (this.activeGeneration === generation) this.activeGeneration = null;
+    if (this.playingGeneration === generation) this.playingGeneration = null;
+    // A transport attempt is not a terminal playback result. Notify only once,
+    // after the fallback (if any), and never announce fallback before it starts.
+    if (result === 'unavailable' && generation === this.generation) callbacks.onError?.(locale.toLowerCase().startsWith('ar')
+      ? 'تعذّر إخراج الرد صوتيًا. يمكنك متابعته نصيًا أو إعادة المحاولة.'
+      : 'Impossible de lire cette réponse. Consultez le texte ou réessayez.');
+    callbacks.onEnd?.(result);
+    return result;
   }
 
   public stop(): void {
     this.generation += 1;
+    this.activeGeneration = null; this.playingGeneration = null;
     this.requestAbort?.abort();
     this.requestAbort = null;
 
@@ -103,6 +133,7 @@ export class VoiceOutput {
       this.source = null;
     }
 
+    if (this.utterance) this.utterance.onstart = this.utterance.onend = this.utterance.onerror = null;
     if (this.utterance && typeof window !== 'undefined' && window.speechSynthesis) {
       try { window.speechSynthesis.cancel(); } catch {}
     }
@@ -120,16 +151,6 @@ export class VoiceOutput {
     if (context && context.state !== 'closed') {
       try { void context.close().catch(() => {}); } catch {}
     }
-  }
-
-  private cleanText(text: string): string {
-    return text
-      .replace(/https?:\/\/\S+/gi, '')
-      .replace(/\[\[.*?\]\]/g, '')
-      .replace(/[*_#`~>]/g, '')
-      .replace(/\{.*?\}/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
   }
 
   private ensureContext(): AudioContext | null {
@@ -161,6 +182,7 @@ export class VoiceOutput {
     text: string,
     generation: number,
     callbacks: VoicePlaybackCallbacks,
+    settings: VoiceOutputSettings,
   ): Promise<VoicePlaybackResult> {
     const controller = new AbortController();
     let timedOut = false;
@@ -172,7 +194,7 @@ export class VoiceOutput {
     const abortResult = (): VoicePlaybackResult => timedOut ? 'unavailable' : 'cancelled';
 
     try {
-      const response = await fetch('/api/assistant/voice/tts', {
+      const response = await awaitOwned(fetch('/api/assistant/voice/tts', {
         method: 'POST',
         credentials: 'same-origin',
         signal: controller.signal,
@@ -182,10 +204,10 @@ export class VoiceOutput {
         },
         body: JSON.stringify({
           text,
-          voice: this.settings.voiceId,
-          speed: this.settings.rate,
+          voice: settings.voiceId,
+          speed: settings.rate,
         }),
-      });
+      }), controller.signal);
       if (generation !== this.generation) return 'cancelled';
       if (controller.signal.aborted) return abortResult();
 
@@ -196,16 +218,17 @@ export class VoiceOutput {
         return 'unavailable';
       }
 
-      const bytes = await response.arrayBuffer();
+      const bytes = await awaitOwned(response.arrayBuffer(), controller.signal);
       if (generation !== this.generation) return 'cancelled';
       if (controller.signal.aborted) return abortResult();
       const context = this.ensureContext();
       if (!context || bytes.byteLength < 45) return 'unavailable';
-      if (context.state === 'suspended') await context.resume();
-      const decoded = await context.decodeAudioData(bytes.slice(0)).catch(() => null);
+      if (context.state === 'suspended') await awaitOwned(context.resume(), controller.signal);
+      if (generation !== this.generation || controller.signal.aborted) return generation !== this.generation ? 'cancelled' : abortResult();
+      const decoded = await awaitOwned(context.decodeAudioData(bytes.slice(0)), controller.signal);
       if (generation !== this.generation) return 'cancelled';
       if (controller.signal.aborted) return abortResult();
-      if (!decoded || !this.analyser) return 'unavailable';
+      if (!decoded || !this.analyser || context !== this.context || context.state !== 'running') return 'unavailable';
 
       clearTimeout(timeout);
       if (this.requestAbort === controller) this.requestAbort = null;
@@ -225,23 +248,33 @@ export class VoiceOutput {
           source.onended = null;
           try { source.disconnect(); } catch {}
           this.stopLevelAnimation();
-          callbacks.onEnd?.(result);
+          if (this.playingGeneration === generation) this.playingGeneration = null;
+          if (this.safetyTimer) { clearTimeout(this.safetyTimer); this.safetyTimer = null; }
           resolve(result);
         };
         this.finishActive = finish;
         source.onended = () => finish('ended');
+        // Native onended can be lost on a suspended/device-disconnected context.
+        // This is an error deadline, never fabricated successful completion.
+        const duration = Number.isFinite(decoded.duration) && decoded.duration > 0 ? decoded.duration : 60;
+        this.safetyTimer = setTimeout(() => {
+          if (generation !== this.generation || settled) return;
+          source.onended = null;
+          try { source.stop(); } catch {}
+          finish('unavailable');
+        }, Math.min(2_147_483_647, duration * 1000 + 10_000));
 
         try {
           source.start(0);
           callbacks.onStart?.();
-          this.startLevelAnimation(callbacks.onLevel, generation, true);
+          if (!settled && generation === this.generation && this.source === source) this.startLevelAnimation(callbacks.onLevel, generation, true);
         } catch {
+          try { source.stop(); } catch {}
           finish('unavailable');
         }
       });
     } catch {
       if (generation !== this.generation || (controller.signal.aborted && !timedOut)) return 'cancelled';
-      callbacks.onError?.('تعذّر تشغيل صوت الخادم. تم الانتقال إلى صوت الجهاز.');
       return 'unavailable';
     } finally {
       clearTimeout(timeout);
@@ -254,24 +287,25 @@ export class VoiceOutput {
     locale: string,
     generation: number,
     callbacks: VoicePlaybackCallbacks,
+    settings: VoiceOutputSettings,
   ): Promise<VoicePlaybackResult> {
     if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
-      callbacks.onError?.('لا يتوفر محرك صوت في هذا المتصفح.');
       return Promise.resolve('unavailable');
     }
 
+    if (generation !== this.generation) return Promise.resolve('cancelled');
     return new Promise<VoicePlaybackResult>((resolve) => {
-      let settled = false;
+      let settled = false, started = false;
       const utterance = new SpeechSynthesisUtterance(text);
       const hasArabic = /[\u0600-\u06ff]/.test(text);
       const normalizedLocale = locale.toLowerCase();
       utterance.lang = hasArabic
         ? 'ar-SA'
         : normalizedLocale.startsWith('en') ? 'en-US' : 'fr-FR';
-      utterance.rate = this.settings.rate;
+      utterance.rate = settings.rate;
       utterance.pitch = 1;
       utterance.volume = 1;
-      const voice = this.findVoice(utterance.lang);
+      const voice = this.findVoice(utterance.lang, settings.gender);
       if (voice) utterance.voice = voice;
       this.utterance = utterance;
 
@@ -280,37 +314,42 @@ export class VoiceOutput {
         settled = true;
         if (this.finishActive === finish) this.finishActive = null;
         if (this.utterance === utterance) this.utterance = null;
+        utterance.onstart = utterance.onend = utterance.onerror = null;
+        if (this.playingGeneration === generation) this.playingGeneration = null;
         if (this.safetyTimer) {
           clearTimeout(this.safetyTimer);
           this.safetyTimer = null;
         }
         this.stopLevelAnimation();
-        callbacks.onEnd?.(result);
         resolve(result);
       };
       this.finishActive = finish;
       utterance.onstart = () => {
-        if (settled || generation !== this.generation) return;
+        if (settled || started || generation !== this.generation) return;
+        started = true;
+        clearTimeout(this.safetyTimer!);
+        this.safetyTimer = setTimeout(expire, Math.min(2_147_483_647, Math.max(8_000, text.length / 6 / settings.rate * 1000 + 10_000)));
         callbacks.onStart?.();
-        this.startLevelAnimation(callbacks.onLevel, generation, false);
+        if (!settled && generation === this.generation && this.utterance === utterance) this.startLevelAnimation(callbacks.onLevel, generation, false);
       };
       utterance.onend = () => finish('ended');
       utterance.onerror = (event) => {
+        if (settled) return;
         if (generation !== this.generation || event.error === 'canceled' || event.error === 'interrupted') {
           finish('cancelled');
           return;
         }
-        callbacks.onError?.('تعذّر على صوت الجهاز قراءة هذا الرد.');
         finish('unavailable');
       };
 
-      // Keep a watchdog for engines that never dispatch `onend`, but allow a
-      // complete long response to finish instead of cutting it at one minute.
-      const estimatedMs = Math.max(8_000, Math.min(10 * 60_000, (text.length / 6) * 1_000 + 10_000));
-      this.safetyTimer = setTimeout(() => {
+      // A queue that never starts has its own deadline. The reading deadline
+      // starts on the real onstart event and scales with text and selected rate.
+      const expire = () => {
+        if (settled || generation !== this.generation) return;
+        finish('unavailable'); // Detach events before synchronous cancellation notifications.
         try { window.speechSynthesis.cancel(); } catch {}
-        finish('unavailable');
-      }, estimatedMs);
+      };
+      this.safetyTimer = setTimeout(expire, 15_000);
 
       try {
         if (window.speechSynthesis.paused) window.speechSynthesis.resume();
@@ -321,14 +360,14 @@ export class VoiceOutput {
     });
   }
 
-  private findVoice(language: string): SpeechSynthesisVoice | null {
+  private findVoice(language: string, gender: VoiceOutputSettings['gender']): SpeechSynthesisVoice | null {
     try {
       const prefix = language.slice(0, 2).toLowerCase();
       const voices = window.speechSynthesis.getVoices().filter((voice) => voice.lang.toLowerCase().startsWith(prefix));
       if (!voices.length) return null;
-      const genderPattern = this.settings.gender === 'female'
-        ? /female|femme|zira|siri|google|audrey|amira|meryem|salma|leila|aoede|kore/i
-        : /male|homme|david|thomas|nicolas|mehdi|youssef|tariq|ali|puck|fenrir|charon/i;
+      const genderPattern = gender === 'female'
+        ? /(?:^|[\s_-])(?:female|femme|zira|audrey|amira|meryem|salma|leila|aoede|kore)(?=$|[\s_-])/i
+        : /(?:^|[\s_-])(?:male|homme|david|thomas|nicolas|mehdi|youssef|tariq|ali|puck|fenrir|charon)(?=$|[\s_-])/i;
       return voices.find((voice) => genderPattern.test(voice.name)) || voices[0] || null;
     } catch {
       return null;
@@ -340,11 +379,13 @@ export class VoiceOutput {
     generation: number,
     readAnalyser: boolean,
   ): void {
+    if (generation !== this.generation) return;
     this.stopLevelAnimation();
     // Web Speech exposes no audio samples. Do not invent a measured level.
     if (!onLevel || !readAnalyser || !this.analyser) { onLevel?.(0); return; }
     const animate = () => {
-      if (generation !== this.generation || !this.finishActive) {
+      if (generation !== this.generation) return;
+      if (!this.finishActive) {
         this.animationFrame = null;
         onLevel?.(0);
         return;
@@ -355,7 +396,7 @@ export class VoiceOutput {
         const average = values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
         onLevel?.(Math.min(1, average / 90));
       }
-      this.animationFrame = requestAnimationFrame(animate);
+      if (generation === this.generation && this.busy && this.playing) this.animationFrame = requestAnimationFrame(animate);
     };
     this.animationFrame = requestAnimationFrame(animate);
   }

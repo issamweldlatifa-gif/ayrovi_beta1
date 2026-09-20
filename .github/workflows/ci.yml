@@ -41,7 +41,7 @@ jobs:
         run: npx playwright install --with-deps chromium firefox
 
       - name: Clear previously tracked browser evidence
-        run: rm -rf docs/editorial/verification/ screenshots/editorial/customer/ screenshots/editorial/complete-icons/ screenshots/editorial/icon-correction/account/ screenshots/editorial/sonim-actions/ screenshots/editorial/sonim-history/ screenshots/editorial/sonim-media/
+        run: rm -rf docs/editorial/verification/ screenshots/editorial/customer/ screenshots/editorial/complete-icons/ screenshots/editorial/icon-correction/account/ screenshots/editorial/sonim-actions/ screenshots/editorial/sonim-history/ screenshots/editorial/sonim-media/ screenshots/editorial/sonim-playback/
 
       - name: Verify editorial reference
         id: editorial_reference
@@ -70,6 +70,9 @@ jobs:
       - name: Verify SONIM media ownership and cancellation
         run: npm run verify:sonim-media
 
+      - name: Verify SONIM output cancellation and truthful settings
+        run: npm run verify:sonim-playback
+
       - name: Verify authenticated account and icon geometry
         run: npm run verify:editorial-account
 
@@ -85,3 +88,4 @@ jobs:
             screenshots/editorial/sonim-actions/
             screenshots/editorial/sonim-history/
             screenshots/editorial/sonim-media/
+            screenshots/editorial/sonim-playback/

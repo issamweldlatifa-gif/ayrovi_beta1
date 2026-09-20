@@ -125,7 +125,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
     {showSettings && <div className="editorial-voice__veil"><div ref={settingsRef} tabIndex={-1} className="editorial-voice__settings" role="dialog" aria-modal="true" aria-labelledby="voice-settings-title">
       <header><h3 id="voice-settings-title">{tr('Paramètres vocaux','إعدادات الصوت')}</h3><button type="button" className="voice-icon-button" onClick={() => setShowSettings(false)} aria-label={tr('Fermer les paramètres','إغلاق الإعدادات')}><X size={20}/></button></header>
       <div className="editorial-voice__settings-scroll">
-        <p className="voice-caption">{onVoiceSettingsChange ? tr('Les changements sont appliqués immédiatement.','تُطبَّق التغييرات مباشرةً.') : tr('Réglages indisponibles dans cette session.','الإعدادات غير متاحة في هذه الجلسة.')}</p>
+        <p className="voice-caption">{onVoiceSettingsChange ? tr('Les changements s’appliquent à la prochaine lecture. Si la voix du serveur est indisponible, la voix de l’appareil peut être différente.','تُطبَّق التغييرات على القراءة التالية. عند تعذّر صوت الخادم، قد يختلف صوت الجهاز المتاح.') : tr('Réglages indisponibles dans cette session.','الإعدادات غير متاحة في هذه الجلسة.')}</p>
         <fieldset disabled={!onVoiceSettingsChange}><legend>{tr('Voix de l’assistant','صوت المساعد')}</legend><div className="voice-choices">
           {VOICE_PRESETS.map(preset => <button type="button" key={preset.id} aria-pressed={settings.voiceId===preset.id} onClick={() => changeSettings({voiceId:preset.id,gender:preset.gender})}><span><bdi>{preset.id}</bdi><small>{tr(preset.fr,preset.ar)}</small></span>{settings.voiceId===preset.id && <Check size={18}/>}</button>)}
         </div></fieldset>

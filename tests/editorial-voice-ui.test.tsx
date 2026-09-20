@@ -27,6 +27,7 @@ describe('editorial voice interaction and truthful settings',()=>{
  });
  it('shows actual initial settings and sends the exact displayed speed',async()=>{
   const change=vi.fn();await render({initialSettings:{voiceId:'Puck',gender:'male',rate:1.25},onVoiceSettingsChange:change});await click('Options du mode vocal');
+  expect(host.textContent).toContain('prochaine lecture');expect(host.textContent).not.toContain('immédiatement');
   expect(host.querySelector('.voice-choices [aria-pressed=true]')?.textContent).toContain('Puck');
   expect(host.querySelector('.voice-rates [aria-pressed=true]')?.textContent).toBe('1.25x');
   const speed=[...host.querySelectorAll<HTMLButtonElement>('.voice-rates button')].find(b=>b.textContent==='1.1x')!;await act(async()=>speed.click());

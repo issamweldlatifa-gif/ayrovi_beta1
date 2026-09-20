@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 196,
-    "customerAndSharedFiles": 147,
+    "files": 197,
+    "customerAndSharedFiles": 148,
     "controls": 409,
     "iconAliases": 99,
     "uniqueGlyphs": 96
@@ -13192,7 +13192,7 @@
     {
       "file": "client/src/components/assistant/AssistantVoiceModeScreen.tsx",
       "domain": "sonim",
-      "sha256": "88624fca915c174ac046bc4eff20c5eaf33c5bfa116223416a238cb3afa015d8",
+      "sha256": "876bdaef85843d628ceec8654680e1f925240993e240054da6c868297d0d441e",
       "lines": 143,
       "imports": [
         "./AssistantMediaPending",
@@ -13504,6 +13504,22 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/components/assistant/media/awaitOwned.ts",
+      "domain": "sonim",
+      "sha256": "50f089d6bbe4c6e1d288793b8ee059f2a14cdbbf34a0aed61314d1c045065cb9",
+      "lines": 23,
+      "imports": [],
+      "exports": [
+        "awaitOwned"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/assistant/media/mediaLabels.ts",
       "domain": "sonim",
       "sha256": "24b2519960e549cf95718ebbe099668f43cc43e11459b16bda7c1c9afc65672e",
@@ -13526,9 +13542,11 @@
     {
       "file": "client/src/components/assistant/media/prepareImage.ts",
       "domain": "sonim",
-      "sha256": "6e50a986dfe37db26e1b9bf77b44336bc1038c8e089b8501fbaeac8939f4c733",
-      "lines": 86,
-      "imports": [],
+      "sha256": "8a8768ad6364177a7d4464040e1f663afac95a84c0fc4ad38a0ae221f22c7944",
+      "lines": 75,
+      "imports": [
+        "./awaitOwned"
+      ],
       "exports": [
         "MAX_IMAGE_FILE_BYTES",
         "MAX_PREPARED_IMAGE_BYTES",
@@ -13669,9 +13687,10 @@
     {
       "file": "client/src/components/assistant/voice/VoiceChatController.ts",
       "domain": "sonim",
-      "sha256": "53b04b0dceed553068602fdc044461dcb5901e3c6615ba6038b1a660b11e9e03",
-      "lines": 541,
+      "sha256": "4309ac156e8adac844245a17def39c83d4ff1ab759a8faf3b8acf3e318c2d75a",
+      "lines": 542,
       "imports": [
+        "../composerPolicy",
         "../assistantApi",
         "../../../utils/session",
         "./VoiceOutput",
@@ -13692,9 +13711,11 @@
     {
       "file": "client/src/components/assistant/voice/VoiceOutput.ts",
       "domain": "sonim",
-      "sha256": "a5011c1163aa137eceb19c9f623c249290558c60f21f124ae26ae6d999a0d37a",
-      "lines": 370,
+      "sha256": "a323f1e093e5c6e159b0e459f9b22d32de33bc73be36f2fcdd7e91bef51ead78",
+      "lines": 411,
       "imports": [
+        "../composerPolicy",
+        "../media/awaitOwned",
         "../../../utils/session",
         "./settings"
       ],

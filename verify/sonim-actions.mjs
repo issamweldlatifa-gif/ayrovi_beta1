@@ -25,9 +25,9 @@ try {
         if (window.actionTest.mode === 'error') throw new DOMException('denied', 'NotAllowedError');
         if (window.actionTest.mode === 'pending') await new Promise(resolve => window.actionTest.resolveShare = resolve);
       } });
-      window.speechTest = { items: [], cancelled: 0 };
+      window.speechTest = { items: [], queuedCallbacks: [], cancelled: 0 };
       window.SpeechSynthesisUtterance = class { constructor(text) { this.text = text; } };
-      Object.defineProperty(window, 'speechSynthesis', { configurable: true, writable: true, value: { paused: false, getVoices: () => [], resume: () => {}, cancel: () => { window.speechTest.cancelled++; }, speak: utterance => window.speechTest.items.push(utterance) } });
+      Object.defineProperty(window, 'speechSynthesis', { configurable: true, writable: true, value: { paused: false, getVoices: () => [], resume: () => {}, cancel: () => { window.speechTest.cancelled++; }, speak: utterance => { window.speechTest.items.push(utterance); window.speechTest.queuedCallbacks.push({ start: utterance.onstart, end: utterance.onend }); } } });
     }, { locale, text });
     page = await ctx.newPage(); page.on('pageerror', e => errors.push(e.message));
     await page.route('**/api/assistant/status', r => r.fulfill({ json: { success: true, data: { voiceReady: false } } }));
@@ -71,7 +71,7 @@ try {
     await first.getByRole('status').filter({ hasText: ar ? 'القراءة جارية' : 'Lecture en cours' }).waitFor();
     await button(second, 'Lire', 'استماع').click();
     check(`${key}: switching cancels old read rather than queuing`, await page.evaluate(() => window.speechTest.cancelled === 1 && window.speechTest.items.length === 2));
-    await page.evaluate(() => { window.speechTest.items[0].onstart(); window.speechTest.items[0].onend(); });
+    await page.evaluate(() => { window.speechTest.queuedCallbacks[0].start(); window.speechTest.queuedCallbacks[0].end(); });
     check(`${key}: stale engine callbacks do not stop new read`, await button(second, 'Arrêter la lecture', 'إيقاف القراءة').count() === 1);
     await button(second, 'Arrêter la lecture', 'إيقاف القراءة').click();
     check(`${key}: explicit stop releases owned playback`, await page.evaluate(() => window.speechTest.cancelled === 2));

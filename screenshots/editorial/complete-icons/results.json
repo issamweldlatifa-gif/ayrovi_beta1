@@ -5080,7 +5080,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 165.578125,
+        "top": 142.1875,
         "bottom": 844
       }
     },
@@ -5116,8 +5116,8 @@
       "label": "fr/320x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 320,
-        "scroll": 320
+        "width": 288,
+        "scroll": 288
       }
     },
     {
@@ -6807,7 +6807,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 165.578125,
+        "top": 142.1875,
         "bottom": 844
       }
     },
@@ -11918,7 +11918,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 240.96875,
+        "top": 194.1875,
         "bottom": 844
       }
     },
@@ -13645,7 +13645,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 240.96875,
+        "top": 194.1875,
         "bottom": 844
       }
     },
@@ -18756,7 +18756,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 240.96875,
+        "top": 217.578125,
         "bottom": 844
       }
     },
@@ -20483,7 +20483,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 240.96875,
+        "top": 217.578125,
         "bottom": 844
       }
     },
@@ -25594,7 +25594,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 188.96875,
+        "top": 165.578125,
         "bottom": 844
       }
     },
@@ -25630,8 +25630,8 @@
       "label": "ar/320x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 320,
-        "scroll": 320
+        "width": 288,
+        "scroll": 288
       }
     },
     {
@@ -27321,7 +27321,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 188.96875,
+        "top": 165.578125,
         "bottom": 844
       }
     },
@@ -32432,7 +32432,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 240.96875,
+        "top": 217.578125,
         "bottom": 844
       }
     },
@@ -34159,7 +34159,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 240.96875,
+        "top": 217.578125,
         "bottom": 844
       }
     },
@@ -41531,8 +41531,8 @@
       "label": "content/ar/320/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 320,
-        "scroll": 320,
+        "width": 288,
+        "scroll": 288,
         "clipped": []
       }
     },
@@ -41615,8 +41615,8 @@
       "label": "content/ar/768/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 768,
-        "scroll": 768,
+        "width": 736,
+        "scroll": 736,
         "clipped": []
       }
     },

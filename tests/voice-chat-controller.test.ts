@@ -296,4 +296,10 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
     expect(contexts[1].createMediaStreamSource).not.toHaveBeenCalled();
   });
 
+  it('resumes listening without a false playback error for a control-tag-only reply', async () => {
+    const voice=makeController();await voice.start('');await voice.speak(' [[OPEN_LENS]] ', 'fr');
+    expect(voice.getState()).toBe('listening');expect(speechSynthesis.speak).not.toHaveBeenCalled();
+    expect((voice as any).options.onError).not.toHaveBeenCalled();
+  });
+
 });

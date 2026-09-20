@@ -1,0 +1,22 @@
+{
+  "baselineCommit": "50d0d59f9d44e904599bbcda00904e5c2ba2c9a6",
+  "purpose": "Expected failures on previous VoiceOutput, before implementation changes",
+  "existingTestsPassed": 11,
+  "newRegressionTestsFailed": 14,
+  "regressions": [
+    "does not report playing while the browser utterance is only queued",
+    "announces browser start once and ignores errors after completion",
+    "does not restart metering after onStart cancels its own operation",
+    "preserves prices, identifiers, links and paragraphs in hands-free speech too",
+    "settles stop even when fetch ignores AbortSignal",
+    "settles stop while audio decoding is unresolved and discards its late result",
+    "bounds decoding by the same server deadline instead of hanging forever",
+    "holds one settings snapshot across server failure and local fallback",
+    "does not claim fallback success or emit an error when local playback succeeds",
+    "reports a terminal French error once if neither output is available",
+    "does not mistake the word female for an explicitly male local voice",
+    "keeps preset and fallback gender coherent for partial configuration",
+    "a synchronous cancel event cannot disguise a watchdog failure as user cancellation",
+    "does not cut a healthy long reading at the old ten-minute ceiling"
+  ]
+}

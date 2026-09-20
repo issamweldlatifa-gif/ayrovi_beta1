@@ -4,9 +4,11 @@ import { createRoot } from 'react-dom/client';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { CustomerIdentity } from '../client/src/design/editorial/CustomerIdentity';
 import { NavigationHistoryProvider, useNavigationHistory } from '../client/src/navigation/NavigationHistory';
+import { VoiceOutput } from '../client/src/components/assistant/voice/VoiceOutput';
 import { AiAssistantDrawer } from '../client/src/components/assistant/AiAssistantDrawer';
 const orders: unknown[] = [];
 (window as any).sonimTestOrders = orders;
+(window as any).sonimTestVoiceOutput = VoiceOutput;
 function Fixture() {
   const navigation = useNavigationHistory();
   const [historyScope, setHistoryScope] = React.useState<string | null>(null);

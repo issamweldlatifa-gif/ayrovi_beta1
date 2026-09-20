@@ -1,3 +1,4 @@
+import { cleanAssistantText } from '../composerPolicy';
 import { transcribeAssistantAudio } from '../assistantApi';
 import { getSessionId } from '../../../utils/session';
 import { VoiceOutput, type VoiceOutputSettings } from './VoiceOutput';
@@ -133,7 +134,8 @@ export class VoiceChatController {
     await this.stopCapture(true);
     if (!this.active || lifecycle !== this.lifecycle || operation !== this.speechOperation) return;
 
-    if (this.speakerMuted || !text.trim()) {
+    const spokenText = cleanAssistantText(text);
+    if (this.speakerMuted || !spokenText) {
       this.beginListening();
       return;
     }
@@ -141,7 +143,7 @@ export class VoiceChatController {
     this.setState('thinking');
     let result: Awaited<ReturnType<VoiceOutput['speak']>>;
     try {
-      result = await this.output.speak(text, locale, {
+      result = await this.output.speak(spokenText, locale, {
         onStart: () => {
           if (this.active && lifecycle === this.lifecycle && operation === this.speechOperation) this.setState('speaking');
         },
@@ -149,9 +151,6 @@ export class VoiceChatController {
           if (this.active && lifecycle === this.lifecycle && operation === this.speechOperation && this.state === 'speaking') {
             this.options.onLevel(level);
           }
-        },
-        onError: (message) => {
-          if (this.active && lifecycle === this.lifecycle && operation === this.speechOperation) this.options.onError(message);
         },
       });
     } catch {
@@ -161,7 +160,9 @@ export class VoiceChatController {
     if (!this.active || lifecycle !== this.lifecycle || operation !== this.speechOperation) return;
     this.options.onLevel(0);
     if (result === 'unavailable') {
-      this.options.onError('تعذّر إخراج الرد صوتيًا، ويمكنك متابعة الحوار نصيًا.');
+      this.options.onError(locale.toLowerCase().startsWith('ar')
+        ? 'تعذّر إخراج الرد صوتيًا، ويمكنك متابعة الحوار نصيًا.'
+        : 'Impossible de lire la réponse. Vous pouvez poursuivre par écrit.');
     }
     if (this.muted) this.setState('muted');
     else this.beginListening();
