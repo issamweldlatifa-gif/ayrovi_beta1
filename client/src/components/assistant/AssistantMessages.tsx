@@ -1,7 +1,7 @@
 import { MerchantRating } from '../../ayrovix/components/MerchantRating';
 import React, { useEffect, useRef } from 'react';
 import { cleanAssistantText } from './composerPolicy';
-import { Mic, ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
+import { Mic, ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, LensBox, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
 import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
@@ -48,7 +48,7 @@ const secondaryActions = [
 const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   const images = [...new Set([product.image, ...(product.images || [])].filter(Boolean))] as string[];
   const [index, setIndex] = React.useState(0);
-  if (!images[index]) return <div className="grid h-full place-items-center text-white/80"><ShoppingBag size={35}/></div>;
+  if (!images[index]) return <div className="grid h-full place-items-center text-muted"><ShoppingBag size={35}/></div>;
   return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="ayrovix-product-media-contain" loading="lazy" decoding="async" draggable={false}/>;
 };
 
@@ -65,11 +65,11 @@ const ShareAction = ({ message, isDark }: { message: AssistantMessage; isDark: b
 
 const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, isOrdering, onSelectProduct, onProductOrder }: Pick<AssistantMessagesProps, 'selectedProduct' | 'productBusyId' | 'isOrdering' | 'onSelectProduct' | 'onProductOrder'> & { message: AssistantMessage; isDark: boolean }) => {
   const { locale, tr } = useLocale();
-  return <div className="mt-3 space-y-3">
+  return <div className="ay-readable-label mt-3 space-y-3">
     {message.orderStatuses?.map((order) => (
       <article key={order.orderId} className={`rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line/15 bg-surface'}`}>
-        <div className="flex items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-ink text-white"><PackageCheck size={30}/></span><div className="min-w-0 flex-1"><p className="text-xs font-bold uppercase tracking-[.12em] text-ink">{tr('Commande', 'طلب')} {order.orderId}</p><h3 className="mt-0.5 text-sm font-extrabold">{order.statusLabel}</h3><p className={`mt-1 text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{order.carrier && `${order.carrier} · `}{order.trackingCode || tr('Suivi en préparation', 'التتبع قيد الإعداد')}</p></div></div>
-        {order.history?.length > 0 && <div className={`mt-3 border-t pt-3 text-xs ${isDark ? 'border-white/10 text-muted' : 'border-line/15 text-muted'}`}>{order.history.slice(-3).reverse().map((item) => <div key={`${item.status}-${item.at}`} className="flex justify-between gap-3 py-1"><span>{item.label}</span><time>{new Date(item.at).toLocaleDateString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</time></div>)}</div>}
+        <div className="flex flex-wrap items-start gap-3"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-ink text-white"><PackageCheck size={30}/></span><div className="min-w-0 flex-1 basis-32"><p className="text-xs font-bold uppercase tracking-[.12em] text-ink">{tr('Commande', 'طلب')} {order.orderId}</p><h3 className="mt-0.5 text-sm font-extrabold">{order.statusLabel}</h3><p className={`mt-1 text-xs ${isDark ? 'text-muted' : 'text-muted'}`}>{order.carrier && `${order.carrier} · `}{order.trackingCode || tr('Suivi en préparation', 'التتبع قيد الإعداد')}</p></div></div>
+        {order.history?.length > 0 && <div className={`mt-3 border-t pt-3 text-xs ${isDark ? 'border-white/10 text-muted' : 'border-line/15 text-muted'}`}>{[...order.history].reverse().map((item) => <div key={`${item.status}-${item.at}`} className="flex flex-wrap justify-between gap-x-3 gap-y-1 py-1"><span className="ay-readable">{item.label}</span><time className="shrink-0">{new Date(item.at).toLocaleDateString(locale === 'ar' ? 'ar-TN' : 'fr-TN')}</time></div>)}</div>}
       </article>
     ))}
     {message.priceBreakdown && <article className={`rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-success/15 bg-success/5'}`}>
@@ -78,14 +78,14 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
     </article>}
     {message.products?.some(isDisplayableCandidate) ? <div className="grid gap-3 sm:grid-cols-2">
       {message.products.filter(isDisplayableCandidate).map((product) => <article key={product.id} className={`overflow-hidden rounded-card border ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-white'}`}>
-        <div className={`relative aspect-[4/3] p-2 ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/><span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-1 text-xs font-bold text-white">{product.source}</span></div>
+        <div className={`aspect-[4/3] p-2 ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/></div><p className="ay-readable-label border-b border-line px-3 py-2 text-xs font-bold">{product.source}</p>
         <div className="p-3">
-          <h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3>
+          <h3 className="ay-readable min-h-9 text-sm font-extrabold leading-snug">{product.title}</h3>
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className={`text-base font-black ${isDark ? 'text-white' : 'text-ink'}`}>{product.priceTnd != null ? `${product.priceTnd.toFixed(2)} DT` : '—'}</p><p className={`text-xs font-semibold ${isDark ? 'text-muted' : 'text-muted'}`}>{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p><MerchantRating value={product}/></div></div>
-          <div className="mt-3 flex gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}>{tr('Lien', 'الرابط')}<ArrowUpRight size={17} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="ay-btn-primary min-h-10 flex-1 px-3 text-xs">{productBusyId === product.id ? tr('Vérification…', 'جارٍ التحقق…') : tr('Choisir', 'اختيار')}</button></div>
+          <div className="mt-3 flex flex-wrap gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}>{tr('Lien', 'الرابط')}<ArrowUpRight size={17} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="ay-btn-primary min-h-10 flex-1 px-3 text-xs">{productBusyId === product.id ? tr('Vérification…', 'جارٍ التحقق…') : tr('Choisir', 'اختيار')}</button></div>
         </div>
       </article>)}
-    </div> : null}
+    </div> : message.products?.length ? <p role="status" className="ay-readable border border-line p-3 text-sm text-muted">{tr('Aucun produit avec un prix et un lien exploitables dans cette réponse. Relancez la recherche.', 'لم يصل منتج بسعر ورابط صالحين في هذا الرد. أعد البحث.')}</p> : null}
     {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder}/></div>}
     {message.supportTicket && <article className={`flex items-start gap-3 rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support AYROVI', 'دعم AYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
   </div>;
@@ -175,7 +175,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
               const hasPresentation = Boolean(message.products?.length || message.priceBreakdown || message.orderStatuses?.length || message.supportTicket || selectedProduct?.messageId === message.id);
               if (message.role === 'assistant' && !assistantText && !hasPresentation) return null;
               const isLastAssistantStreaming = isGenerating && index === messages.length - 1 && message.role === 'assistant';
-              return <div key={message.id} className={`flex items-start ${message.role === 'user' ? 'justify-end' : 'justify-start gap-2.5'}`}>
+              return <div key={message.id} className={`flex flex-wrap gap-y-2 items-start ${message.role === 'user' ? 'justify-end' : 'justify-start gap-2.5'}`}>
                 {message.role === 'assistant' && (
                   <AssistantBrandMark
                     state={isLastAssistantStreaming ? motionState : 'idle'}
@@ -184,7 +184,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                     label={isLastAssistantStreaming ? tr('AYROVI prépare la réponse', 'AYROVI تحضّر الرد') : 'AYROVI'}
                   />
                 )}
-                <div className={message.role === 'user' ? 'max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 max-w-[92%]' : 'min-w-0 max-w-[82%]'}>
+                <div className={message.role === 'user' ? 'min-w-0 max-w-[82%]' : hasPresentation ? 'min-w-0 flex-1 basis-[min(100%,20rem)]' : 'min-w-0 max-w-[82%]'}>
                   <div className={`rounded-card px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-ink text-white shadow-card' : isDark ? 'border border-white/10 bg-white/[0.055] text-white' : 'border border-line bg-white text-ink shadow-card'}`}>
                     {message.role === 'user' && message.fromVoice && (
                       <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black text-white">
@@ -192,12 +192,16 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                         <span>{tr('Vocal', 'صوتي')}</span>
                       </span>
                     )}
-                    {assistantText && <p className="whitespace-pre-wrap">{assistantText}</p>}
-                    {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
+                    {assistantText && <p className="ay-readable whitespace-pre-wrap">{assistantText}</p>}
+                    {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="ay-readable px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
                     {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder}/>}
-                    {message.role === 'assistant' && message.lensSummary && <p className={`mt-2 text-xs font-bold uppercase tracking-[0.12em] ${isDark ? 'text-muted' : 'text-muted'}`}>{tr('Lecture image : confiance', 'قراءة الصورة: الثقة')} {Math.round(message.lensSummary.confidence * 100)}%{message.lensSummary.verified ? tr(' · vérifiée', ' · مؤكدة') : ''}{message.lensSummary.warnings.length ? ` · ${message.lensSummary.warnings[0]}` : ''}</p>}
+                    {message.role === 'assistant' && message.lensSummary && <div className="mt-2 ay-readable text-xs text-muted">
+                      {Number.isFinite(message.lensSummary.confidence) && <p>{tr('Confiance estimée de lecture', 'الثقة التقديرية في القراءة')}: {Math.round(Math.max(0, Math.min(1, message.lensSummary.confidence)) * 100)}%</p>}
+                      {message.lensSummary.verified && <p>{tr('Lecture vérifiée', 'قراءة متحقّق منها')}</p>}
+                      {message.lensSummary.warnings.length > 0 && <ul className="mt-1 list-inside list-disc space-y-1">{message.lensSummary.warnings.map((warning, warningIndex) => <li key={warningIndex}>{warning}</li>)}</ul>}
+                    </div>}
                     {message.role === 'assistant' && !isGenerating && Boolean(message.suggestedActions?.length) && <div className="mt-2.5 flex flex-wrap gap-2">{(message.suggestedActions || []).map((action) => <button key={action.label} type="button" onClick={() => onPrompt(action.prompt)} className={`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}>{action.label}</button>)}</div>}
-                    {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="ay-btn-primary mt-3 w-full text-xs"><Sparkles size={19}/>{tr('Ouvrir AYROVIX Lens', 'فتح عدسة AYROVIX')}</button>}
+                    {message.role === 'assistant' && message.text.includes('[[OPEN_LENS]]') && <button type="button" onClick={onOpenLens} className="ay-btn-primary mt-3 w-full text-xs"><LensBox size={19}/>{tr('Ouvrir AYROVIX Lens', 'فتح عدسة AYROVIX')}</button>}
                   </div>
                   {message.role === 'assistant' && !isLastAssistantStreaming && <div className="assistant-message-actions mt-1.5 flex flex-wrap items-center gap-1 px-1"><button type="button" onClick={() => onCopy(message)} aria-label={tr('Copier', 'نسخ')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}>{copiedId === message.id ? <Check size={26}/> : <Copy size={26}/>}</button><button type="button" onClick={() => onRegenerate(message.id)} aria-label={tr('Régénérer', 'إعادة التوليد')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}><RefreshCw size={26}/></button><button type="button" aria-label={tr('Lire', 'استماع')} className={`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`} onClick={() => window.speechSynthesis?.speak(new SpeechSynthesisUtterance(assistantText))}><Volume2 size={26}/></button><ShareAction message={message} isDark={isDark}/><span className={`mx-1 h-4 w-px ${isDark ? 'bg-white/10' : 'bg-line'}`}/><button type="button" onClick={() => onFeedback(message, 'up')} aria-label={tr('Utile', 'مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'up' ? 'bg-success/10 text-success' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsUp size={26}/></button><button type="button" onClick={() => onFeedback(message, 'down')} aria-label={tr('Pas utile', 'غير مفيد')} className={`rounded-icon p-1.5 ${feedback[message.id] === 'down' ? 'bg-danger/10 text-danger' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}><ThumbsDown size={26}/></button><button type="button" onClick={() => onOpenComment(message)} className={`ms-1 rounded-icon px-2 py-1 text-xs font-bold ${isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}>{tr('Commenter', 'تعليق')}</button></div>}
                 </div>

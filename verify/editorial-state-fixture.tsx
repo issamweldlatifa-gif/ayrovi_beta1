@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { LocaleProvider, useLocale } from '../client/src/i18n/LocaleContext';
 import { CustomerIdentity } from '../client/src/design/editorial/CustomerIdentity';
 import { AssistantVoiceModeScreen } from '../client/src/components/assistant/AssistantVoiceModeScreen';
+import { AssistantMessages } from '../client/src/components/assistant/AssistantMessages';
 import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
 import * as Icons from '../client/src/components/QatafoIcons';
 import { CommentSheet } from '../client/src/social/components/CommentSheet';
@@ -28,6 +29,13 @@ function Fixture(){
    onExit={()=>events.push({action:'exit'})} onTapOrb={()=>events.push({action:'tap'})} onOpenAttachments={()=>events.push({action:'attachment'})} onOpenLens={()=>events.push({action:'lens'})}
    onSelectSuggestion={text=>events.push({action:'suggestion',text})} onVoiceSettingsChange={settings=>events.push({action:'settings',settings})}/>
   :state.kind==='product'?<ProductResult product={product} priceVerified={false} ordering={Boolean(state.ordering)} onOrder={selection=>events.push({action:'order',selection})}/>
+  :state.kind==='messages'?<div style={{height:'100%',display:'flex',flexDirection:'column'}}><AssistantMessages
+   messages={[{id:'long-fixture',role:'assistant',text:tr('Premier paragraphe complet.\n\nDeuxième paragraphe complet.\n','فقرة أولى كاملة.\n\nفقرة ثانية كاملة.\n')+'https://example.test/'+ 'longtoken'.repeat(35),
+    products:[{id:'candidate-fixture',title:tr('Produit avec un titre très long qui doit rester lisible sans suppression de mots — taille, couleur, matière et variante finale','منتج بعنوان طويل يجب أن يبقى كاملًا دون حذف كلمات — المقاس واللون والخامة والمواصفة الأخيرة'),source:tr('Marchand au nom long publié dans les données','اسم متجر طويل كما ورد في البيانات'),sourceUrl:'https://example.test/item',price:10,priceTnd:35,currency:'EUR',image:'',images:[],colors:[],sizes:[],match:80,kind:'external'} as any],
+    lensSummary:{confidence:.82,verified:false,warnings:['WARNING_FIRST / تحذير أول','WARNING_SECOND / تحذير ثان','WARNING_LAST / تحذير أخير']},
+    orderStatuses:[{orderId:'fixture-order',status:'TEST',statusLabel:'Test only / بيانات اختبار',paymentStatus:'UNPAID',depositStatus:'PENDING',trackingCode:'',carrier:'',expectedAt:null,updatedAt:'2026-09-20',history:Array.from({length:6},(_,i)=>({status:'test-'+i,label:'History / سجل '+i,at:'2026-09-20T10:00:00Z'}))}]}]}
+   isGenerating={false} motionState="idle" isDark={false} copiedId={null} feedback={{}} selectedProduct={null} productBusyId="" isOrdering={false}
+   onPrompt={()=>{}} onCopy={()=>{}} onRegenerate={()=>{}} onFeedback={()=>{}} onOpenComment={()=>{}} onOpenLens={()=>{}} onSelectProduct={()=>{}} onProductOrder={()=>{}}/></div>
   :state.kind==='comments'?<CommentSheet postId="fixture-post" isAuthenticated={true} onRequireAuth={()=>events.push({action:'auth'})} onClose={()=>events.push({action:'comments-close'})}/>
   :state.kind==='cart'?<CartDrawer isOpen items={[cartItem]} totalTND={100} onClose={()=>events.push({action:'cart-close'})} onUpdateQuantity={()=>{}} onRemoveItem={()=>{}} onProceedToCheckout={()=>events.push({action:'checkout'})} onCalculateAnotherProduct={()=>{}}/>
   :state.kind==='checkout'?<CheckoutModal isOpen customerSession={session} totalTND={100} itemCount={1} breakdown={{subtotal:100,customs:0,shipping:0,service:0,express:0,discount:0}} onClose={()=>{}} onRequireAuthentication={()=>events.push({action:'auth'})} onOrderSuccess={()=>events.push({action:'order-success'})}/>

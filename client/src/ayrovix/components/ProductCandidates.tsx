@@ -45,8 +45,8 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
                 <span className={`absolute start-1 top-1 rounded-control px-1.5 py-0.5 text-xs font-extrabold ${candidate.match >= 80 ? 'bg-ink text-white' : 'border border-line bg-white/90 text-ink'}`}title={tr('Similarité estimée', 'تشابه تقديري')}>{Number.isFinite(candidate.match) ? Math.round(Math.min(100, Math.max(0,candidate.match)))+'%' : '—'}</span>
               </div>
               <div className="min-w-0 flex-1">
-                <h4 className="line-clamp-2 break-words text-sm font-bold leading-snug text-ink" title={candidate.title}>{candidate.title}</h4>
-                <p className="mt-0.5 truncate text-xs font-semibold text-muted">{candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}</p>
+                <h4 className="ay-readable text-sm font-bold leading-snug text-ink" title={candidate.title}>{candidate.title}</h4>
+                <p className="ay-readable mt-0.5 text-xs font-semibold text-muted">{candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}</p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                   <p className="text-base font-black leading-none text-ink">{candidate.priceTnd != null ? `${candidate.priceTnd.toFixed(2)} DT` : '—'}</p>
                   <p className="text-xs font-semibold text-muted">{Number(candidate.price).toFixed(Number(candidate.price) % 1 ? 2 : 0)} {candidate.currency}</p>
@@ -54,7 +54,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
                 </div>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
                   <button type="button" onClick={() => onChoose(candidate)} className="ay-btn-primary min-h-11 flex-1 px-3 text-xs" title={tr('Ouvrir les détails, confirmer le prix et choisir les options', 'فتح التفاصيل وتأكيد السعر واختيار المواصفات')}>{candidate.kind === 'external' ? tr('Vérifier le prix et choisir', 'تحقق من السعر واختر') : tr('Voir les détails', 'عرض التفاصيل')}</button>
-                  <a href={candidate.sourceUrl} target="_blank" rel="noopener noreferrer" className="ay-btn-secondary min-h-11 px-3 text-xs" aria-label={tr(`Ouvrir ${candidate.title} chez ${candidate.source}`, `فتح ${candidate.title} لدى ${candidate.source}`)} title={tr('Ouvrir la fiche originale du marchand dans un nouvel onglet', 'فتح صفحة المتجر الأصلية في علامة تبويب جديدة')}>{tr(`Voir chez ${candidate.source}`, `عرض في ${candidate.source}`)} <ArrowUpRight size={15} /></a>
+                  <a href={candidate.sourceUrl} target="_blank" rel="noopener noreferrer" className="ay-btn-secondary ay-readable-label min-h-11 px-3 text-xs" aria-label={tr(`Ouvrir ${candidate.title} chez ${candidate.source}`, `فتح ${candidate.title} لدى ${candidate.source}`)} title={tr('Ouvrir la fiche originale du marchand dans un nouvel onglet', 'فتح صفحة المتجر الأصلية في علامة تبويب جديدة')}>{tr(`Voir chez ${candidate.source}`, `عرض في ${candidate.source}`)} <ArrowUpRight size={15} /></a>
                 </div>
               </div>
             </div>

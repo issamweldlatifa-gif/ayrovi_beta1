@@ -6,7 +6,7 @@ describe('whole-application icon architecture gate',()=>{
   it('audits the actual application, including admin, with zero unreviewed exceptions',()=>{
     const report=checkIconContract();
     expect(report.files).toBeGreaterThan(150);
-    expect(report.rawSvg).toBe(5);
+    expect(report.rawSvg).toBe(4);
     expect(report.issues).toEqual([]);
   });
   it.each([
@@ -33,7 +33,7 @@ describe('whole-application icon architecture gate',()=>{
     expect(inspectIconSource(file,'const x=<svg data-brand-mark="invented"/>;').issues.length).toBeGreaterThan(0);
   });
   it('does not permit extra SVG roots in an approved visualization file',()=>{
-    const report=inspectIconSource('client/src/components/AyroviMotion.tsx','const x=<><svg data-brand-mark="ayrovi-motion"/><svg data-brand-mark="ayrovi-motion"/></>;');
+    const report=inspectIconSource('client/src/components/assistant/VoiceLevel.tsx','const x=<><svg data-visualization="audio-level"/><svg data-visualization="audio-level"/></>;');
     expect(report.issues.some(i=>i.reason.includes('exactly'))).toBe(true);
   });
   it('brand registry cannot become a generic external icon library',()=>{

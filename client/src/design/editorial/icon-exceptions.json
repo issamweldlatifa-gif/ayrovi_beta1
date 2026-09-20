@@ -6,12 +6,6 @@
       "count": 1,
       "reason": "The single interface icon renderer backed by glyphs.json."
     },
-    "client/src/components/AyroviMotion.tsx": {
-      "count": 1,
-      "attribute": "data-brand-mark",
-      "value": "ayrovi-motion",
-      "reason": "Owner-supplied animated brand mark. Brand geometry is preserved."
-    },
     "client/src/ayrovix/components/InteractiveLensResults.tsx": {
       "count": 2,
       "attribute": "data-visualization",

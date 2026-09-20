@@ -122,12 +122,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </button>
                     </div>
 
-                    <h4 className="text-xs font-bold text-ink truncate mt-1">
+                    <h4 className="ay-readable text-sm font-bold text-ink mt-1">
                       {item.title}
                     </h4>
 
                     {item.variant && (
-                      <p className="text-xs text-muted truncate mt-0.5">
+                      <p className="ay-readable text-xs text-muted mt-0.5">
                         {item.variant}
                       </p>
                     )}
@@ -136,7 +136,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         {[item.requestedSize && `${tr('Taille', 'المقاس')} ${item.requestedSize}`, item.requestedColor && `${tr('Couleur', 'اللون')} ${item.requestedColor}`].filter(Boolean).join(' · ')}
                       </p>
                     )}
-                    {item.customerNote && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
+                    {item.customerNote && <p className="ay-readable mt-1 text-xs leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
                     {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && validProductUrl(item.sourceUrl) && (
                       <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-bold text-ink underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}

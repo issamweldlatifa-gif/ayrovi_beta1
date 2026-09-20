@@ -119,6 +119,14 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
         {/* Media — priority, no card — uses ayrovix-product-gallery classes for contain + no crop (730 tests) */}
         <div className="flow-media min-w-0">
           <div className="ayrovix-product-gallery overflow-hidden rounded-control bg-white">
+            <div className="flex flex-wrap items-start justify-between gap-2 border-b border-line p-3">
+              <span className={`ay-readable-label rounded-control px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availability.cls}`}>
+                {availability[isArabic ? 'ar' : 'fr']}
+              </span>
+              <span className="ay-readable-label rounded-control bg-ink/85 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
+                {product.source}
+              </span>
+            </div>
             <div className="ayrovix-product-gallery-stage bg-surface">
               {activeImage
                 ? <img
@@ -132,12 +140,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                     className="ayrovix-product-gallery-image"
                   />
                 : <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={40} /></div>}
-              <span className={`absolute start-3 top-3 rounded-control px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availability.cls}`}>
-                {availability[isArabic ? 'ar' : 'fr']}
-              </span>
-              <span className="absolute end-3 top-3 max-w-[45%] truncate rounded-control bg-ink/85 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
-                {product.source}
-              </span>
+
             </div>
             {imageUrls.length > 1 && (
               <div className="ayrovix-thumbnail-strip flex gap-2 overflow-x-auto bg-white px-3 py-3" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>

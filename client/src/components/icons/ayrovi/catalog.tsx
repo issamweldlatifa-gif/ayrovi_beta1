@@ -95,3 +95,6 @@ export const AyroviHourglass = createAyroviIcon('Hourglass');
 export const AyroviExternal = createAyroviIcon('External');
 export const AyroviPlay = createAyroviIcon('Play');
 export const AyroviGrip = createAyroviIcon('Grip');
+
+export const AyroviSonim = createAyroviIcon('Sonim');
+export const AyroviVision = createAyroviIcon('Vision');

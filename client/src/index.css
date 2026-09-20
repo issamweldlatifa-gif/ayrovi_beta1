@@ -10,6 +10,7 @@
 @import "./design/editorial/tokens.generated.css";
 @import "./design/editorial/primitives.css";
 @import "./design/editorial/customer.css";
+@import "./design/editorial/content.css";
 
 @layer base {
   html,
@@ -149,80 +150,10 @@
   }
 }
 
-/* AYROVI eight-part motion mark — all active modes share the same soft settle. */
-.ayrovi-motion {
-  display: block;
-  overflow: visible;
-}
-
-.ayrovi-motion__piece {
-  transform-box: view-box;
-  transform-origin: 50px 50px;
-  transition:
-    transform 680ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 420ms ease;
-  will-change: transform, opacity;
-}
-
-.ayrovi-motion[data-state='idle'] .ayrovi-motion__piece {
-  animation: none;
-  opacity: 1;
-  transform: none;
-}
-
-.ayrovi-motion__center {
-  opacity: .9;
-}
-
-.ayrovi-motion[data-state='thinking'] .ayrovi-motion__piece {
-  animation: ayroviMotionThinking 1.15s ease-in-out var(--piece-delay) infinite;
-}
-
-.ayrovi-motion[data-state='analyzing'] .ayrovi-motion__piece {
-  animation: ayroviMotionAnalyzing 920ms ease-in-out var(--piece-sequence-delay) infinite;
-}
-
-.ayrovi-motion[data-state='reasoning'] .ayrovi-motion__piece {
-  animation: ayroviMotionReasoning 1.35s cubic-bezier(0.45, 0, 0.2, 1) var(--piece-delay) infinite;
-}
-
-.ayrovi-motion[data-state='creating'] .ayrovi-motion__piece {
-  animation: ayroviMotionCreating 760ms cubic-bezier(0.22, 1, 0.36, 1) var(--piece-create-delay) infinite;
-}
-
-.ayrovi-motion[data-state='settling'] .ayrovi-motion__piece {
-  animation: none;
-  opacity: 1;
-  transform: translate(0, 0) rotate(0) scale(1);
-}
-
-@keyframes ayroviMotionIdle {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(var(--piece-x), var(--piece-y)) scale(0.985); }
-}
-
-@keyframes ayroviMotionThinking {
-  0%, 100% { transform: translate(0, 0) rotate(0); }
-  45% { transform: translate(var(--piece-x), var(--piece-y)) rotate(var(--piece-turn)); }
-}
-
-@keyframes ayroviMotionAnalyzing {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  42% { transform: scale(0.84); opacity: 0.42; }
-  68% { transform: scale(1.035); opacity: 1; }
-}
-
-@keyframes ayroviMotionReasoning {
-  0%, 100% { transform: rotate(0) scale(1); }
-  35% { transform: rotate(var(--piece-turn)) scale(0.94); }
-  67% { transform: rotate(var(--piece-counter-turn)) scale(1.015); }
-}
-
-@keyframes ayroviMotionCreating {
-  0% { transform: translate(0, 0) scale(0.94); opacity: 0.7; }
-  52% { transform: translate(var(--piece-x), var(--piece-y)) scale(1.055); opacity: 1; }
-  100% { transform: translate(0, 0) scale(1); opacity: 1; }
-}
+/* One SONIM glyph, with restrained state animation around canonical geometry. */
+.ayrovi-motion { display: inline-flex; align-items: center; justify-content: center; opacity: 1; transition: opacity 680ms ease; }
+.ayrovi-motion:is([data-state='thinking'],[data-state='analyzing'],[data-state='reasoning'],[data-state='creating']) { animation: sonimActivity 1.4s ease-in-out infinite; }
+@keyframes sonimActivity { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
 
 /* Assistant (SONIM) : identité neutre, sur l'encre de la plateforme. */
 .assistant-motion-badge {
@@ -243,15 +174,7 @@
   content: none;
 }
 
-.assistant-motion-badge[data-active='true'] {
-  animation: assistantMotionBadgeGlow 1.55s ease-in-out infinite;
-  box-shadow:
-    0 9px 22px -11px color-mix(in srgb, var(--ayrovi-primary-dark) 90%, transparent),
-    0 0 0 1px color-mix(in srgb, var(--ayrovi-color-brand-orange) 45%, transparent),
-    0 0 18px color-mix(in srgb, var(--ayrovi-color-brand-orange) 22%, transparent);
-}
-
-/* Branded task cards: no emoji, just AYROVI vector icons and the purple light effect. */
+/* Branded task cards: no emoji, just AYROVI vector icons and shared editorial surfaces. */
 .assistant-quick-card {
   position: relative;
   isolation: isolate;
@@ -296,17 +219,8 @@
   box-shadow: 0 6px 14px -9px color-mix(in srgb, var(--ayrovi-primary-dark) 55%, transparent);
 }
 
-@keyframes assistantMotionBadgeGlow {
-  0%, 100% {
-    box-shadow: 0 9px 22px -11px color-mix(in srgb, var(--ayrovi-primary-dark) 90%, transparent), 0 0 0 0 color-mix(in srgb, var(--ayrovi-primary) 22%, transparent), inset 0 1px 0 color-mix(in srgb, var(--ayrovi-white) 22%, transparent);
-  }
-  50% {
-    box-shadow: 0 12px 27px -9px color-mix(in srgb, var(--ayrovi-primary-dark) 95%, transparent), 0 0 0 6px transparent, inset 0 1px 0 color-mix(in srgb, var(--ayrovi-white) 30%, transparent);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .ayrovi-motion__piece,
+  .ayrovi-motion,
   .assistant-motion-badge,
   .assistant-quick-card {
     animation: none !important;

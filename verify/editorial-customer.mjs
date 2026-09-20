@@ -27,7 +27,7 @@ try{
    await inspect('home','.ayrovi-app-shell');
    check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-ayrovi'));
    check(`${locale}/${width}: three navigation destinations preserved`,await p.locator('.ayrovi-glass-bottom-nav nav>button').count()===3);
-   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sparkles','Eye']]]){
+   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sonim','Vision']]]){
     const icons=await inspectEditorialIcons(p,selector);
     check(`${locale}/${width}: ${area} matches editorial geometry and stroke`,icons.errors.length===0 && names.every(name=>icons.names.includes(name)),icons);
    }

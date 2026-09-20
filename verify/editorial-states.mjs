@@ -98,9 +98,25 @@ try{
   await p.screenshot({path:`${output}/checkout-${locale}-${width}.png`});
   await ctx.close();
  }
+ // Long prose, identifiers, product names and warnings must remain complete at phone widths and enlarged text.
+ for(const locale of ['fr','ar'])for(const width of [320,390,768])for(const enlarged of [false,true]){
+  const key=`content/${locale}/${width}/${enlarged?'200pct':'normal'}`;
+  const ctx=await browser.newContext({viewport:{width,height:844},reducedMotion:'reduce'});
+  await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
+  const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();
+  await p.evaluate(enlarged=>{if(enlarged)document.documentElement.style.fontSize='32px';window.setEditorialFixture({kind:'messages'});},enlarged);
+  await p.locator('[data-assistant-messages]').waitFor();
+  const layout=await p.locator('[data-assistant-messages]').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth,clipped:[...el.querySelectorAll('p,h3,h4')].filter(t=>t.scrollWidth>t.clientWidth+1||parseInt(getComputedStyle(t).webkitLineClamp)>0).map(t=>({text:t.textContent.slice(0,60),width:t.clientWidth,scroll:t.scrollWidth}))}));
+  check(`${key}: no horizontal overflow or clamped content`,layout.scroll<=layout.width+1&&!layout.clipped.length,layout);
+  check(`${key}: all warnings and timeline entries remain readable`,await p.locator('[data-assistant-messages]').innerText().then(t=>t.includes('WARNING_FIRST')&&t.includes('WARNING_SECOND')&&t.includes('WARNING_LAST')&&t.includes('History / سجل 0')&&t.includes('History / سجل 5')));
+  check(`${key}: prose preserves paragraph boundaries`,await p.locator('p.whitespace-pre-wrap').evaluate(el=>el.textContent.includes('\n\n')&&getComputedStyle(el).whiteSpace==='pre-wrap'));
+  check(`${key}: SONIM reply uses feature glyph`,await p.locator('[data-editorial-icon="Sonim"]').count()===1);
+  if(width===390&&!enlarged)await p.screenshot({path:`${output}/complete-content-${locale}.png`});
+  await ctx.close();
+ }
  // All imports also work in the ordinary document, not only the selected screens.
  const ctx=await browser.newContext({viewport:{width:1000,height:900}}),p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'icons'}));await p.locator('[data-icon-gallery]').waitFor();
- const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('97 public icon imports match reference drawings',gallery.count===97&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
+ const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('99 public icon imports match reference drawings',gallery.count===99&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
  await p.route('**/api/public/commerce-config',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product'}));await p.getByRole('alert').waitFor();
  check('failed config never invents a payment percentage',!(await p.locator('.flow-product').innerText()).includes('20%'));
  check('failed config disables ordering',await p.locator('.ay-btn-cta').isDisabled());

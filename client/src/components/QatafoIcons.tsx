@@ -119,3 +119,7 @@ export const ExternalLink = I.AyroviExternal;
 
 export const Play = I.AyroviPlay;
 export const Grip = I.AyroviGrip;
+
+/* Feature identity — not aliases for generic effects or password visibility. */
+export const Sonim = I.AyroviSonim;
+export const Vision = I.AyroviVision;

@@ -1,0 +1,4 @@
+/* Content is never shortened merely to fit a card. Media cropping is independent.
+   Preserve prose/paragraphs; only unbreakable tokens may break to fit the viewport. */
+.ay-readable { min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; word-break: normal; }
+.ay-readable-label { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: normal; }

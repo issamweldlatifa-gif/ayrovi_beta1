@@ -28,4 +28,17 @@ describe('SONIM preserves the reader position while responses stream',()=>{
   expect(host.querySelector('.whitespace-pre-wrap')?.textContent).toContain('\n\nمرحبا ✅');
   expect(host.querySelector('.assistant-message-actions')?.className).toContain('flex-wrap');
  });
+ it('keeps every warning and full product title instead of clamping card content',async()=>{
+  const title='Un titre complet — المقاس واللون والمواصفة الأخيرة';
+  await render([{id:'content',role:'assistant',text:'Paragraph one\n\nParagraph two',products:[{id:'p1',title,source:'Example merchant',sourceUrl:'https://example.test/product',price:10,currency:'EUR',priceTnd:30,image:'',images:[]} as any],lensSummary:{confidence:.8,verified:true,warnings:['FIRST_WARNING','SECOND_WARNING','LAST_WARNING']}}]);
+  expect(host.querySelector('h3.ay-readable')?.textContent).toBe(title);
+  expect(host.querySelector('[class*="line-clamp"]')).toBeNull();
+  for(const text of ['FIRST_WARNING','SECOND_WARNING','LAST_WARNING','Lecture vérifiée'])expect(host.textContent).toContain(text);
+ });
+ it('reports unusable product payloads instead of rendering an empty product bubble',async()=>{
+  await render([{id:'bad-product',role:'assistant',text:'',products:[{id:'bad',title:'Invalid product',sourceUrl:'javascript:alert(1)',price:0,currency:'EUR'} as any]}]);
+  expect(host.querySelector('[role="status"]')?.textContent).toContain('Aucun produit');
+  expect(host.querySelector('a')).toBeNull();
+ });
+
 });

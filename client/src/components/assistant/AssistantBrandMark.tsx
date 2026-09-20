@@ -8,7 +8,7 @@ interface AssistantBrandMarkProps {
   label?: string;
 }
 
-/** AYROVI's purple assistant badge with the real eight-piece motion mark. */
+/** SONIM feature icon; the same canonical drawing as navigation and activity. */
 export const AssistantBrandMark: React.FC<AssistantBrandMarkProps> = ({
   state = 'idle',
   size = 36,

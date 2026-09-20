@@ -715,15 +715,21 @@
       {
         "tag": "path",
         "attrs": {
-          "d": "M3 8V3h5M16 3h5v5M21 16v5h-5M8 21H3v-5"
+          "d": "M3 8V3h5M16 3h5v5M3 16v5h5"
         }
       },
       {
         "tag": "circle",
         "attrs": {
-          "cx": 12,
-          "cy": 12,
+          "cx": 11.5,
+          "cy": 11.5,
           "r": 4.5
+        }
+      },
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M15 15l6 6"
         }
       }
     ]
@@ -1514,6 +1520,48 @@
           "height": 2,
           "fill": "currentColor",
           "stroke": "none"
+        }
+      }
+    ]
+  },
+  "Sonim": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M4 3.5h12l4 4V17H10l-5 3.5V17H4Z"
+        }
+      },
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M16 3.5v4h4M8 8h4M8 12h8"
+        }
+      }
+    ]
+  },
+  "Vision": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4"
+        }
+      },
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M5 12l4-4h6l4 4-4 4H9Z"
+        }
+      },
+      {
+        "tag": "circle",
+        "attrs": {
+          "cx": 12,
+          "cy": 12,
+          "r": 2
         }
       }
     ]

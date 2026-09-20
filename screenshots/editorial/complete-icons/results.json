@@ -22211,8 +22211,8 @@
       "label": "ar/320x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 320,
-        "scroll": 320
+        "width": 288,
+        "scroll": 288
       }
     },
     {
@@ -41402,10 +41402,262 @@
       }
     },
     {
-      "label": "97 public icon imports match reference drawings",
+      "label": "content/fr/320/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "count": 97,
+        "width": 288,
+        "scroll": 288,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/fr/320/normal: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/fr/320/normal: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/fr/320/normal: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/fr/320/200pct: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 288,
+        "scroll": 288,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/fr/320/200pct: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/fr/320/200pct: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/fr/320/200pct: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/fr/390/normal: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 358,
+        "scroll": 358,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/fr/390/normal: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/fr/390/normal: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/fr/390/normal: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/fr/390/200pct: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 358,
+        "scroll": 358,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/fr/390/200pct: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/fr/390/200pct: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/fr/390/200pct: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/fr/768/normal: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 736,
+        "scroll": 736,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/fr/768/normal: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/fr/768/normal: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/fr/768/normal: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/fr/768/200pct: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 736,
+        "scroll": 736,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/fr/768/200pct: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/fr/768/200pct: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/fr/768/200pct: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/ar/320/normal: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/ar/320/normal: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/ar/320/normal: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/ar/320/normal: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/ar/320/200pct: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 288,
+        "scroll": 288,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/ar/320/200pct: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/ar/320/200pct: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/ar/320/200pct: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/ar/390/normal: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 358,
+        "scroll": 358,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/ar/390/normal: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/ar/390/normal: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/ar/390/normal: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/ar/390/200pct: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 358,
+        "scroll": 358,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/ar/390/200pct: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/ar/390/200pct: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/ar/390/200pct: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/ar/768/normal: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 736,
+        "scroll": 736,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/ar/768/normal: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/ar/768/normal: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/ar/768/normal: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "content/ar/768/200pct: no horizontal overflow or clamped content",
+      "pass": true,
+      "details": {
+        "width": 736,
+        "scroll": 736,
+        "clipped": []
+      }
+    },
+    {
+      "label": "content/ar/768/200pct: all warnings and timeline entries remain readable",
+      "pass": true
+    },
+    {
+      "label": "content/ar/768/200pct: prose preserves paragraph boundaries",
+      "pass": true
+    },
+    {
+      "label": "content/ar/768/200pct: SONIM reply uses feature glyph",
+      "pass": true
+    },
+    {
+      "label": "99 public icon imports match reference drawings",
+      "pass": true,
+      "details": {
+        "count": 99,
         "names": [
           "Alert",
           "ArrowDown",
@@ -41484,6 +41736,7 @@
           "Shield",
           "Bag",
           "Sliders",
+          "Sonim",
           "Sparkles",
           "Square",
           "Star",
@@ -41496,6 +41749,7 @@
           "Type",
           "User",
           "Video",
+          "Vision",
           "VoiceWave",
           "Volume",
           "VolumeOff",
