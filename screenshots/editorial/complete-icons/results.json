@@ -41615,8 +41615,8 @@
       "label": "content/ar/768/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 736,
-        "scroll": 736,
+        "width": 768,
+        "scroll": 768,
         "clipped": []
       }
     },

@@ -1,6 +1,6 @@
 # دليل النظام التحريري
 
-> أحدث دفعة: [أهلية الخيارات وصدق المخزون](VARIANT_AVAILABILITY_REVIEW_AR.md)، وتسبقها [عزل التسجيل المستمر](SONIM_HANDSFREE_REVIEW_AR.md)، وتسبقها [تشغيل الردود الصوتية وصدق الإعدادات](SONIM_PLAYBACK_REVIEW_AR.md)، وتسبقها [ملكية الصور والتسجيل وتحويل الصوت](SONIM_MEDIA_REVIEW_AR.md)، وتسبقها [اكتمال سجل SONIM وصدق حالة المنتج](SONIM_HISTORY_REVIEW_AR.md)، وتسبقها [إجراءات SONIM والنوافذ المتداخلة](SONIM_ACTIONS_REVIEW_AR.md) و[مراجعة التعميم والوظائف](FEATURES_CONTENT_REVIEW_AR.md). تقارير الأساس والدفعة 02 سجلات تاريخية، وليست وصفًا للحالة الحالية.
+> أحدث دفعة: [مطابقة المنتج وتماسك العرض](PRODUCT_SELECTION_REVIEW_AR.md)، وتسبقها [أهلية الخيارات وصدق المخزون](VARIANT_AVAILABILITY_REVIEW_AR.md)، وتسبقها [عزل التسجيل المستمر](SONIM_HANDSFREE_REVIEW_AR.md)، وتسبقها [تشغيل الردود الصوتية وصدق الإعدادات](SONIM_PLAYBACK_REVIEW_AR.md)، وتسبقها [ملكية الصور والتسجيل وتحويل الصوت](SONIM_MEDIA_REVIEW_AR.md)، وتسبقها [اكتمال سجل SONIM وصدق حالة المنتج](SONIM_HISTORY_REVIEW_AR.md)، وتسبقها [إجراءات SONIM والنوافذ المتداخلة](SONIM_ACTIONS_REVIEW_AR.md) و[مراجعة التعميم والوظائف](FEATURES_CONTENT_REVIEW_AR.md). تقارير الأساس والدفعة 02 سجلات تاريخية، وليست وصفًا للحالة الحالية.
 
 ## أين المصدر؟
 - `client/src/design/editorial/identity.json`: الألوان الدلالية النهارية/الداكنة، هندسة المكونات، حد مساحة البرتقالي، الخطوط مع checksums وتراخيصها.
@@ -29,6 +29,7 @@ npm run verify:sonim-media
 npm run verify:sonim-playback
 npm run verify:sonim-handsfree
 npm run verify:variant-availability
+npm run verify:product-selection
 npm run verify:editorial-account
 ```
 

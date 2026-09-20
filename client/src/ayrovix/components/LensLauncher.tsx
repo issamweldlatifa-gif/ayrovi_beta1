@@ -1,3 +1,4 @@
+import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../services/productSelection';
 import { AppHeader } from '../../design/AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -520,20 +521,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     enterStage('product');
   };
 
-  const handleOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
-    if (!product || (option?.price == null && product.price == null && !candidatesView?.detectedPrice)) return;
-    if (urlResult?.eventId) markChosen(urlResult.eventId);
-    const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
-    const detectedPrice = candidatesView?.detectedPrice;
-    const finalPrice = option?.price ?? product.price ?? detectedPrice?.sourcePrice ?? 0;
-    const finalCurrency = option?.currency ?? product.currency ?? detectedPrice?.sourceCurrency ?? 'EUR';
-    const priceToken = option?.priceToken || product.priceToken || detectedPrice?.priceToken || '';
-    const priceVerificationStatus = product.priceVerificationStatus || (verifiedPriceUrl ? 'VERIFIED' : 'PENDING_MANUAL');
-    if (!priceToken) {
-      setError({ code: 'QUOTE_UNAVAILABLE', message: 'Le devis sécurisé a expiré. Relancez AYROVIX Lens pour continuer.' });
+  const handleOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
+    if (!product) return;
+    const { option, offer } = resolveProductSelection(product, size, color);
+    if (!completeProductOffer(offer)) {
+      setError({ code: 'QUOTE_UNAVAILABLE', message: tr(...productSelectionLabels.unavailable) });
       enterStage('error');
       return;
     }
+    if (urlResult?.eventId) markChosen(urlResult.eventId);
+    const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
+    const priceVerificationStatus = product.priceVerificationStatus || (verifiedPriceUrl ? 'VERIFIED' : 'PENDING_MANUAL');
     setOrdering(true);
     setError(null);
     try {
@@ -543,16 +541,16 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         url: manualUrl,
         referenceUrl: product.sourceUrl || '',
         title: product.title,
-        imageUrl: product.image || detectedPrice?.imageUrl || '',
-        sourcePrice: finalPrice,
-        sourceCurrency: finalCurrency,
-        priceTND: option?.priceTnd ?? product.priceTnd ?? detectedPrice?.totalPriceTND ?? 0,
+        imageUrl: product.image || '',
+        sourcePrice: offer.price,
+        sourceCurrency: offer.currency,
+        priceTND: offer.priceTnd ?? 0,
         variant: option?.label || variant || undefined,
         requestedSize: size,
         requestedColor: color,
         customerNote,
         priceVerificationStatus,
-        priceToken,
+        priceToken: offer.priceToken,
         quantity,
       });
       // Le panier s'ouvre, mais le résultat Lens reste monté pour un retour sans perte d'état.

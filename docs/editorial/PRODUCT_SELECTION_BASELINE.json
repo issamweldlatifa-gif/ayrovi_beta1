@@ -1,0 +1,233 @@
+{
+  "revision": "567a8aa87f40f76d90a21b08c66b3aead200f02f",
+  "selectionCases": [
+    {
+      "label": "explicit exact match",
+      "expectedOption": "blue-M",
+      "pass": true,
+      "observed": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "blue-M",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "blue-M-QUOTE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "size alone with two colors",
+      "expectedOption": null,
+      "pass": false,
+      "observed": {
+        "size": "M",
+        "color": "",
+        "option": {
+          "id": "blue-M",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "blue-M-QUOTE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "same size selection with reordered data",
+      "expectedOption": null,
+      "pass": false,
+      "observed": {
+        "size": "M",
+        "color": "",
+        "option": {
+          "id": "red-M",
+          "label": "M · Rouge",
+          "size": "M",
+          "color": "Rouge",
+          "available": true,
+          "price": 35,
+          "currency": "EUR",
+          "priceTnd": 140,
+          "priceToken": "red-M-QUOTE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "color alone with two sizes",
+      "expectedOption": null,
+      "pass": false,
+      "observed": {
+        "size": "",
+        "color": "Bleu",
+        "option": {
+          "id": "blue-M",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "blue-M-QUOTE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    },
+    {
+      "label": "duplicate size/color with distinct quote",
+      "expectedOption": null,
+      "pass": false,
+      "observed": {
+        "size": "M",
+        "color": "Bleu",
+        "option": {
+          "id": "blue-M",
+          "label": "M · Bleu",
+          "size": "M",
+          "color": "Bleu",
+          "available": true,
+          "price": 27,
+          "currency": "EUR",
+          "priceTnd": 108,
+          "priceToken": "blue-M-QUOTE"
+        },
+        "quantity": 1,
+        "customerNote": "",
+        "manualUrl": "https://example.org/product"
+      }
+    }
+  ],
+  "quoteMixingChecks": [
+    {
+      "label": "lens/fr/390/missing-token: displayed monetary source agrees with selection",
+      "pass": true,
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantit"
+    },
+    {
+      "label": "lens/fr/390/missing-token: actual parent does not invent a variant or change the request",
+      "pass": true,
+      "details": {
+        "store": "generic",
+        "externalId": "blue-M",
+        "url": "https://example.org/product",
+        "referenceUrl": "https://example.org/product",
+        "title": "Selection fixture / منتج اختباري",
+        "imageUrl": "",
+        "sourcePrice": 27,
+        "sourceCurrency": "EUR",
+        "priceTND": 108,
+        "variant": "M · Bleu",
+        "requestedSize": "M",
+        "requestedColor": "Bleu",
+        "customerNote": "",
+        "priceVerificationStatus": "VERIFIED",
+        "priceToken": "eyJ2IjoxLCJwcmljZSI6MjAsImN1cnJlbmN5IjoiRVVSIiwidGl0bGUiOiJTZWxlY3Rpb24gZml4dHVyZSAvINmF2YbYqtisINin2K7Yqtio2KfYsdmKIiwicmVmZXJlbmNlVXJsIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9wcm9kdWN0Iiwic3RhdHVzIjoiVkVSSUZJRUQiLCJleHBpcmVzQXQiOjE3ODk5MjE2OTM3Njl9.t0LIEMsIonIjvWV7hSg0tWp3A_p9CN57rFfPLD4sSF8",
+        "quantity": 1
+      }
+    },
+    {
+      "label": "lens/fr/390/missing-token: parent submits one coherent monetary offer",
+      "pass": true,
+      "details": {
+        "store": "generic",
+        "externalId": "blue-M",
+        "url": "https://example.org/product",
+        "referenceUrl": "https://example.org/product",
+        "title": "Selection fixture / منتج اختباري",
+        "imageUrl": "",
+        "sourcePrice": 27,
+        "sourceCurrency": "EUR",
+        "priceTND": 108,
+        "variant": "M · Bleu",
+        "requestedSize": "M",
+        "requestedColor": "Bleu",
+        "customerNote": "",
+        "priceVerificationStatus": "VERIFIED",
+        "priceToken": "eyJ2IjoxLCJwcmljZSI6MjAsImN1cnJlbmN5IjoiRVVSIiwidGl0bGUiOiJTZWxlY3Rpb24gZml4dHVyZSAvINmF2YbYqtisINin2K7Yqtio2KfYsdmKIiwicmVmZXJlbmNlVXJsIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9wcm9kdWN0Iiwic3RhdHVzIjoiVkVSSUZJRUQiLCJleHBpcmVzQXQiOjE3ODk5MjE2OTM3Njl9.t0LIEMsIonIjvWV7hSg0tWp3A_p9CN57rFfPLD4sSF8",
+        "quantity": 1
+      }
+    },
+    {
+      "label": "lens/fr/390/missing-token: actual server HMAC verifier accepts submitted fields",
+      "pass": false
+    },
+    {
+      "label": "sonim/fr/390/missing-token: displayed monetary source agrees with selection",
+      "pass": true,
+      "details": "DISPONIBILITÉ À CONFIRMER\nMERCHANT FIXTURE\nSelection fixture / منتج اختباري\n\nProduit identifié par AYROVIX\n\nPage du marchand\n\nPRIX TOTAL CALCULÉ\n\n108.00 DT\n\nPrix boutique 27.00 EUR\n\nPrix confirmé\n\nData for verification / بيانات اختبار\n\nDétails de votre demande\n\nCes informations seront transmises à l'équipe d'achat avec votre commande.\n\nLe choix d’une taille ou couleur ne confirme pas son stock.\n\nLien exact du produit *\nCe lien sert à l’achat manuel et ne relance pas l’extraction du prix.\nQuantit"
+    },
+    {
+      "label": "sonim/fr/390/missing-token: actual parent does not invent a variant or change the request",
+      "pass": true,
+      "details": {
+        "store": "generic",
+        "externalId": "blue-M",
+        "url": "https://example.org/product",
+        "referenceUrl": "https://example.org/product",
+        "title": "Selection fixture / منتج اختباري",
+        "imageUrl": "",
+        "sourcePrice": 27,
+        "sourceCurrency": "EUR",
+        "priceTND": 108,
+        "variant": "M · Bleu",
+        "requestedSize": "M",
+        "requestedColor": "Bleu",
+        "customerNote": "",
+        "priceVerificationStatus": "VERIFIED",
+        "priceToken": "eyJ2IjoxLCJwcmljZSI6MjAsImN1cnJlbmN5IjoiRVVSIiwidGl0bGUiOiJTZWxlY3Rpb24gZml4dHVyZSAvINmF2YbYqtisINin2K7Yqtio2KfYsdmKIiwicmVmZXJlbmNlVXJsIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9wcm9kdWN0Iiwic3RhdHVzIjoiVkVSSUZJRUQiLCJleHBpcmVzQXQiOjE3ODk5MjE2OTM3Njl9.t0LIEMsIonIjvWV7hSg0tWp3A_p9CN57rFfPLD4sSF8",
+        "quantity": 1
+      }
+    },
+    {
+      "label": "sonim/fr/390/missing-token: parent submits one coherent monetary offer",
+      "pass": true,
+      "details": {
+        "store": "generic",
+        "externalId": "blue-M",
+        "url": "https://example.org/product",
+        "referenceUrl": "https://example.org/product",
+        "title": "Selection fixture / منتج اختباري",
+        "imageUrl": "",
+        "sourcePrice": 27,
+        "sourceCurrency": "EUR",
+        "priceTND": 108,
+        "variant": "M · Bleu",
+        "requestedSize": "M",
+        "requestedColor": "Bleu",
+        "customerNote": "",
+        "priceVerificationStatus": "VERIFIED",
+        "priceToken": "eyJ2IjoxLCJwcmljZSI6MjAsImN1cnJlbmN5IjoiRVVSIiwidGl0bGUiOiJTZWxlY3Rpb24gZml4dHVyZSAvINmF2YbYqtisINin2K7Yqtio2KfYsdmKIiwicmVmZXJlbmNlVXJsIjoiaHR0cHM6Ly9leGFtcGxlLm9yZy9wcm9kdWN0Iiwic3RhdHVzIjoiVkVSSUZJRUQiLCJleHBpcmVzQXQiOjE3ODk5MjE2OTM3Njl9.t0LIEMsIonIjvWV7hSg0tWp3A_p9CN57rFfPLD4sSF8",
+        "quantity": 1
+      }
+    },
+    {
+      "label": "sonim/fr/390/missing-token: actual server HMAC verifier accepts submitted fields",
+      "pass": false
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ]
+}

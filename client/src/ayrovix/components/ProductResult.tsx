@@ -1,4 +1,4 @@
-import { isSelectableVariant } from '../../../../shared/variantPolicy';
+import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../services/productSelection';
 import { MerchantRating } from './MerchantRating';
 import { Plus, Minus } from '../../components/QatafoIcons';
 import React, { useEffect, useMemo, useState, useId } from 'react';
@@ -57,19 +57,17 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [configAttempt, setConfigAttempt] = useState(0);
   const formId = useId();
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
-  const options = (product.variantOptions || []).filter(isSelectableVariant);
   const requestedSize = sizeChoice === '__other__' ? customSize.trim() : sizeChoice;
-  const selectedOption = (requestedSize || color) ? (options.find((option) =>
-    (!requestedSize || Boolean(option.size && option.size.toLocaleLowerCase() === requestedSize.toLocaleLowerCase()))
-    && (!color || Boolean(option.color && option.color.toLocaleLowerCase() === color.toLocaleLowerCase())),
-  ) || null) : null;
-  const selectedPrice = selectedOption?.price ?? product.price;
-  const selectedCurrency = selectedOption?.currency ?? product.currency;
-  const selectedPriceTnd = selectedOption?.priceTnd ?? product.priceTnd;
+  const selection = resolveProductSelection(product, requestedSize, color);
+  const selectedOption = selection.option;
+  const { price: selectedPrice, currency: selectedCurrency, priceTnd: selectedPriceTnd } = selection.offer;
+  const incompleteVariantQuote = selection.offer.fromVariant && !completeProductOffer(selection.offer);
+  const selectionNotice = incompleteVariantQuote ? productSelectionLabels.incomplete : selection.kind === 'ambiguous' ? productSelectionLabels.ambiguous : productSelectionLabels.general;
+  const displayedPriceVerified = priceVerified && selectedPriceTnd !== null && !selection.generalEstimate && !incompleteVariantQuote;
   const isUrlValid = validProductUrl(manualUrl);
   const validPrice = typeof selectedPrice === 'number' && Number.isFinite(selectedPrice) && selectedPrice > 0 && Boolean(selectedCurrency);
   const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= 99;
-  const canOrder = validPrice && isUrlValid && validQuantity && depositPercent !== null;
+  const canOrder = validPrice && isUrlValid && validQuantity && depositPercent !== null && !incompleteVariantQuote;
   const imageUrls = useMemo(
     () => [...new Set([...(product.images || []), product.image].filter(Boolean))],
     [product.image, product.images],
@@ -187,7 +185,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
           {/* Price — no card, just hierarchy + subtle left rule */}
           <div className="border-s-2 border-ink ps-4 py-1">
-            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{priceVerified ? tr('Prix total calculé', 'السعر الإجمالي المحسوب') : tr('Prix total estimé', 'السعر الإجمالي التقديري')}</p>
+            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{displayedPriceVerified ? tr('Prix total calculé', 'السعر الإجمالي المحسوب') : tr('Prix total estimé', 'السعر الإجمالي التقديري')}</p>
             <p className="mt-1 break-words text-3xl font-black leading-none tracking-tight text-ink">
               <bdi dir="ltr">{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
             </p>
@@ -197,7 +195,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                 : tr('Prix boutique à confirmer', 'سعر المتجر بانتظار التأكيد')}
             </p>
             {/* verification — subtle, not card */}
-            {priceVerified ? (
+            {displayedPriceVerified ? (
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-line bg-surface px-3 py-1 text-xs font-bold text-ink"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
             ) : (
               <div className="mt-2 space-y-1 text-xs leading-snug text-muted">
@@ -206,6 +204,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               </div>
             )}
           </div>
+
+          {selectedOption && <p data-selected-variant className="break-words text-sm leading-relaxed text-ink">{tr('Option retenue :', 'الخيار المحدد:')} {selectedOption.label || [selectedOption.size, selectedOption.color].filter(Boolean).join(' · ')}</p>}
+          {(incompleteVariantQuote || selection.generalEstimate) && <p data-variant-selection-notice role={incompleteVariantQuote ? 'alert' : 'status'} className="break-words border-s-2 border-line ps-3 text-sm leading-relaxed text-muted">{tr(selectionNotice[0], selectionNotice[1])}</p>}
 
           {product.description ? <p className="break-words text-sm leading-relaxed text-muted">{product.description}</p> : null}
         </div>
@@ -307,7 +308,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               setSubmitted(true);
               if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
             }}
-            disabled={ordering || !validPrice || depositPercent === null}
+            disabled={ordering || !validPrice || depositPercent === null || incompleteVariantQuote}
             className="ay-btn-cta min-h-[52px] flex-1 px-5 text-sm break-words"
           >
             {ordering ? <><Loader2 className="h-4 w-4 animate-spin" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{depositPercent !== null ? tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`) : configError ? tr('Commande indisponible', 'الطلب غير متاح') : tr('Conditions en cours de chargement…', 'جارٍ تحميل شروط الطلب…')}</>}

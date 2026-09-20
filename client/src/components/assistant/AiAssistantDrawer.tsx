@@ -1,3 +1,4 @@
+import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../../ayrovix/services/productSelection';
 import { useAssistantAttachments } from './media/useAssistantAttachments';
 import { VoiceNoteCapture, type VoiceNoteState } from './media/VoiceNoteCapture';
 import { imageErrorLabels, voiceNoteErrorLabels } from './media/mediaLabels';
@@ -754,15 +755,13 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     }
   };
 
-  const handleProductOrder = async ({ size, color, option, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
+  const handleProductOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
     const product = selectedProduct?.product;
     if (!product) return;
     if (isStoredProduct) { showToast(tr('Actualisez d’abord le produit conservé.', 'حدّث المنتج المحفوظ أولًا.')); return; }
-    const finalPrice = option?.price ?? product.price;
-    const finalCurrency = option?.currency ?? product.currency;
-    const priceToken = option?.priceToken || product.priceToken || '';
-    if (finalPrice == null || !priceToken) {
-      showToast(tr('Le devis sécurisé a expiré. Relancez la recherche produit dans le chat.', 'انتهت صلاحية عرض السعر الآمن. أعد البحث عن المنتج في المحادثة.'));
+    const { option, offer } = resolveProductSelection(product, size, color);
+    if (!completeProductOffer(offer)) {
+      showToast(tr(...productSelectionLabels.unavailable));
       return;
     }
     const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
@@ -775,15 +774,15 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         referenceUrl: product.sourceUrl || '',
         title: product.title,
         imageUrl: product.image || '',
-        sourcePrice: finalPrice,
-        sourceCurrency: finalCurrency || 'EUR',
-        priceTND: option?.priceTnd ?? product.priceTnd ?? 0,
+        sourcePrice: offer.price,
+        sourceCurrency: offer.currency,
+        priceTND: offer.priceTnd ?? 0,
         variant: option?.label || variant || undefined,
         requestedSize: size,
         requestedColor: color,
         customerNote,
         priceVerificationStatus: product.priceVerificationStatus || 'PENDING_MANUAL',
-        priceToken,
+        priceToken: offer.priceToken,
         quantity,
       });
       setSelectedProduct(null);
