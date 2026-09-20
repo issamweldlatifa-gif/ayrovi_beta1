@@ -86,24 +86,24 @@ export class VoiceChatController {
         }).then((inputStream) => {
           // Permission can resolve before the readiness probe. Keep capture
           // electrically muted until the controller deliberately listens.
+          if (!this.active || lifecycle !== this.lifecycle) {
+            inputStream.getTracks().forEach(track => track.stop());
+            return inputStream;
+          }
+          // Own the granted stream immediately, even while readiness is pending.
+          this.stream = inputStream;
           inputStream.getAudioTracks().forEach((track) => { track.enabled = false; });
           return inputStream;
         }),
         this.readServerTtsReadiness(),
       ]);
 
-      if (!this.active || lifecycle !== this.lifecycle) {
-        stream.getTracks().forEach((track) => track.stop());
-        return false;
-      }
+      if (!this.active || lifecycle !== this.lifecycle) return false;
 
       this.stream = stream;
       this.output.setServerTtsAvailable(serverTtsReady);
-      await this.setupInputGraph(stream);
-      if (!this.active || lifecycle !== this.lifecycle) {
-        this.releaseInput();
-        return false;
-      }
+      await this.setupInputGraph(stream, lifecycle);
+      if (!this.active || lifecycle !== this.lifecycle) return false;
       this.startMonitoring();
 
       if (greeting.trim() && !this.speakerMuted) {
@@ -283,13 +283,14 @@ export class VoiceChatController {
     }
   }
 
-  private async setupInputGraph(stream: MediaStream): Promise<void> {
+  private async setupInputGraph(stream: MediaStream, lifecycle: number): Promise<void> {
     const AudioCtx = window.AudioContext
       || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) throw new Error('AUDIO_CONTEXT_UNAVAILABLE');
     const context = new AudioCtx();
     this.context = context;
     if (context.state === 'suspended') await context.resume();
+    if (!this.active || lifecycle !== this.lifecycle || this.context !== context || this.stream !== stream) return;
 
     const source = context.createMediaStreamSource(stream);
     const highPass = context.createBiquadFilter();

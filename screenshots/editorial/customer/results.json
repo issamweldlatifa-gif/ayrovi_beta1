@@ -120,8 +120,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 697.609375,
-        "composer": 697.609375
+        "messagesBottom": 683.609375,
+        "composer": 683.609375
       }
     },
     {
@@ -260,8 +260,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 697.609375,
-        "composer": 697.609375
+        "messagesBottom": 683.609375,
+        "composer": 683.609375
       }
     },
     {
@@ -400,8 +400,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 697.609375,
-        "composer": 697.609375
+        "messagesBottom": 683.609375,
+        "composer": 683.609375
       }
     },
     {
@@ -540,8 +540,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 689.609375,
-        "composer": 689.609375
+        "messagesBottom": 675.609375,
+        "composer": 675.609375
       }
     },
     {
@@ -680,8 +680,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 689.609375,
-        "composer": 689.609375
+        "messagesBottom": 675.609375,
+        "composer": 675.609375
       }
     },
     {
@@ -820,8 +820,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 697.609375,
-        "composer": 697.609375
+        "messagesBottom": 683.609375,
+        "composer": 683.609375
       }
     },
     {
@@ -960,8 +960,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 697.609375,
-        "composer": 697.609375
+        "messagesBottom": 683.609375,
+        "composer": 683.609375
       }
     },
     {
@@ -1100,8 +1100,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 697.609375,
-        "composer": 697.609375
+        "messagesBottom": 683.609375,
+        "composer": 683.609375
       }
     },
     {
@@ -1240,8 +1240,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 689.609375,
-        "composer": 689.609375
+        "messagesBottom": 675.609375,
+        "composer": 675.609375
       }
     },
     {
@@ -1380,8 +1380,8 @@
       "details": {
         "header": 67.390625,
         "messagesTop": 67.390625,
-        "messagesBottom": 689.609375,
-        "composer": 689.609375
+        "messagesBottom": 675.609375,
+        "composer": 675.609375
       }
     },
     {
@@ -1406,9 +1406,9 @@
       "pass": true,
       "details": {
         "x": 0,
-        "y": 333.609375,
+        "y": 319.609375,
         "width": 390,
-        "height": 146.390625
+        "height": 160.390625
       }
     },
     {

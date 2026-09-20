@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 191,
-    "customerAndSharedFiles": 142,
-    "controls": 408,
+    "files": 196,
+    "customerAndSharedFiles": 147,
+    "controls": 409,
     "iconAliases": 99,
     "uniqueGlyphs": 96
   },
@@ -12326,9 +12326,12 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "5bf7ebfca73454c85af4440f8d86e05df8b15160cd93f5f6e974beafe49161b7",
-      "lines": 1231,
+      "sha256": "291bdf07a43e84b5deacb9cfa67001f099fdaea3d537eb1972d779f15854f3ca",
+      "lines": 1030,
       "imports": [
+        "./media/useAssistantAttachments",
+        "./media/VoiceNoteCapture",
+        "./media/mediaLabels",
         "./AssistantHistoryNotice",
         "../../ayrovix/services/resultPolicy",
         "./conversationHistory",
@@ -12362,7 +12365,7 @@
       "controls": [
         {
           "tag": "AssistantVoiceModeScreen",
-          "line": 1078,
+          "line": 869,
           "className": null,
           "type": null,
           "role": null,
@@ -12372,7 +12375,7 @@
         },
         {
           "tag": "button",
-          "line": 1133,
+          "line": 926,
           "className": "\"ay-btn-secondary mt-2 min-h-11 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12382,7 +12385,7 @@
         },
         {
           "tag": "AssistantAttachmentSheet",
-          "line": 1204,
+          "line": 1001,
           "className": null,
           "type": null,
           "role": null,
@@ -12392,7 +12395,7 @@
         },
         {
           "tag": "AssistantFeedbackSheet",
-          "line": 1214,
+          "line": 1013,
           "className": null,
           "type": null,
           "role": null,
@@ -12438,9 +12441,10 @@
     {
       "file": "client/src/components/assistant/AssistantAttachmentSheet.tsx",
       "domain": "sonim",
-      "sha256": "57e5f3423cd6d10526facfe07b2dce6d77fad55108414490bedb43e63bf49c99",
-      "lines": 105,
+      "sha256": "5907a0454558c838d0607e01cdcee0f6756d542ab122606a24194164812abd51",
+      "lines": 110,
       "imports": [
+        "./AssistantMediaPending",
         "../../hooks/useDialogFocus",
         "react",
         "../QatafoIcons",
@@ -12452,7 +12456,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 53,
+          "line": 57,
           "className": "\"absolute inset-0 z-40 bg-ink/45 backdrop-blur-[2px]\"",
           "type": "\"button\"",
           "role": null,
@@ -12462,7 +12466,7 @@
         },
         {
           "tag": "button",
-          "line": 58,
+          "line": 62,
           "className": "{`absolute end-0 flex h-9 w-9 items-center justify-center rounded-full ${isDark ? 'bg-ink text-white/80' : 'bg-surface text-muted'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12472,7 +12476,7 @@
         },
         {
           "tag": "button",
-          "line": 64,
+          "line": 69,
           "className": "{rowClass}",
           "type": "\"button\"",
           "role": null,
@@ -12482,7 +12486,7 @@
         },
         {
           "tag": "button",
-          "line": 72,
+          "line": 77,
           "className": "{rowClass}",
           "type": "\"button\"",
           "role": null,
@@ -12492,7 +12496,7 @@
         },
         {
           "tag": "button",
-          "line": 80,
+          "line": 85,
           "className": "{rowClass}",
           "type": "\"button\"",
           "role": "\"switch\"",
@@ -12502,7 +12506,7 @@
         },
         {
           "tag": "button",
-          "line": 90,
+          "line": 95,
           "className": "{rowClass}",
           "type": "\"button\"",
           "role": null,
@@ -12512,7 +12516,7 @@
         },
         {
           "tag": "input",
-          "line": 99,
+          "line": 104,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -12522,7 +12526,7 @@
         },
         {
           "tag": "input",
-          "line": 100,
+          "line": 105,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -12535,7 +12539,7 @@
         {
           "module": "../QatafoIcons",
           "bindings": "{ Camera, ChevronRight, Globe2, Image, Plug, X }",
-          "line": 3
+          "line": 4
         }
       ],
       "inlineSvg": [],
@@ -12565,9 +12569,10 @@
     {
       "file": "client/src/components/assistant/AssistantComposer.tsx",
       "domain": "sonim",
-      "sha256": "897b26e9dbc06aa30d5cdafabc66d6906877ace90229d473bc0d432fd061ab7b",
-      "lines": 171,
+      "sha256": "830c74b338b44c6f505ca5078f4e8d4381e9697e39a5ebfb0c15060b7f5925ae",
+      "lines": 176,
       "imports": [
+        "./AssistantMediaPending",
         "react",
         "../QatafoIcons",
         "./types",
@@ -12580,7 +12585,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 72,
+          "line": 80,
           "className": "\"flex h-11 w-11 shrink-0 items-center justify-center rounded-control text-muted hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -12590,7 +12595,7 @@
         },
         {
           "tag": "button",
-          "line": 84,
+          "line": 92,
           "className": "{`flex min-h-11 min-w-11 items-center justify-center gap-2 px-2 text-sm ${isDark ? 'text-white' : 'text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12600,7 +12605,7 @@
         },
         {
           "tag": "textarea",
-          "line": 96,
+          "line": 101,
           "className": "{`mb-2 min-h-[42px] max-h-32 w-full resize-none bg-transparent py-1 text-base leading-6 outline-none placeholder:text-muted ${isDark ? 'text-white' : 'text-ink'}`}",
           "type": null,
           "role": null,
@@ -12610,50 +12615,50 @@
         },
         {
           "tag": "button",
-          "line": 109,
+          "line": 114,
           "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${surfaceButton}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Ajouter au chat', 'إضافة إلى المحادثة')}",
           "onClick": "{onOpenAttachments}",
-          "disabled": "{isGenerating || isTranscribing || isRecording}"
+          "disabled": "{isGenerating || isTranscribing || isRecording || capturePending}"
         },
         {
           "tag": "button",
-          "line": 122,
+          "line": 127,
           "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control transition active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${\n                isRecording\n                  ? 'animate-pulse bg-danger text-white'\n                  : surfaceButton\n              }`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{isRecording ? tr('Terminer l’enregistrement', 'إنهاء التسجيل') : tr('Enregistrer un message vocal', 'تسجيل صوتي')}",
           "onClick": "{isRecording ? onFinishRecording : onStartRecording}",
-          "disabled": "{isGenerating || isTranscribing}"
+          "disabled": "{isGenerating || isTranscribing || mediaWaiting}"
         },
         {
           "tag": "button",
-          "line": 139,
+          "line": 144,
           "className": "\"flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}",
           "onClick": "{isGenerating ? onStop : onSend}",
-          "disabled": "{isTranscribing || isRecording}"
+          "disabled": "{isTranscribing || isRecording || mediaWaiting}"
         },
         {
           "tag": "button",
-          "line": 152,
+          "line": 157,
           "className": "{`flex h-11 w-11 shrink-0 items-center justify-center rounded-control border border-line bg-white text-ink shadow-sm transition hover:bg-surface active:scale-90 disabled:pointer-events-none disabled:opacity-35 ${\n                  voiceMode ? 'ring-2 ring-white animate-pulse' : ''\n                }`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Mode vocal', 'الوضع الصوتي')}",
           "onClick": "{onToggleVoiceMode}",
-          "disabled": "{isGenerating || isTranscribing || isRecording}"
+          "disabled": "{isGenerating || isTranscribing || isRecording || mediaWaiting}"
         }
       ],
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ Loader2, ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X }",
-          "line": 2
+          "bindings": "{ ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X }",
+          "line": 3
         }
       ],
       "inlineSvg": [],
@@ -12823,6 +12828,43 @@
         }
       ],
       "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/AssistantMediaPending.tsx",
+      "domain": "sonim",
+      "sha256": "12c3b79624168eaa7bbd7a160d975d044f3460a2674c8e48481f5e457cf1bdf4",
+      "lines": 19,
+      "imports": [
+        "react",
+        "../QatafoIcons",
+        "../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "AssistantMediaPending"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 16,
+          "className": "\"flex min-h-11 min-w-11 items-center justify-center gap-1 px-2 text-xs\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{cancel}",
+          "onClick": "{onCancel}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../QatafoIcons",
+          "bindings": "{ Loader2, X }",
+          "line": 2
+        }
+      ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -13150,9 +13192,10 @@
     {
       "file": "client/src/components/assistant/AssistantVoiceModeScreen.tsx",
       "domain": "sonim",
-      "sha256": "d235fcc7d0f497c790803f61cf4b95d3432d3fea57c0e24bf0d4c29695137e64",
-      "lines": 138,
+      "sha256": "88624fca915c174ac046bc4eff20c5eaf33c5bfa116223416a238cb3afa015d8",
+      "lines": 143,
       "imports": [
+        "./AssistantMediaPending",
         "react",
         "../QatafoIcons",
         "../../i18n/LocaleContext",
@@ -13170,7 +13213,7 @@
       "controls": [
         {
           "tag": "input",
-          "line": 84,
+          "line": 88,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -13180,7 +13223,7 @@
         },
         {
           "tag": "button",
-          "line": 86,
+          "line": 90,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13190,7 +13233,7 @@
         },
         {
           "tag": "button",
-          "line": 88,
+          "line": 92,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13200,7 +13243,7 @@
         },
         {
           "tag": "Price",
-          "line": 94,
+          "line": 99,
           "className": null,
           "type": null,
           "role": null,
@@ -13210,7 +13253,7 @@
         },
         {
           "tag": "button",
-          "line": 97,
+          "line": 102,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13220,7 +13263,7 @@
         },
         {
           "tag": "button",
-          "line": 100,
+          "line": 105,
           "className": "\"editorial-voice__talk\"",
           "type": "\"button\"",
           "role": null,
@@ -13230,7 +13273,7 @@
         },
         {
           "tag": "button",
-          "line": 108,
+          "line": 113,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -13240,7 +13283,7 @@
         },
         {
           "tag": "button",
-          "line": 113,
+          "line": 118,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13250,7 +13293,7 @@
         },
         {
           "tag": "button",
-          "line": 114,
+          "line": 119,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13260,7 +13303,7 @@
         },
         {
           "tag": "button",
-          "line": 115,
+          "line": 120,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13270,7 +13313,7 @@
         },
         {
           "tag": "button",
-          "line": 116,
+          "line": 121,
           "className": "\"voice-icon-button voice-icon-button--exit\"",
           "type": "\"button\"",
           "role": null,
@@ -13280,7 +13323,7 @@
         },
         {
           "tag": "button",
-          "line": 117,
+          "line": 122,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13290,7 +13333,7 @@
         },
         {
           "tag": "button",
-          "line": 121,
+          "line": 126,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
@@ -13300,7 +13343,7 @@
         },
         {
           "tag": "button",
-          "line": 125,
+          "line": 130,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -13310,7 +13353,7 @@
         },
         {
           "tag": "button",
-          "line": 128,
+          "line": 133,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -13320,7 +13363,7 @@
         },
         {
           "tag": "button",
-          "line": 131,
+          "line": 136,
           "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": "\"switch\"",
@@ -13330,7 +13373,7 @@
         },
         {
           "tag": "button",
-          "line": 134,
+          "line": 139,
           "className": "\"voice-done\"",
           "type": "\"button\"",
           "role": null,
@@ -13343,7 +13386,7 @@
         {
           "module": "../QatafoIcons",
           "bindings": "{ Calculator, Camera, Check, Image as ImageIcon, Loader2, Mic, MicOff, Package, Plus, SlidersHorizontal, Sparkles, Square, Truck, Volume2, VolumeX, X }",
-          "line": 2
+          "line": 3
         }
       ],
       "inlineSvg": [],
@@ -13461,6 +13504,82 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/components/assistant/media/mediaLabels.ts",
+      "domain": "sonim",
+      "sha256": "24b2519960e549cf95718ebbe099668f43cc43e11459b16bda7c1c9afc65672e",
+      "lines": 22,
+      "imports": [
+        "./prepareImage",
+        "./VoiceNoteCapture"
+      ],
+      "exports": [
+        "imageErrorLabels",
+        "voiceNoteErrorLabels"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/media/prepareImage.ts",
+      "domain": "sonim",
+      "sha256": "6e50a986dfe37db26e1b9bf77b44336bc1038c8e089b8501fbaeac8939f4c733",
+      "lines": 86,
+      "imports": [],
+      "exports": [
+        "MAX_IMAGE_FILE_BYTES",
+        "MAX_PREPARED_IMAGE_BYTES",
+        "ImagePreparationError",
+        "validImageHeader",
+        "prepareAssistantImage"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/media/useAssistantAttachments.ts",
+      "domain": "sonim",
+      "sha256": "e357bc75ced444c442e2b60927e43d739f592d5cf1875ec99af4d3a3aa2cfb77",
+      "lines": 57,
+      "imports": [
+        "react",
+        "../types",
+        "./prepareImage"
+      ],
+      "exports": [
+        "useAssistantAttachments"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/assistant/media/VoiceNoteCapture.ts",
+      "domain": "sonim",
+      "sha256": "2c8f79a4044f4af0420ec11f1a7639f51bfd2a73113bf2107e28b99a54ef263f",
+      "lines": 117,
+      "imports": [],
+      "exports": [
+        "VoiceNoteCapture"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/assistant/messageActions.ts",
       "domain": "sonim",
       "sha256": "12b538766590a73b92f1079b65fd345fb9b88d131d936aee04fece13d15350e9",
@@ -13550,8 +13669,8 @@
     {
       "file": "client/src/components/assistant/voice/VoiceChatController.ts",
       "domain": "sonim",
-      "sha256": "9b1881241825025ff28500b3c7458b65b18cb6408d737b1310c5cc9815c039b0",
-      "lines": 540,
+      "sha256": "53b04b0dceed553068602fdc044461dcb5901e3c6615ba6038b1a660b11e9e03",
+      "lines": 541,
       "imports": [
         "../assistantApi",
         "../../../utils/session",

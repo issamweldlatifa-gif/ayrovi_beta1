@@ -1,3 +1,4 @@
+import { AssistantMediaPending } from './AssistantMediaPending';
 import React, { useRef, useState } from 'react';
 import { Calculator, Camera, Check, Image as ImageIcon, Loader2, Mic, MicOff, Package, Plus, SlidersHorizontal, Sparkles, Square, Truck, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -13,6 +14,8 @@ interface AssistantVoiceModeScreenProps {
   state: VoiceChatState;
   volumeLevel: number; // 0.0 to 1.0 (real audio level)
   isDark: boolean;
+  pendingAttachments?: number;
+  onCancelAttachments?: () => void;
   isMuted: boolean;
   isSpeakerMuted: boolean;
   liveTranscript?: string;
@@ -39,6 +42,7 @@ interface AssistantVoiceModeScreenProps {
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
+  pendingAttachments = 0, onCancelAttachments,
   state, volumeLevel, isDark, isMuted, isSpeakerMuted, liveTranscript, attachments, activeProduct,
   onToggleMute, onToggleSpeaker, onExit, onTapOrb, onOpenAttachments, onOpenLens, onAddAttachment,
   onRemoveAttachment, onSelectSuggestion, onVoiceSettingsChange, initialSettings = DEFAULT_VOICE_SETTINGS,
@@ -88,6 +92,7 @@ export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> =
       <button type="button" className="voice-icon-button" onClick={() => setShowSettings(true)} aria-haspopup="dialog" aria-expanded={showSettings} aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}><SlidersHorizontal size={22}/></button>
     </header>
     <main className="editorial-voice__body" inert={showSettings}>
+      {pendingAttachments > 0 && <AssistantMediaPending phase="images" count={pendingAttachments} onCancel={onCancelAttachments}/>}
       {(activeProduct || attachments?.length) ? <section className="editorial-voice__context" aria-label={tr('Contexte de la conversation', 'سياق المحادثة')}>
         {activeProduct?.image || attachments?.[0]?.preview ? <img src={activeProduct?.image || attachments?.[0]?.preview} alt=""/> : <Camera size={24}/>}
         <div><strong>{activeProduct?.title || tr('Photo jointe', 'صورة مرفقة')}</strong>

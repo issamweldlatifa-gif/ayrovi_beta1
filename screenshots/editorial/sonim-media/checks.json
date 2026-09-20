@@ -1,0 +1,702 @@
+{
+  "checks": [
+    {
+      "label": "fr/320: delayed image neither enters a new conversation nor closes SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/320: image completion cannot dismiss an unrelated menu",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stale transcription cannot send after reset",
+      "pass": true,
+      "details": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "label": "fr/320: stale transcription cannot rewrite the new conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/320: pending reservations count toward the two-image cap",
+      "pass": true
+    },
+    {
+      "label": "fr/320: pending image preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "fr/320: sending waits for images",
+      "pass": true
+    },
+    {
+      "label": "fr/320: Enter cannot send a partial attachment set",
+      "pass": true
+    },
+    {
+      "label": "fr/320: send still waits for the first image",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selection order survives inverted decode order",
+      "pass": true
+    },
+    {
+      "label": "fr/320: both complete images reach the real API adapter",
+      "pass": true,
+      "details": {
+        "count": 2
+      }
+    },
+    {
+      "label": "fr/320: sending clears the submitted attachments",
+      "pass": true
+    },
+    {
+      "label": "fr/320: explicit image cancellation cannot append later",
+      "pass": true
+    },
+    {
+      "label": "fr/320: corrupt image is rejected without attachment",
+      "pass": true
+    },
+    {
+      "label": "fr/320: permission waiting has a visible cancellable state",
+      "pass": true
+    },
+    {
+      "label": "fr/320: cancelling permission immediately stops a later grant",
+      "pass": true
+    },
+    {
+      "label": "fr/320: cancelled permission never starts recording",
+      "pass": true
+    },
+    {
+      "label": "fr/320: permission failure is localized",
+      "pass": true
+    },
+    {
+      "label": "fr/320: transcription cancel aborts transport",
+      "pass": true
+    },
+    {
+      "label": "fr/320: ignored transport abort still cannot send",
+      "pass": true
+    },
+    {
+      "label": "fr/320: service failure is not misreported as empty speech",
+      "pass": true
+    },
+    {
+      "label": "fr/320: successful dictation sends exactly once",
+      "pass": true
+    },
+    {
+      "label": "fr/320: dictation does not discard an unrelated typed draft",
+      "pass": true
+    },
+    {
+      "label": "fr/320: dictation uses the latest conversation messages",
+      "pass": true
+    },
+    {
+      "label": "fr/320: stale recorder stop cannot terminate a new recording",
+      "pass": true
+    },
+    {
+      "label": "fr/320: selecting another conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/320: deleting the active conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unmount and reopen cannot receive an old transcript",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unmount cancels outstanding microphone permission ownership",
+      "pass": true
+    },
+    {
+      "label": "fr/320: changing account cancels pending images",
+      "pass": true
+    },
+    {
+      "label": "fr/320: changing account suppresses old transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/320: voice attachment preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "fr/320: account change exits hands-free mode and discards its pending photo",
+      "pass": true
+    },
+    {
+      "label": "fr/320: late hands-free permission is released",
+      "pass": true
+    },
+    {
+      "label": "fr/320: switching from voice to text retains same-conversation photo preparation",
+      "pass": true
+    },
+    {
+      "label": "fr/320: empty composer placeholder is not vertically clipped at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "fr/320: long filenames and pending controls do not overflow at enlarged text",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320,
+        "height": 549,
+        "scrollHeight": 1105
+      }
+    },
+    {
+      "label": "fr/320: complete filename remains available without ellipsis",
+      "pass": true
+    },
+    {
+      "label": "fr/320: overflowing filename region is keyboard reachable",
+      "pass": true
+    },
+    {
+      "label": "fr/320: cancellation remains reachable at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "fr/390: delayed image neither enters a new conversation nor closes SONIM",
+      "pass": true
+    },
+    {
+      "label": "fr/390: image completion cannot dismiss an unrelated menu",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stale transcription cannot send after reset",
+      "pass": true,
+      "details": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "label": "fr/390: stale transcription cannot rewrite the new conversation",
+      "pass": true
+    },
+    {
+      "label": "fr/390: pending reservations count toward the two-image cap",
+      "pass": true
+    },
+    {
+      "label": "fr/390: pending image preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "fr/390: sending waits for images",
+      "pass": true
+    },
+    {
+      "label": "fr/390: Enter cannot send a partial attachment set",
+      "pass": true
+    },
+    {
+      "label": "fr/390: send still waits for the first image",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selection order survives inverted decode order",
+      "pass": true
+    },
+    {
+      "label": "fr/390: both complete images reach the real API adapter",
+      "pass": true,
+      "details": {
+        "count": 2
+      }
+    },
+    {
+      "label": "fr/390: sending clears the submitted attachments",
+      "pass": true
+    },
+    {
+      "label": "fr/390: explicit image cancellation cannot append later",
+      "pass": true
+    },
+    {
+      "label": "fr/390: corrupt image is rejected without attachment",
+      "pass": true
+    },
+    {
+      "label": "fr/390: permission waiting has a visible cancellable state",
+      "pass": true
+    },
+    {
+      "label": "fr/390: cancelling permission immediately stops a later grant",
+      "pass": true
+    },
+    {
+      "label": "fr/390: cancelled permission never starts recording",
+      "pass": true
+    },
+    {
+      "label": "fr/390: permission failure is localized",
+      "pass": true
+    },
+    {
+      "label": "fr/390: transcription cancel aborts transport",
+      "pass": true
+    },
+    {
+      "label": "fr/390: ignored transport abort still cannot send",
+      "pass": true
+    },
+    {
+      "label": "fr/390: service failure is not misreported as empty speech",
+      "pass": true
+    },
+    {
+      "label": "fr/390: successful dictation sends exactly once",
+      "pass": true
+    },
+    {
+      "label": "fr/390: dictation does not discard an unrelated typed draft",
+      "pass": true
+    },
+    {
+      "label": "fr/390: dictation uses the latest conversation messages",
+      "pass": true
+    },
+    {
+      "label": "fr/390: stale recorder stop cannot terminate a new recording",
+      "pass": true
+    },
+    {
+      "label": "fr/390: selecting another conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/390: deleting the active conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unmount and reopen cannot receive an old transcript",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unmount cancels outstanding microphone permission ownership",
+      "pass": true
+    },
+    {
+      "label": "fr/390: changing account cancels pending images",
+      "pass": true
+    },
+    {
+      "label": "fr/390: changing account suppresses old transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/390: voice attachment preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "fr/390: account change exits hands-free mode and discards its pending photo",
+      "pass": true
+    },
+    {
+      "label": "fr/390: late hands-free permission is released",
+      "pass": true
+    },
+    {
+      "label": "fr/390: switching from voice to text retains same-conversation photo preparation",
+      "pass": true
+    },
+    {
+      "label": "fr/390: empty composer placeholder is not vertically clipped at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "fr/390: long filenames and pending controls do not overflow at enlarged text",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 390,
+        "height": 549,
+        "scrollHeight": 1057
+      }
+    },
+    {
+      "label": "fr/390: complete filename remains available without ellipsis",
+      "pass": true
+    },
+    {
+      "label": "fr/390: overflowing filename region is keyboard reachable",
+      "pass": true
+    },
+    {
+      "label": "fr/390: cancellation remains reachable at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "ar/320: delayed image neither enters a new conversation nor closes SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/320: image completion cannot dismiss an unrelated menu",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stale transcription cannot send after reset",
+      "pass": true,
+      "details": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "label": "ar/320: stale transcription cannot rewrite the new conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/320: pending reservations count toward the two-image cap",
+      "pass": true
+    },
+    {
+      "label": "ar/320: pending image preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "ar/320: sending waits for images",
+      "pass": true
+    },
+    {
+      "label": "ar/320: Enter cannot send a partial attachment set",
+      "pass": true
+    },
+    {
+      "label": "ar/320: send still waits for the first image",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selection order survives inverted decode order",
+      "pass": true
+    },
+    {
+      "label": "ar/320: both complete images reach the real API adapter",
+      "pass": true,
+      "details": {
+        "count": 2
+      }
+    },
+    {
+      "label": "ar/320: sending clears the submitted attachments",
+      "pass": true
+    },
+    {
+      "label": "ar/320: explicit image cancellation cannot append later",
+      "pass": true
+    },
+    {
+      "label": "ar/320: corrupt image is rejected without attachment",
+      "pass": true
+    },
+    {
+      "label": "ar/320: permission waiting has a visible cancellable state",
+      "pass": true
+    },
+    {
+      "label": "ar/320: cancelling permission immediately stops a later grant",
+      "pass": true
+    },
+    {
+      "label": "ar/320: cancelled permission never starts recording",
+      "pass": true
+    },
+    {
+      "label": "ar/320: permission failure is localized",
+      "pass": true
+    },
+    {
+      "label": "ar/320: transcription cancel aborts transport",
+      "pass": true
+    },
+    {
+      "label": "ar/320: ignored transport abort still cannot send",
+      "pass": true
+    },
+    {
+      "label": "ar/320: service failure is not misreported as empty speech",
+      "pass": true
+    },
+    {
+      "label": "ar/320: successful dictation sends exactly once",
+      "pass": true
+    },
+    {
+      "label": "ar/320: dictation does not discard an unrelated typed draft",
+      "pass": true
+    },
+    {
+      "label": "ar/320: dictation uses the latest conversation messages",
+      "pass": true
+    },
+    {
+      "label": "ar/320: stale recorder stop cannot terminate a new recording",
+      "pass": true
+    },
+    {
+      "label": "ar/320: selecting another conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/320: deleting the active conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unmount and reopen cannot receive an old transcript",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unmount cancels outstanding microphone permission ownership",
+      "pass": true
+    },
+    {
+      "label": "ar/320: changing account cancels pending images",
+      "pass": true
+    },
+    {
+      "label": "ar/320: changing account suppresses old transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/320: voice attachment preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "ar/320: account change exits hands-free mode and discards its pending photo",
+      "pass": true
+    },
+    {
+      "label": "ar/320: late hands-free permission is released",
+      "pass": true
+    },
+    {
+      "label": "ar/320: switching from voice to text retains same-conversation photo preparation",
+      "pass": true
+    },
+    {
+      "label": "ar/320: empty composer placeholder is not vertically clipped at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "ar/320: long filenames and pending controls do not overflow at enlarged text",
+      "pass": true,
+      "details": {
+        "width": 320,
+        "scroll": 320,
+        "height": 549,
+        "scrollHeight": 1057
+      }
+    },
+    {
+      "label": "ar/320: complete filename remains available without ellipsis",
+      "pass": true
+    },
+    {
+      "label": "ar/320: overflowing filename region is keyboard reachable",
+      "pass": true
+    },
+    {
+      "label": "ar/320: cancellation remains reachable at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "ar/390: delayed image neither enters a new conversation nor closes SONIM",
+      "pass": true
+    },
+    {
+      "label": "ar/390: image completion cannot dismiss an unrelated menu",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stale transcription cannot send after reset",
+      "pass": true,
+      "details": {
+        "before": 0,
+        "after": 0
+      }
+    },
+    {
+      "label": "ar/390: stale transcription cannot rewrite the new conversation",
+      "pass": true
+    },
+    {
+      "label": "ar/390: pending reservations count toward the two-image cap",
+      "pass": true
+    },
+    {
+      "label": "ar/390: pending image preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "ar/390: sending waits for images",
+      "pass": true
+    },
+    {
+      "label": "ar/390: Enter cannot send a partial attachment set",
+      "pass": true
+    },
+    {
+      "label": "ar/390: send still waits for the first image",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selection order survives inverted decode order",
+      "pass": true
+    },
+    {
+      "label": "ar/390: both complete images reach the real API adapter",
+      "pass": true,
+      "details": {
+        "count": 2
+      }
+    },
+    {
+      "label": "ar/390: sending clears the submitted attachments",
+      "pass": true
+    },
+    {
+      "label": "ar/390: explicit image cancellation cannot append later",
+      "pass": true
+    },
+    {
+      "label": "ar/390: corrupt image is rejected without attachment",
+      "pass": true
+    },
+    {
+      "label": "ar/390: permission waiting has a visible cancellable state",
+      "pass": true
+    },
+    {
+      "label": "ar/390: cancelling permission immediately stops a later grant",
+      "pass": true
+    },
+    {
+      "label": "ar/390: cancelled permission never starts recording",
+      "pass": true
+    },
+    {
+      "label": "ar/390: permission failure is localized",
+      "pass": true
+    },
+    {
+      "label": "ar/390: transcription cancel aborts transport",
+      "pass": true
+    },
+    {
+      "label": "ar/390: ignored transport abort still cannot send",
+      "pass": true
+    },
+    {
+      "label": "ar/390: service failure is not misreported as empty speech",
+      "pass": true
+    },
+    {
+      "label": "ar/390: successful dictation sends exactly once",
+      "pass": true
+    },
+    {
+      "label": "ar/390: dictation does not discard an unrelated typed draft",
+      "pass": true
+    },
+    {
+      "label": "ar/390: dictation uses the latest conversation messages",
+      "pass": true
+    },
+    {
+      "label": "ar/390: stale recorder stop cannot terminate a new recording",
+      "pass": true
+    },
+    {
+      "label": "ar/390: selecting another conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/390: deleting the active conversation cancels transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unmount and reopen cannot receive an old transcript",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unmount cancels outstanding microphone permission ownership",
+      "pass": true
+    },
+    {
+      "label": "ar/390: changing account cancels pending images",
+      "pass": true
+    },
+    {
+      "label": "ar/390: changing account suppresses old transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/390: voice attachment preparation is disclosed",
+      "pass": true
+    },
+    {
+      "label": "ar/390: account change exits hands-free mode and discards its pending photo",
+      "pass": true
+    },
+    {
+      "label": "ar/390: late hands-free permission is released",
+      "pass": true
+    },
+    {
+      "label": "ar/390: switching from voice to text retains same-conversation photo preparation",
+      "pass": true
+    },
+    {
+      "label": "ar/390: empty composer placeholder is not vertically clipped at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "ar/390: long filenames and pending controls do not overflow at enlarged text",
+      "pass": true,
+      "details": {
+        "width": 390,
+        "scroll": 390,
+        "height": 549,
+        "scrollHeight": 1009
+      }
+    },
+    {
+      "label": "ar/390: complete filename remains available without ellipsis",
+      "pass": true
+    },
+    {
+      "label": "ar/390: overflowing filename region is keyboard reachable",
+      "pass": true
+    },
+    {
+      "label": "ar/390: cancellation remains reachable at enlarged text",
+      "pass": true
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

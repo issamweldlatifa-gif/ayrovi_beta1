@@ -41,4 +41,18 @@ describe('actual SONIM composer DOM events', () => {
     await act(async () => {container.querySelector<HTMLButtonElement>('[aria-label="Terminer l’enregistrement"]')!.click();});
     expect(onFinish).toHaveBeenCalledTimes(1);
   });
+  it('blocks Enter while image preparation is pending', async () => {
+    await render({pendingAttachments:1}); await enter();expect(onSend).not.toHaveBeenCalled();
+    expect(container.querySelector<HTMLButtonElement>('[aria-label="Envoyer"]')!.disabled).toBe(true);
+  });
+  it('exposes cancellation while microphone permission is outstanding', async () => {
+    const cancel=vi.fn();await render({capturePending:true,onCancelTranscription:cancel});
+    expect(container.textContent).toContain('Autorisation du microphone');
+    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Annuler la demande de microphone"]')!.click());expect(cancel).toHaveBeenCalledOnce();
+  });
+  it('exposes transcription cancellation separately from generation stop', async () => {
+    const cancel=vi.fn();await render({isTranscribing:true,onCancelTranscription:cancel});
+    await act(async()=>container.querySelector<HTMLButtonElement>('[aria-label="Annuler la transcription"]')!.click());expect(cancel).toHaveBeenCalledOnce();expect(onStop).not.toHaveBeenCalled();
+  });
+
 });

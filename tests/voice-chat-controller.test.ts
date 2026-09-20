@@ -260,4 +260,40 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
     expect(states).not.toContain('interrupted');
     expect(speechSynthesis.cancel).toHaveBeenCalledOnce();
   });
+  it('releases a granted microphone immediately while readiness is still pending', async () => {
+    let ready!: (response: Response) => void;
+    vi.mocked(fetch).mockImplementation(() => new Promise(resolve => { ready = resolve; }));
+    const voice = makeController(); const startup = voice.start('');
+    await flush(); expect(stream.track.enabled).toBe(false);
+    voice.stop(); expect(stream.track.stop).toHaveBeenCalledOnce();
+    ready(new Response(JSON.stringify({ data: { serverTextToSpeechReady: false } })));
+    expect(await startup).toBe(false); expect(stream.track.stop).toHaveBeenCalledOnce();
+  });
+
+  it('stops a permission grant that arrives after exit without waiting for readiness', async () => {
+    let grant!: (stream: MediaStream) => void, ready!: (response: Response) => void;
+    vi.mocked(navigator.mediaDevices.getUserMedia).mockImplementation(() => new Promise(resolve => { grant = resolve; }));
+    vi.mocked(fetch).mockImplementation(() => new Promise(resolve => { ready = resolve; }));
+    const voice = makeController(); const startup = voice.start(''); voice.stop();
+    grant(stream as unknown as MediaStream); await flush();
+    expect(stream.track.stop).toHaveBeenCalledOnce();
+    ready(new Response('{}')); expect(await startup).toBe(false);
+  });
+
+  it('a late context resume cannot overwrite or release a newer audio graph', async () => {
+    let resume!: () => void;
+    const contexts: FakeAudioContext[] = [];
+    class DelayedContext extends FakeAudioContext {
+      constructor() { super(); contexts.push(this); if (contexts.length === 2) { this.state = 'suspended'; this.resume = vi.fn(() => new Promise<void>(resolve => { resume = resolve; })); } }
+    }
+    window.AudioContext = DelayedContext as unknown as typeof AudioContext;
+    const voice = makeController(); const first = voice.start(''); await flush();
+    const nextStream = new FakeStream();
+    vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(nextStream as unknown as MediaStream);
+    expect(await voice.start('')).toBe(true); const graph = (voice as any).analyser;
+    resume(); expect(await first).toBe(false);
+    expect((voice as any).analyser).toBe(graph); expect(nextStream.track.stop).not.toHaveBeenCalled();
+    expect(contexts[1].createMediaStreamSource).not.toHaveBeenCalled();
+  });
+
 });

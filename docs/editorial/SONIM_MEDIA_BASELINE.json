@@ -1,0 +1,35 @@
+{
+  "revision": "9e8312444b765a23959b388072c7f25773b3403f",
+  "purpose": "Expected failures on the previous implementation; not release verification",
+  "browser": "Chromium controlled media APIs, fr / 320px",
+  "result": {
+    "checks": [
+      {
+        "label": "fr/320: delayed image neither enters a new conversation nor closes SONIM",
+        "pass": false
+      },
+      {
+        "label": "fr/320: image completion cannot dismiss an unrelated menu",
+        "pass": false
+      },
+      {
+        "label": "fr/320: stale transcription cannot send after reset",
+        "pass": false,
+        "details": {
+          "before": 0,
+          "after": 1
+        }
+      },
+      {
+        "label": "fr/320: stale transcription cannot rewrite the new conversation",
+        "pass": false
+      },
+      {
+        "label": "No uncaught browser errors",
+        "pass": true,
+        "details": []
+      }
+    ],
+    "errors": []
+  }
+}

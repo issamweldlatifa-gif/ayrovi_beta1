@@ -1,3 +1,4 @@
+import { AssistantMediaPending } from './AssistantMediaPending';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import React, { useRef } from 'react';
 import { Camera, ChevronRight, Globe2, Image, Plug, X } from '../QatafoIcons';
@@ -6,6 +7,8 @@ import { useLocale } from '../../i18n/LocaleContext';
 interface AssistantAttachmentSheetProps {
   isOpen: boolean;
   isDark: boolean;
+  pendingAttachments?: number;
+  onCancelAttachments?: () => void;
   webSearchEnabled: boolean;
   onClose: () => void;
   onPickFile: (file: File, kind: 'image' | 'file') => void;
@@ -15,6 +18,7 @@ interface AssistantAttachmentSheetProps {
 
 export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> = ({
   isOpen,
+  pendingAttachments = 0, onCancelAttachments,
   isDark,
   webSearchEnabled,
   onClose,
@@ -60,6 +64,7 @@ export const AssistantAttachmentSheet: React.FC<AssistantAttachmentSheetProps> =
           </button>
         </div>
 
+        {pendingAttachments > 0 && <AssistantMediaPending phase="images" count={pendingAttachments} onCancel={onCancelAttachments}/>}
         <div className="space-y-2.5">
           <button type="button" onClick={() => chooseFile('image')} className={rowClass}>
             <span className="flex items-center gap-3">

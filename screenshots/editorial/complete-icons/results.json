@@ -5116,8 +5116,8 @@
       "label": "fr/320x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288
+        "width": 320,
+        "scroll": 320
       }
     },
     {
@@ -25630,8 +25630,8 @@
       "label": "ar/320x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288
+        "width": 320,
+        "scroll": 320
       }
     },
     {
@@ -41531,8 +41531,8 @@
       "label": "content/ar/320/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288,
+        "width": 320,
+        "scroll": 320,
         "clipped": []
       }
     },
@@ -41615,8 +41615,8 @@
       "label": "content/ar/768/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 736,
-        "scroll": 736,
+        "width": 768,
+        "scroll": 768,
         "clipped": []
       }
     },

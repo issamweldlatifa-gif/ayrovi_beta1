@@ -1,9 +1,12 @@
+import { useAssistantAttachments } from './media/useAssistantAttachments';
+import { VoiceNoteCapture, type VoiceNoteState } from './media/VoiceNoteCapture';
+import { imageErrorLabels, voiceNoteErrorLabels } from './media/mediaLabels';
 import { AssistantHistoryNotice } from './AssistantHistoryNotice';
 import { validProductUrl } from '../../ayrovix/services/resultPolicy';
 import type { HistoryStatus } from './conversationHistory';
 import { useDialogFocus } from '../../hooks/useDialogFocus';
 import { copyAssistantText, textActionLabels } from './messageActions';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { AssistantAttachmentSheet } from './AssistantAttachmentSheet';
 import { AssistantComposer } from './AssistantComposer';
 import { AssistantFeedbackSheet } from './AssistantFeedbackSheet';
@@ -26,7 +29,7 @@ import {
   readAssistantHistory,
   saveAssistantConversation,
 } from './conversationHistory';
-import { AssistantAttachment, AssistantMessage, FeedbackValue } from './types';
+import { AssistantMessage, FeedbackValue } from './types';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { useLocale } from '../../i18n/LocaleContext';
 
@@ -43,10 +46,6 @@ interface AiAssistantDrawerProps {
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
 }
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-const MAX_ATTACHMENTS = 2;
-const MAX_RECORD_SECONDS = 120;
-const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 const createConversationId = () => `conversation_${Date.now()}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
 
 const toStoreKey = (source: string): AyrovixOrderPayload['store'] => {
@@ -107,12 +106,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const [historyRestored, setHistoryRestored] = useState(false);
   const [historySaveAttempt, setHistorySaveAttempt] = useState(0);
   const [input, setInput] = useState('');
-  const [attachments, setAttachments] = useState<AssistantAttachment[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [motionState, setMotionState] = useState<AyroviMotionState>('idle');
   const [lensActive, setLensActive] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceNoteState, setVoiceNoteState] = useState<VoiceNoteState>('idle');
+  const isRecording = voiceNoteState === 'recording';
+  const isTranscribing = voiceNoteState === 'stopping' || voiceNoteState === 'transcribing';
   const [voiceReady, setVoiceReady] = useState<boolean | null>(null);
   const [assistantReady, setAssistantReady] = useState<boolean | null>(null);
   const [recordSeconds, setRecordSeconds] = useState(0);
@@ -161,15 +160,24 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const generationAbortRef = useRef<AbortController | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const mediaStreamRef = useRef<MediaStream | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const discardRecordingRef = useRef(false);
-  const recordingStartedAtRef = useRef(0);
-  const voiceRequestRef = useRef(0);
-  const voiceCapturePendingRef = useRef(false);
-  const transcriptionAbortRef = useRef<AbortController | null>(null);
+  const mediaScope = JSON.stringify([isOpen, historyScope || null, conversationId]);
+  const mediaScopeRef = useRef(mediaScope); mediaScopeRef.current = mediaScope;
+  const attachmentQueue = useAssistantAttachments(mediaScope, code => showToast(tr(...imageErrorLabels[code])));
+  const { attachments, pending: pendingAttachments } = attachmentQueue;
+  const voiceNoteRef = useRef<VoiceNoteCapture | null>(null);
+  const cancelVoiceNote = () => {
+    voiceNoteRef.current?.cancel(false); voiceNoteRef.current = null;
+    setVoiceNoteState('idle'); setRecordSeconds(0);
+  };
+  useLayoutEffect(() => {
+    setVoiceNoteState('idle'); setRecordSeconds(0); stopVoiceMode();
+    return () => {
+      voiceNoteRef.current?.cancel(false); voiceNoteRef.current = null;
+      const voice = voiceControllerRef.current; voiceControllerRef.current = null;
+      voice?.stop(); voiceModeRef.current = false;
+    };
+  }, [mediaScope]);
+
   const historyReadyRef = useRef(false);
   const restoredMessageIdsRef = useRef(new Set<string>());
   const saveOnExitRef = useRef<(updateView?: boolean) => HistoryStatus>(() => 'ready');
@@ -255,7 +263,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (previousHistoryScope.current !== historyScope) {
       previousHistoryScope.current = historyScope;
       stopGeneration(); stopVoiceMode();
-      setInput(''); setAttachments([]);
+      setInput(''); attachmentQueue.clear();
     }
     const result = readAssistantHistory(historyScope);
     const stored = result.conversations;
@@ -366,7 +374,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       stopVoiceMode();
       return;
     }
-    if (isRecording || isTranscribing || isGenerating) return;
+    if (voiceNoteRef.current?.busy || attachmentQueue.isPending() || isGenerating) return;
 
     setVoiceMode(true);
     voiceModeRef.current = true;
@@ -410,31 +418,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   };
 
   const handleAddVoiceAttachment = async (file: File) => {
-    if (attachments.length >= MAX_ATTACHMENTS) {
-      showToast(tr('Limite de 2 images atteinte', 'تم بلوغ الحد الأقصى (صورتان)'));
-      return;
-    }
-    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-      showToast(tr('Format d’image non supporté', 'صيغة الصورة غير مدعومة'));
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      showToast(tr('Image trop volumineuse (max 5 Mo)', 'حجم الصورة كبير جدًا (أقصى حد 5 ميغابايت)'));
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const preview = reader.result as string;
-      const newAttachment: AssistantAttachment = {
-        id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-        name: file.name,
-        type: file.type,
-        preview,
-      };
-      setAttachments((current) => [...current, newAttachment]);
-      showToast(tr('Photo ajoutée pour analyse', 'تمت إضافة الصورة للتحليل'));
-    };
-    reader.readAsDataURL(file);
+    const scope = mediaScopeRef.current;
+    if (await attachmentQueue.add(file) && isOpenRef.current && mediaScopeRef.current === scope) showToast(tr('Photo ajoutée pour analyse', 'تمت إضافة الصورة للتحليل'));
   };
 
   const startAssistantReply = async (sourceMessages: AssistantMessage[], responseId: string) => {
@@ -559,26 +544,6 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   }, [isOpen, feedbackLayer, productLayer, isAttachmentSheetOpen, isMenuOpen, onClose]);
 
   useEffect(() => {
-    if (isRecording) {
-      setRecordSeconds(0);
-      recordTimerRef.current = setInterval(() => setRecordSeconds((seconds) => seconds + 1), 1000);
-    } else if (recordTimerRef.current) {
-      clearInterval(recordTimerRef.current);
-      recordTimerRef.current = null;
-    }
-    return () => { if (recordTimerRef.current) clearInterval(recordTimerRef.current); };
-  }, [isRecording]);
-
-  useEffect(() => {
-    if (!isRecording || recordSeconds < MAX_RECORD_SECONDS) return;
-    discardRecordingRef.current = false;
-    setIsRecording(false);
-    setRecordSeconds(0);
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state && recorder.state !== 'inactive') recorder.stop();
-  }, [isRecording, recordSeconds]);
-
-  useEffect(() => {
     if (isOpen) return;
     saveActiveConversation();
     generationAbortRef.current?.abort();
@@ -586,17 +551,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setIsGenerating(false);
     setMotionState('idle');
     stopVoiceMode();
-    voiceRequestRef.current += 1;
-    voiceCapturePendingRef.current = false;
-    discardRecordingRef.current = true;
-    if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-    mediaStreamRef.current = null;
-    transcriptionAbortRef.current?.abort();
-    transcriptionAbortRef.current = null;
-    setIsTranscribing(false);
-    setIsRecording(false);
-    setRecordSeconds(0);
+    cancelVoiceNote(); attachmentQueue.clear();
     setFeedbackMessage(null);
   }, [isOpen]);
 
@@ -605,31 +560,16 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     isOpenRef.current = false;
     feedbackContext.current = { ...feedbackContext.current, isOpen: false };
     generationAbortRef.current?.abort();
-    transcriptionAbortRef.current?.abort();
     stopVoiceMode();
-    voiceRequestRef.current += 1;
-    voiceCapturePendingRef.current = false;
-    discardRecordingRef.current = true;
-    if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
   }, []);
 
   const handleCloseAssistant = () => {
     saveActiveConversation();
     stopGeneration();
     stopVoiceMode();
-    transcriptionAbortRef.current?.abort();
-    voiceRequestRef.current += 1;
-    voiceCapturePendingRef.current = false;
-    discardRecordingRef.current = true;
-    if (mediaRecorderRef.current?.state && mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-    setIsTranscribing(false);
-    setIsRecording(false);
-    setRecordSeconds(0);
+    cancelVoiceNote(); attachmentQueue.clear();
     setFeedbackMessage(null);
     const start = navigation.stack.findIndex((layer) => layer.id === 'app:assistant');
     const pops = start >= 0 ? navigation.stack.length - start : 1;
@@ -640,10 +580,19 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   if (!isOpen) return null;
 
   const sendMessage = (customText?: string, fromVoice = false) => {
+    const readyAttachments = attachmentQueue.getReady();
     const text = (customText ?? input).trim();
-    if ((!text && attachments.length === 0) || isGenerating || isTranscribing || isRecording || generationAbortRef.current) return;
-    const sentAttachments = attachments.map((attachment) => ({ ...attachment }));
-    const displayText = text || (sentAttachments.length > 1 ? 'Analyse ces images.' : 'Analyse cette image.');
+    if (attachmentQueue.isPending()) {
+      if (fromVoice && text) {
+        setInput(current => [current, text].filter(Boolean).join('\n'));
+        stopVoiceMode();
+        showToast(tr('Images en préparation. Votre texte vocal est conservé dans le brouillon ; envoyez-le quand les images sont prêtes.', 'الصور قيد التجهيز. حُفظ النص الصوتي في المسودة؛ أرسله عندما تجهز الصور.'));
+      }
+      return;
+    }
+    if ((!text && readyAttachments.length === 0) || isGenerating || voiceNoteRef.current?.busy || generationAbortRef.current) return;
+    const sentAttachments = readyAttachments.map((attachment) => ({ ...attachment }));
+    const displayText = text || (sentAttachments.length > 1 ? tr('Analyse ces images.', 'حلّل هذه الصور.') : tr('Analyse cette image.', 'حلّل هذه الصورة.'));
     const userMessage: AssistantMessage = {
       id: `user_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
       role: 'user',
@@ -654,8 +603,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     const responseId = `assistant_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const sourceMessages = [...messages, userMessage];
     setMessages([...sourceMessages, { id: responseId, role: 'assistant', text: '', incomplete: true }]);
-    setInput('');
-    setAttachments([]);
+    if (!fromVoice) setInput('');
+    attachmentQueue.clear();
     void startAssistantReply(sourceMessages, responseId);
   };
 
@@ -663,137 +612,34 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   // latest message state instead of retaining the callback from the opening render.
   voiceTurnHandlerRef.current = (text) => sendMessage(text, true);
 
-  const releaseMediaStream = () => {
-    mediaStreamRef.current?.getTracks().forEach((track) => track.stop());
-    mediaStreamRef.current = null;
-  };
-
-  const transcribeRecording = async (audio: Blob, duration: number) => {
-    if (duration < 0.5 || audio.size < 150) {
-      showToast(tr('Enregistrement trop court', 'التسجيل قصير جدًا'));
-      return;
-    }
-    const controller = new AbortController();
-    transcriptionAbortRef.current?.abort();
-    transcriptionAbortRef.current = controller;
-    setIsTranscribing(true);
-    let text = liveTranscript.trim();
-    try {
-      const result = await transcribeAssistantAudio({
-        audio,
-        csrfToken: customerCsrfToken,
-        signal: controller.signal,
-      });
-      if (result.text?.trim()) {
-        text = result.text.trim();
-      }
-    } catch {
-      // Fallback to client transcript
-    } finally {
-      if (transcriptionAbortRef.current === controller) {
-        transcriptionAbortRef.current = null;
-        setIsTranscribing(false);
-      }
-    }
-    if (text) {
-      setLiveTranscript('');
-      sendMessage(text, true);
-    } else {
-      showToast(tr('Aucune parole détectée — veuillez parler plus clairement', 'لم يتم اكتشاف كلام واضح — يرجى التحدث بوضوح'));
-    }
-  };
-
   const startRecording = async () => {
-    if (isGenerating || isTranscribing || isRecording || voiceCapturePendingRef.current) return;
-    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      showToast(tr('L’enregistrement vocal n’est pas compatible avec ce navigateur', 'التسجيل الصوتي غير متوافق مع هذا المتصفح'));
-      return;
-    }
-    const requestId = ++voiceRequestRef.current;
-    voiceCapturePendingRef.current = true;
-    let stream: MediaStream | null = null;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      if (requestId !== voiceRequestRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
-        return;
-      }
-      const mimeType = [
-        'audio/webm;codecs=opus',
-        'audio/ogg;codecs=opus',
-        'audio/mp4',
-        'audio/webm',
-      ].find((type) => MediaRecorder.isTypeSupported(type));
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      mediaStreamRef.current = stream;
-      mediaRecorderRef.current = recorder;
-      audioChunksRef.current = [];
-      discardRecordingRef.current = false;
-      recordingStartedAtRef.current = Date.now();
-      recorder.ondataavailable = (event) => {
-        if (event.data.size) audioChunksRef.current.push(event.data);
-      };
-      recorder.onerror = () => {
-        discardRecordingRef.current = true;
-        setIsRecording(false);
-        setRecordSeconds(0);
-        releaseMediaStream();
-        showToast('Impossible d’enregistrer le message vocal');
-      };
-      recorder.onstop = () => {
-        const discarded = discardRecordingRef.current;
-        const duration = (Date.now() - recordingStartedAtRef.current) / 1000;
-        const chunks = audioChunksRef.current;
-        audioChunksRef.current = [];
-        mediaRecorderRef.current = null;
-        releaseMediaStream();
-        if (discarded) return;
-        const audio = new Blob(chunks, { type: recorder.mimeType || chunks[0]?.type || 'audio/webm' });
-        void transcribeRecording(audio, duration);
-      };
-      recorder.start(250);
-      setRecordSeconds(0);
-      setIsRecording(true);
-    } catch (error: any) {
-      stream?.getTracks().forEach((track) => track.stop());
-      releaseMediaStream();
-      if (requestId === voiceRequestRef.current) {
-        showToast(error?.name === 'NotAllowedError'
-          ? 'Autorisez le microphone pour envoyer un message vocal'
-          : 'Microphone indisponible');
-      }
-    } finally {
-      if (requestId === voiceRequestRef.current) voiceCapturePendingRef.current = false;
-    }
+    if (isGenerating || generationAbortRef.current || voiceModeRef.current || attachmentQueue.isPending() || voiceNoteRef.current?.busy) return;
+    const origin = mediaScopeRef.current;
+    voiceNoteRef.current?.cancel(false);
+    const current = () => isOpenRef.current && mediaScopeRef.current === origin && voiceNoteRef.current === capture;
+    const capture = new VoiceNoteCapture({
+      onState: state => { if (current()) setVoiceNoteState(state); },
+      onSeconds: seconds => { if (current()) setRecordSeconds(seconds); },
+      onError: code => { if (current()) showToast(tr(...voiceNoteErrorLabels[code])); },
+      onText: text => { if (current()) voiceTurnHandlerRef.current(text); },
+      transcribe: (audio, signal) => transcribeAssistantAudio({ audio, signal, csrfToken: customerCsrfToken }),
+    });
+    voiceNoteRef.current = capture;
+    await capture.start();
   };
-
-  const finishRecording = () => {
-    discardRecordingRef.current = false;
-    setIsRecording(false);
-    setRecordSeconds(0);
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state && recorder.state !== 'inactive') recorder.stop();
-    else releaseMediaStream();
-  };
-
-  const cancelRecording = () => {
-    discardRecordingRef.current = true;
-    setIsRecording(false);
-    setRecordSeconds(0);
-    const recorder = mediaRecorderRef.current;
-    if (recorder?.state && recorder.state !== 'inactive') recorder.stop();
-    else releaseMediaStream();
-  };
+  const finishRecording = () => voiceNoteRef.current?.finish();
+  const cancelRecording = cancelVoiceNote;
 
   const resetConversation = () => {
     saveActiveConversation();
+    cancelVoiceNote(); stopVoiceMode();
     stopGeneration();
     setHistoryRestored(false);
     restoredMessageIdsRef.current.clear();
     setConversationId(createConversationId());
     setMessages([]);
     setInput('');
-    setAttachments([]);
+    attachmentQueue.clear();
     setFeedback({});
     setFeedbackComments({});
     setSelectedProduct(null);
@@ -804,6 +650,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   const selectConversation = (conversation: AssistantConversation) => {
     if (conversation.id === conversationId) { closeAssistantLayer(); return; }
     saveActiveConversation();
+    cancelVoiceNote(); stopVoiceMode();
     stopGeneration();
     rememberSnapshot(conversation);
     restoredMessageIdsRef.current = new Set(conversation.messages.map(message => message.id));
@@ -811,7 +658,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setConversationId(conversation.id);
     setMessages(conversation.messages);
     setInput('');
-    setAttachments([]);
+    attachmentQueue.clear();
     setFeedback({});
     setFeedbackComments({});
     setIsStoredProduct(Boolean(conversation.selectedProduct));
@@ -825,9 +672,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (next.status !== 'ready') return;
     setConversations(next.conversations);
     if (id === conversationId) {
+      cancelVoiceNote(); stopVoiceMode();
       stopGeneration();
       setHistoryRestored(false);
-      setInput(''); setAttachments([]);
+      setInput(''); attachmentQueue.clear();
       setConversationId(createConversationId());
       setMessages([]);
       setFeedback({});
@@ -836,67 +684,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     }
   };
 
-  const handleFilePicked = (file: File, kind: 'image' | 'file') => {
-    if (attachments.length >= MAX_ATTACHMENTS) {
-      showToast(`Maximum ${MAX_ATTACHMENTS} pièces jointes`);
-      return;
-    }
-    if (file.size > MAX_FILE_SIZE) {
-      showToast('Image trop volumineuse (max 5 Mo)');
-      return;
-    }
-    if (!SUPPORTED_IMAGE_TYPES.has(file.type)) {
-      showToast('Formats acceptés : JPEG, PNG, WebP ou GIF');
-      return;
-    }
-    const addFile = (preview?: string, type = file.type) => {
-      setAttachments((current) => [
-        ...current,
-        { id: `file_${Date.now()}_${Math.random()}`, name: file.name, type, preview },
-      ]);
-      if (isAttachmentSheetOpen) closeAssistantLayer();
-    };
-    void kind;
-    // Compression côté client : garantit que l'image atteint toujours le modèle
-    // (≤2,5 Mo → base64 sûr), quel que soit l'appareil ou la taille d'origine.
-    const compress = async (): Promise<{ dataUrl: string; type: string } | null> => {
-      try {
-        const bitmap = await createImageBitmap(file);
-        const maxEdge = 1600;
-        const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
-        const width = Math.max(1, Math.round(bitmap.width * scale));
-        const height = Math.max(1, Math.round(bitmap.height * scale));
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const context = canvas.getContext('2d');
-        if (!context) return null;
-        context.drawImage(bitmap, 0, 0, width, height);
-        bitmap.close();
-        const toBlob = (type: string, quality?: number) => new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, type, quality));
-        let blob = await toBlob('image/png');
-        let type = 'image/png';
-        if (!blob || blob.size > 2.5 * 1024 * 1024) {
-          blob = await toBlob('image/jpeg', 0.85);
-          type = 'image/jpeg';
-        }
-        if (!blob) return null;
-        return { dataUrl: await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(String(reader.result));
-          reader.onerror = () => reject(new Error('read'));
-          reader.readAsDataURL(blob);
-        }), type };
-      } catch {
-        return null;
-      }
-    };
-    void compress().then((prepared) => {
-      if (prepared) { addFile(prepared.dataUrl, prepared.type); return; }
-      const reader = new FileReader();
-      reader.onload = () => addFile(typeof reader.result === 'string' ? reader.result : undefined);
-      reader.onerror = () => showToast('Impossible de lire cette image');
-      reader.readAsDataURL(file);
+  const handleFilePicked = (file: File, _kind: 'image' | 'file') => {
+    const origin = navigation.current;
+    void attachmentQueue.add(file).then(added => {
+      if (added && isOpenRef.current && origin?.id === 'assistant:attachments' && feedbackContext.current.top === origin) closeAssistantLayer();
     });
   };
 
@@ -1083,6 +874,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             isSpeakerMuted={isSpeakerMuted}
             liveTranscript={liveTranscript}
             attachments={attachments}
+            pendingAttachments={pendingAttachments}
+            onCancelAttachments={attachmentQueue.cancelPending}
             activeProduct={selectedProduct && !isStoredProduct ? {
               title: selectedProduct.product.title,
               brand: selectedProduct.product.brand || undefined,
@@ -1104,7 +897,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
             onOpenLens={onOpenLens}
             onAddAttachment={handleAddVoiceAttachment}
-            onRemoveAttachment={(id) => setAttachments((current) => current.filter((att) => att.id !== id))}
+            onRemoveAttachment={attachmentQueue.remove}
             onSelectSuggestion={(suggestion) => sendMessage(suggestion, true)}
             initialSettings={voiceControllerRef.current?.getVoiceSettings()}
             onVoiceSettingsChange={(settings) => voiceControllerRef.current?.configureVoice(settings)}
@@ -1161,6 +954,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
               <AssistantComposer
                 value={input}
                 attachments={attachments}
+                pendingAttachments={pendingAttachments}
+                onCancelAttachments={attachmentQueue.cancelPending}
+                capturePending={voiceNoteState === 'requesting'}
+                onCancelTranscription={cancelVoiceNote}
                 isDark={isDark}
                 isGenerating={isGenerating}
                 isRecording={isRecording}
@@ -1169,7 +966,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 recordSeconds={recordSeconds}
                 onChange={setInput}
                 onOpenAttachments={() => navigation.pushLayer({ id: 'assistant:attachments' })}
-                onRemoveAttachment={(id) => setAttachments((current) => current.filter((attachment) => attachment.id !== id))}
+                onRemoveAttachment={attachmentQueue.remove}
                 onStartRecording={() => void startRecording()}
                 onFinishRecording={finishRecording}
                 onCancelRecording={cancelRecording}
@@ -1205,6 +1002,8 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
           isOpen={isAttachmentSheetOpen}
           isDark={isDark}
           webSearchEnabled={webSearchEnabled}
+          pendingAttachments={pendingAttachments}
+          onCancelAttachments={attachmentQueue.cancelPending}
           onClose={closeAssistantLayer}
           onPickFile={handleFilePicked}
           onToggleWebSearch={() => setWebSearchEnabled((enabled) => !enabled)}
