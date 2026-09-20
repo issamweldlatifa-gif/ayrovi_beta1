@@ -1,3 +1,4 @@
+import { ArrowRight, Play } from './QatafoIcons';
 import React, { useEffect, useRef, useState } from 'react';
 import { getPublicHome } from '../services/publicApi';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -46,7 +47,7 @@ const media = (value: unknown, fallback: string) => String(value || fallback);
 
 const Cta: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
   <button type="button" onClick={onClick} className="mt-5 inline-flex items-center gap-1.5 text-base font-bold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-muted">
-    {children}
+    {children}<ArrowRight size={18} />
   </button>
 );
 
@@ -126,7 +127,7 @@ export const DiscoveryHub: React.FC = () => {
             <div className="px-5 sm:px-8">
               <h3 className="mt-6 text-3xl font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-3xl">Les nouveautés viennent d’arriver.</h3>
             <p className="mt-3 max-w-md text-base leading-[1.6] text-muted sm:text-base">Découvrez une sélection de produits récemment disponibles.</p>
-              <Cta onClick={() => open('arrivals')}>Explorer les arrivages →</Cta>
+              <Cta onClick={() => open('arrivals')}>Explorer les arrivages</Cta>
             </div>
           </div>
         )}
@@ -144,7 +145,7 @@ export const DiscoveryHub: React.FC = () => {
               <h3 className="text-xl font-extrabold leading-tight tracking-[-0.02em] text-ink sm:text-2xl">{promo?.name || 'Les offres AYROVI'}</h3>
               {promo?.description && <p className="mt-1.5 text-sm leading-[1.55] text-muted sm:text-sm">{String(promo.description).slice(0, 110)}</p>}
               {promo?.ends_at && <p className="mt-2 text-xs font-semibold text-muted">Jusqu’au {new Date(promo.ends_at).toLocaleDateString('fr-TN')}</p>}
-              <Cta onClick={() => open('promotions')}>Explorer les promotions →</Cta>
+              <Cta onClick={() => open('promotions')}>Explorer les promotions</Cta>
             </div>
           </div>
         )}
@@ -157,13 +158,13 @@ export const DiscoveryHub: React.FC = () => {
                 <div key={story.id || index} className="relative aspect-[9/16] w-[64%] shrink-0 overflow-hidden rounded-card bg-ink-deep sm:w-[240px]">
                   <img src={media(story.media_url, heroFemme)} alt={story.title || ''} className="absolute inset-0 h-full w-full object-cover" loading={index === 0 ? 'eager' : 'lazy'} />
                   <span aria-hidden className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  <span aria-hidden className="absolute left-1/2 top-1/2 grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-lg text-ink">▶</span>
+                  <span aria-hidden className="absolute left-1/2 top-1/2 grid h-11 w-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-lg text-ink"><Play size={20} /></span>
                   {story.title && <p className="absolute inset-x-0 bottom-0 line-clamp-2 p-3 text-xs font-bold leading-snug text-white">{story.title}</p>}
                 </div>
               ))}
             </div>
             <h3 className="mt-6 text-3xl font-extrabold leading-[1.05] tracking-[-0.02em] text-ink sm:text-3xl">Ce que la communauté découvre.</h3>
-            <Cta onClick={() => open('stories')}>Découvrir la communauté →</Cta>
+            <Cta onClick={() => open('stories')}>Découvrir la communauté</Cta>
           </div>
         )}
 
@@ -177,7 +178,7 @@ export const DiscoveryHub: React.FC = () => {
               <h3 className="mt-2 max-w-xl text-2xl font-extrabold leading-[1.08] tracking-[-0.02em] text-white sm:text-3xl">{article?.title || 'Les tendances qui méritent votre attention.'}</h3>
               <p className="mt-2 max-w-lg text-xs leading-relaxed text-white/80 sm:text-sm">{article?.summary || 'Découvrez les inspirations et nouveautés sélectionnées par AYROVI.'}</p>
               <button type="button" onClick={() => open('news')} className="mt-3.5 inline-flex items-center gap-1.5 text-base font-bold text-white underline decoration-1 underline-offset-4 transition-colors hover:text-white/70">
-                Explorer le magazine →
+                Explorer le magazine <ArrowRight size={18} />
               </button>
             </div>
           </div>

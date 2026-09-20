@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
+  Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
   History, Home, Image, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,
   Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,
 } from '../components/QatafoIcons';
@@ -451,13 +451,13 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?:
           :<p className="admin-block-small" style={{margin:'8px 0'}}>{selected.payment_method==='CARD'?'La carte est confirmée exclusivement par Konnect.':'Aucun justificatif téléversé.'}</p>}
         {canPay&&selected.status==='AWAITING_PAYMENT_VERIFICATION'&&selected.payment_method!=='CARD'&&(selected.proofs||[]).some((proof:any)=>proof.status==='PENDING_VERIFICATION')&&<div style={{display:'flex',gap:8,alignItems:'flex-end',marginTop:10,flexWrap:'wrap'}}>
           <Field label="Note d’approbation / motif de refus"><input value={reviewNote} onChange={(e)=>setReviewNote(e.target.value)} placeholder="Motif obligatoire en cas de refus" style={{minWidth:260}}/></Field>
-          <button className="admin-button admin-button--primary" disabled={busy} onClick={()=>reviewDeposit('approve')}>✓ Valider le virement</button>
-          <button className="admin-button admin-button--danger" disabled={busy||!reviewNote.trim()} onClick={()=>reviewDeposit('reject')}>✕ Refuser</button>
+          <button className="admin-button admin-button--primary" disabled={busy} onClick={()=>reviewDeposit('approve')}><Check size={16}/> Valider le virement</button>
+          <button className="admin-button admin-button--danger" disabled={busy||!reviewNote.trim()} onClick={()=>reviewDeposit('reject')}><X size={16}/> Refuser</button>
         </div>}
         {selected.payment_status==='PAID'&&<div style={{marginTop:12,display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
           <p className="admin-block-small" style={{margin:0}}>Facture : {selected.invoice?.invoice_number||'non émise'}</p>
           {canPay&&!selected.invoice&&<button className="admin-button admin-button--primary" disabled={busy} onClick={issueInvoice}>Émettre la facture</button>}
-          {canPay&&selected.invoice&&<button className="admin-button admin-button--secondary" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail ✓':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}>↻ Régénérer / renvoyer</button>}
+          {canPay&&selected.invoice&&<button className="admin-button admin-button--secondary" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}><RefreshCw size={16}/> Régénérer / renvoyer</button>}
         </div>}
       </section>}
       <section className="admin-list-card" style={{marginBottom:16}}><h3>Expédition & suivi</h3><div className="admin-order-controls">
@@ -468,7 +468,7 @@ const OrdersPage: React.FC<{ canWrite: boolean; canPay: boolean; initialStatus?:
       </div><button className="admin-button admin-button--primary" disabled={!canWrite||busy} onClick={updateDelivery}>Enregistrer la livraison</button><p className="admin-block-small">Le suivi client n’apparaît qu’après SHIPPED. Transporteur et numéro sont alors obligatoires.</p></section>
       <h3>Articles</h3><DataTable<any> rows={selected.items||[]} columns={[
         {key:'product_name',label:'Produit',render:(row)=><div><strong>{row.product_name}</strong>{(row.requested_size||row.requested_color)&&<small className="admin-block-small">{[row.requested_size&&`Taille : ${row.requested_size}`,row.requested_color&&`Couleur : ${row.requested_color}`].filter(Boolean).join(' · ')}</small>}{row.customer_note&&<small className="admin-block-small">Note client : {row.customer_note}</small>}</div>},
-        {key:'source_url',label:'Lien client',render:(row)=><div>{/^https?:\/\//i.test(row.source_url||'')?<a href={row.source_url} target="_blank" rel="noreferrer" className="admin-link">Ouvrir le produit ↗</a>:<span>—</span>}{/^https?:\/\//i.test(row.reference_url||'')&&row.reference_url!==row.source_url&&<a href={row.reference_url} target="_blank" rel="noreferrer" className="admin-block-small">Référence Lens ↗</a>}{(row.reference_url||row.price_verification_status==='PENDING_MANUAL')&&<small className="admin-block-small"><StatusBadge status={row.price_verification_status||'VERIFIED'}/></small>}</div>},
+        {key:'source_url',label:'Lien client',render:(row)=><div>{/^https?:\/\//i.test(row.source_url||'')?<a href={row.source_url} target="_blank" rel="noreferrer" className="admin-link">Ouvrir le produit <ExternalLink size={14}/></a>:<span>—</span>}{/^https?:\/\//i.test(row.reference_url||'')&&row.reference_url!==row.source_url&&<a href={row.reference_url} target="_blank" rel="noreferrer" className="admin-block-small">Référence Lens <ExternalLink size={14}/></a>}{(row.reference_url||row.price_verification_status==='PENDING_MANUAL')&&<small className="admin-block-small"><StatusBadge status={row.price_verification_status||'VERIFIED'}/></small>}</div>},
         {key:'source_platform',label:'Source'}, {key:'quantity',label:'Qté'},
         {key:'original_price',label:'Prix source',render:(row)=>`${row.original_price} ${row.currency}`},
         {key:'total_tnd',label:'Total figé',render:(row)=>formatMoney(row.total_tnd)},
@@ -733,9 +733,9 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
       <section className="admin-card"><CardTitle title="Dépenses par catégorie" subtitle="Période sélectionnée"/><div className="admin-settings-list">{((report?.expensesByCategory||[]) as any[]).length===0&&<p className="admin-block-small">Aucune dépense sur la période.</p>}{((report?.expensesByCategory||[]) as any[]).map(row=><div key={row.category} className="admin-cat-row"><span>{({ADS:'Publicité',SHIPPING:'Transport',STOCK:'Stock',SERVICES:'Services',SALARIES:'Salaires',FEES:'Frais',OTHER:'Autres'} as any)[row.category]||row.category}</span><strong>{formatMoney(row.total)}</strong></div>)}</div></section>
       {ayx&&<section className="admin-card"><CardTitle title="AYROVIX Lens · 7 derniers jours" subtitle="Usage du scan produit (image / lien / QR) — données anonymes"/>
         {ayx.providers&&<div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
-          <Badge tone={ayx.providers.vision?.configured?'success':'warning'}>{ayx.providers.vision?.configured?'✅':'⚠️'} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</Badge>
-          <Badge tone={ayx.providers.visualSearch?.configured?'success':'warning'}>{ayx.providers.visualSearch?.configured?'✅':'⚠️'} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</Badge>
-          <Badge tone={ayx.providers.search?.configured?'success':'warning'}>{ayx.providers.search?.configured?'✅':'⚠️'} AI Core Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Fournisseur non configuré'}</Badge>
+          <Badge tone={ayx.providers.vision?.configured?'success':'warning'}>{ayx.providers.vision?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} AI Core Vision : {ayx.providers.vision?.configured?'Prix et compréhension actifs':'Fournisseur non configuré'}</Badge>
+          <Badge tone={ayx.providers.visualSearch?.configured?'success':'warning'}>{ayx.providers.visualSearch?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} Google Lens : {ayx.providers.visualSearch?.configured?'SerpApi configuré · produits visuels actifs':'Clé manquante — SERPAPI_KEY'}</Badge>
+          <Badge tone={ayx.providers.search?.configured?'success':'warning'}>{ayx.providers.search?.configured?<CheckCircle2 size={16}/>:<AlertCircle size={16}/>} AI Core Web Search : {ayx.providers.search?.configured?`Fallback texte actif · 1 recherche max/requête`:'Fournisseur non configuré'}</Badge>
         </div>}
         <div className="admin-kpi-grid" style={{marginBottom:12}}>
           <section className="admin-kpi"><span>Analyses</span><strong>{ayx.last7d.total}</strong><small className="flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1"><Camera size={12} />{ayx.last7d.image}</span><span className="inline-flex items-center gap-1"><Link2 size={12} />{ayx.last7d.url}</span><span className="inline-flex items-center gap-1"><Grid size={12} />{ayx.last7d.qr}</span></small></section>

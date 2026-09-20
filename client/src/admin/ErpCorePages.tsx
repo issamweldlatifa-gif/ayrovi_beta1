@@ -268,7 +268,7 @@ export const ErpPermissionsPage: React.FC<{ canManage: boolean; role: string }> 
       <div className="admin-settings-list">
         {grouped.length === 0 && <p className="admin-block-small">Aucune ligne&nbsp;: le moteur n’est pas encore amorcé.</p>}
         {grouped.map(([moduleKey, grants]) => <div key={moduleKey} className="admin-cat-row"><span><strong>{grants[0]?.moduleLabel || moduleKey}</strong>
-          <small className="admin-block-small">{grants.map((grant) => `${grant.action}${grant.resourceType !== '*' ? `:${grant.resourceType}` : ''}${grant.scope !== 'all' ? `@${grant.scope}` : ''}${grant.granted ? '' : ' ✕'}`).join(' · ')}</small></span>
+          <small className="admin-block-small">{grants.map((grant) => `${grant.action}${grant.resourceType !== '*' ? `:${grant.resourceType}` : ''}${grant.scope !== 'all' ? `@${grant.scope}` : ''}${grant.granted ? '' : ' (refusé)'}`).join(' · ')}</small></span>
           <StatusBadge status={grants.every((grant) => grant.granted) ? 'ACTIVE' : 'INACTIVE'} /></div>)}
       </div>
     </section>

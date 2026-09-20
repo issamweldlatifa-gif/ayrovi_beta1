@@ -26,7 +26,7 @@ const records = files.map(file => {
    }
    if(ts.isJsxOpeningElement(n)||ts.isJsxSelfClosingElement(n)) {
     const tag=n.tagName.getText(src);
-    if(/^(button|a|input|select|textarea|dialog|form|Button|Modal|Field|AppHeader|Price|Card|.*Drawer|.*Sheet|.*Modal|.*Card|.*Viewer|.*Screen)$/.test(tag)) record.controls.push({tag,line:line(n),className:attr(n,'className'),type:attr(n,'type'),role:attr(n,'role'),ariaLabel:attr(n,'aria-label'),onClick:attr(n,'onClick'),disabled:attr(n,'disabled')});
+    if(/^(button|a|input|select|textarea|summary|dialog|form|Button|Modal|Field|AppHeader|Price|Card|.*Drawer|.*Sheet|.*Modal|.*Card|.*Viewer|.*Screen)$/.test(tag)) record.controls.push({tag,line:line(n),className:attr(n,'className'),type:attr(n,'type'),role:attr(n,'role'),ariaLabel:attr(n,'aria-label'),onClick:attr(n,'onClick'),disabled:attr(n,'disabled')});
     if(tag==='svg') record.inlineSvg.push({line:line(n),viewBox:attr(n,'viewBox')});
    }
    if(ts.isStringLiteral(n)&&/^\/api\//.test(n.text)) record.apiReferences.push(n.text);

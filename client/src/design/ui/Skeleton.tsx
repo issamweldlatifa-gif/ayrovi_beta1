@@ -1,3 +1,4 @@
+import { Loader2 } from '../../components/QatafoIcons';
 import React from 'react';
 import { twMerge } from 'tailwind-merge';
 
@@ -15,5 +16,5 @@ export const Skeleton: React.FC<{ className?: string; circle?: boolean }> = ({ c
 
 /** AYROVI DS v1.0 — Spinner : chargement inline, encre secondaire. */
 export const Spinner: React.FC<{ className?: string; label?: string }> = ({ className, label = 'Chargement…' }) => (
-  <span role="status" aria-label={label} className={twMerge('inline-block h-5 w-5 animate-spin rounded-full border-2 border-line border-t-ink', className)} />
+  <span role="status" aria-label={label}><Loader2 className={twMerge('h-5 w-5 animate-spin', className)} /></span>
 );

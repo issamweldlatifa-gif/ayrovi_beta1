@@ -1,3 +1,4 @@
+import { Play } from '../../components/QatafoIcons';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { FullscreenActionRail } from './FullscreenActionRail';
@@ -73,8 +74,12 @@ export const ReelsViewer: React.FC<{
     items.forEach((item) => { const video = videoRefs.current.get(item.id); if (video) video.muted = next; });
   };
 
+  const [likeError, setLikeError] = useState(false);
+  const likeBusy = useRef(false);
   const toggleLike = async (post: StoryPost) => {
     if (!isAuthenticated) { onRequireAuth(); return; }
+    if (likeBusy.current) return;
+    likeBusy.current = true;setLikeError(false);
     const previous = Boolean(liked[post.id]);
     const optimistic = !previous;
     const baseline = counts[post.id]?.likes ?? ('reelLikes' in (post as ReelItem) ? (post as ReelItem).reelLikes : 0);
@@ -87,7 +92,9 @@ export const ReelsViewer: React.FC<{
     const result = 'views' in (post as ReelItem)
       ? await likeReel(post.id)
       : await likePost(post.id, optimistic);
+    likeBusy.current = false;
     if (!result || result.authRequired) {
+      if (!result) setLikeError(true);
       setLiked((current) => ({ ...current, [post.id]: previous }));
       setCounts((current) => ({ ...current, [post.id]: { ...(current[post.id] || { comments: 0, shares: 0 }), likes: baseline } }));
       if (result?.authRequired) onRequireAuth();
@@ -125,6 +132,7 @@ export const ReelsViewer: React.FC<{
             />
             {videoFailed[post.id] && <div className="absolute inset-0 grid place-items-center bg-ink-gradient"><img src="/media/logo-ayrovi.png" alt="" className="h-11 w-11 rounded-card bg-white object-contain p-3" /></div>}
 
+            {likeError && <p role="alert" className="absolute start-4 end-4 top-20 z-30 border border-line bg-white p-3 text-sm text-danger">{tr("Confirmation du geste indisponible. Vérifiez la connexion.", "تعذر تأكيد التفاعل. تحقق من الاتصال.")}</p>}
             <FullscreenActionRail
               liked={Boolean(liked[post.id])}
               saved={Boolean(saved[post.id])}
@@ -139,7 +147,7 @@ export const ReelsViewer: React.FC<{
 
             {/* Bas : publisher + caption + vues */}
             <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-ink/85 via-ink/30 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pe-20 pt-16">
-              {'views' in (post as ReelItem) && <p className="mb-1 text-xs font-bold text-white/70">▶ {(post as ReelItem).views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr('vues', 'مشاهدة')}</p>}
+              {'views' in (post as ReelItem) && <p className="mb-1 text-xs font-bold text-white/70"><Play size={14} /> {(post as ReelItem).views.toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN')} {tr('vues', 'مشاهدة')}</p>}
               <div className="flex items-center gap-2.5">
                 <span className="grid h-11 w-11 shrink-0 place-items-center overflow-hidden rounded-full bg-white">
                   {post.publisher.official ? <img src="/media/logo-ayrovi.png" alt="" className="h-11 w-11 object-contain p-1" /> : post.publisher.avatar ? <img src={post.publisher.avatar} alt="" className="h-11 w-11 object-cover" /> : <span className="text-xs font-black text-ink">{post.publisher.name.slice(0, 2).toUpperCase()}</span>}

@@ -65,29 +65,13 @@
   }
 }
 
-/* AYROVI Icon System — monoline fine (style Zalando) sur grille 24.
-   Un seul sélecteur : .ayrovi-icon (rendu par AyroviSvg). */
-.ayrovi-icon {
-  display: block;
+/* One editorial renderer across public screens and administration. */
+.ay-editorial-icon {
+  display: inline-block;
   flex: 0 0 auto;
   overflow: visible;
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: var(--ayrovi-icon-stroke, 1.5);
   shape-rendering: geometricPrecision;
   vector-effect: none;
-}
-
-html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
-  fill: none !important;
-}
-
-/* Fill sémantique : seuls les états sélectionnés/aimés optent pour currentColor. */
-.ayrovi-icon[fill='currentColor'],
-.ayrovi-icon.fill-current,
-.ayrovi-icon.fill-brand {
-  fill: currentColor;
 }
 
 /* Custom Scrollbar */
@@ -724,7 +708,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 .hero-anim-fade-3 { animation: heroFadeIn 640ms cubic-bezier(0.22, 1, 0.36, 1) 140ms both; }
 
 /* أيقونات الهيدر فوق الـ Hero: بيضاء واضحة بstroke موحّد 2px + hover برتقالي */
-.public-site-header .ayrovi-icon { stroke-width: 2px; }
+
 .public-site-header.is-over-hero .public-site-header-icon:hover,
 .public-site-header.is-over-hero .public-site-header-icon:focus-visible,
 .public-site-header.is-over-hero .public-site-header-icon:active { color: var(--ayrovi-color-brand-orange) !important; }
@@ -1312,3 +1296,7 @@ html[data-ayrovi-icon-style='solid'] .ayrovi-icon {
 }
 
 @media (prefers-reduced-motion: reduce) { .stories-showcase__cta > svg { transition: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-editorial-icon { animation: none !important; transition: none !important; }
+}

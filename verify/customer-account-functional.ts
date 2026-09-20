@@ -3,16 +3,19 @@ import { chromium, firefox } from 'playwright';
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
+import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
 async function run(){
  Object.assign(process.env,{NODE_ENV:'test',DATABASE_PATH:':memory:',CUSTOMER_AUTH_SECRET:'account-browser-test-only-secret-01234567890123456789',ADMIN_EMAIL:'admin@example.com',ADMIN_PASSWORD:'Test-admin-password-123!',MAIL_PROVIDER:'',MAIL_API_KEY:'',MAIL_FROM:'',GOOGLE_CLIENT_ID:'',FACEBOOK_APP_ID:'',APPLE_CLIENT_ID:'',CUSTOMER_OTP_PROVIDER:'console'});
  const {app,db}=await import('../src/server');const server=app.listen(0,'127.0.0.1');await new Promise<void>(r=>server.once('listening',r));const base=`http://127.0.0.1:${(server.address() as any).port}`;
  const browser=await chromium.launch({headless:true});let checks=0;const errors:string[]=[];const check=(v:unknown,m:string)=>{assert.ok(v,m);checks++;};const output=process.env.AYROVI_ACCOUNT_OUTPUT || 'screenshots/account';await mkdir(output,{recursive:true});
  const context=await browser.newContext({viewport:{width:390,height:844},locale:'fr'});const page=await context.newPage();page.on('pageerror',e=>errors.push(e.message));
+ const iconEvidence:unknown[]=[];
+ const verifyIcons=async()=>{const result=await inspectEditorialIcons(page,'.customer-account');iconEvidence.push({heading:await page.locator('#account-heading').innerText(),...result});check(result.count>0 && result.errors.length===0,'account SVG geometry/stroke/RTL matches editorial: '+JSON.stringify(result));};
  const password='Original-password-1!';const email='account-demo@example.com';
- const openHome=async()=>{await page.goto(`${base}/?customerAuth=login`);await page.locator('.ac-profile-card').waitFor();await page.locator('.ac-home>.ac-loading').waitFor({state:'hidden'});};
- const section=async(id:string)=>{await page.locator(`[data-account-section="${id}"]`).click();await page.locator('.ac-section>.ac-loading').waitFor({state:'hidden'});};
- const back=async()=>{await page.locator('.ac-header button').click();await page.locator('.ac-home').waitFor();await page.locator('.ac-home>.ac-loading').waitFor({state:'hidden'});};
- const layout=async()=>{check(await page.locator('.customer-account').evaluate(e=>e.scrollWidth<=e.clientWidth),'no outer horizontal overflow');check(await page.locator('.ac-main').evaluate(e=>e.scrollWidth<=e.clientWidth),'no content overflow');};
+ const openHome=async()=>{await page.goto(`${base}/?customerAuth=login`);await page.locator('.ac-profile-card').waitFor();await page.locator('.ac-home>.ac-loading').waitFor({state:'hidden'});await verifyIcons();};
+ const section=async(id:string)=>{await page.locator(`[data-account-section="${id}"]`).click();await page.locator('.ac-section>.ac-loading').waitFor({state:'hidden'});await verifyIcons();};
+ const back=async()=>{await page.locator('.ac-header button').click();await page.locator('.ac-home').waitFor();await page.locator('.ac-home>.ac-loading').waitFor({state:'hidden'});await verifyIcons();};
+ const layout=async()=>{await verifyIcons();check(await page.locator('.customer-account').evaluate(e=>e.scrollWidth<=e.clientWidth),'no outer horizontal overflow');check(await page.locator('.ac-main').evaluate(e=>e.scrollWidth<=e.clientWidth),'no content overflow');};
  try{
   const registered=await context.request.post(`${base}/api/customer/auth/email/register`,{data:{displayName:'Amira Ben Ali',email,password}});check(registered.ok(),'real test account created');const id=(await registered.json()).data.account.id;
   const now=new Date().toISOString();
@@ -58,8 +61,12 @@ async function run(){
   const other=await context.request.post(`${base}/api/customer/auth/email/register`,{data:{displayName:'حساب ثانٍ للاختبار',email:'account-second@example.com',password}});check(other.ok(),'second account created');await openHome();await page.waitForFunction(()=>document.documentElement.dataset.ayrovixTheme==='light');check(!(await page.locator('.ac-profile-card').innerText()).includes('Amira'),'identity isolated');await section('security');const otherId=(await other.json()).data.account.id;db.run('UPDATE customer_accounts SET password_hash=NULL WHERE id=?',otherId);await back();await section('security');await page.getByText('دخولك مرتبط بمزوّد الحساب',{exact:true}).waitFor();check(await page.locator('#account-new-password').count()===0,'OAuth-only explanation, no fake password form');
   check(errors.length===0,'no browser errors: '+errors.join(';'));
   // Independent Firefox render + browser back.
-  const fox=await firefox.launch({headless:true});try{const fc=await fox.newContext({storageState:await context.storageState(),viewport:{width:360,height:800}});const fp=await fc.newPage();fp.on('pageerror',e=>errors.push(e.message));await fp.goto(`${base}/?customerAuth=login`);await fp.locator('.ac-home').waitFor();await fp.locator('[data-account-section=orders]').click();await fp.locator('.ac-empty').waitFor();await fp.goBack();await fp.locator('.ac-home').waitFor();check(await fp.locator('.ac-main').evaluate(e=>e.scrollWidth<=e.clientWidth),'Firefox layout/back');await fp.screenshot({path:`${output}/firefox-ar.png`});}finally{await fox.close();}
-  check(errors.length===0,'no errors in either browser');await writeFile(`${output}/results.json`,JSON.stringify({checks,browsers:['Chromium','Firefox'],locales:['fr','ar'],widths:[320,360,390,414,768,1280],errors,fixtures:'isolated SQLite, fictional accounts; external services disabled'},null,2));console.log(`PASS: ${checks} real browser/API/SQLite assertions; no external services used.`);
+  const fox=await firefox.launch({headless:true});try{const fc=await fox.newContext({storageState:await context.storageState(),viewport:{width:360,height:800}});const fp=await fc.newPage();fp.on('pageerror',e=>errors.push(e.message));
+  const pending=new Set<string>();fp.on('request',r=>pending.add(r.url()));fp.on('requestfinished',r=>pending.delete(r.url()));fp.on('requestfailed',r=>pending.delete(r.url()));
+  try { await fp.goto(`${base}/?customerAuth=login`); }
+  catch(error) { const diagnostic={pending:[...pending],page:await fp.evaluate(()=>({url:location.href,readyState:document.readyState,accountVisible:!!document.querySelector('.ac-home'),text:document.body.innerText.slice(0,200)})).catch(()=>null)};await writeFile(`${output}/firefox-navigation-diagnostic.json`,JSON.stringify(diagnostic,null,2));console.error('Firefox navigation diagnostic',diagnostic);throw error; }
+  await fp.locator('.ac-home').waitFor();await fp.locator('[data-account-section=orders]').click();await fp.locator('.ac-empty').waitFor();await fp.goBack();await fp.locator('.ac-home').waitFor();check(await fp.locator('.ac-main').evaluate(e=>e.scrollWidth<=e.clientWidth),'Firefox layout/back');await fp.screenshot({path:`${output}/firefox-ar.png`});}finally{await fox.close();}
+  check(errors.length===0,'no errors in either browser');await writeFile(`${output}/results.json`,JSON.stringify({checks,iconEvidence,browsers:['Chromium','Firefox'],locales:['fr','ar'],widths:[320,360,390,414,768,1280],errors,fixtures:'isolated SQLite, fictional accounts; external services disabled'},null,2));console.log(`PASS: ${checks} real browser/API/SQLite assertions; no external services used.`);
  }finally{await browser.close();await new Promise<void>(r=>server.close(()=>r()));db.close();}
 }
 run().catch(e=>{console.error(e);process.exit(1);});

@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { IconFamily } from '../client/src/design/editorial/IconFamily';
+import { IconDirectionProvider } from '../client/src/design/editorial/IconDirection';
 import { ArrowLeft, LensBox, Search } from '../client/src/components/QatafoIcons';
 import { customerTheme, CUSTOMER_FONTS } from '../client/src/design/editorial/customerTheme';
 import { DEFAULT_INTERFACE_CONFIG } from '../client/src/config/interfaceConfig';
@@ -30,18 +30,18 @@ describe('customer identity integration, not a reference-only kit', () => {
     expect(readFileSync('client/src/main.tsx','utf8')).toContain('isAdminPath ? <AdminApp /> : <CustomerIdentity>');
   });
   it('renders the NEW geometry through existing screen imports, not just the standalone board', () => {
-    const html=renderToStaticMarkup(<IconFamily family="editorial"><Search /></IconFamily>);
+    const html=renderToStaticMarkup(<IconDirectionProvider direction="ltr"><Search /></IconDirectionProvider>);
     expect(html).toContain('data-editorial-icon="Search"');expect(html).toContain('stroke-width="1.3"');
   });
-  it('keeps legacy admin/default and an explicit preserved navigation boundary', () => {
-    expect(renderToStaticMarkup(<Search />)).not.toContain('data-editorial-icon');
-    const html=renderToStaticMarkup(<IconFamily family="editorial"><IconFamily family="legacy"><LensBox /></IconFamily></IconFamily>);
-    expect(html).not.toContain('data-editorial-icon');expect(html).toContain('stroke-width="1.5"');
+  it('uses editorial everywhere including admin/default and preserved navigation', () => {
+    expect(renderToStaticMarkup(<Search />)).toContain('data-editorial-icon');
+    expect(renderToStaticMarkup(<LensBox />)).toContain('stroke-width="1.3"');
     const app=readFileSync('client/src/App.tsx','utf8');
     expect(app.match(/data-preserved-navigation/g)).toHaveLength(2);
+    expect(app).not.toContain('family="legacy"');
   });
   it('mirrors backward navigation exactly once despite legacy RTL rotate classes', () => {
-    const html=renderToStaticMarkup(<IconFamily family="editorial" direction="rtl"><ArrowLeft className="h-5 rotate-180" /></IconFamily>);
+    const html=renderToStaticMarkup(<IconDirectionProvider direction="rtl"><ArrowLeft className="h-5 rotate-180" /></IconDirectionProvider>);
     expect(html).toContain('translate(24 0) scale(-1 1)');expect(html).not.toContain('rotate-180');
   });
   it('isolates price numerals without changing currency calculations', () => {

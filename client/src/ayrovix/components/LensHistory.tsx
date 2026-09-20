@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import type { AyrovixHistoryItem } from '../types';
 import { loadAyrovixHistory, readLocalAyrovixHistory } from '../services/history';
-import { ArrowLeft, History, LensBox } from '../../components/QatafoIcons';
+import { Loader2, ArrowLeft, History, LensBox } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 
 interface LensHistoryProps {
@@ -32,7 +32,7 @@ const HistoryThumbnail: React.FC<{ item: AyrovixHistoryItem }> = ({ item }) => {
   if (item.imageUrl && !failed) {
     return <img src={item.imageUrl} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setFailed(true)} className="ayrovix-product-media-contain" />;
   }
-  return <LensBox size={25} strokeWidth={1.6} />;
+  return <LensBox size={25} />;
 };
 
 export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, onRepeat, onNewScan }) => {
@@ -57,11 +57,11 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
     <div className="ayrovix-theme-scope fixed inset-0 z-[95] flex flex-col bg-surface text-ink" role="dialog" aria-modal="true" dir={direction} aria-label={tr('Historique AYROVIX Lens', 'سجل عدسة AYROVIX')}>
       <header className="grid min-h-[62px] grid-cols-[1fr_auto_1fr] items-center border-b border-line bg-white px-3 pt-[env(safe-area-inset-top)]">
         <button type="button" onClick={onClose} className="inline-flex min-h-[44px] w-fit items-center gap-1 rounded-xl px-2 text-xs font-extrabold text-ink" aria-label={tr('Retour à AYROVIX Lens', 'العودة إلى عدسة AYROVIX')}>
-          <ArrowLeft size={18} strokeWidth={2.1} className={isArabic ? 'rotate-180' : ''} />
+          <ArrowLeft size={18} className={isArabic ? 'rotate-180' : ''} />
           {tr('Retour', 'رجوع')}
         </button>
         <div className="flex items-center gap-2 text-sm font-extrabold">
-          <History size={18} strokeWidth={1.9} />
+          <History size={18} />
           {tr('Historique', 'السجل')}
         </div>
         <span />
@@ -75,11 +75,11 @@ export const LensHistory: React.FC<LensHistoryProps> = ({ open, onClose, scope, 
           </div>
 
           {loading && items.length === 0 ? (
-            <div className="grid h-40 place-items-center"><span className="h-7 w-7 animate-spin rounded-full border-[3px] border-line border-r-transparent" /></div>
+            <div className="grid h-40 place-items-center"><Loader2 className="h-7 w-7 animate-spin" /></div>
           ) : items.length === 0 ? (
             <div className="bg-white p-7 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-surface text-ink">
-                <History size={25} strokeWidth={1.8} />
+                <History size={25} />
               </div>
               <h3 className="mt-3 text-sm font-extrabold">{tr('Aucune recherche pour le moment', 'لا يوجد بحث حتى الآن')}</h3>
               <p className="mt-1 text-xs text-muted">{tr("Photographiez, scannez ou collez le lien d'un produit.", 'صوّر منتجًا أو امسحه أو ألصق رابطه.')}</p>

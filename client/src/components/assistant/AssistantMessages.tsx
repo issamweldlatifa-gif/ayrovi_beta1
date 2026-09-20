@@ -1,12 +1,13 @@
+import { MerchantRating } from '../../ayrovix/components/MerchantRating';
 import React, { useEffect, useRef } from 'react';
 import { cleanAssistantText } from './composerPolicy';
-import { ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
+import { Mic, ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
 import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
 import { AssistantMessage, FeedbackValue } from './types';
-import { displayRating, isDisplayableCandidate } from '../../ayrovix/services/resultPolicy';
+import { isDisplayableCandidate } from '../../ayrovix/services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
 interface AssistantMessagesProps {
@@ -80,7 +81,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
         <div className={`relative aspect-[4/3] p-2 ${isDark ? 'bg-white/5' : 'bg-surface'}`}><CandidateImage product={product}/><span className="absolute start-2 top-2 rounded-full bg-ink/80 px-2 py-1 text-xs font-bold text-white">{product.source}</span></div>
         <div className="p-3">
           <h3 className="line-clamp-2 min-h-9 text-xs font-extrabold leading-snug">{product.title}</h3>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className={`text-base font-black ${isDark ? 'text-white' : 'text-ink'}`}>{product.priceTnd != null ? `${product.priceTnd.toFixed(2)} DT` : '—'}</p><p className={`text-xs font-semibold ${isDark ? 'text-muted' : 'text-muted'}`}>{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p><p className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-ink"><Star size={22} fill="currentColor" />{displayRating(product).toFixed(1)}/5 <span className={isDark ? 'text-muted' : 'text-muted'}>{product.ratingKind === 'merchant' ? tr('marchand', 'المتجر') : tr('pertinence', 'التطابق')}</span></p></div></div>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2"><div><p className={`text-base font-black ${isDark ? 'text-white' : 'text-ink'}`}>{product.priceTnd != null ? `${product.priceTnd.toFixed(2)} DT` : '—'}</p><p className={`text-xs font-semibold ${isDark ? 'text-muted' : 'text-muted'}`}>{Number(product.price).toFixed(Number(product.price) % 1 ? 2 : 0)} {product.currency}</p><MerchantRating value={product}/></div></div>
           <div className="mt-3 flex gap-2"><a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className={`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}>{tr('Lien', 'الرابط')}<ArrowUpRight size={17} /></a><button type="button" disabled={Boolean(productBusyId)} onClick={() => onSelectProduct(message.id, product)} className="ay-btn-primary min-h-10 flex-1 px-3 text-xs">{productBusyId === product.id ? tr('Vérification…', 'جارٍ التحقق…') : tr('Choisir', 'اختيار')}</button></div>
         </div>
       </article>)}
@@ -187,7 +188,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                   <div className={`rounded-card px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-ink text-white shadow-card' : isDark ? 'border border-white/10 bg-white/[0.055] text-white' : 'border border-line bg-white text-ink shadow-card'}`}>
                     {message.role === 'user' && message.fromVoice && (
                       <span className="mb-1.5 inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-black text-white">
-                        <span>🎙️</span>
+                        <Mic size={14} />
                         <span>{tr('Vocal', 'صوتي')}</span>
                       </span>
                     )}

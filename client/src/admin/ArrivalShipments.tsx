@@ -1,3 +1,4 @@
+import { Check } from '../components/QatafoIcons';
 import React, { useCallback, useEffect, useState } from 'react';
 import { adminApi, ApiError } from './api';
 import { Button } from './components';
@@ -76,14 +77,14 @@ function fmt(iso: string | null | undefined): string {
 const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
   DRAFT: { text: 'Brouillon', cls: 'arrival-wh-tag' },
   CONFIRMED: { text: 'Confirmé', cls: 'arrival-wh-tag' },
-  SENT: { text: '✓ Envoyé', cls: 'arrival-wh-tag arrival-wh-sent' },
+  SENT: { text: 'Envoyé', cls: 'arrival-wh-tag arrival-wh-sent' },
   SENDING: { text: 'Envoi…', cls: 'arrival-wh-tag' },
   SEND_FAILED: { text: 'Échec', cls: 'arrival-wh-tag arrival-wh-failed' },
 };
 
 function StatusPill({ status }: { status: string }) {
   const s = STATUS_LABEL[status] || { text: status, cls: 'arrival-wh-tag' };
-  return <span className={s.cls}>{s.text}</span>;
+  return <span className={s.cls}>{status === 'SENT' && <Check size={14}/>}{s.text}</span>;
 }
 
 export default function ArrivalShipments({ arrivalId, canWrite, arrivalConfirmed }: {
@@ -275,7 +276,7 @@ export default function ArrivalShipments({ arrivalId, canWrite, arrivalConfirmed
 
               {integration === 'SENT' && (
                 <p className="arrival-shipment-sent">
-                  ✓ Reçu par l’entrepôt · <strong>{s.warehouse_shipment_id || s.dispatch?.warehouse_shipment_id}</strong>
+                  <Check size={16}/> Reçu par l’entrepôt · <strong>{s.warehouse_shipment_id || s.dispatch?.warehouse_shipment_id}</strong>
                   {s.dispatch?.sent_at ? ` · ${fmt(s.dispatch.sent_at)}` : ''}
                   {s.dispatch?.attempts && s.dispatch.attempts > 1 ? ` · ${s.dispatch.attempts} tentatives` : ''}
                 </p>

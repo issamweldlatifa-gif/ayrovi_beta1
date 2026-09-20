@@ -12,7 +12,7 @@
     {
       "label": "fr/320/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.011559537914691944
+      "details": 0.011441054502369668
     },
     {
       "label": "fr/320: actual logo source preserved",
@@ -23,8 +23,29 @@
       "pass": true
     },
     {
-      "label": "fr/320: navigation still legacy glyphs",
-      "pass": true
+      "label": "fr/320: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "fr/320: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "fr/320/auth: no horizontal overflow",
@@ -131,7 +152,7 @@
     {
       "label": "fr/360/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.013033175355450236
+      "details": 0.012927856766719327
     },
     {
       "label": "fr/360: actual logo source preserved",
@@ -142,8 +163,29 @@
       "pass": true
     },
     {
-      "label": "fr/360: navigation still legacy glyphs",
-      "pass": true
+      "label": "fr/360: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "fr/360: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "fr/360/auth: no horizontal overflow",
@@ -250,7 +292,7 @@
     {
       "label": "fr/390/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.014120792319844453
+      "details": 0.01402357516101592
     },
     {
       "label": "fr/390: actual logo source preserved",
@@ -261,8 +303,29 @@
       "pass": true
     },
     {
-      "label": "fr/390: navigation still legacy glyphs",
-      "pass": true
+      "label": "fr/390: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "fr/390: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "fr/390/auth: no horizontal overflow",
@@ -369,7 +432,7 @@
     {
       "label": "fr/768/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.006760342614533965
+      "details": 0.006710974526066351
     },
     {
       "label": "fr/768: actual logo source preserved",
@@ -380,8 +443,29 @@
       "pass": true
     },
     {
-      "label": "fr/768: navigation still legacy glyphs",
-      "pass": true
+      "label": "fr/768: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "fr/768: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "fr/768/auth: no horizontal overflow",
@@ -488,7 +572,7 @@
     {
       "label": "fr/1360/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.006836318650683022
+      "details": 0.006808440200724839
     },
     {
       "label": "fr/1360: actual logo source preserved",
@@ -499,8 +583,29 @@
       "pass": true
     },
     {
-      "label": "fr/1360: navigation still legacy glyphs",
-      "pass": true
+      "label": "fr/1360: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "fr/1360: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "fr/1360/auth: no horizontal overflow",
@@ -607,7 +712,7 @@
     {
       "label": "ar/320/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.011559537914691944
+      "details": 0.011441054502369668
     },
     {
       "label": "ar/320: actual logo source preserved",
@@ -618,8 +723,29 @@
       "pass": true
     },
     {
-      "label": "ar/320: navigation still legacy glyphs",
-      "pass": true
+      "label": "ar/320: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "ar/320: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "ar/320/auth: no horizontal overflow",
@@ -726,7 +852,7 @@
     {
       "label": "ar/360/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.013033175355450236
+      "details": 0.012927856766719327
     },
     {
       "label": "ar/360: actual logo source preserved",
@@ -737,8 +863,29 @@
       "pass": true
     },
     {
-      "label": "ar/360: navigation still legacy glyphs",
-      "pass": true
+      "label": "ar/360: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "ar/360: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "ar/360/auth: no horizontal overflow",
@@ -845,7 +992,7 @@
     {
       "label": "ar/390/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.013993194798882003
+      "details": 0.013895977640053469
     },
     {
       "label": "ar/390: actual logo source preserved",
@@ -856,8 +1003,29 @@
       "pass": true
     },
     {
-      "label": "ar/390: navigation still legacy glyphs",
-      "pass": true
+      "label": "ar/390: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "ar/390: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "ar/390/auth: no horizontal overflow",
@@ -964,7 +1132,7 @@
     {
       "label": "ar/768/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.006760342614533965
+      "details": 0.006710974526066351
     },
     {
       "label": "ar/768: actual logo source preserved",
@@ -975,8 +1143,29 @@
       "pass": true
     },
     {
-      "label": "ar/768: navigation still legacy glyphs",
-      "pass": true
+      "label": "ar/768: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "ar/768: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "ar/768/auth: no horizontal overflow",
@@ -1083,7 +1272,7 @@
     {
       "label": "ar/1360/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.006836318650683022
+      "details": 0.006808440200724839
     },
     {
       "label": "ar/1360: actual logo source preserved",
@@ -1094,8 +1283,29 @@
       "pass": true
     },
     {
-      "label": "ar/1360: navigation still legacy glyphs",
-      "pass": true
+      "label": "ar/1360: header matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 2,
+        "names": [
+          "Menu",
+          "User"
+        ],
+        "errors": []
+      }
+    },
+    {
+      "label": "ar/1360: navigation matches editorial geometry and stroke",
+      "pass": true,
+      "details": {
+        "count": 3,
+        "names": [
+          "Lens",
+          "Sparkles",
+          "Eye"
+        ],
+        "errors": []
+      }
     },
     {
       "label": "ar/1360/auth: no horizontal overflow",
@@ -1224,7 +1434,7 @@
       "locale": "fr",
       "width": 320,
       "screen": "home",
-      "ratio": 0.011559537914691944,
+      "ratio": 0.011441054502369668,
       "exclusions": []
     },
     {
@@ -1259,7 +1469,7 @@
       "locale": "fr",
       "width": 360,
       "screen": "home",
-      "ratio": 0.013033175355450236,
+      "ratio": 0.012927856766719327,
       "exclusions": []
     },
     {
@@ -1294,7 +1504,7 @@
       "locale": "fr",
       "width": 390,
       "screen": "home",
-      "ratio": 0.014120792319844453,
+      "ratio": 0.01402357516101592,
       "exclusions": []
     },
     {
@@ -1329,7 +1539,7 @@
       "locale": "fr",
       "width": 768,
       "screen": "home",
-      "ratio": 0.006760342614533965,
+      "ratio": 0.006710974526066351,
       "exclusions": []
     },
     {
@@ -1364,7 +1574,7 @@
       "locale": "fr",
       "width": 1360,
       "screen": "home",
-      "ratio": 0.006836318650683022,
+      "ratio": 0.006808440200724839,
       "exclusions": []
     },
     {
@@ -1399,7 +1609,7 @@
       "locale": "ar",
       "width": 320,
       "screen": "home",
-      "ratio": 0.011559537914691944,
+      "ratio": 0.011441054502369668,
       "exclusions": []
     },
     {
@@ -1434,7 +1644,7 @@
       "locale": "ar",
       "width": 360,
       "screen": "home",
-      "ratio": 0.013033175355450236,
+      "ratio": 0.012927856766719327,
       "exclusions": []
     },
     {
@@ -1469,7 +1679,7 @@
       "locale": "ar",
       "width": 390,
       "screen": "home",
-      "ratio": 0.013993194798882003,
+      "ratio": 0.013895977640053469,
       "exclusions": []
     },
     {
@@ -1504,7 +1714,7 @@
       "locale": "ar",
       "width": 768,
       "screen": "home",
-      "ratio": 0.006760342614533965,
+      "ratio": 0.006710974526066351,
       "exclusions": []
     },
     {
@@ -1539,7 +1749,7 @@
       "locale": "ar",
       "width": 1360,
       "screen": "home",
-      "ratio": 0.006836318650683022,
+      "ratio": 0.006808440200724839,
       "exclusions": []
     },
     {

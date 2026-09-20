@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 const identity = JSON.parse(fs.readFileSync('client/src/design/editorial/identity.json', 'utf8'));
+const glyphCount = Object.keys(JSON.parse(fs.readFileSync('client/src/design/editorial/glyphs.json','utf8'))).length;
 const checks = [];
 const errors = [];
 const check = (label, condition, details) => { checks.push({ label, pass: Boolean(condition), ...(details === undefined ? {} : {details}) }); if (!condition) throw new Error(label + ': ' + JSON.stringify(details)); };
@@ -17,7 +18,7 @@ try {
   await page.goto(pathToFileURL(path.resolve('docs/editorial/AYROVI-editorial-system.html')).href);
   await page.evaluate(async fonts => { await Promise.all(fonts.map(font => document.fonts.load(`16px "${font.family}"`))); await document.fonts.ready; }, identity.fonts);
   check('all four self-hosted families load from embedded WOFF2', await page.evaluate(fonts => fonts.every(f => document.fonts.check(`16px "${f.family}"`)), identity.fonts));
-  check('complete 92-glyph reference', await page.locator('.glyph').count() === 92);
+  check('complete reference family', await page.locator('.glyph').count() === glyphCount);
   for (const locale of ['ar','fr']) {
     await page.evaluate(locale => { document.documentElement.lang=locale;document.documentElement.dir=locale==='ar'?'rtl':'ltr'; }, locale);
     for (const width of [320,360,390,768,1360]) {
@@ -35,7 +36,7 @@ try {
   await page.locator('#search').fill('lens');
   check('icon search works', await page.locator('.glyph:visible').count()===1);
   await page.locator('#search').fill('no-such-icon');
-  check('empty search is announced',await page.locator('#count').textContent()==='0 / 92');
+  check('empty search is announced',await page.locator('#count').textContent()===`0 / ${glyphCount}`);
   await page.locator('#search').fill('');
   await page.locator('#example').click();
   check('sample action reports its real demonstration state', (await page.locator('#feedback').textContent()).includes('تجربة عرض فقط'));
@@ -50,7 +51,7 @@ try {
   await page.locator('#locale').click();
   await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:reportDir+'/system-desktop-fr.png'});
-  await page.locator('.glyphs').screenshot({path:reportDir+'/all-92-glyphs.png'});
+  await page.locator('.glyphs').screenshot({path:reportDir+'/all-glyphs.png'});
   await page.emulateMedia({reducedMotion:'reduce'});
   check('reduced motion removes button transitions', await page.locator('#example').evaluate(e=>getComputedStyle(e).transitionDuration)==='0s');
   check('no external requests',external.length===0,external);

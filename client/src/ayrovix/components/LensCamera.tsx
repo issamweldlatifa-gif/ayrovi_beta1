@@ -36,7 +36,7 @@ export const LensCamera: React.FC<LensCameraProps> = ({ onImage }) => {
         className="ay-btn-primary h-auto w-full justify-start gap-4 rounded-card p-4 text-start shadow-card"
       >
         <span className="grid h-12 w-12 flex-none place-items-center rounded-control bg-white/15">
-          <Camera size={24} strokeWidth={1.8} />
+          <Camera size={24} />
         </span>
         <span>
           <span className="block text-sm font-extrabold">{tr('Prendre une photo', 'التقاط صورة')}</span>

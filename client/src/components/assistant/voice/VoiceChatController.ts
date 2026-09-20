@@ -56,6 +56,8 @@ export class VoiceChatController {
     return this.state;
   }
 
+  public getVoiceSettings(): VoiceOutputSettings { return this.output.getSettings(); }
+
   public configureVoice(settings: Partial<VoiceOutputSettings>): void {
     this.output.configure(settings);
   }

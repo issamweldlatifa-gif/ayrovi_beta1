@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { Trash2, ArrowRight, Plus, Minus } from './QatafoIcons';
+import { Trash2, ArrowRight, Plus, Minus, ChevronDown } from './QatafoIcons';
 import { AppHeader } from '../design/AppHeader';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem } from '../types';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
-import { getCommerceConfig } from '../services/publicApi';
+import { useCommercePolicy } from '../commerce/useCommercePolicy';
+import { validProductUrl } from '../ayrovix/services/resultPolicy';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -37,7 +38,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onCalculateAnotherProduct,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
-  const [depositPolicy, setDepositPolicy] = React.useState({ percent: 20, reviewDelay: '', refund: '' });
+  const commerce = useCommercePolicy(isOpen);
+  const depositPolicy = commerce.policy?.deposit;
   useBodyScrollLock(isOpen);
 
   useEffect(() => {
@@ -49,20 +51,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    getCommerceConfig().then((payload) => {
-      const deposit = payload.data?.deposit || {};
-      setDepositPolicy({
-        percent: Number(deposit.percent) > 0 ? Number(deposit.percent) : 20,
-        reviewDelay: String(deposit.reviewDelay || ''),
-        refund: String(deposit.unavailableRefundPolicy || ''),
-      });
-    }).catch(() => undefined);
-  }, [isOpen]);
 
   const pendingManual = items.some((item) => item.priceVerificationStatus === 'PENDING_MANUAL');
-  const estimatedDeposit = Math.round(totalTND * depositPolicy.percent / 100 * 1000) / 1000;
+  const estimatedDeposit = Math.round(totalTND * (depositPolicy?.percent ?? 0) / 100 * 1000) / 1000;
 
   if (!isOpen) return null;
 
@@ -105,10 +96,10 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-surface border border-line rounded-2xl p-3.5 flex gap-3.5 items-start group hover:border-line/40 transition-all"
+                  className="bg-surface border border-line rounded-card p-3.5 flex gap-3.5 items-start group hover:border-line/40 transition-all"
                 >
                   {/* Thumbnail */}
-                  <div className="w-16 h-16 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-card bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center">
                     {item.imageUrl ? (
                       <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
                     ) : null}
@@ -123,7 +114,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => onRemoveItem(item.id)}
-                        className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-danger/5 hover:text-danger"
+                        className="grid h-11 w-11 shrink-0 place-items-center rounded-control text-muted transition-colors hover:bg-danger/5 hover:text-danger"
                         title={tr('Supprimer', 'حذف')}
                         aria-label={tr(`Supprimer ${item.title} du panier`, `حذف ${item.title} من السلة`)}
                       >
@@ -146,7 +137,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </p>
                     )}
                     {item.customerNote && <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{tr('Note', 'ملاحظة')} : {item.customerNote}</p>}
-                    {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && (
+                    {(item.referenceUrl || item.priceVerificationStatus === 'PENDING_MANUAL') && validProductUrl(item.sourceUrl) && (
                       <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-bold text-ink underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
@@ -159,7 +150,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       </div>
 
                       {/* Quantity Controls */}
-                      <div className="flex items-center gap-1 bg-white border border-line rounded-xl p-0.5 shadow-xs">
+                      <div className="flex items-center gap-1 bg-white border border-line rounded-card p-0.5 shadow-xs">
                         <button
                           type="button"
                           onClick={() => onUpdateQuantity(item.id, item.quantity - 1)}
@@ -192,12 +183,19 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
           {/* Footer & Checkout */}
           {items.length > 0 && (
             <div className="ay-safe-bottom p-4 sm:p-6 border-t border-line bg-surface space-y-3">
-              <div className="rounded-xl border border-line bg-surface p-3 text-xs leading-5 text-ink">
-                <p className="font-black">{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</p>
+              {depositPolicy ? <details className="group rounded-card border border-line bg-surface text-xs leading-5 text-ink">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 font-black [&::-webkit-details-marker]:hidden"><span>{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</span><ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" /></summary>
+                <div className="space-y-1 border-t border-line px-3 py-2">
                 {pendingManual && <p className="font-bold">{tr('Le prix du produit sera vérifié par l’équipe avant l’achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}
-                <p>{tr(depositPolicy.reviewDelay || 'Vérification après réception du justificatif.', 'يتم التحقق بعد استلام إثبات الدفع.')}</p>
-                <p>{tr(depositPolicy.refund || 'Remboursement de l’acompte si le produit ne peut pas être validé ou acheté.', 'يُرجع العربون إذا تعذر التحقق من المنتج أو شراؤه.')}</p>
-              </div>
+                {depositPolicy.reviewDelay && <p dir="auto">{depositPolicy.reviewDelay}</p>}
+                {depositPolicy.unavailableRefundPolicy && <p dir="auto">{depositPolicy.unavailableRefundPolicy}</p>}
+                <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline">{tr('Consulter les conditions publiées', 'راجع الشروط المنشورة')}</a>
+                </div>
+              </details>
+              : <div role={commerce.status === 'error' ? 'alert' : 'status'} className="border border-line p-3 text-xs leading-5">
+                {commerce.status === 'error' ? tr('Conditions de paiement indisponibles. Réessayez avant de continuer.', 'تعذر تحميل شروط الدفع. أعد المحاولة قبل المتابعة.') : tr('Chargement des conditions de paiement…', 'جارٍ تحميل شروط الدفع…')}
+                {commerce.status === 'error' && <button type="button" onClick={commerce.retry} className="ay-btn-secondary mt-2 w-full">{tr('Réessayer', 'أعد المحاولة')}</button>}
+              </div>}
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted font-semibold">{tr('Total de la commande :', 'إجمالي الطلب:')}</span>
                 <span className="text-xl font-extrabold text-ink">{formatMoney(totalTND)}</span>
@@ -210,7 +208,8 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
               <button
                 type="button"
-                onClick={onProceedToCheckout}
+                onClick={() => { if (commerce.status === 'ready') onProceedToCheckout(); }}
+                disabled={commerce.status !== 'ready'}
                 className="ay-btn-cta w-full text-sm"
               >
                 <span>{tr('Continuer vers la livraison', 'المتابعة إلى التوصيل')}</span>

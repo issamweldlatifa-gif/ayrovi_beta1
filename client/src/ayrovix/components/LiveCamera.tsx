@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag } from '../../components/QatafoIcons';
+import { ArrowLeft, Zap, ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
 import { LensContextHeader } from './LensNavigation';
 import { LiveVisionRuntime, type LiveDetection, type LiveVisionState } from '../services/liveVisionRuntime';
@@ -193,13 +193,13 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {/* Header — icônes blanches à intérieur transparent + nom de la surface, comme « lens ai » sur la photo de référence */}
       <div className="absolute left-0 right-0 top-0 z-20 flex h-14 items-center justify-between px-3 pt-1">
         <button type="button" onClick={photoUrl && onPhotoClose ? onPhotoClose : onClose} className={`grid h-10 w-10 place-items-center rounded-full text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'bg-black/55 backdrop-blur' : ''}`} aria-label={tr('Retour', 'رجوع')}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+          <ArrowLeft size={22} />
         </button>
         <p aria-hidden="true" className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-extrabold lowercase tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'rounded-full bg-black/40 px-3 py-0.5 backdrop-blur' : ''}`}>ayrovix</p>
         {photoUrl ? null : (
           <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
             className={`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill={torchOn ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/></svg>
+            <Zap size={20} />
           </button>
         )}
       </div>
@@ -325,7 +325,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {!photoUrl && (
       <div className="relative z-10 flex items-end justify-between px-8 pb-2">
         <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
-          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} strokeWidth={1.8} /></span>
+          <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} /></span>
           {tr('Importer', 'استيراد')}
         </button>
 
@@ -333,7 +333,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
           <button type="button" onClick={handleCentralAction} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}
             className={`grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}>
             <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-transparent text-white ring-2 ring-white' : 'bg-white/95'}`}>
-              {isVideo && !capturing && <ScanSearch size={22} strokeWidth={1.9} />}
+              {isVideo && !capturing && <ScanSearch size={22} />}
             </span>
           </button>
         ) : (
@@ -342,7 +342,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
 
         <button type="button" onClick={() => { setNotice(null); setMode(mode === 'code' ? 'search' : 'code'); }} aria-pressed={mode === 'code'}
           className="flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
-          <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent ${mode === 'code' ? 'ring-2 ring-white' : ''}`}><Barcode size={22} strokeWidth={1.8} /></span>
+          <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent ${mode === 'code' ? 'ring-2 ring-white' : ''}`}><Barcode size={22} /></span>
           {tr('Barcode', 'باركود')}
         </button>
       </div>

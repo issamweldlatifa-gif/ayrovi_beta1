@@ -7,7 +7,7 @@
  * d'application unique sans aucun littéral de couleur.
  */
 import React, { useRef, useState } from 'react';
-import { AlertCircle, Loader2, RefreshCw } from '../../components/QatafoIcons';
+import { ArrowUp, ArrowDown, Grip, AlertCircle, Loader2, RefreshCw } from '../../components/QatafoIcons';
 import { Button } from './Button';
 import { TableCell } from './TableCell';
 
@@ -124,7 +124,7 @@ export function DataTable<T extends { id?: string }>({
                 aria-sort={column.sortable && onSortChange && sort?.key === column.key ? (sort.direction === 'asc' ? 'ascending' : 'descending') : undefined}>
                 {column.sortable && onSortChange ? (
                   <button type="button" className="admin-table-sort" onClick={() => onSortChange(column.key)} data-active={sort?.key === column.key ? 'true' : undefined}>
-                    {column.label}{sort?.key === column.key && <i>{sort.direction === 'asc' ? '↑' : '↓'}</i>}
+                    {column.label}{sort?.key === column.key && <span aria-hidden>{sort.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}</span>}
                   </button>
                 ) : column.label}
               </th>
@@ -161,7 +161,7 @@ export function DataTable<T extends { id?: string }>({
                       </td>}
                       {withActions.map((column) => (
                         <TableCell key={column.key} className={column.className} align={column.align}>
-                          {column.key === '__drag' ? <span className="admin-table-grip" title="Glisser pour réordonner" aria-hidden="true">⋮⋮</span>
+                          {column.key === '__drag' ? <span className="admin-table-grip" title="Glisser pour réordonner" aria-hidden="true"><Grip size={16}/></span>
                             : column.key === '__actions' ? (
                             <div className="admin-row-actions">
                               {(rowActions ?? []).filter((action) => !action.show || action.show(row)).map((action) => {

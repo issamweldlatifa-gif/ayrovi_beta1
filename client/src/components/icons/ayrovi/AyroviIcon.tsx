@@ -1,59 +1,23 @@
 import * as React from 'react';
-import { useIconFamily } from '../../../design/editorial/IconFamily';
+import { useIconDirection } from '../../../design/editorial/IconDirection';
 import { EditorialIcon, type EditorialIconName } from '../../../design/editorial/Icon';
+import identity from '../../../design/editorial/identity.json';
 import glyphs from '../../../design/editorial/glyphs.json';
 
-/**
- * AYROVI Icon System — base.
- * Style: monoline fine (Zalando-like) on a 24 grid.
- * Stroke 1.5 via --ayrovi-icon-stroke (proportional at every display size).
- * Monochrome strict (Zalando-like) : currentColor uniquement, aucun accent.
- */
-export const AYROVI_ICON_SIZE = 24;
-export const AYROVI_STROKE = 1.5;
-export const AYROVI_CORNER = 3;
+/** Compatibility API only. No legacy renderer, geometry, or optional family remains. */
+export const AYROVI_ICON_SIZE = identity.geometry.iconGrid;
+export const AYROVI_STROKE = identity.geometry.iconStroke;
+export const AYROVI_CORNER = identity.geometry.controlRadius;
 export type AyroviIconProps = React.SVGProps<SVGSVGElement> & {
   size?: number | string;
   title?: string;
 };
 
-export const AyroviSvg = React.forwardRef<SVGSVGElement, AyroviIconProps>(
-  ({ size = AYROVI_ICON_SIZE, strokeWidth = AYROVI_STROKE, className, color, title, children, ...props }, ref) => (
-    <svg
-      ref={ref}
-      xmlns="http://www.w3.org/2000/svg"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color || 'currentColor'}
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      overflow="visible"
-      className={['ayrovi-icon', className].filter(Boolean).join(' ')}
-      aria-hidden={title ? undefined : true}
-      {...props}
-    >
-      {title ? <title>{title}</title> : null}
-      {children}
-    </svg>
-  ),
-);
-AyroviSvg.displayName = 'AyroviSvg';
-
-export function createAyroviIcon(name: string, body: React.ReactNode) {
+export function createAyroviIcon(name: EditorialIconName) {
   const Icon = React.forwardRef<SVGSVGElement, AyroviIconProps>(function AyroviNamed(props, ref) {
-    const { family, direction } = useIconFamily();
-    if (family === 'editorial' && Object.hasOwn(glyphs, name)) {
-      return <EditorialIcon {...props} ref={ref} name={name as EditorialIconName} direction={direction} data-ayrovi-icon={name}
-        className={glyphs[name as EditorialIconName].mirrorRtl ? props.className?.replace(/(^|\s)rotate-180(?=\s|$)/g, ' ').trim() : props.className} />;
-    }
-    return (
-      <AyroviSvg ref={ref} data-ayrovi-icon={name} {...props}>
-        {body}
-      </AyroviSvg>
-    );
+    const direction = useIconDirection();
+    return <EditorialIcon {...props} ref={ref} name={name} direction={direction} data-ayrovi-icon={name}
+      className={glyphs[name].mirrorRtl ? props.className?.replace(/(^|\s)rotate-180(?=\s|$)/g, ' ').trim() : props.className} />;
   });
   Icon.displayName = `Ayrovi${name}`;
   return Icon;

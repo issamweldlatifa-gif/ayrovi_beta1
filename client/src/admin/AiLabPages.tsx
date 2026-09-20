@@ -159,7 +159,7 @@ const SuggestionRow: React.FC<{ question: string; count: number }> = ({ question
       setState('done');
     } catch { setState('error'); }
   };
-  if (state === 'done') return <p className="admin-block-small" style={{ margin: '8px 0' }}>✓ Ajouté à la base de connaissance : {question}</p>;
+  if (state === 'done') return <p className="admin-block-small" style={{ margin: '8px 0' }}><CheckCircle2 size={16}/> Ajouté à la base de connaissance : {question}</p>;
   return (
     <div style={{ borderTop: '1px solid var(--admin-line-soft)', marginTop: 10, paddingTop: 10 }}>
       <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>« {question} » <span className="admin-block-small">— posée {count}× sans réponse vérifiée</span></p>
@@ -226,7 +226,7 @@ export const AiDiscoveryPage: React.FC = () => {
             { key: 'tools', label: 'Outils', className: 'admin-block-small', render: (row: any) => row.tools || '—' },
             { key: 'question', label: 'Question', className: 'admin-block-small', render: (row: any) => row.question || '—' },
             { key: 'confidence', label: 'Confiance', render: (row: any) => (row.confidence ? `${Math.round(row.confidence * 100)}%` : '—') },
-            { key: 'success', label: 'Succès', render: (row: any) => (row.success ? '✓' : '✗') },
+            { key: 'success', label: 'Succès', render: (row: any) => (row.success ? <CheckCircle2 size={16} aria-label="Réussite"/> : <AlertCircle size={16} aria-label="Échec"/>) },
           ]}
         />
       </section>

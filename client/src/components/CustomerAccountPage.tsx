@@ -4,8 +4,7 @@ import { AccountCart, AccountFavorites, safeAccountLink } from './account/Accoun
 import { AccountPreferences, AccountSecurity } from './account/AccountSettings';
 import { AccountSection, accountSections } from './account/model';
 import '../styles/customer-account.css';
-import { FcGoogle } from 'react-icons/fc';
-import { FaApple, FaFacebookF } from 'react-icons/fa6';
+import { GoogleBrandIcon as FcGoogle, AppleBrandIcon as FaApple, FacebookBrandIcon as FaFacebookF } from '../design/BrandIcon';
 import {
   ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, Heart, Home, Loader2, LogOut,
   MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X, Hourglass, AlertCircle, ArrowDown,

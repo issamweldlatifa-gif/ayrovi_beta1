@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { MerchantRating } from './MerchantRating';
+import { Plus, Minus } from '../../components/QatafoIcons';
+import React, { useEffect, useMemo, useState, useId } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
-import { ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star } from '../../components/QatafoIcons';
+import { Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star } from '../../components/QatafoIcons';
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
@@ -49,7 +51,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [manualUrl, setManualUrl] = useState(product.sourceUrl || '');
   const [submitted, setSubmitted] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
-  const [depositPercent, setDepositPercent] = useState(20);
+  const [depositPercent, setDepositPercent] = useState<number | null>(null);
+  const [configError, setConfigError] = useState(false);
+  const [configAttempt, setConfigAttempt] = useState(0);
+  const formId = useId();
   const availability = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
   const options = (product.variantOptions || []).filter((option) => option.available);
   const requestedSize = sizeChoice === '__other__' ? customSize.trim() : sizeChoice;
@@ -61,10 +66,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const selectedCurrency = selectedOption?.currency ?? product.currency;
   const selectedPriceTnd = selectedOption?.priceTnd ?? product.priceTnd;
   const isUrlValid = validProductUrl(manualUrl);
-  const canOrder = Number(selectedPrice) > 0 && selectedCurrency != null && isUrlValid && quantity >= 1 && quantity <= 99;
-  const rawRating = Number(product.rating);
-  const displayRating = Number.isFinite(rawRating) && rawRating > 0 && rawRating <= 5 ? Math.round(rawRating * 10) / 10 : (priceVerified ? 5 : 4.5);
-  const merchantRating = product.ratingKind === 'merchant';
+  const validPrice = typeof selectedPrice === 'number' && Number.isFinite(selectedPrice) && selectedPrice > 0 && Boolean(selectedCurrency);
+  const validQuantity = Number.isInteger(quantity) && quantity >= 1 && quantity <= 99;
+  const canOrder = validPrice && isUrlValid && validQuantity && depositPercent !== null;
   const imageUrls = useMemo(
     () => [...new Set([...(product.images || []), product.image].filter(Boolean))],
     [product.image, product.images],
@@ -74,15 +78,20 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/public/commerce-config')
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((payload) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+    setConfigError(false); setDepositPercent(null);
+    fetch('/api/public/commerce-config', { signal: controller.signal })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('CONFIG_UNAVAILABLE')))
+      .then(payload => {
         const percent = Number(payload?.data?.deposit?.percent);
-        if (!cancelled && Number.isFinite(percent) && percent > 0 && percent <= 100) setDepositPercent(percent);
+        if (!Number.isFinite(percent) || percent <= 0 || percent > 100) throw new Error('INVALID_DEPOSIT');
+        if (!cancelled) setDepositPercent(percent);
       })
-      .catch(() => undefined);
-    return () => { cancelled = true; };
-  }, []);
+      .catch(() => { if (!cancelled) setConfigError(true); })
+      .finally(() => clearTimeout(timeout));
+    return () => { cancelled = true; clearTimeout(timeout); controller.abort(); };
+  }, [configAttempt]);
 
   useEffect(() => {
     setImageIndex(0);
@@ -109,7 +118,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.95fr] lg:gap-8 lg:items-start">
         {/* Media — priority, no card — uses ayrovix-product-gallery classes for contain + no crop (730 tests) */}
         <div className="flow-media min-w-0">
-          <div className="ayrovix-product-gallery overflow-hidden rounded-xl bg-white">
+          <div className="ayrovix-product-gallery overflow-hidden rounded-control bg-white">
             <div className="ayrovix-product-gallery-stage bg-surface">
               {activeImage
                 ? <img
@@ -122,11 +131,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                     onError={() => setImageIndex((current) => Math.min(current + 1, imageUrls.length))}
                     className="ayrovix-product-gallery-image"
                   />
-                : <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={40} strokeWidth={1.4} /></div>}
-              <span className={`absolute left-3 top-3 rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availability.cls}`}>
+                : <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={40} /></div>}
+              <span className={`absolute start-3 top-3 rounded-control px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availability.cls}`}>
                 {availability[isArabic ? 'ar' : 'fr']}
               </span>
-              <span className="absolute right-3 top-3 max-w-[45%] truncate rounded-full bg-ink/85 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
+              <span className="absolute end-3 top-3 max-w-[45%] truncate rounded-control bg-ink/85 px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide text-white">
                 {product.source}
               </span>
             </div>
@@ -139,7 +148,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                       key={`${url}-${index}`}
                       type="button"
                       onClick={() => setImageIndex(index)}
-                      className={`ayrovix-thumbnail shrink-0 rounded-xl border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}
+                      className={`ayrovix-thumbnail shrink-0 rounded-control border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}
                       aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}
                       aria-current={selected ? 'true' : undefined}
                     >
@@ -161,9 +170,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               {[product.brand, product.model].filter(Boolean).join(' · ') || tr('Produit identifié par AYROVIX', 'منتج تعرّفت عليه AYROVIX')}
             </p>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1 text-xs font-extrabold text-ink" title={merchantRating ? tr('Note publiée par le marchand', 'تقييم منشور لدى المتجر') : tr('Qualité de la fiche AYROVIX', 'جودة بطاقة AYROVIX')}>
-                <Star size={14} fill="currentColor" style={{color:'#FF6900'}} />{displayRating.toFixed(1)}/5 <span className="font-semibold text-muted">{merchantRating ? tr('marchand', 'المتجر') : tr('fiche AYROVIX', 'بطاقة AYROVIX')}</span>
-              </span>
+              <MerchantRating value={product}/>
               {validProductUrl(product.sourceUrl) && (
                 <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink">
                   {tr('Page du marchand', 'صفحة المتجر')}<ArrowUpRight size={14} />
@@ -175,22 +182,22 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div className="h-px bg-line" />
 
           {/* Price — no card, just hierarchy + subtle left rule */}
-          <div className="border-l-2 border-ink pl-4 py-1">
-            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{tr('Prix final tout inclus', 'السعر النهائي الشامل')}</p>
+          <div className="border-s-2 border-ink ps-4 py-1">
+            <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{priceVerified ? tr('Prix total calculé', 'السعر الإجمالي المحسوب') : tr('Prix total estimé', 'السعر الإجمالي التقديري')}</p>
             <p className="mt-1 break-words text-3xl font-black leading-none tracking-tight text-ink">
-              {selectedPriceTnd != null ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}
+              <bdi dir="ltr">{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
             </p>
             <p className="mt-1 break-words text-xs font-semibold leading-snug text-muted">
-              {selectedPrice != null && selectedCurrency
+              {validPrice && selectedPrice != null && selectedCurrency
                 ? `${tr('Prix boutique', 'سعر المتجر')} ${selectedPrice.toFixed(2)} ${selectedCurrency}`
                 : tr('Prix boutique à confirmer', 'سعر المتجر بانتظار التأكيد')}
             </p>
             {/* verification — subtle, not card */}
             {priceVerified ? (
-              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1 text-xs font-bold text-ink"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-control border border-line bg-surface px-3 py-1 text-xs font-bold text-ink"><CheckCircle className="h-3.5 w-3.5 shrink-0" />{tr('Prix confirmé', 'السعر مؤكّد')}</p>
             ) : (
               <div className="mt-2 space-y-1 text-xs leading-snug text-muted">
-                <p className="inline-flex items-start gap-1.5 font-semibold text-ink"><Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tr(`Prix estimé — vérification manuelle par notre équipe après l’acompte de ${depositPercent}%.`, `السعر تقديري — يتحقق منه فريقنا يدويًا بعد دفع عربون ${depositPercent}%.`)}</p>
+                <p className="inline-flex items-start gap-1.5 font-semibold text-ink"><Hourglass className="mt-0.5 h-3.5 w-3.5 shrink-0" />{tr('Prix estimé — une vérification manuelle reste nécessaire.', 'السعر تقديري — ما زال يحتاج إلى تحقق يدوي.')}</p>
                 {verificationReason(product.verificationFailureCode, isArabic) && <p className="break-words text-muted">{tr('Motif :', 'السبب:')} {verificationReason(product.verificationFailureCode, isArabic)}.</p>}
               </div>
             )}
@@ -213,48 +220,49 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <span className="mb-1.5 block break-words text-xs font-bold text-ink">{tr('Lien exact du produit', 'الرابط الدقيق للمنتج')} <span className="text-danger">*</span></span>
           <input
             type="url"
+            aria-describedby={`${formId}-url-hint ${formId}-url-error`}
             value={manualUrl}
             onChange={(event) => setManualUrl(event.target.value.slice(0, 4096))}
             onBlur={() => setSubmitted(true)}
             placeholder="https://boutique.com/produit-exact"
             autoComplete="url"
             maxLength={4096}
-            className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink"
+            className="min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink"
             aria-invalid={submitted && !isUrlValid}
             required
           />
-          <span className="mt-1 block break-words text-xs leading-snug text-muted">{tr("Ce lien sert à l’achat manuel et ne relance pas l’extraction du prix.", 'يُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.')}</span>
-          {submitted && !isUrlValid && <span className="mt-1 block break-words text-xs font-semibold text-danger">{tr('Ajoutez un lien public complet commençant par http:// ou https://.', 'أضف رابطًا عامًا كاملًا يبدأ بـ http:// أو https://.')}</span>}
+          <span id={`${formId}-url-hint`} className="mt-1 block break-words text-xs leading-snug text-muted">{tr("Ce lien sert à l’achat manuel et ne relance pas l’extraction du prix.", 'يُستخدم الرابط للشراء اليدوي ولا يعيد استخراج السعر.')}</span>
+          {submitted && !isUrlValid && <span id={`${formId}-url-error`} role="alert" className="mt-1 block break-words text-xs font-semibold text-danger">{tr('Ajoutez un lien public complet commençant par http:// ou https://.', 'أضف رابطًا عامًا كاملًا يبدأ بـ http:// أو https://.')}</span>}
         </label>
 
         <div className="grid gap-4 sm:grid-cols-[180px_1fr] sm:items-start">
           <div>
             <span className="mb-1.5 block break-words text-xs font-bold text-ink">{tr('Quantité', 'الكمية')} <span className="text-danger">*</span></span>
-            <div className="flex min-h-[46px] max-w-[180px] items-center rounded-xl border border-line bg-white">
-              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label={tr('Diminuer la quantité', 'تقليل الكمية')} className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">−</button>
-              <input type="number" min={1} max={99} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} aria-label={tr('Quantité', 'الكمية')} className="h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none" required />
-              <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label={tr('Augmenter la quantité', 'زيادة الكمية')} className="h-11 w-11 text-lg font-bold text-ink disabled:opacity-30">+</button>
+            <div className="flex min-h-[46px] max-w-[180px] items-center rounded-control border border-line bg-white">
+              <button type="button" onClick={() => setQuantity((value) => Math.max(1, value - 1))} disabled={quantity <= 1} aria-label={tr('Diminuer la quantité', 'تقليل الكمية')} className="inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30"><Minus size={18} /></button>
+              <input type="number" min={1} max={99} step={1} aria-invalid={!validQuantity} aria-describedby={!validQuantity ? `${formId}-quantity-error` : undefined} value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} aria-label={tr('Quantité', 'الكمية')} className="h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none" required />
+              <button type="button" onClick={() => setQuantity((value) => Math.min(99, value + 1))} disabled={quantity >= 99} aria-label={tr('Augmenter la quantité', 'زيادة الكمية')} className="inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30"><Plus size={18} /></button>
             </div>
           </div>
 
-          <details className="rounded-xl border border-line bg-surface px-3 py-2 open:bg-white">
+          <details className="rounded-control border border-line bg-surface px-3 py-2 open:bg-white">
             <summary className="cursor-pointer list-none break-words text-xs font-extrabold text-ink">{tr('Taille, couleur et commentaire', 'المقاس واللون والملاحظة')} <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span></summary>
             <div className="mt-3 space-y-3">
               <label className="block">
                 <span className="mb-1.5 block break-words text-xs font-bold text-ink">{tr('Couleur', 'اللون')}</span>
-                <input list="ayrovix-colors" value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder={tr('Ex. Noir', 'مثال: أسود')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink" />
-                {product.colors.length > 0 && <datalist id="ayrovix-colors">{product.colors.map((item) => <option key={item} value={item} />)}</datalist>}
+                <input list={`${formId}-colors`} value={color} onChange={(event) => setColor(event.target.value.slice(0, 100))} placeholder={tr('Ex. Noir', 'مثال: أسود')} className="min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink" />
+                {product.colors.length > 0 && <datalist id={`${formId}-colors`}>{product.colors.map((item) => <option key={item} value={item} />)}</datalist>}
               </label>
               <label className="block">
                 <span className="mb-1.5 block break-words text-xs font-bold text-ink">{tr('Taille', 'المقاس')}</span>
-                <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink">
+                <select value={sizeChoice} onChange={(event) => setSizeChoice(event.target.value)} className="min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink">
                   <option value="">{tr('Sans préférence', 'دون تفضيل')}</option>
                   {sizeOptions.map((item) => <option key={item} value={item}>{item}</option>)}
                   <option value="__other__">{tr('Autre', 'مقاس آخر')}</option>
                 </select>
               </label>
               {sizeChoice === '__other__' && (
-                <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink" />
+                <input value={customSize} onChange={(event) => setCustomSize(event.target.value.slice(0, 100))} placeholder={tr('Précisez la taille souhaitée', 'اكتب المقاس المطلوب')} aria-label={tr('Autre taille', 'مقاس آخر')} className="min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink" />
               )}
               {product.sizes.length > 0 || product.colors.length > 0 ? (
                 <p className="break-words rounded-icon bg-surface px-3 py-2 text-xs leading-relaxed text-muted">
@@ -273,7 +281,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               )}
               <label className="block">
                 <span className="mb-1.5 block break-words text-xs font-bold text-ink">{tr('Commentaire spécial', 'ملاحظة خاصة')}</span>
-                <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder={tr('Ex. emballage cadeau, variante précise…', 'مثال: تغليف هدية أو مواصفة دقيقة…')} className="w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink" />
+                <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value.slice(0, 1000))} rows={3} placeholder={tr('Ex. emballage cadeau, variante précise…', 'مثال: تغليف هدية أو مواصفة دقيقة…')} className="w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink" />
               </label>
             </div>
           </details>
@@ -283,7 +291,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
       {/* ── 3. CTA — primary action clearly accessible, content-driven ── */}
       <div className="mt-6 space-y-2 border-t border-line pt-4">
         <div className="flex flex-col gap-2.5 sm:flex-row">
-          {product.sourceUrl && (
+          {validProductUrl(product.sourceUrl) && (
             <a href={product.sourceUrl} target="_blank" rel="noopener noreferrer" className="ay-btn-secondary min-h-[52px] px-4 text-sm break-words">
               {tr('Voir chez le marchand', 'عرض صفحة المتجر')}
             </a>
@@ -294,13 +302,13 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               setSubmitted(true);
               if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });
             }}
-            disabled={ordering || Number(selectedPrice) <= 0 || selectedCurrency == null}
+            disabled={ordering || !validPrice || depositPercent === null}
             className="ay-btn-cta min-h-[52px] flex-1 px-5 text-sm break-words"
           >
-            {ordering ? <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-r-transparent" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`)}</>}
+            {ordering ? <><Loader2 className="h-4 w-4 animate-spin" /> {tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</> : <>{depositPercent !== null ? tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`) : configError ? tr('Commande indisponible', 'الطلب غير متاح') : tr('Conditions en cours de chargement…', 'جارٍ تحميل شروط الطلب…')}</>}
           </button>
         </div>
-        <p className="break-words text-center text-xs font-bold text-muted">{tr(`Acompte ${depositPercent}% · Suivi après expédition réelle`, `عربون ${depositPercent}% · التتبع بعد الشحن الفعلي`)}</p>
+        {configError ? <div role="alert" className="border border-line p-3 text-sm text-danger"><p>{tr('Impossible de charger les conditions du serveur. Aucune commande n’a été envoyée.', 'تعذّر تحميل شروط الطلب من الخادم. لم يُرسل أي طلب.')}</p><button type="button" className="ay-btn-secondary mt-2 min-h-11" onClick={() => setConfigAttempt(value => value + 1)}>{tr('Réessayer', 'إعادة المحاولة')}</button></div> : depositPercent !== null ? <p className="break-words text-center text-xs font-medium text-muted">{tr(`Acompte ${depositPercent}% · Suivi après expédition réelle`, `عربون ${depositPercent}% · التتبع بعد الشحن الفعلي`)}</p> : <p role="status" className="text-sm text-muted">{tr('Chargement des conditions…','جارٍ تحميل الشروط…')}</p>}
       </div>
     </div>
   );

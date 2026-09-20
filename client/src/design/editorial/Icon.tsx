@@ -12,7 +12,7 @@ export interface EditorialIconProps extends Omit<React.SVGProps<SVGSVGElement>, 
 
 /** Static local geometry only; never takes SVG/HTML supplied by CMS or a customer. */
 export const EditorialIcon = forwardRef<SVGSVGElement, EditorialIconProps>(function EditorialIcon(
-  { name, size = identity.geometry.iconGrid, title, direction = 'ltr', className, ...props }, ref,
+  { name, size = identity.geometry.iconGrid, title, direction = 'ltr', className, style, ...props }, ref,
 ) {
   const id = useId();
   const titleId = `${id}-icon-title`;
@@ -20,12 +20,13 @@ export const EditorialIcon = forwardRef<SVGSVGElement, EditorialIconProps>(funct
   const named = Boolean(title || props['aria-label'] || props['aria-labelledby']);
   return (
     <svg
+      {...props}
       ref={ref}
       xmlns="http://www.w3.org/2000/svg"
       width={size}
       height={size}
       viewBox="0 0 24 24"
-      fill="none"
+      fill={props.fill === 'currentColor' ? 'currentColor' : 'none'}
       stroke="currentColor"
       strokeWidth={identity.geometry.iconStroke}
       strokeLinecap="square"
@@ -35,7 +36,7 @@ export const EditorialIcon = forwardRef<SVGSVGElement, EditorialIconProps>(funct
       role={named ? 'img' : undefined}
       aria-hidden={named ? undefined : true}
       aria-labelledby={title ? titleId : undefined}
-      {...props}
+      style={style ? { ...style, strokeWidth: undefined, strokeLinecap: undefined, strokeLinejoin: undefined } : undefined}
       className={['ay-editorial-icon', className].filter(Boolean).join(' ')}
       data-editorial-icon={name}
     >

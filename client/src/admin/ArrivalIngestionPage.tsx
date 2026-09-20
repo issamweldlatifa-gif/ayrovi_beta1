@@ -189,7 +189,7 @@ function WarehouseSendButton({
   if (status === 'SENT') {
     return (
       <span className="arrival-wh-tag arrival-wh-sent" title={dispatch?.sentAt ? `Envoyé le ${formatDate(dispatch.sentAt, true)}` : ''}>
-        ✓ Envoyé · {dispatch?.warehouseArrivalId || 'Expected Arrival'}
+        <CheckCircle2 size={16}/> Envoyé · {dispatch?.warehouseArrivalId || 'Expected Arrival'}
       </span>
     );
   }

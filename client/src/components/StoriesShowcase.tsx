@@ -1,3 +1,4 @@
+import { ArrowRight } from './QatafoIcons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getStories } from '../social/storyService';
 import type { Story, StoryCta } from '../social/types';
@@ -115,9 +116,7 @@ export const StoriesShowcase: React.FC<Props> = ({ isAuthenticated, onRequireAut
         {settings.ctaLabel ? (
           <button type="button" className="stories-showcase__cta" onClick={explore}>
             <span>{settings.ctaLabel}</span>
-            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-              <path d="M5 12h13M13 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            <ArrowRight size={17} />
           </button>
         ) : null}
       </div>

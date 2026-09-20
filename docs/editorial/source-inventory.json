@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 177,
-    "customerAndSharedFiles": 128,
-    "controls": 403,
-    "iconAliases": 95,
-    "uniqueGlyphs": 92
+    "files": 185,
+    "customerAndSharedFiles": 136,
+    "controls": 406,
+    "iconAliases": 97,
+    "uniqueGlyphs": 94
   },
   "aliases": [
     {
@@ -388,6 +388,14 @@
     {
       "alias": "ExternalLink",
       "glyph": "External"
+    },
+    {
+      "alias": "Play",
+      "glyph": "Play"
+    },
+    {
+      "alias": "Grip",
+      "glyph": "Grip"
     }
   ],
   "files": [
@@ -414,7 +422,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "a30c3780a9e16611b98b3bebc15be4265c7c2f57d2a91f7bfc772ea083008535",
+      "sha256": "be8160f71edc05d9fdb9f73e9692b634b4a023c6db8814fc4661b54c1df54b31",
       "lines": 847,
       "imports": [
         "react",
@@ -675,7 +683,7 @@
           "type": null,
           "role": null,
           "ariaLabel": null,
-          "onClick": "{async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail ✓':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}",
+          "onClick": "{async()=>{setBusy(true);try{const r=await adminApi<any>(`/orders/${selected.id}/invoice/resend`,{method:'POST'});setToast({message:`Facture ${r.data?.invoiceNumber} ${r.data?.mail?.delivered?'renvoyée par e-mail':'régénérée'}.`,tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}}}",
           "disabled": "{busy}"
         },
         {
@@ -1532,7 +1540,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{\n  AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,\n  History, Home, Image, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,\n  Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,\n}",
+          "bindings": "{\n  Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,\n  History, Home, Image, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,\n  Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,\n}",
           "line": 2
         }
       ],
@@ -1854,7 +1862,7 @@
     {
       "file": "client/src/admin/AiLabPages.tsx",
       "domain": "admin",
-      "sha256": "fb7842690f3840dd5db4bbade44c7605623e944334e7f37e92470ab0488ca5f5",
+      "sha256": "ba69cdfc8e2c0e672df9b95f408a1527b9cd7916ad32c9e47c20ddb57f4c7f6a",
       "lines": 237,
       "imports": [
         "react",
@@ -2096,7 +2104,7 @@
     {
       "file": "client/src/admin/ArrivalIngestionPage.tsx",
       "domain": "admin",
-      "sha256": "98436017477395b8f8fe656195064d42be7b772a7765673c2417966f95d5391b",
+      "sha256": "32e7ae07e8ccacbb348df22b4a8ac83f653ee249a5e4f188e81dde0d157d3790",
       "lines": 880,
       "imports": [
         "react",
@@ -3076,9 +3084,10 @@
     {
       "file": "client/src/admin/ArrivalShipments.tsx",
       "domain": "admin",
-      "sha256": "1e846353b969422cfbc905df3d6bd4285b9370df17aaa335ecdc02aef6ae930f",
-      "lines": 308,
+      "sha256": "35b9d6f4af34f1fb5ce7dfaaad09880ef324abe901a15ab116cc26f41fd0f71f",
+      "lines": 309,
       "imports": [
+        "../components/QatafoIcons",
         "react",
         "./api",
         "./components"
@@ -3089,22 +3098,12 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 190,
+          "line": 191,
           "className": null,
           "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => setShowForm(true)}",
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 204,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
           "disabled": null
         },
         {
@@ -3148,8 +3147,8 @@
           "disabled": null
         },
         {
-          "tag": "select",
-          "line": 210,
+          "tag": "input",
+          "line": 209,
           "className": null,
           "type": null,
           "role": null,
@@ -3158,8 +3157,8 @@
           "disabled": null
         },
         {
-          "tag": "input",
-          "line": 216,
+          "tag": "select",
+          "line": 211,
           "className": null,
           "type": null,
           "role": null,
@@ -3231,7 +3230,7 @@
           "tag": "input",
           "line": 223,
           "className": null,
-          "type": "\"datetime-local\"",
+          "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -3251,7 +3250,7 @@
           "tag": "input",
           "line": 225,
           "className": null,
-          "type": "\"number\"",
+          "type": "\"datetime-local\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -3281,7 +3280,7 @@
           "tag": "input",
           "line": 228,
           "className": null,
-          "type": null,
+          "type": "\"number\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
@@ -3291,20 +3290,20 @@
           "tag": "input",
           "line": 229,
           "className": null,
-          "type": "\"number\"",
+          "type": null,
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": null
         },
         {
-          "tag": "Button",
-          "line": 232,
+          "tag": "input",
+          "line": 230,
           "className": null,
-          "type": null,
+          "type": "\"number\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => setShowForm(false)}",
+          "onClick": null,
           "disabled": null
         },
         {
@@ -3314,12 +3313,22 @@
           "type": null,
           "role": null,
           "ariaLabel": null,
+          "onClick": "{() => setShowForm(false)}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 234,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
           "onClick": "{createShipment}",
           "disabled": null
         },
         {
           "tag": "Button",
-          "line": 292,
+          "line": 293,
           "className": null,
           "type": null,
           "role": null,
@@ -3329,7 +3338,7 @@
         },
         {
           "tag": "Button",
-          "line": 295,
+          "line": 296,
           "className": null,
           "type": null,
           "role": null,
@@ -3338,7 +3347,13 @@
           "disabled": null
         }
       ],
-      "icons": [],
+      "icons": [
+        {
+          "module": "../components/QatafoIcons",
+          "bindings": "{ Check }",
+          "line": 1
+        }
+      ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -3479,6 +3494,16 @@
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => navigate(item.section)}",
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 244,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         },
         {
@@ -5803,7 +5828,7 @@
     {
       "file": "client/src/admin/ErpCorePages.tsx",
       "domain": "admin",
-      "sha256": "0f5b3f5282661496a5b897aee4b694faa92c1bad280119cb6a9247ebeeebc5f7",
+      "sha256": "ce54897478fe9a266fdd6b47f2dd795aa128752b60785a3bd951eff02aa2d342",
       "lines": 459,
       "imports": [
         "react",
@@ -6189,7 +6214,7 @@
     {
       "file": "client/src/admin/HeroVisualsPage.tsx",
       "domain": "admin",
-      "sha256": "5fd9045af2b1f2bf7531cc7f5212ca3b196d67e252db1df552daa1fcea793665",
+      "sha256": "c307712b67502a2ac30723665e9d71c8f831081abdf9a448746549bcc4db799e",
       "lines": 456,
       "imports": [
         "react",
@@ -6595,7 +6620,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{ ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X }",
+          "bindings": "{ Check, Square, Monitor, ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X }",
           "line": 2
         }
       ],
@@ -6823,6 +6848,16 @@
         {
           "tag": "Field",
           "line": 199,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 200,
           "className": null,
           "type": null,
           "role": null,
@@ -9740,7 +9775,7 @@
     {
       "file": "client/src/admin/StoriesStudio.tsx",
       "domain": "admin",
-      "sha256": "3834558a428c5a52c8e34c856f75d4c5050ee0ca2f004fa6a879af526fd41dbb",
+      "sha256": "f9bc6ddfaad380049c1ced6437588638763f3dec25b718311071c114f848df11",
       "lines": 397,
       "imports": [
         "react",
@@ -10286,7 +10321,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{ Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp }",
+          "bindings": "{ X, Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp }",
           "line": 2
         }
       ],
@@ -10298,11 +10333,10 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "595a0456b72ac88605df170730734c2021e9712a7bdc64c12628d4efca0c75c5",
-      "lines": 621,
+      "sha256": "3b08f13ef17c5e03aeac6decbe9f5639e14fbae96bbeef45018967eb907ce6a0",
+      "lines": 620,
       "imports": [
         "./design/editorial/customerTheme",
-        "./design/editorial/IconFamily",
         "react",
         "./components/TopAnnouncementBar",
         "./components/Navbar",
@@ -10332,7 +10366,7 @@
       "controls": [
         {
           "tag": "MenuDrawer",
-          "line": 460,
+          "line": 459,
           "className": null,
           "type": null,
           "role": null,
@@ -10342,7 +10376,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 495,
+          "line": 494,
           "className": null,
           "type": null,
           "role": null,
@@ -10352,7 +10386,7 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 510,
+          "line": 509,
           "className": null,
           "type": null,
           "role": null,
@@ -10362,7 +10396,7 @@
         },
         {
           "tag": "CartDrawer",
-          "line": 551,
+          "line": 550,
           "className": null,
           "type": null,
           "role": null,
@@ -10372,7 +10406,7 @@
         },
         {
           "tag": "CheckoutModal",
-          "line": 567,
+          "line": 566,
           "className": null,
           "type": null,
           "role": null,
@@ -10382,7 +10416,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 609,
+          "line": 608,
           "className": null,
           "type": null,
           "role": null,
@@ -10406,9 +10440,11 @@
     {
       "file": "client/src/ayrovix/components/InteractiveLensResults.tsx",
       "domain": "lens",
-      "sha256": "71eda47711a7723b7a56f372bab3eb23a7fcddf020a4a249eb94ec8e8eaa7e85",
-      "lines": 546,
+      "sha256": "19bf018409b11ff6ac6ecff30817a2d65cf42102f7b69e928d283f86d2e5bd4a",
+      "lines": 554,
       "imports": [
+        "./MerchantRating",
+        "../../components/QatafoIcons",
         "react",
         "../../components/QatafoIcons",
         "../types",
@@ -10421,8 +10457,8 @@
       "controls": [
         {
           "tag": "button",
-          "line": 448,
-          "className": "\"flex items-center gap-1 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur\"",
+          "line": 456,
+          "className": "\"flex items-center gap-1 rounded-control border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10431,48 +10467,8 @@
         },
         {
           "tag": "button",
-          "line": 452,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setScale(s => Math.min(3, s + 0.3))}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 453,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setScale(s => Math.max(1, s - 0.3))}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 454,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { resetView(); clearSelection(); }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 476,
-          "className": "\"grid h-8 place-items-center shrink-0 rounded-full border border-line bg-surface px-2.5 text-xs font-bold text-ink\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{clearSelection}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 480,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-sm font-bold text-ink\"",
+          "line": 460,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Zoomer', 'تكبير')}",
@@ -10481,8 +10477,8 @@
         },
         {
           "tag": "button",
-          "line": 481,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-sm font-bold text-ink\"",
+          "line": 461,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Dézoomer', 'تصغير')}",
@@ -10491,8 +10487,8 @@
         },
         {
           "tag": "button",
-          "line": 482,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-ink\"",
+          "line": 462,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Réinitialiser la vue', 'إعادة ضبط العرض')}",
@@ -10501,8 +10497,48 @@
         },
         {
           "tag": "button",
-          "line": 485,
-          "className": "\"shrink-0 rounded-full border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink whitespace-nowrap\"",
+          "line": 484,
+          "className": "\"grid h-8 place-items-center shrink-0 rounded-control border border-line bg-surface px-2.5 text-xs font-bold text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{clearSelection}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 488,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-sm font-bold text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Zoomer', 'تكبير')}",
+          "onClick": "{() => setScale(s => Math.min(3, s + 0.3))}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 489,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-sm font-bold text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Dézoomer', 'تصغير')}",
+          "onClick": "{() => setScale(s => Math.max(1, s - 0.3))}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 490,
+          "className": "\"grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Réinitialiser la vue', 'إعادة ضبط العرض')}",
+          "onClick": "{() => { resetView(); clearSelection(); }}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 493,
+          "className": "\"shrink-0 rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink whitespace-nowrap\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10511,8 +10547,8 @@
         },
         {
           "tag": "button",
-          "line": 486,
-          "className": "\"shrink-0 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap\"",
+          "line": 494,
+          "className": "\"shrink-0 rounded-control bg-ink px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10521,8 +10557,8 @@
         },
         {
           "tag": "button",
-          "line": 504,
-          "className": "\"mt-2 w-full rounded-full bg-ink py-2 text-xs font-bold text-white\"",
+          "line": 512,
+          "className": "\"mt-2 w-full rounded-control bg-ink py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10531,8 +10567,8 @@
         },
         {
           "tag": "button",
-          "line": 513,
-          "className": "\"rounded-full bg-ink px-5 py-2 text-xs font-bold text-white\"",
+          "line": 521,
+          "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10541,8 +10577,8 @@
         },
         {
           "tag": "button",
-          "line": 513,
-          "className": "\"rounded-full border border-line bg-white px-5 py-2 text-xs font-bold text-ink\"",
+          "line": 521,
+          "className": "\"rounded-control border border-line bg-white px-5 py-2 text-xs font-bold text-ink\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10551,8 +10587,8 @@
         },
         {
           "tag": "button",
-          "line": 532,
-          "className": "{`mt-2 w-full rounded-full py-2 text-xs font-bold text-white ${pl.pending ? 'bg-amber-600' : 'bg-ink'}`}",
+          "line": 540,
+          "className": "\"mt-2 min-h-11 w-full rounded-control bg-ink py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -10563,23 +10599,27 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw }",
+          "bindings": "{ Plus, Minus }",
           "line": 2
+        },
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Loader2, ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw }",
+          "line": 4
         }
       ],
       "inlineSvg": [
         {
-          "line": 417,
+          "line": 425,
           "viewBox": "\"0 0 100 100\""
         },
         {
-          "line": 430,
+          "line": 438,
           "viewBox": "\"0 0 100 100\""
         }
       ],
       "colors": [
-        "#111",
-        "#FF6900"
+        "#111"
       ],
       "fontDeclarations": [],
       "apiReferences": []
@@ -10587,7 +10627,7 @@
     {
       "file": "client/src/ayrovix/components/LensCamera.tsx",
       "domain": "lens",
-      "sha256": "66011bc03ad2d969c55e5b4c29f6ad717203a5ab84d874321098c5f3ef64fc02",
+      "sha256": "d0d05a642c680dae3a28521e3c6e35b278cb910e929f9264a25db8b1d9109654",
       "lines": 49,
       "imports": [
         "react",
@@ -10634,7 +10674,7 @@
     {
       "file": "client/src/ayrovix/components/LensHistory.tsx",
       "domain": "lens",
-      "sha256": "758de76273dfe733e7edf3feaade7ddd8063b712dc362cada69521bbae20462e",
+      "sha256": "09a6d92cd5e2f953629b88d46e805eb49e88fc6afa73b60e1a34c8a05b0608f8",
       "lines": 122,
       "imports": [
         "react",
@@ -10691,7 +10731,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, History, LensBox }",
+          "bindings": "{ Loader2, ArrowLeft, History, LensBox }",
           "line": 4
         }
       ],
@@ -10703,7 +10743,7 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "3e791b9c5aaa28b5c424e5cfd7b99881efe9b4e7b0eca7223d1309aff7782186",
+      "sha256": "447a12aec834bf7dc26e546f61d0db0df96ec7174a958966194d88ffa3d490ea",
       "lines": 935,
       "imports": [
         "../../design/AppHeader",
@@ -10946,7 +10986,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles }",
+          "bindings": "{ Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles }",
           "line": 24
         }
       ],
@@ -11106,7 +11146,7 @@
     {
       "file": "client/src/ayrovix/components/LensUpload.tsx",
       "domain": "lens",
-      "sha256": "2ab9d298a0a9b53288af5ec18f87a3c28c84f4c0cc3edd2e20e4678d1cb14ed4",
+      "sha256": "66d43ec05793990c15e258f09e9f50aad7795a0e1eb51fdf5ff9d5b9518df074",
       "lines": 44,
       "imports": [
         "react",
@@ -11153,7 +11193,7 @@
     {
       "file": "client/src/ayrovix/components/LiveCamera.tsx",
       "domain": "lens",
-      "sha256": "5f5910064f99a2ba1664f580ed84081e2dc479eed722411e66000a5f472e73f9",
+      "sha256": "d8564dc9cf4b20325cfd3c803071fa8c4e9b2081a9cfd3ed601e88ce14840665",
       "lines": 371,
       "imports": [
         "react",
@@ -11311,20 +11351,11 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag }",
+          "bindings": "{ ArrowLeft, Zap, ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag }",
           "line": 3
         }
       ],
-      "inlineSvg": [
-        {
-          "line": 196,
-          "viewBox": "\"0 0 24 24\""
-        },
-        {
-          "line": 202,
-          "viewBox": "\"0 0 24 24\""
-        }
-      ],
+      "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
@@ -11332,11 +11363,39 @@
       ]
     },
     {
+      "file": "client/src/ayrovix/components/MerchantRating.tsx",
+      "domain": "lens",
+      "sha256": "43b55d601432ce301694fadc555b00c9de4ad07bfeb6363d630ac9158d470eaa",
+      "lines": 17,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext",
+        "../services/resultPolicy"
+      ],
+      "exports": [
+        "MerchantRating"
+      ],
+      "controls": [],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Star }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/ayrovix/components/ProductCandidates.tsx",
       "domain": "lens",
-      "sha256": "44e62a848f8dc363706ae56ab7434599e0bbc9830c3cb76d721b5f1f246cdac0",
-      "lines": 68,
+      "sha256": "7d50805a00cbd9360e7f349394f69e84bc09ab5a0b22476523c8a1e2e7316696",
+      "lines": 67,
       "imports": [
+        "./MerchantRating",
         "react",
         "motion/react",
         "../../components/QatafoIcons",
@@ -11350,7 +11409,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 57,
+          "line": 56,
           "className": "\"ay-btn-primary min-h-11 flex-1 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11360,7 +11419,7 @@
         },
         {
           "tag": "a",
-          "line": 58,
+          "line": 57,
           "className": "\"ay-btn-secondary min-h-11 px-3 text-xs\"",
           "type": null,
           "role": null,
@@ -11373,7 +11432,7 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ ArrowUpRight, Image as ImageIcon, Star }",
-          "line": 3
+          "line": 4
         }
       ],
       "inlineSvg": [],
@@ -11384,9 +11443,11 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "d59e87a6629df0d15b9a78374b09a739f08308ae1975a4f9bd33f9ed91cb9c5d",
-      "lines": 308,
+      "sha256": "26ffc9168dff9871b03c9348ce92ebe0bb2218f41879d935a97149e5a5d82b8c",
+      "lines": 316,
       "imports": [
+        "./MerchantRating",
+        "../../components/QatafoIcons",
         "react",
         "../types",
         "../../components/QatafoIcons",
@@ -11399,8 +11460,8 @@
       "controls": [
         {
           "tag": "button",
-          "line": 138,
-          "className": "{`ayrovix-thumbnail shrink-0 rounded-xl border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}",
+          "line": 147,
+          "className": "{`ayrovix-thumbnail shrink-0 rounded-control border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}",
@@ -11409,7 +11470,7 @@
         },
         {
           "tag": "a",
-          "line": 168,
+          "line": 175,
           "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
@@ -11419,8 +11480,8 @@
         },
         {
           "tag": "input",
-          "line": 214,
-          "className": "\"min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
+          "line": 221,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
           "type": "\"url\"",
           "role": null,
           "ariaLabel": null,
@@ -11429,8 +11490,8 @@
         },
         {
           "tag": "button",
-          "line": 234,
-          "className": "\"h-11 w-11 text-lg font-bold text-ink disabled:opacity-30\"",
+          "line": 242,
+          "className": "\"inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Diminuer la quantité', 'تقليل الكمية')}",
@@ -11439,7 +11500,7 @@
         },
         {
           "tag": "input",
-          "line": 235,
+          "line": 243,
           "className": "\"h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none\"",
           "type": "\"number\"",
           "role": null,
@@ -11449,8 +11510,8 @@
         },
         {
           "tag": "button",
-          "line": 236,
-          "className": "\"h-11 w-11 text-lg font-bold text-ink disabled:opacity-30\"",
+          "line": 244,
+          "className": "\"inline-flex items-center justify-center h-11 w-11 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Augmenter la quantité', 'زيادة الكمية')}",
@@ -11458,9 +11519,19 @@
           "disabled": "{quantity >= 99}"
         },
         {
+          "tag": "summary",
+          "line": 249,
+          "className": "\"cursor-pointer list-none break-words text-xs font-extrabold text-ink\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "input",
-          "line": 245,
-          "className": "\"min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
+          "line": 253,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -11469,8 +11540,8 @@
         },
         {
           "tag": "select",
-          "line": 250,
-          "className": "\"min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
+          "line": 258,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -11479,8 +11550,8 @@
         },
         {
           "tag": "input",
-          "line": 257,
-          "className": "\"min-h-[46px] w-full rounded-xl border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
+          "line": 265,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": "{tr('Autre taille', 'مقاس آخر')}",
@@ -11489,7 +11560,7 @@
         },
         {
           "tag": "a",
-          "line": 268,
+          "line": 276,
           "className": "\"mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline\"",
           "type": null,
           "role": null,
@@ -11499,8 +11570,8 @@
         },
         {
           "tag": "textarea",
-          "line": 276,
-          "className": "\"w-full resize-none rounded-xl border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
+          "line": 284,
+          "className": "\"w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -11509,7 +11580,7 @@
         },
         {
           "tag": "a",
-          "line": 287,
+          "line": 295,
           "className": "\"ay-btn-secondary min-h-[52px] px-4 text-sm break-words\"",
           "type": null,
           "role": null,
@@ -11519,26 +11590,39 @@
         },
         {
           "tag": "button",
-          "line": 291,
+          "line": 299,
           "className": "\"ay-btn-cta min-h-[52px] flex-1 px-5 text-sm break-words\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => {\n              setSubmitted(true);\n              if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });\n            }}",
-          "disabled": "{ordering || Number(selectedPrice) <= 0 || selectedCurrency == null}"
+          "disabled": "{ordering || !validPrice || depositPercent === null}"
+        },
+        {
+          "tag": "button",
+          "line": 311,
+          "className": "\"ay-btn-secondary mt-2 min-h-11\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setConfigAttempt(value => value + 1)}",
+          "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star }",
-          "line": 3
+          "bindings": "{ Plus, Minus }",
+          "line": 2
+        },
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star }",
+          "line": 5
         }
       ],
       "inlineSvg": [],
-      "colors": [
-        "#FF6900"
-      ],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
         "/api/public/commerce-config"
@@ -11747,7 +11831,7 @@
     {
       "file": "client/src/ayrovix/services/resultPolicy.ts",
       "domain": "lens",
-      "sha256": "75b69b4830bc9bff1b7abc50a69d29932f2f0a10aef707d818889b4e6873a48d",
+      "sha256": "94f5966c5429fb77bd23d781ea574f13a4ea1b902ab4c3f766a0850d0aa4ea54",
       "lines": 47,
       "imports": [
         "../types"
@@ -11774,6 +11858,42 @@
       "lines": 198,
       "imports": [],
       "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/commerce/policy.ts",
+      "domain": "shell-content",
+      "sha256": "7841292e69f484155a7684098a59872fedd965b1f819874ceb33358884494a45",
+      "lines": 25,
+      "imports": [],
+      "exports": [
+        "parseCommercePolicy"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/commerce/useCommercePolicy.ts",
+      "domain": "shell-content",
+      "sha256": "642fb62923fa74fffa1bdabff916dede2dc7f78954b89ab6de782bac5455ca40",
+      "lines": 22,
+      "imports": [
+        "react",
+        "../services/publicApi",
+        "./policy"
+      ],
+      "exports": [
+        "useCommercePolicy"
+      ],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
@@ -12198,7 +12318,7 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "e29ef88b7c82030521b8fd4c46068052a540255cf135cff50504bcb978e5fdd3",
+      "sha256": "195e50501a56ed41388177d7743888d8d04b4cd7ec0e7ac492149f8a1acffa73",
       "lines": 1119,
       "imports": [
         "react",
@@ -12209,7 +12329,6 @@
         "./AssistantMessages",
         "./AssistantSideMenu",
         "./AssistantVoiceModeScreen",
-        "./AssistantVoiceOrb",
         "./voice/VoiceChatController",
         "./voice/types",
         "../../hooks/useBodyScrollLock",
@@ -12230,7 +12349,7 @@
       "controls": [
         {
           "tag": "AssistantVoiceModeScreen",
-          "line": 978,
+          "line": 977,
           "className": null,
           "type": null,
           "role": null,
@@ -12422,7 +12541,7 @@
     {
       "file": "client/src/components/assistant/AssistantComposer.tsx",
       "domain": "sonim",
-      "sha256": "570a42928382a23423a4f92f14b92d2de3ea16ecdc07d80b6be9fba31f3eee67",
+      "sha256": "897b26e9dbc06aa30d5cdafabc66d6906877ace90229d473bc0d432fd061ab7b",
       "lines": 171,
       "imports": [
         "react",
@@ -12509,14 +12628,12 @@
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X }",
+          "bindings": "{ Loader2, ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X }",
           "line": 2
         }
       ],
       "inlineSvg": [],
-      "colors": [
-        "#111111"
-      ],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
@@ -12658,9 +12775,10 @@
     {
       "file": "client/src/components/assistant/AssistantMessages.tsx",
       "domain": "sonim",
-      "sha256": "544c23c71b01595e168b127388dd7e762702b4b8e166a6e90867f95a0df418aa",
-      "lines": 213,
+      "sha256": "7819b8103f1f8c0ac560fffe36b871c72f2dbd7d5c620e2a610db9caa0be5372",
+      "lines": 214,
       "imports": [
+        "../../ayrovix/components/MerchantRating",
         "react",
         "./composerPolicy",
         "../QatafoIcons",
@@ -12678,7 +12796,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 62,
+          "line": 63,
           "className": "{`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12688,7 +12806,7 @@
         },
         {
           "tag": "a",
-          "line": 84,
+          "line": 85,
           "className": "{`inline-flex min-h-10 items-center gap-1 rounded-card border px-3 text-xs font-extrabold ${isDark ? 'border-white/15 text-white/90' : 'border-line text-ink'}`}",
           "type": null,
           "role": null,
@@ -12698,7 +12816,7 @@
         },
         {
           "tag": "button",
-          "line": 84,
+          "line": 85,
           "className": "\"ay-btn-primary min-h-10 flex-1 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12708,7 +12826,7 @@
         },
         {
           "tag": "button",
-          "line": 142,
+          "line": 143,
           "className": "\"assistant-quick-card flex min-h-[92px] flex-col justify-center rounded-card p-4 text-start text-ink transition active:scale-[0.98]\"",
           "type": "\"button\"",
           "role": null,
@@ -12718,7 +12836,7 @@
         },
         {
           "tag": "button",
-          "line": 159,
+          "line": 160,
           "className": "{`flex min-h-11 items-center rounded-control px-3 text-xs font-bold transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white/90' : 'text-muted hover:bg-surface hover:text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12728,7 +12846,7 @@
         },
         {
           "tag": "button",
-          "line": 198,
+          "line": 199,
           "className": "{`min-h-11 rounded-control border px-3.5 text-xs font-bold transition active:scale-95 ${isDark ? 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10' : 'border-line bg-white text-ink hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12738,7 +12856,7 @@
         },
         {
           "tag": "button",
-          "line": 199,
+          "line": 200,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12748,7 +12866,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 202,
           "className": "{`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12758,7 +12876,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 202,
           "className": "{`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12768,7 +12886,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 202,
           "className": "{`rounded-icon p-1.5 transition ${isDark ? 'text-muted hover:bg-white/5 hover:text-white' : 'text-muted hover:bg-surface hover:text-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12778,7 +12896,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 202,
           "className": "{`rounded-icon p-1.5 ${feedback[message.id] === 'up' ? 'bg-success/10 text-success' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12788,7 +12906,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 202,
           "className": "{`rounded-icon p-1.5 ${feedback[message.id] === 'down' ? 'bg-danger/10 text-danger' : isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12798,7 +12916,7 @@
         },
         {
           "tag": "button",
-          "line": 201,
+          "line": 202,
           "className": "{`ms-1 rounded-icon px-2 py-1 text-xs font-bold ${isDark ? 'text-muted hover:bg-white/5' : 'text-muted hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12810,8 +12928,8 @@
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 }",
-          "line": 3
+          "bindings": "{ Mic, ArrowUpRight, Check, Copy, MessageSquare, PackageCheck, RefreshCw, Share2, ShoppingBag, Sparkles, Star, ThumbsDown, ThumbsUp, Volume2 }",
+          "line": 4
         }
       ],
       "inlineSvg": [],
@@ -12940,15 +13058,19 @@
     {
       "file": "client/src/components/assistant/AssistantVoiceModeScreen.tsx",
       "domain": "sonim",
-      "sha256": "ebc867a750ec9617bd5c8910107b7363b1d4d1f69934e8c6b810819a27400dee",
-      "lines": 651,
+      "sha256": "d235fcc7d0f497c790803f61cf4b95d3432d3fea57c0e24bf0d4c29695137e64",
+      "lines": 138,
       "imports": [
         "react",
         "../QatafoIcons",
         "../../i18n/LocaleContext",
+        "../../hooks/useDialogFocus",
+        "../../design/ui/Price",
+        "./VoiceLevel",
+        "./voice/settings",
         "./types",
         "./voice/types",
-        "./voice/VoiceOutput"
+        "../../styles/editorial-voice.css"
       ],
       "exports": [
         "AssistantVoiceModeScreen"
@@ -12956,8 +13078,8 @@
       "controls": [
         {
           "tag": "input",
-          "line": 169,
-          "className": "\"hidden\"",
+          "line": 84,
+          "className": null,
           "type": "\"file\"",
           "role": null,
           "ariaLabel": null,
@@ -12966,231 +13088,188 @@
         },
         {
           "tag": "button",
-          "line": 179,
-          "className": "{`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${\n            isDark\n              ? 'bg-white/10 text-white hover:bg-white/15'\n              : 'bg-white text-ink shadow-sm hover:bg-black/5'\n          }`}",
+          "line": 86,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}",
-          "onClick": "{() => { triggerHaptic(); onExit(); }}",
+          "onClick": "{onExit}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 201,
-          "className": "{`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${\n            showSettingsModal\n              ? 'bg-ink text-white'\n              : isDark\n                ? 'bg-white/10 text-white hover:bg-white/15'\n                : 'bg-white text-ink shadow-sm hover:bg-black/5'\n          }`}",
+          "line": 88,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Options du mode vocal', 'خيارات الوضع الصوتي')}",
-          "onClick": "{() => { triggerHaptic(); setShowSettingsModal(true); }}",
+          "onClick": "{() => setShowSettings(true)}",
+          "disabled": null
+        },
+        {
+          "tag": "Price",
+          "line": 94,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 241,
-          "className": "\"grid h-4 w-4 place-items-center rounded-full bg-black/10 text-black hover:bg-black/20 dark:bg-white/20 dark:text-white\"",
+          "line": 97,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": null,
+          "ariaLabel": "{tr('Supprimer la photo', 'حذف الصورة')}",
           "onClick": "{() => onRemoveAttachment(attachments[0].id)}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 292,
-          "className": "{`relative flex h-44 w-44 cursor-pointer items-center justify-center rounded-full bg-gradient-to-tr ${orbGradient} shadow-2xl transition-transform duration-100 active:scale-95 sm:h-52 sm:w-52`}",
+          "line": 100,
+          "className": "\"editorial-voice__talk\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Appuyer pour envoyer ou parler', 'اضغط للإرسال أو التحدث')}",
-          "onClick": "{() => {\n              triggerHaptic();\n              if (onTapOrb) onTapOrb();\n            }}",
-          "disabled": null
+          "ariaLabel": "{tapLabel}",
+          "onClick": "{() => { vibrate(); onTapOrb?.(); }}",
+          "disabled": "{!onTapOrb || !(interruptible || mayFinish)}"
         },
         {
           "tag": "button",
-          "line": 342,
-          "className": "{`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition active:scale-95 ${\n                  isDark\n                    ? 'bg-white/10 text-white/90 hover:bg-white/15'\n                    : 'bg-white text-ink shadow-sm hover:bg-black/5'\n                }`}",
+          "line": 108,
+          "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => {\n                  triggerHaptic();\n                  onSelectSuggestion(tr(sug.fr, sug.ar));\n                }}",
+          "onClick": "{() => onSelectSuggestion(tr(item.fr, item.ar))}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 394,
-          "className": "{`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${\n                  attachments && attachments.length > 0\n                    ? 'bg-ink text-white shadow-md'\n                    : isDark\n                      ? 'bg-white/10 text-white hover:bg-white/15'\n                      : 'bg-white text-ink shadow-sm hover:bg-black/5'\n                }`}",
+          "line": 113,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Ajouter une photo', 'إضافة صورة')}",
-          "onClick": "{() => { triggerHaptic(); onOpenAttachments(); }}",
+          "ariaLabel": "{tr('Ajouter une photo','إضافة صورة')}",
+          "onClick": "{onOpenAttachments}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 412,
-          "className": "{`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${\n                  isDark\n                    ? 'bg-white/10 text-white hover:bg-white/15'\n                    : 'bg-white text-ink shadow-sm hover:bg-black/5'\n                }`}",
+          "line": 114,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}",
-          "onClick": "{() => { triggerHaptic(); onOpenLens(); }}",
-          "disabled": null
+          "ariaLabel": "{onOpenLens ? tr('Scanner avec AYROVIX Lens','فحص مع AYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}",
+          "onClick": "{() => onOpenLens ? onOpenLens() : fileRef.current?.click()}",
+          "disabled": "{!onOpenLens && !onAddAttachment}"
         },
         {
           "tag": "button",
-          "line": 426,
-          "className": "{`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${\n                  isDark\n                    ? 'bg-white/10 text-white hover:bg-white/15'\n                    : 'bg-white text-ink shadow-sm hover:bg-black/5'\n                }`}",
+          "line": 115,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Choisir une photo', 'اختيار صورة')}",
-          "onClick": "{() => { triggerHaptic(); fileInputRef.current?.click(); }}",
+          "ariaLabel": "{isMuted ? tr('Activer le microphone','إلغاء كتم الصوت') : tr('Couper le microphone','كتم الصوت')}",
+          "onClick": "{onToggleMute}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 445,
-          "className": "{`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${\n                isMuted\n                  ? 'bg-danger/15 text-danger ring-2 ring-danger/30'\n                  : isDark\n                    ? 'bg-white/10 text-white hover:bg-white/15'\n                    : 'bg-white text-ink shadow-md hover:bg-black/5'\n              }`}",
+          "line": 116,
+          "className": "\"voice-icon-button voice-icon-button--exit\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{isMuted ? tr('Activer le microphone', 'إلغاء كتم الصوت') : tr('Couper le microphone', 'كتم الصوت')}",
-          "onClick": "{() => { triggerHaptic(); onToggleMute(); }}",
+          "ariaLabel": "{tr('Quitter le mode vocal','إيقاف والخروج من الوضع الصوتي')}",
+          "onClick": "{onExit}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 462,
-          "className": "\"grid h-14 w-14 place-items-center rounded-full bg-cta text-cta-ink shadow-lg shadow-cta/30 transition hover:bg-cta-hover active:scale-95\"",
+          "line": 117,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Quitter le mode vocal', 'إيقاف والخروج من الوضع الصوتي')}",
-          "onClick": "{() => { triggerHaptic(); onExit(); }}",
+          "ariaLabel": "{isSpeakerMuted ? tr('Activer le haut-parleur','تشغيل الصوت') : tr('Couper le haut-parleur','إيقاف الصوت')}",
+          "onClick": "{onToggleSpeaker}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 472,
-          "className": "{`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${\n                isSpeakerMuted\n                  ? 'bg-white/5 text-muted'\n                  : isDark\n                    ? 'bg-white/10 text-white hover:bg-white/15'\n                    : 'bg-white text-ink shadow-md hover:bg-black/5'\n              }`}",
+          "line": 121,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{isSpeakerMuted ? tr('Activer le haut-parleur', 'تشغيل الصوت') : tr('Couper le haut-parleur', 'إيقاف الصوت')}",
-          "onClick": "{() => { triggerHaptic(); onToggleSpeaker(); }}",
+          "ariaLabel": "{tr('Fermer les paramètres','إغلاق الإعدادات')}",
+          "onClick": "{() => setShowSettings(false)}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 503,
-          "className": "\"grid h-8 w-8 place-items-center rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { triggerHaptic(); setShowSettingsModal(false); }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 519,
-          "className": "{`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${\n                      selectedVoiceId === 'Aoede'\n                        ? 'border-2 border-ink bg-ink/5 text-ink'\n                        : isDark\n                          ? 'border border-white/10 bg-white/5 text-white'\n                          : 'border border-black/5 bg-black/5 text-ink'\n                    }`}",
+          "line": 125,
+          "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => handleVoiceSelect('Aoede', 'female')}",
+          "onClick": "{() => changeSettings({voiceId:preset.id,gender:preset.gender})}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 533,
-          "className": "{`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${\n                      selectedVoiceId === 'Kore'\n                        ? 'border-2 border-ink bg-ink/5 text-ink'\n                        : isDark\n                          ? 'border border-white/10 bg-white/5 text-white'\n                          : 'border border-black/5 bg-black/5 text-ink'\n                    }`}",
+          "line": 128,
+          "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => handleVoiceSelect('Kore', 'female')}",
+          "onClick": "{() => changeSettings({rate})}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 547,
-          "className": "{`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${\n                      selectedVoiceId === 'Puck'\n                        ? 'border-2 border-ink bg-ink/5 text-ink'\n                        : isDark\n                          ? 'border border-white/10 bg-white/5 text-white'\n                          : 'border border-black/5 bg-black/5 text-ink'\n                    }`}",
+          "line": 131,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => handleVoiceSelect('Puck', 'male')}",
-          "disabled": null
+          "role": "\"switch\"",
+          "ariaLabel": "{tr('Retours haptiques','التفاعل بالاهتزاز')}",
+          "onClick": "{() => { const next=!haptics;setHaptics(next);if(next && canVibrate){try{navigator.vibrate(12);}catch{}} }}",
+          "disabled": "{!canVibrate}"
         },
         {
           "tag": "button",
-          "line": 561,
-          "className": "{`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${\n                      selectedVoiceId === 'Fenrir'\n                        ? 'border-2 border-ink bg-ink/5 text-ink'\n                        : isDark\n                          ? 'border border-white/10 bg-white/5 text-white'\n                          : 'border border-black/5 bg-black/5 text-ink'\n                    }`}",
+          "line": 134,
+          "className": "\"voice-done\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => handleVoiceSelect('Fenrir', 'male')}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 590,
-          "className": "{`rounded-xl py-2.5 text-xs font-bold transition ${\n                        Math.abs(voiceRate - item.val) < 0.04\n                          ? 'bg-ink text-white shadow-md'\n                          : isDark\n                            ? 'bg-white/5 text-white hover:bg-white/10'\n                            : 'bg-black/5 text-ink hover:bg-black/10'\n                      }`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => handleVoiceRateChange(item.val)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 618,
-          "className": "{`relative h-6 w-11 rounded-full transition-colors ${\n                    hapticsEnabled ? 'bg-ink' : 'bg-gray-400/40'\n                  }`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => {\n                    const next = !hapticsEnabled;\n                    setHapticsEnabled(next);\n                    if (next) triggerHaptic();\n                  }}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 638,
-          "className": "\"mt-6 w-full rounded-2xl bg-[#FF6900] py-3.5 text-center text-xs font-black text-white shadow-lg shadow-[#FF6900]/25 active:scale-95\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => { triggerHaptic(); setShowSettingsModal(false); }}",
+          "onClick": "{() => setShowSettings(false)}",
           "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ Camera, Check, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Sparkles, Volume2, VolumeX, X }",
+          "bindings": "{ Calculator, Camera, Check, Image as ImageIcon, Loader2, Mic, MicOff, Package, Plus, SlidersHorizontal, Sparkles, Square, Truck, Volume2, VolumeX, X }",
           "line": 2
         }
       ],
-      "inlineSvg": [
-        {
-          "line": 309,
-          "viewBox": "\"0 0 100 40\""
-        }
-      ],
-      "colors": [
-        "#0A0A0A",
-        "#111111",
-        "#3f3f46",
-        "#FF6900",
-        "#c75200",
-        "#dc2626",
-        "#e05e00",
-        "#ef4444",
-        "#f87171"
-      ],
+      "inlineSvg": [],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
     {
       "file": "client/src/components/assistant/AssistantVoiceOrb.tsx",
       "domain": "sonim",
-      "sha256": "2382378fde3daae5e6bf0914b8d14d68bfa8109c7b5bfdaf595606c4208e0b5a",
-      "lines": 181,
+      "sha256": "b981acd2558ed1193fab70a63576fc1f3cf4331a035a6c63f337248d0af721c3",
+      "lines": 31,
       "imports": [
         "react",
         "../QatafoIcons",
-        "../../i18n/LocaleContext"
+        "../../i18n/LocaleContext",
+        "./VoiceLevel",
+        "../../styles/editorial-voice.css"
       ],
       "exports": [
         "AssistantVoiceOrb"
@@ -13198,51 +13277,34 @@
       "controls": [
         {
           "tag": "button",
-          "line": 87,
-          "className": "\"grid h-7 w-7 place-items-center rounded-full text-muted transition hover:bg-black/5 hover:text-ink active:scale-90\"",
+          "line": 23,
+          "className": "\"voice-icon-button\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}",
+          "ariaLabel": "{tr('Fermer le mode vocal','إغلاق الوضع الصوتي')}",
           "onClick": "{onExitVoice}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 159,
-          "className": "\"inline-flex min-h-[38px] items-center gap-1.5 rounded-full bg-danger/10 px-4 text-xs font-black text-danger transition hover:bg-danger/20 active:scale-95\"",
+          "line": 26,
+          "className": "\"voice-done\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{onInterrupt}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 168,
-          "className": "\"inline-flex min-h-[38px] items-center gap-1.5 rounded-full bg-cta px-4 text-xs font-black text-white shadow-sm transition hover:bg-cta-dark active:scale-95\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onManualFinish}",
+          "onClick": "{state === 'speaking' ? onInterrupt : onManualFinish}",
           "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../QatafoIcons",
-          "bindings": "{ Mic, Pause, Square, Volume2, X }",
+          "bindings": "{ Loader2, Pause, Square, X }",
           "line": 2
         }
       ],
       "inlineSvg": [],
-      "colors": [
-        "#0A0A0A",
-        "#111111",
-        "#3f3f46",
-        "#FF6900",
-        "#c75200",
-        "#e05e00"
-      ],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
@@ -13300,6 +13362,24 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/components/assistant/voice/settings.ts",
+      "domain": "sonim",
+      "sha256": "ea74629441315d9a746aae0a0af8ed9c979a3ac81a35410d2caaea4d1c28960d",
+      "lines": 15,
+      "imports": [],
+      "exports": [
+        "DEFAULT_VOICE_SETTINGS",
+        "VOICE_PRESETS",
+        "VOICE_RATES"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/assistant/voice/types.ts",
       "domain": "sonim",
       "sha256": "9fb8fa8b5c79145736fa50cb779a5ad79208f3f40604429581b52a53e19c0744",
@@ -13316,8 +13396,8 @@
     {
       "file": "client/src/components/assistant/voice/VoiceChatController.ts",
       "domain": "sonim",
-      "sha256": "2b51c69117565db712e84b7b4f4aeeecd9f99146eaaf2707a8339875ef749de5",
-      "lines": 538,
+      "sha256": "9b1881241825025ff28500b3c7458b65b18cb6408d737b1310c5cc9815c039b0",
+      "lines": 540,
       "imports": [
         "../assistantApi",
         "../../../utils/session",
@@ -13339,10 +13419,11 @@
     {
       "file": "client/src/components/assistant/voice/VoiceOutput.ts",
       "domain": "sonim",
-      "sha256": "8a03f68eb5086de164a303e093d098d89e4cdb3a43f575b869d5661260f6c556",
-      "lines": 375,
+      "sha256": "6fb65aa0be9fbc47ac3175d83778f31f884f6a4b9d5d60f9a4a0f5ac60ff0c40",
+      "lines": 368,
       "imports": [
-        "../../../utils/session"
+        "../../../utils/session",
+        "./settings"
       ],
       "exports": [
         "VoiceOutput"
@@ -13357,10 +13438,34 @@
       ]
     },
     {
+      "file": "client/src/components/assistant/VoiceLevel.tsx",
+      "domain": "sonim",
+      "sha256": "208651e7873cbd7caf3fe1934a858ce0dca20accaf8a0ca9ea12a6d211aec9d6",
+      "lines": 11,
+      "imports": [
+        "react",
+        "../../hooks/useSmoothedLevel"
+      ],
+      "exports": [
+        "VoiceLevel"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [
+        {
+          "line": 7,
+          "viewBox": "\"0 0 100 40\""
+        }
+      ],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/AyroviMotion.tsx",
       "domain": "shell-content",
-      "sha256": "23a9526a03f2262bbbf2923ba95f864d3029f3678ba16b513d66f29c782b09ea",
-      "lines": 94,
+      "sha256": "d4702f8d759570a7d3693ca3c13dfdbde63e56678e319108921d4acaababbc9b",
+      "lines": 95,
       "imports": [
         "react"
       ],
@@ -13456,8 +13561,8 @@
     {
       "file": "client/src/components/CartDrawer.tsx",
       "domain": "commerce",
-      "sha256": "5399c29d07f6f8e31fbf7f7cc2bbaf973c60328a40df940bfc858e369fdd03bb",
-      "lines": 227,
+      "sha256": "926a1eaf43634173199e5a4dd356f7cebddb3b856681d677e5db58eeee25e2c2",
+      "lines": 226,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -13466,7 +13571,8 @@
         "../types",
         "./JourneyProgress",
         "../i18n/LocaleContext",
-        "../services/publicApi"
+        "../commerce/useCommercePolicy",
+        "../ayrovix/services/resultPolicy"
       ],
       "exports": [
         "CartDrawer"
@@ -13474,7 +13580,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 72,
+          "line": 63,
           "className": "\"absolute inset-0 h-full w-full cursor-default bg-ink/40 backdrop-blur-xs transition-opacity\"",
           "type": "\"button\"",
           "role": null,
@@ -13484,7 +13590,7 @@
         },
         {
           "tag": "AppHeader",
-          "line": 82,
+          "line": 73,
           "className": null,
           "type": null,
           "role": null,
@@ -13494,7 +13600,7 @@
         },
         {
           "tag": "button",
-          "line": 99,
+          "line": 90,
           "className": "\"ay-btn-primary mt-2 min-h-12 text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -13504,8 +13610,8 @@
         },
         {
           "tag": "button",
-          "line": 123,
-          "className": "\"grid h-11 w-11 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-danger/5 hover:text-danger\"",
+          "line": 114,
+          "className": "\"grid h-11 w-11 shrink-0 place-items-center rounded-control text-muted transition-colors hover:bg-danger/5 hover:text-danger\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr(`Supprimer ${item.title} du panier`, `حذف ${item.title} من السلة`)}",
@@ -13514,7 +13620,7 @@
         },
         {
           "tag": "a",
-          "line": 150,
+          "line": 141,
           "className": "\"mt-1 inline-block text-xs font-bold text-ink underline\"",
           "type": null,
           "role": null,
@@ -13524,7 +13630,7 @@
         },
         {
           "tag": "button",
-          "line": 163,
+          "line": 154,
           "className": "\"flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35\"",
           "type": "\"button\"",
           "role": null,
@@ -13534,7 +13640,7 @@
         },
         {
           "tag": "button",
-          "line": 175,
+          "line": 166,
           "className": "\"flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35\"",
           "type": "\"button\"",
           "role": null,
@@ -13543,8 +13649,38 @@
           "disabled": "{item.quantity >= 99}"
         },
         {
+          "tag": "summary",
+          "line": 187,
+          "className": "\"flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 font-black [&::-webkit-details-marker]:hidden\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 192,
+          "className": "\"inline-flex min-h-11 items-center underline\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
           "tag": "button",
-          "line": 206,
+          "line": 197,
+          "className": "\"ay-btn-secondary mt-2 w-full\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{commerce.retry}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 204,
           "className": "\"ay-btn-secondary min-h-12 w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -13554,19 +13690,19 @@
         },
         {
           "tag": "button",
-          "line": 211,
+          "line": 209,
           "className": "\"ay-btn-cta w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{onProceedToCheckout}",
-          "disabled": null
+          "onClick": "{() => { if (commerce.status === 'ready') onProceedToCheckout(); }}",
+          "disabled": "{commerce.status !== 'ready'}"
         }
       ],
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ Trash2, ArrowRight, Plus, Minus }",
+          "bindings": "{ Trash2, ArrowRight, Plus, Minus, ChevronDown }",
           "line": 2
         }
       ],
@@ -13596,8 +13732,8 @@
     {
       "file": "client/src/components/CheckoutModal.tsx",
       "domain": "commerce",
-      "sha256": "918b793da614ea0ef606571363312684223dead70d99d81da461be05826ca472",
-      "lines": 639,
+      "sha256": "74b612781a41a1fe40a45dc5096746489f9717c302b89730dac148c264a89788",
+      "lines": 618,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -13606,7 +13742,7 @@
         "../types",
         "../utils/session",
         "../customer/api",
-        "../services/publicApi",
+        "../commerce/useCommercePolicy",
         "./JourneyProgress",
         "../i18n/LocaleContext",
         "../navigation/NavigationHistory",
@@ -13618,7 +13754,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 420,
+          "line": 395,
           "className": null,
           "type": null,
           "role": null,
@@ -13628,7 +13764,7 @@
         },
         {
           "tag": "form",
-          "line": 431,
+          "line": 406,
           "className": "\"checkout-flow-content ay-safe-bottom space-y-4\"",
           "type": null,
           "role": null,
@@ -13638,7 +13774,17 @@
         },
         {
           "tag": "button",
-          "line": 452,
+          "line": 409,
+          "className": "\"ay-btn-secondary mt-2 w-full\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{commerce.retry}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 431,
           "className": "{`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-line bg-surface text-ink' : 'border-line bg-white text-muted'}`}",
           "type": "\"button\"",
           "role": null,
@@ -13648,7 +13794,7 @@
         },
         {
           "tag": "input",
-          "line": 467,
+          "line": 446,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15\"",
           "type": "\"text\"",
           "role": null,
@@ -13658,7 +13804,7 @@
         },
         {
           "tag": "input",
-          "line": 483,
+          "line": 462,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 read-only:bg-surface/60\"",
           "type": "\"email\"",
           "role": null,
@@ -13668,7 +13814,7 @@
         },
         {
           "tag": "input",
-          "line": 503,
+          "line": 482,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 font-mono\"",
           "type": "\"tel\"",
           "role": null,
@@ -13678,7 +13824,7 @@
         },
         {
           "tag": "select",
-          "line": 524,
+          "line": 503,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15\"",
           "type": null,
           "role": null,
@@ -13688,7 +13834,7 @@
         },
         {
           "tag": "textarea",
-          "line": 542,
+          "line": 521,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 resize-none py-2\"",
           "type": null,
           "role": null,
@@ -13698,7 +13844,7 @@
         },
         {
           "tag": "button",
-          "line": 552,
+          "line": 531,
           "className": "\"ay-btn-secondary w-full text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -13708,7 +13854,7 @@
         },
         {
           "tag": "button",
-          "line": 559,
+          "line": 538,
           "className": "\"ay-btn-secondary min-w-0 px-2 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -13718,7 +13864,7 @@
         },
         {
           "tag": "button",
-          "line": 560,
+          "line": 539,
           "className": "\"ay-btn-cta min-w-0 px-2 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -13728,8 +13874,8 @@
         },
         {
           "tag": "button",
-          "line": 589,
-          "className": "{`checkout-payment-option rounded-xl border transition-all ${selected ? 'border-line bg-surface text-ink' : available ? 'border-line bg-surface text-muted hover:border-line/50' : 'border-line bg-surface text-muted'}`}",
+          "line": 568,
+          "className": "{`checkout-payment-option rounded-card border transition-all ${selected ? 'border-line bg-surface text-ink' : available ? 'border-line bg-surface text-muted hover:border-line/50' : 'border-line bg-surface text-muted'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -13738,7 +13884,7 @@
         },
         {
           "tag": "input",
-          "line": 625,
+          "line": 604,
           "className": "\"mt-0.5 h-5 w-5 shrink-0 accent-brand\"",
           "type": "\"checkbox\"",
           "role": null,
@@ -13748,7 +13894,7 @@
         },
         {
           "tag": "a",
-          "line": 626,
+          "line": 605,
           "className": "\"font-black text-ink underline\"",
           "type": null,
           "role": null,
@@ -13758,7 +13904,7 @@
         },
         {
           "tag": "button",
-          "line": 629,
+          "line": 608,
           "className": "\"ay-btn-secondary min-w-0 px-2 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -13768,19 +13914,19 @@
         },
         {
           "tag": "button",
-          "line": 630,
+          "line": 609,
           "className": "\"ay-btn-cta min-w-0 px-2 text-xs sm:text-sm\"",
           "type": "\"submit\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{isLoading || !formData.termsAccepted || (hasAvailablePaymentMethod&&!isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod)) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}"
+          "disabled": "{commerce.status !== 'ready' || isLoading || !formData.termsAccepted || (hasAvailablePaymentMethod&&!isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod)) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}"
         }
       ],
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ AlertCircle, CheckCircle2, Loader2, LocateFixed }",
+          "bindings": "{ AlertCircle, CheckCircle2, Loader2, LocateFixed, ArrowRightLeft }",
           "line": 2
         }
       ],
@@ -13795,8 +13941,8 @@
     {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
-      "sha256": "3b39252e97010767c5b2fcf73bacb445c64666c970d05638e267c42e82404ee3",
-      "lines": 842,
+      "sha256": "6c6a7b6444d16056797f1e244b4de4aec4dc8683b4a828e073e099846d3f55bf",
+      "lines": 841,
       "imports": [
         "react",
         "./account/AccountHome",
@@ -13804,8 +13950,7 @@
         "./account/AccountSettings",
         "./account/model",
         "../styles/customer-account.css",
-        "react-icons/fc",
-        "react-icons/fa6",
+        "../design/BrandIcon",
         "./QatafoIcons",
         "../hooks/useBodyScrollLock",
         "../types",
@@ -13825,7 +13970,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 118,
+          "line": 117,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -13835,7 +13980,7 @@
         },
         {
           "tag": "form",
-          "line": 595,
+          "line": 594,
           "className": "\"flex flex-1 flex-col\"",
           "type": null,
           "role": null,
@@ -13845,7 +13990,7 @@
         },
         {
           "tag": "button",
-          "line": 596,
+          "line": 595,
           "className": "\"mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -13855,7 +14000,7 @@
         },
         {
           "tag": "Field",
-          "line": 604,
+          "line": 603,
           "className": null,
           "type": null,
           "role": null,
@@ -13865,7 +14010,7 @@
         },
         {
           "tag": "input",
-          "line": 605,
+          "line": 604,
           "className": "{`${inputClass} text-center text-2xl font-black tracking-[0.35em]`}",
           "type": null,
           "role": null,
@@ -13875,7 +14020,7 @@
         },
         {
           "tag": "button",
-          "line": 608,
+          "line": 607,
           "className": "\"mt-3 w-full border border-line bg-surface p-3 text-xs font-bold text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -13885,7 +14030,7 @@
         },
         {
           "tag": "button",
-          "line": 609,
+          "line": 608,
           "className": "\"ay-btn-primary mt-5 w-full text-sm\"",
           "type": null,
           "role": null,
@@ -13895,7 +14040,7 @@
         },
         {
           "tag": "form",
-          "line": 614,
+          "line": 613,
           "className": "\"flex flex-1 flex-col\"",
           "type": null,
           "role": null,
@@ -13905,7 +14050,7 @@
         },
         {
           "tag": "button",
-          "line": 615,
+          "line": 614,
           "className": "\"mb-4 flex items-center gap-1.5 self-start text-xs font-black text-muted transition hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -13915,7 +14060,7 @@
         },
         {
           "tag": "Field",
-          "line": 623,
+          "line": 622,
           "className": null,
           "type": null,
           "role": null,
@@ -13925,7 +14070,7 @@
         },
         {
           "tag": "input",
-          "line": 626,
+          "line": 625,
           "className": "{`${inputClass} pl-11 text-base`}",
           "type": "\"tel\"",
           "role": null,
@@ -13935,7 +14080,7 @@
         },
         {
           "tag": "button",
-          "line": 630,
+          "line": 629,
           "className": "\"ay-btn-primary mt-5 w-full text-sm\"",
           "type": null,
           "role": null,
@@ -13945,7 +14090,7 @@
         },
         {
           "tag": "Button",
-          "line": 638,
+          "line": 637,
           "className": null,
           "type": null,
           "role": null,
@@ -13955,7 +14100,7 @@
         },
         {
           "tag": "Button",
-          "line": 657,
+          "line": 656,
           "className": null,
           "type": null,
           "role": null,
@@ -13965,7 +14110,7 @@
         },
         {
           "tag": "a",
-          "line": 662,
+          "line": 661,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -13975,7 +14120,7 @@
         },
         {
           "tag": "a",
-          "line": 665,
+          "line": 664,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -13985,7 +14130,7 @@
         },
         {
           "tag": "a",
-          "line": 668,
+          "line": 667,
           "className": "{buttonClasses('secondary', 'md', 'ay-auth__provider')}",
           "type": null,
           "role": null,
@@ -13995,7 +14140,7 @@
         },
         {
           "tag": "form",
-          "line": 678,
+          "line": 677,
           "className": null,
           "type": null,
           "role": null,
@@ -14005,7 +14150,7 @@
         },
         {
           "tag": "button",
-          "line": 691,
+          "line": 690,
           "className": "\"ay-auth__password-toggle\"",
           "type": "\"button\"",
           "role": null,
@@ -14015,7 +14160,7 @@
         },
         {
           "tag": "Button",
-          "line": 697,
+          "line": 696,
           "className": "\"ay-auth__submit\"",
           "type": "\"submit\"",
           "role": null,
@@ -14025,12 +14170,22 @@
         },
         {
           "tag": "button",
-          "line": 701,
+          "line": 700,
           "className": "\"ay-auth__recovery-link\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => setRecoveryOpen(!recoveryOpen)}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 707,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         },
         {
@@ -14044,18 +14199,8 @@
           "disabled": null
         },
         {
-          "tag": "a",
-          "line": 709,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
           "tag": "Button",
-          "line": 712,
+          "line": 711,
           "className": "\"ay-auth__phone\"",
           "type": null,
           "role": null,
@@ -14065,13 +14210,23 @@
         },
         {
           "tag": "button",
-          "line": 718,
+          "line": 717,
           "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => {\n                setEmailMode(emailMode === 'login' ? 'register' : 'login');\n                setEmailAddress(''); setEmailName('');\n                setEmailPassword(''); setShowPassword(false); setRecoveryOpen(false); setError(''); setNotice('');\n                document.getElementById('auth-title')?.focus();\n              }}",
           "disabled": "{authBusy}"
+        },
+        {
+          "tag": "a",
+          "line": 725,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
         },
         {
           "tag": "a",
@@ -14084,18 +14239,8 @@
           "disabled": null
         },
         {
-          "tag": "a",
-          "line": 727,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
           "tag": "input",
-          "line": 741,
+          "line": 740,
           "className": null,
           "type": "\"file\"",
           "role": null,
@@ -14105,7 +14250,7 @@
         },
         {
           "tag": "button",
-          "line": 741,
+          "line": 740,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -14115,7 +14260,7 @@
         },
         {
           "tag": "form",
-          "line": 743,
+          "line": 742,
           "className": "\"ac-panel ac-form-stack\"",
           "type": null,
           "role": null,
@@ -14125,7 +14270,7 @@
         },
         {
           "tag": "input",
-          "line": 749,
+          "line": 748,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -14135,7 +14280,7 @@
         },
         {
           "tag": "Button",
-          "line": 750,
+          "line": 749,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -14145,7 +14290,7 @@
         },
         {
           "tag": "Button",
-          "line": 753,
+          "line": 752,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14155,7 +14300,7 @@
         },
         {
           "tag": "button",
-          "line": 754,
+          "line": 753,
           "className": "\"ac-text-button ac-danger-text\"",
           "type": "\"button\"",
           "role": null,
@@ -14165,7 +14310,7 @@
         },
         {
           "tag": "button",
-          "line": 757,
+          "line": 756,
           "className": "\"ay-btn-primary text-sm\"",
           "type": null,
           "role": null,
@@ -14175,7 +14320,7 @@
         },
         {
           "tag": "button",
-          "line": 757,
+          "line": 756,
           "className": "\"px-3 py-2 text-xs font-black text-ink\"",
           "type": null,
           "role": null,
@@ -14185,7 +14330,7 @@
         },
         {
           "tag": "button",
-          "line": 757,
+          "line": 756,
           "className": "\"px-3 py-2 text-xs font-black text-danger\"",
           "type": null,
           "role": null,
@@ -14195,7 +14340,7 @@
         },
         {
           "tag": "button",
-          "line": 759,
+          "line": 758,
           "className": "\"grid w-full min-w-0 grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-line bg-white p-3 text-start sm:p-4\"",
           "type": null,
           "role": null,
@@ -14205,7 +14350,7 @@
         },
         {
           "tag": "button",
-          "line": 764,
+          "line": 763,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": null,
           "role": null,
@@ -14215,7 +14360,7 @@
         },
         {
           "tag": "button",
-          "line": 769,
+          "line": 768,
           "className": "\"text-xs font-black text-ink\"",
           "type": null,
           "role": null,
@@ -14225,7 +14370,7 @@
         },
         {
           "tag": "a",
-          "line": 772,
+          "line": 771,
           "className": "\"ay-btn-secondary shrink-0 px-3 text-xs\"",
           "type": null,
           "role": null,
@@ -14235,7 +14380,7 @@
         },
         {
           "tag": "a",
-          "line": 774,
+          "line": 773,
           "className": "\"ay-btn-secondary mt-4 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -14245,7 +14390,7 @@
         },
         {
           "tag": "button",
-          "line": 782,
+          "line": 781,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14255,7 +14400,7 @@
         },
         {
           "tag": "Button",
-          "line": 786,
+          "line": 785,
           "className": null,
           "type": null,
           "role": null,
@@ -14265,7 +14410,7 @@
         },
         {
           "tag": "Button",
-          "line": 786,
+          "line": 785,
           "className": null,
           "type": null,
           "role": null,
@@ -14275,7 +14420,7 @@
         },
         {
           "tag": "a",
-          "line": 787,
+          "line": 786,
           "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
           "type": null,
           "role": null,
@@ -14285,7 +14430,7 @@
         },
         {
           "tag": "a",
-          "line": 787,
+          "line": 786,
           "className": "\"flex min-h-14 items-center justify-between rounded-2xl border border-line bg-white px-5 font-black\"",
           "type": null,
           "role": null,
@@ -14295,7 +14440,7 @@
         },
         {
           "tag": "button",
-          "line": 798,
+          "line": 797,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14305,7 +14450,7 @@
         },
         {
           "tag": "button",
-          "line": 799,
+          "line": 798,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14315,7 +14460,7 @@
         },
         {
           "tag": "form",
-          "line": 804,
+          "line": 803,
           "className": "\"max-h-[92dvh] w-full overflow-y-auto bg-white p-5 sm:max-w-xl sm:rounded-card sm:p-7\"",
           "type": null,
           "role": "\"dialog\"",
@@ -14325,7 +14470,7 @@
         },
         {
           "tag": "button",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -14335,7 +14480,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14345,7 +14490,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14355,7 +14500,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14365,7 +14510,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14375,7 +14520,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14385,7 +14530,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14395,7 +14540,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14405,7 +14550,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14415,7 +14560,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14425,7 +14570,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14435,7 +14580,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14445,7 +14590,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14455,7 +14600,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14465,7 +14610,7 @@
         },
         {
           "tag": "textarea",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14475,7 +14620,7 @@
         },
         {
           "tag": "Field",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": null,
           "role": null,
@@ -14485,7 +14630,7 @@
         },
         {
           "tag": "textarea",
-          "line": 804,
+          "line": 803,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14495,7 +14640,7 @@
         },
         {
           "tag": "input",
-          "line": 804,
+          "line": 803,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -14505,7 +14650,7 @@
         },
         {
           "tag": "button",
-          "line": 804,
+          "line": 803,
           "className": "\"ay-btn-primary flex-1 text-sm\"",
           "type": null,
           "role": null,
@@ -14515,7 +14660,7 @@
         },
         {
           "tag": "button",
-          "line": 804,
+          "line": 803,
           "className": "\"ay-btn-secondary text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -14525,7 +14670,7 @@
         },
         {
           "tag": "AppHeader",
-          "line": 806,
+          "line": 805,
           "className": null,
           "type": null,
           "role": null,
@@ -14535,7 +14680,7 @@
         },
         {
           "tag": "CreditCard",
-          "line": 816,
+          "line": 815,
           "className": "\"h-7 w-7 text-ink\"",
           "type": null,
           "role": null,
@@ -14545,7 +14690,7 @@
         },
         {
           "tag": "button",
-          "line": 816,
+          "line": 815,
           "className": "\"ay-btn-primary mt-3 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -14555,7 +14700,7 @@
         },
         {
           "tag": "button",
-          "line": 817,
+          "line": 816,
           "className": "\"ay-btn-secondary mt-3 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -14565,7 +14710,7 @@
         },
         {
           "tag": "Field",
-          "line": 827,
+          "line": 826,
           "className": null,
           "type": null,
           "role": null,
@@ -14575,7 +14720,7 @@
         },
         {
           "tag": "input",
-          "line": 827,
+          "line": 826,
           "className": "{inputClass}",
           "type": null,
           "role": null,
@@ -14585,7 +14730,7 @@
         },
         {
           "tag": "input",
-          "line": 828,
+          "line": 827,
           "className": "\"block w-full min-w-0 text-xs\"",
           "type": "\"file\"",
           "role": null,
@@ -14595,7 +14740,7 @@
         },
         {
           "tag": "button",
-          "line": 829,
+          "line": 828,
           "className": "\"ay-btn-primary w-full text-xs\"",
           "type": null,
           "role": null,
@@ -14605,7 +14750,7 @@
         },
         {
           "tag": "a",
-          "line": 836,
+          "line": 835,
           "className": "\"ay-btn-secondary mt-4 w-full text-xs\"",
           "type": null,
           "role": null,
@@ -14615,7 +14760,7 @@
         },
         {
           "tag": "a",
-          "line": 836,
+          "line": 835,
           "className": "\"mt-3 inline-flex items-center gap-1 font-black text-ink\"",
           "type": null,
           "role": null,
@@ -14626,19 +14771,9 @@
       ],
       "icons": [
         {
-          "module": "react-icons/fc",
-          "bindings": "{ FcGoogle }",
-          "line": 7
-        },
-        {
-          "module": "react-icons/fa6",
-          "bindings": "{ FaApple, FaFacebookF }",
-          "line": 8
-        },
-        {
           "module": "./QatafoIcons",
           "bindings": "{\n  ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, Heart, Home, Loader2, LogOut,\n  MapPin, Package, Pencil, Phone, Plus, ShieldCheck, ShoppingBag, Trash2, User, X, Hourglass, AlertCircle, ArrowDown,\n  CreditCard, ReceiptText, Truck, Moon, Settings, Lock, ScanSearch, FileText, ChevronRight, ChevronDown, ExternalLink, RefreshCw,\n  Person, Camera, Eye, EyeOff,\n}",
-          "line": 9
+          "line": 8
         }
       ],
       "inlineSvg": [],
@@ -14837,9 +14972,10 @@
     {
       "file": "client/src/components/DiscoveryHub.tsx",
       "domain": "discovery-social",
-      "sha256": "d78cb2777554f0ef29dc387889d46ea04a67f2714ac734935512185cbe403811",
-      "lines": 189,
+      "sha256": "68adb6b94f1faca0b9d1eeaa67133391de105919bd30d55a5167db8946cf318f",
+      "lines": 190,
       "imports": [
+        "./QatafoIcons",
         "react",
         "../services/publicApi",
         "../navigation/NavigationHistory",
@@ -14853,7 +14989,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 48,
+          "line": 49,
           "className": "\"mt-5 inline-flex items-center gap-1.5 text-base font-bold text-ink underline decoration-1 underline-offset-4 transition-colors hover:text-muted\"",
           "type": "\"button\"",
           "role": null,
@@ -14863,7 +14999,7 @@
         },
         {
           "tag": "button",
-          "line": 98,
+          "line": 99,
           "className": "{`relative shrink-0 whitespace-nowrap pb-2.5 text-xs font-bold tracking-[0.02em] transition-colors sm:text-sm ${active === tab.key ? 'text-ink' : 'text-muted hover:text-ink'}`}",
           "type": "\"button\"",
           "role": "\"tab\"",
@@ -14873,7 +15009,7 @@
         },
         {
           "tag": "button",
-          "line": 179,
+          "line": 180,
           "className": "\"mt-3.5 inline-flex items-center gap-1.5 text-base font-bold text-white underline decoration-1 underline-offset-4 transition-colors hover:text-white/70\"",
           "type": "\"button\"",
           "role": null,
@@ -14882,7 +15018,13 @@
           "disabled": null
         }
       ],
-      "icons": [],
+      "icons": [
+        {
+          "module": "./QatafoIcons",
+          "bindings": "{ ArrowRight, Play }",
+          "line": 1
+        }
+      ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -14935,11 +15077,11 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "057cf4016dd34ab0f9cf90eafc9b90dda73f9ab402b1fa4c44b97fb01734a8a9",
+      "sha256": "228537d96b9cca96675fdffcb0b6288c9ea241da770ebcc8845f9e2b88e58665",
       "lines": 185,
       "imports": [
         "react",
-        "react-icons/fa6",
+        "../design/BrandIcon",
         "./QatafoIcons",
         "../services/publicApi"
       ],
@@ -14954,6 +15096,16 @@
           "type": null,
           "role": null,
           "ariaLabel": "{label}",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 137,
+          "className": "\"flex cursor-pointer list-none items-center justify-between py-4 text-base font-bold text-ink sm:cursor-default sm:py-0 sm:pb-3 [&::-webkit-details-marker]:hidden\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
           "onClick": null,
           "disabled": null
         },
@@ -15009,11 +15161,6 @@
         }
       ],
       "icons": [
-        {
-          "module": "react-icons/fa6",
-          "bindings": "{ FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp }",
-          "line": 2
-        },
         {
           "module": "./QatafoIcons",
           "bindings": "{ Heart, MessageSquare, Package, ShieldCheck, Truck }",
@@ -15099,29 +15246,24 @@
     {
       "file": "client/src/components/icons/ayrovi/AyroviIcon.tsx",
       "domain": "shared-design",
-      "sha256": "9de478c5db75954c08d6d2a88a2f0b2e036bb398a3b1b21f2fa953dc9af88771",
-      "lines": 61,
+      "sha256": "72ebc78b35e780ce421febcfa8363c5ef566eef2c874250152550d7030d1026b",
+      "lines": 25,
       "imports": [
         "react",
-        "../../../design/editorial/IconFamily",
+        "../../../design/editorial/IconDirection",
         "../../../design/editorial/Icon",
+        "../../../design/editorial/identity.json",
         "../../../design/editorial/glyphs.json"
       ],
       "exports": [
         "AYROVI_ICON_SIZE",
         "AYROVI_STROKE",
         "AYROVI_CORNER",
-        "AyroviSvg",
         "createAyroviIcon"
       ],
       "controls": [],
       "icons": [],
-      "inlineSvg": [
-        {
-          "line": 22,
-          "viewBox": "\"0 0 24 24\""
-        }
-      ],
+      "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
@@ -15129,10 +15271,9 @@
     {
       "file": "client/src/components/icons/ayrovi/catalog.tsx",
       "domain": "shared-design",
-      "sha256": "0283186c0c3c3237cd2ed41fd228b5aaf0120d262e9623926243e500812b38bb",
-      "lines": 508,
+      "sha256": "707054359f9a878cda715fc2bb85d4bb5253b246282582c99412068853fbb15c",
+      "lines": 98,
       "imports": [
-        "react",
         "./AyroviIcon"
       ],
       "exports": [
@@ -15227,7 +15368,9 @@
         "AyroviPalette",
         "AyroviGlobe",
         "AyroviHourglass",
-        "AyroviExternal"
+        "AyroviExternal",
+        "AyroviPlay",
+        "AyroviGrip"
       ],
       "controls": [],
       "icons": [],
@@ -15479,27 +15622,13 @@
     {
       "file": "client/src/components/NavigationBrandIcons.tsx",
       "domain": "shell-content",
-      "sha256": "c41eba1d2ea62b2cddadac535a4ff432ab70b1dfe41a84df25e21ae67ad9df04",
-      "lines": 21,
-      "imports": [
-        "react"
-      ],
-      "exports": [
-        "AyrovixNavIcon",
-        "AyvisiNavIcon"
-      ],
+      "sha256": "72c65413b9b2553322fe6d37b1cdc22fd58eec2d66b158153bab4e8399a9c4f4",
+      "lines": 4,
+      "imports": [],
+      "exports": [],
       "controls": [],
       "icons": [],
-      "inlineSvg": [
-        {
-          "line": 7,
-          "viewBox": "\"0 0 24 24\""
-        },
-        {
-          "line": 16,
-          "viewBox": "\"0 0 24 24\""
-        }
-      ],
+      "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
@@ -15897,8 +16026,8 @@
     {
       "file": "client/src/components/QatafoIcons.tsx",
       "domain": "shared-design",
-      "sha256": "857b3f4cece7806d05bc1bdbc56a6aa4eee8d703c2fc001ed4f3f747a732d960",
-      "lines": 119,
+      "sha256": "eaf6929cba0a253549a1e5ee087d2d8a0955515583792e3d7d394b71008f887a",
+      "lines": 122,
       "imports": [
         "./icons/ayrovi",
         "./icons/ayrovi/catalog"
@@ -15998,7 +16127,9 @@
         "Palette",
         "Globe2",
         "Hourglass",
-        "ExternalLink"
+        "ExternalLink",
+        "Play",
+        "Grip"
       ],
       "controls": [],
       "icons": [
@@ -16088,9 +16219,10 @@
     {
       "file": "client/src/components/StoriesShowcase.tsx",
       "domain": "discovery-social",
-      "sha256": "a365a350bcbe84103e8a79ee573b5c2145548f5f9c51cff66b3920250e6c1548",
-      "lines": 172,
+      "sha256": "ff83972cb1d8c3c7d84cd477d0c5b51dbc2522f07b1c96df6e851ab21184f5a7",
+      "lines": 171,
       "imports": [
+        "./QatafoIcons",
         "react",
         "../social/storyService",
         "../social/types",
@@ -16105,7 +16237,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 116,
+          "line": 117,
           "className": "\"stories-showcase__cta\"",
           "type": "\"button\"",
           "role": null,
@@ -16115,7 +16247,7 @@
         },
         {
           "tag": "button",
-          "line": 129,
+          "line": 128,
           "className": "\"stories-showcase__card\"",
           "type": "\"button\"",
           "role": null,
@@ -16125,7 +16257,7 @@
         },
         {
           "tag": "StoryViewer",
-          "line": 147,
+          "line": 146,
           "className": null,
           "type": null,
           "role": null,
@@ -16135,7 +16267,7 @@
         },
         {
           "tag": "CommentSheet",
-          "line": 160,
+          "line": 159,
           "className": null,
           "type": null,
           "role": null,
@@ -16144,13 +16276,14 @@
           "disabled": null
         }
       ],
-      "icons": [],
-      "inlineSvg": [
+      "icons": [
         {
-          "line": 118,
-          "viewBox": "\"0 0 24 24\""
+          "module": "./QatafoIcons",
+          "bindings": "{ ArrowRight }",
+          "line": 1
         }
       ],
+      "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
       "apiReferences": [
@@ -16360,7 +16493,7 @@
     {
       "file": "client/src/design/admin/DataTable.tsx",
       "domain": "admin",
-      "sha256": "c98d64dadcb7c19f831124184ff35adddfb67926507c4138ec43bfc3a02a8d0f",
+      "sha256": "571788e24645465e959fcd2e016b4f8bda022ebe9bc05dfddad7454275dff477",
       "lines": 190,
       "imports": [
         "react",
@@ -16446,7 +16579,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ AlertCircle, Loader2, RefreshCw }",
+          "bindings": "{ ArrowUp, ArrowDown, Grip, AlertCircle, Loader2, RefreshCw }",
           "line": 10
         }
       ],
@@ -16996,6 +17129,49 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/design/BrandIcon.tsx",
+      "domain": "shared-design",
+      "sha256": "d9749981f2532cd71be31749d7b5f9d7bc755aeb75350ea20dd23ac0c8feb385",
+      "lines": 20,
+      "imports": [
+        "react",
+        "react-icons/fc",
+        "react-icons/fa6",
+        "react-icons"
+      ],
+      "exports": [
+        "BrandIcon",
+        "GoogleBrandIcon",
+        "AppleBrandIcon",
+        "FacebookBrandIcon",
+        "InstagramBrandIcon",
+        "TiktokBrandIcon",
+        "WhatsappBrandIcon"
+      ],
+      "controls": [],
+      "icons": [
+        {
+          "module": "react-icons/fc",
+          "bindings": "{ FcGoogle }",
+          "line": 2
+        },
+        {
+          "module": "react-icons/fa6",
+          "bindings": "{ FaApple, FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp }",
+          "line": 3
+        },
+        {
+          "module": "react-icons",
+          "bindings": "type { IconBaseProps }",
+          "line": 4
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/design/Button.tsx",
       "domain": "shared-design",
       "sha256": "cf5b4e5aaa4f790a4e6e56f795922319ca159dff28c08ce54cb13d7b083dee86",
@@ -17030,8 +17206,8 @@
     {
       "file": "client/src/design/editorial/customer.css",
       "domain": "account-auth",
-      "sha256": "cea8a16353cbffeec03e7e985a3e2e09284ef9940fb03036af06495d8d4b8025",
-      "lines": 51,
+      "sha256": "59283c72adf4c39064390dda2e4953f9247752b5d44c952a8e51022507cc5219",
+      "lines": 50,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -17050,12 +17226,12 @@
     {
       "file": "client/src/design/editorial/CustomerIdentity.tsx",
       "domain": "account-auth",
-      "sha256": "e4046d71a0f1e269dc062e4dc8a168b8b7090e61872f02570f7fa752b6d7c98a",
+      "sha256": "9c4e2fc5dab41ae9c202381d9dd14f786f5ebc40be5bcf6553e4b985753d93d4",
       "lines": 14,
       "imports": [
         "react",
         "../../i18n/LocaleContext",
-        "./IconFamily",
+        "./IconDirection",
         "./customerTheme"
       ],
       "exports": [
@@ -17071,8 +17247,8 @@
     {
       "file": "client/src/design/editorial/customerTheme.ts",
       "domain": "account-auth",
-      "sha256": "436d84c36c11ae35fd0db2ba9760a3cf95971db5aedbc0d12fe18c6099351d81",
-      "lines": 62,
+      "sha256": "aa2e2d736a20e5d32d9c8370a56fc0650fa8b48aa2cd9488324af9bde39e5086",
+      "lines": 54,
       "imports": [
         "react",
         "./identity.json",
@@ -17080,26 +17256,20 @@
       ],
       "exports": [
         "CUSTOMER_FONTS",
-        "customerTheme",
-        "preservedNavigationTheme"
+        "customerTheme"
       ],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
-      "colors": [
-        "#0a0a0a",
-        "#111111",
-        "#666666",
-        "#ff6900"
-      ],
+      "colors": [],
       "fontDeclarations": [],
       "apiReferences": []
     },
     {
       "file": "client/src/design/editorial/Icon.tsx",
       "domain": "shared-design",
-      "sha256": "62e7800d40bc8f3ee50e4f33110e1a58f5f314457780ab2dfdb7f8645401e9eb",
-      "lines": 49,
+      "sha256": "894610fa4e1079864ece622d8498a70ac5e1df8256bdf382599933734f5d353f",
+      "lines": 50,
       "imports": [
         "react",
         "./glyphs.json",
@@ -17121,16 +17291,16 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/design/editorial/IconFamily.tsx",
+      "file": "client/src/design/editorial/IconDirection.tsx",
       "domain": "shared-design",
-      "sha256": "3ff9c7818dca48a68688a74a0bcb5f9b6ca20b269f1d5103485835191d1746ed",
+      "sha256": "b412a6662fbba4c146c9628facef47a4c1a1aa0390ad4cc7e1898aeac9ec5b96",
       "lines": 12,
       "imports": [
         "react"
       ],
       "exports": [
-        "useIconFamily",
-        "IconFamily"
+        "useIconDirection",
+        "IconDirectionProvider"
       ],
       "controls": [],
       "icons": [],
@@ -17214,7 +17384,7 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "990bd59b1d112458bc28f5d0b8b10c7c45b45a10acbe9f34a6fda8d608d92266",
+      "sha256": "ddf37d59e6b0fb43e5190044ae25eaa91a9161709c6f34c69aaa7b17b925b8fc",
       "lines": 574,
       "imports": [],
       "exports": [],
@@ -17717,9 +17887,10 @@
     {
       "file": "client/src/design/ui/Skeleton.tsx",
       "domain": "shared-design",
-      "sha256": "480dc5b1941dd773ef4f85a65b7f7ad38e781408b6a7758e544e38bcc42f5497",
-      "lines": 20,
+      "sha256": "2db8de0d28c80abb084555aa0a68a06203bcd4e4c3b93bf2e6faacea81ba81fa",
+      "lines": 21,
       "imports": [
+        "../../components/QatafoIcons",
         "react",
         "tailwind-merge"
       ],
@@ -17728,7 +17899,13 @@
         "Spinner"
       ],
       "controls": [],
-      "icons": [],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Loader2 }",
+          "line": 1
+        }
+      ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -17842,13 +18019,32 @@
     {
       "file": "client/src/hooks/useDialogFocus.ts",
       "domain": "shell-content",
-      "sha256": "cde8c2057557ad40c3066fe26b72e601b7f38b448cb8a53befd0abe1a189e9f4",
+      "sha256": "1d2766a4bf32418c17bf55d0eb59bb0f9d0805a6dd8e4a7631afde94bd0c013c",
       "lines": 24,
       "imports": [
         "react"
       ],
       "exports": [
         "useDialogFocus"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/hooks/useSmoothedLevel.ts",
+      "domain": "shell-content",
+      "sha256": "3f99e082406bfdf234f015be78ef4be8b86e557a5abf886d528e6f7738cb6ac9",
+      "lines": 35,
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "normalizeAudioLevel",
+        "useSmoothedLevel"
       ],
       "controls": [],
       "icons": [],
@@ -17879,8 +18075,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "2c440bb48682f211a54092de80e3d74cc7dcd8417a86d64a3c24be3b3e44c6bc",
-      "lines": 1315,
+      "sha256": "a634383e065216a868f31733c2d194ad66ef2a4fd5348fac03eb5853d2f398c4",
+      "lines": 1303,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -17957,8 +18153,8 @@
     {
       "file": "client/src/services/publicApi.ts",
       "domain": "shell-content",
-      "sha256": "2c93e489af33fee0ddba3816a7f5409a8a9c403a398eb84e3c8bb9315d036017",
-      "lines": 51,
+      "sha256": "e8719248758cdd504a997e6119156b5b6d9471ce917bbe0cd2e44f343c4c38d4",
+      "lines": 57,
       "imports": [],
       "exports": [
         "getPublicHome",
@@ -17977,15 +18173,17 @@
     {
       "file": "client/src/social/components/CommentSheet.tsx",
       "domain": "discovery-social",
-      "sha256": "2f54e211668bf40e7f3af1c3ffbb895d009b2b1000ee2765181eb192ce242738",
-      "lines": 76,
+      "sha256": "d9cbb6ec4ee80b9d89decba5212566cc3f5938fb8686d079bdc3cc0b420cccdc",
+      "lines": 115,
       "imports": [
         "react",
         "motion/react",
         "../../components/QatafoIcons",
         "../storyService",
         "../types",
-        "../../i18n/LocaleContext"
+        "../../i18n/LocaleContext",
+        "../../hooks/useDialogFocus",
+        "../../hooks/useBodyScrollLock"
       ],
       "exports": [
         "CommentSheet"
@@ -17993,8 +18191,8 @@
       "controls": [
         {
           "tag": "button",
-          "line": 37,
-          "className": "\"grid h-11 w-11 place-items-center rounded-full text-muted transition hover:bg-surface active:scale-90\"",
+          "line": 80,
+          "className": "\"grid h-12 w-12 place-items-center rounded-control text-muted transition hover:bg-surface\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Fermer', 'إغلاق')}",
@@ -18002,8 +18200,18 @@
           "disabled": null
         },
         {
+          "tag": "button",
+          "line": 84,
+          "className": "\"ay-btn-secondary mt-3 w-full\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => setAttempt(value => value + 1)}",
+          "disabled": null
+        },
+        {
           "tag": "form",
-          "line": 51,
+          "line": 97,
           "className": "\"flex items-center gap-2 border-t border-line px-3 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-4\"",
           "type": null,
           "role": null,
@@ -18013,28 +18221,28 @@
         },
         {
           "tag": "input",
-          "line": 53,
-          "className": "\"min-h-12 min-w-0 flex-1 rounded-full border border-line bg-surface px-4 text-sm font-semibold text-ink outline-none transition focus:border-line focus:ring-2 focus:ring-black/10/10\"",
+          "line": 98,
+          "className": "\"min-h-12 min-w-0 flex-1 rounded-control border border-line bg-surface px-3 text-sm text-ink focus-visible:outline-2 focus-visible:outline-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": "{tr('Votre commentaire', 'تعليقك')}",
           "onClick": null,
-          "disabled": null
+          "disabled": "{busy}"
         },
         {
           "tag": "button",
-          "line": 62,
-          "className": "\"ay-btn-primary rounded-full px-4 text-xs sm:px-5\"",
+          "line": 101,
+          "className": "\"ay-btn-primary min-h-12 px-3 text-xs sm:px-5\"",
           "type": "\"submit\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
-          "disabled": "{text.trim().length < 2 || busy}"
+          "disabled": "{text.trim().length < 2 || busy || loadState !== 'ready'}"
         },
         {
           "tag": "button",
-          "line": 67,
-          "className": "\"ay-btn-primary mt-3 min-h-11 rounded-full px-6 text-xs uppercase tracking-widest\"",
+          "line": 106,
+          "className": "\"ay-btn-primary mt-3 min-h-12 px-4 text-xs\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -18045,7 +18253,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ User, X }",
+          "bindings": "{ Loader2, User, X }",
           "line": 3
         }
       ],
@@ -18057,7 +18265,7 @@
     {
       "file": "client/src/social/components/FullscreenActionRail.tsx",
       "domain": "discovery-social",
-      "sha256": "33d906d8d7d44d64b1813bb4abb014bd5ea265b2b5b94da0f33ae8fd1269a40e",
+      "sha256": "08848688210ced460e7bfffee6268f7fd69b29d81c61529f0c52090896766130",
       "lines": 36,
       "imports": [
         "react",
@@ -18071,7 +18279,7 @@
         {
           "tag": "button",
           "line": 18,
-          "className": "{`flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-full transition active:scale-90 ${active ? 'text-cta' : 'text-white'}`}",
+          "className": "{`flex min-h-12 min-w-12 flex-col items-center justify-center gap-0.5 rounded-control transition active:scale-90 ${active ? 'text-cta' : 'text-white'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{label}",
@@ -18141,9 +18349,10 @@
     {
       "file": "client/src/social/components/ReelsViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "0d4157688496ecce9d82315f2cf3102a5c981a15b4f1c60c732b4118db5a7ceb",
-      "lines": 157,
+      "sha256": "e58c3780ec7254cfaa5f756a06ce2cbe5e5c2592cd2b1b96af2ed0c032e08e22",
+      "lines": 165,
       "imports": [
+        "../../components/QatafoIcons",
         "react",
         "motion/react",
         "./FullscreenActionRail",
@@ -18157,7 +18366,13 @@
         "ReelsViewer"
       ],
       "controls": [],
-      "icons": [],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Play }",
+          "line": 1
+        }
+      ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -18199,8 +18414,8 @@
     {
       "file": "client/src/social/components/StoryFeed.tsx",
       "domain": "discovery-social",
-      "sha256": "cf606b09a69013d5c7f5b78ddf3649eba72e31a133a4a59c59e00bfa8afc57f6",
-      "lines": 180,
+      "sha256": "099adadc3cfbdd08414d76a37658f8185ae7c2b9cb3d228a384839d2ac14500e",
+      "lines": 188,
       "imports": [
         "react",
         "motion/react",
@@ -18216,8 +18431,8 @@
       "controls": [
         {
           "tag": "button",
-          "line": 25,
-          "className": "{`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${light ? 'text-white hover:bg-white/15' : 'text-muted hover:bg-surface'}`}",
+          "line": 26,
+          "className": "{`grid h-11 w-11 place-items-center rounded-control transition active:scale-90 ${light ? 'text-white hover:bg-white/15' : 'text-muted hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Options du post', 'خيارات المنشور')}",
@@ -18226,27 +18441,17 @@
         },
         {
           "tag": "button",
-          "line": 30,
+          "line": 31,
           "className": "\"block w-full px-4 py-2.5 text-start text-xs font-bold text-ink hover:bg-surface\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => { void navigator.clipboard?.writeText(window.location.href); setMenuOpen(false); }}",
+          "onClick": "{async () => { try { if (!navigator.clipboard?.writeText) throw new Error('CLIPBOARD_UNAVAILABLE'); await navigator.clipboard.writeText(postPublicUrl(post.id)); setCopyStatus('copied'); } catch { setCopyStatus('error'); } }}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 31,
-          "className": "\"block w-full px-4 py-2.5 text-start text-xs font-bold text-muted\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => setMenuOpen(false)}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 75,
+          "line": 77,
           "className": "\"relative block w-full\"",
           "type": "\"button\"",
           "role": null,
@@ -18256,8 +18461,8 @@
         },
         {
           "tag": "button",
-          "line": 113,
-          "className": "{`grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${liked ? 'heart-pop text-cta' : 'text-ink hover:bg-surface'}`}",
+          "line": 115,
+          "className": "{`grid h-12 w-12 place-items-center rounded-control transition active:scale-90 ${liked ? 'heart-pop text-cta' : 'text-ink hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{liked ? tr('Ne plus aimer', 'إلغاء الإعجاب') : tr('Aimer', 'إعجاب')}",
@@ -18266,8 +18471,8 @@
         },
         {
           "tag": "button",
-          "line": 116,
-          "className": "\"grid h-12 w-12 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90\"",
+          "line": 118,
+          "className": "\"grid h-12 w-12 place-items-center rounded-control text-ink transition hover:bg-surface active:scale-90\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Commenter', 'تعليق')}",
@@ -18276,8 +18481,8 @@
         },
         {
           "tag": "button",
-          "line": 119,
-          "className": "\"grid h-12 w-12 place-items-center rounded-full text-ink transition hover:bg-surface active:scale-90\"",
+          "line": 121,
+          "className": "\"grid h-12 w-12 place-items-center rounded-control text-ink transition hover:bg-surface active:scale-90\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Partager', 'مشاركة')}",
@@ -18286,8 +18491,8 @@
         },
         {
           "tag": "button",
-          "line": 122,
-          "className": "{`ms-auto grid h-12 w-12 place-items-center rounded-full transition active:scale-90 ${saved ? 'text-ink' : 'text-ink hover:bg-surface'}`}",
+          "line": 124,
+          "className": "{`ms-auto grid h-12 w-12 place-items-center rounded-control transition active:scale-90 ${saved ? 'text-ink' : 'text-ink hover:bg-surface'}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Enregistrer', 'حفظ')}",
@@ -18296,8 +18501,8 @@
         },
         {
           "tag": "button",
-          "line": 170,
-          "className": "\"mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-surface px-4 text-xs font-extrabold text-ink transition hover:bg-ink/15 active:scale-95\"",
+          "line": 178,
+          "className": "\"mt-3 inline-flex min-h-11 items-center gap-2 rounded-control bg-surface px-4 text-xs font-extrabold text-ink transition hover:bg-ink/15 active:scale-95\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -18306,8 +18511,8 @@
         },
         {
           "tag": "button",
-          "line": 171,
-          "className": "\"mt-3 flex min-h-12 w-full items-center gap-3 rounded-full border border-line bg-surface px-3 text-start text-sm font-semibold text-muted transition focus:border-line hover:border-line/40\"",
+          "line": 179,
+          "className": "\"mt-3 flex min-h-12 w-full items-center gap-3 rounded-control border border-line bg-surface px-3 text-start text-sm font-semibold text-muted transition focus:border-line hover:border-line/40\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -18330,8 +18535,8 @@
     {
       "file": "client/src/social/components/StoryViewer.tsx",
       "domain": "discovery-social",
-      "sha256": "da466b078355beadf56a9152f419a883d0f8599fa03f7db0b4cb229e8d81ef75",
-      "lines": 221,
+      "sha256": "4bbb357e89f3f04cbe51fc3430d81acc7737803d02fc69b79ef6da6f27ca30d0",
+      "lines": 226,
       "imports": [
         "react",
         "motion/react",
@@ -18349,7 +18554,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 198,
+          "line": 202,
           "className": "\"absolute inset-y-0 start-0 w-1/3\"",
           "type": "\"button\"",
           "role": null,
@@ -18359,7 +18564,7 @@
         },
         {
           "tag": "button",
-          "line": 199,
+          "line": 203,
           "className": "\"absolute inset-y-0 end-0 w-2/3\"",
           "type": "\"button\"",
           "role": null,
@@ -18369,7 +18574,7 @@
         },
         {
           "tag": "button",
-          "line": 216,
+          "line": 221,
           "className": "\"ay-btn-secondary mt-2 min-h-11 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -18393,8 +18598,8 @@
     {
       "file": "client/src/social/storyService.ts",
       "domain": "discovery-social",
-      "sha256": "9f9699115e3102cd38a1a53a1773b429de873eb118f150f7771fa064cb1704a4",
-      "lines": 363,
+      "sha256": "edb02b65ffaa280fef0d1016e05a65dbcfcb6646be5ee4820b03753cb099b432",
+      "lines": 337,
       "imports": [
         "./types",
         "../utils/session"
@@ -18403,7 +18608,6 @@
         "configureSocial",
         "OFFICIAL",
         "publisherFor",
-        "baseCount",
         "timeAgo",
         "getStoryPublishers",
         "mapDbStories",
@@ -18643,6 +18847,23 @@
       "colors": [],
       "fontDeclarations": [
         "font-family: var(--ayrovi-font-display)"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/styles/editorial-voice.css",
+      "domain": "shell-content",
+      "sha256": "1a85863d595f893e5218fe38d26d747b6e3b3f63d1bf697f5af415d74325c936",
+      "lines": 57,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [
+        "font-family:\"AY Space Grotesk\",sans-serif",
+        "font-family:var(--ayrovi-font-display)"
       ],
       "apiReferences": []
     },

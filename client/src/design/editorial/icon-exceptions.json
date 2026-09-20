@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "scope": "All client application source, including administration. Exceptions are brand marks and data visualizations, never legacy interface glyphs.",
+  "rawSvg": {
+    "client/src/design/editorial/Icon.tsx": {
+      "count": 1,
+      "reason": "The single interface icon renderer backed by glyphs.json."
+    },
+    "client/src/components/AyroviMotion.tsx": {
+      "count": 1,
+      "attribute": "data-brand-mark",
+      "value": "ayrovi-motion",
+      "reason": "Owner-supplied animated brand mark. Brand geometry is preserved."
+    },
+    "client/src/ayrovix/components/InteractiveLensResults.tsx": {
+      "count": 2,
+      "attribute": "data-visualization",
+      "value": "lens-detections",
+      "reason": "Image-coordinate detection boxes and points; real data overlays, not interface icons."
+    },
+    "client/src/components/assistant/VoiceLevel.tsx": {
+      "count": 1,
+      "attribute": "data-visualization",
+      "value": "audio-level",
+      "reason": "Waveform driven by the real audio level, not a static icon."
+    }
+  },
+  "brandModule": "client/src/design/BrandIcon.tsx",
+  "brandImports": {
+    "react-icons/fc": [
+      "FcGoogle"
+    ],
+    "react-icons/fa6": [
+      "FaApple",
+      "FaFacebookF",
+      "FaInstagram",
+      "FaTiktok",
+      "FaWhatsapp"
+    ]
+  }
+}

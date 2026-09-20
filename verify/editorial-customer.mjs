@@ -1,6 +1,7 @@
 import { chromium } from 'playwright';
 import sharp from 'sharp';
 import fs from 'node:fs';
+import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
 const base=process.env.AYROVI_BASE_URL || 'http://127.0.0.1:3000';
 const output='screenshots/editorial/customer';fs.mkdirSync(output,{recursive:true});
 const checks=[], errors=[], orange=[];
@@ -26,7 +27,10 @@ try{
    await inspect('home','.ayrovi-app-shell');
    check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-ayrovi'));
    check(`${locale}/${width}: three navigation destinations preserved`,await p.locator('.ayrovi-glass-bottom-nav nav>button').count()===3);
-   check(`${locale}/${width}: navigation still legacy glyphs`,await p.locator('.ayrovi-glass-bottom-nav [data-editorial-icon]').count()===0);
+   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sparkles','Eye']]]){
+    const icons=await inspectEditorialIcons(p,selector);
+    check(`${locale}/${width}: ${area} matches editorial geometry and stroke`,icons.errors.length===0 && names.every(name=>icons.names.includes(name)),icons);
+   }
    await p.getByRole('button',{name:locale==='ar'?'فتح فضائي':'Ouvrir mon espace',exact:true}).click();
    await inspect('auth','.ay-auth');
    check(`${locale}/${width}: empty credential fields`,(await p.locator('.ay-auth input[type=email]').inputValue())===''&&(await p.locator('.ay-auth input[type=password]').inputValue())==='');

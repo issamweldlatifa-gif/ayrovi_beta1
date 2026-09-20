@@ -21,7 +21,7 @@ import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
 import { InteractiveLensResults } from './InteractiveLensResults';
-import { Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles } from '../../components/QatafoIcons';
+import { Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles } from '../../components/QatafoIcons';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -801,7 +801,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                         title={item.queryLabel || item.title}
                       >
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="grid h-5 w-5 place-items-center rounded-full bg-surface text-xs font-black text-muted">{item.kind==='image'?'◉':item.kind==='text'?'Aa':item.kind==='url'?'↗':'◎'}</span>
+                          <span className="grid h-5 w-5 place-items-center rounded-full bg-surface text-xs font-black text-muted">{item.kind==='image'?<GalleryIcon size={16}/>:item.kind==='text'?<Type size={16}/>:item.kind==='url'?<ExternalLink size={16}/>:<Barcode size={16}/>} </span>
                           <span className="truncate max-w-[18ch]">{item.queryLabel || item.title}</span>
                         </span>
                       </button>

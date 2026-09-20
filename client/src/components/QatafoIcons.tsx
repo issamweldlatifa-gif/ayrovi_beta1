@@ -116,3 +116,6 @@ export const Palette = I.AyroviPalette;
 export const Globe2 = I.AyroviGlobe;
 export const Hourglass = I.AyroviHourglass;
 export const ExternalLink = I.AyroviExternal;
+
+export const Play = I.AyroviPlay;
+export const Grip = I.AyroviGrip;

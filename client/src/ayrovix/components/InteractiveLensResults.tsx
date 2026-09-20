@@ -1,7 +1,9 @@
+import { MerchantRating } from './MerchantRating';
+import { Plus, Minus } from '../../components/QatafoIcons';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw } from '../../components/QatafoIcons';
+import { Loader2, ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw } from '../../components/QatafoIcons';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
-import { displayRating, isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
+import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 
 export interface InteractiveLensView {
@@ -49,7 +51,7 @@ const CandidateImage: React.FC<{ candidate?: AyrovixCandidate; fallback?: string
     if (favicon) {
       return (
         <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-surface p-2 text-center">
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-white text-sm font-black text-ink shadow-sm border border-line">
+          <div className="grid h-9 w-9 place-items-center rounded-control bg-white text-sm font-black text-ink shadow-sm border border-line">
             <img src={favicon} alt="" width={18} height={18} loading="lazy" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none'; }} />
           </div>
           <span className="max-w-[78px] truncate text-xs font-bold text-muted">{candidate.source}</span>
@@ -58,7 +60,7 @@ const CandidateImage: React.FC<{ candidate?: AyrovixCandidate; fallback?: string
     }
     return (
       <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-surface p-2 text-center">
-        <div className="grid h-9 w-9 place-items-center rounded-full bg-white text-sm font-black text-ink shadow-sm border border-line">
+        <div className="grid h-9 w-9 place-items-center rounded-control bg-white text-sm font-black text-ink shadow-sm border border-line">
           <span>{candidate.source.charAt(0).toUpperCase()}</span>
         </div>
         <span className="max-w-[78px] truncate text-xs font-bold text-muted">{candidate.source}</span>
@@ -95,12 +97,15 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   // Tirer vers le bas sous le peek = fermer le tiroir → retour à la caméra Lens (onReset).
   const [dragH, setDragH] = useState<number | null>(null);
   const dragDy = useRef(0);
+  const dragHeight = useRef<number | null>(null);
+  const mouseDragCleanup = useRef<(() => void) | null>(null);
+  useEffect(() => () => mouseDragCleanup.current?.(), []);
   const sheetGeom = () => {
     const host = sheetRef.current?.parentElement;
     const ch = host?.clientHeight ?? window.innerHeight;
     return { ch, peek: Math.round(ch * 0.38) };
   };
-  const dragStart = (clientY: number) => { startY.current = clientY; dragDy.current = 0; };
+  const dragStart = (clientY: number) => { startY.current = clientY; dragDy.current = 0; dragHeight.current = null; };
   const dragMove = (clientY: number) => {
     if (startY.current == null) return;
     const dy = startY.current - clientY;
@@ -108,12 +113,15 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
     const { ch, peek } = sheetGeom();
     const base = sheet === 'full' ? ch : peek;
     // petit caoutchouc aux bornes, jamais sous 0
-    setDragH(Math.max(0, Math.min(ch + 36, base + dy)));
+    const next = Math.max(0, Math.min(ch + 36, base + dy));
+    dragHeight.current = next;
+    setDragH(next);
   };
   const dragEnd = () => {
     startY.current = null;
     const { ch, peek } = sheetGeom();
-    const h = dragH;
+    const h = dragHeight.current;
+    dragHeight.current = null;
     setDragH(null);
     if (h == null) return;
     if (sheet === 'full') {
@@ -124,8 +132,8 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
       setSheet('full');
     }
   };
-  const onHandleTouchStart = (e: React.TouchEvent) => { dragStart(e.touches[0].clientY); };
-  const onHandleTouchMove = (e: React.TouchEvent) => { dragMove(e.touches[0].clientY); };
+  const onHandleTouchStart = (e: React.TouchEvent) => { if ((e.target as HTMLElement).closest('button,a,input,select')) return; if(e.touches[0]) dragStart(e.touches[0].clientY); };
+  const onHandleTouchMove = (e: React.TouchEvent) => { if(e.touches[0]) dragMove(e.touches[0].clientY); };
   const onHandleTouchEnd = () => { dragEnd(); };
 
   const [scale, setScale] = useState(1);
@@ -414,7 +422,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         {/* GOOGLE LENS LEVEL: instant box highlight — 1 rect, no heavy path */}
         {imgBox && selectedBox && (
           <div className="absolute pointer-events-none" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+            <svg data-visualization="lens-detections" aria-hidden="true" focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
               {/* dim outside selected */}
               <path d={`M0 0 H100 V100 H0 Z M${selectedBox.x} ${selectedBox.y} H${selectedBox.x+selectedBox.w} V${selectedBox.y+selectedBox.h} H${selectedBox.x} Z`} fill="rgba(0,0,0,0.38)" fillRule="evenodd" />
               {/* white frame */}
@@ -427,7 +435,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
         {/* idle: Google Lens dots — minimal, not full boxes */}
         {imgBox && detectedProducts && detectedProducts.length > 1 && !selectedBox && (
           <div className="absolute pointer-events-none" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
-            <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
+            <svg data-visualization="lens-detections" aria-hidden="true" focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
               {detectedProducts.map((p,i)=> p.box ? (
                 <g key={i}>
                   {/* subtle dot at center — Google Lens style */}
@@ -445,25 +453,25 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
           <div className="pointer-events-auto flex gap-1.5 items-center">
             <span className="hidden">Sélectionner</span>
             {selectedBox && (
-              <button type="button" onClick={clearSelection} className="flex items-center gap-1 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur"><X size={12} /> {tr('Effacer', 'مسح')}</button>
+              <button type="button" onClick={clearSelection} className="flex items-center gap-1 rounded-control border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur"><X size={12} /> {tr('Effacer', 'مسح')}</button>
             )}
           </div>
           <div className="pointer-events-auto flex gap-1.5">
-            <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur">+</button>
-            <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur">−</button>
-            <button type="button" onClick={() => { resetView(); clearSelection(); }} className="grid h-8 w-8 place-items-center rounded-full border border-white/20 bg-black/60 text-white backdrop-blur"><RefreshCw size={14} /></button>
+            <button type="button" aria-label={tr('Zoomer', 'تكبير')} onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur"><Plus size={18} /></button>
+            <button type="button" aria-label={tr('Dézoomer', 'تصغير')} onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur"><Minus size={18} /></button>
+            <button type="button" aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} onClick={() => { resetView(); clearSelection(); }} className="grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur"><RefreshCw size={14} /></button>
           </div>
         </div>
         )}
 
-        <div className={`absolute bottom-[calc(38%+12px)] left-1/2 -translate-x-1/2 rounded-full px-3 py-1.5 text-xs font-medium text-center max-w-[92%] leading-tight ${shell ? 'bg-black/55 text-white backdrop-blur' : 'bg-black/60 text-white/90 backdrop-blur'}`}>
+        <div className={`absolute bottom-[calc(38%+12px)] left-1/2 -translate-x-1/2 rounded-control px-3 py-1.5 text-xs font-medium text-center max-w-[92%] leading-tight ${shell ? 'bg-black/55 text-white backdrop-blur' : 'bg-black/60 text-white/90 backdrop-blur'}`}>
           {selectedBox ? tr('Produit sélectionné • Touchez un autre', 'تم التحديد • المس منتجا آخر') : tr('Touchez un produit', 'المس منتجًا')}
           {!selectedBox && scale === 1 ? ` • ${tr('Pincez pour zoomer', 'قرّب بأصابعك')}` : ''}
         </div>
       </div>
 
-      <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' && dragH == null ? 'rounded-none' : 'rounded-t-[20px]'} overflow-hidden`} style={{ height: dragH != null ? `${dragH}px` : sheet === 'full' ? '100%' : '38%', transition: dragH == null ? 'height 0.25s ease' : 'none' }}>
-        <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-t-[20px]'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { dragStart(e.clientY); const onMove = (ev: MouseEvent) => dragMove(ev.clientY); const onUp = () => { dragEnd(); window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); }; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
+      <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' && dragH == null ? 'rounded-none' : 'rounded-none'} overflow-hidden`} style={{ height: dragH != null ? `${dragH}px` : sheet === 'full' ? '100%' : '38%', transition: dragH == null ? 'height 0.25s ease' : 'none' }}>
+        <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-none'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { if ((e.target as HTMLElement).closest('button,a,input,select')) return; mouseDragCleanup.current?.(); dragStart(e.clientY); const onMove = (ev: MouseEvent) => dragMove(ev.clientY); const cleanup = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); mouseDragCleanup.current = null; }; const onUp = () => { cleanup(); dragEnd(); }; mouseDragCleanup.current = cleanup; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
           <span className="h-1.5 w-10 rounded-full bg-black/15" />
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pl-2 pr-2">
             <div className="min-w-0 flex-1">
@@ -473,25 +481,25 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             </div>
             <div className="flex gap-1.5 shrink-0 flex-wrap items-center justify-end">
               {shell && selectedBox && (
-                <button type="button" onClick={clearSelection} className="grid h-8 place-items-center shrink-0 rounded-full border border-line bg-surface px-2.5 text-xs font-bold text-ink"><X size={12} /> {tr('Effacer', 'مسح')}</button>
+                <button type="button" onClick={clearSelection} className="grid h-8 place-items-center shrink-0 rounded-control border border-line bg-surface px-2.5 text-xs font-bold text-ink"><X size={12} /> {tr('Effacer', 'مسح')}</button>
               )}
               {shell && (
                 <span className="flex gap-1">
-                  <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} aria-label={tr('Zoomer', 'تكبير')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-sm font-bold text-ink">+</button>
-                  <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} aria-label={tr('Dézoomer', 'تصغير')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-sm font-bold text-ink">−</button>
-                  <button type="button" onClick={() => { resetView(); clearSelection(); }} aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} className="grid h-8 w-8 place-items-center rounded-full border border-line bg-surface text-ink"><RefreshCw size={13} /></button>
+                  <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} aria-label={tr('Zoomer', 'تكبير')} className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-sm font-bold text-ink"><Plus size={18} /></button>
+                  <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} aria-label={tr('Dézoomer', 'تصغير')} className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-sm font-bold text-ink"><Minus size={18} /></button>
+                  <button type="button" onClick={() => { resetView(); clearSelection(); }} aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-ink"><RefreshCw size={13} /></button>
                 </span>
               )}
-              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'peek' : 'full')} className="shrink-0 rounded-full border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
-              <button type="button" onClick={() => { clearSelection(); onReset(); }} className="shrink-0 rounded-full bg-ink px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap">{tr('Nouvelle recherche', 'بحث جديد')}</button>
+              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'peek' : 'full')} className="shrink-0 rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
+              <button type="button" onClick={() => { clearSelection(); onReset(); }} className="shrink-0 rounded-control bg-ink px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap">{tr('Nouvelle recherche', 'بحث جديد')}</button>
             </div>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto w-full px-2 py-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {isLoading ? (
             <div className="space-y-3 py-4">
-              <div className="flex items-center gap-2 text-xs font-bold text-muted"><span className="h-4 w-4 animate-spin rounded-full border-2 border-line border-t-transparent" />{tr('Analyse en cours…', 'جارٍ التحليل…')}</div>
-              <div className="grid grid-cols-2 gap-2.5">{[0,1,2,3].map(i => (<div key={i} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-xl bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>))}</div>
+              <div className="flex items-center gap-2 text-xs font-bold text-muted"><Loader2 className="h-4 w-4 animate-spin" />{tr('Analyse en cours…', 'جارٍ التحليل…')}</div>
+              <div className="grid grid-cols-2 gap-2.5">{[0,1,2,3].map(i => (<div key={i} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-card bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>))}</div>
               <p className="text-center text-xs text-muted">{tr("AYROVIX analyse l'image…", 'تحلل AYROVIX الصورة…')}</p>
             </div>
           ) : (
@@ -501,39 +509,39 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                   <p className="text-xs font-extrabold uppercase tracking-wide text-muted">{tr('Prix repéré', 'سعر مكتشف')}</p>
                   <p className="text-sm font-bold text-ink line-clamp-2">{detected.title || name}</p>
                   <p className="text-lg font-black text-ink">{detected.totalPriceTND?.toFixed(2) || '—'} DT <span className="text-xs font-medium text-muted">{detected.sourcePrice.toFixed(2)} {detected.sourceCurrency}</span></p>
-                  {onCommandDetected && <button type="button" onClick={() => onCommandDetected(detected)} className="mt-2 w-full rounded-full bg-ink py-2 text-xs font-bold text-white">{tr('Commander avec ce prix', 'الطلب بهذا السعر')}</button>}
+                  {onCommandDetected && <button type="button" onClick={() => onCommandDetected(detected)} className="mt-2 w-full rounded-control bg-ink py-2 text-xs font-bold text-white">{tr('Commander avec ce prix', 'الطلب بهذا السعر')}</button>}
                 </div>
               )}
               {visible.length === 0 ? (
                 <div className="py-8 text-center">
-                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-surface text-muted"><ImageIcon size={22} /></div>
+                  <div className="mx-auto grid h-12 w-12 place-items-center rounded-control bg-surface text-muted"><ImageIcon size={22} /></div>
                   <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance', 'لا توجد نتائج')}</p>
                   <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
                   <p className="mx-auto mt-1 max-w-[28ch] text-xs text-muted">{tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center"><button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-full bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button><button type="button" onClick={() => onReset()} className="rounded-full border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button></div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center"><button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-control bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button><button type="button" onClick={() => onReset()} className="rounded-control border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button></div>
                   <p className="mt-2 text-xs font-medium text-muted">{tr('Astuce : touchez directement le produit pour affiner la recherche.', 'نصيحة: المس المنتج مباشرة لتحسين البحث.')}</p>
                 </div>
               ) : (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 auto-rows-fr">
                     {visible.slice(0, 12).map(c => { const pl = priceLine(c); return (
-                      <article key={c.id} className="bg-white p-2.5 rounded-xl border border-line/50 flex flex-col">
+                      <article key={c.id} className="bg-white p-2.5 rounded-card border border-line/50 flex flex-col">
                         <div className="relative aspect-square overflow-hidden bg-surface"><CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} /><MatchBadge value={c.match} /></div>
                         <h4 className="mt-1.5 line-clamp-2 break-words text-xs font-bold leading-snug text-ink">{c.title}</h4>
                         {c.colors.length > 0 || c.sizes.length > 0 ? (<p className="break-words whitespace-normal text-xs font-semibold leading-snug text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>) : (<p className="text-xs font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>)}
                         <p className="break-words whitespace-normal text-xs font-medium leading-snug text-muted">{c.source}</p>
-                        <div className="mt-0.5 flex items-center gap-1 text-xs font-bold" style={{color:'#FF6900'}}><Star size={11} fill="currentColor" />{displayRating(c).toFixed(1)}</div>
+                        <MerchantRating value={c}/>
                         <div className={`mt-1 px-2 py-1.5 ${pl.pending ? 'bg-amber-50 border border-amber-200' : 'bg-surface'}`}>
                           <p className="text-xs font-extrabold uppercase tracking-wide text-muted">{pl.pending ? tr('Prix sur devis', 'سعر عند الطلب') : tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
                           <p className={`text-sm font-black ${pl.pending ? 'text-amber-700' : 'text-ink'}`}>{pl.tnd}</p>
                           <p className="break-words whitespace-normal text-xs font-semibold leading-snug text-muted">{pl.original ? `${tr('Prix boutique', 'سعر المتجر')} ${pl.original} • ${c.source}` : c.source}</p>
                           <p className="text-xs font-medium text-muted">{pl.pending ? tr('AYROVIX confirmera le prix avant commande.', 'سيؤكد AYROVIX السعر قبل الطلب.') : tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
                         </div>
-                        <button type="button" onClick={() => onChoose(c)} className={`mt-2 w-full rounded-full py-2 text-xs font-bold text-white ${pl.pending ? 'bg-amber-600' : 'bg-ink'}`}>{pl.pending ? tr('Demander le prix', 'طلب السعر') : tr('Voir le produit', 'عرض المنتج')}</button>
+                        <button type="button" onClick={() => onChoose(c)} className="mt-2 min-h-11 w-full rounded-control bg-ink py-2 text-xs font-bold text-white">{pl.pending ? tr('Demander le prix', 'طلب السعر') : tr('Voir le produit', 'عرض المنتج')}</button>
                       </article>
                     );})}
                   </div>
-                  <div className="mt-3 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-muted"><ShieldCheck size={14} />{tr('Prix vérifiés et marchands fiables', 'أسعار متحقق منها وتجار موثوقون')}</div>
+                  <div className="mt-3 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-muted"><ShieldCheck size={14} />{tr('Vérifiez le prix et les conditions dans la fiche produit.', 'تحقق من السعر والشروط في بطاقة المنتج.')}</div>
                 </>
               )}
             </>

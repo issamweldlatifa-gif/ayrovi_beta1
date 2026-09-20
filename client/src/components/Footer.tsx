@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa6';
+import { FacebookBrandIcon as FaFacebookF, InstagramBrandIcon as FaInstagram, TiktokBrandIcon as FaTiktok, WhatsappBrandIcon as FaWhatsapp } from '../design/BrandIcon';
 import { Heart, MessageSquare, Package, ShieldCheck, Truck } from './QatafoIcons';
 import { getCommerceConfig } from '../services/publicApi';
 

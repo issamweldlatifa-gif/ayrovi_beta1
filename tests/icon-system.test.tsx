@@ -11,14 +11,14 @@ import { AyroviBack, AyroviSearch, AyroviSparkles, AyroviUser } from '../client/
 const family = [Menu, AyroviBack, Search, User, Sparkles, Home, ShoppingBag, Heart, MessageCircle, Package, X, AlertCircle];
 
 describe('AYROVI icon system', () => {
-  it('renders the family as independent 24px monoline SVG (Zalando-like, stroke 1.5)', () => {
+  it('renders the family as independent 24px monoline SVG (editorial, stroke 1.3)', () => {
     for (const Icon of family) {
       const markup = renderToStaticMarkup(<Icon />);
       expect(markup).toContain('viewBox="0 0 24 24"');
-      expect(markup).toContain('stroke-width="1.5"');
-      expect(markup).toContain('stroke-linecap="round"');
-      expect(markup).toContain('stroke-linejoin="round"');
-      expect(markup).toContain('ayrovi-icon');
+      expect(markup).toContain('stroke-width="1.3"');
+      expect(markup).toContain('stroke-linecap="square"');
+      expect(markup).toContain('stroke-linejoin="miter"');
+      expect(markup).toContain('ay-editorial-icon');
       expect(markup).not.toContain('class="lucide');
     }
   });
@@ -44,7 +44,7 @@ describe('AYROVI icon system', () => {
     for (const Icon of [Home, ShoppingBag, Heart, MessageCircle, Package, Truck, Bell, CheckCircle2]) {
       const markup = renderToStaticMarkup(<Icon />);
       expect(markup).toContain('viewBox="0 0 24 24"');
-      expect(markup).toContain('stroke-width="1.5"');
+      expect(markup).toContain('stroke-width="1.3"');
       expect(markup).toContain('data-ayrovi-icon=');
     }
   });
@@ -52,15 +52,15 @@ describe('AYROVI icon system', () => {
   it('keeps fill reserved for explicit selected states', () => {
     expect(renderToStaticMarkup(<Heart />)).toContain('fill="none"');
     expect(renderToStaticMarkup(<HeartFilled />)).toContain('fill="currentColor"');
-    expect(renderToStaticMarkup(<ShoppingBag />)).toContain('stroke-width="1.5"');
+    expect(renderToStaticMarkup(<ShoppingBag />)).toContain('stroke-width="1.3"');
   });
 
   it('publishes the thin stroke token, with no lucide dependency and no signature system', () => {
     const tokens = readFileSync('client/src/design/tokens.css', 'utf8');
     const globalCss = readFileSync('client/src/index.css', 'utf8');
-    expect(tokens).toContain('--ayrovi-icon-stroke: 1.5');
+    expect(tokens).toContain('--ayrovi-icon-stroke: 1.3');
     expect(tokens).not.toContain('--ayrovi-icon-signature');
-    expect(globalCss).toContain('stroke-width: var(--ayrovi-icon-stroke, 1.5)');
+    expect(globalCss).not.toContain('stroke-width: 2px');
     expect(globalCss).toContain('vector-effect: none');
     expect(globalCss).not.toContain('.lucide');
     expect(globalCss).not.toContain('data-ayrovi-signature');

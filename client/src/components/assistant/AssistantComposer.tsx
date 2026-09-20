@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X } from '../QatafoIcons';
+import { Loader2, ArrowUp, FileText, Mic, Pause, Plus, VoiceWave, X } from '../QatafoIcons';
 import { AssistantAttachment } from './types';
 import { useLocale } from '../../i18n/LocaleContext';
 import { recordingTime, shouldSubmitComposer } from './composerPolicy';
@@ -89,7 +89,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
           </div>
         ) : isTranscribing ? (
           <div className="mb-3 flex min-h-[42px] items-center gap-2.5" role="status" aria-live="polite">
-            <span className="h-6 w-6 shrink-0 animate-spin rounded-full border-2 border-ink/25 border-t-[#111111]" />
+            <Loader2 className="h-6 w-6 shrink-0 animate-spin" />
             <span className={`text-sm ${isDark ? 'text-white/80' : 'text-muted'}`}>{tr('Transcription en cours…', 'جارٍ تحويل الصوت إلى نص…')}</span>
           </div>
         ) : (
@@ -143,7 +143,7 @@ export const AssistantComposer: React.FC<AssistantComposerProps> = ({
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-cta text-cta-ink shadow-md transition hover:bg-cta-hover active:scale-90 disabled:pointer-events-none disabled:opacity-30"
                 aria-label={isGenerating ? tr('Arrêter la réponse', 'إيقاف الرد') : tr('Envoyer', 'إرسال')}
               >
-                {isGenerating ? <Pause className="h-6 w-6 fill-current" /> : <ArrowUp className="h-6 w-6 stroke-[2.5]" />}
+                {isGenerating ? <Pause className="h-6 w-6 fill-current" /> : <ArrowUp className="h-6 w-6" />}
               </button>
             )}
 

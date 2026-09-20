@@ -1,9 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Camera, Check, Image as ImageIcon, Mic, MicOff, Plus, SlidersHorizontal, Sparkles, Volume2, VolumeX, X } from '../QatafoIcons';
+import React, { useRef, useState } from 'react';
+import { Calculator, Camera, Check, Image as ImageIcon, Loader2, Mic, MicOff, Package, Plus, SlidersHorizontal, Sparkles, Square, Truck, Volume2, VolumeX, X } from '../QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
+import { Price } from '../../design/ui/Price';
+import { VoiceLevel } from './VoiceLevel';
+import { DEFAULT_VOICE_SETTINGS, VOICE_PRESETS, VOICE_RATES, type VoiceOutputSettings } from './voice/settings';
 import type { AssistantAttachment } from './types';
 import type { VoiceChatState } from './voice/types';
-import type { VoiceId, VoiceOutputSettings } from './voice/VoiceOutput';
+import '../../styles/editorial-voice.css';
 
 interface AssistantVoiceModeScreenProps {
   state: VoiceChatState;
@@ -30,621 +34,104 @@ interface AssistantVoiceModeScreenProps {
   onAddAttachment?: (file: File) => void;
   onRemoveAttachment?: (id: string) => void;
   onSelectSuggestion?: (suggestion: string) => void;
+  initialSettings?: VoiceOutputSettings;
   onVoiceSettingsChange?: (settings: Partial<VoiceOutputSettings>) => void;
 }
 
 export const AssistantVoiceModeScreen: React.FC<AssistantVoiceModeScreenProps> = ({
-  state,
-  volumeLevel,
-  isDark,
-  isMuted,
-  isSpeakerMuted,
-  liveTranscript,
-  attachments,
-  activeProduct,
-  onToggleMute,
-  onToggleSpeaker,
-  onExit,
-  onTapOrb,
-  onOpenAttachments,
-  onOpenLens,
-  onAddAttachment,
-  onRemoveAttachment,
-  onSelectSuggestion,
-  onVoiceSettingsChange,
+  state, volumeLevel, isDark, isMuted, isSpeakerMuted, liveTranscript, attachments, activeProduct,
+  onToggleMute, onToggleSpeaker, onExit, onTapOrb, onOpenAttachments, onOpenLens, onAddAttachment,
+  onRemoveAttachment, onSelectSuggestion, onVoiceSettingsChange, initialSettings = DEFAULT_VOICE_SETTINGS,
 }) => {
   const { tr, direction } = useLocale();
-  const [smoothedVolume, setSmoothedVolume] = useState(0);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [selectedVoiceId, setSelectedVoiceId] = useState<VoiceId>('Aoede');
-  const [voiceRate, setVoiceRate] = useState<number>(1.05);
-  const [hapticsEnabled, setHapticsEnabled] = useState(true);
-  const frameRef = useRef<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-  const triggerHaptic = () => {
-    if (hapticsEnabled && typeof navigator !== 'undefined' && navigator.vibrate) {
-      try { navigator.vibrate(12); } catch {}
-    }
+  const rootRef = useRef<HTMLDivElement>(null);
+  const settingsRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [settings, setSettings] = useState<VoiceOutputSettings>({ ...initialSettings });
+  const [haptics, setHaptics] = useState(true);
+  const canVibrate = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+  useDialogFocus(rootRef, true);
+  useDialogFocus(settingsRef, showSettings);
+  const vibrate = () => { if (haptics && canVibrate) { try { navigator.vibrate(12); } catch { /* optional device feedback */ } } };
+  const changeSettings = (next: Partial<VoiceOutputSettings>) => {
+    if (!onVoiceSettingsChange) return;
+    setSettings(current => ({ ...current, ...next })); onVoiceSettingsChange(next); vibrate();
   };
-
-  // Handle escape key to exit voice mode or close modal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showSettingsModal) {
-          setShowSettingsModal(false);
-        } else {
-          onExit();
-        }
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onExit, showSettingsModal]);
-
-  // Smooth real-time volume animation
-  useEffect(() => {
-    let current = smoothedVolume;
-    const update = () => {
-      current += (volumeLevel - current) * 0.35;
-      setSmoothedVolume(current);
-      frameRef.current = requestAnimationFrame(update);
-    };
-    frameRef.current = requestAnimationFrame(update);
-    return () => {
-      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-    };
-  }, [volumeLevel]);
-
-  const scale = 1 + Math.min(0.4, smoothedVolume * 0.75);
-  const glow = Math.min(40, 12 + smoothedVolume * 50);
-
-  const stateLabel = isMuted
-    ? tr('Microphone coupé', 'تم كتم الميكروفون')
-    : state === 'starting'
-      ? tr('Démarrage du mode vocal…', 'جاري تشغيل المحادثة الصوتية…')
-      : state === 'listening'
-        ? tr('Je vous écoute…', 'أنا أستمع إليك…')
-        : state === 'user_speaking'
-          ? tr('Vous parlez…', 'أنت تتحدث…')
-          : state === 'transcribing'
-            ? tr('Transcription en cours…', 'جاري فهم كلامك…')
-            : state === 'thinking'
-              ? tr('Je réfléchis…', 'جاري تحضير الرد…')
-              : state === 'speaking'
-                ? tr('Je vous réponds…', 'المساعد يتحدث…')
-                : state === 'error'
-                  ? tr('Mode vocal indisponible', 'تعذّر تشغيل المحادثة الصوتية')
-                  : tr('Prêt', 'جاهز');
-
-  const orbGradient = state === 'transcribing' || state === 'thinking'
-    ? 'from-[#111111] via-[#3f3f46] to-[#0A0A0A]'
-    : state === 'error'
-      ? 'from-[#ef4444] via-[#f87171] to-[#dc2626]'
-      : state === 'listening'
-        ? 'from-[#FF6900] via-[#e05e00] to-[#c75200]'
-        : 'from-[#111111] via-[#3f3f46] to-[#0A0A0A]';
-
-  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onAddAttachment) {
-      triggerHaptic();
-      onAddAttachment(file);
-    }
-    e.target.value = '';
+  const labels: Record<VoiceChatState, string> = {
+    idle: tr('Prêt à vous écouter', 'جاهز للاستماع إليك'),
+    starting: tr('Connexion au microphone…', 'جارٍ الاتصال بالميكروفون…'),
+    listening: tr('Je vous écoute', 'أنا أستمع إليك'),
+    user_speaking: tr('Vous avez la parole', 'تفضل، أنا أستمع'),
+    transcribing: tr('Transcription en cours…', 'جارٍ تحويل كلامك إلى نص…'),
+    thinking: tr('Je prépare la réponse…', 'جارٍ تحضير الإجابة…'),
+    speaking: tr('Je vous réponds', 'إليك الإجابة'),
+    muted: tr('Microphone coupé', 'الميكروفون مكتوم'),
+    error: tr('Le mode vocal est indisponible', 'الوضع الصوتي غير متاح'),
   };
-
-  const handleVoiceSelect = (voiceId: VoiceId, gender: 'female' | 'male') => {
-    setSelectedVoiceId(voiceId);
-    onVoiceSettingsChange?.({ voiceId, gender, rate: voiceRate });
-    triggerHaptic();
-  };
-
-  const handleVoiceRateChange = (rate: number) => {
-    setVoiceRate(rate);
-    const gender = selectedVoiceId === 'Aoede' || selectedVoiceId === 'Kore' ? 'female' : 'male';
-    onVoiceSettingsChange?.({ voiceId: selectedVoiceId, gender, rate });
-    triggerHaptic();
-  };
-
-  const sampleSuggestions = [
-    { ar: 'احسبلي سوم هذا 🧮', fr: 'Calculer le prix total 🧮' },
-    { ar: 'تبعلي طلبيتي 📦', fr: 'Suivre ma commande 📦' },
-    { ar: 'عطيني أفضل العروض ✨', fr: 'Meilleures offres du moment ✨' },
-    { ar: 'قداش التوصيل لتونس؟ 🚚', fr: 'Prix de livraison en Tunisie 🚚' },
+  const interruptible = state === 'speaking' || state === 'thinking';
+  const mayFinish = !isMuted && (state === 'listening' || state === 'user_speaking');
+  const tapLabel = interruptible ? tr('Interrompre la réponse', 'مقاطعة الإجابة') : tr('Terminer et envoyer', 'إنهاء وإرسال');
+  const suggestions = [
+    { fr: 'Calculer le prix total', ar: 'احسبلي سوم هذا', icon: Calculator },
+    { fr: 'Suivre ma commande', ar: 'تبعلي طلبيتي', icon: Package },
+    { fr: 'Meilleures offres du moment', ar: 'عطيني أفضل العروض', icon: Sparkles },
+    { fr: 'Prix de livraison en Tunisie', ar: 'قداش التوصيل لتونس؟', icon: Truck },
   ];
-
-  return (
-    <div
-      dir={direction}
-      className={`absolute inset-0 z-40 flex flex-col justify-between overflow-hidden transition-all duration-300 ${
-        isDark ? 'bg-ink text-white' : 'bg-surface text-ink'
-      }`}
-      role="dialog"
-      aria-modal="true"
-      aria-label={tr('Mode Vocal AYROVI', 'الوضع الصوتي AYROVI')}
-    >
-      {/* Hidden file input for camera/gallery attachments */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileInputChange}
-      />
-
-      {/* 1. Top Header: Exit (X), Center Brand & Settings */}
-      <header className="relative z-10 flex items-center justify-between px-6 pt-[max(1.25rem,calc(env(safe-area-inset-top)+0.75rem))]">
-        <button
-          type="button"
-          onClick={() => { triggerHaptic(); onExit(); }}
-          className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
-            isDark
-              ? 'bg-white/10 text-white hover:bg-white/15'
-              : 'bg-white text-ink shadow-sm hover:bg-black/5'
-          }`}
-          aria-label={tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}
-          title={tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}
-        >
-          <X size={20} />
+  return <div ref={rootRef} tabIndex={-1} dir={direction} data-ay-design="editorial" data-tone={isDark ? 'dark' : 'light'} data-voice-state={state}
+    className="editorial-voice" role="dialog" aria-modal="true" aria-label={tr('Mode vocal AYROVI', 'الوضع الصوتي AYROVI')}
+    onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); if (showSettings) setShowSettings(false); else onExit(); } }}>
+    <input ref={fileRef} type="file" accept="image/*" hidden onChange={event => { const file = event.target.files?.[0]; if (file && onAddAttachment) onAddAttachment(file); event.target.value = ''; }} />
+    <header className="editorial-voice__header" inert={showSettings}>
+      <button type="button" className="voice-icon-button" onClick={onExit} aria-label={tr('Fermer le mode vocal', 'إغلاق الوضع الصوتي')}><X size={22}/></button>
+      <span className="editorial-voice__brand" dir="ltr"><i aria-hidden/>AYROVI VOICE</span>
+      <button type="button" className="voice-icon-button" onClick={() => setShowSettings(true)} aria-haspopup="dialog" aria-expanded={showSettings} aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}><SlidersHorizontal size={22}/></button>
+    </header>
+    <main className="editorial-voice__body" inert={showSettings}>
+      {(activeProduct || attachments?.length) ? <section className="editorial-voice__context" aria-label={tr('Contexte de la conversation', 'سياق المحادثة')}>
+        {activeProduct?.image || attachments?.[0]?.preview ? <img src={activeProduct?.image || attachments?.[0]?.preview} alt=""/> : <Camera size={24}/>}
+        <div><strong>{activeProduct?.title || tr('Photo jointe', 'صورة مرفقة')}</strong>
+          {activeProduct?.priceTnd != null && Number.isFinite(activeProduct.priceTnd) && <Price amount={activeProduct.priceTnd} size="sm" currencyLabel={tr('DT', 'د.ت')}/>}
+          {(attachments?.length || 0) > 1 && <small>{tr(`${attachments!.length} pièces jointes`, `${attachments!.length} مرفقات`)}</small>}
+        </div>
+        {attachments?.[0]?.id && onRemoveAttachment && <button type="button" className="voice-icon-button" onClick={() => onRemoveAttachment(attachments[0].id)} aria-label={tr('Supprimer la photo', 'حذف الصورة')}><X size={18}/></button>}
+      </section> : null}
+      <div className="editorial-voice__signal">
+        <button type="button" className="editorial-voice__talk" onClick={() => { vibrate(); onTapOrb?.(); }} disabled={!onTapOrb || !(interruptible || mayFinish)} aria-label={tapLabel}>
+          <VoiceLevel level={volumeLevel} muted={isMuted}/>
+          <span>{state === 'starting' || state === 'transcribing' ? <Loader2 size={20} className="animate-spin"/> : interruptible ? <Square size={20}/> : isMuted ? <MicOff size={20}/> : <Mic size={20}/>}</span>
         </button>
-
-        {/* Center Live Mode Indicator */}
-        <div className="flex items-center gap-2 rounded-full border border-black/5 bg-white/70 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/30">
-          <span className="h-2 w-2 rounded-full bg-[#FF6900] animate-pulse" />
-          <span className="text-xs font-black tracking-wide">
-            AYROVI VOICE
-          </span>
+        <h2 role="status" aria-live="polite">{isMuted ? labels.muted : labels[state]}</h2>
+        <p>{state === 'error' ? tr('Revenez au chat pour réessayer ou écrire votre demande.', 'عد إلى المحادثة لإعادة المحاولة أو كتابة طلبك.') : interruptible ? tr('Vous pouvez interrompre la réponse.', 'يمكنك مقاطعة الإجابة.') : tr('Le tracé suit le niveau audio reçu.', 'الرسم يتبع مستوى الصوت المستقبَل.')}</p>
+      </div>
+      {liveTranscript ? <blockquote dir="auto">{liveTranscript}</blockquote> : (state === 'listening' || state === 'idle') && onSelectSuggestion ? <div className="editorial-voice__suggestions">
+        {suggestions.map(item => <button type="button" key={item.fr} onClick={() => onSelectSuggestion(tr(item.fr, item.ar))}><item.icon size={18}/><span>{tr(item.fr,item.ar)}</span></button>)}
+      </div> : null}
+    </main>
+    <footer className="editorial-voice__footer" inert={showSettings}>
+      <div className="editorial-voice__controls">
+        {onOpenAttachments && <button type="button" className="voice-icon-button" onClick={onOpenAttachments} aria-label={tr('Ajouter une photo','إضافة صورة')}><Plus size={22}/></button>}
+        <button type="button" className="voice-icon-button" disabled={!onOpenLens && !onAddAttachment} onClick={() => onOpenLens ? onOpenLens() : fileRef.current?.click()} aria-label={onOpenLens ? tr('Scanner avec AYROVIX Lens','فحص مع AYROVIX Lens') : tr('Choisir une photo','اختيار صورة')}>{onOpenLens ? <Camera size={22}/> : <ImageIcon size={22}/>}</button>
+        <button type="button" className="voice-icon-button" onClick={onToggleMute} aria-pressed={isMuted} aria-label={isMuted ? tr('Activer le microphone','إلغاء كتم الصوت') : tr('Couper le microphone','كتم الصوت')}>{isMuted ? <MicOff size={22}/> : <Mic size={22}/>}</button>
+        <button type="button" className="voice-icon-button voice-icon-button--exit" onClick={onExit} aria-label={tr('Quitter le mode vocal','إيقاف والخروج من الوضع الصوتي')}><X size={22}/></button>
+        <button type="button" className="voice-icon-button" onClick={onToggleSpeaker} aria-pressed={!isSpeakerMuted} aria-label={isSpeakerMuted ? tr('Activer le haut-parleur','تشغيل الصوت') : tr('Couper le haut-parleur','إيقاف الصوت')}>{isSpeakerMuted ? <VolumeX size={22}/> : <Volume2 size={22}/>}</button>
+      </div>
+    </footer>
+    {showSettings && <div className="editorial-voice__veil"><div ref={settingsRef} tabIndex={-1} className="editorial-voice__settings" role="dialog" aria-modal="true" aria-labelledby="voice-settings-title">
+      <header><h3 id="voice-settings-title">{tr('Paramètres vocaux','إعدادات الصوت')}</h3><button type="button" className="voice-icon-button" onClick={() => setShowSettings(false)} aria-label={tr('Fermer les paramètres','إغلاق الإعدادات')}><X size={20}/></button></header>
+      <div className="editorial-voice__settings-scroll">
+        <p className="voice-caption">{onVoiceSettingsChange ? tr('Les changements sont appliqués immédiatement.','تُطبَّق التغييرات مباشرةً.') : tr('Réglages indisponibles dans cette session.','الإعدادات غير متاحة في هذه الجلسة.')}</p>
+        <fieldset disabled={!onVoiceSettingsChange}><legend>{tr('Voix de l’assistant','صوت المساعد')}</legend><div className="voice-choices">
+          {VOICE_PRESETS.map(preset => <button type="button" key={preset.id} aria-pressed={settings.voiceId===preset.id} onClick={() => changeSettings({voiceId:preset.id,gender:preset.gender})}><span><bdi>{preset.id}</bdi><small>{tr(preset.fr,preset.ar)}</small></span>{settings.voiceId===preset.id && <Check size={18}/>}</button>)}
+        </div></fieldset>
+        <fieldset disabled={!onVoiceSettingsChange}><legend>{tr('Vitesse de diction','سرعة الكلام')}</legend><div className="voice-rates">
+          {VOICE_RATES.map(rate => <button type="button" key={rate} aria-pressed={settings.rate===rate} onClick={() => changeSettings({rate})}><bdi>{rate}x</bdi></button>)}
+        </div></fieldset>
+        <div className="voice-haptics"><span>{tr('Retours haptiques','التفاعل بالاهتزاز')}<small>{canVibrate ? tr('Vibration légère lors des interactions.','اهتزاز خفيف عند التفاعل.') : tr('Non pris en charge par ce navigateur.','غير مدعوم في هذا المتصفح.')}</small></span>
+          <button type="button" className="voice-icon-button" role="switch" aria-checked={haptics && canVibrate} disabled={!canVibrate} aria-label={tr('Retours haptiques','التفاعل بالاهتزاز')} onClick={() => { const next=!haptics;setHaptics(next);if(next && canVibrate){try{navigator.vibrate(12);}catch{}} }}><span aria-hidden>{haptics && canVibrate ? <Check size={20}/> : <X size={20}/>}</span></button>
         </div>
-
-        <button
-          type="button"
-          onClick={() => { triggerHaptic(); setShowSettingsModal(true); }}
-          className={`grid h-11 w-11 place-items-center rounded-full transition active:scale-90 ${
-            showSettingsModal
-              ? 'bg-ink text-white'
-              : isDark
-                ? 'bg-white/10 text-white hover:bg-white/15'
-                : 'bg-white text-ink shadow-sm hover:bg-black/5'
-          }`}
-          aria-label={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-          title={tr('Options du mode vocal', 'خيارات الوضع الصوتي')}
-        >
-          <SlidersHorizontal size={20} />
-        </button>
-      </header>
-
-      {/* 2. Center Stage: Large Reactive Voice Orb & Visualizer */}
-      <main className="relative flex flex-1 flex-col items-center justify-center px-6 py-4 text-center">
-        {/* Active Product or Image context pill if present */}
-        {(activeProduct || (attachments && attachments.length > 0)) && (
-          <div className="mb-4 flex max-w-xs items-center gap-2 rounded-full border border-black/5 bg-white/85 px-3.5 py-1.5 shadow-sm backdrop-blur-md dark:border-white/10 dark:bg-black/45">
-            {activeProduct?.image || attachments?.[0]?.preview ? (
-              <img
-                src={activeProduct?.image || attachments?.[0]?.preview}
-                alt=""
-                className="h-7 w-7 rounded-full object-cover shadow-sm"
-              />
-            ) : (
-              <Camera size={16} className="text-ink" />
-            )}
-            <span className="truncate text-xs font-bold">
-              {activeProduct?.title || tr('Photo attachée pour analyse', 'صورة مرفقة للتحليل')}
-            </span>
-            {activeProduct?.priceTnd != null && (
-              <span className="rounded bg-surface px-1.5 py-0.5 text-xs font-black text-ink">
-                {activeProduct.priceTnd} TND
-              </span>
-            )}
-            {attachments?.[0]?.id && onRemoveAttachment && (
-              <button
-                type="button"
-                onClick={() => onRemoveAttachment(attachments[0].id)}
-                className="grid h-4 w-4 place-items-center rounded-full bg-black/10 text-black hover:bg-black/20 dark:bg-white/20 dark:text-white"
-                title={tr('Supprimer la photo', 'حذف الصورة')}
-              >
-                <X size={10} />
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Ambient background glow */}
-        <div
-          className="pointer-events-none absolute h-72 w-72 rounded-full bg-ink/10 blur-3xl transition-all duration-300"
-          style={{ transform: `scale(${scale * 1.35})` }}
-        />
-
-        {/* Outer Orb Rings */}
-        <div className="relative flex h-60 w-60 items-center justify-center sm:h-72 sm:w-72">
-          {/* Pulsing ring 1 */}
-          <div
-            className={`absolute inset-0 rounded-full bg-gradient-to-tr ${orbGradient} opacity-20 blur-xl transition-all duration-200`}
-            style={{
-              transform: `scale(${scale * 1.22})`,
-              filter: `blur(${glow}px)`,
-            }}
-          />
-
-          {/* Pulsing ring 2 */}
-          <div
-            className={`absolute inset-4 rounded-full bg-gradient-to-br ${orbGradient} opacity-35 transition-all duration-150`}
-            style={{
-              transform: `scale(${scale * 1.1})`,
-            }}
-          />
-
-          {/* Floating satellite dots */}
-          <div
-            className="pointer-events-none absolute -left-2 top-10 h-3 w-3 rounded-full bg-ink opacity-60 shadow-md transition-transform duration-300"
-            style={{ transform: `translateY(${Math.sin(smoothedVolume * 10) * 8}px)` }}
-          />
-          <div
-            className="pointer-events-none absolute -right-2 top-20 h-4 w-4 rounded-full bg-ink opacity-70 shadow-md transition-transform duration-300"
-            style={{ transform: `translateY(${-Math.sin(smoothedVolume * 10) * 10}px)` }}
-          />
-          <div
-            className="pointer-events-none absolute bottom-8 left-4 h-2.5 w-2.5 rounded-full bg-ink opacity-55 shadow-md"
-          />
-
-          {/* Core Central Glowing Orb */}
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic();
-              if (onTapOrb) onTapOrb();
-            }}
-            className={`relative flex h-44 w-44 cursor-pointer items-center justify-center rounded-full bg-gradient-to-tr ${orbGradient} shadow-2xl transition-transform duration-100 active:scale-95 sm:h-52 sm:w-52`}
-            style={{
-              transform: `scale(${scale})`,
-              boxShadow: isDark
-                ? `0 0 ${glow * 1.5}px rgba(17, 17, 17, 0.35)`
-                : `0 0 ${glow * 1.8}px rgba(17, 17, 17, 0.45)`,
-            }}
-            aria-label={tr('Appuyer pour envoyer ou parler', 'اضغط للإرسال أو التحدث')}
-          >
-            {/* Waveform texture overlay inside orb */}
-            <div className="pointer-events-none absolute inset-2 rounded-full border border-white/20 bg-white/10 backdrop-blur-[2px]" />
-            <svg
-              className="h-24 w-28 text-white/80 transition-transform duration-100"
-              viewBox="0 0 100 40"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
-              <path
-                d={`M 10 20 Q 30 ${20 - smoothedVolume * 18} 50 20 T 90 20`}
-                className="transition-all duration-75"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Real State Label */}
-        <p className={`mt-8 text-lg font-black tracking-tight ${isDark ? 'text-white' : 'text-ink'}`}>
-          {stateLabel}
-        </p>
-
-        {/* Live Subtitle Transcript */}
-        {liveTranscript ? (
-          <p
-            className={`mt-3 max-w-sm rounded-2xl px-4 py-2 text-sm font-bold italic transition-all ${
-              isDark ? 'bg-white/10 text-white/90' : 'bg-white text-ink shadow-sm'
-            }`}
-          >
-            « {liveTranscript} »
-          </p>
-        ) : (state === 'listening' || state === 'idle') && onSelectSuggestion ? (
-          <div className="mt-4 flex flex-wrap justify-center gap-1.5 max-w-xs sm:max-w-md">
-            {sampleSuggestions.map((sug, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => {
-                  triggerHaptic();
-                  onSelectSuggestion(tr(sug.fr, sug.ar));
-                }}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition active:scale-95 ${
-                  isDark
-                    ? 'bg-white/10 text-white/90 hover:bg-white/15'
-                    : 'bg-white text-ink shadow-sm hover:bg-black/5'
-                }`}
-              >
-                <Sparkles size={12} className="text-ink" />
-                <span>{tr(sug.fr, sug.ar)}</span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-
-        {/* Real-time Audio Waveform Bars */}
-        <div className="mt-6 flex items-center justify-center gap-1.5" aria-hidden="true">
-          {[
-            0.2, 0.35, 0.5, 0.7, 0.45, 0.85, 0.6, 1.0, 0.75, 0.9, 0.55, 0.8, 0.4, 0.65, 0.3, 0.2,
-          ].map((factor, idx) => {
-            const barH = Math.max(
-              3,
-              Math.min(28, isMuted ? 3 : smoothedVolume * 45 * factor + 3),
-            );
-            return (
-              <span
-                key={idx}
-                className={`w-1 rounded-full transition-[height] duration-75 ${
-                  state === 'transcribing' || state === 'thinking'
-                    ? 'bg-blue-500'
-                    : state === 'error'
-                      ? 'bg-red-500'
-                      : 'bg-ink'
-                }`}
-                style={{ height: `${barH}px` }}
-              />
-            );
-          })}
-        </div>
-      </main>
-
-      {/* 3. Bottom Composer & Voice Controls */}
-      <footer className="relative z-10 px-6 pb-[max(1.75rem,calc(env(safe-area-inset-bottom)+1.25rem))] pt-4">
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3 sm:gap-5">
-          {/* Left Side: Multimodal Image & Lens Actions */}
-          <div className="flex items-center gap-2">
-            {onOpenAttachments ? (
-              <button
-                type="button"
-                onClick={() => { triggerHaptic(); onOpenAttachments(); }}
-                className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
-                  attachments && attachments.length > 0
-                    ? 'bg-ink text-white shadow-md'
-                    : isDark
-                      ? 'bg-white/10 text-white hover:bg-white/15'
-                      : 'bg-white text-ink shadow-sm hover:bg-black/5'
-                }`}
-                title={tr('Ajouter une photo', 'إضافة صورة')}
-                aria-label={tr('Ajouter une photo', 'إضافة صورة')}
-              >
-                <Plus size={20} />
-              </button>
-            ) : null}
-
-            {onOpenLens ? (
-              <button
-                type="button"
-                onClick={() => { triggerHaptic(); onOpenLens(); }}
-                className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
-                  isDark
-                    ? 'bg-white/10 text-white hover:bg-white/15'
-                    : 'bg-white text-ink shadow-sm hover:bg-black/5'
-                }`}
-                title={tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}
-                aria-label={tr('Scanner avec AYROVIX Lens', 'فحص مع AYROVIX Lens')}
-              >
-                <Camera size={20} />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => { triggerHaptic(); fileInputRef.current?.click(); }}
-                className={`grid h-12 w-12 place-items-center rounded-full transition active:scale-95 ${
-                  isDark
-                    ? 'bg-white/10 text-white hover:bg-white/15'
-                    : 'bg-white text-ink shadow-sm hover:bg-black/5'
-                }`}
-                title={tr('Choisir une photo', 'اختيار صورة')}
-                aria-label={tr('Choisir une photo', 'اختيار صورة')}
-              >
-                <ImageIcon size={20} />
-              </button>
-            )}
-          </div>
-
-          {/* Right Side: Mute | Central Exit [X] | Speaker Controls */}
-          <div className="flex items-center gap-3 sm:gap-4">
-            {/* Mute / Unmute Button */}
-            <button
-              type="button"
-              onClick={() => { triggerHaptic(); onToggleMute(); }}
-              className={`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${
-                isMuted
-                  ? 'bg-danger/15 text-danger ring-2 ring-danger/30'
-                  : isDark
-                    ? 'bg-white/10 text-white hover:bg-white/15'
-                    : 'bg-white text-ink shadow-md hover:bg-black/5'
-              }`}
-              aria-label={isMuted ? tr('Activer le microphone', 'إلغاء كتم الصوت') : tr('Couper le microphone', 'كتم الصوت')}
-              aria-pressed={isMuted}
-            >
-              {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
-            </button>
-
-            {/* Central Exit Button (X) */}
-            <button
-              type="button"
-              onClick={() => { triggerHaptic(); onExit(); }}
-              className="grid h-14 w-14 place-items-center rounded-full bg-cta text-cta-ink shadow-lg shadow-cta/30 transition hover:bg-cta-hover active:scale-95"
-              aria-label={tr('Quitter le mode vocal', 'إيقاف والخروج من الوضع الصوتي')}
-            >
-              <X size={26} strokeWidth={2.5} />
-            </button>
-
-            {/* Speaker / Voice Sound Output Toggle */}
-            <button
-              type="button"
-              onClick={() => { triggerHaptic(); onToggleSpeaker(); }}
-              className={`grid h-14 w-14 place-items-center rounded-full transition active:scale-95 ${
-                isSpeakerMuted
-                  ? 'bg-white/5 text-muted'
-                  : isDark
-                    ? 'bg-white/10 text-white hover:bg-white/15'
-                    : 'bg-white text-ink shadow-md hover:bg-black/5'
-              }`}
-              aria-label={isSpeakerMuted ? tr('Activer le haut-parleur', 'تشغيل الصوت') : tr('Couper le haut-parleur', 'إيقاف الصوت')}
-              aria-pressed={!isSpeakerMuted}
-            >
-              {isSpeakerMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
-            </button>
-          </div>
-        </div>
-      </footer>
-
-      {/* 4. Voice Settings Bottom Sheet Modal */}
-      {showSettingsModal && (
-        <div className="absolute inset-0 z-50 flex flex-col justify-end bg-black/50 backdrop-blur-sm">
-          <div
-            className={`flex max-h-[85vh] flex-col rounded-t-3xl p-6 shadow-2xl transition-all ${
-              isDark ? 'bg-white/10 text-white' : 'bg-white text-ink'
-            }`}
-          >
-            <div className="flex items-center justify-between pb-4 border-b border-black/5 dark:border-white/10">
-              <h3 className="text-base font-black">
-                {tr('Paramètres du mode vocal', 'إعدادات الوضع الصوتي')}
-              </h3>
-              <button
-                type="button"
-                onClick={() => { triggerHaptic(); setShowSettingsModal(false); }}
-                className="grid h-8 w-8 place-items-center rounded-full bg-black/5 hover:bg-black/10 dark:bg-white/10 dark:hover:bg-white/20"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-6 overflow-y-auto py-1">
-              {/* Voice selection for server TTS and the best matching local fallback. */}
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-muted">
-                  {tr('Voix de l’assistant', 'صوت المساعد')}
-                </label>
-                <div className="mt-2.5 grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceSelect('Aoede', 'female')}
-                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
-                      selectedVoiceId === 'Aoede'
-                        ? 'border-2 border-ink bg-ink/5 text-ink'
-                        : isDark
-                          ? 'border border-white/10 bg-white/5 text-white'
-                          : 'border border-black/5 bg-black/5 text-ink'
-                    }`}
-                  >
-                    <span>Aoede (Féminin)</span>
-                    {selectedVoiceId === 'Aoede' && <Check size={16} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceSelect('Kore', 'female')}
-                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
-                      selectedVoiceId === 'Kore'
-                        ? 'border-2 border-ink bg-ink/5 text-ink'
-                        : isDark
-                          ? 'border border-white/10 bg-white/5 text-white'
-                          : 'border border-black/5 bg-black/5 text-ink'
-                    }`}
-                  >
-                    <span>Kore (Féminin Doux)</span>
-                    {selectedVoiceId === 'Kore' && <Check size={16} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceSelect('Puck', 'male')}
-                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
-                      selectedVoiceId === 'Puck'
-                        ? 'border-2 border-ink bg-ink/5 text-ink'
-                        : isDark
-                          ? 'border border-white/10 bg-white/5 text-white'
-                          : 'border border-black/5 bg-black/5 text-ink'
-                    }`}
-                  >
-                    <span>Puck (Masculin)</span>
-                    {selectedVoiceId === 'Puck' && <Check size={16} />}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleVoiceSelect('Fenrir', 'male')}
-                    className={`flex items-center justify-between rounded-2xl p-3.5 text-xs font-bold transition ${
-                      selectedVoiceId === 'Fenrir'
-                        ? 'border-2 border-ink bg-ink/5 text-ink'
-                        : isDark
-                          ? 'border border-white/10 bg-white/5 text-white'
-                          : 'border border-black/5 bg-black/5 text-ink'
-                    }`}
-                  >
-                    <span>Fenrir (Masculin Calme)</span>
-                    {selectedVoiceId === 'Fenrir' && <Check size={16} />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Voice Speed / Rate */}
-              <div>
-                <label className="text-xs font-black uppercase tracking-wider text-muted">
-                  {tr('Vitesse de diction', 'سرعة الكلام')}
-                </label>
-                <div className="mt-2.5 grid grid-cols-4 gap-2">
-                  {[
-                    { label: '0.9x', val: 0.9 },
-                    { label: '1.0x', val: 1.0 },
-                    { label: '1.1x', val: 1.08 },
-                    { label: '1.25x', val: 1.25 },
-                  ].map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => handleVoiceRateChange(item.val)}
-                      className={`rounded-xl py-2.5 text-xs font-bold transition ${
-                        Math.abs(voiceRate - item.val) < 0.04
-                          ? 'bg-ink text-white shadow-md'
-                          : isDark
-                            ? 'bg-white/5 text-white hover:bg-white/10'
-                            : 'bg-black/5 text-ink hover:bg-black/10'
-                      }`}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Haptics & Feedback */}
-              <div className="flex items-center justify-between rounded-2xl border border-black/5 p-3.5 dark:border-white/10">
-                <div>
-                  <p className="text-xs font-bold">
-                    {tr('Retours haptiques / Vibrations', 'الاهتزاز والتفاعل اللمسي')}
-                  </p>
-                  <p className="text-xs text-muted">
-                    {tr('Micro-vibration lors des interactions', 'اهتزاز خفيف عند التحدث والمقاطعة')}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !hapticsEnabled;
-                    setHapticsEnabled(next);
-                    if (next) triggerHaptic();
-                  }}
-                  className={`relative h-6 w-11 rounded-full transition-colors ${
-                    hapticsEnabled ? 'bg-ink' : 'bg-gray-400/40'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                      hapticsEnabled ? 'right-0.5' : 'left-0.5'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => { triggerHaptic(); setShowSettingsModal(false); }}
-              className="mt-6 w-full rounded-2xl bg-[#FF6900] py-3.5 text-center text-xs font-black text-white shadow-lg shadow-[#FF6900]/25 active:scale-95"
-            >
-              {tr('Appliquer', 'تطبيق الإعدادات')}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+      </div>
+      <button type="button" className="voice-done" onClick={() => setShowSettings(false)}>{tr('Terminé','تم')}</button>
+    </div></div>}
+  </div>;
 };

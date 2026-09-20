@@ -62,6 +62,7 @@ export const AyroviMotion: React.FC<AyroviMotionProps> = ({
 
   return (
     <svg
+      data-brand-mark="ayrovi-motion"
       viewBox="-5 -5 110 110"
       width={size}
       height={size}

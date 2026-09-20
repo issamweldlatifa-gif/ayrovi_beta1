@@ -1,5 +1,4 @@
-import { customerTheme, preservedNavigationTheme } from './design/editorial/customerTheme';
-import { IconFamily } from './design/editorial/IconFamily';
+import { customerTheme } from './design/editorial/customerTheme';
 import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
@@ -432,7 +431,7 @@ export const App: React.FC = () => {
       <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />
 
       {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
-      <IconFamily family="legacy"><div data-preserved-navigation style={{ ...preservedNavigationTheme, display: 'contents' }}>
+      <div data-preserved-navigation style={{ display: 'contents' }}>
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
         onGoHome={() => {
@@ -450,7 +449,7 @@ export const App: React.FC = () => {
         isAuthenticated={Boolean(customerSession)}
         logoUrl={interfaceConfig.logoUrl}
       />
-      </div></IconFamily>
+      </div>
 
       {appView === 'app:about' && <Suspense fallback={null}><AboutPage section={interfaceConfig.sections.find(section => section.id === 'about')} onClose={closeAppView} /></Suspense>}
 
@@ -479,7 +478,7 @@ export const App: React.FC = () => {
       <ScrollToTopButton hidden={navigation.stack.length > 0} />
 
       {/* Compact RTL glass navigation: Ayvisi (left), Ayrovi (center), Ayrovix (right). */}
-      <IconFamily family="legacy"><div data-preserved-navigation style={{ ...preservedNavigationTheme, display: 'contents' }}>
+      <div data-preserved-navigation style={{ display: 'contents' }}>
       <BottomNavBar
         isAiDrawerOpen={isAiDrawerOpen}
         onToggleAiDrawer={handleToggleAiDrawer}
@@ -487,7 +486,7 @@ export const App: React.FC = () => {
         config={interfaceConfig.navigation}
         iconConfig={interfaceConfig.icons}
       />
-      </div></IconFamily>
+      </div>
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}
       {isProductDrawerOpen && (

@@ -1435,5 +1435,87 @@
         }
       }
     ]
+  },
+  "Play": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "path",
+        "attrs": {
+          "d": "M7 4l14 8-14 8Z"
+        }
+      }
+    ]
+  },
+  "Grip": {
+    "mirrorRtl": false,
+    "shapes": [
+      {
+        "tag": "rect",
+        "attrs": {
+          "x": 7,
+          "y": 4,
+          "width": 2,
+          "height": 2,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      },
+      {
+        "tag": "rect",
+        "attrs": {
+          "x": 15,
+          "y": 4,
+          "width": 2,
+          "height": 2,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      },
+      {
+        "tag": "rect",
+        "attrs": {
+          "x": 7,
+          "y": 11,
+          "width": 2,
+          "height": 2,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      },
+      {
+        "tag": "rect",
+        "attrs": {
+          "x": 15,
+          "y": 11,
+          "width": 2,
+          "height": 2,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      },
+      {
+        "tag": "rect",
+        "attrs": {
+          "x": 7,
+          "y": 18,
+          "width": 2,
+          "height": 2,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      },
+      {
+        "tag": "rect",
+        "attrs": {
+          "x": 15,
+          "y": 18,
+          "width": 2,
+          "height": 2,
+          "fill": "currentColor",
+          "stroke": "none"
+        }
+      }
+    ]
   }
 }

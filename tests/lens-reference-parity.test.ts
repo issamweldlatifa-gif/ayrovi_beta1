@@ -59,7 +59,9 @@ describe('AYROVIX Lens ↔ Amazon reference parity', () => {
     expect(irl).toContain("useState<'peek'|'full'>('peek')");
     expect(irl).not.toContain("'half'");
     // hauteur live pendant le drag (le doigt tire la sheet, pas de saut à seuils)
-    expect(irl).toContain('setDragH(Math.max(0, Math.min(ch + 36, base + dy)))');
+    expect(irl).toContain('Math.max(0, Math.min(ch + 36, base + dy))');
+    expect(irl).toContain('dragHeight.current = next');
+    expect(irl).toContain('const h = dragHeight.current');
     expect(irl).toContain('dragH != null ? `${dragH}px`');
     // sous le peek → onReset() = retour caméra Lens
     expect(irl).toContain("} else if (h < peek * 0.55) {");

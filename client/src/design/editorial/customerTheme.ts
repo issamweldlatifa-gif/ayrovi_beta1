@@ -51,11 +51,3 @@ export function customerTheme(locale: 'ar' | 'fr', config?: PublicInterfaceConfi
   };
   return values as CSSProperties;
 }
-
-/** Preserve original navigation appearance without leaking it into screens. */
-export const preservedNavigationTheme = {
-  '--font-primary': "'Inter', 'Noto Sans Arabic', Helvetica, Arial, sans-serif",
-  '--ayrovi-neutral-900': '#111111', '--ayrovi-neutral-500': '#666666', '--ayrovi-ink-deep': '#0a0a0a',
-  '--ayrovi-cta': '#ff6900', '--ayrovi-cta-ink': '#111111', '--ayrovi-color-brand-orange': '#ff6900',
-  '--ayrovi-radius-control': '12px', '--ayrovi-radius-icon': '10px', '--ayrovi-icon-stroke': '1.5',
-} as CSSProperties;

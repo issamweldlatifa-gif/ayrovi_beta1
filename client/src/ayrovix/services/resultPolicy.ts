@@ -13,11 +13,11 @@ export function validProductUrl(value: string): boolean {
   } catch { return false; }
 }
 
-export function displayRating(candidate: Pick<AyrovixCandidate, 'rating' | 'match'>): number {
-  const rating = Number(candidate.rating);
-  return Number.isFinite(rating) && rating > 0 && rating <= 5
-    ? Math.round(rating * 10) / 10
-    : Math.round(Math.max(1, Math.min(5, candidate.match / 20)) * 10) / 10;
+/** Show only an actual merchant-provided review score, never a converted match percentage. */
+export function displayRating(candidate: { rating?: number | null; ratingKind?: string }): number | null {
+  const rating = candidate.rating;
+  return candidate.ratingKind === 'merchant' && typeof rating === 'number' && Number.isFinite(rating) && rating > 0 && rating <= 5
+    ? Math.round(rating * 10) / 10 : null;
 }
 
 export function isDisplayableCandidate(candidate: AyrovixCandidate): boolean {

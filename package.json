@@ -18,9 +18,12 @@
     "android:open": "cap open android",
     "design:inventory": "node scripts/inventory-customer-design.mjs",
     "design:build": "node scripts/build-editorial-design.mjs",
-    "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check",
+    "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check && npm run icons:check",
     "design:browser": "node verify/editorial-system.mjs",
-    "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs"
+    "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs",
+    "icons:check": "node scripts/check-icon-contract.mjs",
+    "verify:editorial-states": "esbuild verify/editorial-states-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-states-runner.cjs && node .cache/editorial-states-runner.cjs",
+    "verify:editorial-account": "esbuild verify/customer-account-functional.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-account-runner.cjs && AYROVI_ACCOUNT_OUTPUT=screenshots/editorial/icon-correction/account node .cache/editorial-account-runner.cjs"
   },
   "keywords": [
     "ayrovi",

@@ -6,7 +6,6 @@ import { AssistantHeader } from './AssistantHeader';
 import { AssistantMessages } from './AssistantMessages';
 import { AssistantSideMenu } from './AssistantSideMenu';
 import { AssistantVoiceModeScreen } from './AssistantVoiceModeScreen';
-import { AssistantVoiceOrb } from './AssistantVoiceOrb';
 import { VoiceChatController } from './voice/VoiceChatController';
 import type { VoiceChatState } from './voice/types';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -487,7 +486,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     if (!isOpen) return;
     window.requestAnimationFrame(() => pageRef.current?.focus({ preventScroll: true }));
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === 'Escape' && !event.defaultPrevented) {
         if (feedbackLayer || productLayer || isAttachmentSheetOpen || isMenuOpen) closeAssistantLayer();
         else onClose();
       }
@@ -986,10 +985,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             activeProduct={selectedProduct ? {
               title: selectedProduct.product.title,
               brand: selectedProduct.product.brand || undefined,
-              price: selectedProduct.product.price || undefined,
+              price: selectedProduct.product.price ?? undefined,
               currency: selectedProduct.product.currency || undefined,
               image: selectedProduct.product.image || undefined,
-              priceTnd: selectedProduct.product.priceTnd || undefined,
+              priceTnd: selectedProduct.product.priceTnd ?? undefined,
             } : null}
             onToggleMute={handleToggleMute}
             onToggleSpeaker={handleToggleSpeaker}
@@ -1006,6 +1005,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
             onAddAttachment={handleAddVoiceAttachment}
             onRemoveAttachment={(id) => setAttachments((current) => current.filter((att) => att.id !== id))}
             onSelectSuggestion={(suggestion) => sendMessage(suggestion, true)}
+            initialSettings={voiceControllerRef.current?.getVoiceSettings()}
             onVoiceSettingsChange={(settings) => voiceControllerRef.current?.configureVoice(settings)}
           />
         ) : (

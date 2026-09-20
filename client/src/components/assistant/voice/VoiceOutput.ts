@@ -1,13 +1,8 @@
 import { getSessionId } from '../../../utils/session';
 
-export type VoiceId = 'Aoede' | 'Kore' | 'Puck' | 'Fenrir';
+import { DEFAULT_VOICE_SETTINGS, VOICE_PRESETS, type VoiceOutputSettings } from './settings';
+export type { VoiceId, VoiceOutputSettings } from './settings';
 export type VoicePlaybackResult = 'ended' | 'cancelled' | 'unavailable';
-
-export interface VoiceOutputSettings {
-  voiceId: VoiceId;
-  gender: 'female' | 'male';
-  rate: number;
-}
 
 export interface VoicePlaybackCallbacks {
   onStart?: () => void;
@@ -34,11 +29,7 @@ export class VoiceOutput {
   private finishActive: ((result: VoicePlaybackResult) => void) | null = null;
   private generation = 0;
   private serverTtsAvailable: boolean | null = null;
-  private settings: VoiceOutputSettings = {
-    voiceId: 'Aoede',
-    gender: 'female',
-    rate: 1.05,
-  };
+  private settings: VoiceOutputSettings = { ...DEFAULT_VOICE_SETTINGS };
 
   public warmUp(): void {
     const context = this.ensureContext();
@@ -55,10 +46,12 @@ export class VoiceOutput {
   }
 
   public configure(settings: Partial<VoiceOutputSettings>): void {
-    if (settings.voiceId) this.settings.voiceId = settings.voiceId;
-    if (settings.gender) this.settings.gender = settings.gender;
-    if (settings.rate != null) this.settings.rate = Math.max(0.8, Math.min(1.3, settings.rate));
+    if (settings.voiceId && VOICE_PRESETS.some(preset => preset.id === settings.voiceId)) this.settings.voiceId = settings.voiceId;
+    if (settings.gender === 'female' || settings.gender === 'male') this.settings.gender = settings.gender;
+    if (settings.rate != null && Number.isFinite(settings.rate)) this.settings.rate = Math.max(0.8, Math.min(1.3, settings.rate));
   }
+
+  public getSettings(): VoiceOutputSettings { return { ...this.settings }; }
 
   public get busy(): boolean {
     return Boolean(this.requestAbort || this.source || this.utterance || this.finishActive);

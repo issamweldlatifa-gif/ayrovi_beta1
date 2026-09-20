@@ -49,8 +49,9 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   it('renders the reference composition: summary, best, others, trust, new search', () => {
     const html = render();
     expect(html).toContain('Résultats Lens');
-    // Interactive keeps the same guarantees as legacy: price labels, trust, no invention
-    expect(html).toContain('Prix vérifiés et marchands fiables');
+    // Preserve estimates and actions without asserting unverified merchant trust.
+    expect(html).not.toContain('Prix vérifiés et marchands fiables');
+    expect(html).toContain('Vérifiez le prix et les conditions dans la fiche produit.');
     expect(html).toContain('Nouvelle recherche');
     expect(html).toContain('Prix final estimé');
     expect(html).toContain('Voir le produit');

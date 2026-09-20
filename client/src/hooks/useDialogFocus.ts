@@ -10,7 +10,7 @@ export function useDialogFocus(ref: RefObject<HTMLElement | null>, active: boole
       .filter(el => !el.closest('[inert],[hidden]') && el.getClientRects().length > 0);
     (panel.querySelector<HTMLElement>('[data-dialog-autofocus]') || targets()[0] || panel).focus({ preventScroll: true });
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Tab') return;
+      if (event.key !== 'Tab' || event.defaultPrevented) return;
       const items = targets();
       const first = items[0], last = items.at(-1);
       if (!first || !last) { event.preventDefault();panel.focus();return; }

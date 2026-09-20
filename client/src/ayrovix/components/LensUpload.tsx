@@ -31,7 +31,7 @@ export const LensUpload: React.FC<LensUploadProps> = ({ onImage }) => {
         className="ay-btn-secondary h-auto w-full justify-start gap-4 rounded-card p-4 text-start"
       >
         <span className="grid h-12 w-12 flex-none place-items-center rounded-control bg-surface text-ink">
-          <ImageIcon size={24} strokeWidth={1.8} />
+          <ImageIcon size={24} />
         </span>
         <span>
           <span className="block text-sm font-extrabold text-ink">{tr('Importer une image', 'رفع صورة')}</span>

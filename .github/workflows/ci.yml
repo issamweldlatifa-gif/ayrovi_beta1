@@ -35,22 +35,38 @@ jobs:
         run: npx vitest run
 
       - name: Install reference browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Clear previously tracked browser evidence
+        run: rm -rf docs/editorial/verification/ screenshots/editorial/customer/ screenshots/editorial/complete-icons/ screenshots/editorial/icon-correction/account/
 
       - name: Verify editorial reference
+        id: editorial_reference
         run: npm run design:browser
 
       - name: Upload editorial reference evidence
+        if: ${{ !cancelled() && (steps.editorial_reference.outcome == 'success' || steps.editorial_reference.outcome == 'failure') }}
         uses: actions/upload-artifact@v4
         with:
           name: editorial-reference-evidence
           path: docs/editorial/verification/
 
       - name: Verify real customer screens (isolated providers and SQLite)
+        id: editorial_customer
         run: npm run verify:editorial-customer
 
+      - name: Verify editorial voice, products and all icon imports
+        run: npm run verify:editorial-states
+
+      - name: Verify authenticated account and icon geometry
+        run: npm run verify:editorial-account
+
       - name: Upload customer-screen evidence
+        if: ${{ !cancelled() && (steps.editorial_customer.outcome == 'success' || steps.editorial_customer.outcome == 'failure') }}
         uses: actions/upload-artifact@v4
         with:
           name: editorial-customer-evidence
-          path: screenshots/editorial/customer/
+          path: |
+            screenshots/editorial/customer/
+            screenshots/editorial/complete-icons/
+            screenshots/editorial/icon-correction/account/

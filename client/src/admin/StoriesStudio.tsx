@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp } from '../components/QatafoIcons';
+import { X, Box, Eye, Heart, MessageSquare, Pencil, Plus, Share2, Trash2, ArrowUp } from '../components/QatafoIcons';
 import { adminApi } from './api';
 import { Button, DataTable, Field, Modal, StatusBadge, Switch } from './components';
 
@@ -327,7 +327,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                 if (e.target.value === '__custom') setForm({ ...form, category: '' });
                 else setForm({ ...form, category: e.target.value });
               }}>
-                {publishers.map((pub) => <option key={pub.id} value={pub.slug}>{pub.name}{pub.official ? ' ✓' : ''}</option>)}
+                {publishers.map((pub) => <option key={pub.id} value={pub.slug}>{pub.name}{pub.official ? ' (officiel)' : ''}</option>)}
                 <option value="__custom">+ Canal personnalisé…</option>
               </select>
             </Field>
@@ -360,7 +360,7 @@ export const StoriesStudioPage: React.FC<{ onEditContent: () => void }> = ({ onE
                   {form.secondary_images.map((url: string, i: number) => (
                     <span key={i} style={{ position: 'relative' }}>
                       <img src={url} alt="" style={{ width: 56, height: 56, borderRadius: 10, objectFit: 'cover' }} />
-                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, insetInlineEnd: -6, background: 'var(--admin-danger-strong)', color: 'var(--admin-on-dark)', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800 }}>✕</button>
+                      <button type="button" aria-label="Retirer" onClick={() => setForm({ ...form, secondary_images: form.secondary_images.filter((_: any, j: number) => j !== i) })} style={{ position: 'absolute', top: -6, insetInlineEnd: -6, background: 'var(--admin-danger-strong)', color: 'var(--admin-on-dark)', borderRadius: '50%', width: 18, height: 18, fontSize: 10, fontWeight: 800 }}><X size={16}/></button>
                     </span>
                   ))}
                 </div>

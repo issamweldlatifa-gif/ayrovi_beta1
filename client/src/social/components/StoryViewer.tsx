@@ -34,6 +34,8 @@ export const StoryViewer: React.FC<{
   onSeenChange: () => void;
 }> = ({ groups, startIndex, isAuthenticated, onRequireAuth, onOpenComments, onClose, onCta, onSeenChange }) => {
   const { locale, tr } = useLocale();
+  const [likeError, setLikeError] = useState(false);
+  const likeBusy = useRef(false);
   const [likedIds, setLikedIds] = useState<Record<string, boolean>>({});
   const [savedIds, setSavedIds] = useState<Record<string, boolean>>({});
   const [counts, setCounts] = useState<Record<string, { likes: number; comments: number; views: number; shares: number }>>({});
@@ -59,13 +61,15 @@ export const StoryViewer: React.FC<{
 
   const toggleLike = async (target: Story) => {
     if (!isAuthenticated) { onRequireAuth(); return; }
-    const next = !likedIds[target.id];
-    setLikedIds((current) => ({ ...current, [target.id]: next }));
-    const result = await likePost(target.id, next);
-    if (result.authRequired) {
-      setLikedIds((current) => ({ ...current, [target.id]: !next }));
-      onRequireAuth();
-    }
+    if (likeBusy.current) return;
+    likeBusy.current = true; setLikeError(false);
+    try {
+      const result = await likePost(target.id, !likedIds[target.id]);
+      if (!result) { setLikeError(true); return; }
+      if (result.authRequired) { onRequireAuth(); return; }
+      setLikedIds(current => ({ ...current, [target.id]: result.liked }));
+      setCounts(current => ({ ...current, [target.id]: { ...(current[target.id] || {comments:0,views:0,shares:0}), likes:result.likesCount } }));
+    } finally { likeBusy.current = false; }
   };
 
   const toggleSave = (target: Story) => {
@@ -200,6 +204,7 @@ export const StoryViewer: React.FC<{
       </motion.div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 h-64 bg-gradient-to-t from-ink/90 via-ink/35 to-transparent" />
+      {likeError && <p role="alert" className="absolute start-4 end-4 top-20 z-30 border border-line bg-white p-3 text-sm text-danger">{tr("Confirmation du geste indisponible. Vérifiez la connexion.", "تعذر تأكيد التفاعل. تحقق من الاتصال.")}</p>}
       <FullscreenActionRail
         liked={Boolean(likedIds[story.id])}
         saved={saved}

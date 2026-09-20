@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
+import { Check, Square, Monitor, ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
 import { Button, ConfirmDialog, DataTable, Field, StatusBadge, Switch, Toast } from './components';
 import { adminApi } from './api';
 
@@ -371,7 +371,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           </div>
           {analysis && (
             <p className="admin-hero-analysis">
-              Analyse auto — <strong>orientation détectée : {analysis.orientation === 'portrait' ? 'PORTRAIT 📱' : analysis.orientation === 'square' ? 'SQUARE ◼' : 'LANDSCAPE 🖼'}</strong>
+              Analyse auto — <strong>orientation détectée : {analysis.orientation === 'portrait' ? <><Monitor size={16}/> PORTRAIT</> : analysis.orientation === 'square' ? <><Square size={16}/> SQUARE</> : <><ImageIcon size={16}/> LANDSCAPE</>}</strong>
               · luminosité <strong>{analysis.luminance}</strong> ({analysis.brightness === 'dark' ? 'sombre' : analysis.brightness === 'light' ? 'claire' : 'moyenne'})
               · couleur dominante <span style={{ display: 'inline-block', width: 12, height: 12, borderRadius: 3, background: analysis.dominantColor, verticalAlign: 'middle' }} /> <strong>{analysis.dominantColor}</strong>
               {overlayMode === 'AUTO' ? ` · overlay auto ${(analysis.luminance < 0.35 ? 18 : analysis.luminance > 0.6 ? 50 : 32)}%` : ''}
@@ -432,7 +432,7 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
           ]}
           rowActions={canWrite ? [
             { key: 'adjust', label: 'Ajuster (focal/alt/planification)', icon: <RefreshCw size={16} />, hideLabel: true, onRun: (row: any) => { setEditId(row.id); setFocalX(row.focalX); setFocalY(row.focalY); setMobileFocalX(row.mobileFocalX ?? 0.5); setMobileFocalY(row.mobileFocalY ?? 0.5); setOverlayMode(row.overlayMode === 'MANUAL' ? 'MANUAL' : 'AUTO'); setOverlayStrength(typeof row.overlayStrength === 'number' ? row.overlayStrength : 0.3); setOrientationOverride(row.orientationOverride === 'LANDSCAPE' ? 'LANDSCAPE' : row.orientationOverride === 'PORTRAIT' ? 'PORTRAIT' : 'AUTO'); try { setAnalysis(row.analysis ? JSON.parse(row.analysis) : null); } catch { setAnalysis(null); } setAltText(row.altText); setPreviewUrl(''); setFile(null); } },
-            { key: 'publish', label: 'Publier', icon: '✓', hideLabel: true, show: (row: any) => row.status !== 'PUBLISHED', onRun: (row: any) => void publish(row) },
+            { key: 'publish', label: 'Publier', icon: <Check size={16}/>, hideLabel: true, show: (row: any) => row.status !== 'PUBLISHED', onRun: (row: any) => void publish(row) },
             { key: 'unpublish', label: 'Dépublier', icon: <X size={16} />, hideLabel: true, show: (row: any) => row.status === 'PUBLISHED', onRun: (row: any) => void unpublish(row) },
             { key: 'delete', label: 'Supprimer', icon: <X size={16} />, hideLabel: true, tone: 'danger', onRun: (row: any) => setDeleteTarget(row) },
           ] : undefined}
