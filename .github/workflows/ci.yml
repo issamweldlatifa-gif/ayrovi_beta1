@@ -27,6 +27,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      # HTTP/SPA contract tests require the generated public/index.html.
+      - name: Build
+        run: npm run build
+
       - name: Test
         run: npx vitest run
 
@@ -41,9 +45,6 @@ jobs:
         with:
           name: editorial-reference-evidence
           path: docs/editorial/verification/
-
-      - name: Build
-        run: npm run build
 
       - name: Verify real customer screens (isolated providers and SQLite)
         run: npm run verify:editorial-customer
