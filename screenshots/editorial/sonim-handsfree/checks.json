@@ -1,0 +1,310 @@
+{
+  "checks": [
+    {
+      "label": "fr/320: actual Drawer enters hands-free listening",
+      "pass": true
+    },
+    {
+      "label": "fr/320: component CSS is loaded",
+      "pass": true
+    },
+    {
+      "label": "fr/320: late discarded recorder events cannot stop the new capture",
+      "pass": true
+    },
+    {
+      "label": "fr/320: upload keeps header, speech and final fragments without old bytes",
+      "pass": true,
+      "details": {
+        "length": 840
+      }
+    },
+    {
+      "label": "fr/320: microphone stays disabled during transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/320: a completed voice turn sends once and resumes listening",
+      "pass": true
+    },
+    {
+      "label": "fr/320: muting during final flush cancels rather than uploading partial audio",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unmute does not get stuck in an obsolete transcribing state",
+      "pass": true
+    },
+    {
+      "label": "fr/320: service failure preserves the microphone mute",
+      "pass": true
+    },
+    {
+      "label": "fr/320: service failure is localized without pretending there was no speech",
+      "pass": true
+    },
+    {
+      "label": "fr/320: unmute after failure creates a working new capture",
+      "pass": true
+    },
+    {
+      "label": "fr/320: closing voice mode aborts transcription ownership",
+      "pass": true
+    },
+    {
+      "label": "fr/320: ignored transport abort cannot send the old turn",
+      "pass": true
+    },
+    {
+      "label": "fr/320: closing releases all microphone tracks",
+      "pass": true
+    },
+    {
+      "label": "fr/320: capture memory budget fails closed without an upload",
+      "pass": true
+    },
+    {
+      "label": "fr/320: failed microphone cannot be falsely reactivated by a mute toggle",
+      "pass": true
+    },
+    {
+      "label": "fr/320: resource-limit failure is localized and gives a recovery route",
+      "pass": true
+    },
+    {
+      "label": "fr/320: text chat remains available after a capture failure",
+      "pass": true
+    },
+    {
+      "label": "fr/390: actual Drawer enters hands-free listening",
+      "pass": true
+    },
+    {
+      "label": "fr/390: component CSS is loaded",
+      "pass": true
+    },
+    {
+      "label": "fr/390: late discarded recorder events cannot stop the new capture",
+      "pass": true
+    },
+    {
+      "label": "fr/390: upload keeps header, speech and final fragments without old bytes",
+      "pass": true,
+      "details": {
+        "length": 840
+      }
+    },
+    {
+      "label": "fr/390: microphone stays disabled during transcription",
+      "pass": true
+    },
+    {
+      "label": "fr/390: a completed voice turn sends once and resumes listening",
+      "pass": true
+    },
+    {
+      "label": "fr/390: muting during final flush cancels rather than uploading partial audio",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unmute does not get stuck in an obsolete transcribing state",
+      "pass": true
+    },
+    {
+      "label": "fr/390: service failure preserves the microphone mute",
+      "pass": true
+    },
+    {
+      "label": "fr/390: service failure is localized without pretending there was no speech",
+      "pass": true
+    },
+    {
+      "label": "fr/390: unmute after failure creates a working new capture",
+      "pass": true
+    },
+    {
+      "label": "fr/390: closing voice mode aborts transcription ownership",
+      "pass": true
+    },
+    {
+      "label": "fr/390: ignored transport abort cannot send the old turn",
+      "pass": true
+    },
+    {
+      "label": "fr/390: closing releases all microphone tracks",
+      "pass": true
+    },
+    {
+      "label": "fr/390: capture memory budget fails closed without an upload",
+      "pass": true
+    },
+    {
+      "label": "fr/390: failed microphone cannot be falsely reactivated by a mute toggle",
+      "pass": true
+    },
+    {
+      "label": "fr/390: resource-limit failure is localized and gives a recovery route",
+      "pass": true
+    },
+    {
+      "label": "fr/390: text chat remains available after a capture failure",
+      "pass": true
+    },
+    {
+      "label": "ar/320: actual Drawer enters hands-free listening",
+      "pass": true
+    },
+    {
+      "label": "ar/320: component CSS is loaded",
+      "pass": true
+    },
+    {
+      "label": "ar/320: late discarded recorder events cannot stop the new capture",
+      "pass": true
+    },
+    {
+      "label": "ar/320: upload keeps header, speech and final fragments without old bytes",
+      "pass": true,
+      "details": {
+        "length": 840
+      }
+    },
+    {
+      "label": "ar/320: microphone stays disabled during transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/320: a completed voice turn sends once and resumes listening",
+      "pass": true
+    },
+    {
+      "label": "ar/320: muting during final flush cancels rather than uploading partial audio",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unmute does not get stuck in an obsolete transcribing state",
+      "pass": true
+    },
+    {
+      "label": "ar/320: service failure preserves the microphone mute",
+      "pass": true
+    },
+    {
+      "label": "ar/320: service failure is localized without pretending there was no speech",
+      "pass": true
+    },
+    {
+      "label": "ar/320: unmute after failure creates a working new capture",
+      "pass": true
+    },
+    {
+      "label": "ar/320: closing voice mode aborts transcription ownership",
+      "pass": true
+    },
+    {
+      "label": "ar/320: ignored transport abort cannot send the old turn",
+      "pass": true
+    },
+    {
+      "label": "ar/320: closing releases all microphone tracks",
+      "pass": true
+    },
+    {
+      "label": "ar/320: capture memory budget fails closed without an upload",
+      "pass": true
+    },
+    {
+      "label": "ar/320: failed microphone cannot be falsely reactivated by a mute toggle",
+      "pass": true
+    },
+    {
+      "label": "ar/320: resource-limit failure is localized and gives a recovery route",
+      "pass": true
+    },
+    {
+      "label": "ar/320: text chat remains available after a capture failure",
+      "pass": true
+    },
+    {
+      "label": "ar/390: actual Drawer enters hands-free listening",
+      "pass": true
+    },
+    {
+      "label": "ar/390: component CSS is loaded",
+      "pass": true
+    },
+    {
+      "label": "ar/390: late discarded recorder events cannot stop the new capture",
+      "pass": true
+    },
+    {
+      "label": "ar/390: upload keeps header, speech and final fragments without old bytes",
+      "pass": true,
+      "details": {
+        "length": 840
+      }
+    },
+    {
+      "label": "ar/390: microphone stays disabled during transcription",
+      "pass": true
+    },
+    {
+      "label": "ar/390: a completed voice turn sends once and resumes listening",
+      "pass": true
+    },
+    {
+      "label": "ar/390: muting during final flush cancels rather than uploading partial audio",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unmute does not get stuck in an obsolete transcribing state",
+      "pass": true
+    },
+    {
+      "label": "ar/390: service failure preserves the microphone mute",
+      "pass": true
+    },
+    {
+      "label": "ar/390: service failure is localized without pretending there was no speech",
+      "pass": true
+    },
+    {
+      "label": "ar/390: unmute after failure creates a working new capture",
+      "pass": true
+    },
+    {
+      "label": "ar/390: closing voice mode aborts transcription ownership",
+      "pass": true
+    },
+    {
+      "label": "ar/390: ignored transport abort cannot send the old turn",
+      "pass": true
+    },
+    {
+      "label": "ar/390: closing releases all microphone tracks",
+      "pass": true
+    },
+    {
+      "label": "ar/390: capture memory budget fails closed without an upload",
+      "pass": true
+    },
+    {
+      "label": "ar/390: failed microphone cannot be falsely reactivated by a mute toggle",
+      "pass": true
+    },
+    {
+      "label": "ar/390: resource-limit failure is localized and gives a recovery route",
+      "pass": true
+    },
+    {
+      "label": "ar/390: text chat remains available after a capture failure",
+      "pass": true
+    },
+    {
+      "label": "No uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

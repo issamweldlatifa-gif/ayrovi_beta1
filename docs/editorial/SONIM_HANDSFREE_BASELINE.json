@@ -1,0 +1,23 @@
+{
+  "revision": "363dfe09dcadfc6d13d55a06ede506a54f8e31f4",
+  "purpose": "Expected failures of exploratory tests before the ownership fix",
+  "existingPassed": 8,
+  "newFailed": 3,
+  "cases": [
+    {
+      "test": "AUDIT: late discarded stop cannot erase the next capture buffer",
+      "status": "failed",
+      "failure": "AssertionError: expected 180 to be 480 // Object.is equality"
+    },
+    {
+      "test": "AUDIT: delayed old recorder error cannot kill the replacement",
+      "status": "failed",
+      "failure": "AssertionError: expected 'error' to be 'listening' // Object.is equality"
+    },
+    {
+      "test": "AUDIT: late turn finalization cannot disable a restarted microphone",
+      "status": "failed",
+      "failure": "AssertionError: expected false to be true // Object.is equality"
+    }
+  ]
+}

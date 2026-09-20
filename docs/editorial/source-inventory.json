@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 197,
-    "customerAndSharedFiles": 148,
+    "files": 198,
+    "customerAndSharedFiles": 149,
     "controls": 409,
     "iconAliases": 99,
     "uniqueGlyphs": 96
@@ -13192,7 +13192,7 @@
     {
       "file": "client/src/components/assistant/AssistantVoiceModeScreen.tsx",
       "domain": "sonim",
-      "sha256": "876bdaef85843d628ceec8654680e1f925240993e240054da6c868297d0d441e",
+      "sha256": "d42986f70eb8be4322c52c319c9007ed3baecd0b66fa46d31d6049059f6586b6",
       "lines": 143,
       "imports": [
         "./AssistantMediaPending",
@@ -13309,7 +13309,7 @@
           "role": null,
           "ariaLabel": "{isMuted ? tr('Activer le microphone','إلغاء كتم الصوت') : tr('Couper le microphone','كتم الصوت')}",
           "onClick": "{onToggleMute}",
-          "disabled": null
+          "disabled": "{state === 'error'}"
         },
         {
           "tag": "button",
@@ -13687,9 +13687,11 @@
     {
       "file": "client/src/components/assistant/voice/VoiceChatController.ts",
       "domain": "sonim",
-      "sha256": "4309ac156e8adac844245a17def39c83d4ff1ab759a8faf3b8acf3e318c2d75a",
-      "lines": 542,
+      "sha256": "0d02623d9f8562030a0453e1b21ce1f5b6bf9df2086319b14e94dbaee797b219",
+      "lines": 507,
       "imports": [
+        "./VoiceInputCapture",
+        "../media/awaitOwned",
         "../composerPolicy",
         "../assistantApi",
         "../../../utils/session",
@@ -13707,6 +13709,23 @@
       "apiReferences": [
         "/api/assistant/status"
       ]
+    },
+    {
+      "file": "client/src/components/assistant/voice/VoiceInputCapture.ts",
+      "domain": "sonim",
+      "sha256": "87cc8ffc2b7398841c6484a57e802cb66baaa5b1f3495ad4059eb8cbcce7b8e5",
+      "lines": 77,
+      "imports": [],
+      "exports": [
+        "MAX_VOICE_INPUT_BYTES",
+        "VoiceInputCapture"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
     },
     {
       "file": "client/src/components/assistant/voice/VoiceOutput.ts",

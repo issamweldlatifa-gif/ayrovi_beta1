@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { transcribeMock } = vi.hoisted(() => ({
-  transcribeMock: vi.fn(async (_input: { audio: Blob }) => ({ text: 'مرحبا أيروفي' })),
+  transcribeMock: vi.fn(async (_input: { audio: Blob; signal?: AbortSignal }) => ({ text: 'مرحبا أيروفي' })),
 }));
 vi.mock('../client/src/components/assistant/assistantApi', () => ({
   transcribeAssistantAudio: transcribeMock,
@@ -137,12 +137,13 @@ beforeEach(() => {
     success: true,
     data: { serverTextToSpeechReady: false },
   }), { headers: { 'content-type': 'application/json' } })));
-  transcribeMock.mockClear();
+  transcribeMock.mockReset().mockResolvedValue({text:'مرحبا أيروفي'});
 });
 
 afterEach(() => {
   controller?.stop();
   controller = null;
+  vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -300,6 +301,87 @@ describe('VoiceChatController clean hands-free lifecycle', () => {
     const voice=makeController();await voice.start('');await voice.speak(' [[OPEN_LENS]] ', 'fr');
     expect(voice.getState()).toBe('listening');expect(speechSynthesis.speak).not.toHaveBeenCalled();
     expect((voice as any).options.onError).not.toHaveBeenCalled();
+  });
+
+  it('late discarded stop cannot erase the next capture buffer', async () => {
+    const voice=makeController(); await voice.start('');
+    const previous=FakeRecorder.instances[0];
+    previous.stop.mockImplementation(()=>{ previous.state='inactive'; });
+    voice.setMuted(true); voice.setMuted(false); await flush();
+    const current=FakeRecorder.instances[1]; expect(current).toBeTruthy();
+    current.emitChunk(300,42);
+    await new Promise(resolve=>setTimeout(resolve,850));
+    const audio=await (voice as any).stopCapture(false) as Blob;
+    expect(audio.size).toBe(480);
+    expect(new Uint8Array(await audio.arrayBuffer())[0]).toBe(42);
+  });
+  it('delayed old recorder error cannot kill the replacement', async () => {
+    const voice=makeController(); await voice.start('');
+    const oldError=FakeRecorder.instances[0].onerror!;
+    voice.setMuted(true);voice.setMuted(false);await flush();
+    expect(FakeRecorder.instances).toHaveLength(2);
+    oldError();
+    expect(voice.getState()).toBe('listening');
+    expect(stream.track.stop).not.toHaveBeenCalled();
+  });
+  it('late turn finalization cannot disable a restarted microphone', async () => {
+    const voice=makeController(); await voice.start('');
+    const recorder=FakeRecorder.instances[0];
+    recorder.stop.mockImplementation(()=>{ recorder.state='inactive'; });
+    (voice as any).state='user_speaking';
+    (voice as any).speechStartedAt=performance.now()-1000;
+    const pending=(voice as any).finishUserTurn();
+    voice.stop(); const next=new FakeStream();
+    vi.mocked(navigator.mediaDevices.getUserMedia).mockResolvedValue(next as unknown as MediaStream);
+    await voice.start(''); expect(next.track.enabled).toBe(true);
+    await pending;
+    expect(next.track.enabled).toBe(true);
+  });
+
+  it('muting during final flush cancels the pending turn and unmute resumes', async () => {
+    const voice=makeController();await voice.start('');
+    FakeRecorder.instances[0].stop.mockImplementation(()=>{FakeRecorder.instances[0].state='inactive';});
+    (voice as any).state='user_speaking';(voice as any).speechStartedAt=performance.now()-700;
+    voice.forceFinishTurn();voice.setMuted(true);voice.setMuted(false);await flush();
+    expect(voice.getState()).toBe('listening');expect(stream.track.enabled).toBe(true);expect(transcribeMock).not.toHaveBeenCalled();
+  });
+
+  it('resuming input explicitly cancels transcription even when transport ignores abort', async () => {
+    let reply!:(value:{text:string})=>void;transcribeMock.mockImplementation(()=>new Promise(resolve=>{reply=resolve;}));
+    const voice=makeController();await voice.start('');
+    (voice as any).state='user_speaking';(voice as any).speechStartedAt=performance.now()-700;voice.forceFinishTurn();await flush();
+    const signal=transcribeMock.mock.calls[0][0].signal!;voice.resumeListening();await flush();expect(signal.aborted).toBe(true);
+    reply({text:'STALE'});await flush();expect(turns).toEqual([]);expect(voice.getState()).toBe('listening');
+  });
+
+  it('times out hung transcription, stays muted, then resumes without a stuck flag', async () => {
+    vi.useFakeTimers();let reply!:(value:{text:string})=>void;transcribeMock.mockImplementation(()=>new Promise(resolve=>{reply=resolve;}));
+    const voice=makeController();await voice.start('');
+    (voice as any).state='user_speaking';(voice as any).speechStartedAt=performance.now()-700;voice.forceFinishTurn();await vi.advanceTimersByTimeAsync(0);
+    voice.setMuted(true);expect(transcribeMock.mock.calls[0][0].signal!.aborted).toBe(false);
+    await vi.advanceTimersByTimeAsync(30_000);expect(voice.getState()).toBe('muted');expect((voice as any).options.onError).toHaveBeenCalledOnce();
+    expect((voice as any).options.onError.mock.calls[0][0]).toContain('مهلة');voice.setMuted(false);await vi.advanceTimersByTimeAsync(0);
+    expect(voice.getState()).toBe('listening');reply({text:'LATE'});await vi.advanceTimersByTimeAsync(0);expect(turns).toEqual([]);
+  });
+
+  it('an unmute continuation cannot reopen input while a newer response starts', async () => {
+    const voice=makeController();await voice.start('');voice.setMuted(false);expect(FakeRecorder.instances).toHaveLength(1);
+    voice.setMuted(true);voice.setMuted(false);const playback=voice.speak('Réponse','fr');await flush();
+    expect(FakeRecorder.instances).toHaveLength(1);expect(stream.track.enabled).toBe(false);expect(voice.getState()).toBe('speaking');
+    (speechSynthesis.speak.mock.calls[0][0] as FakeUtterance).onend?.();await playback;expect(voice.getState()).toBe('listening');
+  });
+
+  it('fails safely at the upload budget and a mute toggle cannot hide the device failure',async()=>{
+    const voice=makeController();await voice.start('');FakeRecorder.instances[0].emitChunk(12*1024*1024+1);
+    expect(voice.getState()).toBe('error');expect(stream.track.stop).toHaveBeenCalledOnce();expect(transcribeMock).not.toHaveBeenCalled();
+    voice.setMuted(true);voice.setMuted(false);expect(voice.getState()).toBe('error');
+  });
+
+  it('an old VAD animation cannot monitor or schedule work in a new lifecycle',async()=>{
+    const frames:FrameRequestCallback[]=[];vi.mocked(requestAnimationFrame).mockImplementation(callback=>{frames.push(callback);return frames.length;});
+    const voice=makeController();await voice.start('');const previous=frames[0];await voice.start('');
+    const calls=(voice as any).options.onLevel.mock.calls.length;previous(0);
+    expect(frames).toHaveLength(2);expect((voice as any).options.onLevel.mock.calls).toHaveLength(calls);
   });
 
 });

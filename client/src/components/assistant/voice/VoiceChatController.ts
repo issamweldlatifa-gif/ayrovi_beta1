@@ -1,3 +1,5 @@
+import { VoiceInputCapture, type VoiceCaptureFailure } from './VoiceInputCapture';
+import { awaitOwned } from '../media/awaitOwned';
 import { cleanAssistantText } from '../composerPolicy';
 import { transcribeAssistantAudio } from '../assistantApi';
 import { getSessionId } from '../../../utils/session';
@@ -39,9 +41,9 @@ export class VoiceChatController {
   private context: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private monitorFrame: number | null = null;
-  private recorder: MediaRecorder | null = null;
-  private chunks: Blob[] = [];
-  private captureMimeType = 'audio/webm';
+  private capture: VoiceInputCapture | null = null;
+  private inputOperation = 0;
+  private muteOperation = 0;
   private listeningSince = 0;
   private speechCandidateSince = 0;
   private speechStartedAt = 0;
@@ -116,11 +118,9 @@ export class VoiceChatController {
     } catch (error: unknown) {
       if (!this.active || lifecycle !== this.lifecycle) return false;
       const denied = error instanceof DOMException && error.name === 'NotAllowedError';
-      this.options.onError(denied
-        ? 'يرجى السماح باستعمال الميكروفون لتشغيل المحادثة الصوتية.'
-        : 'تعذّر تشغيل المحادثة الصوتية على هذا الجهاز.');
-      this.setState('error');
-      this.releaseInput();
+      this.failInput(denied
+        ? this.localized('Autorisez le microphone pour activer le mode vocal.', 'يرجى السماح باستعمال الميكروفون لتشغيل المحادثة الصوتية.')
+        : this.localized('Le mode vocal est indisponible sur cet appareil.', 'تعذّر تشغيل المحادثة الصوتية على هذا الجهاز.'));
       return false;
     }
   }
@@ -128,6 +128,7 @@ export class VoiceChatController {
   public async speak(text: string, locale = this.options.language): Promise<void> {
     if (!this.active) return;
     this.waitingForReply = false;
+    this.cancelInputTurn();
     const lifecycle = this.lifecycle;
     const operation = ++this.speechOperation;
     this.setInputEnabled(false);
@@ -172,6 +173,7 @@ export class VoiceChatController {
   public markThinking(): void {
     if (!this.active) return;
     this.waitingForReply = true;
+    this.cancelInputTurn();
     this.speechOperation += 1;
     this.output.stop();
     this.setInputEnabled(false);
@@ -182,6 +184,7 @@ export class VoiceChatController {
   public resumeListening(): void {
     if (!this.active) return;
     this.waitingForReply = false;
+    this.cancelInputTurn();
     const lifecycle = this.lifecycle;
     const operation = ++this.speechOperation;
     this.output.stop();
@@ -197,6 +200,7 @@ export class VoiceChatController {
   public interruptOutput(): void {
     if (!this.active) return;
     this.waitingForReply = false;
+    this.cancelInputTurn();
     const lifecycle = this.lifecycle;
     const operation = ++this.speechOperation;
     this.output.stop();
@@ -215,16 +219,19 @@ export class VoiceChatController {
   }
 
   public setMuted(muted: boolean): void {
+    if (!this.active || this.muted === muted) return;
+    const lifecycle = this.lifecycle, speech = this.speechOperation, mute = ++this.muteOperation;
     this.muted = muted;
     this.setInputEnabled(false);
     if (muted) {
+      if (!this.transcriptionAbort) this.cancelInputTurn();
       this.setState('muted');
       void this.stopCapture(true);
       return;
     }
     void (async () => {
       await this.stopCapture(true);
-      if (!this.active || this.muted) return;
+      if (!this.active || this.muted || lifecycle !== this.lifecycle || speech !== this.speechOperation || mute !== this.muteOperation) return;
       if (this.finalizingTurn || this.transcriptionAbort) {
         this.setState('transcribing');
       } else if (this.waitingForReply || (this.output.busy && !this.output.playing)) {
@@ -248,8 +255,7 @@ export class VoiceChatController {
     this.speechOperation += 1;
     this.finalizingTurn = false;
     this.waitingForReply = false;
-    this.transcriptionAbort?.abort();
-    this.transcriptionAbort = null;
+    this.cancelInputTurn();
     this.output.dispose();
     this.stopRecorderImmediately();
     this.releaseInput();
@@ -269,13 +275,13 @@ export class VoiceChatController {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4_000);
     try {
-      const response = await fetch('/api/assistant/status', {
+      const response = await awaitOwned(fetch('/api/assistant/status', {
         credentials: 'same-origin',
         signal: controller.signal,
         headers: { 'x-session-id': getSessionId() },
-      });
+      }), controller.signal);
       if (!response.ok) return null;
-      const payload = await response.json();
+      const payload = await awaitOwned(response.json(), controller.signal);
       return payload?.data?.serverTextToSpeechReady === true;
     } catch {
       return null;
@@ -308,10 +314,11 @@ export class VoiceChatController {
 
   private startMonitoring(): void {
     if (this.monitorFrame !== null) cancelAnimationFrame(this.monitorFrame);
+    const lifecycle = this.lifecycle;
     const samples = new Uint8Array(512);
 
     const monitor = () => {
-      if (!this.active || !this.analyser) return;
+      if (!this.active || lifecycle !== this.lifecycle || !this.analyser) return;
       if (this.state === 'listening' || this.state === 'user_speaking') {
         this.analyser.getByteTimeDomainData(samples);
         let squareSum = 0;
@@ -321,9 +328,9 @@ export class VoiceChatController {
         }
         const rms = Math.sqrt(squareSum / samples.length);
         this.options.onLevel(Math.min(1, rms * 8));
-        this.updateVoiceActivity(rms, performance.now());
+        if (this.active && lifecycle === this.lifecycle) this.updateVoiceActivity(rms, performance.now());
       }
-      this.monitorFrame = requestAnimationFrame(monitor);
+      if (this.active && lifecycle === this.lifecycle) this.monitorFrame = requestAnimationFrame(monitor);
     };
 
     this.monitorFrame = requestAnimationFrame(monitor);
@@ -364,78 +371,67 @@ export class VoiceChatController {
 
   private beginListening(): void {
     if (!this.active) return;
+    this.waitingForReply = false; this.finalizingTurn = false;
+    this.options.onTranscript('');
     if (this.muted) {
       this.setState('muted');
       return;
     }
 
-    this.waitingForReply = false;
     this.setInputEnabled(true);
     this.listeningSince = performance.now();
     this.speechCandidateSince = 0;
     this.speechStartedAt = 0;
     this.lastVoiceAt = 0;
     this.noiseFloor = 0.012;
-    this.finalizingTurn = false;
-    this.options.onTranscript('');
     this.setState('listening');
     this.startCapture();
   }
 
+  private localized(fr: string, ar: string): string { return this.options.language.toLowerCase().startsWith('ar') ? ar : fr; }
+
   private startCapture(): void {
-    if (!this.active || this.muted || !this.stream || this.recorder) return;
+    if (!this.active || this.muted || !this.stream || this.capture) return;
     try {
-      const mimeType = typeof MediaRecorder.isTypeSupported === 'function'
-        ? [
-            'audio/webm;codecs=opus',
-            'audio/ogg;codecs=opus',
-            'audio/mp4',
-            'audio/webm',
-          ].find((type) => MediaRecorder.isTypeSupported(type))
-        : undefined;
-      const recorder = new MediaRecorder(this.stream, mimeType ? { mimeType } : undefined);
-      this.captureMimeType = recorder.mimeType || mimeType || 'audio/webm';
-      this.chunks = [];
-      recorder.ondataavailable = (event) => {
-        if (!event.data?.size) return;
-        // MediaRecorder chunks are fragments of one WebM/Ogg container. The
-        // first chunk carries its initialization header, so pruning old chunks
-        // makes Firefox/Android uploads undecodable. Keep the complete container
-        // from the start of this listening turn; a fresh recorder starts after
-        // every assistant response.
-        this.chunks.push(event.data);
-      };
-      recorder.onerror = () => {
-        if (this.active) this.failInput('حدث خطأ أثناء تسجيل الصوت.');
-      };
-      this.recorder = recorder;
-      recorder.start(200);
-    } catch {
-      this.failInput('تعذّر بدء تسجيل الصوت في هذا المتصفح.');
-    }
+      const capture = new VoiceInputCapture(this.stream, failure => {
+        if (this.capture === capture && this.active) this.failInput(this.captureError(failure));
+      }, () => { if (this.capture === capture) this.capture = null; });
+      this.capture = capture;
+      capture.start();
+    } catch { this.failInput(this.captureError('recording')); }
+  }
+
+  private captureError(failure: VoiceCaptureFailure): string {
+    if (failure === 'large') return this.localized('Enregistrement trop volumineux (12 Mo maximum). Rouvrez le mode vocal.', 'بلغ التسجيل الحد الأقصى للحجم (12 ميغابايت). أعد فتح الوضع الصوتي.');
+    if (failure === 'flush-timeout') return this.localized('L’enregistrement n’a pas pu se terminer. Aucun son incomplet n’a été envoyé. Rouvrez le mode vocal.', 'تعذّر إنهاء التسجيل. لم يُرسل صوت غير مكتمل. أعد فتح الوضع الصوتي.');
+    return this.localized('Erreur d’enregistrement. Rouvrez le mode vocal pour réessayer.', 'حدث خطأ في التسجيل. أعد فتح الوضع الصوتي للمحاولة مجددًا.');
+  }
+
+  private cancelInputTurn(): void {
+    this.inputOperation += 1;
+    this.transcriptionAbort?.abort(); this.transcriptionAbort = null;
+    this.finalizingTurn = false;
   }
 
   private failInput(message: string): void {
-    this.options.onError(message);
-    this.active = false;
-    this.setInputEnabled(false);
-    this.stopRecorderImmediately();
-    this.releaseInput();
-    this.options.onLevel(0);
+    this.stop(false);
     this.setState('error');
+    this.options.onError(message);
   }
 
   private async finishUserTurn(): Promise<void> {
     if (!this.active || this.state !== 'user_speaking' || this.finalizingTurn) return;
     this.finalizingTurn = true;
     const lifecycle = this.lifecycle;
+    const operation = ++this.inputOperation;
+    const ownsTurn = () => this.active && lifecycle === this.lifecycle && operation === this.inputOperation;
     const duration = performance.now() - this.speechStartedAt;
     this.setState('transcribing');
     this.options.onLevel(0);
 
-    const audio = await this.stopCapture(false);
     this.setInputEnabled(false);
-    if (!this.active || lifecycle !== this.lifecycle) return;
+    const audio = await this.stopCapture(false);
+    if (!ownsTurn()) return;
     if (!audio || audio.size < 120 || duration < MIN_SPEECH_MS) {
       this.options.onTranscript('');
       this.beginListening();
@@ -445,78 +441,47 @@ export class VoiceChatController {
     const controller = new AbortController();
     this.transcriptionAbort?.abort();
     this.transcriptionAbort = controller;
+    let timedOut = false;
+    const deadline = setTimeout(() => { timedOut = true; controller.abort(); }, 30_000);
     try {
-      const result = await transcribeAssistantAudio({
+      const result = await awaitOwned(transcribeAssistantAudio({
         audio,
         csrfToken: this.options.csrfToken,
         signal: controller.signal,
-      });
-      if (!this.active || lifecycle !== this.lifecycle || controller.signal.aborted) return;
-      const text = result.text.trim();
+      }), controller.signal);
+      if (!ownsTurn() || this.transcriptionAbort !== controller || controller.signal.aborted) return;
+      const text = typeof result.text === 'string' ? result.text.trim() : '';
       if (!text) {
-        this.options.onError('لم يتم التعرّف على الكلام بوضوح. حاول مرة أخرى.');
+        this.options.onError(this.localized('Aucune parole reconnue. Réessayez.', 'لم يتم التعرّف على الكلام بوضوح. حاول مرة أخرى.'));
         this.beginListening();
         return;
       }
       this.options.onTranscript(text);
+      if (!ownsTurn()) return;
       this.waitingForReply = true;
       this.setState('thinking');
       this.finalizingTurn = false;
-      this.options.onTurn(text);
-    } catch (error: unknown) {
-      if (!this.active || lifecycle !== this.lifecycle || controller.signal.aborted) return;
-      this.options.onError(error instanceof Error ? error.message : 'تعذّر تحويل الصوت إلى نص.');
+      if (ownsTurn()) this.options.onTurn(text);
+    } catch {
+      if (!ownsTurn() || this.transcriptionAbort !== controller || (controller.signal.aborted && !timedOut)) return;
+      this.options.onError(timedOut
+        ? this.localized('La transcription a dépassé le délai. Aucun message n’a été envoyé.', 'انتهت مهلة تحويل الصوت إلى نص. لم تُرسل أي رسالة.')
+        : this.localized('Impossible de transcrire cet enregistrement. Réessayez.', 'تعذّر تحويل هذا التسجيل إلى نص. أعد المحاولة.'));
       this.beginListening();
     } finally {
+      clearTimeout(deadline);
       if (this.transcriptionAbort === controller) this.transcriptionAbort = null;
     }
   }
 
   private stopCapture(discard: boolean): Promise<Blob | null> {
-    const recorder = this.recorder;
-    if (!recorder) {
-      if (discard) this.chunks = [];
-      return Promise.resolve(null);
-    }
-
-    return new Promise((resolve) => {
-      let settled = false;
-      let timeout: ReturnType<typeof setTimeout>;
-      const finish = () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timeout);
-        recorder.removeEventListener('stop', finish);
-        if (this.recorder === recorder) this.recorder = null;
-        const chunks = this.chunks;
-        this.chunks = [];
-        resolve(discard || !chunks.length ? null : new Blob(chunks, { type: this.captureMimeType }));
-      };
-      timeout = setTimeout(finish, 800);
-      recorder.addEventListener('stop', finish, { once: true });
-      try {
-        if (recorder.state === 'recording') {
-          if (typeof recorder.requestData === 'function') recorder.requestData();
-          recorder.stop();
-        } else {
-          finish();
-        }
-      } catch {
-        finish();
-      }
-    });
+    if (discard) { this.stopRecorderImmediately(); return Promise.resolve(null); }
+    return this.capture?.finish() || Promise.resolve(null);
   }
 
   private stopRecorderImmediately(): void {
-    const recorder = this.recorder;
-    this.recorder = null;
-    this.chunks = [];
-    if (!recorder) return;
-    recorder.ondataavailable = null;
-    recorder.onerror = null;
-    try {
-      if (recorder.state !== 'inactive') recorder.stop();
-    } catch {}
+    const capture = this.capture; this.capture = null;
+    capture?.cancel();
   }
 
   private setInputEnabled(enabled: boolean): void {
