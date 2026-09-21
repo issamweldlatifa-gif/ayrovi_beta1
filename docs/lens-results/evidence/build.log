@@ -69,7 +69,7 @@ public/assets/App-Cp37_m65.js                       233.43 kB │ gzip:  74.54 k
 public/assets/qr-C9LzHcXT.js                        411.24 kB │ gzip: 109.94 kB
 public/assets/AdminApp-DQ29yeYf.js                  447.90 kB │ gzip: 106.34 kB
 
-✓ built in 1.21s
+✓ built in 1.49s
 
 > ayrovi@3.10.4 build:server
 > node -e 'require("esbuild").buildSync({entryPoints:["src/server.ts"],bundle:true,platform:"node",target:"node20",outfile:"dist/server.js",external:["better-sqlite3","jsdom","express","compression","cors","dotenv","tesseract.js","multer","sharp","pdf-to-img","mailparser"]})'

@@ -1,0 +1,15 @@
+
+ RUN  v4.1.11 /home/user/ayrovi_beta1
+
+ ✓ tests/icon-architecture-guard.test.ts (19 tests) 1279ms
+     ✓ audits the actual application, including admin, with zero unreviewed exceptions  1270ms
+ ✓ tests/lens-results-interaction.test.tsx (8 tests) 222ms
+ ✓ tests/editorial-lens-drag.test.tsx (6 tests) 120ms
+ ✓ tests/lens-ui-phase0.test.tsx (8 tests) 53ms
+ ✓ tests/lens-results.test.tsx (7 tests) 47ms
+ ✓ tests/lens-selection-geometry.test.ts (15 tests) 10ms
+
+ Test Files  6 passed (6)
+      Tests  63 passed (63)
+   Start at  06:05:19
+   Duration  4.93s (transform 456ms, setup 0ms, import 1.44s, tests 1.73s, environment 861ms)

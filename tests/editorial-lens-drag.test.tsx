@@ -5,9 +5,10 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
-let root:Root,host:HTMLDivElement,reset:ReturnType<typeof vi.fn>;
+let root:Root,host:HTMLDivElement;
+const reset = vi.fn<() => void>();
 beforeEach(async()=>{
- host=document.createElement('div');document.body.append(host);root=createRoot(host);reset=vi.fn();
+ host=document.createElement('div');document.body.append(host);root=createRoot(host);reset.mockClear();
  vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(1000);
  Object.assign(HTMLElement.prototype,{setPointerCapture:vi.fn(),hasPointerCapture:()=>true});
  vi.spyOn(window,'requestAnimationFrame').mockReturnValue(42);
