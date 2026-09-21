@@ -1,0 +1,49 @@
+.lens-results{--sheet-offset:65%;--sheet-progress:0;position:relative;isolation:isolate;flex:1;min-height:0;width:100%;height:100%;overflow:hidden;background:#000;color:#fff;font-family:var(--ay-font-stack);overscroll-behavior:none}
+.lens-results button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.lens-results button:focus-visible,.lens-image-target:focus-visible{outline:3px solid #ff7900;outline-offset:-3px}
+.lens-results-chrome{position:absolute;inset:env(safe-area-inset-top,0px) 12px auto;z-index:2;height:60px;display:flex;align-items:center;justify-content:center;opacity:clamp(0,calc(1 - var(--sheet-progress)*3),1);transition:opacity .22s ease;pointer-events:none}
+.lens-results-chrome>button{position:absolute;inset-inline-start:0;display:grid;place-items:center;width:48px;height:48px;border:0;background:transparent;color:inherit;pointer-events:auto}
+.lens-results-chrome>span{display:flex;align-items:center;gap:8px;font-size:1.125rem;font-weight:500}
+.lens-results-image{position:absolute;inset:calc(60px + env(safe-area-inset-top,0px)) 0 35%;overflow:hidden;touch-action:none}
+.lens-results-image>img{display:block;width:100%;height:100%;object-fit:contain;user-select:none}
+.lens-image-target{position:absolute;inset:0;cursor:crosshair;touch-action:none}
+.lens-image-coordinates{position:absolute;pointer-events:none}
+.lens-selection{position:absolute;border-radius:16px;box-shadow:0 0 0 200vmax #0006;pointer-events:none}
+.lens-selection-corner{position:absolute;width:44px;height:44px;padding:0;border:0;background:none;color:#fff;pointer-events:auto;touch-action:none;z-index:2}
+.lens-selection-corner i{position:absolute;inset:10px;border:0 solid #fff;filter:drop-shadow(0 1px 2px #0009)}
+.lens-corner-nw{left:-22px;top:-22px}.lens-corner-ne{right:-22px;top:-22px}.lens-corner-sw{left:-22px;bottom:-22px}.lens-corner-se{right:-22px;bottom:-22px}
+.lens-corner-nw i{border-left-width:3px;border-top-width:3px;border-top-left-radius:12px;transform:translate(10px,10px)}
+.lens-corner-ne i{border-right-width:3px;border-top-width:3px;border-top-right-radius:12px;transform:translate(-10px,10px)}
+.lens-corner-sw i{border-left-width:3px;border-bottom-width:3px;border-bottom-left-radius:12px;transform:translate(10px,-10px)}
+.lens-corner-se i{border-right-width:3px;border-bottom-width:3px;border-bottom-right-radius:12px;transform:translate(-10px,-10px)}
+.lens-product-dot{position:absolute;transform:translate(-50%,-50%);width:44px;height:44px;display:grid;place-items:center;pointer-events:auto;background:none;border:0}
+.lens-product-dot i{width:9px;height:9px;background:#fff;border-radius:50%;box-shadow:0 0 0 5px #fff3,0 1px 5px #000}
+.lens-analysis-dots{position:absolute;inset:0;pointer-events:none}
+.lens-analysis-dots i{position:absolute;left:calc(20% + var(--dot-index)*14%);top:36%;width:5px;height:5px;border-radius:50%;background:#fff;box-shadow:0 0 8px #fff;animation:lens-analyze 1.2s ease-in-out infinite;animation-delay:calc(var(--dot-index)*-.18s)}
+.lens-analysis-dots i:nth-child(even){top:62%}
+@keyframes lens-analyze{0%,100%{opacity:.25;transform:translateY(6px) scale(.65)}50%{opacity:1;transform:translateY(-6px) scale(1.2)}}
+.lens-results-sheet{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;min-height:0;background:#fff;color:#000;border-radius:24px 24px 0 0;transform:translate3d(0,var(--sheet-offset),0);transition:transform .28s cubic-bezier(.2,.8,.2,1);will-change:transform;overflow:hidden;contain:layout style}
+.lens-sheet-handle{flex:none;display:grid;place-items:center;width:100%;height:44px;min-height:44px;touch-action:none;border:0;background:transparent;color:#595959;cursor:grab!important}
+.lens-sheet-handle:active{cursor:grabbing!important}
+.lens-sheet-handle>span{width:36px;height:4px;background:#bdbdbd;border-radius:4px}
+.lens-sheet-summary{flex:none;display:flex;gap:12px;align-items:center;min-height:60px;padding:0 16px 12px;overflow:hidden}
+.lens-sheet-summary>img{width:44px;height:44px;flex:none;object-fit:contain;border:1px solid #d9d9d9;border-radius:10px;background:#f5f5f5}
+.lens-sheet-summary>div{min-width:0}.lens-sheet-summary h3{font-size:.9375rem;line-height:1.4;font-weight:500;margin:0}
+.lens-sheet-summary p{font-size:.8125rem;line-height:1.5;color:#595959;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:2px 0 0}
+.lens-results-list{flex:1;min-height:0;overflow-y:auto;overscroll-behavior-y:contain;padding:0 12px calc(20px + env(safe-area-inset-bottom,0px));scrollbar-width:none;touch-action:pan-y}
+.lens-results-list::-webkit-scrollbar{display:none}
+.lens-result-grid>article{min-width:0;align-self:start}
+.lens-results[data-expanded="true"] .lens-results-sheet{border-radius:0}
+.lens-results[data-expanded="true"][data-has-image="true"] .lens-sheet-summary{display:none}
+.lens-results[data-expanded="false"] .lens-results-list{overflow-y:hidden}
+.lens-results[data-dragging] .lens-results-sheet,.lens-results[data-dragging] .lens-results-chrome{transition:none}
+.lens-results[data-has-image="false"]{--sheet-offset:0px;background:#fff;color:#000}
+.lens-results[data-has-image="false"] .lens-results-chrome{opacity:1;z-index:4}
+.lens-results[data-has-image="false"] .lens-results-sheet{padding-top:calc(64px + env(safe-area-inset-top,0px));transform:none}
+.lens-results[data-expanded="true"] .lens-sheet-handle{padding-top:env(safe-area-inset-top,0px);height:calc(44px + env(safe-area-inset-top,0px))}
+@media(min-width:900px){.lens-results-list{padding-inline:max(16px,calc((100% - 1050px)/2))}.lens-results-image{inset-inline:12%}}
+@media(max-height:500px){.lens-results-image{top:48px}.lens-results-chrome{height:48px}.lens-sheet-summary{min-height:44px;padding-bottom:6px}.lens-sheet-summary>img{width:32px;height:32px}}
+@media(prefers-reduced-motion:reduce){.lens-results-sheet,.lens-results-chrome{transition:none}.lens-results .lens-analysis-dots i,.lens-results .animate-pulse,.lens-results .animate-spin{animation:none}}
+/* Keep prices and controls readable when the user enlarges text. */
+.lens-result-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,max(9rem,calc((100% - 24px)/3))),1fr))}
+.lens-result-grid article{overflow-wrap:anywhere}

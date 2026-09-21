@@ -1,0 +1,15 @@
+
+> ayrovi@3.10.4 design:check
+> node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check && npm run icons:check && npm run identity:check
+
+Design inventory up to date
+
+> ayrovi@3.10.4 icons:check
+> node scripts/check-icon-contract.mjs
+
+Icon contract: 204 source files; 2 reviewed SVG roots; 0 violations.
+
+> ayrovi@3.10.4 identity:check
+> node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs
+
+AYROVI A: source, stack, pure neutrals, local assets and font hashes verified.

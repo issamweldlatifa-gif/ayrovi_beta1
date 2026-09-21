@@ -1,0 +1,1723 @@
+{
+  "checks": [
+    {
+      "name": "chromium/fr: starts in peek",
+      "pass": true
+    },
+    {
+      "name": "analysis dots while request pending",
+      "pass": true
+    },
+    {
+      "name": "no extra zoom/search/header buttons",
+      "pass": true
+    },
+    {
+      "name": "analysis animation stops",
+      "pass": true
+    },
+    {
+      "name": "320: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "390: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "768: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "1360: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "letterbox does not submit a crop",
+      "pass": true
+    },
+    {
+      "name": "detected product uses exact original-image coordinates",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 37.5,
+        "h": 80
+      }
+    },
+    {
+      "name": "selection has four adjustable corners",
+      "pass": true
+    },
+    {
+      "name": "resize submits only on release",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 43.3974358974359,
+        "h": 75.07692307692308
+      }
+    },
+    {
+      "name": "keyboard can adjust crop",
+      "pass": true
+    },
+    {
+      "name": "drag uses compositor without mutating list",
+      "pass": true
+    },
+    {
+      "name": "upward drag expands to results only",
+      "pass": true
+    },
+    {
+      "name": "no brand/back/toolbar over full results",
+      "pass": true,
+      "details": {
+        "top": 0,
+        "chrome": "0",
+        "inert": true,
+        "summary": "none"
+      }
+    },
+    {
+      "name": "existing product action preserved",
+      "pass": true
+    },
+    {
+      "name": "price remains unchanged",
+      "pass": true
+    },
+    {
+      "name": "expanded list scrolls without collapsing",
+      "pass": true
+    },
+    {
+      "name": "keyboard collapse resets scroll, keeps image",
+      "pass": true
+    },
+    {
+      "name": "Escape returns to picture without resetting search",
+      "pass": true
+    },
+    {
+      "name": "touch drag on content expands",
+      "pass": true
+    },
+    {
+      "name": "scrolled content does not hand drag to sheet",
+      "pass": true
+    },
+    {
+      "name": "downward drag at list top returns to image",
+      "pass": true
+    },
+    {
+      "name": "large text, short viewport: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "empty state has one honest retry, no false history link",
+      "pass": true
+    },
+    {
+      "name": "link/text results stay full and have an exit",
+      "pass": true
+    },
+    {
+      "name": "chromium/ar: starts in peek",
+      "pass": true
+    },
+    {
+      "name": "analysis dots while request pending",
+      "pass": true
+    },
+    {
+      "name": "no extra zoom/search/header buttons",
+      "pass": true
+    },
+    {
+      "name": "analysis animation stops",
+      "pass": true
+    },
+    {
+      "name": "320: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "390: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "768: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "1360: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "letterbox does not submit a crop",
+      "pass": true
+    },
+    {
+      "name": "detected product uses exact original-image coordinates",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 37.5,
+        "h": 80
+      }
+    },
+    {
+      "name": "selection has four adjustable corners",
+      "pass": true
+    },
+    {
+      "name": "resize submits only on release",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 43.3974358974359,
+        "h": 75.07692307692308
+      }
+    },
+    {
+      "name": "keyboard can adjust crop",
+      "pass": true
+    },
+    {
+      "name": "drag uses compositor without mutating list",
+      "pass": true
+    },
+    {
+      "name": "upward drag expands to results only",
+      "pass": true
+    },
+    {
+      "name": "no brand/back/toolbar over full results",
+      "pass": true,
+      "details": {
+        "top": 0,
+        "chrome": "0",
+        "inert": true,
+        "summary": "none"
+      }
+    },
+    {
+      "name": "existing product action preserved",
+      "pass": true
+    },
+    {
+      "name": "price remains unchanged",
+      "pass": true
+    },
+    {
+      "name": "expanded list scrolls without collapsing",
+      "pass": true
+    },
+    {
+      "name": "keyboard collapse resets scroll, keeps image",
+      "pass": true
+    },
+    {
+      "name": "Escape returns to picture without resetting search",
+      "pass": true
+    },
+    {
+      "name": "touch drag on content expands",
+      "pass": true
+    },
+    {
+      "name": "scrolled content does not hand drag to sheet",
+      "pass": true
+    },
+    {
+      "name": "downward drag at list top returns to image",
+      "pass": true
+    },
+    {
+      "name": "large text, short viewport: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "empty state has one honest retry, no false history link",
+      "pass": true
+    },
+    {
+      "name": "link/text results stay full and have an exit",
+      "pass": true
+    },
+    {
+      "name": "firefox/fr: starts in peek",
+      "pass": true
+    },
+    {
+      "name": "analysis dots while request pending",
+      "pass": true
+    },
+    {
+      "name": "no extra zoom/search/header buttons",
+      "pass": true
+    },
+    {
+      "name": "analysis animation stops",
+      "pass": true
+    },
+    {
+      "name": "320: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "390: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "768: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "1360: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "letterbox does not submit a crop",
+      "pass": true
+    },
+    {
+      "name": "detected product uses exact original-image coordinates",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 37.5,
+        "h": 80
+      }
+    },
+    {
+      "name": "selection has four adjustable corners",
+      "pass": true
+    },
+    {
+      "name": "resize submits only on release",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 43.3974358974359,
+        "h": 75.07692307692308
+      }
+    },
+    {
+      "name": "keyboard can adjust crop",
+      "pass": true
+    },
+    {
+      "name": "drag uses compositor without mutating list",
+      "pass": true
+    },
+    {
+      "name": "upward drag expands to results only",
+      "pass": true
+    },
+    {
+      "name": "no brand/back/toolbar over full results",
+      "pass": true,
+      "details": {
+        "top": 0,
+        "chrome": "0",
+        "inert": true,
+        "summary": "none"
+      }
+    },
+    {
+      "name": "existing product action preserved",
+      "pass": true
+    },
+    {
+      "name": "price remains unchanged",
+      "pass": true
+    },
+    {
+      "name": "expanded list scrolls without collapsing",
+      "pass": true
+    },
+    {
+      "name": "keyboard collapse resets scroll, keeps image",
+      "pass": true
+    },
+    {
+      "name": "Escape returns to picture without resetting search",
+      "pass": true
+    },
+    {
+      "name": "large text, short viewport: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "empty state has one honest retry, no false history link",
+      "pass": true
+    },
+    {
+      "name": "link/text results stay full and have an exit",
+      "pass": true
+    },
+    {
+      "name": "firefox/ar: starts in peek",
+      "pass": true
+    },
+    {
+      "name": "analysis dots while request pending",
+      "pass": true
+    },
+    {
+      "name": "no extra zoom/search/header buttons",
+      "pass": true
+    },
+    {
+      "name": "analysis animation stops",
+      "pass": true
+    },
+    {
+      "name": "320: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 320,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "390: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 390,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "768: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 768,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "1360: image contained and page fits",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "official font stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "fit": "contain",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "targets": [
+          {
+            "w": 48,
+            "h": 48
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 1360,
+            "h": 44
+          }
+        ]
+      }
+    },
+    {
+      "name": "letterbox does not submit a crop",
+      "pass": true
+    },
+    {
+      "name": "detected product uses exact original-image coordinates",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 37.5,
+        "h": 80
+      }
+    },
+    {
+      "name": "selection has four adjustable corners",
+      "pass": true
+    },
+    {
+      "name": "resize submits only on release",
+      "pass": true,
+      "details": {
+        "x": 11.5,
+        "y": 7.5,
+        "w": 43.3974358974359,
+        "h": 75.07692307692308
+      }
+    },
+    {
+      "name": "keyboard can adjust crop",
+      "pass": true
+    },
+    {
+      "name": "drag uses compositor without mutating list",
+      "pass": true
+    },
+    {
+      "name": "upward drag expands to results only",
+      "pass": true
+    },
+    {
+      "name": "no brand/back/toolbar over full results",
+      "pass": true,
+      "details": {
+        "top": 0,
+        "chrome": "0",
+        "inert": true,
+        "summary": "none"
+      }
+    },
+    {
+      "name": "existing product action preserved",
+      "pass": true
+    },
+    {
+      "name": "price remains unchanged",
+      "pass": true
+    },
+    {
+      "name": "expanded list scrolls without collapsing",
+      "pass": true
+    },
+    {
+      "name": "keyboard collapse resets scroll, keeps image",
+      "pass": true
+    },
+    {
+      "name": "Escape returns to picture without resetting search",
+      "pass": true
+    },
+    {
+      "name": "large text, short viewport: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "empty state has one honest retry, no false history link",
+      "pass": true
+    },
+    {
+      "name": "link/text results stay full and have an exit",
+      "pass": true
+    },
+    {
+      "name": "no browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": [],
+  "scope": "Actual results UI, synthetic illustration and provider state; desktop browsers plus Chromium touch input, not physical-device performance."
+}

@@ -6,7 +6,7 @@ describe('whole-application icon architecture gate',()=>{
   it('audits the actual application, including admin, with zero unreviewed exceptions',()=>{
     const report=checkIconContract();
     expect(report.files).toBeGreaterThan(150);
-    expect(report.rawSvg).toBe(4);
+    expect(report.rawSvg).toBe(2); // Canonical icon renderer + audio waveform; Lens now uses CSS geometry.
     expect(report.issues).toEqual([]);
   });
   it.each([

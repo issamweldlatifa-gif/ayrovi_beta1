@@ -52,11 +52,11 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     // Preserve estimates and actions without asserting unverified merchant trust.
     expect(html).not.toContain('Prix vérifiés et marchands fiables');
     expect(html).toContain('Vérifiez le prix et les conditions dans la fiche produit.');
-    expect(html).toContain('Nouvelle recherche');
+    expect(html).toContain('Afficher tous les résultats');
     expect(html).toContain('Prix final estimé');
     expect(html).toContain('Voir le produit');
     // ROI / interactive controls keep image visible
-    expect(html).toContain('Sélectionner');
+    expect(html).toContain('Sélectionner un produit');
   });
 
   it('sorts by match and shows the best first with its % badge', () => {
@@ -117,7 +117,8 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(camera).toContain('rounded-2xl bg-transparent');
     expect(camera).not.toContain("tr('Code', 'رمز')");
     // Reference literal (2026-09-18): in shell mode NOTHING floats over the photo — controls live in the sheet strip
-    expect(irl).toContain("{!shell && (");
+    expect(irl).not.toContain("tr('Zoomer'");
+    expect(camera).toContain('{!(photoUrl && overlay) && <header');
   });
 
   it('keeps the results view in the correct flow stage (candidates), not the first page', () => {

@@ -2,6 +2,7 @@
 import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
 import { LiveCamera } from '../client/src/ayrovix/components/LiveCamera';
 import { LensLauncher } from '../client/src/ayrovix/components/LensLauncher';
 import { LensAccess, readLensConsent, rememberLensConsent } from '../client/src/ayrovix/components/LensHelp';
@@ -88,7 +89,7 @@ describe('Lens entry — real controls, lifecycle and explicit policy',()=>{
   await act(async()=>root.render(null));deliver!(new Blob(['test'],{type:'image/jpeg'}));expect(props.onPhoto).not.toHaveBeenCalled();expect(track.stop).toHaveBeenCalledTimes(1);
  });
  it('keeps the existing image/result shell and does not start Live over a photo',async()=>{
-  const props=callbacks(),close=vi.fn();await render(<LiveCamera {...props} liveEnabled photoUrl="blob:test" overlay={<div>Existing results</div>} onPhotoClose={close}/>);
+  const props=callbacks(),close=vi.fn();await render(<LiveCamera {...props} liveEnabled photoUrl="blob:test" overlay={<InteractiveLensResults shell previewUrl="blob:test" fallbackImage={null} view={{queryLabel:"Existing results",list:[],eventId:"test"}} onReset={close} onChoose={()=>{}}/>} onPhotoClose={close}/>);
   expect(host.textContent).toContain('Existing results');expect(host.querySelector('.lens-camera-controls')).toBeNull();expect(host.querySelector('[aria-label="Aide et règles de Lens"]')).toBeNull();
   await press('Retour à la caméra');expect(close).toHaveBeenCalledTimes(1);expect(props.onClose).not.toHaveBeenCalled();expect(mocks.start).not.toHaveBeenCalled();
  });

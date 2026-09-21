@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { CustomerIdentity } from '../client/src/design/editorial/CustomerIdentity';
 import { NavigationHistoryProvider, useNavigationHistory } from '../client/src/navigation/NavigationHistory';
+import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
 import { LiveCamera } from '../client/src/ayrovix/components/LiveCamera';
 import { LensAccess, readLensConsent, rememberLensConsent } from '../client/src/ayrovix/components/LensHelp';
 const state={mediaRequests:0,stopped:0,photos:[] as number[],links:[] as string[],codes:[] as string[],exits:0};(window as any).lensEntryTest=state;
@@ -17,7 +18,7 @@ function Fixture(){
  const close=()=>{state.exits++;nav.back();};
  return <><button data-open onClick={()=>nav.pushLayer({id:'app:lens'})}>Ouvrir Lens / فتح Lens</button>{nav.has('app:lens')&&(accepted?<LiveCamera
   onPhoto={file=>{state.photos.push(file.size);setPhoto(URL.createObjectURL(file));}}
-  photoUrl={photo} overlay={photo?<div style={{background:'#000',color:'#fff',height:'100%',paddingTop:100}}>Existing result surface — outside this phase</div>:null}
+  photoUrl={photo} overlay={photo?<InteractiveLensResults shell previewUrl={photo} fallbackImage={null} view={{queryLabel:null,list:[],eventId:"fixture"}} onChoose={()=>{}} onReset={()=>{if(photo)URL.revokeObjectURL(photo);setPhoto(null);}}/>:null}
   onPhotoClose={()=>{if(photo)URL.revokeObjectURL(photo);setPhoto(null);}}
   onQrUrl={u=>state.links.push(u)} onBarcode={c=>state.codes.push(c)} onCodeText={c=>state.codes.push(c)} onLink={u=>state.links.push(u)}
   onClose={close} onMenu={()=>{}} onCameraFailed={()=>{throw Error('Synthetic camera failed');}} liveEnabled={new URLSearchParams(location.search).get('live')!=='off'}

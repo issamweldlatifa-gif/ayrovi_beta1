@@ -1,10 +1,13 @@
 import { MerchantRating } from './MerchantRating';
-import { Plus, Minus } from '../../components/QatafoIcons';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { Loader2, ArrowUpRight, Camera, Image as ImageIcon, ShieldCheck, Star, X, RefreshCw } from '../../components/QatafoIcons';
+import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, ShieldCheck } from '../../components/QatafoIcons';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
+
+import { containedImageRect, pointInImage, detectedBox, selectionForPoint, resizeSelection, type LensBox, type Corner } from '../services/lensSelectionGeometry';
+import { useLensResultsSheet } from './useLensResultsSheet';
+import './lens-results.css';
 
 export interface InteractiveLensView {
   queryLabel: string | null;
@@ -77,300 +80,85 @@ const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
   </span>
 );
 
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, customerIntent, shell }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell }) => {
   const { tr, direction } = useLocale();
   const visible = useMemo(() => {
     const strict = view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
-    if (strict.length) return strict;
-    // D2-10 lenient PENDING — show "Prix à confirmer" instead of 0 results when lens has matches without price
-    return view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
+    return strict.length ? strict : view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
   }, [view.list]);
-  const best = visible[0];
-  const name = view.queryLabel || best?.title || tr('Produit détecté par AYROVIX', 'منتج اكتشفته AYROVIX');
+  const name = view.queryLabel || visible[0]?.title || tr('Votre image', 'صورتك');
   const detected = view.detectedPrice;
-
-  const [sheet, setSheet] = useState<'peek'|'full'>('peek');
-  const sheetRef = useRef<HTMLDivElement>(null);
-  const startY = useRef<number | null>(null);
-  // Phase 1: peek 38% (was 22%) so results are immediately visible without pull — product stays visible above
-  // Drawer vrai (référence) : suit le doigt, aimante entre peek (38 %) et page complète (100 %).
-  // Tirer vers le bas sous le peek = fermer le tiroir → retour à la caméra Lens (onReset).
-  const [dragH, setDragH] = useState<number | null>(null);
-  const dragDy = useRef(0);
-  const dragHeight = useRef<number | null>(null);
-  const mouseDragCleanup = useRef<(() => void) | null>(null);
-  useEffect(() => () => mouseDragCleanup.current?.(), []);
-  const sheetGeom = () => {
-    const host = sheetRef.current?.parentElement;
-    const ch = host?.clientHeight ?? window.innerHeight;
-    return { ch, peek: Math.round(ch * 0.38) };
-  };
-  const dragStart = (clientY: number) => { startY.current = clientY; dragDy.current = 0; dragHeight.current = null; };
-  const dragMove = (clientY: number) => {
-    if (startY.current == null) return;
-    const dy = startY.current - clientY;
-    dragDy.current = dy;
-    const { ch, peek } = sheetGeom();
-    const base = sheet === 'full' ? ch : peek;
-    // petit caoutchouc aux bornes, jamais sous 0
-    const next = Math.max(0, Math.min(ch + 36, base + dy));
-    dragHeight.current = next;
-    setDragH(next);
-  };
-  const dragEnd = () => {
-    startY.current = null;
-    const { ch, peek } = sheetGeom();
-    const h = dragHeight.current;
-    dragHeight.current = null;
-    setDragH(null);
-    if (h == null) return;
-    if (sheet === 'full') {
-      if (h < ch * 0.74) setSheet('peek');
-    } else if (h < peek * 0.55) {
-      onReset(); // tiré vers le bas sous le peek → on retourne dans Lens (caméra)
-    } else if (h > peek * 1.35) {
-      setSheet('full');
-    }
-  };
-  const onHandleTouchStart = (e: React.TouchEvent) => { if ((e.target as HTMLElement).closest('button,a,input,select')) return; if(e.touches[0]) dragStart(e.touches[0].clientY); };
-  const onHandleTouchMove = (e: React.TouchEvent) => { if(e.touches[0]) dragMove(e.touches[0].clientY); };
-  const onHandleTouchEnd = () => { dragEnd(); };
-
-  const [scale, setScale] = useState(1);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const panStart = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
-  const lastDist = useRef<number | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [imgBox, setImgBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-
-  // GOOGLE LENS LEVEL: instant tap selection — no freehand lasso, ultra-light
-  const [selectedBox, setSelectedBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
-  const [showPulse, setShowPulse] = useState(false);
-  const tapStart = useRef<{ x: number; y: number; t: number } | null>(null);
-
-  const resetView = () => { setScale(1); setOffset({ x: 0, y: 0 }); };
-  const clearSelection = useCallback(() => {
-    setSelectedBox(null);
-    setShowPulse(false);
-  }, []);
-
-  const updateImgBox = useCallback(() => {
-    const container = containerRef.current;
-    const img = imgRef.current;
-    if (!container || !img) { setImgBox(null); return; }
-    const cRect = container.getBoundingClientRect();
-    if (shell && img.naturalWidth && img.naturalHeight) {
-      // object-cover : le contenu visible déborde du conteneur — rect réel = image centrée, échelle max, + pan/zoom
-      const k = Math.max(cRect.width / img.naturalWidth, cRect.height / img.naturalHeight) * scale;
-      const w = img.naturalWidth * k;
-      const h = img.naturalHeight * k;
-      setImgBox({ x: (cRect.width - w) / 2 + offset.x, y: (cRect.height - h) / 2 + offset.y, w, h });
-      return;
-    }
-    const iRect = img.getBoundingClientRect();
-    setImgBox({ x: iRect.left - cRect.left, y: iRect.top - cRect.top, w: iRect.width, h: iRect.height });
-  }, [shell, scale, offset.x, offset.y]);
-
+  const drawer = useLensResultsSheet(Boolean(previewUrl));
+  const imageRef = useRef<HTMLImageElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLButtonElement>(null);
+  const [imgBox, setImgBox] = useState<LensBox | null>(null);
+  const [selectedBox, setSelectedBox] = useState<LensBox | null>(null);
+  const selectedRef = useRef<LensBox | null>(null);
+  const requestEpoch = useRef(0);
+  const tap = useRef<{ x: number; y: number; id: number } | null>(null);
+  const resizing = useRef<{ box: LensBox; corner: Corner; x: number; y: number } | null>(null);
+  const products = useMemo(() => (detectedProducts || []).flatMap(p => {
+    const box = detectedBox(p.box); return box ? [{ ...p, box }] : [];
+  }), [detectedProducts]);
+  const select = (box: LensBox | null) => { selectedRef.current = box; setSelectedBox(box); };
+  const clearSelection = () => select(null);
   useEffect(() => {
-    updateImgBox();
-    const onResize = () => updateImgBox();
-    window.addEventListener('resize', onResize);
-    const img = imgRef.current;
-    if (img) { img.addEventListener('load', updateImgBox); if (img.complete) updateImgBox(); }
-    return () => { window.removeEventListener('resize', onResize); if (img) img.removeEventListener('load', updateImgBox); };
-  }, [previewUrl, updateImgBox, scale, offset]);
-  useEffect(() => { const id = requestAnimationFrame(updateImgBox); return () => cancelAnimationFrame(id); }, [scale, offset, updateImgBox]);
-
-  const clientToPercent = useCallback((clientX: number, clientY: number): { x: number; y: number } | null => {
-    const img = imgRef.current;
-    if (!img) return null;
-    const rect = img.getBoundingClientRect();
-    if (rect.width < 10 || rect.height < 10) return null;
-    const x = ((clientX - rect.left) / rect.width) * 100;
-    const y = ((clientY - rect.top) / rect.height) * 100;
-    return { x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) };
-  }, []);
-  const isInsideImage = useCallback((clientX: number, clientY: number) => {
-    const img = imgRef.current;
-    if (!img) return false;
-    const r = img.getBoundingClientRect();
-    return clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom;
-  }, []);
-
-  // Crop selected BOX to File — 18% pad, instant (no path calc)
-  const cropBoxToFile = useCallback(async (box: { x:number; y:number; w:number; h:number }): Promise<File | null> => {
-    if (!previewUrl) return null;
-    try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = previewUrl;
-      await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(new Error('load')); });
-      const natW = img.naturalWidth, natH = img.naturalHeight;
-      if (!natW || !natH) return null;
-      let x = (box.x/100)*natW, y = (box.y/100)*natH, w = (box.w/100)*natW, h = (box.h/100)*natH;
-      if (w < 20 || h < 20) return null;
-      const pad = Math.max(24, Math.max(w, h) * 0.18);
-      let padX = x - pad, padY = y - pad, padW = w + pad*2, padH = h + pad*2;
-      if (padX < 0) { padW += padX; padX = 0; }
-      if (padY < 0) { padH += padY; padY = 0; }
-      if (padX + padW > natW) padW = natW - padX;
-      if (padY + padH > natH) padH = natH - padY;
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(padW); canvas.height = Math.round(padH);
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return null;
-      ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(img, padX, padY, padW, padH, 0, 0, padW, padH);
-      const blob: Blob | null = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.85));
-      if (!blob) return null;
-      return new File([blob], 'lens-select.jpg', { type: 'image/jpeg' });
-    } catch { return null; }
+    select(null); drawer.snap(!previewUrl);
+    return () => { requestEpoch.current++; };
   }, [previewUrl]);
+  useEffect(() => {
+    if (!selectedRef.current && products.length === 1) select(products[0].box);
+  }, [products]);
+  const measure = useCallback(() => {
+    const image = imageRef.current, stage = stageRef.current;
+    if (!image || !stage) return;
+    setImgBox(containedImageRect(stage.clientWidth, stage.clientHeight, image.naturalWidth, image.naturalHeight));
+  }, []);
+  useEffect(() => {
+    measure();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
+    if (stageRef.current) observer?.observe(stageRef.current);
+    window.addEventListener('resize', measure);
+    return () => { observer?.disconnect(); window.removeEventListener('resize', measure); };
+  }, [measure, previewUrl]);
 
-  // AYROVIX ULTRA-PRECISE TAP: every region of pants/shoes selectable — no dead zone
-  // Sleeve→shirt, any pants pixel→pants, any shoe pixel→shoe, instant free search on new tap
-  // PERFORMANCE: tap = fast local, no AI per movement
-  const findBoxForTap = useCallback((tap: {x:number;y:number}): { x:number;y:number;w:number;h:number } => {
-    if (detectedProducts && detectedProducts.length) {
-      // Expanded hit-test 9% each side — forgiving for edges, picks smallest containing box (shoe over pants)
-      const hits: Array<{box:[number,number,number,number], area:number, dist:number}> = [];
-      for (const prod of detectedProducts) {
-        if (!prod.box) continue;
-        const [bx,by,bw,bh]=prod.box;
-        const bx0=bx*100, by0=by*100, bx1=(bx+bw)*100, by1=(by+bh)*100;
-        const pad=9;
-        const ex0=Math.max(0,bx0-pad), ey0=Math.max(0,by0-pad), ex1=Math.min(100,bx1+pad), ey1=Math.min(100,by1+pad);
-        const inside = tap.x >= ex0 && tap.x <= ex1 && tap.y >= ey0 && tap.y <= ey1;
-        if (inside) {
-          const area=bw*bh;
-          const cx=(bx0+bx1)/2, cy=(by0+by1)/2;
-          const dist=Math.hypot(tap.x-cx, tap.y-cy);
-          hits.push({box: prod.box, area, dist});
-        }
-      }
-      if (hits.length) {
-        hits.sort((a,b)=> a.area - b.area || a.dist - b.dist);
-        const [bx,by,bw,bh]=hits[0].box;
-        return { x: bx*100, y: by*100, w: bw*100, h: bh*100 };
-      }
-      // No expanded hit → nearest center with 28% forgiving radius (covers far edge taps)
-      let best:{box:[number,number,number,number], dist:number} | null=null;
-      for (const prod of detectedProducts) {
-        if (!prod.box) continue;
-        const [bx,by,bw,bh]=prod.box;
-        const cx=(bx*100+(bx+bw)*100)/2, cy=(by*100+(by+bh)*100)/2;
-        const dist=Math.hypot(tap.x-cx, tap.y-cy);
-        if (!best || dist < best.dist) best={box: prod.box, dist};
-      }
-      if (best && best.dist < 28) {
-        const [bx,by,bw,bh]=best.box;
-        return { x: bx*100, y: by*100, w: bw*100, h: bh*100 };
-      }
-    }
-    // Fallback: 26% centered box — larger for better visibility, never dead
-    const size=26;
-    return { x: Math.max(0, tap.x - size/2), y: Math.max(0, tap.y - size/2), w: Math.min(size, 100 - Math.max(0, tap.x - size/2)), h: Math.min(size, 100 - Math.max(0, tap.y - size/2)) };
-  }, [detectedProducts]);
-
-  const triggerTapSearch = useCallback(async (box: { x:number;y:number;w:number;h:number }) => {
-    setShowPulse(true); setTimeout(()=> setShowPulse(false), 550);
-    // D2-8: prefer backend ROI crop (no canvas, saves 80-150ms + 60KB) — backend sharp extracts with 18% pad
-    if (onRoiSearch) {
-      onRoiSearch(box);
-      return;
-    }
-    if (!onLassoSearch) return;
-    const t0 = performance.now();
-    const file = await cropBoxToFile(box);
-    const cropMs = Math.round(performance.now() - t0);
-    if (file) onLassoSearch(file, cropMs);
-  }, [onRoiSearch, onLassoSearch, cropBoxToFile]);
-
-  const handleTap = useCallback((clientX:number, clientY:number) => {
-    if (scale > 1) return; // pan mode when zoomed
-    if (!isInsideImage(clientX, clientY)) return;
-    const pt = clientToPercent(clientX, clientY);
-    if (!pt) return;
-    if (sheet !== 'peek') setSheet('peek');
-    const box = findBoxForTap(pt);
-    if (!box) return;
-    setSelectedBox(box);
-    triggerTapSearch(box);
-  }, [scale, isInsideImage, clientToPercent, findBoxForTap, triggerTapSearch, sheet]);
-
-  // Pointer handlers — ultra-light: only tap + pinch/pan, no lasso path
-  const onTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length === 2) {
-      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      lastDist.current = d;
-      return;
-    }
-    if (e.touches.length === 1) {
-      const t = e.touches[0];
-      tapStart.current = { x: t.clientX, y: t.clientY, t: Date.now() };
-      if (scale > 1) {
-        panStart.current = { x: t.clientX, y: t.clientY, ox: offset.x, oy: offset.y };
-        setIsPanning(true);
-      }
-    }
+  const search = async (box: LensBox) => {
+    const epoch = ++requestEpoch.current;
+    select(box);
+    if (onRoiSearch) { onRoiSearch(box); return; }
+    // Legacy client-crop fallback; late image/encoder callbacks cannot start a stale search.
+    if (!onLassoSearch || !previewUrl) return;
+    const started = performance.now();
+    try {
+      const image = new Image(); image.crossOrigin = 'anonymous';
+      const loaded = new Promise<void>((resolve, reject) => { image.onload = () => resolve(); image.onerror = reject; });
+      image.src = previewUrl; await loaded;
+      if (epoch !== requestEpoch.current) return;
+      const x = box.x / 100 * image.naturalWidth, y = box.y / 100 * image.naturalHeight;
+      const w = box.w / 100 * image.naturalWidth, h = box.h / 100 * image.naturalHeight;
+      const pad = Math.max(24, Math.max(w, h) * .18);
+      const sx = Math.max(0, x - pad), sy = Math.max(0, y - pad);
+      const sw = Math.min(image.naturalWidth, x + w + pad) - sx, sh = Math.min(image.naturalHeight, y + h + pad) - sy;
+      const canvas = document.createElement('canvas'); canvas.width = Math.max(1, Math.round(sw)); canvas.height = Math.max(1, Math.round(sh));
+      const context = canvas.getContext('2d'); if (!context) return;
+      context.drawImage(image, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/jpeg', .85));
+      if (blob && epoch === requestEpoch.current) onLassoSearch(new File([blob], 'lens-select.jpg', { type: 'image/jpeg' }), Math.round(performance.now() - started));
+    } catch { /* Keep current results if the local crop is unavailable. */ }
   };
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && lastDist.current != null) {
-      const d = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
-      const factor = d / lastDist.current;
-      setScale(s => Math.min(3, Math.max(1, s * factor)));
-      lastDist.current = d;
-      return;
-    }
-    if (e.touches.length === 1 && panStart.current && scale > 1) {
-      const dx = e.touches[0].clientX - panStart.current.x;
-      const dy = e.touches[0].clientY - panStart.current.y;
-      setOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy });
-      if (e.cancelable) e.preventDefault();
-    }
+  const tapImage = (x: number, y: number) => {
+    const rect = stageRef.current?.getBoundingClientRect();
+    if (!rect || !imgBox) return;
+    const point = pointInImage(x - rect.left, y - rect.top, imgBox);
+    if (point) void search(selectionForPoint(point, products.map(p => p.box)));
   };
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (e.touches.length === 0) {
-      lastDist.current = null;
-      if (panStart.current) { panStart.current = null; setIsPanning(false); return; }
-      const start = tapStart.current;
-      tapStart.current = null;
-      if (!start) return;
-      const end = e.changedTouches[0];
-      if (!end) return;
-      const dx = end.clientX - start.x, dy = end.clientY - start.y;
-      const dist = Math.hypot(dx, dy);
-      const dur = Date.now() - start.t;
-      if (dist < 12 && dur < 400) {
-        handleTap(end.clientX, end.clientY);
-      }
-    }
-  };
-  const onMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    tapStart.current = { x: e.clientX, y: e.clientY, t: Date.now() };
-    if (scale > 1) {
-      panStart.current = { x: e.clientX, y: e.clientY, ox: offset.x, oy: offset.y };
-      setIsPanning(true);
-    }
-  };
-  const onMouseMove = (e: React.MouseEvent) => {
-    if (panStart.current && scale > 1) {
-      const dx = e.clientX - panStart.current.x, dy = e.clientY - panStart.current.y;
-      setOffset({ x: panStart.current.ox + dx, y: panStart.current.oy + dy });
-    }
-  };
-  const onMouseUp = (e: React.MouseEvent) => {
-    if (panStart.current) { panStart.current = null; setIsPanning(false); return; }
-    const start = tapStart.current; tapStart.current = null;
-    if (!start) return;
-    const dx = e.clientX - start.x, dy = e.clientY - start.y;
-    if (Math.hypot(dx, dy) < 8 && Date.now() - start.t < 400) handleTap(e.clientX, e.clientY);
-  };
-  const onMouseLeave = () => { panStart.current = null; setIsPanning(false); tapStart.current = null; };
-
+  const cornerLabel = (corner: Corner) => ({
+    nw: tr('Ajuster le coin supérieur gauche', 'ضبط الزاوية العلوية اليسرى'),
+    ne: tr('Ajuster le coin supérieur droit', 'ضبط الزاوية العلوية اليمنى'),
+    sw: tr('Ajuster le coin inférieur gauche', 'ضبط الزاوية السفلية اليسرى'),
+    se: tr('Ajuster le coin inférieur droit', 'ضبط الزاوية السفلية اليمنى'),
+  }[corner]);
   const priceLine = (c: AyrovixCandidate) => {
     const isPending = c.priceVerificationStatus === 'PENDING_MANUAL' || (c.price == null && c.priceTnd == null);
     if (isPending && c.priceTnd == null) {
@@ -388,119 +176,57 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
   };
 
   return (
-    <div className={`relative flex ${shell ? 'h-full' : 'h-[100dvh]'} w-full flex-col overflow-hidden bg-ink-deep`} dir={direction}>
-      <style>{`@keyframes pulseBox{0%{transform:scale(1);opacity:1}50%{transform:scale(1.03);opacity:0.95}100%{transform:scale(1);opacity:1}}`}</style>
-      <div
-        ref={containerRef}
-        className={`relative flex-1 overflow-hidden ${shell ? 'bg-black' : 'bg-surface'} select-none`}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onMouseLeave={onMouseLeave}
-        style={{ cursor: isPanning ? 'grabbing' : scale > 1 ? 'grab' : 'pointer', touchAction: scale > 1 ? 'none' : 'pan-y' }}
-      >
-        <div className={`absolute inset-0 flex justify-center ${shell ? 'items-center' : 'items-start pt-2 sm:pt-3'}`}>
-          <div className="relative h-full w-full flex items-center justify-center">
-            {previewUrl ? (
-              <img ref={imgRef} src={previewUrl} alt={name} draggable={false} className={shell ? 'h-full w-full object-cover select-none' : 'max-h-[calc(100%_-_8px)] max-w-full object-contain select-none'} style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`, transition: isPanning ? 'none' : 'transform 0.2s' }} onLoad={updateImgBox} />
-            ) : (
-              <div className="h-full w-full bg-[#111] grid place-items-center text-white/50"><ImageIcon size={40} /></div>
-            )}
-          </div>
-          {isLoading && !selectedBox && (
-            <div className="absolute inset-0 pointer-events-none" aria-label={tr('Analyse en cours', 'جارٍ التحليل')}>
-              <span className="absolute h-2.5 w-2.5 animate-bounce rounded-full bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.25)]" style={{left:'22%', top:'28%', animationDelay:'-0.3s'}} />
-              <span className="absolute h-2.5 w-2.5 animate-bounce rounded-full bg-white/90 shadow-[0_0_0_4px_rgba(255,255,255,0.2)]" style={{left:'68%', top:'42%', animationDelay:'-0.15s'}} />
-              <span className="absolute h-2.5 w-2.5 animate-bounce rounded-full bg-white/80 shadow-[0_0_0_4px_rgba(255,255,255,0.15)]" style={{left:'45%', top:'62%'}} />
-            </div>
-          )}
+    <div ref={drawer.rootRef} className={`lens-results ${shell ? 'lens-results-shell' : ''}`} data-expanded={drawer.full} data-has-image={Boolean(previewUrl)} dir={direction}
+      onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (drawer.full && previewUrl) { drawer.snap(false); handleRef.current?.focus(); } else onReset(); } }}>
+      <header className="lens-results-chrome" inert={drawer.full && Boolean(previewUrl)} aria-hidden={drawer.full && previewUrl ? true : undefined}>
+        <button type="button" aria-label={tr('Retour à la caméra', 'العودة إلى الكاميرا')} onClick={onReset}><ArrowLeft size={22} className={direction === 'rtl' ? 'rotate-180' : ''} /></button>
+        <span dir="ltr"><ScanSearch size={22} /> Lens</span>
+      </header>
+      {previewUrl && <div ref={stageRef} className="lens-results-image" inert={drawer.full} aria-hidden={drawer.full ? true : undefined}>
+        <img ref={imageRef} src={previewUrl} alt={tr('Image à analyser', 'الصورة المراد تحليلها')} draggable={false} onLoad={measure} />
+        <div className="lens-image-target" role="button" tabIndex={drawer.full ? -1 : 0} aria-label={tr('Sélectionner un produit dans l’image', 'تحديد منتج في الصورة')}
+          onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); void search(selectionForPoint({ x: 50, y: 50 }, products.map(p => p.box))); } }}
+          onPointerDown={e => { if (!e.isPrimary || e.button !== 0) return; tap.current = { x: e.clientX, y: e.clientY, id: e.pointerId }; e.currentTarget.setPointerCapture(e.pointerId); }}
+          onPointerUp={e => { const start = tap.current; tap.current = null; if (start?.id === e.pointerId && Math.hypot(e.clientX - start.x, e.clientY - start.y) < 10) tapImage(e.clientX, e.clientY); }}
+          onPointerCancel={() => { tap.current = null; }} />
+        {imgBox && <div className="lens-image-coordinates" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
+          {selectedBox && <div className="lens-selection" data-visualization="lens-detections" style={{ left: `${selectedBox.x}%`, top: `${selectedBox.y}%`, width: `${selectedBox.w}%`, height: `${selectedBox.h}%` }}>
+            {(['nw', 'ne', 'sw', 'se'] as Corner[]).map(corner => <button type="button" key={corner} className={`lens-selection-corner lens-corner-${corner}`} aria-label={cornerLabel(corner)}
+              onPointerDown={e => { if (!e.isPrimary || e.button !== 0) return; e.stopPropagation(); resizing.current = { box: selectedBox, corner, x: e.clientX, y: e.clientY }; e.currentTarget.setPointerCapture(e.pointerId); }}
+              onPointerMove={e => { const d = resizing.current; if (d && e.currentTarget.hasPointerCapture(e.pointerId)) select(resizeSelection(d.box, d.corner, (e.clientX - d.x) / imgBox.w * 100, (e.clientY - d.y) / imgBox.h * 100)); }}
+              onPointerUp={() => { if (resizing.current && selectedRef.current) void search(selectedRef.current); resizing.current = null; }}
+              onPointerCancel={() => { if (resizing.current) select(resizing.current.box); resizing.current = null; }}
+              onKeyDown={e => { const keys: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }; const delta = keys[e.key]; if (!delta) return; e.preventDefault(); const k = e.shiftKey ? 5 : 1; select(resizeSelection(selectedRef.current || selectedBox, corner, delta[0] * k, delta[1] * k)); }}
+              onKeyUp={e => { if (e.key.startsWith('Arrow') && selectedRef.current) void search(selectedRef.current); }}><i aria-hidden="true" /></button>)}
+          </div>}
+          {products.map((product, i) => <button type="button" key={`${product.name}-${i}`} className="lens-product-dot" aria-label={tr(`Sélectionner : ${product.name}`, `تحديد: ${product.name}`)}
+            style={{ left: `${product.box.x + product.box.w / 2}%`, top: `${product.box.y + product.box.h / 2}%` }} onClick={() => void search(product.box)}><i aria-hidden="true" /></button>)}
+          {isLoading && <div className="lens-analysis-dots" aria-hidden="true" style={selectedBox ? { left: `${selectedBox.x}%`, top: `${selectedBox.y}%`, width: `${selectedBox.w}%`, height: `${selectedBox.h}%` } : undefined}>
+            {[0, 1, 2, 3, 4].map(i => <i key={i} style={{ '--dot-index': i } as React.CSSProperties} />)}
+          </div>}
+        </div>}
+      </div>}
+      <section className="lens-results-sheet" aria-label={tr('Résultats Lens', 'نتائج Lens')}>
+        {previewUrl && <button ref={handleRef} type="button" className="lens-sheet-handle" aria-label={drawer.full ? tr('Revenir à l’image', 'العودة إلى الصورة') : tr('Afficher tous les résultats', 'عرض كل النتائج')} aria-expanded={drawer.full} aria-controls="lens-result-list"
+          onPointerDown={e => { if (!e.isPrimary || e.button !== 0) return; drawer.skipClick.current = false; drawer.begin(e.clientY); e.currentTarget.setPointerCapture(e.pointerId); }}
+          onPointerMove={e => { if (e.currentTarget.hasPointerCapture(e.pointerId)) drawer.move(e.clientY); }}
+          onPointerUp={() => drawer.end()} onPointerCancel={() => drawer.end(true)}
+          onClick={() => { if (drawer.skipClick.current) { drawer.skipClick.current = false; return; } drawer.snap(!drawer.full); }}
+          onKeyDown={e => { if (['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) { e.preventDefault(); drawer.snap(e.key === 'ArrowUp' || e.key === 'Home'); } }}><span aria-hidden="true" /></button>}
+        <div className="lens-sheet-summary" aria-hidden={drawer.full && previewUrl ? true : undefined}>
+          {previewUrl && <img src={previewUrl} alt="" draggable={false} />}
+          <div><h3>{tr('Résultats Lens', 'نتائج Lens')}{!isLoading && visible.length > 0 ? ` · ${visible.length}` : ''}</h3>
+            <p>{isLoading ? tr('Analyse en cours…', 'جارٍ التحليل…') : name}</p></div>
         </div>
-
-        {/* GOOGLE LENS LEVEL: instant box highlight — 1 rect, no heavy path */}
-        {imgBox && selectedBox && (
-          <div className="absolute pointer-events-none" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
-            <svg data-visualization="lens-detections" aria-hidden="true" focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
-              {/* dim outside selected */}
-              <path d={`M0 0 H100 V100 H0 Z M${selectedBox.x} ${selectedBox.y} H${selectedBox.x+selectedBox.w} V${selectedBox.y+selectedBox.h} H${selectedBox.x} Z`} fill="rgba(0,0,0,0.38)" fillRule="evenodd" />
-              {/* white frame */}
-              <rect x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h} fill="rgba(255,255,255,0.06)" stroke="white" strokeWidth="0.85" rx="1" vectorEffect="non-scaling-stroke" style={showPulse ? { animation: 'pulseBox 0.55s ease' } : undefined} />
-              <rect x={selectedBox.x} y={selectedBox.y} width={selectedBox.w} height={selectedBox.h} fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.6" rx="1" vectorEffect="non-scaling-stroke" style={{ filter: 'blur(0.9px)' }} />
-            </svg>
-          </div>
-        )}
-
-        {/* idle: Google Lens dots — minimal, not full boxes */}
-        {imgBox && detectedProducts && detectedProducts.length > 1 && !selectedBox && (
-          <div className="absolute pointer-events-none" style={{ left: imgBox.x, top: imgBox.y, width: imgBox.w, height: imgBox.h }}>
-            <svg data-visualization="lens-detections" aria-hidden="true" focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full overflow-visible">
-              {detectedProducts.map((p,i)=> p.box ? (
-                <g key={i}>
-                  {/* subtle dot at center — Google Lens style */}
-                  <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="1.1" fill="white" opacity="0.9" />
-                  <circle cx={(p.box[0]+p.box[2]/2)*100} cy={(p.box[1]+p.box[3]/2)*100} r="2.2" fill="none" stroke="white" strokeWidth="0.25" opacity="0.5" className="animate-pulse" />
-                </g>
-              ) : null)}
-            </svg>
-          </div>
-        )}
-
-        {!shell && (
-        <div className={`absolute left-2 right-2 top-12 flex items-center justify-between pointer-events-none`}>
-          {/* shell: icônes blanches à intérieur transparent posées directement sur l'image, comme la référence */}
-          <div className="pointer-events-auto flex gap-1.5 items-center">
-            <span className="hidden">Sélectionner</span>
-            {selectedBox && (
-              <button type="button" onClick={clearSelection} className="flex items-center gap-1 rounded-control border border-white/20 bg-black/60 px-3 py-1.5 text-xs font-bold text-white backdrop-blur"><X size={12} /> {tr('Effacer', 'مسح')}</button>
-            )}
-          </div>
-          <div className="pointer-events-auto flex gap-1.5">
-            <button type="button" aria-label={tr('Zoomer', 'تكبير')} onClick={() => setScale(s => Math.min(3, s + 0.3))} className="grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur"><Plus size={18} /></button>
-            <button type="button" aria-label={tr('Dézoomer', 'تصغير')} onClick={() => setScale(s => Math.max(1, s - 0.3))} className="grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur"><Minus size={18} /></button>
-            <button type="button" aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} onClick={() => { resetView(); clearSelection(); }} className="grid h-11 w-11 place-items-center rounded-control border border-white/20 bg-black/60 text-white backdrop-blur"><RefreshCw size={14} /></button>
-          </div>
-        </div>
-        )}
-
-        <div className={`absolute bottom-[calc(38%+12px)] left-1/2 -translate-x-1/2 rounded-control px-3 py-1.5 text-xs font-medium text-center max-w-[92%] leading-tight ${shell ? 'bg-black/55 text-white backdrop-blur' : 'bg-black/60 text-white/90 backdrop-blur'}`}>
-          {selectedBox ? tr('Produit sélectionné • Touchez un autre', 'تم التحديد • المس منتجا آخر') : tr('Touchez un produit', 'المس منتجًا')}
-          {!selectedBox && scale === 1 ? ` • ${tr('Pincez pour zoomer', 'قرّب بأصابعك')}` : ''}
-        </div>
-      </div>
-
-      <div ref={sheetRef} className={`absolute bottom-0 left-0 right-0 flex flex-col bg-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] ${sheet === 'full' && dragH == null ? 'rounded-none' : 'rounded-none'} overflow-hidden`} style={{ height: dragH != null ? `${dragH}px` : sheet === 'full' ? '100%' : '38%', transition: dragH == null ? 'height 0.25s ease' : 'none' }}>
-        <div className={`flex shrink-0 flex-col items-center gap-2 border-b border-line bg-white py-2 cursor-grab active:cursor-grabbing ${sheet === 'full' ? 'rounded-none' : 'rounded-none'}`} onTouchStart={onHandleTouchStart} onTouchMove={onHandleTouchMove} onTouchEnd={onHandleTouchEnd} onMouseDown={e => { if ((e.target as HTMLElement).closest('button,a,input,select')) return; mouseDragCleanup.current?.(); dragStart(e.clientY); const onMove = (ev: MouseEvent) => dragMove(ev.clientY); const cleanup = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); mouseDragCleanup.current = null; }; const onUp = () => { cleanup(); dragEnd(); }; mouseDragCleanup.current = cleanup; window.addEventListener('mousemove', onMove); window.addEventListener('mouseup', onUp); }}>
-          <span className="h-1.5 w-10 rounded-full bg-black/15" />
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between pl-2 pr-2">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-extrabold text-ink leading-tight break-words">{tr('Résultats Lens', 'نتائج Lens')} • {visible.length}</h3>
-              <p className="text-xs font-medium text-muted break-words line-clamp-2 leading-snug">{name}</p>
-              {previewUrl && <p className="text-xs font-medium text-muted/70 break-words">{tr('Votre image ci-dessus — touchez pour sélectionner', 'صورتك أعلاه — المس للتحديد')}</p>}
-            </div>
-            <div className="flex gap-1.5 shrink-0 flex-wrap items-center justify-end">
-              {shell && selectedBox && (
-                <button type="button" onClick={clearSelection} className="grid h-8 place-items-center shrink-0 rounded-control border border-line bg-surface px-2.5 text-xs font-bold text-ink"><X size={12} /> {tr('Effacer', 'مسح')}</button>
-              )}
-              {shell && (
-                <span className="flex gap-1">
-                  <button type="button" onClick={() => setScale(s => Math.min(3, s + 0.3))} aria-label={tr('Zoomer', 'تكبير')} className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-sm font-bold text-ink"><Plus size={18} /></button>
-                  <button type="button" onClick={() => setScale(s => Math.max(1, s - 0.3))} aria-label={tr('Dézoomer', 'تصغير')} className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-sm font-bold text-ink"><Minus size={18} /></button>
-                  <button type="button" onClick={() => { resetView(); clearSelection(); }} aria-label={tr('Réinitialiser la vue', 'إعادة ضبط العرض')} className="grid h-11 w-11 place-items-center rounded-control border border-line bg-surface text-ink"><RefreshCw size={13} /></button>
-                </span>
-              )}
-              <button type="button" onClick={() => setSheet(s => s === 'full' ? 'peek' : 'full')} className="shrink-0 rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink whitespace-nowrap">{sheet === 'full' ? tr('Réduire', 'تصغير') : tr('Agrandir', 'تكبير')}</button>
-              <button type="button" onClick={() => { clearSelection(); onReset(); }} className="shrink-0 rounded-control bg-ink px-3 py-1.5 text-xs font-bold text-white whitespace-nowrap">{tr('Nouvelle recherche', 'بحث جديد')}</button>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto w-full px-2 py-3 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        <p className="sr-only" role="status" aria-live="polite">{isLoading ? tr('Analyse en cours…', 'جارٍ التحليل…') : tr(`${visible.length} résultats disponibles`, `${visible.length} نتيجة متاحة`)}</p>
+        <div ref={drawer.bodyRef} id="lens-result-list" className="lens-results-list" aria-busy={Boolean(isLoading)}
+          onWheel={e => { if (previewUrl && !drawer.full && e.deltaY > 8) drawer.snap(true); }}
+          onFocusCapture={e => { if (previewUrl && !drawer.full && e.target instanceof HTMLElement && e.target.matches('button:focus-visible,a:focus-visible')) drawer.snap(true); }}>
           {isLoading ? (
             <div className="space-y-3 py-4">
               <div className="flex items-center gap-2 text-xs font-bold text-muted"><Loader2 className="h-4 w-4 animate-spin" />{tr('Analyse en cours…', 'جارٍ التحليل…')}</div>
               <div className="grid grid-cols-2 gap-2.5">{[0,1,2,3].map(i => (<div key={i} className="animate-pulse bg-white p-2"><div className="aspect-square rounded-card bg-line" /><div className="mt-2 h-3 rounded bg-line" /><div className="mt-1 h-2 rounded bg-line w-2/3" /></div>))}</div>
-              <p className="text-center text-xs text-muted">{tr("AYROVIX analyse l'image…", 'تحلل AYROVIX الصورة…')}</p>
+
             </div>
           ) : (
             <>
@@ -515,15 +241,15 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
               {visible.length === 0 ? (
                 <div className="py-8 text-center">
                   <div className="mx-auto grid h-12 w-12 place-items-center rounded-control bg-surface text-muted"><ImageIcon size={22} /></div>
-                  <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance', 'لا توجد نتائج')}</p>
+
                   <p className="mt-2 text-sm font-bold text-ink">{tr('Aucune correspondance trouvée', 'لا توجد مطابقة')}</p>
                   <p className="mx-auto mt-1 max-w-[28ch] text-xs text-muted">{tr('Essayez une autre zone ou une image plus nette.', 'جرّب منطقة أخرى أو صورة أوضح.')}</p>
-                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center"><button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-control bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button><button type="button" onClick={() => onReset()} className="rounded-control border border-line bg-white px-5 py-2 text-xs font-bold text-ink">{tr('Recherches récentes', 'عمليات البحث الأخيرة')}</button></div>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:justify-center"><button type="button" onClick={() => { clearSelection(); onReset(); }} className="rounded-control bg-ink px-5 py-2 text-xs font-bold text-white">{tr('Nouvelle recherche', 'بحث جديد')}</button></div>
                   <p className="mt-2 text-xs font-medium text-muted">{tr('Astuce : touchez directement le produit pour affiner la recherche.', 'نصيحة: المس المنتج مباشرة لتحسين البحث.')}</p>
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3 auto-rows-fr">
+                  <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-3">
                     {visible.slice(0, 12).map(c => { const pl = priceLine(c); return (
                       <article key={c.id} className="bg-white p-2.5 rounded-card border border-line/50 flex flex-col">
                         <div className="relative aspect-square overflow-hidden bg-surface"><CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} /><MatchBadge value={c.match} /></div>
@@ -547,7 +273,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
             </>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 };

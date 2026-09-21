@@ -96,14 +96,14 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(src).toContain('Estimation tout inclus');
   });
 
-  it('empty state CTA is enriched and links to history', () => {
+  it('empty state offers a real retry without a misleading history action', () => {
     const view = { queryLabel:'Introuvable XYZ', list:[], eventId:'ev4', detectedPrice:null };
     const html = renderToStaticMarkup(
       <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
     expect(html).toContain('Aucune correspondance');
     expect(html).toContain('Nouvelle recherche');
-    expect(html).toContain('Recherches récentes');
+    expect(html).not.toContain('Recherches récentes');
     expect(html).toContain('Astuce');
   });
 

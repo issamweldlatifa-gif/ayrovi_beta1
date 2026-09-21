@@ -300,6 +300,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
     previewRef.current = prepared.previewUrl;
     setPreviewUrl(prepared.previewUrl);
+    setDetectedProducts([]);
     setImageFile(prepared.file);
     void runImageAnalysis(prepared.file);
   };
@@ -342,7 +343,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         eventId: result.eventId,
         detectedPrice: result.detectedPrice || null,
       });
-      setDetectedProducts((result.identification.products || []).map((p:any)=> ({ name: p.name || p.category || '', box: p.box || null, category: p.category || '' })));
+      // ROI responses describe a padded crop, not the original preview coordinates.
+      // Keep the full-image detections so subsequent taps cannot drift to another item.
+      if (!roi && cropMs == null) setDetectedProducts((result.identification.products || []).map((p:any)=> ({ name: p.name || p.category || '', box: p.box || null, category: p.category || '' })));
       setVerifiedPriceUrl(false);
       setIsAnalyzing(false);
       if (stage !== 'candidates') replaceStage('candidates');
@@ -680,7 +683,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   return (
     <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
-        {['home', 'error', 'barcode', 'candidates', 'product'].includes(stage) && (
+        {['home', 'error', 'barcode', 'product'].includes(stage) && (
           <AppHeader title="LENS" onBack={stage === 'home' ? handleClose : stage === 'product' ? goBack : reset} />
         )}
 

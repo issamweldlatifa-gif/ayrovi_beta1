@@ -258,12 +258,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
       {photoUrl && overlay && (
         <div className="absolute inset-0 z-[15] overflow-hidden">{overlay}</div>
       )}
-      {/* Bande de lisibilité comme la référence (← + marque seulement, aucun contrôle) */}
-      {photoUrl && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[16] h-20 bg-gradient-to-b from-black/55 to-transparent" />
-      )}
-
-      <header className="lens-camera-header">
+      {!(photoUrl && overlay) && <header className="lens-camera-header">
         <button type="button" onClick={panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose} className="lens-camera-icon" aria-label={photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}>
           <ArrowLeft size={22} />
         </button>
@@ -276,7 +271,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
               aria-label={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}><Zap size={22} /></button>
           </div>
         )}
-      </header>
+      </header>}
 
       {mode === 'search' && !photoUrl && isVideo && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">

@@ -5,27 +5,49 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { InteractiveLensResults } from '../client/src/ayrovix/components/InteractiveLensResults';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
-let root:Root,host:HTMLDivElement;
-beforeEach(async()=>{host=document.createElement('div');document.body.append(host);root=createRoot(host);await act(async()=>root.render(<LocaleProvider><InteractiveLensResults view={{queryLabel:'Test',list:[],eventId:'test'}} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}}/></LocaleProvider>));});
-afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.restoreAllMocks();});
-function parts(){const handle=host.querySelector<HTMLElement>('.cursor-grab')!;const sheet=handle.parentElement!;Object.defineProperty(sheet.parentElement,'clientHeight',{value:1000,configurable:true});return {handle,sheet};}
+let root:Root,host:HTMLDivElement,reset:ReturnType<typeof vi.fn>;
+beforeEach(async()=>{
+ host=document.createElement('div');document.body.append(host);root=createRoot(host);reset=vi.fn();
+ vi.spyOn(HTMLElement.prototype,'clientHeight','get').mockReturnValue(1000);
+ Object.assign(HTMLElement.prototype,{setPointerCapture:vi.fn(),hasPointerCapture:()=>true});
+ vi.spyOn(window,'requestAnimationFrame').mockReturnValue(42);
+ vi.spyOn(window,'cancelAnimationFrame');
+ await act(async()=>root.render(<LocaleProvider><InteractiveLensResults view={{queryLabel:'Test',list:[],eventId:'test'}} previewUrl="image.jpg" fallbackImage={null} onChoose={()=>{}} onReset={reset}/></LocaleProvider>));
+});
+afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.restoreAllMocks();delete (HTMLElement.prototype as any).setPointerCapture;delete (HTMLElement.prototype as any).hasPointerCapture;});
+const handle=()=>host.querySelector<HTMLButtonElement>('.lens-sheet-handle')!;
+const surface=()=>host.querySelector<HTMLDivElement>('.lens-results')!;
+async function pointer(type:string,y:number,target:HTMLElement=handle()){
+ const e=new MouseEvent(type,{clientY:y,bubbles:true,button:0});Object.defineProperties(e,{pointerId:{value:1},isPrimary:{value:true}});
+ await act(async()=>target.dispatchEvent(e));
+}
 describe('Lens drawer pointer lifecycle',()=>{
- it('uses the actual latest drag height on mouseup, not the stale render captured at mousedown',async()=>{
-  const {handle,sheet}=parts();expect(sheet.style.height).toBe('38%');
-  await act(async()=>handle.dispatchEvent(new MouseEvent('mousedown',{clientY:600,bubbles:true})));
-  await act(async()=>window.dispatchEvent(new MouseEvent('mousemove',{clientY:100})));
-  await act(async()=>window.dispatchEvent(new MouseEvent('mouseup',{clientY:100})));
-  expect(sheet.style.height).toBe('100%');
+ it('uses the latest pointer position on release even before the paint frame executes',async()=>{
+  expect(surface().style.getPropertyValue('--sheet-offset')).toBe('650px');
+  await pointer('pointerdown',700);await pointer('pointermove',100);await pointer('pointerup',100);
+  expect(surface().getAttribute('data-expanded')).toBe('true');expect(surface().style.getPropertyValue('--sheet-offset')).toBe('0px');
  });
- it('does not start a drag when operating a header button',async()=>{
-  const {handle,sheet}=parts();const spy=vi.spyOn(window,'addEventListener');
-  await act(async()=>handle.querySelector('button')!.dispatchEvent(new MouseEvent('mousedown',{clientY:600,bubbles:true})));
-  expect(spy.mock.calls.some(([name])=>name==='mousemove')).toBe(false);expect(sheet.style.height).toBe('38%');
+ it('does not start a drawer drag when operating the image back button',async()=>{
+  const button=host.querySelector<HTMLButtonElement>('.lens-results-chrome button')!;
+  await pointer('pointerdown',40,button);await pointer('pointermove',400,button);await pointer('pointerup',400,button);
+  expect(surface().hasAttribute('data-dragging')).toBe(false);expect(surface().getAttribute('data-expanded')).toBe('false');
  });
- it('cleans up global pointer listeners if the screen closes mid-drag',async()=>{
-  const {handle}=parts();const spy=vi.spyOn(window,'removeEventListener');
-  await act(async()=>handle.dispatchEvent(new MouseEvent('mousedown',{clientY:600,bubbles:true})));
-  await act(async()=>root.render(null));
-  expect(spy.mock.calls.some(([name])=>name==='mousemove')).toBe(true);expect(spy.mock.calls.some(([name])=>name==='mouseup')).toBe(true);
+ it('cancels queued paint and native touch/resize listeners on unmount mid-drag',async()=>{
+  const remove=vi.spyOn(window,'removeEventListener');const body=host.querySelector('.lens-results-list')!;const bodyRemove=vi.spyOn(body,'removeEventListener');
+  await pointer('pointerdown',700);await pointer('pointermove',100);await act(async()=>root.render(null));
+  expect(window.cancelAnimationFrame).toHaveBeenCalledWith(42);expect(remove.mock.calls.some(([name])=>name==='resize')).toBe(true);
+  for(const name of ['touchstart','touchmove','touchend','touchcancel'])expect(bodyRemove.mock.calls.some(([n])=>n===name)).toBe(true);
+ });
+ it('a cancelled drag restores the previous snap point',async()=>{
+  await pointer('pointerdown',700);await pointer('pointermove',100);await pointer('pointercancel',100);
+  expect(surface().getAttribute('data-expanded')).toBe('false');expect(surface().style.getPropertyValue('--sheet-offset')).toBe('650px');
+ });
+ it('a downward pull at peek cannot accidentally discard the search',async()=>{
+  await pointer('pointerdown',700);await pointer('pointermove',990);await pointer('pointerup',990);
+  expect(surface().getAttribute('data-expanded')).toBe('false');expect(reset).not.toHaveBeenCalled();
+ });
+ it('a click generated by a completed drag does not toggle the new snap point again',async()=>{
+  await pointer('pointerdown',700);await pointer('pointermove',100);await pointer('pointerup',100);await act(async()=>handle().click());
+  expect(surface().getAttribute('data-expanded')).toBe('true');
  });
 });

@@ -85,6 +85,19 @@ jobs:
           name: lens-camera-evidence
           path: docs/lens-phase1/evidence/
 
+      - name: Verify Lens image selection and sliding results
+        id: lens_results
+        run: |
+          rm -rf docs/lens-results/evidence/
+          npm run verify:lens-results
+
+      - name: Upload fresh Lens results evidence
+        if: ${{ !cancelled() && (steps.lens_results.outcome == 'success' || steps.lens_results.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lens-results-evidence
+          path: docs/lens-results/evidence/
+
       - name: Verify editorial voice, products and all icon imports
         run: npm run verify:editorial-states
 

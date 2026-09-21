@@ -1,0 +1,7 @@
+
+> ayrovi@3.10.4 typecheck
+> tsc --noEmit && tsc -p tsconfig.client.json --noEmit
+
+tests/editorial-lens-drag.test.tsx(15,185): error TS2322: Type 'Mock<Procedure | Constructable>' is not assignable to type '() => void'.
+  Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' is not assignable to type '() => void'.
+    Type 'MockInstance<Procedure | Constructable> & (new (...args: any[]) => any) & {}' provides no match for the signature '(): void'.

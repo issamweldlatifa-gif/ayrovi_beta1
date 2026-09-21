@@ -7,14 +7,7 @@ on:
         description: 'Play versionCode (incrémenter à chaque AAB)'
         required: false
         default: '1'
-  push:
-    branches: [main]
-    paths:
-      - 'android/**'
-      - 'client/**'
-      - 'capacitor.config.ts'
-      - 'package.json'
-      - '.github/workflows/android-apk.yml'
+  # Website-only delivery: Android builds require an explicit manual request.
 
 jobs:
   android:
