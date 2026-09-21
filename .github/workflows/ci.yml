@@ -72,10 +72,14 @@ jobs:
         run: npm run verify:editorial-customer
 
       - name: Verify Lens camera entry, help, consent and navigation
-        run: npm run verify:lens-camera
+        id: lens_camera
+        run: |
+          # Local evidence is versioned for review; never upload it as this run's output.
+          rm -rf docs/lens-phase1/evidence/
+          npm run verify:lens-camera
 
       - name: Upload Lens entry evidence
-        if: always()
+        if: ${{ !cancelled() && (steps.lens_camera.outcome == 'success' || steps.lens_camera.outcome == 'failure') }}
         uses: actions/upload-artifact@v4
         with:
           name: lens-camera-evidence
