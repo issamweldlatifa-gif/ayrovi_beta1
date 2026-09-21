@@ -1,11 +1,9 @@
+import { FONT_STACK } from '../../../../shared/brand.generated';
 import type { CSSProperties } from 'react';
 import identity from './identity.json';
 import type { PublicInterfaceConfig } from '../../config/interfaceConfig';
 
-export const CUSTOMER_FONTS = {
-  ar: '"AY Noto Sans Arabic", "AY Space Grotesk", sans-serif',
-  fr: '"AY Space Grotesk", "AY Noto Sans Arabic", sans-serif',
-};
+export const CUSTOMER_FONTS = { ar: FONT_STACK, fr: FONT_STACK };
 
 /** Compatibility adapter, not a second palette. Never mutates CMS config or <html>.
  * CMS owns content, media, section order/visibility, layout and navigation.
@@ -17,13 +15,13 @@ export function customerTheme(locale: 'ar' | 'fr', config?: PublicInterfaceConfi
     '--font-primary': CUSTOMER_FONTS[locale],
     '--ayrovi-font-body': CUSTOMER_FONTS[locale],
     '--ayrovi-font': CUSTOMER_FONTS[locale],
-    '--ayrovi-font-display': locale === 'ar' ? '"AY Amiri", "AY DM Serif Display", serif' : '"AY DM Serif Display", "AY Amiri", serif',
+    '--ayrovi-font-display': FONT_STACK,
     '--ayrovi-bg-main': c.canvas, '--ayrovi-white': c.canvas, '--ayrovi-page-bg': c.canvas,
     '--ayrovi-bg-surface': c.surface, '--ayrovi-neutral-50': c.surface,
     '--ayrovi-surface-raised': c.canvas,
     '--ayrovi-border-soft': c.line, '--ayrovi-neutral-200': c.line,
     '--ayrovi-text-primary': c.ink, '--ayrovi-heading-color': c.ink, '--ayrovi-neutral-900': c.ink,
-    '--ayrovi-text-secondary': c.muted, '--ayrovi-neutral-500': c.muted, '--ayrovi-text-color': c.muted,
+    '--ayrovi-text-secondary': c.muted, '--ayrovi-neutral-500': c.muted, '--ayrovi-text-color': c.ink,
     '--ayrovi-ink': c.ink, '--ayrovi-ink-deep': c.action, '--ayrovi-neutral-950': c.action,
     '--ayrovi-primary': c.ink, '--ayrovi-primary-dark': c.action, '--ayrovi-primary-light': c.muted,
     '--ayrovi-color-brand-orange': c.accent, '--ayrovi-orange': c.accent,
@@ -42,7 +40,7 @@ export function customerTheme(locale: 'ar' | 'fr', config?: PublicInterfaceConfi
     '--ayrovi-hero-bg': c.canvas, '--ayrovi-hero-text': c.ink,
     '--ayrovi-footer-bg': c.canvas, '--ayrovi-footer-text': c.ink,
     '--ayrovi-icon-color': c.ink, '--ayrovi-icon-active-color': c.accentText,
-    '--ayrovi-body-line-height': locale === 'ar' ? '1.8' : '1.65', '--ayrovi-letter-spacing': '0em',
+    '--ayrovi-body-line-height': locale === 'ar' ? '1.8' : '1.5', '--ayrovi-letter-spacing': '0em',
     '--ayrovi-text-align': 'start',
     '--ayrovi-section-gap': `${config?.layout.sectionGap ?? 0}px`,
     '--ayrovi-content-max': `${config?.layout.maxWidth ?? identity.geometry.contentMax}px`,

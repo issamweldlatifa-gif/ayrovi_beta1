@@ -1,3 +1,5 @@
+import { FONT_STACK } from '../../shared/brand.generated';
+import { enforceBrandIdentity, enforceLegacyTheme, hasForbiddenFontSelection } from '../../shared/identityPolicy';
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
@@ -1888,13 +1890,13 @@ export function createAdminRouter(
   router.get('/settings', requireAdmin(db, 'content:read'), (req, res) => {
     const category = typeof req.query.category === 'string' ? req.query.category : '';
     const rows = category ? db.all<any>('SELECT * FROM settings WHERE category=? ORDER BY label', category) : db.all<any>('SELECT * FROM settings ORDER BY category,label');
-    res.json({ success: true, data: rows.map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? JSON.parse(row.setting_value) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
+    res.json({ success: true, data: rows.map((row) => ({ ...row, setting_value: row.value_type === 'JSON' ? (row.setting_key === 'interface_config' ? enforceBrandIdentity(JSON.parse(row.setting_value)) : row.setting_key === 'site_theme' ? enforceLegacyTheme(JSON.parse(row.setting_value)) : JSON.parse(row.setting_value)) : row.value_type === 'NUMBER' ? Number(row.setting_value) : row.value_type === 'BOOLEAN' ? row.setting_value === 'true' : row.setting_value })) });
   });
 
   router.put('/settings/:id', requireAdmin(db, 'settings:write'), (req, res) => {
     const current = db.get<any>('SELECT * FROM settings WHERE id=?', req.params.id);
     if (!current) return res.status(404).json({ success: false, error: 'Paramètre introuvable.' });
-    const received = req.body?.value;
+    let received = req.body?.value;
     if (current.setting_key === 'payment_methods') {
       if (!Array.isArray(received) || !received.length || received.some((method: unknown) => !['COD','D17','FLOUCI'].includes(String(method)))) {
         return res.status(400).json({ success: false, error: 'Les paiements autorisés sont COD, D17 et FLOUCI.' });
@@ -1905,7 +1907,13 @@ export function createAdminRouter(
         return res.status(400).json({ success: false, error: 'La liste des gouvernorats est invalide.' });
       }
     }
+    if (current.setting_key === 'site_theme') {
+      if (received?.font !== undefined && received.font !== FONT_STACK) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
+      received = enforceLegacyTheme(received);
+    }
     if (current.setting_key === 'interface_config') {
+      if (hasForbiddenFontSelection(received)) return res.status(400).json({ success: false, code: 'IDENTITY_LOCKED', error: 'La typographie AYROVI A est verrouillée.' });
+      received = enforceBrandIdentity(received);
       const sectionIds = new Set(['hero', 'cms', 'brands', 'about', 'footer']);
       const sections = received && typeof received === 'object' && !Array.isArray(received) ? received.sections : null;
       const encoded = JSON.stringify(received);

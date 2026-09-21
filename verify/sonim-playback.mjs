@@ -84,7 +84,7 @@ try {
     await settings.getByRole('button',{name:/^Puck/}).click();await settings.getByRole('button',{name:'0.9x',exact:true}).click();
     check(`${key}: selected preset and rate match the controls`,await settings.locator('.voice-choices [aria-pressed=true]').innerText().then(text=>text.includes('Puck'))&&await settings.locator('.voice-rates [aria-pressed=true]').innerText()==='0.9x');
     // Wait for the inherited color transition too, not merely aria-pressed.
-    await page.waitForFunction(()=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor==='rgb(32, 32, 32)'&&getComputedStyle(button.firstElementChild).color==='rgb(255, 255, 255)';});
+    await page.waitForFunction(()=>{const button=document.querySelector('.voice-rates [aria-pressed=true]');return button&&getComputedStyle(button).backgroundColor==='rgb(0, 0, 0)'&&getComputedStyle(button.firstElementChild).color==='rgb(255, 255, 255)';});
     check(`${key}: selected rate settles on readable action contrast`,await settings.locator('.voice-rates [aria-pressed=true]').evaluate(el=>getComputedStyle(el).color===getComputedStyle(el.firstElementChild).color));
     await page.screenshot({path:`${output}/settings-${locale}-${width}.png`});
     await page.evaluate(()=>document.documentElement.style.fontSize='200%');

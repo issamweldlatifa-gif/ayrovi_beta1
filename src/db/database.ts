@@ -1,3 +1,4 @@
+import { FONT_STACK } from '../../shared/brand.generated';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -2400,7 +2401,7 @@ export class QatafoDatabase {
       ['setting_site_theme', 'DESIGN', 'site_theme', JSON.stringify({
         preset: 'noir', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46',
         accent: '#ff6900', ink: '#111111', gradient: 'linear-gradient(135deg,#0a0a0a 0%,#111111 100%)',
-        font: 'jakarta', radius: 'soft',
+        font: FONT_STACK, radius: 'soft',
       }), 'JSON', 'Thème visuel de la plateforme (préréglages et couleurs)'],
       ['setting_interface_config', 'INTERFACE', 'interface_config', JSON.stringify({
         logoUrl: '/media/logo-ayrovi.png',
@@ -2411,7 +2412,7 @@ export class QatafoDatabase {
           { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
           { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
         ],
-        typography: { preset: 'ayrovi-modern', body: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", display: "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif", baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
+        typography: { preset: 'ayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },
         buttons: { background: '#111111', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111111', borderColor: '#111111', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
         icons: { library: 'ayrovi', color: '#666666', activeColor: '#ff6900', size: 28, style: 'outline' },

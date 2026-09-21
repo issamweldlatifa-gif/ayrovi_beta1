@@ -14,15 +14,15 @@ try{
   const ctx=await browser.newContext({locale,viewport:{width,height},reducedMotion:width===320?'reduce':'no-preference'});
   await ctx.addInitScript(locale=>localStorage.setItem('ayrovi.locale.v1',locale),locale);
   const page=await ctx.newPage();page.on('pageerror',e=>errors.push(e.message));await page.goto(base+'/__verify/states');
-  await page.locator('.editorial-voice').waitFor();await page.evaluate(async()=>{await document.fonts.load('16px "AY Noto Sans Arabic"');await document.fonts.load('16px "AY Space Grotesk"');await document.fonts.ready;});
+  await page.locator('.editorial-voice').waitFor();await page.evaluate(async()=>{await document.fonts.load('16px "Noto Sans Arabic"');await document.fonts.load('16px "Zalando Sans"');await document.fonts.ready;});
   for(const state of ['idle','starting','listening','user_speaking','transcribing','thinking','speaking','muted','error']){
    await page.evaluate(({state,dark})=>window.setEditorialFixture({voice:state,dark,muted:state==='muted'}),{state,dark});
    await page.locator(`[data-voice-state="${state}"][data-tone="${dark?'dark':'light'}"]`).waitFor();
-   await page.waitForFunction(dark=>{const el=document.querySelector('.editorial-voice');return el && getComputedStyle(el).backgroundColor===(dark?'rgb(25, 24, 23)':'rgb(255, 255, 255)');},dark);
+   await page.waitForFunction(dark=>{const el=document.querySelector('.editorial-voice');return el && getComputedStyle(el).backgroundColor===(dark?'rgb(0, 0, 0)':'rgb(255, 255, 255)');},dark);
    const layout=await page.locator('.editorial-voice').evaluate(el=>{const footer=el.querySelector('footer').getBoundingClientRect();return {width:el.clientWidth,scroll:el.scrollWidth,footer:footer.bottom,controls:[...el.querySelectorAll('button')].filter(e=>e.getClientRects().length&&!e.closest('[inert]')).map(e=>({w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height,label:e.getAttribute('aria-label')||e.textContent.trim()})),color:getComputedStyle(el).color,bg:getComputedStyle(el).backgroundColor};});
    check(`${key}/${state}: no overflow and footer remains reachable`,layout.scroll<=layout.width+1 && layout.footer<=height+1,layout);
    check(`${key}/${state}: named 44px controls`,layout.controls.every(c=>c.w>=43.9&&c.h>=43.9&&c.label),layout.controls);
-   check(`${key}/${state}: semantic readable surface`,layout.bg===(dark?'rgb(25, 24, 23)':'rgb(255, 255, 255)')&&layout.color===(dark?'rgb(250, 249, 247)':'rgb(39, 35, 34)'),layout);
+   check(`${key}/${state}: semantic readable surface`,layout.bg===(dark?'rgb(0, 0, 0)':'rgb(255, 255, 255)')&&layout.color===(dark?'rgb(255, 255, 255)':'rgb(0, 0, 0)'),layout);
    const icons=await inspectEditorialIcons(page,'.editorial-voice');check(`${key}/${state}: reference SVG geometry`,icons.count>0&&!icons.errors.length,icons);
    if(state==='listening'||state==='error'){
     const shot=await page.screenshot();const ratio=await area(shot);orange.push({key,state,ratio});check(`${key}/${state}: orange <=3%`,ratio<=.03,ratio);

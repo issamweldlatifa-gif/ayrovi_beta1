@@ -328,7 +328,7 @@ describe('Administration CRM Arrival AI ingestion', () => {
     await mutation(harness, 'patch', `/api/admin/arrival-ingestion/clients/${saraClientId}`).send({ storeId: temu.id });
 
     const pdfPath = path.join(harness.root, 'temu-fixture.pdf');
-    writeSimplePdf([
+    await writeSimplePdf([
       { text: 'TEMU INVOICE', size: 18, bold: true },
       { text: 'Product: TEMU storage basket' },
       { text: 'SKU: TM-100' },
@@ -447,7 +447,7 @@ describe('Administration CRM Arrival AI ingestion', () => {
     const customerId = addCustomer(harness.db, '8', 'Client Quota');
     const flow = await createArrivalWithClient(harness, 'Quota fixture', customerId, 'TEMU');
     const pdfPath = path.join(harness.root, 'multi-page-quota.pdf');
-    writeSimplePdf(Array.from({ length: 110 }, (_, index) => ({ text: `Product row ${index + 1} SKU Q-${index + 1} Qty 1` })), pdfPath);
+    await writeSimplePdf(Array.from({ length: 110 }, (_, index) => ({ text: `Product row ${index + 1} SKU Q-${index + 1} Qty 1` })), pdfPath);
     const uploaded = await mutation(harness, 'post', `/api/admin/arrival-ingestion/clients/${flow.clientId}/sources`)
       .field('sourceType', 'PDF').attach('source', pdfPath, { contentType: 'application/pdf' });
     const started = await mutation(harness, 'post', `/api/admin/arrival-ingestion/sources/${uploaded.body.data.source.id}/extractions`).send({ reprocess: false });
@@ -545,7 +545,7 @@ describe('Administration CRM Arrival AI ingestion', () => {
     expect(emailUpload.body.data.source.arrivalClientStoreId).toBe(sheinAssignment.id);
 
     const pdfPath = path.join(harness.root, 'same-client-temu.pdf');
-    writeSimplePdf([
+    await writeSimplePdf([
       { text: 'TEMU INVOICE', size: 18, bold: true },
       { text: 'Product: TEMU storage basket' },
       { text: 'SKU: TM-100' },

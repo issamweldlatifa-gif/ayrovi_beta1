@@ -1,3 +1,4 @@
+import { FONT_STACK } from '../../../shared/brand.generated';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
@@ -757,14 +758,14 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
 
 // ===== قسم التطوير: ثيم المنصة بالكامل + القنوات + نص الفوتر =====
 const THEME_PRESETS=[
-  {id:'noir',label:'Noir AYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#ff6900',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:'jakarta'},
-  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#ff6900',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:'jakarta'},
-  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#ff6900',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:'jakarta'},
-  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#ff6900',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:'jakarta'},
-  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#ff6900',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:'jakarta'},
-  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#ff6900',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:'jakarta'},
+  {id:'noir',label:'Noir AYROVI',primary:'#111318',primaryDark:'#050505',primaryLight:'#3f3f46',accent:'#ff6900',gradient:'linear-gradient(135deg,#050505 0%,#111318 100%)',font:FONT_STACK},
+  {id:'nuit',label:'Bleu nuit',primary:'#2563eb',primaryDark:'#1d4ed8',primaryLight:'#60a5fa',accent:'#ff6900',gradient:'linear-gradient(135deg,#0b1e4b 0%,#2563eb 100%)',font:FONT_STACK},
+  {id:'emeraude',label:'Émeraude',primary:'#059669',primaryDark:'#047857',primaryLight:'#34d399',accent:'#ff6900',gradient:'linear-gradient(135deg,#064e3b 0%,#059669 100%)',font:FONT_STACK},
+  {id:'framboise',label:'Framboise',primary:'#db2777',primaryDark:'#be185d',primaryLight:'#f472b6',accent:'#ff6900',gradient:'linear-gradient(135deg,#500724 0%,#db2777 100%)',font:FONT_STACK},
+  {id:'sable',label:'Sable doré',primary:'#b45309',primaryDark:'#92400e',primaryLight:'#d97706',accent:'#ff6900',gradient:'linear-gradient(135deg,#431407 0%,#b45309 100%)',font:FONT_STACK},
+  {id:'charbon',label:'Charbon chic',primary:'#334155',primaryDark:'#1e293b',primaryLight:'#64748b',accent:'#ff6900',gradient:'linear-gradient(135deg,#0f172a 0%,#334155 100%)',font:FONT_STACK},
 ];
-const FONT_OPTIONS=[{value:'jakarta',label:'Inter — identité AYROVI'}];
+const FONT_OPTIONS=[{value:FONT_STACK,label:'AYROVI A — identité verrouillée'}];
 const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const [rows,setRows]=useState<any[]>([]);const [theme,setTheme]=useState<any>(THEME_PRESETS[0]);const [footerAbout,setFooterAbout]=useState('');
   const [channels,setChannels]=useState({facebook:'',instagram:'',tiktok:'',whatsapp:''});
@@ -772,7 +773,7 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const parseJson=(v:any)=>{try{return typeof v==='string'?JSON.parse(v):v;}catch{return null;}};
   const load=()=>adminApi<any>('/settings').then(r=>{setRows(r.data);
     const find=(key:string)=>r.data.find((row:any)=>row.setting_key===key);
-    const t=parseJson(find('site_theme')?.setting_value);if(t&&t.primary)setTheme({preset:'custom',ink:'#1d2130',...t});
+    const t=parseJson(find('site_theme')?.setting_value);if(t&&t.primary)setTheme({preset:'custom',ink:'#1d2130',...t,font:FONT_STACK});
     setFooterAbout(String(find('footer_about')?.setting_value??''));
     setChannels({facebook:String(find('facebook_url')?.setting_value??''),instagram:String(find('instagram_url')?.setting_value??''),tiktok:String(find('tiktok_url')?.setting_value??''),whatsapp:String(find('whatsapp_url')?.setting_value??'')});
   });
@@ -783,7 +784,7 @@ const DesignPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   return <><PageHeader title="Développement & design" description="Système AYROVI 70% blanc / 25% noir / 5% orange. Inter + Noto Sans Arabic unifient latin et arabe." action={canWrite?<Button busy={busy} onClick={save}>Publier le design</Button>:undefined}/>
   <div className="admin-report-grid">
     <section className="admin-card"><CardTitle title="Modèles prêts" subtitle="Choisissez un modèle, personnalisez ensuite ses couleurs"/><div className="admin-theme-grid">{THEME_PRESETS.map(preset=><button key={preset.id} type="button" disabled={!canWrite} className={`admin-theme-card ${theme.preset===preset.id?'is-active':''}`} onClick={()=>applyPreset(preset)}><i style={{background:preset.gradient}}/><span>{preset.label}</span><small>{preset.primary} · {preset.accent}</small></button>)}</div>
-    <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select value={theme.font||'jakarta'} onChange={e=>setTheme({...theme,preset:'custom',font:e.target.value})} options={FONT_OPTIONS}/></Field></div>
+    <div className="admin-form-row" style={{marginTop:16}}><Field label="Couleur principale" full><input type="color" value={theme.primary} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',primary:e.target.value})}/></Field><Field label="Accent (promos)" full><input type="color" value={theme.accent} disabled={!canWrite} onChange={e=>setTheme({...theme,preset:'custom',accent:e.target.value})}/></Field><Field label="Police" full><Select disabled value={FONT_STACK} onChange={e=>setTheme({...theme,preset:'custom',font:FONT_STACK})} options={FONT_OPTIONS}/></Field></div>
     <div className="admin-theme-preview" style={{background:theme.gradient}}><strong>Boutique AYROVI</strong><span>70% blanc · 25% noir · 5% orange</span><button style={{background:theme.accent,color:'#fff'}} type="button">CTA</button></div></section>
     <section className="admin-card"><CardTitle title="Canaux & pied de page" subtitle="Liens affichés dans la section « Nos canaux » du site"/><div className="admin-settings-list">
       <Field label="Facebook" full><input disabled={!canWrite} value={channels.facebook} onChange={e=>setChannels({...channels,facebook:e.target.value})} placeholder="https://facebook.com/ayrovi"/></Field>

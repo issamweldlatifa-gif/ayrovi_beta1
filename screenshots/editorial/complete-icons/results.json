@@ -70,7 +70,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -209,7 +209,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -282,7 +282,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -381,7 +381,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -471,7 +471,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -610,7 +610,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -688,7 +688,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -787,7 +787,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -856,7 +856,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -955,7 +955,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1025,7 +1025,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1124,7 +1124,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1194,7 +1194,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1293,7 +1293,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1363,7 +1363,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1462,7 +1462,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1531,7 +1531,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1630,7 +1630,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -1797,8 +1797,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -1936,8 +1936,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2009,8 +2009,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2108,8 +2108,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2198,8 +2198,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2337,8 +2337,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2415,8 +2415,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2514,8 +2514,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2583,8 +2583,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2682,8 +2682,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2752,8 +2752,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2851,8 +2851,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -2921,8 +2921,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -3020,8 +3020,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -3090,8 +3090,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -3189,8 +3189,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -3258,8 +3258,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -3357,8 +3357,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -3489,7 +3489,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -3628,7 +3628,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -3701,7 +3701,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -3800,7 +3800,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -3890,7 +3890,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4029,7 +4029,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4107,7 +4107,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4206,7 +4206,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4275,7 +4275,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4374,7 +4374,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4444,7 +4444,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4543,7 +4543,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4613,7 +4613,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4712,7 +4712,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4782,7 +4782,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4881,7 +4881,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -4950,7 +4950,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -5049,7 +5049,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -5080,7 +5080,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 142.1875,
+        "top": 156.828125,
         "bottom": 844
       }
     },
@@ -5216,8 +5216,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5355,8 +5355,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5428,8 +5428,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5527,8 +5527,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5617,8 +5617,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5756,8 +5756,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5834,8 +5834,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -5933,8 +5933,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6002,8 +6002,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6101,8 +6101,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6171,8 +6171,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6270,8 +6270,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6340,8 +6340,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6439,8 +6439,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6509,8 +6509,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6608,8 +6608,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6677,8 +6677,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6776,8 +6776,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -6807,7 +6807,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 142.1875,
+        "top": 156.828125,
         "bottom": 844
       }
     },
@@ -6864,12 +6864,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -6908,7 +6908,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -6933,12 +6933,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -7003,12 +7003,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -7047,7 +7047,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7120,7 +7120,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7219,7 +7219,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7265,12 +7265,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -7309,7 +7309,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7334,12 +7334,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -7404,12 +7404,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -7448,7 +7448,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7526,7 +7526,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7625,7 +7625,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7694,7 +7694,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7793,7 +7793,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7863,7 +7863,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -7962,7 +7962,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8032,7 +8032,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8131,7 +8131,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8201,7 +8201,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8300,7 +8300,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8369,7 +8369,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8468,7 +8468,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -8591,12 +8591,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -8635,8 +8635,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -8660,12 +8660,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -8730,12 +8730,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -8774,8 +8774,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -8847,8 +8847,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -8946,8 +8946,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -8992,12 +8992,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -9036,8 +9036,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9061,12 +9061,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -9131,12 +9131,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -9175,8 +9175,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9253,8 +9253,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9352,8 +9352,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9421,8 +9421,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9520,8 +9520,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9590,8 +9590,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9689,8 +9689,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9759,8 +9759,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9858,8 +9858,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -9928,8 +9928,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -10027,8 +10027,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -10096,8 +10096,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -10195,8 +10195,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -10283,12 +10283,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -10327,7 +10327,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -10352,12 +10352,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -10422,12 +10422,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -10466,7 +10466,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -10539,7 +10539,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -10638,7 +10638,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -10684,12 +10684,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -10728,7 +10728,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -10753,12 +10753,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -10823,12 +10823,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -10867,7 +10867,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -10945,7 +10945,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11044,7 +11044,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11113,7 +11113,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11212,7 +11212,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11282,7 +11282,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11381,7 +11381,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11451,7 +11451,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11550,7 +11550,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11620,7 +11620,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11719,7 +11719,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11788,7 +11788,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11887,7 +11887,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -11918,7 +11918,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 194.1875,
+        "top": 208.828125,
         "bottom": 844
       }
     },
@@ -12010,12 +12010,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -12054,8 +12054,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12079,12 +12079,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -12149,12 +12149,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -12193,8 +12193,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12266,8 +12266,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12365,8 +12365,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12411,12 +12411,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -12455,8 +12455,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12480,12 +12480,12 @@
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Calculer le prix total"
         },
         {
           "w": 175,
-          "h": 48,
+          "h": 66.78125,
           "label": "Suivre ma commande"
         },
         {
@@ -12550,12 +12550,12 @@
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Calculer le prix total"
           },
           {
             "w": 175,
-            "h": 48,
+            "h": 66.78125,
             "label": "Suivre ma commande"
           },
           {
@@ -12594,8 +12594,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12672,8 +12672,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12771,8 +12771,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12840,8 +12840,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -12939,8 +12939,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13009,8 +13009,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13108,8 +13108,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13178,8 +13178,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13277,8 +13277,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13347,8 +13347,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13446,8 +13446,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13515,8 +13515,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13614,8 +13614,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -13645,7 +13645,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 194.1875,
+        "top": 208.828125,
         "bottom": 844
       }
     },
@@ -13746,7 +13746,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -13885,7 +13885,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -13958,7 +13958,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14057,7 +14057,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14147,7 +14147,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14286,7 +14286,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14364,7 +14364,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14463,7 +14463,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14532,7 +14532,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14631,7 +14631,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14701,7 +14701,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14800,7 +14800,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14870,7 +14870,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -14969,7 +14969,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -15039,7 +15039,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -15138,7 +15138,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -15207,7 +15207,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -15306,7 +15306,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -15473,8 +15473,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -15612,8 +15612,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -15685,8 +15685,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -15784,8 +15784,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -15874,8 +15874,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16013,8 +16013,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16091,8 +16091,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16190,8 +16190,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16259,8 +16259,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16358,8 +16358,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16428,8 +16428,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16527,8 +16527,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16597,8 +16597,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16696,8 +16696,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16766,8 +16766,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16865,8 +16865,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -16934,8 +16934,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -17033,8 +17033,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -17165,7 +17165,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17304,7 +17304,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17377,7 +17377,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17476,7 +17476,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17566,7 +17566,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17705,7 +17705,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17783,7 +17783,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17882,7 +17882,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -17951,7 +17951,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18050,7 +18050,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18120,7 +18120,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18219,7 +18219,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18289,7 +18289,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18388,7 +18388,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18458,7 +18458,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18557,7 +18557,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18626,7 +18626,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18725,7 +18725,7 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -18756,7 +18756,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 217.578125,
+        "top": 232.21875,
         "bottom": 844
       }
     },
@@ -18892,8 +18892,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19031,8 +19031,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19104,8 +19104,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19203,8 +19203,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19293,8 +19293,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19432,8 +19432,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19510,8 +19510,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19609,8 +19609,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19678,8 +19678,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19777,8 +19777,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19847,8 +19847,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -19946,8 +19946,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20016,8 +20016,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20115,8 +20115,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20185,8 +20185,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20284,8 +20284,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20353,8 +20353,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20452,8 +20452,8 @@
             "label": "Couper le haut-parleur"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -20483,7 +20483,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 217.578125,
+        "top": 232.21875,
         "bottom": 844
       }
     },
@@ -20584,7 +20584,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -20723,7 +20723,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -20796,7 +20796,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -20895,7 +20895,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -20985,7 +20985,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21124,7 +21124,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21202,7 +21202,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21301,7 +21301,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21370,7 +21370,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21469,7 +21469,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21539,7 +21539,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21638,7 +21638,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21708,7 +21708,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21807,7 +21807,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21877,7 +21877,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -21976,7 +21976,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -22045,7 +22045,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -22144,7 +22144,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -22311,8 +22311,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -22450,8 +22450,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -22523,8 +22523,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -22622,8 +22622,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -22712,8 +22712,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -22851,8 +22851,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -22929,8 +22929,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23028,8 +23028,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23097,8 +23097,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23196,8 +23196,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23266,8 +23266,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23365,8 +23365,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23435,8 +23435,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23534,8 +23534,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23604,8 +23604,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23703,8 +23703,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23772,8 +23772,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -23871,8 +23871,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -24003,7 +24003,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24142,7 +24142,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24215,7 +24215,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24314,7 +24314,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24404,7 +24404,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24543,7 +24543,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24621,7 +24621,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24720,7 +24720,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24789,7 +24789,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24888,7 +24888,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -24958,7 +24958,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25057,7 +25057,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25127,7 +25127,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25226,7 +25226,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25296,7 +25296,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25395,7 +25395,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25464,7 +25464,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25563,7 +25563,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -25594,7 +25594,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 165.578125,
+        "top": 149.875,
         "bottom": 844
       }
     },
@@ -25630,8 +25630,8 @@
       "label": "ar/320x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288
+        "width": 320,
+        "scroll": 320
       }
     },
     {
@@ -25730,8 +25730,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -25869,8 +25869,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -25942,8 +25942,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26041,8 +26041,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26131,8 +26131,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26270,8 +26270,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26348,8 +26348,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26447,8 +26447,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26516,8 +26516,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26615,8 +26615,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26685,8 +26685,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26784,8 +26784,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26854,8 +26854,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -26953,8 +26953,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -27023,8 +27023,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -27122,8 +27122,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -27191,8 +27191,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -27290,8 +27290,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -27321,7 +27321,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 165.578125,
+        "top": 149.875,
         "bottom": 844
       }
     },
@@ -27422,7 +27422,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -27561,7 +27561,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -27634,7 +27634,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -27733,7 +27733,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -27823,7 +27823,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -27962,7 +27962,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28040,7 +28040,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28139,7 +28139,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28208,7 +28208,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28307,7 +28307,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28377,7 +28377,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28476,7 +28476,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28546,7 +28546,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28645,7 +28645,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28715,7 +28715,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28814,7 +28814,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28883,7 +28883,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -28982,7 +28982,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -29149,8 +29149,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29288,8 +29288,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29361,8 +29361,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29460,8 +29460,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29550,8 +29550,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29689,8 +29689,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29767,8 +29767,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29866,8 +29866,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -29935,8 +29935,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30034,8 +30034,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30104,8 +30104,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30203,8 +30203,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30273,8 +30273,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30372,8 +30372,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30442,8 +30442,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30541,8 +30541,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30610,8 +30610,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30709,8 +30709,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -30841,7 +30841,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -30980,7 +30980,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31053,7 +31053,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31152,7 +31152,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31242,7 +31242,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31381,7 +31381,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31459,7 +31459,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31558,7 +31558,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31627,7 +31627,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31726,7 +31726,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31796,7 +31796,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31895,7 +31895,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -31965,7 +31965,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -32064,7 +32064,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -32134,7 +32134,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -32233,7 +32233,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -32302,7 +32302,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -32401,7 +32401,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -32432,7 +32432,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 217.578125,
+        "top": 201.875,
         "bottom": 844
       }
     },
@@ -32568,8 +32568,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -32707,8 +32707,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -32780,8 +32780,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -32879,8 +32879,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -32969,8 +32969,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33108,8 +33108,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33186,8 +33186,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33285,8 +33285,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33354,8 +33354,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33453,8 +33453,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33523,8 +33523,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33622,8 +33622,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33692,8 +33692,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33791,8 +33791,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33861,8 +33861,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -33960,8 +33960,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -34029,8 +34029,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -34128,8 +34128,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -34159,7 +34159,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 217.578125,
+        "top": 201.875,
         "bottom": 844
       }
     },
@@ -34260,7 +34260,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34399,7 +34399,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34472,7 +34472,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34571,7 +34571,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34661,7 +34661,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34800,7 +34800,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34878,7 +34878,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -34977,7 +34977,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35046,7 +35046,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35145,7 +35145,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35215,7 +35215,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35314,7 +35314,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35384,7 +35384,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35483,7 +35483,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35553,7 +35553,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35652,7 +35652,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35721,7 +35721,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35820,7 +35820,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -35987,8 +35987,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36126,8 +36126,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36199,8 +36199,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36298,8 +36298,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36388,8 +36388,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36527,8 +36527,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36605,8 +36605,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36704,8 +36704,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36773,8 +36773,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36872,8 +36872,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -36942,8 +36942,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37041,8 +37041,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37111,8 +37111,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37210,8 +37210,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37280,8 +37280,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37379,8 +37379,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37448,8 +37448,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37547,8 +37547,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -37679,7 +37679,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -37818,7 +37818,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -37891,7 +37891,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -37990,7 +37990,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38080,7 +38080,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38219,7 +38219,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38297,7 +38297,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38396,7 +38396,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38465,7 +38465,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38564,7 +38564,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38634,7 +38634,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38733,7 +38733,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38803,7 +38803,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38902,7 +38902,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -38972,7 +38972,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -39071,7 +39071,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -39140,7 +39140,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -39239,7 +39239,7 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(39, 35, 34)",
+        "color": "rgb(0, 0, 0)",
         "bg": "rgb(255, 255, 255)"
       }
     },
@@ -39270,7 +39270,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 240.96875,
+        "top": 225.265625,
         "bottom": 844
       }
     },
@@ -39406,8 +39406,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -39545,8 +39545,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -39618,8 +39618,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -39717,8 +39717,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -39807,8 +39807,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -39946,8 +39946,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40024,8 +40024,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40123,8 +40123,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40192,8 +40192,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40291,8 +40291,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40361,8 +40361,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40460,8 +40460,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40530,8 +40530,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40629,8 +40629,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40699,8 +40699,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40798,8 +40798,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40867,8 +40867,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40966,8 +40966,8 @@
             "label": "إيقاف الصوت"
           }
         ],
-        "color": "rgb(250, 249, 247)",
-        "bg": "rgb(25, 24, 23)"
+        "color": "rgb(255, 255, 255)",
+        "bg": "rgb(0, 0, 0)"
       }
     },
     {
@@ -40997,7 +40997,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 240.96875,
+        "top": 225.265625,
         "bottom": 844
       }
     },
@@ -41057,7 +41057,7 @@
             "h": 48
           },
           {
-            "w": 93,
+            "w": 96,
             "h": 48
           }
         ]
@@ -41150,7 +41150,7 @@
             "h": 48
           },
           {
-            "w": 93,
+            "w": 96,
             "h": 48
           }
         ]

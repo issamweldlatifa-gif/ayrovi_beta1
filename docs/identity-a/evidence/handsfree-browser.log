@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:sonim-handsfree
+> node verify/sonim-actions-runner.mjs verify/sonim-handsfree.mjs
+
+73/73 SONIM hands-free assertions passed

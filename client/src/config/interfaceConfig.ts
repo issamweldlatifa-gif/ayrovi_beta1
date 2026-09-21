@@ -1,45 +1,15 @@
+import { FONT_STACK, BRAND } from '../../../shared/brand.generated';
+import { enforceBrandIdentity } from '../../../shared/identityPolicy';
 export const PUBLIC_SECTION_IDS = ['hero', 'cms', 'brands', 'about', 'footer'] as const;
 export type PublicSectionId = (typeof PUBLIC_SECTION_IDS)[number];
 
-export const AYROVI_FONT_STACK = "'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif";
+export const AYROVI_FONT_STACK = FONT_STACK;
 
-export const INTERFACE_FONT_PRESETS = [
-  {
-    id: 'ayrovi-modern',
-    label: 'AYROVI Modern',
-    description: 'Inter + Noto Sans Arabic — identité unique latin/arabe.',
-    display: AYROVI_FONT_STACK,
-    body: AYROVI_FONT_STACK,
-  },
-  {
-    id: 'system-clean',
-    label: 'System Clean',
-    description: 'Rapide, neutre et optimisé sur tous les appareils.',
-    display: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-    body: "system-ui, -apple-system, 'Segoe UI', sans-serif",
-  },
-  {
-    id: 'tunis-arabic',
-    label: 'Tunis Arabic',
-    description: 'Tahoma assure une lecture équilibrée en arabe et en français.',
-    display: "Tahoma, Arial, 'Segoe UI', sans-serif",
-    body: "Tahoma, Arial, 'Segoe UI', sans-serif",
-  },
-  {
-    id: 'editorial',
-    label: 'Editorial',
-    description: 'Titres élégants avec un contenu sans-serif classique.',
-    display: "Georgia, 'Times New Roman', serif",
-    body: "Arial, Helvetica, sans-serif",
-  },
-  {
-    id: 'friendly',
-    label: 'Friendly Rounded',
-    description: 'Trebuchet donne une personnalité accessible et dynamique.',
-    display: "'Trebuchet MS', 'Segoe UI', sans-serif",
-    body: "'Trebuchet MS', Arial, sans-serif",
-  },
-] as const;
+export const INTERFACE_FONT_PRESETS = [{
+  id: 'ayrovi-a', label: 'AYROVI A — identité officielle',
+  description: 'Zalando Sans + Noto Sans Arabic. Charte verrouillée, fontes locales.',
+  display: AYROVI_FONT_STACK, body: AYROVI_FONT_STACK,
+}] as const;
 export type InterfaceFontPresetId = (typeof INTERFACE_FONT_PRESETS)[number]['id'];
 
 export const INTERFACE_ICON_LIBRARIES = [
@@ -147,22 +117,22 @@ export interface PublicInterfaceConfig {
 export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   logoUrl: '/media/logo-ayrovi.png',
   sections: [
-    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#0a0a0a', textColor: '#ffffff', paddingY: 0, contained: false },
-    { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
-    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#111111', paddingY: 0, contained: false },
-    { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
-    { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#111111', paddingY: 0, contained: false },
+    { id: 'hero', visible: true, order: 10, title: 'Toute la mode du monde, livrée chez vous.', subtitle: '', image: '', backgroundColor: '#000000', textColor: '#ffffff', paddingY: 0, contained: false },
+    { id: 'cms', visible: true, order: 20, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
+    { id: 'brands', visible: true, order: 30, title: '', subtitle: '', image: '', backgroundColor: '#f8f9fa', textColor: '#000000', paddingY: 0, contained: false },
+    { id: 'about', visible: true, order: 40, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
+    { id: 'footer', visible: true, order: 50, title: '', subtitle: '', image: '', backgroundColor: '#ffffff', textColor: '#000000', paddingY: 0, contained: false },
   ],
   typography: {
-    preset: 'ayrovi-modern',
+    preset: 'ayrovi-a',
     body: INTERFACE_FONT_PRESETS[0].body,
     display: INTERFACE_FONT_PRESETS[0].display,
     baseSize: 16,
     align: 'start',
-    headingColor: '#111111',
+    headingColor: '#000000',
     textColor: '#666666',
     lineHeight: 1.5,
-    letterSpacing: -0.011,
+    letterSpacing: 0,
     headingScale: 1,
   },
   colors: {
@@ -170,29 +140,29 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     surfaceBackground: '#ffffff',
     surfaceAlt: '#f8f9fa',
     borderColor: '#eaeaea',
-    primary: '#111111',
-    primaryDark: '#0a0a0a',
+    primary: '#000000',
+    primaryDark: '#000000',
     primaryLight: '#3f3f46',
     accent: '#ff6900',
     headerBackground: '#ffffff',
-    headerText: '#111111',
-    announcementBackground: '#0a0a0a',
+    headerText: '#000000',
+    announcementBackground: '#000000',
     announcementText: '#ffffff',
-    heroBackground: '#0a0a0a',
+    heroBackground: '#000000',
     heroText: '#ffffff',
     footerBackground: '#ffffff',
-    footerText: '#111111',
+    footerText: '#000000',
     success: '#15803d',
     warning: '#666666', // réservé (non consommé par la vitrine) — les états d'alerte sont neutre + icône
     danger: '#dc2626',
   },
   buttons: {
-    background: '#111111', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111111',
-    borderColor: '#111111', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
+    background: '#000000', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#000000',
+    borderColor: '#000000', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
   icons: { library: 'ayrovi', color: '#666666', activeColor: '#ff6900', size: 28, style: 'outline' },
   navigation: {
-    background: '#ffffff', color: '#111111', activeBackground: '#0a0a0a', showLabels: true, height: 56,
+    background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
@@ -217,7 +187,7 @@ const iconLibraryIds = new Set<string>(INTERFACE_ICON_LIBRARIES.map((library) =>
 /** Merge persisted Admin data with safe defaults before it reaches public UI styles. */
 export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig {
   if (!input || typeof input !== 'object' || Array.isArray(input)) return structuredClone(DEFAULT_INTERFACE_CONFIG);
-  const value = input as Partial<PublicInterfaceConfig>;
+  const value = enforceBrandIdentity(input) as Partial<PublicInterfaceConfig>;
   const inputSections = Array.isArray(value.sections) ? value.sections : [];
   const sections = DEFAULT_INTERFACE_CONFIG.sections.map((fallback) => {
     const candidate = inputSections.find((section) => section && section.id === fallback.id) as Partial<InterfaceSectionConfig> | undefined;
@@ -241,7 +211,7 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
   const navigation = value.navigation || {} as PublicInterfaceConfig['navigation'];
   const slider = value.slider || {} as PublicInterfaceConfig['slider'];
   const layout = value.layout || {} as PublicInterfaceConfig['layout'];
-  const preset = fontPresetIds.has(String(typography.preset || '')) ? typography.preset as InterfaceFontPresetId : 'ayrovi-modern';
+  const preset = fontPresetIds.has(String(typography.preset || '')) ? typography.preset as InterfaceFontPresetId : 'ayrovi-a';
   const presetFallback = INTERFACE_FONT_PRESETS.find((item) => item.id === preset) || INTERFACE_FONT_PRESETS[0];
   return {
     logoUrl: safeMedia(value.logoUrl) || DEFAULT_INTERFACE_CONFIG.logoUrl,

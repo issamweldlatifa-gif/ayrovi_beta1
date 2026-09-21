@@ -162,7 +162,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
     if (page === 'promotions') return home.promotions.length ? (
       <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => (
         <ContentCard key={promotion.id} variant="promo" image={mediaSource(promotion.image, index % 2 ? heroFemme : heroEnfants)} title={promotion.name} description={promotion.description} eyebrow={tr('Promotion en cours', 'عرض متاح')} dir={direction}>
-          {promotion.promo_code && <span className="inline-block rounded-control border border-white/25 bg-white/10 px-4 py-2 font-mono text-sm font-bold">{tr('Code', 'الرمز')} : {promotion.promo_code}</span>}
+          {promotion.promo_code && <span className="inline-block rounded-control border border-white/25 bg-white/10 px-4 py-2 ay-number text-sm font-bold">{tr('Code', 'الرمز')} : {promotion.promo_code}</span>}
         </ContentCard>
       ))}</div>
     ) : <EmptyContent label={tr('Promotions', 'العروض')} />;

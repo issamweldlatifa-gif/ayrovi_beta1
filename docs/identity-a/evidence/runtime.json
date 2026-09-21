@@ -1,0 +1,701 @@
+{
+  "checks": [
+    {
+      "label": "Chromium: actual locale fr",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/320: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/320: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/fr/320: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/390: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/390: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/fr/390: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/768: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/768: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/fr/768: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/1360: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/fr/1360: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/fr/1360: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium: actual locale ar",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/320: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/320: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/ar/320: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/390: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/390: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/ar/390: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/768: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/768: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/ar/768: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/1360: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/ar/1360: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/ar/1360: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium: account created",
+      "pass": true
+    },
+    {
+      "label": "Chromium: price really changed",
+      "pass": true,
+      "details": {
+        "before": "50,60 DT",
+        "after": "91,21 DT"
+      }
+    },
+    {
+      "label": "Chromium: quantity persisted to DB",
+      "pass": true
+    },
+    {
+      "label": "Chromium/dynamic-price: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/dynamic-price: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/dynamic-price: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "actual rendered glyphs use only downloaded approved fonts: .ac-cart-description strong",
+      "pass": true,
+      "details": {
+        "fonts": [
+          {
+            "familyName": "Zalando Sans",
+            "postScriptName": "ZalandoSans-Regular",
+            "isCustomFont": true,
+            "glyphCount": 8
+          }
+        ]
+      }
+    },
+    {
+      "label": "actual rendered glyphs use only downloaded approved fonts: .ac-cart-description h2",
+      "pass": true,
+      "details": {
+        "fonts": [
+          {
+            "familyName": "Zalando Sans",
+            "postScriptName": "ZalandoSans-Regular",
+            "isCustomFont": true,
+            "glyphCount": 32
+          },
+          {
+            "familyName": "Noto Sans Arabic",
+            "postScriptName": "NotoSansArabic-Regular",
+            "isCustomFont": true,
+            "glyphCount": 7
+          }
+        ]
+      }
+    },
+    {
+      "label": "Chromium/privacy: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/privacy: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/privacy: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/terms: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/terms: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/terms: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/data-deletion: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/data-deletion: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/data-deletion: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/admin: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/admin: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/admin: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium/admin-dark: responsive",
+      "pass": true
+    },
+    {
+      "label": "Chromium/admin-dark: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Chromium/admin-dark: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Chromium: no external font requests",
+      "pass": true,
+      "details": []
+    },
+    {
+      "label": "Firefox: actual locale fr",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/320: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/320: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/fr/320: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/390: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/390: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/fr/390: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/768: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/768: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/fr/768: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/1360: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/fr/1360: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/fr/1360: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox: actual locale ar",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/320: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/320: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/ar/320: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/390: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/390: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/ar/390: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/768: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/768: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/ar/768: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/1360: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/ar/1360: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/ar/1360: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox: account created",
+      "pass": true
+    },
+    {
+      "label": "Firefox: price really changed",
+      "pass": true,
+      "details": {
+        "before": "50,60 DT",
+        "after": "91,21 DT"
+      }
+    },
+    {
+      "label": "Firefox: quantity persisted to DB",
+      "pass": true
+    },
+    {
+      "label": "Firefox/dynamic-price: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/dynamic-price: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/dynamic-price: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/privacy: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/privacy: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "\"Zalando Sans\"",
+          "\"Noto Sans Arabic\""
+        ]
+      }
+    },
+    {
+      "label": "Firefox/privacy: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/terms: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/terms: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "\"Zalando Sans\"",
+          "\"Noto Sans Arabic\""
+        ]
+      }
+    },
+    {
+      "label": "Firefox/terms: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/data-deletion: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/data-deletion: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "\"Zalando Sans\"",
+          "\"Noto Sans Arabic\""
+        ]
+      }
+    },
+    {
+      "label": "Firefox/data-deletion: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/admin: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/admin: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/admin: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox/admin-dark: responsive",
+      "pass": true
+    },
+    {
+      "label": "Firefox/admin-dark: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "Firefox/admin-dark: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "Firefox: no external font requests",
+      "pass": true,
+      "details": []
+    },
+    {
+      "label": "generated invoice HTML: responsive",
+      "pass": true
+    },
+    {
+      "label": "generated invoice HTML: all visible text and controls use the official stack",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "bad": [],
+        "loaded": [
+          "Zalando Sans",
+          "Noto Sans Arabic"
+        ]
+      }
+    },
+    {
+      "label": "generated invoice HTML: actual local Latin font loaded",
+      "pass": true
+    },
+    {
+      "label": "no browser exceptions",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "fonts": [
+    {
+      "selector": ".ac-cart-description strong",
+      "fonts": [
+        {
+          "familyName": "Zalando Sans",
+          "postScriptName": "ZalandoSans-Regular",
+          "isCustomFont": true,
+          "glyphCount": 8
+        }
+      ]
+    },
+    {
+      "selector": ".ac-cart-description h2",
+      "fonts": [
+        {
+          "familyName": "Zalando Sans",
+          "postScriptName": "ZalandoSans-Regular",
+          "isCustomFont": true,
+          "glyphCount": 32
+        },
+        {
+          "familyName": "Noto Sans Arabic",
+          "postScriptName": "NotoSansArabic-Regular",
+          "isCustomFont": true,
+          "glyphCount": 7
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "scope": "Real built app; isolated SQLite and fictional accounts; no live providers"
+}

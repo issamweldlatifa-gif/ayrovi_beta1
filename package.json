@@ -1,7 +1,7 @@
 {
   "name": "ayrovi",
   "version": "3.10.4",
-  "description": "AYSONIC — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
+  "description": "AYSONIC \u2014 Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
@@ -18,7 +18,7 @@
     "android:open": "cap open android",
     "design:inventory": "node scripts/inventory-customer-design.mjs",
     "design:build": "node scripts/build-editorial-design.mjs",
-    "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check && npm run icons:check",
+    "design:check": "node scripts/build-editorial-design.mjs --check && node scripts/inventory-customer-design.mjs --check && npm run icons:check && npm run identity:check",
     "design:browser": "node verify/editorial-system.mjs",
     "verify:editorial-customer": "esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs",
     "icons:check": "node scripts/check-icon-contract.mjs",
@@ -30,7 +30,11 @@
     "verify:sonim-playback": "node verify/sonim-actions-runner.mjs verify/sonim-playback.mjs",
     "verify:sonim-handsfree": "node verify/sonim-actions-runner.mjs verify/sonim-handsfree.mjs",
     "verify:variant-availability": "node verify/sonim-actions-runner.mjs verify/variant-availability.mjs verify/variant-availability-fixture.tsx",
-    "verify:product-selection": "node verify/sonim-actions-runner.mjs verify/product-selection.mjs verify/product-selection-fixture.tsx"
+    "verify:product-selection": "node verify/sonim-actions-runner.mjs verify/product-selection.mjs verify/product-selection-fixture.tsx",
+    "identity:check": "node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs",
+    "identity:test": "vitest run tests/brand-identity.test.ts",
+    "prebuild:client": "npm run identity:check",
+    "verify:identity": "esbuild verify/identity-runtime.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/identity-runtime.cjs && node .cache/identity-runtime.cjs"
   },
   "keywords": [
     "ayrovi",
@@ -49,12 +53,14 @@
     "@capacitor/app": "^7.1.2",
     "@capacitor/core": "^7.6.9",
     "@capacitor/status-bar": "^7.0.6",
+    "@pdf-lib/fontkit": "^1.1.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/canvas-confetti": "^1.9.0",
     "@vitejs/plugin-react": "^6.0.5",
     "@zxing/library": "0.21.3",
     "autoprefixer": "^10.5.4",
     "better-sqlite3": "^11.10.0",
+    "bidi-js": "^1.1.0",
     "canvas-confetti": "^1.9.4",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
@@ -66,6 +72,7 @@
     "mailparser": "^3.9.17",
     "motion": "^13.1.0",
     "multer": "^2.4.0",
+    "pdf-lib": "^1.17.1",
     "pdf-to-img": "^5.0.0",
     "postcss": "^8.5.26",
     "react": "^19.2.8",

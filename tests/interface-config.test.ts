@@ -7,27 +7,27 @@ describe('واجهتي full interface configuration', () => {
   test('locks the 70/25/5 AYROVI palette on public defaults', () => {
     expect(DEFAULT_INTERFACE_CONFIG.colors).toMatchObject({
       pageBackground: '#ffffff',
-      primary: '#111111',
+      primary: '#000000',
       accent: '#ff6900',
-      announcementBackground: '#0a0a0a',
+      announcementBackground: '#000000',
       announcementText: '#ffffff',
-      heroBackground: '#0a0a0a',
+      heroBackground: '#000000',
     });
     expect(DEFAULT_INTERFACE_CONFIG.icons.activeColor).toBe('#ff6900');
-    expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#111111' });
-    expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#111111');
+    expect(DEFAULT_INTERFACE_CONFIG.navigation).toMatchObject({ background: '#ffffff', color: '#000000' });
+    expect(DEFAULT_INTERFACE_CONFIG.buttons.background).toBe('#000000');
   });
 
-  test('uses a single Inter / Noto Sans Arabic stack on the default preset', () => {
-    expect(DEFAULT_INTERFACE_CONFIG.typography.display).toContain('Inter');
+  test('uses a single Zalando Sans / Noto Sans Arabic stack on the default preset', () => {
+    expect(DEFAULT_INTERFACE_CONFIG.typography.display).toContain('Zalando Sans');
     expect(DEFAULT_INTERFACE_CONFIG.typography.body).toContain('Noto Sans Arabic');
     expect(DEFAULT_INTERFACE_CONFIG.typography.display).toBe(DEFAULT_INTERFACE_CONFIG.typography.body);
     expect(INTERFACE_FONT_PRESETS[0].display).not.toContain('Plus Jakarta');
   });
 
-  test('publishes exactly five font presets and the single AYROVI icon system', () => {
-    expect(INTERFACE_FONT_PRESETS).toHaveLength(5);
-    expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).size).toBe(5);
+  test('publishes one locked font preset and the single AYROVI icon system', () => {
+    expect(INTERFACE_FONT_PRESETS).toHaveLength(1);
+    expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).size).toBe(1);
     expect(INTERFACE_FONT_PRESETS.every((preset) => preset.body && preset.display)).toBe(true);
     // Un seul système d'icônes : le système maison (lucide et les bibliothèques de comparaison ont été retirés).
     expect(INTERFACE_ICON_LIBRARIES.map((library) => library.id)).toEqual(['ayrovi']);
@@ -40,16 +40,16 @@ describe('واجهتي full interface configuration', () => {
       typography: { body: DEFAULT_INTERFACE_CONFIG.typography.body, display: DEFAULT_INTERFACE_CONFIG.typography.display, baseSize: 17, align: 'center', headingColor: '#112233', textColor: '#445566' },
       buttons: { background: '#123456', color: '#ffffff', radius: 8, height: 46, shape: 'soft' },
       icons: { library: 'lucide', color: '#654321', size: 22, style: 'outline' },
-      navigation: { background: '#111111', color: '#eeeeee', activeBackground: '#333333', showLabels: true, height: 72, lensLabel: 'Photo', aiLabel: 'AI', visionLabel: 'Vision' },
+      navigation: { background: '#000000', color: '#eeeeee', activeBackground: '#333333', showLabels: true, height: 72, lensLabel: 'Photo', aiLabel: 'AI', visionLabel: 'Vision' },
       slider: DEFAULT_INTERFACE_CONFIG.slider,
       layout: { sectionGap: 24, maxWidth: 1320 },
     };
     const normalized = normalizeInterfaceConfig(legacy);
     expect(normalized.sections.map((section) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
     expect(normalized.typography.baseSize).toBe(17);
-    expect(normalized.typography.headingColor).toBe('#112233');
+    expect(normalized.typography.headingColor).toBe('#000000');
     expect(normalized.colors.pageBackground).toBe('#ffffff');
-    expect(normalized.buttons.secondaryColor).toBe('#111111');
+    expect(normalized.buttons.secondaryColor).toBe('#000000');
     // Les anciennes valeurs de bibliothèque (lucide…) sont recentrées sur le système AYROVI.
     expect(normalized.icons).toMatchObject({ library: 'ayrovi', color: '#654321', activeColor: '#ff6900' });
     expect(normalized.layout).toMatchObject({ sectionGap: 24, maxWidth: 1320, cardRadius: 16, shadow: 'soft' });
@@ -66,7 +66,7 @@ describe('واجهتي full interface configuration', () => {
     input.layout.cardRadius = 99;
     input.sections[0].paddingY = 999;
     const normalized = normalizeInterfaceConfig(input);
-    expect(normalized.colors.pageBackground).toBe('#abcdef');
+    expect(normalized.colors.pageBackground).toBe('#ffffff');
     expect(normalized.colors.primary).toBe(DEFAULT_INTERFACE_CONFIG.colors.primary);
     expect(normalized.typography.baseSize).toBe(22);
     expect(normalized.typography.lineHeight).toBe(1.2);

@@ -1,7 +1,7 @@
 /* Editorial voice composition. No gradients, decorative glow, or large orange surfaces. */
 .editorial-voice { position:absolute; inset:0; z-index:40; display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; color:var(--ay-e-ink); background:var(--ay-e-canvas); }
 .editorial-voice__header { flex:none; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:max(12px, env(safe-area-inset-top)) 16px 12px; border-bottom:1px solid var(--ay-e-line); }
-.editorial-voice__brand { display:flex; align-items:center; gap:8px; font-family:"AY Space Grotesk",sans-serif; font-size:12px; font-weight:600; letter-spacing:.06em; }
+.editorial-voice__brand { display:flex; align-items:center; gap:8px; font-family:var(--ay-font-stack); font-size:12px; font-weight:600; letter-spacing:.06em; }
 .editorial-voice__brand i { width:5px; height:5px; background:var(--ay-e-accent); }
 .voice-icon-button { display:inline-flex; flex:none; align-items:center; justify-content:center; width:48px; min-width:44px; height:48px; border:1px solid var(--ay-e-line); border-radius:0; color:var(--ay-e-ink); background:var(--ay-e-canvas); cursor:pointer; }
 .editorial-voice button:focus-visible { outline:2px solid var(--ay-e-focus); outline-offset:3px; }
@@ -44,7 +44,7 @@
 .voice-choices button, .voice-rates button { border:1px solid var(--ay-e-line); background:var(--ay-e-canvas); color:var(--ay-e-ink); border-radius:0; }
 .voice-choices [aria-pressed=true], .voice-rates [aria-pressed=true] { background:var(--ay-e-action); color:var(--ay-e-on-action); border-color:var(--ay-e-action); }
 .voice-rates { display:flex; flex-wrap:wrap; gap:8px; }
-.voice-rates button { flex:1; min-width:64px; min-height:44px; font:13px "AY Space Grotesk",sans-serif; }
+.voice-rates button { flex:1; min-width:64px; min-height:44px; font:13px var(--ay-font-stack); }
 .voice-haptics { display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:20px; margin-top:24px; border-top:1px solid var(--ay-e-line); font-size:13px; }
 .voice-haptics small { display:block; color:var(--ay-e-muted); font-size:12px; line-height:1.8; margin-top:4px; }
 .voice-done { flex:none; width:100%; min-height:48px; margin-top:16px; padding:12px; border:1px solid var(--ay-e-action); border-radius:0; background:var(--ay-e-action); color:var(--ay-e-on-action); font-weight:500; }

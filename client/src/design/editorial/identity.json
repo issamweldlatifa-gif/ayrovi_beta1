@@ -1,76 +1,61 @@
 {
-  "version": "2.0.0",
-  "name": "AYROVI ÉDITORIAL",
+  "version": "3.0.0",
+  "name": "AYROVI A — Official Identity",
   "orangeAreaLimit": 0.03,
   "orangeAreaExclusions": [
     "product-images"
   ],
   "colors": {
     "canvas": "#FFFFFF",
-    "surface": "#F6F5F3",
-    "ink": "#272322",
-    "action": "#202020",
-    "actionHover": "#393431",
+    "surface": "#F5F5F5",
+    "ink": "#000000",
+    "action": "#000000",
+    "actionHover": "#262626",
     "onAction": "#FFFFFF",
-    "muted": "#716C67",
-    "line": "#DDD9D5",
+    "muted": "#595959",
+    "line": "#D9D9D9",
     "accent": "#FF7900",
     "accentText": "#A74700",
     "success": "#236044",
     "danger": "#A52D2D",
-    "focus": "#272322"
+    "focus": "#000000",
+    "secondary": "#333333"
   },
   "darkColors": {
-    "canvas": "#191817",
-    "surface": "#242220",
-    "ink": "#FAF9F7",
-    "action": "#FAF9F7",
-    "actionHover": "#E3DFDA",
-    "onAction": "#191817",
-    "muted": "#BEB7B0",
-    "line": "#55504B",
+    "canvas": "#000000",
+    "surface": "#171717",
+    "ink": "#FFFFFF",
+    "action": "#FFFFFF",
+    "actionHover": "#E5E5E5",
+    "onAction": "#000000",
+    "muted": "#BDBDBD",
+    "line": "#525252",
     "accent": "#FF7900",
     "accentText": "#FFAE69",
     "success": "#90D6AF",
     "danger": "#FFABAB",
-    "focus": "#FAF9F7"
+    "focus": "#FFFFFF",
+    "secondary": "#E5E5E5"
   },
   "fonts": [
     {
-      "family": "AY Noto Sans Arabic",
+      "family": "Zalando Sans",
+      "file": "/fonts/editorial/zalando-sans.woff2",
+      "weight": "200 900",
+      "stretch": "75% 125%",
+      "style": "normal",
+      "role": "latin-ui-and-numbers",
+      "license": "/fonts/editorial/zalando-sans-OFL.txt",
+      "sha256": "ba6fc11db691debbd271564b194e37d96fab6d3d58c96574c58ce15696196a8f"
+    },
+    {
+      "family": "Noto Sans Arabic",
       "file": "/fonts/editorial/noto-sans-arabic.woff2",
       "weight": "100 900",
       "style": "normal",
       "role": "arabic-ui",
       "license": "/fonts/editorial/noto-sans-arabic-OFL.txt",
       "sha256": "a83d688c5a2bf59b3e912958833780faecf957e4820c547233ff86dc86198e06"
-    },
-    {
-      "family": "AY Space Grotesk",
-      "file": "/fonts/editorial/space-grotesk.woff2",
-      "weight": "300 700",
-      "style": "normal",
-      "role": "latin-ui",
-      "license": "/fonts/editorial/space-grotesk-OFL.txt",
-      "sha256": "70541c504618dd2717661fab766e01b410fdba4faa40e678ff4652e53ef75810"
-    },
-    {
-      "family": "AY Amiri",
-      "file": "/fonts/editorial/amiri.woff2",
-      "weight": "400",
-      "style": "normal",
-      "role": "arabic-editorial",
-      "license": "/fonts/editorial/amiri-OFL.txt",
-      "sha256": "637aad31872c4f1bb1ea9506511d10346f686f64aa1c292da5f9c9d1d9f24cbd"
-    },
-    {
-      "family": "AY DM Serif Display",
-      "file": "/fonts/editorial/dm-serif-display.woff2",
-      "weight": "400",
-      "style": "normal",
-      "role": "latin-editorial",
-      "license": "/fonts/editorial/dm-serif-display-OFL.txt",
-      "sha256": "b0d6557276449110729254754376e0327800dce400b2d3eedba3cb45635da297"
     }
   ],
   "geometry": {
@@ -106,5 +91,17 @@
     "fast": 120,
     "standard": 180,
     "reduced": 0
+  },
+  "typography": {
+    "preset": "ayrovi-a",
+    "stack": "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
+    "headingWidth": "112.5%",
+    "bodyWeight": 400,
+    "headingWeight": 500,
+    "labelWeight": 700,
+    "priceWeight": 400,
+    "bodyLineHeight": 1.5,
+    "arabicLineHeight": 1.8,
+    "letterSpacing": "0em"
   }
 }

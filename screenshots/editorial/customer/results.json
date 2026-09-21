@@ -118,10 +118,10 @@
       "label": "fr/320: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 683.609375,
-        "composer": 683.609375
+        "header": 65,
+        "messagesTop": 65,
+        "messagesBottom": 685,
+        "composer": 685
       }
     },
     {
@@ -258,10 +258,10 @@
       "label": "fr/360: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 683.609375,
-        "composer": 683.609375
+        "header": 65,
+        "messagesTop": 65,
+        "messagesBottom": 685,
+        "composer": 685
       }
     },
     {
@@ -292,7 +292,7 @@
     {
       "label": "fr/390/home: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.01402357516101592
+      "details": 0.014020537124802527
     },
     {
       "label": "fr/390: actual logo source preserved",
@@ -398,10 +398,10 @@
       "label": "fr/390: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 683.609375,
-        "composer": 683.609375
+        "header": 65,
+        "messagesTop": 65,
+        "messagesBottom": 685,
+        "composer": 685
       }
     },
     {
@@ -503,7 +503,7 @@
     {
       "label": "fr/768/menu: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.0009055958728278041
+      "details": 0
     },
     {
       "label": "fr/768: initial menu focus is close",
@@ -538,10 +538,10 @@
       "label": "fr/768: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 675.609375,
-        "composer": 675.609375
+        "header": 65,
+        "messagesTop": 65,
+        "messagesBottom": 677,
+        "composer": 677
       }
     },
     {
@@ -643,7 +643,7 @@
     {
       "label": "fr/1360/menu: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.0012440758293838863
+      "details": 0
     },
     {
       "label": "fr/1360: initial menu focus is close",
@@ -678,10 +678,10 @@
       "label": "fr/1360: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 675.609375,
-        "composer": 675.609375
+        "header": 65,
+        "messagesTop": 65,
+        "messagesBottom": 677,
+        "composer": 677
       }
     },
     {
@@ -818,10 +818,10 @@
       "label": "ar/320: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 683.609375,
-        "composer": 683.609375
+        "header": 69.796875,
+        "messagesTop": 69.796875,
+        "messagesBottom": 682.203125,
+        "composer": 682.203125
       }
     },
     {
@@ -958,10 +958,10 @@
       "label": "ar/360: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 683.609375,
-        "composer": 683.609375
+        "header": 69.796875,
+        "messagesTop": 69.796875,
+        "messagesBottom": 682.203125,
+        "composer": 682.203125
       }
     },
     {
@@ -1098,10 +1098,10 @@
       "label": "ar/390: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 683.609375,
-        "composer": 683.609375
+        "header": 69.796875,
+        "messagesTop": 69.796875,
+        "messagesBottom": 682.203125,
+        "composer": 682.203125
       }
     },
     {
@@ -1203,7 +1203,7 @@
     {
       "label": "ar/768/menu: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.0009302799170616113
+      "details": 0
     },
     {
       "label": "ar/768: initial menu focus is close",
@@ -1238,10 +1238,10 @@
       "label": "ar/768: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 675.609375,
-        "composer": 675.609375
+        "header": 69.796875,
+        "messagesTop": 69.796875,
+        "messagesBottom": 674.203125,
+        "composer": 674.203125
       }
     },
     {
@@ -1343,7 +1343,7 @@
     {
       "label": "ar/1360/menu: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.0012440758293838863
+      "details": 0
     },
     {
       "label": "ar/1360: initial menu focus is close",
@@ -1378,10 +1378,10 @@
       "label": "ar/1360: controls do not cover conversation",
       "pass": true,
       "details": {
-        "header": 67.390625,
-        "messagesTop": 67.390625,
-        "messagesBottom": 675.609375,
-        "composer": 675.609375
+        "header": 69.796875,
+        "messagesTop": 69.796875,
+        "messagesBottom": 674.203125,
+        "composer": 674.203125
       }
     },
     {
@@ -1406,9 +1406,9 @@
       "pass": true,
       "details": {
         "x": 0,
-        "y": 319.609375,
+        "y": 321,
         "width": 390,
-        "height": 160.390625
+        "height": 159
       }
     },
     {
@@ -1504,7 +1504,7 @@
       "locale": "fr",
       "width": 390,
       "screen": "home",
-      "ratio": 0.01402357516101592,
+      "ratio": 0.014020537124802527,
       "exclusions": []
     },
     {
@@ -1553,7 +1553,7 @@
       "locale": "fr",
       "width": 768,
       "screen": "menu",
-      "ratio": 0.0009055958728278041,
+      "ratio": 0,
       "exclusions": []
     },
     {
@@ -1588,7 +1588,7 @@
       "locale": "fr",
       "width": 1360,
       "screen": "menu",
-      "ratio": 0.0012440758293838863,
+      "ratio": 0,
       "exclusions": []
     },
     {
@@ -1728,7 +1728,7 @@
       "locale": "ar",
       "width": 768,
       "screen": "menu",
-      "ratio": 0.0009302799170616113,
+      "ratio": 0,
       "exclusions": []
     },
     {
@@ -1763,7 +1763,7 @@
       "locale": "ar",
       "width": 1360,
       "screen": "menu",
-      "ratio": 0.0012440758293838863,
+      "ratio": 0,
       "exclusions": []
     },
     {

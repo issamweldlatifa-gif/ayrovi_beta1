@@ -1,0 +1,22 @@
+[
+  {
+    "file": "assets/fonts/ZalandoSans-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/zalando/sans/4e44d0864c4e37ab67fa549cd188aec8776dc948/fonts/ttf/ZalandoSans-Regular.ttf",
+    "sha256": "bb5ddbccfee73b0c1a98a50cded231363abeacb54a105cab24c8c41dd277ffb1"
+  },
+  {
+    "file": "assets/fonts/ZalandoSans-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/zalando/sans/4e44d0864c4e37ab67fa549cd188aec8776dc948/fonts/ttf/ZalandoSans-Bold.ttf",
+    "sha256": "d890ebbcce8e0a699ac52fa4d31531ad93ce5ffa85c463516163940443a8686d"
+  },
+  {
+    "file": "assets/fonts/NotoSansArabic-Regular.ttf",
+    "source": "https://raw.githubusercontent.com/notofonts/arabic/43674fa5a3ad7e1a8e1b9249319b51b1ee68be26/fonts/NotoSansArabic/hinted/ttf/NotoSansArabic-Regular.ttf",
+    "sha256": "acc087b31aabed3c2d821bc981416dea362407a81f235c9a4966463cc7ef7bbe"
+  },
+  {
+    "file": "assets/fonts/NotoSansArabic-Bold.ttf",
+    "source": "https://raw.githubusercontent.com/notofonts/arabic/43674fa5a3ad7e1a8e1b9249319b51b1ee68be26/fonts/NotoSansArabic/hinted/ttf/NotoSansArabic-Bold.ttf",
+    "sha256": "254358898829790c363a0dca784d74458e491f797bb9ddf862789bad673ae7a4"
+  }
+]

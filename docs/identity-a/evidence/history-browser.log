@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:sonim-history
+> node verify/sonim-actions-runner.mjs verify/sonim-history.mjs
+
+157/157 SONIM history assertions passed

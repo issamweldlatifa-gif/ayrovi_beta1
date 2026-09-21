@@ -326,8 +326,8 @@
         "height": 117,
         "content": 117,
         "overflow": "visible",
-        "textBottom": 476.390625,
-        "nextTop": 512.390625,
+        "textBottom": 475.890625,
+        "nextTop": 512.890625,
         "docWidth": 320,
         "docScroll": 320
       }
@@ -337,7 +337,7 @@
       "pass": true,
       "details": {
         "width": 90,
-        "textWidth": 20,
+        "textWidth": 22,
         "height": 88,
         "buttons": [
           44,
@@ -676,11 +676,11 @@
       "details": {
         "width": 358,
         "scroll": 358,
-        "height": 117,
-        "content": 117,
+        "height": 78,
+        "content": 78,
         "overflow": "visible",
-        "textBottom": 476.921875,
-        "nextTop": 512.921875,
+        "textBottom": 455.921875,
+        "nextTop": 492.921875,
         "docWidth": 390,
         "docScroll": 390
       }
@@ -690,7 +690,7 @@
       "pass": true,
       "details": {
         "width": 90,
-        "textWidth": 20,
+        "textWidth": 22,
         "height": 88,
         "buttons": [
           44,
@@ -1030,10 +1030,10 @@
         "width": 288,
         "scroll": 288,
         "height": 78,
-        "content": 84,
+        "content": 78,
         "overflow": "visible",
-        "textBottom": 467.390625,
-        "nextTop": 493.390625,
+        "textBottom": 455.546875,
+        "nextTop": 492.546875,
         "docWidth": 320,
         "docScroll": 320
       }
@@ -1043,7 +1043,7 @@
       "pass": true,
       "details": {
         "width": 90,
-        "textWidth": 18,
+        "textWidth": 22,
         "height": 88,
         "buttons": [
           44,
@@ -1383,10 +1383,10 @@
         "width": 358,
         "scroll": 358,
         "height": 78,
-        "content": 84,
+        "content": 78,
         "overflow": "visible",
-        "textBottom": 238.9375,
-        "nextTop": 264.9375,
+        "textBottom": 456.296875,
+        "nextTop": 493.296875,
         "docWidth": 390,
         "docScroll": 390
       }
@@ -1396,7 +1396,7 @@
       "pass": true,
       "details": {
         "width": 90,
-        "textWidth": 18,
+        "textWidth": 22,
         "height": 88,
         "buttons": [
           44,

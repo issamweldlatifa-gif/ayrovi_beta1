@@ -1,3 +1,4 @@
+import { enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { cardGatewayAvailable } from '../services/paymentGateway';
@@ -101,8 +102,8 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         whatsapp: String(facts.whatsapp_url || ''),
       },
       // الثيم البصري العام + استوديو «واجهتي».
-      theme: facts.site_theme && typeof facts.site_theme === 'object' ? facts.site_theme : null,
-      interfaceConfig: facts.interface_config && typeof facts.interface_config === 'object' ? facts.interface_config : null,
+      theme: facts.site_theme && typeof facts.site_theme === 'object' ? enforceLegacyTheme(facts.site_theme) : null,
+      interfaceConfig: facts.interface_config && typeof facts.interface_config === 'object' ? enforceBrandIdentity(facts.interface_config) : null,
       footerAbout: String(facts.footer_about || ''),
     };
   };

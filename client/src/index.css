@@ -34,7 +34,7 @@
     background-color: var(--ayrovi-white);
     color: var(--ayrovi-ink);
     font-family: var(--font-primary);
-    letter-spacing: -0.011em;
+    letter-spacing: 0;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;

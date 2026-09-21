@@ -862,7 +862,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
       aria-modal="true"
       aria-label={tr('SONIM', 'SONIM')}
     >
-      <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-[var(--ayrovi-font)] outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
+      <section ref={pageRef} tabIndex={-1} className={`relative flex h-full min-h-0 w-full flex-col overflow-hidden font-sans outline-none ${isDark ? 'bg-ink' : 'bg-surface'}`}>
         <div className="contents" inert={Boolean(isMenuOpen || isAttachmentSheetOpen || (feedbackLayer && feedbackMessage))}>
         {voiceMode ? (
           <AssistantVoiceModeScreen

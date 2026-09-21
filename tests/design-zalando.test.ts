@@ -63,7 +63,7 @@ describe('jetons canoniques — la charte tient en six variables', () => {
       '--ayrovi-bg-main': '#ffffff',
       '--ayrovi-bg-surface': '#f8f9fa',
       '--ayrovi-border-soft': '#eaeaea',
-      '--ayrovi-text-primary': '#111111',
+      '--ayrovi-text-primary': '#000000',
       '--ayrovi-text-secondary': '#666666',
       '--ayrovi-color-brand-orange': '#ff6900',
     };
@@ -266,7 +266,7 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
     const SLATE = /#(1d2130|6b7280|f8f9fe|e2e8f0|5b6472|111318|050505|17181c|111217|171717|23242c)\b/gi;
     const offenders: string[] = [];
     for (const rel of clientFiles(/\.(tsx|ts|css)$/)) {
-      if (rel.startsWith('client/src/admin/') || rel === TOKENS) continue;
+      if (rel.startsWith('client/src/admin/') || rel === TOKENS || rel === 'client/src/design/editorial/tokens.generated.css') continue; // Generated approved neutral palette has its own identity/contrast tests.
       const hits = withoutComments(read(rel)).match(SLATE) ?? [];
       if (hits.length) offenders.push(`${rel} → ${[...new Set(hits)].join(' ')}`);
     }

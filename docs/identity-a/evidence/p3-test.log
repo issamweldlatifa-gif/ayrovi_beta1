@@ -1,0 +1,1734 @@
+
+> ayrovi@3.10.4 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/user/ayrovi_beta1[39m
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mavatar and password writes require authentication
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mall new writes require CSRF and do not mutate on failure
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mphoto is decoded, cropped, metadata stripped, persisted and isolated
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mremoving a provider/custom photo is persistent and explicitly recorded
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects missing image
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects svg image
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects fake JPEG image
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2moversized photo is rejected with 413 JSON
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2msecurity summary accurately identifies password/OAuth-only accounts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mpassword change rotates current session, revokes others/resets and queues notification
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects invalid password change: wrong / New-password-2!
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects invalid password change: Original-password-1! / short
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects invalid password change: Original-password-1! / aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mrejects invalid password change: Original-password-1! / Original-password-1!
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mOAuth-only account cannot set a password through change endpoint
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mpassword guessing is rate limited
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mpartial preferences preserve omitted values, reject coercions and isolate accounts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-account-settings.test.ts[2m > [22m[2mPersistent customer account settings[2m > [22m[2mpassword account cannot remove its login email
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/customer-account-settings.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 3940[2mms[22m[39m
+     [33m[2m✓[22m[39m password change rotates current session, revokes others/resets and queues notification [33m 478[2mms[22m[39m
+     [33m[2m✓[22m[39m password guessing is rate limited [33m 354[2mms[22m[39m
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mkeeps operational Arrivals separate from the existing public CMS arrivals
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mcreates a canonical CRM customer inline, normalizes and reuses a duplicate phone, then links the Arrival atomically
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mcreates a canonical CRM customer inline, normalizes and reuses a duplicate phone, then links the Arrival atomically
+[22m[39m[Arrival ingestion] ARRIVAL_INGESTION_FAILED
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mruns the full SHEIN email + TEMU PDF workflow, review, idempotency, summary and confirmation
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mblocks confirmation on partial data and records a sanitized failed extraction without retrying the source
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mrecovers an interrupted job without retaining uncommitted rows or derived files
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mopens the extraction capability circuit on HTTP 429 and does not call remaining PDF pages
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mpersists and exposes sanitized actionable authentication diagnostics without leaking provider details
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mkeeps multiple nested Stores on one Arrival client, scopes sources/products, supports an Arrival alias, and unlinks without deleting canonical CRM data
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2mcreates and manages global Store profiles with audited validation and assignment protection
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-ingestion.test.ts[2m > [22m[2mAdministration CRM Arrival AI ingestion[2m > [22m[2menforces admin authentication, write permission and CSRF protection
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/arrival-ingestion.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 3595[2mms[22m[39m
+     [33m[2m✓[22m[39m runs the full SHEIN email + TEMU PDF workflow, review, idempotency, summary and confirmation [33m 757[2mms[22m[39m
+     [33m[2m✓[22m[39m opens the extraction capability circuit on HTTP 429 and does not call remaining PDF pages [33m 1208[2mms[22m[39m
+     [33m[2m✓[22m[39m keeps multiple nested Stores on one Arrival client, scopes sources/products, supports an Arrival alias, and unlinks without deleting canonical CRM data [33m 411[2mms[22m[39m
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCategory Master (official taxonomy)[2m > [22m[2mthe master is data imported from AYROVI, never hardcoded: empty master disables classification
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCategory Master (official taxonomy)[2m > [22m[2monly ACTIVE entries are shown to the AI and inactive codes are rejected
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCategory Master (official taxonomy)[2m > [22m[2mre-importing the official master is idempotent (no duplicate categories)
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2m1. clear SKU + clear product name -> AI classifies, source AI, confidence stored
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2m2. AI returns a category that does not exist -> NEEDS_REVIEW, nothing stored
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2m3. AI returns an INACTIVE category -> NEEDS_REVIEW
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2m4. AI not confident (below configurable threshold) -> NEEDS_REVIEW
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2m4. AI not confident (below configurable threshold) -> NEEDS_REVIEW
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2m5. ambiguous product name -> AI declines (empty code) -> NEEDS_REVIEW
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mAI classification flow[2m > [22m[2mAI provider failure never blocks or loses the Card: lines go to review
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mManual review flow[2m > [22m[2m7. manual selection from the official master -> CLASSIFIED, source MANUAL
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mManual review flow[2m > [22m[2mfree text is impossible: unknown / inactive / incoherent codes are rejected
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mManual review flow[2m > [22m[2mHTTP: PATCH /products/:id/category accepts only official codes, GET /categories lists the master
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mManual review flow[2m > [22m[2mHTTP: POST /clients/:id/classify runs the AI pass on demand
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCard approval gate and Warehouse dispatch[2m > [22m[2m8. a Card without a category is not approved until manual review resolves it
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCard approval gate and Warehouse dispatch[2m > [22m[2m9. re-classifying and re-sending the same Card never duplicates anything
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCard approval gate and Warehouse dispatch[2m > [22m[2m10. a legacy Card (created before the feature) keeps working untouched
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mCard approval gate and Warehouse dispatch[2m > [22m[2ma category deactivated in the master can no longer be selected
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-category-classification.test.ts[2m > [22m[2mSchema migration on an existing database[2m > [22m[2man existing (pre-feature) database is upgraded additively and its Cards keep working
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/arrival-category-classification.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 2981[2mms[22m[39m
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mregistration enqueues one escaped/localized welcome, not on login; provider accepted then payload erased
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mregistration enqueues one escaped/localized welcome, not on login; provider accepted then payload erased
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "مرحبًا بك في AYROVI!"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2munconfigured mail does not break registration, never fakes a reset send
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mtemporary provider failure is durable and retried with stable idempotency key
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mtemporary provider failure is durable and retried with stable idempotency key
+[22m[39m[Mail] فشل الإرسال عبر resend: HTTP 503
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mtemporary provider failure is durable and retried with stable idempotency key
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mend-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mend-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mend-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2munknown, blocked, and social-only accounts get identical responses without reset mail
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mexpiry, tampering, blocked account and changed email invalidate a link
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mexpiry, tampering, blocked account and changed email invalidate a link
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mexpiry, tampering, blocked account and changed email invalidate a link
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mvalidating password does not consume token; consuming one invalidates all outstanding links
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mvalidating password does not consume token; consuming one invalidates all outstanding links
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mvalidating password does not consume token; consuming one invalidates all outstanding links
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mvalidating password does not consume token; consuming one invalidates all outstanding links
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mper-address and IP limits apply to unknown addresses as well
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mrejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mrejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Bienvenue chez AYROVI !"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2mrejects non-JSON and cross-origin POSTs and uses configured origin, never Host, for email links
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Réinitialisez votre mot de passe"
+
+[90mstdout[2m | tests/customer-password-recovery.test.ts[2m > [22m[2mCustomer welcome and password recovery[2m > [22m[2muntrusted public origins fail readiness and expired jobs never send
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/customer-password-recovery.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1884[2mms[22m[39m
+     [33m[2m✓[22m[39m end-to-end reset: hashed token, encrypted payload, no session/password in responses; single-use and all sessions revoked [33m 376[2mms[22m[39m
+[90mstdout[2m | tests/ayrovi.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/ayrovi.test.ts[2m > [22m[2mAYSONIC platform[2m > [22m[2mone-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [31m❯[39m tests/ayrovi.test.ts [2m([22m[2m42 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1698[2mms[22m[39m
+     [32m✓[39m customer OTP activates isolated accounts and links only verified historical orders[32m 61[2mms[22m[39m
+     [32m✓[39m Google OAuth state is bound to the initiating browser[32m 9[2mms[22m[39m
+     [32m✓[39m Google OAuth safely merges an explicitly linked account and rejects unverified email pre-hijacking[32m 47[2mms[22m[39m
+     [32m✓[39m Facebook OAuth state is provider-bound and tied to the initiating browser[32m 6[2mms[22m[39m
+     [32m✓[39m Facebook OAuth verifies the token and never merges accounts by an unverified email[32m 10[2mms[22m[39m
+     [32m✓[39m customers can permanently delete their profile with CSRF and explicit confirmation[32m 6[2mms[22m[39m
+     [32m✓[39m URL cleaner extracts a valid link from pasted text[32m 0[2mms[22m[39m
+     [32m✓[39m image extraction rejects a request without an image[32m 2[2mms[22m[39m
+     [32m✓[39m image extraction rejects non-image uploads[32m 8[2mms[22m[39m
+     [32m✓[39m image extraction rejects spoofed image MIME and keeps healthcheck alive[32m 8[2mms[22m[39m
+     [32m✓[39m scraping blocks malformed and private service addresses[32m 6[2mms[22m[39m
+     [32m✓[39m cart routes require a valid client session[32m 2[2mms[22m[39m
+     [32m✓[39m Lens order keeps the mandatory manual link and request fields, while signed estimate tampering is rejected[32m 17[2mms[22m[39m
+     [32m✓[39m cart and checkout remain isolated between client sessions[32m 43[2mms[22m[39m
+     [32m✓[39m invalid cart quantities are rejected[32m 3[2mms[22m[39m
+     [32m✓[39m duplicate additions cannot exceed the per-item quantity limit[32m 13[2mms[22m[39m
+     [32m✓[39m email-only accounts checkout with a form-provided delivery phone (no SMS verification needed)[32m 15[2mms[22m[39m
+     [32m✓[39m checkout requires at least one verified contact channel[32m 7[2mms[22m[39m
+     [32m✓[39m checkout reuses customers while preserving separate orders[32m 8[2mms[22m[39m
+     [33m[2m✓[22m[39m manual transfer lifecycle preserves proof history, separates invoice and enables tracking only after shipping [33m 516[2mms[22m[39m
+     [32m✓[39m card gateway success/failure is verified server-side and cannot be approved manually[32m 94[2mms[22m[39m
+     [32m✓[39m finance reports combine income, expenses and profit with strict validation[32m 57[2mms[22m[39m
+     [32m✓[39m customer profile, addresses, favorites, notifications and ownership boundaries persist[32m 26[2mms[22m[39m
+     [32m✓[39m guest carts merge into an account and customer logout and expiry invalidate sessions[32m 21[2mms[22m[39m
+     [32m✓[39m public CMS and assistant APIs expose backend data without admin secrets[32m 17[2mms[22m[39m
+     [32m✓[39m admin routes reject unauthenticated requests, clear stale cookies and reject invalid credentials[32m 48[2mms[22m[39m
+     [32m✓[39m super admin login establishes an HttpOnly session and rotating CSRF token[32m 47[2mms[22m[39m
+[31m     [31m×[31m واجهتي is seeded, publicly readable and rejects malformed section schemas[39m[32m 15[2mms[22m[39m
+     [32m✓[39m admin mutations require a valid CSRF token[32m 2[2mms[22m[39m
+     [32m✓[39m dashboard and pricing preview are backend-driven[32m 11[2mms[22m[39m
+     [32m✓[39m CMS CRUD validates, relates, publishes and safely archives content[32m 17[2mms[22m[39m
+     [32m✓[39m OMS prevents bypassing payment, order and shipping stages[32m 12[2mms[22m[39m
+     [32m✓[39m pricing changes are versioned without changing historical order snapshots[32m 9[2mms[22m[39m
+     [32m✓[39m assistant feedback is persisted for guests and CSRF-protected accounts without storing raw guest sessions[32m 13[2mms[22m[39m
+     [33m[2m✓[22m[39m RBAC separates content, order, admin and super-admin capabilities [33m 324[2mms[22m[39m
+     [32m✓[39m audit logs record actors, targets and old/new values[32m 6[2mms[22m[39m
+     [32m✓[39m manual PUBLISHED status publishes now instead of showing a false published badge[32m 6[2mms[22m[39m
+     [32m✓[39m public magazine exposes due schedules but never future content[32m 3[2mms[22m[39m
+     [32m✓[39m rate limiting throttles brute-force attempts on sensitive endpoints[32m 28[2mms[22m[39m
+     [32m✓[39m logout invalidates the admin session[32m 4[2mms[22m[39m
+     [32m✓[39m healthcheck reports the service as ready[32m 2[2mms[22m[39m
+     [32m✓[39m one-shot data migrations never clobber admin edits across restarts (LENS block + payment methods)[32m 145[2mms[22m[39m
+ [32m✓[39m tests/icon-architecture-guard.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 1183[2mms[22m[39m
+     [33m[2m✓[22m[39m audits the actual application, including admin, with zero unreviewed exceptions [33m 1175[2mms[22m[39m
+[90mstdout[2m | tests/assistant.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mchat retries Claude without tools then still answers a greeting
+[22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
+
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mchat retries Claude without tools then still answers a greeting
+[22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
+
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
+
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
+
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
+
+[90mstderr[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mshopping chat stays online when Claude rejects every request
+[22m[39m[AI Core Anthropic] HTTP 400 {"type":"invalid_request_error"}
+
+[90mstdout[2m | tests/assistant.test.ts[2m > [22m[2mAYROVI Claude assistant[2m > [22m[2mlens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model
+[22m[39m[AYROVIX serpapi-lens] 1 visual product matches
+
+ [32m✓[39m tests/assistant.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 715[2mms[22m[39m
+     [33m[2m✓[22m[39m lens_search reuses Google Lens and returns real presentation cards without exposing quote tokens to the model [33m 481[2mms[22m[39m
+ [32m✓[39m tests/voice-chat-controller.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 984[2mms[22m[39m
+     [33m[2m✓[22m[39m late discarded stop cannot erase the next capture buffer [33m 855[2mms[22m[39m
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2msends a real card, creates an Expected Arrival, and is idempotent on double-send
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2minvalid credentials -> SEND_FAILED, no warehouse arrival, retry possible
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2mwarehouse unavailable -> SEND_FAILED with WAREHOUSE_UNAVAILABLE
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2mrefuses to send before the Arrival is confirmed
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2mmulti-store customer: card-level store is null while products carry store context
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2mmultiple customers in one arrival produce separate cards/arrivals
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/arrival-warehouse-dispatch.test.ts[2m > [22m[2mArrival CRM -> Warehouse dispatch[2m > [22m[2mlarge card (>=100 products) is accepted and total units aggregated
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/arrival-warehouse-dispatch.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 878[2mms[22m[39m
+ [32m✓[39m tests/editorial-system.test.tsx [2m([22m[2m107 tests[22m[2m)[22m[33m 724[2mms[22m[39m
+[90mstdout[2m | tests/shipment-dispatch.test.ts[2m > [22m[2mShipment Card -> Warehouse dispatch[2m > [22m[2mmanual create -> confirm -> send creates a warehouse shipment with unique carton ids; double send is idempotent
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/shipment-dispatch.test.ts[2m > [22m[2mShipment Card -> Warehouse dispatch[2m > [22m[2mcannot confirm a shipment with no cartons
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/shipment-dispatch.test.ts[2m > [22m[2mShipment Card -> Warehouse dispatch[2m > [22m[2mcannot send before confirmation
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/shipment-dispatch.test.ts[2m > [22m[2mShipment Card -> Warehouse dispatch[2m > [22m[2mwarehouse rejects invalid auth -> SEND_FAILED, then retry succeeds
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/shipment-dispatch.test.ts[2m > [22m[2mShipment Card -> Warehouse dispatch[2m > [22m[2mwarehouse unavailable -> SEND_FAILED with WAREHOUSE_UNAVAILABLE
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/shipment-dispatch.test.ts[2m > [22m[2mShipment Card -> Warehouse dispatch[2m > [22m[2mcarrier status does NOT overwrite internal integration status
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/shipment-dispatch.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 767[2mms[22m[39m
+[90mstdout[2m | tests/purchasing-foundation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/purchasing-foundation.test.ts[2m > [22m[2mAYROVI Achats (P2.3)[2m > [22m[2mpermissions, listes et framework[2m > [22m[2mle schéma est prêt avant le premier appel, donc aucune table n’est créée à la volée
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/purchasing-foundation.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 521[2mms[22m[39m
+[90mstdout[2m | tests/assistant-tool-security.test.ts[2m > [22m[2mAssistant Tool Gateway security enforcement[2m > [22m[2mdefault-denies undeclared tools and audits without dispatching them
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/assistant-tool-security.test.ts[2m > [22m[2mAssistant Tool Gateway security enforcement[2m > [22m[2mrejects schema smuggling before the mutating domain function
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/assistant-tool-security.test.ts[2m > [22m[2mAssistant Tool Gateway security enforcement[2m > [22m[2mshadow can never invoke a write tool
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/assistant-tool-security.test.ts[2m > [22m[2mAssistant Tool Gateway security enforcement[2m > [22m[2mprobe can never invoke a write tool
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/assistant-tool-security.test.ts[2m > [22m[2mAssistant Tool Gateway security enforcement[2m > [22m[2mderives canonical idempotency, executes once, replays once and audits both attempts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/assistant-tool-security.test.ts[2m > [22m[2mAssistant Tool Gateway security enforcement[2m > [22m[2mrequires a valid server-derived principal before any active write
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/assistant-tool-security.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 659[2mms[22m[39m
+[90mstdout[2m | tests/catalogue-foundation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/catalogue-foundation.test.ts[2m > [22m[2mcatalogue foundation (P2.1)[2m > [22m[2mdatabase safety: fresh, existing, repeated[2m > [22m[2ma fresh database gets the catalogue shape from the constructor alone
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/catalogue-foundation.test.ts [2m([22m[2m48 tests[22m[2m)[22m[33m 668[2mms[22m[39m
+[90mstdout[2m | tests/crm-foundation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/crm-foundation.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 593[2mms[22m[39m
+ [32m✓[39m tests/dependency-compatibility.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 605[2mms[22m[39m
+     [33m[2m✓[22m[39m the actual native asset script awaits composition and applies the requested logo scale [33m 367[2mms[22m[39m
+[90mstdout[2m | tests/back-office-foundation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/back-office-foundation.test.ts [2m([22m[2m29 tests[22m[2m)[22m[33m 482[2mms[22m[39m
+[90mstdout[2m | tests/ayrovix.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mSerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude
+[22m[39m[AYROVIX serpapi-lens] 1 visual product matches
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
+[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
+[22m[39m[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mimage → identification Claude (simulée) → candidats catalogue → événement → choix
+[22m[39m[LensTrace ayx_muamtzun_l78pxb] {"requestId":"ayx_muamtzun_l78pxb","startedAt":"2026-09-21T02:34:52.991Z","normalizeMs":6,"imageBytesIn":91,"anthropicVisionMs":3,"serpApiTotalMs":3,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":1,"dedupMs":1,"candidatesCount":1,"totalBackendMs":12,"endedAt":"2026-09-21T02:34:53.003Z"}
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+
+[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AI Core Anthropic] HTTP 500 internal
+
+[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AYROVIX] structured output failed (Vision provider HTTP 500) — retrying JSON
+
+[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AI Core Anthropic] HTTP 500 internal
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AYROVIX serpapi-lens] 1 visual product matches
+
+[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AYROVIX analyze-image] vision failed — continuing with visual matches
+
+[90mstderr[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[AI Core Anthropic] HTTP 500 internal
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2manalyze-image continue avec Google Lens si Claude Vision échoue
+[22m[39m[LensTrace ayx_muamtzva_cdpiky] {"requestId":"ayx_muamtzva_cdpiky","startedAt":"2026-09-21T02:34:53.015Z","normalizeMs":1,"imageBytesIn":91,"anthropicVisionMs":8,"serpApiTotalMs":8,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":1,"dedupMs":0,"candidatesCount":1,"totalBackendMs":11,"endedAt":"2026-09-21T02:34:53.026Z"}
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
+[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
+[22m[39m[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude lit le prix visible dans la même requête structurée que Vision
+[22m[39m[LensTrace ayx_muamtzvs_e0iu03] {"requestId":"ayx_muamtzvs_e0iu03","startedAt":"2026-09-21T02:34:53.032Z","normalizeMs":2,"imageBytesIn":91,"anthropicVisionMs":0,"serpApiTotalMs":0,"pipelineCacheHit":false,"searchCandidatesMs":1,"dedupMs":0,"candidatesCount":0,"totalBackendMs":4,"endedAt":"2026-09-21T02:34:53.036Z"}
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
+[22m[39m[AYROVIX] Trying anthropic claude-haiku-4-5-20251001
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
+[22m[39m[AYROVIX] Provider SUCCESS claude-haiku-4-5-20251001
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mun ancien prix barré n'est jamais accepté comme prix de commande
+[22m[39m[LensTrace ayx_muamtzw1_gvcepq] {"requestId":"ayx_muamtzw1_gvcepq","startedAt":"2026-09-21T02:34:53.041Z","normalizeMs":2,"imageBytesIn":91,"anthropicVisionMs":0,"serpApiTotalMs":0,"pipelineCacheHit":false,"searchCandidatesMs":1,"anthropicRelevanceMs":0,"dedupMs":0,"candidatesCount":1,"totalBackendMs":4,"endedAt":"2026-09-21T02:34:53.045Z"}
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mClaude Web Search transforme les résultats officiels Anthropic en candidats
+[22m[39m[AYROVIX provider-search] 2 candidates, searches=1
+
+[90mstdout[2m | tests/ayrovix.test.ts[2m > [22m[2mAYROVIX Lens[2m > [22m[2mQR texte exclut toute page Web Search sans prix et lien marchand exploitables
+[22m[39m[AYROVIX provider-search] 1 candidates, searches=1
+
+ [32m✓[39m tests/ayrovix.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 390[2mms[22m[39m
+ [32m✓[39m tests/crm-ui-render.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[33m 450[2mms[22m[39m
+     [33m[2m✓[22m[39m chaque écran se monte, affiche son titre et sa première ligne [33m 402[2mms[22m[39m
+[90mstdout[2m | tests/inventory-foundation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/inventory-foundation.test.ts [2m([22m[2m31 tests[22m[2m)[22m[33m 335[2mms[22m[39m
+[90mstdout[2m | tests/admin-read-gates.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/admin-read-gates.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 426[2mms[22m[39m
+[90mstdout[2m | tests/magazine-agent.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/magazine-agent.test.ts[2m > [22m[2mMagazine Agent persistence and product policy[2m > [22m[2muses the official Anthropic messages endpoint with Web Search and auto-saves the response
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/magazine-agent.test.ts[2m > [22m[2mMagazine Agent persistence and product policy[2m > [22m[2mkeeps Web Search while applying the structured-output compatibility fallback
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/magazine-agent.test.ts[2m > [22m[2mMagazine Agent persistence and product policy[2m > [22m[2mkeeps Web Search while applying the structured-output compatibility fallback
+[22m[39m[AI Core Anthropic] HTTP 400 {"error":"output_config cannot be combined with web_search tool"}
+
+[90mstderr[2m | tests/magazine-agent.test.ts[2m > [22m[2mMagazine Agent persistence and product policy[2m > [22m[2mkeeps Web Search while applying the structured-output compatibility fallback
+[22m[39m[Magazine Agent] structured-web compatibility fallback
+
+[90mstdout[2m | tests/magazine-agent.test.ts[2m > [22m[2mMagazine Agent persistence and product policy[2m > [22m[2mrepairs a malformed successful Claude response before saving any draft
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/magazine-agent.test.ts[2m > [22m[2mMagazine Agent persistence and product policy[2m > [22m[2mrepairs a malformed successful Claude response before saving any draft
+[22m[39m[Magazine Agent] invalid structured response; blocks=text
+
+ [32m✓[39m tests/magazine-agent.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 365[2mms[22m[39m
+[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2msanitized Shadow observability[2m > [22m[2mpersists only correlated metadata and supports actual daily usage/cost totals
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2mAYROVIX execution-lane isolation[2m > [22m[2mshadow/probe cannot read, replace or evict the canonical Lens cache
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstdout[2m | tests/ai-shadow-readiness.test.ts[2m > [22m[2mAYROVIX execution-lane isolation[2m > [22m[2mshadow/probe never enter canonical evaluations or learning aggregates
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/ai-shadow-readiness.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 340[2mms[22m[39m
+ [32m✓[39m tests/design-primitives.test.tsx [2m([22m[2m41 tests[22m[2m)[22m[33m 317[2mms[22m[39m
+[90mstdout[2m | tests/arrival-operational-fields.test.ts[2m > [22m[2mArrival CRM operational fields + multi-source customer aggregation[2m > [22m[2maggregates an EMAIL source and an IMAGE (screenshot) source from two stores onto one Customer Arrival Card, then warehouse batch
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/arrival-operational-fields.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 318[2mms[22m[39m
+     [33m[2m✓[22m[39m aggregates an EMAIL source and an IMAGE (screenshot) source from two stores onto one Customer Arrival Card, then warehouse batch [33m 309[2mms[22m[39m
+[90mstdout[2m | tests/arrival-migration.test.ts[2m > [22m[2mArrival multi-store database migration[2m > [22m[2mcreates and verifies a pre-DDL backup, migrates the legacy Store, and links existing sources/jobs/products
+[22m[39m[database] verified pre-migration backup created: pre-arrival-multistore-2026-09-21T02-35-01-022Z.sqlite
+[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+[database] reconciled verified pre-migration backup: pre-arrival-multistore-2026-09-21T02-35-01-022Z.sqlite
+
+[90mstdout[2m | tests/arrival-migration.test.ts[2m > [22m[2mArrival multi-store database migration[2m > [22m[2mdoes not treat a post-migration database copy as a pre-DDL backup
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/arrival-migration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 291[2mms[22m[39m
+[90mstdout[2m | tests/erp-core-foundation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/erp-core-foundation.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 259[2mms[22m[39m
+ [32m✓[39m tests/merchant-availability.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 270[2mms[22m[39m
+[90mstdout[2m | tests/hardening.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/hardening.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 152[2mms[22m[39m
+[90mstdout[2m | tests/admin-desk.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/admin-desk.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 233[2mms[22m[39m
+ [32m✓[39m tests/editorial-commerce-policy.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[32m 148[2mms[22m[39m
+ [32m✓[39m tests/editorial-voice-ui.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 159[2mms[22m[39m
+[90mstdout[2m | tests/public-upload-policy.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/public-upload-policy.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 140[2mms[22m[39m
+ [32m✓[39m tests/editorial-icon-routing.test.tsx [2m([22m[2m102 tests[22m[2m)[22m[32m 181[2mms[22m[39m
+[90mstderr[2m | tests/editorial-comments.test.tsx[2m > [22m[2mtruthful comment sheet lifecycle[2m > [22m[2mdistinguishes loading from empty and failed reads, with a real retry
+[22m[39mYou have Reduced Motion enabled on your device. Animations may not appear as expected.. For more information and steps for solving, visit https://motion.dev/troubleshooting/reduced-motion-disabled
+
+ [32m✓[39m tests/editorial-comments.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 154[2mms[22m[39m
+[90mstdout[2m | tests/home-content-cms.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/home-content-cms.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 140[2mms[22m[39m
+ [31m❯[39m tests/design-tokens.test.ts [2m([22m[2m15 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 127[2mms[22m[39m
+     [32m✓[39m les trois feuilles système sont à zéro littéral[32m 3[2mms[22m[39m
+     [32m✓[39m tokens.css est le seul lieu des valeurs de la couche admin[32m 8[2mms[22m[39m
+     [32m✓[39m la couche d’application est une seule feuille, sans valeur en dur (P3/T2d)[32m 3[2mms[22m[39m
+[31m     [31m×[31m les valeurs canoniques de la couche admin sont exactes (P3/T2)[39m[32m 8[2mms[22m[39m
+     [32m✓[39m les huit noms hérités survivent comme alias, et plus personne ne les consomme[32m 71[2mms[22m[39m
+     [32m✓[39m chaque ton porte exactement la valeur inscrite dans son nom[32m 1[2mms[22m[39m
+     [32m✓[39m un ton n’est jamais redéfini deux fois avec des valeurs différentes[32m 2[2mms[22m[39m
+     [32m✓[39m le nombre de références aux tons ne remonte pas au-dessus du mesure de T1[32m 1[2mms[22m[39m
+     [32m✓[39m la conversion de la feuille ex-gelée a bien réduit la dette, sans la masquer[32m 2[2mms[22m[39m
+     [32m✓[39m tout var() de la couche admin (CSS et styles en ligne) résout vers une valeur connue[32m 8[2mms[22m[39m
+     [32m✓[39m les accolades restent équilibrées dans chaque feuille touchée[32m 1[2mms[22m[39m
+[31m     [31m×[31m deux tokens de la couche admin ne portent jamais la même valeur hexadécimale[39m[32m 5[2mms[22m[39m
+     [32m✓[39m la table d’absorption de palette existe et relate chaque valeur retirée[32m 5[2mms[22m[39m
+     [32m✓[39m l’accent du back-office est la valeur unique de --ayrovi-cta[32m 4[2mms[22m[39m
+     [32m✓[39m seuls les fichiers données/maquettes/média portent un littéral[32m 4[2mms[22m[39m
+ [31m❯[39m tests/back-office-shell.test.tsx [2m([22m[2m34 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 180[2mms[22m[39m
+     [32m✓[39m affiche les groupes et entrées renvoyés par le serveur, avec le statut legacy[32m 20[2mms[22m[39m
+     [32m✓[39m expose le DomainSwitcher avec les compteurs du registre, jamais une liste figée[32m 8[2mms[22m[39m
+     [32m✓[39m place les modules planifiés hors navigation : visibles comme roadmap, jamais cliquables[32m 8[2mms[22m[39m
+     [32m✓[39m garde le deep-link ?section=…&request=… et le transmet à la page[32m 7[2mms[22m[39m
+     [32m✓[39m accepte la forme /admin/<section> sans ajouter aucune route[32m 12[2mms[22m[39m
+     [32m✓[39m signale la ressource legacy par son maître canonique sans retirer l’écran[32m 6[2mms[22m[39m
+     [32m✓[39m propose le maître canonique en navigation quand cet écran est permis[32m 13[2mms[22m[39m
+     [32m✓[39m affiche l’identité employée rattachée au compte[32m 14[2mms[22m[39m
+     [32m✓[39m ne condamne aucun écran quand le framework échoue : bandeau + page rendue[32m 4[2mms[22m[39m
+     [32m✓[39m neutralise les entrées non permises côté serveur : elles n’arrivent jamais dans la coquille[32m 7[2mms[22m[39m
+     [32m✓[39m construit ses entrées depuis la navigation filtrée[32m 1[2mms[22m[39m
+     [32m✓[39m propose une création permise et passe celle qui est refusée[32m 2[2mms[22m[39m
+     [32m✓[39m n’invente aucune commande quand le framework n’a pas répondu[32m 1[2mms[22m[39m
+     [32m✓[39m respecte hiddenByDefault, le tri déclaré et l’ordre des colonnes[32m 1[2mms[22m[39m
+     [32m✓[39m délègue le rendu des cellules à un seul endroit[32m 16[2mms[22m[39m
+     [32m✓[39m nourrit le formulaire partagé depuis les champs du descripteur, sans copie[32m 1[2mms[22m[39m
+     [32m✓[39m grise une action refusée avec sa raison, et masque ce que la ressource ne sait pas faire[32m 5[2mms[22m[39m
+     [32m✓[39m reste muet sur le journal d’audit tant qu’aucun enregistrement n’est sélectionné[32m 1[2mms[22m[39m
+     [32m✓[39m garde le markup d’origine pour les appels existants[32m 1[2mms[22m[39m
+     [32m✓[39m ajoute tri, sélection, densité, légende, erreurs et actions quand on le demande[32m 4[2mms[22m[39m
+     [32m✓[39m affiche l’action d’état vide quand la liste est vide[32m 1[2mms[22m[39m
+     [32m✓[39m ne garde aucune liste de navigation dans le client[32m 1[2mms[22m[39m
+     [32m✓[39m ne redéclare ni formulaire, ni cloche, ni formatteurs hors du module partagé[32m 0[2mms[22m[39m
+     [32m✓[39m laisse DataTable et ResourceForm à un seul définition dans le back office[32m 14[2mms[22m[39m
+     [32m✓[39m dessine la cellule « entité » à un seul endroit, partagé par tous les écrans[32m 1[2mms[22m[39m
+     [32m✓[39m rend le premier écran métier par le framework, sans page écrite à la main[32m 1[2mms[22m[39m
+     [32m✓[39m fait piloter les 9 écrans du moteur par le descripteur, sans second rendu[32m 0[2mms[22m[39m
+     [32m✓[39m relie les capacités de la ressource à la matrice centrale, avec repli legacy[32m 0[2mms[22m[39m
+     [32m✓[39m ne laisse aucune liste dessinée à la main hors du moteur (gel P2.1)[32m 7[2mms[22m[39m
+     [32m✓[39m réordonne, masque le libellé, fixe une largeur minimale et accepte une clé par index[32m 4[2mms[22m[39m
+     [32m✓[39m n’ajoute aucune colonne quand le parent ne demande rien[32m 1[2mms[22m[39m
+     [32m✓[39m la coquille expose les commandes de thème et de direction dans l’en-tête[32m 6[2mms[22m[39m
+[31m     [31m×[31m tokens.css porte un bloc sombre scopé ≥ 15 rôles et la feuille reste sans littéral actif[39m[32m 7[2mms[22m[39m
+     [32m✓[39m la feuille admin embarque les finitions sombres et une direction logique (E9)[32m 1[2mms[22m[39m
+[90mstdout[2m | tests/stories-showcase.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/stories-showcase.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 111[2mms[22m[39m
+[90mstdout[2m | tests/facebook-migration.test.ts[2m > [22m[2mFacebook identity migration[2m > [22m[2mupgrades legacy GOOGLE/PHONE identity constraints without losing identities
+[22m[39m[DB] تمت ترقية جدول customer_auth_identities إلى المخطط الحالي.
+[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/facebook-migration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 160[2mms[22m[39m
+[90mstdout[2m | tests/customer-notification-migration.test.ts[2m > [22m[2mcustomer notification lifecycle migration[2m > [22m[2mpreserves legacy notifications and accepts all canonical commerce events
+[22m[39m[DB] تمت ترقية جدول customer_notifications إلى المخطط الحالي.
+[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/customer-notification-migration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 154[2mms[22m[39m
+[90mstdout[2m | tests/voice-transport.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/voice-transport.test.ts[2m > [22m[2mAYROVI voice transport and session subsystem[2m > [22m[2mopens one quota circuit on Gemini HTTP 429 and does not retry subsequent TTS requests
+[22m[39m[Gemini TTS] TTS_QUOTA_EXCEEDED status=429 model=gemini-3.1-flash-tts-preview retryAt=2026-09-21T03:35:17.737Z
+
+ [32m✓[39m tests/voice-transport.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 99[2mms[22m[39m
+ [32m✓[39m tests/ai-architecture-boundaries.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 130[2mms[22m[39m
+[90mstdout[2m | tests/lens-feature.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/lens-feature.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 113[2mms[22m[39m
+ [32m✓[39m tests/editorial-conversation-scroll.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 99[2mms[22m[39m
+ [32m✓[39m tests/voice-output.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+ [32m✓[39m tests/editorial-feature-identity.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 121[2mms[22m[39m
+ [32m✓[39m tests/assistant-composer-events.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 103[2mms[22m[39m
+ [32m✓[39m tests/editorial-lens-drag.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 89[2mms[22m[39m
+ [31m❯[39m tests/design-zalando.test.ts [2m([22m[2m24 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 78[2mms[22m[39m
+[31m     [31m×[31m les six jetons existent avec leurs valeurs exactes[39m[32m 10[2mms[22m[39m
+     [32m✓[39m l’orange n’a qu’un seul porteur : les autres noms ne sont que des alias[32m 3[2mms[22m[39m
+     [32m✓[39m l’ancien accent « soft » n’est plus une teinte orange[32m 1[2mms[22m[39m
+     [32m✓[39m aucune feuille de style du client ne porte un littéral hérité[32m 4[2mms[22m[39m
+     [32m✓[39m aucun composant du client ne porte un littéral hérité[32m 12[2mms[22m[39m
+     [32m✓[39m le serveur ne publie plus l’ancienne valeur par défaut[32m 5[2mms[22m[39m
+     [32m✓[39m les valeurs par défaut persistées sont le nouvel orange[32m 1[2mms[22m[39m
+     [32m✓[39m la section LENS v2 n’a plus de lavis pêche[32m 1[2mms[22m[39m
+     [32m✓[39m la diagonale orange décorative est neutralisée[32m 1[2mms[22m[39m
+     [32m✓[39m la bannière est une carte de surface à filet de 3px, pas un bloc orange[32m 1[2mms[22m[39m
+     [32m✓[39m le CTA de la bannière est rétrogradé en secondaire (un seul orange plein par écran)[32m 1[2mms[22m[39m
+     [32m✓[39m le CTA principal « Ouvrir LENS » reste le seul orange plein de la section[32m 1[2mms[22m[39m
+     [32m✓[39m les flèches des prix marchands sont des cercles transparents à filet fin[32m 1[2mms[22m[39m
+     [32m✓[39m le viseur LENS est neutre (Google Lens), pas orange[32m 1[2mms[22m[39m
+     [32m✓[39m les anciens blocs oranges de la page d’accueil ont bien été retirés[32m 1[2mms[22m[39m
+     [32m✓[39m la feuille des primitives est importée par la feuille racine[32m 0[2mms[22m[39m
+     [32m✓[39m les quatre primitives sont définies et sans valeur littérale[32m 0[2mms[22m[39m
+     [32m✓[39m la carte de surface porte le filet de 3px et jamais de fond orange[32m 0[2mms[22m[39m
+[31m     [31m×[31m aucun résidu de l’échelle slate dans la vitrine (CSS, TSX, TS)[39m[32m 9[2mms[22m[39m
+     [32m✓[39m le CTA principal porte le texte ENCRE (6.54:1, AAA) — jamais de blanc[32m 1[2mms[22m[39m
+     [32m✓[39m aucune taille de police hors échelle dans la vitrine (ratchet à zéro)[32m 6[2mms[22m[39m
+     [32m✓[39m editorial customer tokens are scoped; legacy admin orange is not overwritten[32m 1[2mms[22m[39m
+     [32m✓[39m aucun conteneur ne repeint sa surface en orange[32m 9[2mms[22m[39m
+     [32m✓[39m le compte d’usages orange reste sous le plafond mesuré après refonte[32m 8[2mms[22m[39m
+[90mstdout[2m | tests/lens-text.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/lens-text.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 67[2mms[22m[39m
+[90mstdout[2m | tests/assistant-vision.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+[90mstderr[2m | tests/assistant-vision.test.ts[2m > [22m[2mattachment corrompu rejeté sans casser le chat
+[22m[39m[Assistant] attachment ignoré : signature image invalide
+
+ [32m✓[39m tests/assistant-vision.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 68[2mms[22m[39m
+ [32m✓[39m tests/assistant-attachments.test.tsx [2m([22m[2m9 tests[22m[2m)[22m[32m 79[2mms[22m[39m
+ [32m✓[39m tests/navigation-history.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 55[2mms[22m[39m
+ [32m✓[39m tests/lens-results.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m tests/assistant-image-preparation.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 60[2mms[22m[39m
+ [32m✓[39m tests/editorial-product-integrity.test.tsx [2m([22m[2m16 tests[22m[2m)[22m[32m 49[2mms[22m[39m
+ [32m✓[39m tests/lens-ui-phase0.test.tsx [2m([22m[2m8 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32m✓[39m tests/assistant-voice-note.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+ [32m✓[39m tests/editorial-integration.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32m✓[39m tests/social.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+[90mstderr[2m | tests/ai-core.test.ts[2m > [22m[2mAnthropicAdapter[2m > [22m[2mdoes not run its model/schema fallback loop after HTTP 429
+[22m[39m[AI Core Anthropic] HTTP 429 {"error":"quota"}
+
+ [32m✓[39m tests/ai-core.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+[90mstdout[2m | tests/lens-live.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/lens-live.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 32[2mms[22m[39m
+ [32m✓[39m tests/assistant-conversation-history.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+[90mstderr[2m | tests/arrival-ai-compatibility.test.ts[2m > [22m[2mArrival AI structured-output compatibility policy[2m > [22m[2mclassifies a mocked output-schema HTTP 400 without requiring tool payloads
+[22m[39m[AI Core Anthropic] HTTP 400 {"error":{"message":"output_config json_schema is not supported for this model"}}
+
+[90mstderr[2m | tests/arrival-ai-compatibility.test.ts[2m > [22m[2mArrival AI structured-output compatibility policy[2m > [22m[2mpreflight rejects an over-limit union schema locally without calling Anthropic
+[22m[39m[AI Core Anthropic] {"error":"ANTHROPIC_SCHEMA_LIMIT_EXCEEDED","context":"output_schema:too-many-unions","union_parameters":17,"maximum_allowed":16,"offenders":["$.field0 (type-array)","$.field1 (type-array)","$.field2 (type-array)","$.field3 (type-array)","$.field4 (type-array)","$.field5 (type-array)","$.field6 (type-array)","$.field7 (type-array)","$.field8 (type-array)","$.field9 (type-array)","$.field10 (type-array)","$.field11 (type-array)","$.field12 (type-array)","$.field13 (type-array)","$.field14 (type-array)","$.field15 (type-array)","$.field16 (type-array)"]}
+
+ [32m✓[39m tests/arrival-ai-compatibility.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+[90mstdout[2m | tests/mailer.test.ts[2m > [22m[2mtransactional mail readiness[2m > [22m[2mrequires a supported provider, API key and valid sender address
+[22m[39m[Mail] (غير مفعّل — MAIL_PROVIDER=unsupported) إلى=client@example.com الموضوع="Test"
+
+[90mstdout[2m | tests/mailer.test.ts[2m > [22m[2mmail provider transport contracts[2m > [22m[2mresend submits a real provider request and reports acceptance
+[22m[39m[Mail] أُرسل عبر resend إلى customer@example.com — "Welcome"
+
+[90mstdout[2m | tests/mailer.test.ts[2m > [22m[2mmail provider transport contracts[2m > [22m[2mbrevo submits a real provider request and reports acceptance
+[22m[39m[Mail] أُرسل عبر brevo إلى customer@example.com — "Welcome"
+
+[90mstdout[2m | tests/mailer.test.ts[2m > [22m[2mmail provider transport contracts[2m > [22m[2msendgrid submits a real provider request and reports acceptance
+[22m[39m[Mail] أُرسل عبر sendgrid إلى customer@example.com — "Welcome"
+
+[90mstderr[2m | tests/mailer.test.ts[2m > [22m[2mmail provider transport contracts[2m > [22m[2mprovider rejection and network exceptions never report delivery
+[22m[39m[Mail] فشل الإرسال عبر resend: HTTP 401
+
+[90mstderr[2m | tests/mailer.test.ts[2m > [22m[2mmail provider transport contracts[2m > [22m[2mprovider rejection and network exceptions never report delivery
+[22m[39m[Mail] خطأ أثناء الإرسال: connection failed
+
+ [32m✓[39m tests/mailer.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/assistant-history-presentation.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/otp.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m tests/voice-input-capture.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m tests/icon-system.test.tsx [2m([22m[2m6 tests[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m tests/product-selection.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/ayrovix-gallery.test.tsx [2m([22m[2m3 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/ayrovix-navigation.test.tsx [2m([22m[2m5 tests[22m[2m)[22m[32m 19[2mms[22m[39m
+ [32m✓[39m tests/assistant-composer-policy.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[32m 16[2mms[22m[39m
+ [32m✓[39m tests/lens.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 14[2mms[22m[39m
+ [32m✓[39m tests/checkout-flow-responsive.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
+ [32m✓[39m tests/assistant-text-actions.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m tests/variant-policy.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32m✓[39m src/ayrovix/services/aiLensIntelligence.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [31m❯[39m tests/interface-config.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 17[2mms[22m[39m
+[31m     [31m×[31m locks the 70/25/5 AYROVI palette on public defaults[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m uses a single Inter / Noto Sans Arabic stack on the default preset[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m publishes exactly five font presets and the single AYROVI icon system[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m upgrades a legacy واجهتي payload without losing its content[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m accepts HEX controls and clamps unsafe or out-of-range values[39m[32m 1[2mms[22m[39m
+ [32m✓[39m tests/homepage-navigation.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+[90mstdout[2m | tests/pricing.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/pricing.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+[90mstdout[2m | tests/crm-indexation.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/crm-indexation.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/arrival-inline-customer-ui.test.tsx [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m tests/lens-reference-parity.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
+ [32m✓[39m tests/android-shell.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 11 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/ayrovi.test.ts[2m > [22mAYSONIC platform[2m > [22mواجهتي is seeded, publicly readable and rejects malformed section schemas
+[31m[1mAssertionError[22m: expected 'ayrovi-a' to be 'ayrovi-modern' // Object.is equality[39m
+
+Expected: [32m"ayrovi-[7mmodern[27m"[39m
+Received: [31m"ayrovi-[7ma[27m"[39m
+
+[36m [2m❯[22m tests/ayrovi.test.ts:[2m1032:49[22m[39m
+    [90m1030|[39m     [34mexpect[39m(row)[33m.[39m[34mtoBeTruthy[39m()[33m;[39m
+    [90m1031|[39m     expect(row.setting_value.sections.map((section: any) => section.id…
+    [90m1032|[39m     [34mexpect[39m(row[33m.[39msetting_value[33m.[39mtypography[33m.[39mpreset)[33m.[39m[34mtoBe[39m([32m'ayrovi-modern'[39m)[33m;[39m
+    [90m   |[39m                                                 [31m^[39m
+    [90m1033|[39m     expect(row.setting_value.colors).toMatchObject({ pageBackground: '…
+    [90m1034|[39m     expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi',…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/back-office-shell.test.tsx[2m > [22mE8/E9 — thème sombre & direction RTL[2m > [22mtokens.css porte un bloc sombre scopé ≥ 15 rôles et la feuille reste sans littéral actif
+[31m[1mAssertionError[22m: expected 4573 to be less than -1[39m
+[36m [2m❯[22m tests/back-office-shell.test.tsx:[2m528:19[22m[39m
+    [90m526|[39m     [34mexpect[39m(roles)[33m.[39m[34mtoBeGreaterThanOrEqual[39m([34m15[39m)[33m;[39m
+    [90m527|[39m     // le bloc sombre est placé avant les blocs clairs (voirie à plat …
+    [90m528|[39m     [34mexpect[39m(start)[33m.[39m[34mtoBeLessThan[39m(tokens[33m.[39m[34mindexOf[39m([32m'--admin-ink:#17151f'[39m))[33m;[39m
+    [90m   |[39m                   [31m^[39m
+    [90m529|[39m   })[33m;[39m
+    [90m530|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/design-tokens.test.ts[2m > [22mcouche back-office — plus aucune valeur de couleur en dur[2m > [22mles valeurs canoniques de la couche admin sont exactes (P3/T2)
+[31m[1mAssertionError[22m: --admin-ink doit résoudre #17151f: expected '#000000' to be '#17151f' // Object.is equality[39m
+
+Expected: [32m"#[7m17151f[27m"[39m
+Received: [31m"#[7m000000[27m"[39m
+
+[36m [2m❯[22m tests/design-tokens.test.ts:[2m150:63[22m[39m
+    [90m148|[39m     [35mfor[39m ([35mconst[39m [name[33m,[39m value] [35mof[39m [33mObject[39m[33m.[39m[34mentries[39m(canonical)) {
+    [90m149|[39m       expect(declared.has(name), `${name} doit être défini dans tokens…
+    [90m150|[39m       expect(resolve(name), `${name} doit résoudre ${value}`).toBe(val…
+    [90m   |[39m                                                               [31m^[39m
+    [90m151|[39m       [35mfor[39m ([35mconst[39m file [35mof[39m [33mSYSTEM_SHEETS[39m) {
+    [90m152|[39m         expect(declarations(read(file)).some(([, n]) => n === name), `…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/design-tokens.test.ts[2m > [22mune valeur, un seul porteur[2m > [22mdeux tokens de la couche admin ne portent jamais la même valeur hexadécimale
+[31m[1mAssertionError[22m: expected [ …(7) ] to deeply equal [][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [][39m
+[31m+ [[39m
+[31m+   "#ffffff ← --admin-ink, --admin-ink-strong, --admin-ink-black, --admin-surface-page, --admin-surface-card, --admin-on-dark",[39m
+[31m+   "#bdbdbd ← --admin-ink-muted, --admin-text-soft",[39m
+[31m+   "#000000 ← --admin-surface-page, --admin-rail, --admin-ink-strong, --admin-ink-black, --admin-ink",[39m
+[31m+   "#171717 ← --admin-surface-card, --admin-surface-sunken, --admin-surface-tint, --admin-surface-soft",[39m
+[31m+   "#595959 ← --admin-ink-muted, --admin-text-soft",[39m
+[31m+   "#d9d9d9 ← --admin-line, --admin-line-firm",[39m
+[31m+   "#f5f5f5 ← --admin-surface-sunken, --admin-surface-tint, --admin-surface-soft",[39m
+[31m+ ][39m
+
+[36m [2m❯[22m tests/design-tokens.test.ts:[2m307:24[22m[39m
+    [90m305|[39m     }
+    [90m306|[39m     const duplicates = [...byValue.entries()].filter(([, names]) => na…
+    [90m307|[39m     [34mexpect[39m(duplicates)[33m.[39m[34mtoEqual[39m([])[33m;[39m
+    [90m   |[39m                        [31m^[39m
+    [90m308|[39m   })[33m;[39m
+    [90m309|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/design-zalando.test.ts[2m > [22mjetons canoniques — la charte tient en six variables[2m > [22mles six jetons existent avec leurs valeurs exactes
+[31m[1mAssertionError[22m: --ayrovi-text-primary doit être déclaré dans tokens.css: expected '#000000' to be '#111111' // Object.is equality[39m
+
+Expected: [32m"#[7m111111[27m"[39m
+Received: [31m"#[7m000000[27m"[39m
+
+[36m [2m❯[22m tests/design-zalando.test.ts:[2m71:79[22m[39m
+    [90m 69|[39m     }[33m;[39m
+    [90m 70|[39m     [35mfor[39m ([35mconst[39m [name[33m,[39m value] [35mof[39m [33mObject[39m[33m.[39m[34mentries[39m(canonical)) {
+    [90m 71|[39m       expect(declared.get(name), `${name} doit être déclaré dans token…
+    [90m   |[39m                                                                               [31m^[39m
+    [90m 72|[39m     }
+    [90m 73|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/design-zalando.test.ts[2m > [22mDS v1.0 — verrous d'échelle (2026-09-18)[2m > [22maucun résidu de l’échelle slate dans la vitrine (CSS, TSX, TS)
+[31m[1mAssertionError[22m: expected 'client/src/design/editorial/tokens.ge…' to be '' // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[31m+ client/src/design/editorial/tokens.generated.css → #171717[39m
+
+[36m [2m❯[22m tests/design-zalando.test.ts:[2m273:35[22m[39m
+    [90m271|[39m       if (hits.length) offenders.push(`${rel} → ${[...new Set(hits)].j…
+    [90m272|[39m     }
+    [90m273|[39m     [34mexpect[39m(offenders[33m.[39m[34mjoin[39m([32m' | '[39m))[33m.[39m[34mtoBe[39m([32m''[39m)[33m;[39m
+    [90m   |[39m                                   [31m^[39m
+    [90m274|[39m   })[33m;[39m
+    [90m275|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/interface-config.test.ts[2m > [22mواجهتي full interface configuration[2m > [22mlocks the 70/25/5 AYROVI palette on public defaults
+[31m[1mAssertionError[22m: expected { pageBackground: '#ffffff', …(18) } to match object { pageBackground: '#ffffff', …(5) }
+(13 matching properties omitted from actual)[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[2m    "accent": "#ff6900",[22m
+[32m-   "announcementBackground": "#0a0a0a",[39m
+[31m+   "announcementBackground": "#000000",[39m
+[2m    "announcementText": "#ffffff",[22m
+[32m-   "heroBackground": "#0a0a0a",[39m
+[31m+   "heroBackground": "#000000",[39m
+[2m    "pageBackground": "#ffffff",[22m
+[32m-   "primary": "#111111",[39m
+[31m+   "primary": "#000000",[39m
+[2m  }[22m
+
+[36m [2m❯[22m tests/interface-config.test.ts:[2m8:45[22m[39m
+    [90m  6|[39m [34mdescribe[39m([32m'واجهتي full interface configuration'[39m[33m,[39m () [33m=>[39m {
+    [90m  7|[39m   [34mtest[39m([32m'locks the 70/25/5 AYROVI palette on public defaults'[39m[33m,[39m () [33m=>[39m {
+    [90m  8|[39m     [34mexpect[39m([33mDEFAULT_INTERFACE_CONFIG[39m[33m.[39mcolors)[33m.[39m[34mtoMatchObject[39m({
+    [90m   |[39m                                             [31m^[39m
+    [90m  9|[39m       pageBackground[33m:[39m [32m'#ffffff'[39m[33m,[39m
+    [90m 10|[39m       primary[33m:[39m [32m'#111111'[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/interface-config.test.ts[2m > [22mواجهتي full interface configuration[2m > [22muses a single Inter / Noto Sans Arabic stack on the default preset
+[31m[1mAssertionError[22m: expected '\'Zalando Sans\', \'Noto Sans Arabic\…' to contain 'Inter'[39m
+
+Expected: [32m"Inter"[39m
+Received: [31m"'Zalando Sans', 'Noto Sans Arabic', sans-serif"[39m
+
+[36m [2m❯[22m tests/interface-config.test.ts:[2m22:57[22m[39m
+    [90m 20|[39m
+    [90m 21|[39m   test('uses a single Inter / Noto Sans Arabic stack on the default pr…
+    [90m 22|[39m     expect(DEFAULT_INTERFACE_CONFIG.typography.display).toContain('Int…
+    [90m   |[39m                                                         [31m^[39m
+    [90m 23|[39m     expect(DEFAULT_INTERFACE_CONFIG.typography.body).toContain('Noto S…
+    [90m 24|[39m     expect(DEFAULT_INTERFACE_CONFIG.typography.display).toBe(DEFAULT_I…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/interface-config.test.ts[2m > [22mواجهتي full interface configuration[2m > [22mpublishes exactly five font presets and the single AYROVI icon system
+[31m[1mAssertionError[22m: expected [ { id: 'ayrovi-a', …(4) } ] to have a length of 5 but got 1[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 5[39m
+[31m+ 1[39m
+
+[36m [2m❯[22m tests/interface-config.test.ts:[2m29:36[22m[39m
+    [90m 27|[39m
+    [90m 28|[39m   test('publishes exactly five font presets and the single AYROVI icon…
+    [90m 29|[39m     [34mexpect[39m([33mINTERFACE_FONT_PRESETS[39m)[33m.[39m[34mtoHaveLength[39m([34m5[39m)[33m;[39m
+    [90m   |[39m                                    [31m^[39m
+    [90m 30|[39m     expect(new Set(INTERFACE_FONT_PRESETS.map((preset) => preset.id)).…
+    [90m 31|[39m     expect(INTERFACE_FONT_PRESETS.every((preset) => preset.body && pre…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/interface-config.test.ts[2m > [22mواجهتي full interface configuration[2m > [22mupgrades a legacy واجهتي payload without losing its content
+[31m[1mAssertionError[22m: expected '#000000' to be '#112233' // Object.is equality[39m
+
+Expected: [32m"#[7m112233[27m"[39m
+Received: [31m"#[7m000000[27m"[39m
+
+[36m [2m❯[22m tests/interface-config.test.ts:[2m50:48[22m[39m
+    [90m 48|[39m     expect(normalized.sections.map((section) => section.id)).toEqual([…
+    [90m 49|[39m     [34mexpect[39m(normalized[33m.[39mtypography[33m.[39mbaseSize)[33m.[39m[34mtoBe[39m([34m17[39m)[33m;[39m
+    [90m 50|[39m     [34mexpect[39m(normalized[33m.[39mtypography[33m.[39mheadingColor)[33m.[39m[34mtoBe[39m([32m'#112233'[39m)[33m;[39m
+    [90m   |[39m                                                [31m^[39m
+    [90m 51|[39m     [34mexpect[39m(normalized[33m.[39mcolors[33m.[39mpageBackground)[33m.[39m[34mtoBe[39m([32m'#ffffff'[39m)[33m;[39m
+    [90m 52|[39m     [34mexpect[39m(normalized[33m.[39mbuttons[33m.[39msecondaryColor)[33m.[39m[34mtoBe[39m([32m'#111111'[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/11]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/interface-config.test.ts[2m > [22mواجهتي full interface configuration[2m > [22maccepts HEX controls and clamps unsafe or out-of-range values
+[31m[1mAssertionError[22m: expected '#ffffff' to be '#abcdef' // Object.is equality[39m
+
+Expected: [32m"#[7mabcde[27mf"[39m
+Received: [31m"#[7mfffff[27mf"[39m
+
+[36m [2m❯[22m tests/interface-config.test.ts:[2m69:46[22m[39m
+    [90m 67|[39m     input[33m.[39msections[[34m0[39m][33m.[39mpaddingY [33m=[39m [34m999[39m[33m;[39m
+    [90m 68|[39m     [35mconst[39m normalized [33m=[39m [34mnormalizeInterfaceConfig[39m(input)[33m;[39m
+    [90m 69|[39m     [34mexpect[39m(normalized[33m.[39mcolors[33m.[39mpageBackground)[33m.[39m[34mtoBe[39m([32m'#abcdef'[39m)[33m;[39m
+    [90m   |[39m                                              [31m^[39m
+    [90m 70|[39m     expect(normalized.colors.primary).toBe(DEFAULT_INTERFACE_CONFIG.co…
+    [90m 71|[39m     [34mexpect[39m(normalized[33m.[39mtypography[33m.[39mbaseSize)[33m.[39m[34mtoBe[39m([34m22[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/11]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m81 passed[39m[22m[90m (86)[39m
+[2m      Tests [22m [1m[31m11 failed[39m[22m[2m | [22m[1m[32m1321 passed[39m[22m[90m (1332)[39m
+[2m   Start at [22m 02:34:11
+[2m   Duration [22m 88.14s[2m (transform 4.05s, setup 0ms, import 41.06s, tests 30.67s, environment 4.92s)[22m
+

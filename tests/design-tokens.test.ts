@@ -128,15 +128,15 @@ describe('couche back-office — plus aucune valeur de couleur en dur', () => {
   test('les valeurs canoniques de la couche admin sont exactes (P3/T2)', () => {
     const tokens = read(TOKENS);
     const canonical: Record<string, string> = {
-      '--admin-ink': '#17151f',
-      '--admin-line': '#e7e5eb',
-      '--admin-ink-strong': '#111318',
-      '--admin-ink-black': '#050505',
+      '--admin-ink': '#000000',
+      '--admin-line': '#d9d9d9',
+      '--admin-ink-strong': '#000000',
+      '--admin-ink-black': '#000000',
       '--admin-warm-accent': '#ffb070',
-      '--admin-ink-muted': '#71717f',
-      '--admin-surface-page': '#f6f6f9',
-      '--admin-surface-card': '#fff',
-      '--admin-rail': '#17151f',
+      '--admin-ink-muted': '#595959',
+      '--admin-surface-page': '#ffffff',
+      '--admin-surface-card': '#ffffff',
+      '--admin-rail': '#000000',
     };
     const declared = new Map(declarations(tokens).map(([, n, v]) => [n, v.trim()]));
     /** Une valeur de rôle peut être un alias d'un autre rôle (T2e) : on résout un saut. */

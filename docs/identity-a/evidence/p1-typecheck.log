@@ -1,0 +1,6 @@
+
+> ayrovi@3.10.4 typecheck
+> tsc --noEmit && tsc -p tsconfig.client.json --noEmit
+
+client/src/config/interfaceConfig.ts(220,7): error TS2322: Type '"ayrovi-a" | "ayrovi-modern"' is not assignable to type '"ayrovi-a"'.
+  Type '"ayrovi-modern"' is not assignable to type '"ayrovi-a"'.

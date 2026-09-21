@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:sonim-actions
+> node verify/sonim-actions-runner.mjs
+
+185/185 SONIM browser assertions passed

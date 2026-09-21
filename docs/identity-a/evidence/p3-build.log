@@ -1,0 +1,65 @@
+
+> ayrovi@3.10.4 build
+> npm run build:client && npm run build:server
+
+
+> ayrovi@3.10.4 build:client
+> vite build
+
+vite v8.2.1 building client environment for production...
+[2Ktransforming...✓ 828 modules transformed.
+rendering chunks...
+computing gzip size...
+public/index.html                                     2.24 kB │ gzip:   0.90 kB
+public/assets/adidas-DSiMMEHE.jpg                     6.66 kB
+public/assets/shein-VCX7drB9.jpg                      6.95 kB
+public/assets/ysl-BCgHxbGU.jpg                        7.31 kB
+public/assets/nike-Dnelz9bu.jpg                       7.50 kB
+public/assets/the-north-face-BnBYyhsv.jpg            10.70 kB
+public/assets/dior-DsmacnAf.jpg                      12.88 kB
+public/assets/zara-PLZWEJaL.jpg                      13.32 kB
+public/assets/ellesse-Dw6R_Xvo.jpg                   14.60 kB
+public/assets/jordan-Dycio7Hm.jpg                    17.17 kB
+public/assets/chanel-BRLfpnFi.jpg                    17.21 kB
+public/assets/prada-EeNm87n2.jpg                     19.31 kB
+public/assets/burberry-BGqL7J1S.jpg                  20.05 kB
+public/assets/hermes-BFafVh5d.jpg                    33.98 kB
+public/assets/dolce-gabbana-LtJIoL3G.jpg             34.69 kB
+public/assets/hero-homme-Cxuh9cL5.jpg                41.23 kB
+public/assets/hero-femme-CX_-1i6X.jpg                46.63 kB
+public/assets/versace-CqSoPMYt.jpg                   49.56 kB
+public/assets/about-parallax-C3cZSsmf.jpg            86.05 kB
+public/assets/hero-enfants-DYGXUqF9.jpg             146.33 kB
+public/assets/AiAssistantDrawer-BSDCRqQ_.css          6.59 kB │ gzip:   1.59 kB
+public/assets/CustomerAccountPage-D8k6JAAV.css       11.17 kB │ gzip:   2.63 kB
+public/assets/AdminApp-CCAN4x3C.css                 118.38 kB │ gzip:  20.03 kB
+public/assets/index-DsVMzSD-.css                    195.49 kB │ gzip:  32.53 kB
+public/assets/esm-CHz-oS1i.js                         0.25 kB │ gzip:   0.20 kB
+public/assets/CheckoutFlowShell-BsQUAwIF.js           0.44 kB │ gzip:   0.27 kB
+public/assets/JourneyProgress-JLP7mZbn.js             0.68 kB │ gzip:   0.47 kB
+public/assets/resultPolicy-41holXna.js                0.83 kB │ gzip:   0.45 kB
+public/assets/AboutPage-ChS-czXP.js                   0.83 kB │ gzip:   0.53 kB
+public/assets/useCommercePolicy-CVn8Mu4b.js           1.19 kB │ gzip:   0.65 kB
+public/assets/MenuDrawer-D2v97tdC.js                  5.99 kB │ gzip:   2.39 kB
+public/assets/interfaceConfig-CBZEZC64.js             6.97 kB │ gzip:   2.48 kB
+public/assets/CartDrawer-BlcKbZVp.js                  8.91 kB │ gzip:   3.38 kB
+public/assets/CustomerPasswordRecovery-z0Lqbr2w.js   11.46 kB │ gzip:   4.28 kB
+public/assets/QatafoIcons-BY2HnxXw.js                15.87 kB │ gzip:   5.14 kB
+public/assets/ProductDrawer-BQYwfH0i.js              17.28 kB │ gzip:   5.03 kB
+public/assets/OrderSuccessModal-BeY4CdMW.js          20.27 kB │ gzip:   7.70 kB
+public/assets/ProductResult-DVM4yoEs.js              21.93 kB │ gzip:   7.73 kB
+public/assets/CheckoutModal-Celmvtur.js              26.45 kB │ gzip:   8.50 kB
+public/assets/api-qVhAU7e8.js                        29.16 kB │ gzip:   9.64 kB
+public/assets/CustomerAccountPage-D1jLkDYq.js        77.54 kB │ gzip:  20.66 kB
+public/assets/LensLauncher-BDMF2TUn.js              108.36 kB │ gzip:  32.53 kB
+public/assets/AiAssistantDrawer-0pce2yl_.js         118.26 kB │ gzip:  36.93 kB
+public/assets/index-CqdEYe2o.js                     203.34 kB │ gzip:  64.36 kB
+public/assets/App-pDOtP3PK.js                       233.39 kB │ gzip:  74.53 kB
+public/assets/qr-C9LzHcXT.js                        411.24 kB │ gzip: 109.94 kB
+public/assets/AdminApp-Gx0NRPbK.js                  448.02 kB │ gzip: 106.20 kB
+
+✓ built in 1.13s
+
+> ayrovi@3.10.4 build:server
+> node -e 'require("esbuild").buildSync({entryPoints:["src/server.ts"],bundle:true,platform:"node",target:"node20",outfile:"dist/server.js",external:["better-sqlite3","jsdom","express","compression","cors","dotenv","tesseract.js","multer","sharp","pdf-to-img","mailparser"]})'
+

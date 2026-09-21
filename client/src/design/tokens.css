@@ -51,6 +51,8 @@
   --font-sans: var(--font-primary);
   --font-display: var(--font-primary);
   --font-body: var(--font-primary);
+  --font-mono: var(--font-primary);
+  --font-serif: var(--font-primary);
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
@@ -96,16 +98,16 @@
    ───────────────────────────────────────────────────────────────────────── */
 html[data-theme='dark'] {
   color-scheme: dark;
-  --admin-ink:#e8e6ee;
-  --admin-ink-strong:#f5f3fa;
-  --admin-ink-black:#f7f6fb;
-  --admin-ink-muted:#a4a0b0;
-  --admin-text-soft:#b0acbc;
-  --admin-surface-page:#0f0e14;
-  --admin-surface-card:#171520;
-  --admin-surface-sunken:#121118;
-  --admin-surface-tint:#1c1926;
-  --admin-surface-soft:#15131c;
+  --admin-ink:var(--ayrovi-white);
+  --admin-ink-strong:var(--admin-ink);
+  --admin-ink-black:var(--admin-ink);
+  --admin-ink-muted:#bdbdbd;
+  --admin-text-soft:var(--admin-ink-muted);
+  --admin-surface-page:var(--ayrovi-ink-deep);
+  --admin-surface-card:#171717;
+  --admin-surface-sunken:var(--admin-surface-card);
+  --admin-surface-tint:var(--admin-surface-card);
+  --admin-surface-soft:var(--admin-surface-card);
   --admin-line:#2a2735;
   --admin-line-soft:#221f2c;
   --admin-line-firm:#322e40;
@@ -114,8 +116,8 @@ html[data-theme='dark'] {
   --admin-danger-ink:#ff8a80;
   /* Rail & encre-sur-sombre découplés du texte dans le thème sombre : le rail
      reste sombre et son texte reste clair (valeurs sombres ≠ valeurs claires). */
-  --admin-rail:#14131b;
-  --admin-on-dark:#f6f4fb;
+  --admin-rail:var(--admin-surface-page);
+  --admin-on-dark:var(--ayrovi-white);
 }
 
 :root {
@@ -125,12 +127,12 @@ html[data-theme='dark'] {
     --ayrovi-bg-main: #ffffff;              /* Canvas — fond pur de toutes les pages */
     --ayrovi-bg-surface: #f8f9fa;           /* Cartes, listes, écrans de comparaison */
     --ayrovi-border-soft: #eaeaea;          /* Filets 1px, séparateurs fins */
-    --ayrovi-text-primary: #111111;         /* Encre : titres, marques, prix, texte */
+    --ayrovi-text-primary: #000000;         /* Encre : titres, marques, prix, texte */
     --ayrovi-text-secondary: #666666;       /* Encre secondaire : légendes, méta */
     --ayrovi-color-brand-orange: #ff6900;   /* Orange de marque (logo) — déclencheur d'action UNIQUE */
 
     /* — surfaces sombres premium : la SEULE famille de noir — */
-    --ayrovi-ink-deep: #0a0a0a;             /* Hero, announcement, coquille Lens, rails */
+    --ayrovi-ink-deep: #000000;             /* Hero, announcement, coquille Lens, rails */
     --ayrovi-ink-soft: #3f3f46;             /* Éléments doux sur sombre (liseré, icône au repos) */
 
     /* — chaîne accent : une seule source de vérité, dérivations incluses — */
@@ -170,15 +172,15 @@ html[data-theme='dark'] {
     --ayrovi-focus-ring: var(--ayrovi-text-primary);
     --ayrovi-focus-ring-inverse: var(--ayrovi-white);
 
-    --font-primary: 'Inter', 'Noto Sans Arabic', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    --font-primary: var(--ay-font-stack);
     --font-weight-regular: 400;
     --font-weight-medium: 500;
     --font-weight-semibold: 600;
     --font-weight-bold: 700;
-    --text-display: 2.25rem;
+    --text-display: 2.5rem;
     --text-display--line-height: 2.5rem;
-    --text-h1: 1.875rem;
-    --text-h1--line-height: 2.25rem;
+    --text-h1: 1.625rem;
+    --text-h1--line-height: 1.875rem;
     --text-h2: 1.5rem;
     --text-h2--line-height: 1.875rem;
     --text-h3: 1.25rem;
@@ -299,12 +301,12 @@ html[data-theme='dark'] {
      « yellow » pour un pêche). Les alias dépréciés en bas de bloc gardent la
      cascade ouverte pour tout consommateur que cette phase ne réécrit pas.
      ───────────────────────────────────────────────────────────────────────── */
-  --admin-ink-strong:#111318; /* c'est un noir, pas un violet */
-  --admin-ink-black:#050505; /* noir profond du rail et des dégradés */
+  --admin-ink-strong:var(--admin-ink); /* c'est un noir, pas un violet */
+  --admin-ink-black:var(--admin-ink); /* noir profond du rail et des dégradés */
   --admin-warm-accent:#ffb070; /* pêche : « yellow » induisait en erreur */
-  --admin-ink-muted:#71717f; /* encre atténuée, pas une couleur « muette » */
-  --admin-surface-page:#f6f6f9; /* surface de page */
-  --admin-surface-card:#fff; /* surface de carte */
+  --admin-ink-muted:#595959; /* encre atténuée, pas une couleur « muette » */
+  --admin-surface-page:var(--admin-surface-card); /* surface de page */
+  --admin-surface-card:var(--ayrovi-white); /* surface de carte */
   --admin-rail: var(--admin-ink); /* même encre que le texte : une seule valeur dans le fichier */
 
   /* — alias dépréciés, conservés pour ne rien casser — */
@@ -332,15 +334,15 @@ html[data-theme='dark'] {
      teintes en mesurant l’écart. `tests/design-tokens.test.ts` interdit tout
      littéral dans les feuilles du back-office et fait baisser leur nombre de refs.
      ───────────────────────────────────────────────────────────────────────── */
-  --admin-ink:#17151f; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-line:#e7e5eb; /* déplacé depuis admin.css — jamais renommé ni retouché */
-  --admin-surface-sunken:#faf9fc; /* surface en creux des panneaux */
-  --admin-surface-tint:#faf8ff; /* surface teintée (fonds de groupe) */
-  --admin-surface-soft:#fbfbfe; /* surface adoucie (encadrés, listes) */
-  --admin-line-soft:#e5e7eb; /* filet clair (listes, encadrés) */
-  --admin-line-firm:#f0eef7; /* filet renforcé (champs, séparateurs) */
-  --admin-text-soft:#77727f; /* texte tertiaire */
-  --admin-on-dark: var(--admin-surface-card); /* blanc unique : la carte et l'encre-sur-sombre partagent la valeur */
+  --admin-ink:var(--ayrovi-text-primary); /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-line:#d9d9d9; /* déplacé depuis admin.css — jamais renommé ni retouché */
+  --admin-surface-sunken:#f5f5f5; /* surface en creux des panneaux */
+  --admin-surface-tint:var(--admin-surface-sunken); /* surface teintée (fonds de groupe) */
+  --admin-surface-soft:var(--admin-surface-sunken); /* surface adoucie (encadrés, listes) */
+  --admin-line-soft:#e5e5e5; /* filet clair (listes, encadrés) */
+  --admin-line-firm:var(--admin-line); /* filet renforcé (champs, séparateurs) */
+  --admin-text-soft:var(--admin-ink-muted); /* texte tertiaire */
+  --admin-on-dark:var(--ayrovi-white); /* blanc unique : la carte et l'encre-sur-sombre partagent la valeur */
   --admin-danger-strong:#c9362b; /* danger soutenu (bandeaux, badges) */
   --admin-danger-text:#b42318; /* texte en erreur */
   --admin-danger-ink:#b6251c; /* erreur profonde (barre latérale) */

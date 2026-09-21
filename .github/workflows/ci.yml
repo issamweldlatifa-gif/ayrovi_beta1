@@ -27,6 +27,9 @@ jobs:
       - name: Check generated identity and source inventory
         run: npm run design:check
 
+      - name: Enforce official AYROVI A identity
+        run: npm run identity:check && npm run identity:test
+
       - name: Typecheck
         run: npm run typecheck
 
@@ -42,6 +45,16 @@ jobs:
 
       - name: Clear previously tracked browser evidence
         run: rm -rf docs/editorial/verification/ screenshots/editorial/customer/ screenshots/editorial/complete-icons/ screenshots/editorial/icon-correction/account/ screenshots/editorial/sonim-actions/ screenshots/editorial/sonim-history/ screenshots/editorial/sonim-media/ screenshots/editorial/sonim-playback/ screenshots/editorial/sonim-handsfree/ screenshots/editorial/variant-availability/ screenshots/editorial/product-selection/
+
+      - name: Verify official fonts, changing prices, admin and PDF
+        run: npm run verify:identity
+
+      - name: Upload official identity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: identity-a-evidence
+          path: docs/identity-a/evidence/
 
       - name: Verify editorial reference
         id: editorial_reference

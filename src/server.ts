@@ -39,8 +39,8 @@ app.use((req, res, next) => {
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
     "script-src 'self'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' data: https://fonts.gstatic.com",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self' data:",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob: https:",
     // Lecteurs embarqués pour les vidéos CMS (LENS) — domaines d'intégration fermés.
@@ -181,8 +181,10 @@ app.use('/reset-password', (_req, res, next) => {
 });
 app.use(express.static(publicDir, {
   setHeaders: (res, filePath) => {
-    if (path.basename(filePath) === 'index.html') {
+    if (filePath.endsWith('.html')) {
       res.setHeader('Cache-Control', 'no-store');
+    } else if (path.basename(filePath) === 'identity.css' || filePath.includes(`${path.sep}fonts${path.sep}`)) {
+      res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
     } else {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }

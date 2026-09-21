@@ -525,7 +525,7 @@ describe('E8/E9 — thème sombre & direction RTL', () => {
     const roles = (block.match(/--admin-[a-z-]+:/g) ?? []).length;
     expect(roles).toBeGreaterThanOrEqual(15);
     // le bloc sombre est placé avant les blocs clairs (voirie à plat des verrous)
-    expect(start).toBeLessThan(tokens.indexOf('--admin-ink:#17151f'));
+    expect(start).toBeLessThan(tokens.indexOf('--admin-ink:var(--ayrovi-text-primary)'));
   });
 
   it('la feuille admin embarque les finitions sombres et une direction logique (E9)', () => {

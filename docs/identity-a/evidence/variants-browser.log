@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:variant-availability
+> node verify/sonim-actions-runner.mjs verify/variant-availability.mjs verify/variant-availability-fixture.tsx
+
+165/165 variant availability assertions passed

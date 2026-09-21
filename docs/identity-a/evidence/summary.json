@@ -1,0 +1,46 @@
+{
+  "date": "2026-09-21",
+  "baseCommit": "2e8792f",
+  "environment": "Local workspace; isolated SQLite; fictional accounts; live providers disabled. Full final checks completed; GitHub push authorized by user.",
+  "unitIntegration": {
+    "files": 87,
+    "assertions": 1361,
+    "log": "final-tests.log",
+    "status": "PASS: completed full rerun after all final source changes."
+  },
+  "browser": {
+    "reference": 41,
+    "customer": 235,
+    "account": 134,
+    "identityRuntime": 102,
+    "productSelection": 401,
+    "extendedStates": 1234,
+    "sonimActions": 185,
+    "variants": 165,
+    "history": 157,
+    "media": 161,
+    "playback": 85,
+    "handsfree": 73
+  },
+  "woff2Bytes": {
+    "before": 497180,
+    "after": 416828
+  },
+  "advisories": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "limits": [
+    "Existing UI locale system remains French/Arabic; English content/glyphs tested, not a new English translation.",
+    "Mail clients may suppress webfonts. Generic fallback and unsupported glyph coverage cannot be controlled.",
+    "External providers/payments/mail not exercised live; no native Android/iOS build performed.",
+    "Require branch protection and review outside workspace; CI workflow edited but not run on remote GitHub.",
+    "Existing generated invoices are not rewritten; new generation uses embedded approved fonts."
+  ],
+  "browserAssertionTotal": 2973,
+  "releaseStatus": "Local acceptance gates passed. Remote CI/deployment must be checked independently after push."
+}

@@ -882,7 +882,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           {stage === 'barcode' && barcode && (
             <div className="mx-auto max-w-md space-y-4 pt-6 text-center">
               <p className="text-sm font-extrabold text-ink">{tr('Code-barres détecté', 'تم اكتشاف الرمز الشريطي')}</p>
-              <p className="mx-auto w-fit bg-surface px-5 py-3 font-mono text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
+              <p className="mx-auto w-fit bg-surface px-5 py-3 ay-number text-lg font-bold tracking-[0.15em] text-ink">{barcode.code}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">
                 {tr("Aucune offre en ligne ne correspond à ce code pour le moment. Photographiez le produit : AYROVIX l'identifiera par l'image.", 'لا يطابق هذا الرمز أي عرض عبر الإنترنت حاليًا. صوّر المنتج وستتعرّف عليه AYROVIX من الصورة.')}
               </p>
@@ -906,7 +906,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
               <p className="text-sm font-extrabold text-ink">{g.title}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{error.message}</p>
               <p className="mx-auto max-w-xs text-xs leading-relaxed text-muted">{g.hint}</p>
-              <p className="text-xs font-mono text-muted">{error.code}</p>
+              <p className="text-xs ay-number text-muted">{error.code}</p>
               <div className="flex flex-wrap justify-center gap-2.5">
                 {showPreview && (
                   <button type="button" onClick={() => void runImageAnalysis()} className="ay-btn-secondary text-xs">{tr('Relancer l’analyse', 'إعادة التحليل')}</button>

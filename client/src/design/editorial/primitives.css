@@ -3,27 +3,28 @@
 [data-ay-design="editorial"] {
   color: var(--ay-e-ink);
   background: var(--ay-e-canvas);
-  font: 400 16px/1.65 "AY Space Grotesk", "AY Noto Sans Arabic", sans-serif;
+  font: 400 16px/1.5 var(--ay-font-stack);
   letter-spacing: 0;
   color-scheme: light;
 }
-[data-ay-design="editorial"]:lang(ar) { font-family: "AY Noto Sans Arabic", "AY Space Grotesk", sans-serif; }
+[data-ay-design="editorial"]:lang(ar) { line-height: 1.8; }
 [data-ay-design="editorial"][data-tone="dark"] { color-scheme: dark; }
 [data-ay-design="editorial"] .ay-e-display {
-  font: 400 clamp(28px, 5vw, 48px)/1.15 "AY DM Serif Display", Georgia, serif;
+  font: 500 clamp(26px, 4vw, 40px)/1.16 var(--ay-font-stack);
+  font-stretch: var(--ay-font-heading-width);
   text-wrap: balance;
   font-synthesis: none;
 }
-[data-ay-design="editorial"]:lang(ar) .ay-e-display { font-family: "AY Amiri", serif; line-height: 1.5; }
-[data-ay-design="editorial"] .ay-e-label { font-size: 14px; font-weight: 550; }
+[data-ay-design="editorial"]:lang(ar) .ay-e-display { font-stretch: 100%; line-height: 1.6; }
+[data-ay-design="editorial"] .ay-e-label { font-size: 14px; font-weight: 700; }
 [data-ay-design="editorial"] .ay-e-caption { font-size: 12px; color: var(--ay-e-muted); }
-[data-ay-design="editorial"] .ay-e-number { font-family: "AY Space Grotesk", sans-serif; font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
+[data-ay-design="editorial"] .ay-e-number { font-family: var(--ay-font-stack); font-variant-numeric: tabular-nums; unicode-bidi: isolate; }
 [data-ay-design="editorial"] .ay-e-button {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: var(--ay-e-control-height); min-width: var(--ay-e-min-target);
   max-width: 100%; padding: 10px 20px; border: 1px solid var(--ay-e-action);
   border-radius: var(--ay-e-control-radius); background: var(--ay-e-action);
-  color: var(--ay-e-on-action); font: inherit; font-size: 14px; font-weight: 550;
+  color: var(--ay-e-on-action); font: inherit; font-size: 14px; font-weight: 700;
   cursor: pointer; text-decoration: none;
   transition: background-color 120ms ease, border-color 120ms ease;
 }

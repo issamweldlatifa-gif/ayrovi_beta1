@@ -1029,8 +1029,8 @@ describe('AYSONIC platform', () => {
     const row = settings.body.data.find((item: any) => item.setting_key === 'interface_config');
     expect(row).toBeTruthy();
     expect(row.setting_value.sections.map((section: any) => section.id)).toEqual(['hero', 'cms', 'brands', 'about', 'footer']);
-    expect(row.setting_value.typography.preset).toBe('ayrovi-modern');
-    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#111111', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
+    expect(row.setting_value.typography.preset).toBe('ayrovi-a');
+    expect(row.setting_value.colors).toMatchObject({ pageBackground: '#ffffff', primary: '#000000', heroBackground: '#0a0a0a', announcementBackground: '#0a0a0a', accent: '#ff6900' }); // DS v1.0
     expect(row.setting_value.icons).toMatchObject({ library: 'ayrovi', activeColor: '#ff6900' });
     expect(row.setting_value.navigation.color).toBe('#111111'); // DS v1.0
 
@@ -1044,6 +1044,29 @@ describe('AYSONIC platform', () => {
     const publicConfig = await request(app).get('/api/public/commerce-config');
     expect(publicConfig.status).toBe(200);
     expect(publicConfig.body.data.interfaceConfig.navigation.background).toBe('#ffffff');
+  });
+
+  test('official identity rejects API font overrides and keeps business content editable', async () => {
+    const settings = await superAdmin.get('/api/admin/settings?category=appearance');
+    const all = settings.body.data.length ? settings.body.data : (await superAdmin.get('/api/admin/settings')).body.data;
+    const row = all.find((item: any) => item.setting_key === 'interface_config');
+    expect(row).toBeTruthy();
+    const original = structuredClone(row.setting_value);
+    const rejected = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: { ...original, typography: { ...original.typography, body: 'Arial, serif' } } });
+    expect(rejected.status).toBe(400);
+    expect(rejected.body.code).toBe('IDENTITY_LOCKED');
+    const next = structuredClone(original);
+    next.sections[0].title = 'Identité fixe, contenu modifiable';
+    const saved = await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: next });
+    expect(saved.status).toBe(200);
+    const pub = await request(app).get('/api/public/commerce-config');
+    expect(pub.body.data.interfaceConfig.sections[0].title).toBe(next.sections[0].title);
+    expect(pub.body.data.interfaceConfig.typography.body).toContain('Zalando Sans');
+    expect(pub.body.data.interfaceConfig.typography.body).not.toContain('Arial');
+    await superAdmin.put(`/api/admin/settings/${row.id}`).set('x-csrf-token', adminCsrf).send({ value: original });
+    const legacy = (await superAdmin.get('/api/admin/settings')).body.data.find((item: any) => item.setting_key === 'site_theme');
+    const oldTheme = await superAdmin.put(`/api/admin/settings/${legacy.id}`).set('x-csrf-token', adminCsrf).send({ value: { ...legacy.setting_value, font: 'jakarta' } });
+    expect(oldTheme.status).toBe(400);
   });
 
   test('admin mutations require a valid CSRF token', async () => {

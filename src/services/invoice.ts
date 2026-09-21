@@ -1,3 +1,4 @@
+import { FONT_STACK, BRAND, documentIdentityCss, mailIdentityStyle } from './brandDocuments';
 /**
  * AYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
@@ -110,33 +111,34 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   return `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="utf-8"><title>Facture ${escapeHtml(order.invoice_number)}</title>
 <style>
+  ${documentIdentityCss()}
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: "Segoe UI", Arial, sans-serif; color: #17131f; font-size: 13px; padding: 40px; }
+  body { font-family: ${FONT_STACK}; color: #000000; font-size: 13px; padding: 40px; }
   .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #FF6900; padding-bottom: 20px; }
-  .brand { font-size: 26px; font-weight: 900; color: #111318; letter-spacing: -0.5px; }
-  .brand small { display: block; font-size: 11px; color: #6b7280; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
+  .brand { font-size: 26px; font-weight: 900; color: #000000; letter-spacing: -0.5px; }
+  .brand small { display: block; font-size: 11px; color: ${BRAND.colors.muted}; font-weight: 600; margin-top: 6px; letter-spacing: 0; }
   .doc { text-align: right; }
   .doc h1 { font-size: 22px; font-weight: 900; }
-  .doc .num { color: #111318; font-family: ui-monospace, monospace; font-size: 15px; margin-top: 4px; }
+  .doc .num { color: #000000; font-family: ${FONT_STACK}; font-size: 15px; margin-top: 4px; }
   .meta { display: flex; gap: 24px; margin: 24px 0; }
-  .card { flex: 1; border: 1px solid #e5e7f0; border-radius: 12px; padding: 14px 16px; }
-  .card h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #8b8494; margin-bottom: 8px; }
+  .card { flex: 1; border: 1px solid ${BRAND.colors.line}; border-radius: 12px; padding: 14px 16px; }
+  .card h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: ${BRAND.colors.muted}; margin-bottom: 8px; }
   .card p { line-height: 1.55; }
   table { width: 100%; border-collapse: collapse; margin: 18px 0; }
-  th { background: #f4f4f5; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #111318; padding: 10px 12px; }
-  td { padding: 10px 12px; border-bottom: 1px solid #eef0f6; vertical-align: top; }
-  td small { display: block; color: #8b8494; margin-top: 3px; font-size: 11px; }
+  th { background: ${BRAND.colors.surface}; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #000000; padding: 10px 12px; }
+  td { padding: 10px 12px; border-bottom: 1px solid ${BRAND.colors.line}; vertical-align: top; }
+  td small { display: block; color: ${BRAND.colors.muted}; margin-top: 3px; font-size: 11px; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .totals { width: 320px; margin-left: auto; }
   .totals td { padding: 7px 12px; }
-  .totals .grand td { font-size: 15px; font-weight: 900; border-top: 2px solid #17131f; }
+  .totals .grand td { font-size: 15px; font-weight: 900; border-top: 2px solid #000000; }
   .deposit { background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 16px; margin-top: 20px; }
   .deposit strong { color: #047857; }
   .deposit table { margin: 6px 0 0; }
   .deposit td { border: none; padding: 4px 0; }
-  .tracking { background: #f4f4f5; border: 1px dashed #FF6900; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
-  .tracking b { font-family: ui-monospace, monospace; font-size: 17px; color: #111318; letter-spacing: 1px; }
-  footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e5e7f0; color: #8b8494; font-size: 11px; text-align: center; line-height: 1.6; }
+  .tracking { background: ${BRAND.colors.surface}; border: 1px dashed #FF6900; border-radius: 12px; padding: 14px 16px; margin-top: 16px; text-align: center; }
+  .tracking b { font-family: ${FONT_STACK}; font-size: 17px; color: #000000; letter-spacing: 1px; }
+  footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid ${BRAND.colors.line}; color: ${BRAND.colors.muted}; font-size: 11px; text-align: center; line-height: 1.6; }
 </style></head><body>
   <div class="header">
     <div class="brand">${escapeHtml(company.name)}
@@ -264,7 +266,7 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
   db.run('UPDATE orders SET invoice_number=? WHERE id=?', invoice.invoice_number, orderId);
   const target = path.join(invoiceWriteDir(), `${String(invoice.invoice_number).replace(/[^A-Z0-9-]/gi, '')}.pdf`);
 
-  writeSimplePdf(buildInvoiceLines(db, orderId), target);
+  await writeSimplePdf(buildInvoiceLines(db, orderId), target);
   const now = new Date().toISOString();
   db.transaction(() => {
     db.run('UPDATE invoices SET file_path=?,updated_at=? WHERE id=?', target, now, invoice.id);
@@ -275,9 +277,9 @@ export async function generateInvoicePdf(db: QatafoDatabase, orderId: string): P
 
 export function invoiceEmailHtml(input: { customerName: string; orderNumber: string; invoiceNumber: string; trackingCode: string; totalLabel: string; depositLabel: string; balanceLabel: string; company: string }): string {
   const e = escapeHtml;
-  return `<!DOCTYPE html><html lang="fr"><body style="font-family:Arial,sans-serif;color:#17131f;background:#f7f7f7;padding:24px;">
-  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #e5e7eb;">
-    <div style="background:#111318;padding:22px 26px;color:#fff;">
+  return `<!DOCTYPE html><html lang="fr"><head>${mailIdentityStyle()}</head><body style="font-family:${FONT_STACK};color:#000000;background:#ffffff;padding:24px;">
+  <div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid ${BRAND.colors.line};">
+    <div style="background:#000000;padding:22px 26px;color:#fff;">
       <strong style="font-size:20px;">${e(input.company)}</strong>
       <p style="margin:4px 0 0;font-size:12px;opacity:.85;">Confirmation d'acompte & facture électronique</p>
     </div>
@@ -286,13 +288,13 @@ export function invoiceEmailHtml(input: { customerName: string; orderNumber: str
       <p style="margin-top:10px;line-height:1.6;">Votre acompte de <strong>${e(input.depositLabel)}</strong> a bien été reçu pour la commande
       <strong>${e(input.orderNumber)}</strong> (total ${e(input.totalLabel)}). Votre commande est <strong>confirmée</strong> et passe en préparation.</p>
       <table style="width:100%;margin:18px 0;border-collapse:collapse;font-size:14px;">
-        <tr><td style="padding:8px 0;color:#6b7280;">Facture</td><td style="text-align:right;font-weight:700;">${e(input.invoiceNumber)}</td></tr>
-        <tr><td style="padding:8px 0;color:#6b7280;">Acompte encaissé</td><td style="text-align:right;font-weight:700;color:#047857;">${e(input.depositLabel)}</td></tr>
-        <tr><td style="padding:8px 0;color:#6b7280;">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
-        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:#6b7280;">Code de suivi</td><td style="text-align:right;font-weight:700;color:#111318;font-family:monospace;">${e(input.trackingCode)}</td></tr>` : ''}
+        <tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Facture</td><td style="text-align:right;font-weight:700;">${e(input.invoiceNumber)}</td></tr>
+        <tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Acompte encaissé</td><td style="text-align:right;font-weight:700;color:#047857;">${e(input.depositLabel)}</td></tr>
+        <tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Solde à la livraison</td><td style="text-align:right;font-weight:700;">${e(input.balanceLabel)}</td></tr>
+        ${input.trackingCode ? `<tr><td style="padding:8px 0;color:${BRAND.colors.muted};">Code de suivi</td><td style="text-align:right;font-weight:700;color:#000000;font-family:${FONT_STACK};font-variant-numeric:tabular-nums;">${e(input.trackingCode)}</td></tr>` : ''}
       </table>
-      <p style="line-height:1.6;color:#374151;">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
-      <p style="margin-top:22px;font-size:12px;color:#8b8494;">Merci de votre confiance — l'équipe ${e(input.company)}</p>
+      <p style="line-height:1.6;color:${BRAND.colors.secondary};">Votre facture électronique est jointe à cet e-mail en PDF. Vous pouvez aussi la télécharger à tout moment depuis votre espace client AYROVI (Commandes → ${e(input.orderNumber)}).</p>
+      <p style="margin-top:22px;font-size:12px;color:${BRAND.colors.muted};">Merci de votre confiance — l'équipe ${e(input.company)}</p>
     </div>
   </div>
 </body></html>`;

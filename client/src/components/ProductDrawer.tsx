@@ -448,7 +448,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       placeholder="https://www.shein.com/..."
                       dir="ltr"
                       disabled={isUploading || isScraping}
-                      className="w-full bg-white/15 border border-white/25 focus:border-white rounded-xl px-3 py-2 text-xs text-white placeholder:text-purple-200/70 focus:outline-none font-mono"
+                      className="w-full bg-white/15 border border-white/25 focus:border-white rounded-xl px-3 py-2 text-xs text-white placeholder:text-purple-200/70 focus:outline-none ay-number"
                     />
                     <button
                       type="button"

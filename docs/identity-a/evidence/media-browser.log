@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:sonim-media
+> node verify/sonim-actions-runner.mjs verify/sonim-media.mjs
+
+161/161 SONIM media assertions passed

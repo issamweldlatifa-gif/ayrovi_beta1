@@ -86,7 +86,7 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         <div className="bg-surface border border-line rounded-2xl p-4 flex items-center justify-between">
           <div className="text-left">
             <span className="text-xs text-muted uppercase font-bold block">{tr('Numéro de commande :', 'رقم الطلب:')}</span>
-            <span className="text-lg font-mono font-black text-ink">{result.orderNumber}</span>
+            <span className="text-lg ay-number font-black text-ink">{result.orderNumber}</span>
           </div>
           <button
             type="button"

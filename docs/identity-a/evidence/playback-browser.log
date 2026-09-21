@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:sonim-playback
+> node verify/sonim-actions-runner.mjs verify/sonim-playback.mjs
+
+85/85 SONIM playback assertions passed

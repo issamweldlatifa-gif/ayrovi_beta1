@@ -1,0 +1,74 @@
+
+> ayrovi@3.10.4 build
+> npm run build:client && npm run build:server
+
+
+> ayrovi@3.10.4 prebuild:client
+> npm run identity:check
+
+
+> ayrovi@3.10.4 identity:check
+> node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs
+
+AYROVI A: source, stack, pure neutrals, local assets and font hashes verified.
+
+> ayrovi@3.10.4 build:client
+> vite build
+
+vite v8.2.1 building client environment for production...
+[2Ktransforming...✓ 828 modules transformed.
+rendering chunks...
+computing gzip size...
+public/index.html                                     2.24 kB │ gzip:   0.90 kB
+public/assets/adidas-DSiMMEHE.jpg                     6.66 kB
+public/assets/shein-VCX7drB9.jpg                      6.95 kB
+public/assets/ysl-BCgHxbGU.jpg                        7.31 kB
+public/assets/nike-Dnelz9bu.jpg                       7.50 kB
+public/assets/the-north-face-BnBYyhsv.jpg            10.70 kB
+public/assets/dior-DsmacnAf.jpg                      12.88 kB
+public/assets/zara-PLZWEJaL.jpg                      13.32 kB
+public/assets/ellesse-Dw6R_Xvo.jpg                   14.60 kB
+public/assets/jordan-Dycio7Hm.jpg                    17.17 kB
+public/assets/chanel-BRLfpnFi.jpg                    17.21 kB
+public/assets/prada-EeNm87n2.jpg                     19.31 kB
+public/assets/burberry-BGqL7J1S.jpg                  20.05 kB
+public/assets/hermes-BFafVh5d.jpg                    33.98 kB
+public/assets/dolce-gabbana-LtJIoL3G.jpg             34.69 kB
+public/assets/hero-homme-Cxuh9cL5.jpg                41.23 kB
+public/assets/hero-femme-CX_-1i6X.jpg                46.63 kB
+public/assets/versace-CqSoPMYt.jpg                   49.56 kB
+public/assets/about-parallax-C3cZSsmf.jpg            86.05 kB
+public/assets/hero-enfants-DYGXUqF9.jpg             146.33 kB
+public/assets/AiAssistantDrawer-BSDCRqQ_.css          6.59 kB │ gzip:   1.59 kB
+public/assets/CustomerAccountPage-D8k6JAAV.css       11.17 kB │ gzip:   2.63 kB
+public/assets/AdminApp-DUn0SF5R.css                 118.37 kB │ gzip:  20.00 kB
+public/assets/index-DfyBzw6f.css                    195.72 kB │ gzip:  32.54 kB
+public/assets/esm-CYV3w9eP.js                         0.25 kB │ gzip:   0.20 kB
+public/assets/CheckoutFlowShell-phXonohe.js           0.44 kB │ gzip:   0.27 kB
+public/assets/JourneyProgress-fPQgfgU1.js             0.68 kB │ gzip:   0.47 kB
+public/assets/resultPolicy-41holXna.js                0.83 kB │ gzip:   0.45 kB
+public/assets/AboutPage-Da-JBQCe.js                   0.83 kB │ gzip:   0.53 kB
+public/assets/useCommercePolicy-TO1FnC0U.js           1.19 kB │ gzip:   0.65 kB
+public/assets/MenuDrawer-wEqDf95L.js                  5.99 kB │ gzip:   2.39 kB
+public/assets/interfaceConfig-YWLqW7no.js             7.04 kB │ gzip:   2.51 kB
+public/assets/CartDrawer-D-WCDsLV.js                  8.91 kB │ gzip:   3.38 kB
+public/assets/CustomerPasswordRecovery-BUGmlpsd.js   11.46 kB │ gzip:   4.27 kB
+public/assets/QatafoIcons-DWxXlTYn.js                15.87 kB │ gzip:   5.14 kB
+public/assets/ProductDrawer-DjAFjPva.js              17.28 kB │ gzip:   5.03 kB
+public/assets/OrderSuccessModal-DEeIRUQV.js          20.27 kB │ gzip:   7.69 kB
+public/assets/ProductResult-DlQ12qEc.js              21.93 kB │ gzip:   7.73 kB
+public/assets/CheckoutModal-DQH0P3WN.js              26.45 kB │ gzip:   8.50 kB
+public/assets/api-CiTDEus8.js                        29.16 kB │ gzip:   9.64 kB
+public/assets/CustomerAccountPage-Cs7feU6z.js        77.54 kB │ gzip:  20.66 kB
+public/assets/LensLauncher-CSKdOwc6.js              108.36 kB │ gzip:  32.53 kB
+public/assets/AiAssistantDrawer-yPT17uRt.js         118.24 kB │ gzip:  36.92 kB
+public/assets/index-Bha8nQRP.js                     203.34 kB │ gzip:  64.36 kB
+public/assets/App-Bdiv4ApA.js                       233.39 kB │ gzip:  74.53 kB
+public/assets/qr-C9LzHcXT.js                        411.24 kB │ gzip: 109.94 kB
+public/assets/AdminApp-DX242HVM.js                  447.91 kB │ gzip: 106.20 kB
+
+✓ built in 1.30s
+
+> ayrovi@3.10.4 build:server
+> node -e 'require("esbuild").buildSync({entryPoints:["src/server.ts"],bundle:true,platform:"node",target:"node20",outfile:"dist/server.js",external:["better-sqlite3","jsdom","express","compression","cors","dotenv","tesseract.js","multer","sharp","pdf-to-img","mailparser"]})'
+

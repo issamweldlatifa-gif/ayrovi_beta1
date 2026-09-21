@@ -2,7 +2,7 @@
   "scope": "Standalone design reference only; does not certify migrated application screens or live provider integrations",
   "checks": [
     {
-      "label": "all four self-hosted families load from embedded WOFF2",
+      "label": "both official self-hosted families load from embedded WOFF2",
       "pass": true
     },
     {
@@ -19,30 +19,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 82
+            "w": 90
           },
           {
             "h": 48,
             "w": 103
           },
           {
-            "h": 48.390625,
-            "w": 260
+            "h": 50.796875,
+            "w": 222
           },
           {
             "h": 48,
-            "w": 126
+            "w": 128
           },
           {
             "h": 48,
-            "w": 74
+            "w": 77
           },
           {
-            "h": 48.390625,
+            "h": 50.796875,
             "w": 238
           },
           {
-            "h": 48.390625,
+            "h": 50.796875,
             "w": 238
           }
         ]
@@ -55,7 +55,7 @@
     {
       "label": "ar/320: language-specific editorial face",
       "pass": true,
-      "details": "\"AY Amiri\", serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "ar/360: no horizontal page overflow",
@@ -67,30 +67,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 82
+            "w": 90
           },
           {
             "h": 48,
             "w": 103
           },
           {
-            "h": 48.390625,
-            "w": 260
+            "h": 50.796875,
+            "w": 222
           },
           {
             "h": 48,
-            "w": 126
+            "w": 128
           },
           {
             "h": 48,
-            "w": 74
+            "w": 77
           },
           {
-            "h": 48.390625,
+            "h": 50.796875,
             "w": 278
           },
           {
-            "h": 48.390625,
+            "h": 50.796875,
             "w": 278
           }
         ]
@@ -103,7 +103,7 @@
     {
       "label": "ar/360: language-specific editorial face",
       "pass": true,
-      "details": "\"AY Amiri\", serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "ar/390: no horizontal page overflow",
@@ -115,30 +115,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 82
+            "w": 90
           },
           {
             "h": 48,
             "w": 103
           },
           {
-            "h": 48.390625,
-            "w": 260
+            "h": 50.796875,
+            "w": 222
           },
           {
             "h": 48,
-            "w": 126
+            "w": 128
           },
           {
             "h": 48,
-            "w": 74
+            "w": 77
           },
           {
-            "h": 48.390625,
+            "h": 50.796875,
             "w": 308
           },
           {
-            "h": 48.390625,
+            "h": 50.796875,
             "w": 308
           }
         ]
@@ -151,7 +151,7 @@
     {
       "label": "ar/390: language-specific editorial face",
       "pass": true,
-      "details": "\"AY Amiri\", serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "ar/768: no horizontal page overflow",
@@ -163,30 +163,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 98
+            "w": 106
           },
           {
             "h": 48,
             "w": 119
           },
           {
-            "h": 48.390625,
-            "w": 260
+            "h": 50.796875,
+            "w": 222
           },
           {
             "h": 48,
-            "w": 142
+            "w": 144
           },
           {
             "h": 48,
-            "w": 90
+            "w": 93
           },
           {
-            "h": 69.796875,
+            "h": 67.234375,
             "w": 298
           },
           {
-            "h": 69.796875,
+            "h": 67.234375,
             "w": 298
           }
         ]
@@ -199,7 +199,7 @@
     {
       "label": "ar/768: language-specific editorial face",
       "pass": true,
-      "details": "\"AY Amiri\", serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "ar/1360: no horizontal page overflow",
@@ -211,30 +211,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 98
+            "w": 106
           },
           {
             "h": 48,
             "w": 119
           },
           {
-            "h": 48.390625,
-            "w": 260
+            "h": 50.796875,
+            "w": 222
           },
           {
             "h": 48,
-            "w": 142
+            "w": 144
           },
           {
             "h": 48,
-            "w": 90
+            "w": 93
           },
           {
-            "h": 74.84375,
+            "h": 72.203125,
             "w": 554
           },
           {
-            "h": 74.84375,
+            "h": 72.203125,
             "w": 554
           }
         ]
@@ -247,7 +247,7 @@
     {
       "label": "ar/1360: language-specific editorial face",
       "pass": true,
-      "details": "\"AY Amiri\", serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "fr/320: no horizontal page overflow",
@@ -259,30 +259,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 83
+            "w": 90
           },
           {
             "h": 48,
-            "w": 78
-          },
-          {
-            "h": 48.390625,
-            "w": 217
+            "w": 82
           },
           {
             "h": 48,
-            "w": 139
+            "w": 222
           },
           {
             "h": 48,
-            "w": 111
+            "w": 148
           },
           {
-            "h": 48.390625,
+            "h": 48,
+            "w": 113
+          },
+          {
+            "h": 48,
             "w": 238
           },
           {
-            "h": 48.390625,
+            "h": 48,
             "w": 238
           }
         ]
@@ -295,7 +295,7 @@
     {
       "label": "fr/320: language-specific editorial face",
       "pass": true,
-      "details": "\"AY DM Serif Display\", Georgia, serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "fr/360: no horizontal page overflow",
@@ -307,30 +307,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 83
+            "w": 90
           },
           {
             "h": 48,
-            "w": 78
-          },
-          {
-            "h": 48.390625,
-            "w": 217
+            "w": 82
           },
           {
             "h": 48,
-            "w": 139
+            "w": 222
           },
           {
             "h": 48,
-            "w": 111
+            "w": 148
           },
           {
-            "h": 48.390625,
+            "h": 48,
+            "w": 113
+          },
+          {
+            "h": 48,
             "w": 278
           },
           {
-            "h": 48.390625,
+            "h": 48,
             "w": 278
           }
         ]
@@ -343,7 +343,7 @@
     {
       "label": "fr/360: language-specific editorial face",
       "pass": true,
-      "details": "\"AY DM Serif Display\", Georgia, serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "fr/390: no horizontal page overflow",
@@ -355,30 +355,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 83
+            "w": 90
           },
           {
             "h": 48,
-            "w": 78
-          },
-          {
-            "h": 48.390625,
-            "w": 217
+            "w": 82
           },
           {
             "h": 48,
-            "w": 139
+            "w": 222
           },
           {
             "h": 48,
-            "w": 111
+            "w": 148
           },
           {
-            "h": 48.390625,
+            "h": 48,
+            "w": 113
+          },
+          {
+            "h": 48,
             "w": 308
           },
           {
-            "h": 48.390625,
+            "h": 48,
             "w": 308
           }
         ]
@@ -391,7 +391,7 @@
     {
       "label": "fr/390: language-specific editorial face",
       "pass": true,
-      "details": "\"AY DM Serif Display\", Georgia, serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "fr/768: no horizontal page overflow",
@@ -403,30 +403,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 99
+            "w": 106
           },
           {
             "h": 48,
-            "w": 94
-          },
-          {
-            "h": 48.390625,
-            "w": 217
+            "w": 98
           },
           {
             "h": 48,
-            "w": 155
+            "w": 222
           },
           {
             "h": 48,
-            "w": 127
+            "w": 164
           },
           {
-            "h": 79.3125,
+            "h": 48,
+            "w": 129
+          },
+          {
+            "h": 82.78125,
             "w": 298
           },
           {
-            "h": 79.3125,
+            "h": 82.78125,
             "w": 298
           }
         ]
@@ -439,7 +439,7 @@
     {
       "label": "fr/768: language-specific editorial face",
       "pass": true,
-      "details": "\"AY DM Serif Display\", Georgia, serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "fr/1360: no horizontal page overflow",
@@ -451,30 +451,30 @@
         "targets": [
           {
             "h": 48,
-            "w": 99
+            "w": 106
           },
           {
             "h": 48,
-            "w": 94
-          },
-          {
-            "h": 48.390625,
-            "w": 217
+            "w": 98
           },
           {
             "h": 48,
-            "w": 155
+            "w": 222
           },
           {
             "h": 48,
-            "w": 127
+            "w": 164
           },
           {
-            "h": 76.4375,
+            "h": 48,
+            "w": 129
+          },
+          {
+            "h": 71.90625,
             "w": 554
           },
           {
-            "h": 76.4375,
+            "h": 71.90625,
             "w": 554
           }
         ]
@@ -487,7 +487,7 @@
     {
       "label": "fr/1360: language-specific editorial face",
       "pass": true,
-      "details": "\"AY DM Serif Display\", Georgia, serif"
+      "details": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif"
     },
     {
       "label": "language control switches the document to Arabic RTL",

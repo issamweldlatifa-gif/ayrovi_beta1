@@ -1,0 +1,4 @@
+
+> ayrovi@3.10.4 typecheck
+> tsc --noEmit && tsc -p tsconfig.client.json --noEmit
+

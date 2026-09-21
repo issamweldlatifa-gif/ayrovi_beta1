@@ -67,9 +67,9 @@ try{
  await p.keyboard.press('Escape');await p.locator('[data-sonim-tone="dark"]').waitFor();
  await p.locator('[data-assistant-composer] textarea').fill('Un brouillon, sans envoi.');
  const bounds=await p.locator('[data-assistant-composer]').boundingBox();check('short viewport: composer remains reachable',bounds.y+bounds.height<=481,bounds);
- await p.waitForFunction(()=>getComputedStyle(document.querySelector('.assistant-quick-card')).backgroundColor==='rgb(36, 34, 32)');
- check('dark welcome cards use semantic dark surface',await p.locator('.assistant-quick-card').first().evaluate(e=>getComputedStyle(e).backgroundColor)==='rgb(36, 34, 32)');
- check('dark muted text is readable token',await p.locator('.assistant-quick-card .text-muted').first().evaluate(e=>getComputedStyle(e).color)==='rgb(190, 183, 176)');
+ await p.waitForFunction(()=>getComputedStyle(document.querySelector('.assistant-quick-card')).backgroundColor==='rgb(23, 23, 23)');
+ check('dark welcome cards use semantic dark surface',await p.locator('.assistant-quick-card').first().evaluate(e=>getComputedStyle(e).backgroundColor)==='rgb(23, 23, 23)');
+ check('dark muted text is readable token',await p.locator('.assistant-quick-card .text-muted').first().evaluate(e=>getComputedStyle(e).color)==='rgb(189, 189, 189)');
  await p.screenshot({path:output+'/sonim-dark-short.png'});await extra.close();
  const restricted=await browser.newContext();await restricted.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw new DOMException('Blocked','SecurityError');}}));
  const rp=await restricted.newPage();rp.on('pageerror',e=>errors.push(e.message));await rp.goto(base,{waitUntil:'domcontentloaded'});await rp.locator('.editorial-hero__title').waitFor();check('restricted browser storage does not crash the customer shell',await rp.locator('.public-site-header').isVisible());await restricted.close();

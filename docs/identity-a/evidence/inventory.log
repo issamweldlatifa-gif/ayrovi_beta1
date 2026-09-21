@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 design:inventory
+> node scripts/inventory-customer-design.mjs
+
+{"files":199,"customerAndSharedFiles":150,"controls":409,"iconAliases":99,"uniqueGlyphs":96}

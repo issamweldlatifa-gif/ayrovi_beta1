@@ -1,0 +1,17 @@
+
+> ayrovi@3.10.4 verify:editorial-account
+> esbuild verify/customer-account-functional.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-account-runner.cjs && AYROVI_ACCOUNT_OUTPUT=screenshots/editorial/icon-correction/account node .cache/editorial-account-runner.cjs
+
+
+  .cache/editorial-account-runner.cjs  1.7mb ⚠️
+
+⚡ Done in 79ms
+[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+PASS: 134 real browser/API/SQLite assertions; no external services used.

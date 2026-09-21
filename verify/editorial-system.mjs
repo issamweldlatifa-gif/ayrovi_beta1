@@ -17,7 +17,7 @@ fs.mkdirSync(reportDir, {recursive: true});
 try {
   await page.goto(pathToFileURL(path.resolve('docs/editorial/AYROVI-editorial-system.html')).href);
   await page.evaluate(async fonts => { await Promise.all(fonts.map(font => document.fonts.load(`16px "${font.family}"`))); await document.fonts.ready; }, identity.fonts);
-  check('all four self-hosted families load from embedded WOFF2', await page.evaluate(fonts => fonts.every(f => document.fonts.check(`16px "${f.family}"`)), identity.fonts));
+  check('both official self-hosted families load from embedded WOFF2', await page.evaluate(fonts => fonts.every(f => document.fonts.check(`16px "${f.family}"`)), identity.fonts));
   check('complete reference family', await page.locator('.glyph').count() === glyphCount);
   for (const locale of ['ar','fr']) {
     await page.evaluate(locale => { document.documentElement.lang=locale;document.documentElement.dir=locale==='ar'?'rtl':'ltr'; }, locale);
@@ -27,7 +27,7 @@ try {
       check(`${locale}/${width}: no horizontal page overflow`, geometry.scroll<=width && geometry.body<=width,geometry);
       check(`${locale}/${width}: controls have at least 44px targets`, geometry.targets.every(t=>t.h>=44&&t.w>=44));
       const font=await page.locator('h1').evaluate(e=>getComputedStyle(e).fontFamily);
-      check(`${locale}/${width}: language-specific editorial face`,font.includes(locale==='ar'?'AY Amiri':'AY DM Serif Display'),font);
+      check(`${locale}/${width}: language-specific editorial face`,font.includes('Zalando Sans') && font.includes('Noto Sans Arabic'),font);
     }
   }
   await page.setViewportSize({width:390,height:844});
@@ -43,7 +43,7 @@ try {
   await page.locator('#search').focus();
   check('keyboard focus has an outline', await page.locator('#search').evaluate(e=>getComputedStyle(e).outlineStyle)!=='none');
   await page.locator('#tone').click();
-  check('dark mode uses its own semantic tokens', await page.locator('body').evaluate(e=>getComputedStyle(e).backgroundColor)==='rgb(25, 24, 23)');
+  check('dark mode uses its own semantic tokens', await page.locator('body').evaluate(e=>getComputedStyle(e).backgroundColor)==='rgb(0, 0, 0)');
   await page.locator('#tone').click();
   await page.evaluate(()=>scrollTo(0,0));
   await page.screenshot({path:reportDir+'/system-mobile-ar.png'});
