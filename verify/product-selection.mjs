@@ -41,7 +41,7 @@ try{
   for(const scenario of scenarios){
    fresh={...base,variantOptions:scenario.options,priceToken:scenario.missingGeneral?null:base.priceToken};
    await page.goto(process.env.AYROVI_BASE_URL+`/__verify/sonim?mode=${mode}&case=${scenario.name}`);await page.locator('[data-open]').click();
-   if(mode==='lens'){await page.locator('#ayrovix-url-input').fill(base.sourceUrl);await page.getByRole('button',{name:ar?'تحليل':'Analyser',exact:true}).click();}
+   if(mode==='lens'){await page.locator('.lens-access, #ayrovix-url-input').first().waitFor(); if(await page.locator('.lens-access').count()){for(const input of await page.locator('.lens-consent input').all())await input.check(); await page.locator('.lens-consent .lens-panel-primary').click();} await page.locator('#ayrovix-url-input').fill(base.sourceUrl);await page.getByRole('button',{name:ar?'تحليل':'Analyser',exact:true}).click();}
    else await page.getByRole('button',{name:ar?'تحديث المنتج وفتحه':'Actualiser et ouvrir le produit',exact:true}).click();
    const card=page.locator('.flow-product');await card.waitFor();const order=card.getByRole('button',{name:ar?'اطلب · عربون 25%':'Commander · 25%',exact:true});await order.waitFor();
    await card.locator('details summary').click();

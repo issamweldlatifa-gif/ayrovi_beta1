@@ -71,6 +71,16 @@ jobs:
         id: editorial_customer
         run: npm run verify:editorial-customer
 
+      - name: Verify Lens camera entry, help, consent and navigation
+        run: npm run verify:lens-camera
+
+      - name: Upload Lens entry evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lens-camera-evidence
+          path: docs/lens-phase1/evidence/
+
       - name: Verify editorial voice, products and all icon imports
         run: npm run verify:editorial-states
 

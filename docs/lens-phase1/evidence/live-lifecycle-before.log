@@ -1,0 +1,179 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/user/ayrovi_beta1[39m
+
+ [31m❯[39m tests/lens-live-lifecycle.test.ts [2m([22m[2m10 tests[22m[2m | [22m[31m9 failed[39m[2m)[22m[32m 42[2mms[22m[39m
+[31m     [31m×[31m first frame is sampled immediately rather than waiting a full polling interval[39m[32m 12[2mms[22m[39m
+[31m     [31m×[31m a pre-stop encoded frame cannot start a request in a replacement session[39m[32m 9[2mms[22m[39m
+[31m     [31m×[31m late provider responses cannot repopulate a stopped session[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m an obsolete request cannot clear the replacement in-flight lock or schedule a second loop[39m[32m 4[2mms[22m[39m
+[31m     [31m×[31m a failed request is retried even if the camera remains completely still[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m an unchanged recognized scene does not age its product out as if it disappeared[39m[32m 3[2mms[22m[39m
+[31m     [31m×[31m a detector resolving from an older session cannot replace the current detector[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m an old local inference cannot publish detections after restart[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m crop matching gets an abort signal and cannot survive stop[39m[32m 2[2mms[22m[39m
+     [32m✓[39m repeated start creates no duplicate scheduler, stop releases scheduled work[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 9 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22mfirst frame is sampled immediately rather than waiting a full polling interval
+[31m[1mAssertionError[22m: expected [] to have a length of 1 but got +0[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 1[39m
+[31m+ 0[39m
+
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m26:71[22m[39m
+    [90m 24|[39m describe('Live runtime sessions — real scheduler with controlled media…
+    [90m 25|[39m  it('first frame is sampled immediately rather than waiting a full pol…
+    [90m 26|[39m   runtime.start();await vi.advanceTimersByTimeAsync(0);expect(encode).…
+    [90m   |[39m                                                                       [31m^[39m
+    [90m 27|[39m  })[33m;[39m
+    [90m 28|[39m  it('a pre-stop encoded frame cannot start a request in a replacement …
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22ma pre-stop encoded frame cannot start a request in a replacement session
+[31m[1mAssertionError[22m: expected "vi.fn()" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st vi.fn() call:
+
+[22m    Array [
+      File {},
+      AbortSignal {
+        Symbol(kEvents): Map {},
+        Symbol(events.maxEventTargetListeners): 10,
+        Symbol(events.maxEventTargetListenersWarned): false,
+        Symbol(kHandlers): Map {},
+        Symbol(kAborted): false,
+        Symbol(kReason): undefined,
+        Symbol(kComposite): false,
+      },
+    ]
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m29:103[22m[39m
+    [90m 27|[39m  })[33m;[39m
+    [90m 28|[39m  it('a pre-stop encoded frame cannot start a request in a replacement …
+    [90m 29|[39m   await startFrame();runtime.stop();runtime.start();deliver();await fl…
+    [90m   |[39m                                                                                                       [31m^[39m
+    [90m 30|[39m  })[33m;[39m
+    [90m 31|[39m  it('late provider responses cannot repopulate a stopped session',asyn…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22mlate provider responses cannot repopulate a stopped session
+[31m[1mAssertionError[22m: expected [ …(3) ] to have a length of 2 but got 3[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 2[39m
+[31m+ 3[39m
+
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m34:97[22m[39m
+    [90m 32|[39m   const pending=deferred();mocks.analyze.mockReturnValue(pending.promi…
+    [90m 33|[39m   const signal=mocks.analyze.mock.calls[0][1] as AbortSignal;runtime.s…
+    [90m 34|[39m   const count=states.length;pending.resolve(result('Old product'));awa…
+    [90m   |[39m                                                                                                 [31m^[39m
+    [90m 35|[39m  })[33m;[39m
+    [90m 36|[39m  it('an obsolete request cannot clear the replacement in-flight lock o…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22man obsolete request cannot clear the replacement in-flight lock or schedule a second loop
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m39:78[22m[39m
+    [90m 37|[39m   const old=deferred(),current=deferred();mocks.analyze.mockReturnValu…
+    [90m 38|[39m   await startFrame();deliver();await flush();runtime.stop();runtime.st…
+    [90m 39|[39m   old.resolve(result('Old'));await flush();expect((runtime as any).inf…
+    [90m   |[39m                                                                              [31m^[39m
+    [90m 40|[39m   current.resolve(result('Current'));await flush();expect(states.at(-1…
+    [90m 41|[39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22ma failed request is retried even if the camera remains completely still
+[31m[1mAssertionError[22m: expected 1 to be greater than 1[39m
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m44:25[22m[39m
+    [90m 42|[39m  it('a failed request is retried even if the camera remains completely…
+    [90m 43|[39m   mocks.analyze.mockRejectedValueOnce(new Error('temporary'));await st…
+    [90m 44|[39m   expect(encode.length).toBeGreaterThan(1);deliver(1);await flush();ex…
+    [90m   |[39m                         [31m^[39m
+    [90m 45|[39m  })[33m;[39m
+    [90m 46|[39m  it('an unchanged recognized scene does not age its product out as if …
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22man unchanged recognized scene does not age its product out as if it disappeared
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m48:91[22m[39m
+    [90m 46|[39m  it('an unchanged recognized scene does not age its product out as if …
+    [90m 47|[39m   await startFrame();deliver();await flush();await vi.advanceTimersByT…
+    [90m 48|[39m   expect(states.at(-1).objects.some((o:any)=>o.label==='New product'&&…
+    [90m   |[39m                                                                                           [31m^[39m
+    [90m 49|[39m   [34mexpect[39m(mocks[33m.[39manalyze)[33m.[39m[34mtoHaveBeenCalledTimes[39m([34m1[39m)[33m;[39m
+    [90m 50|[39m  })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22ma detector resolving from an older session cannot replace the current detector
+[31m[1mAssertionError[22m: expected { detect: [Function Mock] } to be { detect: [Function Mock] } // Object.is equality[39m
+
+[2mCompared values have no visual difference.[22m
+
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m53:194[22m[39m
+
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22man old local inference cannot publish detections after restart
+[31m[1mAssertionError[22m: expected [ …(4) ] to have a length of 3 but got 4[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- 3[39m
+[31m+ 4[39m
+
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m58:18[22m[39m
+    [90m 56|[39m   const pending=deferred();mocks.load.mockResolvedValue({detect:()=>pe…
+    [90m 57|[39m   runtime.stop();runtime.start();const count=states.length;pending.res…
+    [90m 58|[39m   expect(states).toHaveLength(count);expect((runtime as any).objects).…
+    [90m   |[39m                  [31m^[39m
+    [90m 59|[39m  })[33m;[39m
+    [90m 60|[39m  it('crop matching gets an abort signal and cannot survive stop',async…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/9]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m tests/lens-live-lifecycle.test.ts[2m > [22mLive runtime sessions — real scheduler with controlled media/provider promises[2m > [22mcrop matching gets an abort signal and cannot survive stop
+[31m[1mAssertionError[22m: expected undefined to be an instance of AbortSignal[39m
+[36m [2m❯[22m tests/lens-live-lifecycle.test.ts:[2m63:101[22m[39m
+
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/9]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m9 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 04:52:50
+[2m   Duration [22m 686ms[2m (transform 109ms, setup 0ms, import 126ms, tests 42ms, environment 371ms)[22m

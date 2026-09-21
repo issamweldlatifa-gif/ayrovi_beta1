@@ -1,0 +1,62 @@
+/* Lens entry surfaces: approved type stack and glyph family; no result-sheet restyling. */
+.lens-camera { font-family:var(--ay-font-stack); background:#000; color:#fff; }
+.lens-camera-stage { position:relative; display:flex; flex-direction:column; flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; }
+.lens-camera-header { position:relative; z-index:20; display:grid; grid-template-columns:88px minmax(0,1fr) 88px; align-items:center; gap:4px; padding:max(8px,env(safe-area-inset-top)) 12px 8px; flex:none; background:linear-gradient(#0009,transparent); }
+.lens-camera-header > .lens-camera-icon { justify-self:start; }
+.lens-camera-brand { overflow-wrap:anywhere; margin:0; font-size:1.125rem; font-weight:500; letter-spacing:0; line-height:1.25; text-align:center; }
+.lens-camera-brand span { display:block; font-size:0.6875rem; font-weight:400; margin-top:3px; }
+.lens-camera-tools { display:flex; }
+.lens-camera-icon { display:grid; place-items:center; min-width:44px; min-height:44px; padding:0; color:#fff; background:transparent; border:0; border-radius:0; cursor:pointer; }
+.lens-camera-icon[aria-pressed=true] { background:#fff; color:#000; }
+.lens-camera-icon:disabled { opacity:.45; cursor:not-allowed; }
+.lens-camera .lens-viewfinder { min-height:120px; padding-block:24px; }
+.lens-viewfinder > div { max-width:min(300px,48dvh); }
+.lens-camera-guidance { position:relative; z-index:10; max-width:420px; margin:0 auto 12px; padding:8px 16px; color:#fff; background:#0009; font-size:0.8125rem; line-height:1.6; text-align:center; }
+.lens-camera-tab { min-height:44px; letter-spacing:0; }
+.lens-camera-tab:disabled { opacity:.4; }
+.lens-live-unavailable { position:relative; z-index:10; margin:0 16px 12px; color:#fff; font-size:0.75rem; text-align:center; }
+.lens-camera-controls { display:grid; grid-template-columns:minmax(0,1fr) 84px minmax(0,1fr); align-items:center; gap:12px; padding:0 16px 10px; flex:none; }
+.lens-camera-action { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:76px; gap:2px; background:transparent; color:#fff; border:0; font-family:inherit; font-size:0.8125rem; font-weight:500; line-height:1.4; cursor:pointer; }
+.lens-camera-action > span { height:44px; width:44px; }
+.lens-camera-shutter { justify-self:center; }
+.lens-camera-shutter:disabled { opacity:.45; cursor:not-allowed; }
+.lens-camera button:focus-visible { outline:2px solid #fff; outline-offset:3px; }
+.lens-scan-actions { position:relative; z-index:10; display:flex; flex-wrap:wrap; justify-content:center; gap:12px; padding:12px 16px; }
+.lens-scan-actions button { min-height:44px; padding:8px 14px; border:1px solid #fff; background:#000; color:#fff; font:inherit; font-size:0.875rem; }
+.lens-access { position:fixed; inset:0; z-index:100; background:#000; }
+.lens-panel-backdrop { position:fixed; inset:0; z-index:115; display:flex; align-items:flex-end; justify-content:center; padding:max(12px,env(safe-area-inset-top)) 0 0; background:#0009; }
+.lens-panel { width:100%; max-width:540px; max-height:calc(100dvh - max(12px,env(safe-area-inset-top))); display:flex; flex-direction:column; overflow:hidden; background:#fff; color:#000; font-family:var(--ay-font-stack); font-size:0.9375rem; line-height:1.65; text-align:start; border:1px solid var(--ay-e-line); }
+.lens-panel:lang(ar) { line-height:1.85; }
+.lens-panel-header { display:flex; align-items:center; gap:12px; flex:none; padding:12px 16px; border-bottom:1px solid var(--ay-e-line); }
+.lens-panel-header h2 { flex:1; margin:0; font-size:1.25rem; font-weight:500; line-height:1.4; }
+.lens-panel-icon { display:grid; place-items:center; flex:none; min-width:44px; min-height:44px; padding:0; border:1px solid var(--ay-e-line); color:#000; background:#fff; cursor:pointer; }
+.lens-panel-body { overflow-y:auto; overscroll-behavior:contain; padding:20px 20px max(20px,env(safe-area-inset-bottom)); min-height:0; }
+.lens-panel-lead { margin:0 0 20px; font-size:1.0625rem; font-weight:400; }
+.lens-guide details { border-top:1px solid var(--ay-e-line); padding:14px 0; }
+.lens-guide summary { min-height:44px; display:list-item; padding-block:8px; font-weight:700; cursor:pointer; }
+.lens-guide p { margin:8px 0; }
+.lens-guide ul { margin:8px 0; padding-inline-start:22px; }
+.lens-guide li { margin-block:8px; }
+.lens-guide a { color:#000; text-decoration:underline; text-underline-offset:3px; display:inline-block; padding-block:10px; }
+.lens-methods button { display:flex; align-items:center; gap:16px; width:100%; min-height:88px; padding:16px; margin-top:12px; border:1px solid var(--ay-e-line); background:#fff; color:#000; text-align:start; cursor:pointer; }
+.lens-methods button svg { flex:none; }
+.lens-methods strong { display:block; font-size:1.0rem; font-weight:700; }
+.lens-methods small { display:block; margin-top:4px; color:#595959; font-size:0.8125rem; }
+.lens-link-form { display:flex; flex-direction:column; gap:12px; }
+.lens-link-form label { font-weight:700; }
+.lens-link-form input { width:100%; min-height:48px; border:1px solid #595959; background:#fff; color:#000; padding:12px; font:inherit; font-size:1.0rem; border-radius:0; }
+.lens-link-form p { margin:0; font-size:0.8125rem; }
+.lens-panel-primary,.lens-panel-secondary { min-height:48px; width:100%; padding:10px 16px; border:1px solid #000; background:#000; color:#fff; font:inherit; font-weight:700; cursor:pointer; }
+.lens-panel-secondary { background:#fff; color:#000; }
+.lens-panel-primary:disabled { background:#595959; border-color:#595959; opacity:.55; cursor:not-allowed; }
+.lens-panel button:focus-visible,.lens-panel input:focus-visible,.lens-panel summary:focus-visible,.lens-panel a:focus-visible { outline:2px solid #000; outline-offset:3px; }
+.lens-access-intro { display:flex; align-items:flex-start; gap:12px; margin-bottom:20px; }
+.lens-access-intro svg { flex:none; margin-top:5px; }
+.lens-access-intro p { margin:0; }
+.lens-consent { display:flex; flex-direction:column; gap:12px; border-top:1px solid var(--ay-e-line); padding-top:16px; }
+.lens-consent label { display:flex; align-items:flex-start; gap:12px; min-height:44px; cursor:pointer; }
+.lens-consent input { width:20px; height:20px; flex:none; margin-top:5px; accent-color:#000; }
+.lens-consent p { font-size:0.75rem; color:#595959; }
+@media(min-width:600px) { .lens-panel-backdrop { align-items:center; padding:24px; } .lens-panel { max-height:calc(100dvh - 48px); } .lens-camera-controls { width:420px; max-width:100%; margin-inline:auto; } }
+@media(max-height:550px) { .lens-camera .lens-viewfinder { padding-block:8px; } .lens-viewfinder > div { max-width:120px; } .lens-camera-guidance { margin-bottom:4px; padding-block:4px; } .lens-camera-header { padding-block:4px; } }
+@media(prefers-reduced-motion:reduce) { .lens-camera button { transition:none; } }

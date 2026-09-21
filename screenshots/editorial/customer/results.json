@@ -135,7 +135,7 @@
     {
       "label": "fr/320/lens: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.00011848341232227489
+      "details": 0
     },
     {
       "label": "fr/320: Lens imports new icon family",
@@ -835,7 +835,7 @@
     {
       "label": "ar/320/lens: orange area <= 3% (no exclusions)",
       "pass": true,
-      "details": 0.00011848341232227489
+      "details": 0
     },
     {
       "label": "ar/320: Lens imports new icon family",
@@ -1462,7 +1462,7 @@
       "locale": "fr",
       "width": 320,
       "screen": "lens",
-      "ratio": 0.00011848341232227489,
+      "ratio": 0,
       "exclusions": []
     },
     {
@@ -1637,7 +1637,7 @@
       "locale": "ar",
       "width": 320,
       "screen": "lens",
-      "ratio": 0.00011848341232227489,
+      "ratio": 0,
       "exclusions": []
     },
     {

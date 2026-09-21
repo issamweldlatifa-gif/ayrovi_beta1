@@ -1,0 +1,2271 @@
+{
+  "checks": [
+    {
+      "name": "chromium/fr: no media request before agreement",
+      "pass": true
+    },
+    {
+      "name": "agreement disabled by default",
+      "pass": true
+    },
+    {
+      "name": "chromium/fr/320: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "chromium/fr/390: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "chromium/fr/768: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "chromium/fr/1360: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 83,
+            "h": 44
+          },
+          {
+            "w": 142,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "title glyphs really rendered with official local Zalando Sans",
+      "pass": true,
+      "details": {
+        "fonts": [
+          {
+            "familyName": "Zalando Sans",
+            "postScriptName": "ZalandoSans-Regular",
+            "isCustomFont": true,
+            "glyphCount": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "background inert during help",
+      "pass": true
+    },
+    {
+      "name": "focus remains in help",
+      "pass": true
+    },
+    {
+      "name": "Escape returns focus to help trigger",
+      "pass": true
+    },
+    {
+      "name": "help does not reopen camera",
+      "pass": true
+    },
+    {
+      "name": "chooser contains exactly two methods",
+      "pass": true
+    },
+    {
+      "name": "link receives focus",
+      "pass": true
+    },
+    {
+      "name": "URL preserved by handler",
+      "pass": true
+    },
+    {
+      "name": "scanner does not conceal a link field",
+      "pass": true
+    },
+    {
+      "name": "barcode uses existing handler",
+      "pass": true
+    },
+    {
+      "name": "Live is labeled as scanning, not video recording",
+      "pass": true
+    },
+    {
+      "name": "nested navigation preserves selected Live mode",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Live",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Photo",
+      "pass": true
+    },
+    {
+      "name": "enlarged short-screen panel has no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "capture generated a real nonempty image",
+      "pass": true
+    },
+    {
+      "name": "result shell untouched by entry controls",
+      "pass": true
+    },
+    {
+      "name": "return from image reuses media stream",
+      "pass": true
+    },
+    {
+      "name": "image import uses the same photo handler",
+      "pass": true
+    },
+    {
+      "name": "exit releases camera tracks",
+      "pass": true
+    },
+    {
+      "name": "chromium/ar: no media request before agreement",
+      "pass": true
+    },
+    {
+      "name": "agreement disabled by default",
+      "pass": true
+    },
+    {
+      "name": "chromium/ar/320: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "chromium/ar/390: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "chromium/ar/768: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "chromium/ar/1360: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 77,
+            "h": 44
+          },
+          {
+            "w": 109,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "title glyphs really rendered with official local Zalando Sans",
+      "pass": true,
+      "details": {
+        "fonts": [
+          {
+            "familyName": "Zalando Sans",
+            "postScriptName": "ZalandoSans-Regular",
+            "isCustomFont": true,
+            "glyphCount": 11
+          }
+        ]
+      }
+    },
+    {
+      "name": "background inert during help",
+      "pass": true
+    },
+    {
+      "name": "focus remains in help",
+      "pass": true
+    },
+    {
+      "name": "Escape returns focus to help trigger",
+      "pass": true
+    },
+    {
+      "name": "help does not reopen camera",
+      "pass": true
+    },
+    {
+      "name": "chooser contains exactly two methods",
+      "pass": true
+    },
+    {
+      "name": "link receives focus",
+      "pass": true
+    },
+    {
+      "name": "URL preserved by handler",
+      "pass": true
+    },
+    {
+      "name": "scanner does not conceal a link field",
+      "pass": true
+    },
+    {
+      "name": "barcode uses existing handler",
+      "pass": true
+    },
+    {
+      "name": "Live is labeled as scanning, not video recording",
+      "pass": true
+    },
+    {
+      "name": "nested navigation preserves selected Live mode",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Live",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Photo",
+      "pass": true
+    },
+    {
+      "name": "enlarged short-screen panel has no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "capture generated a real nonempty image",
+      "pass": true
+    },
+    {
+      "name": "result shell untouched by entry controls",
+      "pass": true
+    },
+    {
+      "name": "return from image reuses media stream",
+      "pass": true
+    },
+    {
+      "name": "image import uses the same photo handler",
+      "pass": true
+    },
+    {
+      "name": "exit releases camera tracks",
+      "pass": true
+    },
+    {
+      "name": "firefox/fr: no media request before agreement",
+      "pass": true
+    },
+    {
+      "name": "agreement disabled by default",
+      "pass": true
+    },
+    {
+      "name": "firefox/fr/320: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "firefox/fr/390: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "firefox/fr/768: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "firefox/fr/1360: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 79.73333740234375,
+            "h": 44
+          },
+          {
+            "w": 136.4666748046875,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "background inert during help",
+      "pass": true
+    },
+    {
+      "name": "focus remains in help",
+      "pass": true
+    },
+    {
+      "name": "Escape returns focus to help trigger",
+      "pass": true
+    },
+    {
+      "name": "help does not reopen camera",
+      "pass": true
+    },
+    {
+      "name": "chooser contains exactly two methods",
+      "pass": true
+    },
+    {
+      "name": "link receives focus",
+      "pass": true
+    },
+    {
+      "name": "URL preserved by handler",
+      "pass": true
+    },
+    {
+      "name": "scanner does not conceal a link field",
+      "pass": true
+    },
+    {
+      "name": "barcode uses existing handler",
+      "pass": true
+    },
+    {
+      "name": "Live is labeled as scanning, not video recording",
+      "pass": true
+    },
+    {
+      "name": "nested navigation preserves selected Live mode",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Live",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Photo",
+      "pass": true
+    },
+    {
+      "name": "enlarged short-screen panel has no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "capture generated a real nonempty image",
+      "pass": true
+    },
+    {
+      "name": "result shell untouched by entry controls",
+      "pass": true
+    },
+    {
+      "name": "return from image reuses media stream",
+      "pass": true
+    },
+    {
+      "name": "image import uses the same photo handler",
+      "pass": true
+    },
+    {
+      "name": "exit releases camera tracks",
+      "pass": true
+    },
+    {
+      "name": "firefox/ar: no media request before agreement",
+      "pass": true
+    },
+    {
+      "name": "agreement disabled by default",
+      "pass": true
+    },
+    {
+      "name": "firefox/ar/320: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 90,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 90,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "firefox/ar/390: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 125,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 125,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "firefox/ar/768: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "firefox/ar/1360: no overflow",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "44px targets",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "official stack and medium title",
+      "pass": true,
+      "details": {
+        "overflow": false,
+        "controls": [
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 44,
+            "h": 44
+          },
+          {
+            "w": 76.23333740234375,
+            "h": 44
+          },
+          {
+            "w": 110.33334350585938,
+            "h": 44
+          },
+          {
+            "w": 140,
+            "h": 76
+          },
+          {
+            "w": 78,
+            "h": 78
+          },
+          {
+            "w": 140,
+            "h": 76
+          }
+        ],
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "weight": "500"
+      }
+    },
+    {
+      "name": "background inert during help",
+      "pass": true
+    },
+    {
+      "name": "focus remains in help",
+      "pass": true
+    },
+    {
+      "name": "Escape returns focus to help trigger",
+      "pass": true
+    },
+    {
+      "name": "help does not reopen camera",
+      "pass": true
+    },
+    {
+      "name": "chooser contains exactly two methods",
+      "pass": true
+    },
+    {
+      "name": "link receives focus",
+      "pass": true
+    },
+    {
+      "name": "URL preserved by handler",
+      "pass": true
+    },
+    {
+      "name": "scanner does not conceal a link field",
+      "pass": true
+    },
+    {
+      "name": "barcode uses existing handler",
+      "pass": true
+    },
+    {
+      "name": "Live is labeled as scanning, not video recording",
+      "pass": true
+    },
+    {
+      "name": "nested navigation preserves selected Live mode",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Live",
+      "pass": true
+    },
+    {
+      "name": "keyboard selects Photo",
+      "pass": true
+    },
+    {
+      "name": "enlarged short-screen panel has no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "capture generated a real nonempty image",
+      "pass": true
+    },
+    {
+      "name": "result shell untouched by entry controls",
+      "pass": true
+    },
+    {
+      "name": "return from image reuses media stream",
+      "pass": true
+    },
+    {
+      "name": "image import uses the same photo handler",
+      "pass": true
+    },
+    {
+      "name": "exit releases camera tracks",
+      "pass": true
+    },
+    {
+      "name": "no uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": [],
+  "fonts": [
+    {
+      "locale": "fr",
+      "fonts": [
+        {
+          "familyName": "Zalando Sans",
+          "postScriptName": "ZalandoSans-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ]
+    },
+    {
+      "locale": "ar",
+      "fonts": [
+        {
+          "familyName": "Zalando Sans",
+          "postScriptName": "ZalandoSans-Regular",
+          "isCustomFont": true,
+          "glyphCount": 11
+        }
+      ]
+    }
+  ],
+  "scope": "Actual components, synthetic media stream. External analysis disabled; not a physical-device performance benchmark."
+}

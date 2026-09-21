@@ -1,3 +1,4 @@
+import { LensAccess, readLensConsent, rememberLensConsent } from './LensHelp';
 import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../services/productSelection';
 import { AppHeader } from '../../design/AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
@@ -116,6 +117,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   darkMode,
   onToggleDarkMode,
 }) => {
+  const [lensAccepted, setLensAccepted] = useState(readLensConsent);
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
@@ -206,6 +208,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   }, [isOpen, stage, historyScope]);
 
   if (!isOpen) return null;
+  if (!lensAccepted) return <LensAccess onClose={onClose} onAccept={() => { rememberLensConsent(); setLensAccepted(true); }} />;
 
   const startRequest = () => {
     requestAbortRef.current?.abort();

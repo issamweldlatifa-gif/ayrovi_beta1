@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 199,
-    "customerAndSharedFiles": 150,
-    "controls": 409,
+    "files": 201,
+    "customerAndSharedFiles": 152,
+    "controls": 423,
     "iconAliases": 99,
     "uniqueGlyphs": 96
   },
@@ -10634,6 +10634,29 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/ayrovix/components/lens-camera.css",
+      "domain": "lens",
+      "sha256": "1c6ab02128ba029cf9dde6a170138d64b2009f88ada1b639fc582067c165eda7",
+      "lines": 63,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#0009",
+        "#595959",
+        "#fff"
+      ],
+      "fontDeclarations": [
+        "font-family:var(--ay-font-stack)",
+        "font-family:inherit",
+        "font-family:var(--ay-font-stack)"
+      ],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/ayrovix/components/LensCamera.tsx",
       "domain": "lens",
       "sha256": "d0d05a642c680dae3a28521e3c6e35b278cb910e929f9264a25db8b1d9109654",
@@ -10672,6 +10695,130 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Camera }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/components/LensHelp.tsx",
+      "domain": "lens",
+      "sha256": "cb7cab5e8fcbd34f4c7a60563094106a60d9e3674ccbdfaa1338f20a20773a61",
+      "lines": 63,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext",
+        "../../hooks/useDialogFocus",
+        "./lens-camera.css"
+      ],
+      "exports": [
+        "LENS_CONSENT_KEY",
+        "readLensConsent",
+        "rememberLensConsent",
+        "LensDialog",
+        "LensGuide",
+        "LensAccess"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 24,
+          "className": "\"lens-panel-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer cette fenêtre', 'إغلاق هذه النافذة')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 34,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 40,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 46,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 46,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 56,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 56,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 58,
+          "className": "\"lens-panel-primary\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onAccept}",
+          "disabled": "{!adult || !agreed}"
+        },
+        {
+          "tag": "button",
+          "line": 59,
+          "className": "\"lens-panel-secondary\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onClose}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Info, X }",
           "line": 2
         }
       ],
@@ -10752,9 +10899,10 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "023a7512f69145a8b488e246695b65c7083cbab7cdc5a1916692dea4de25ec26",
-      "lines": 933,
+      "sha256": "acffd5109e9674a9c2513a765c0e82b01f64922d8167a2ff7a4d59c6167ae5db",
+      "lines": 936,
       "imports": [
+        "./LensHelp",
         "../services/productSelection",
         "../../design/AppHeader",
         "react",
@@ -10784,7 +10932,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 681,
+          "line": 684,
           "className": null,
           "type": null,
           "role": null,
@@ -10794,7 +10942,7 @@
         },
         {
           "tag": "input",
-          "line": 687,
+          "line": 690,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -10804,7 +10952,7 @@
         },
         {
           "tag": "button",
-          "line": 713,
+          "line": 716,
           "className": "\"lens-drop\"",
           "type": "\"button\"",
           "role": null,
@@ -10814,7 +10962,7 @@
         },
         {
           "tag": "form",
-          "line": 731,
+          "line": 734,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -10824,7 +10972,7 @@
         },
         {
           "tag": "input",
-          "line": 747,
+          "line": 750,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"search\"",
           "role": null,
@@ -10834,7 +10982,7 @@
         },
         {
           "tag": "button",
-          "line": 759,
+          "line": 762,
           "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
           "type": "\"submit\"",
           "role": null,
@@ -10844,7 +10992,7 @@
         },
         {
           "tag": "form",
-          "line": 764,
+          "line": 767,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -10854,7 +11002,7 @@
         },
         {
           "tag": "input",
-          "line": 779,
+          "line": 782,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"url\"",
           "role": null,
@@ -10864,7 +11012,7 @@
         },
         {
           "tag": "button",
-          "line": 781,
+          "line": 784,
           "className": "\"ay-btn-primary flex-none text-xs\"",
           "type": "\"submit\"",
           "role": null,
@@ -10874,7 +11022,7 @@
         },
         {
           "tag": "button",
-          "line": 790,
+          "line": 793,
           "className": "\"text-xs font-bold text-ink underline\"",
           "type": "\"button\"",
           "role": null,
@@ -10884,7 +11032,7 @@
         },
         {
           "tag": "button",
-          "line": 794,
+          "line": 797,
           "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
           "type": "\"button\"",
           "role": null,
@@ -10894,7 +11042,7 @@
         },
         {
           "tag": "button",
-          "line": 852,
+          "line": 855,
           "className": "\"mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -10904,7 +11052,7 @@
         },
         {
           "tag": "button",
-          "line": 863,
+          "line": 866,
           "className": "\"w-full rounded-full bg-ink py-3 text-sm font-bold text-white sm:w-auto sm:px-6\"",
           "type": "\"button\"",
           "role": null,
@@ -10914,7 +11062,7 @@
         },
         {
           "tag": "button",
-          "line": 867,
+          "line": 870,
           "className": "\"w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line sm:w-auto sm:px-6\"",
           "type": "\"button\"",
           "role": null,
@@ -10924,7 +11072,7 @@
         },
         {
           "tag": "button",
-          "line": 890,
+          "line": 893,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10934,7 +11082,7 @@
         },
         {
           "tag": "button",
-          "line": 893,
+          "line": 896,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10944,7 +11092,7 @@
         },
         {
           "tag": "button",
-          "line": 912,
+          "line": 915,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10954,7 +11102,7 @@
         },
         {
           "tag": "button",
-          "line": 915,
+          "line": 918,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10964,7 +11112,7 @@
         },
         {
           "tag": "button",
-          "line": 918,
+          "line": 921,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10974,7 +11122,7 @@
         },
         {
           "tag": "button",
-          "line": 920,
+          "line": 923,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10984,7 +11132,7 @@
         },
         {
           "tag": "button",
-          "line": 921,
+          "line": 924,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -10997,7 +11145,7 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles }",
-          "line": 25
+          "line": 26
         }
       ],
       "inlineSvg": [],
@@ -11203,14 +11351,17 @@
     {
       "file": "client/src/ayrovix/components/LiveCamera.tsx",
       "domain": "lens",
-      "sha256": "d8564dc9cf4b20325cfd3c803071fa8c4e9b2081a9cfd3ed601e88ce14840665",
-      "lines": 371,
+      "sha256": "43325b4d3a0b518dca0951eb2dba074a81b89d8bdaae93aa3772d16bcb54f008",
+      "lines": 440,
       "imports": [
         "react",
         "../services/qr",
         "../../components/QatafoIcons",
         "../../i18n/LocaleContext",
-        "./LensNavigation",
+        "./LensHelp",
+        "../../navigation/NavigationHistory",
+        "../../hooks/useDialogFocus",
+        "./lens-camera.css",
         "../services/liveVisionRuntime"
       ],
       "exports": [
@@ -11219,27 +11370,37 @@
       "controls": [
         {
           "tag": "button",
-          "line": 195,
-          "className": "{`grid h-10 w-10 place-items-center rounded-full text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'bg-black/55 backdrop-blur' : ''}`}",
+          "line": 267,
+          "className": "\"lens-camera-icon\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Retour', 'رجوع')}",
-          "onClick": "{photoUrl && onPhotoClose ? onPhotoClose : onClose}",
+          "ariaLabel": "{photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}",
+          "onClick": "{panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 200,
-          "className": "{`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}",
+          "line": 273,
+          "className": "\"lens-camera-icon\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}",
+          "ariaLabel": "{tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')}",
+          "onClick": "{() => openPanel('help')}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 274,
+          "className": "\"lens-camera-icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}",
           "onClick": "{toggleTorch}",
-          "disabled": null
+          "disabled": "{!torchAvailable || torchBusy}"
         },
         {
           "tag": "button",
-          "line": 234,
+          "line": 302,
           "className": "{`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-white bg-white/20 ring-2 ring-white' : 'border-white/90 hover:border-white hover:bg-white/10'}`}",
           "type": "\"button\"",
           "role": null,
@@ -11249,7 +11410,7 @@
         },
         {
           "tag": "button",
-          "line": 252,
+          "line": 320,
           "className": "\"pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg\"",
           "type": "\"button\"",
           "role": null,
@@ -11259,7 +11420,7 @@
         },
         {
           "tag": "button",
-          "line": 279,
+          "line": 347,
           "className": "{`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}",
           "type": "\"button\"",
           "role": null,
@@ -11269,7 +11430,7 @@
         },
         {
           "tag": "button",
-          "line": 286,
+          "line": 354,
           "className": "\"bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold text-white\"",
           "type": "\"button\"",
           "role": null,
@@ -11279,18 +11440,18 @@
         },
         {
           "tag": "button",
-          "line": 313,
-          "className": "{`relative rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-[0.08em] transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}",
+          "line": 379,
+          "className": "{`lens-camera-tab relative rounded-full px-5 py-2 text-sm font-semibold transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}",
           "type": "\"button\"",
           "role": "\"tab\"",
           "ariaLabel": null,
-          "onClick": "{() => { setCamMode(m); setMode('search'); }}",
+          "onClick": "{() => { setCamMode(m); setNotice(null); }}",
           "disabled": "{disabled}"
         },
         {
           "tag": "button",
-          "line": 327,
-          "className": "\"flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]\"",
+          "line": 394,
+          "className": "\"lens-camera-action\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -11299,28 +11460,78 @@
         },
         {
           "tag": "button",
-          "line": 333,
-          "className": "{`grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}",
+          "line": 400,
+          "className": "{`lens-camera-shutter grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}",
           "onClick": "{handleCentralAction}",
+          "disabled": "{!cameraReady || capturing}"
+        },
+        {
+          "tag": "button",
+          "line": 408,
+          "className": "\"lens-camera-action\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openPanel('methods')}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 343,
-          "className": "\"flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]\"",
+          "line": 416,
+          "className": null,
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => { setNotice(null); setMode(mode === 'code' ? 'search' : 'code'); }}",
+          "onClick": "{() => openPanel('methods', true)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 416,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{closePanel}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 420,
+          "className": "\"hidden\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 426,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openPanel('scan', true)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 427,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{() => openPanel('link')}",
           "disabled": null
         },
         {
           "tag": "form",
-          "line": 352,
-          "className": "\"relative z-10 mx-5 mb-2 flex gap-2\"",
+          "line": 429,
+          "className": "\"lens-link-form\"",
           "type": null,
           "role": null,
           "ariaLabel": null,
@@ -11329,8 +11540,8 @@
         },
         {
           "tag": "input",
-          "line": 353,
-          "className": "\"min-h-[46px] min-w-0 flex-1 rounded-full border border-white/25 bg-white/15 px-4 text-sm text-white placeholder:text-white/60 backdrop-blur focus:outline-none\"",
+          "line": 431,
+          "className": null,
           "type": "\"url\"",
           "role": null,
           "ariaLabel": null,
@@ -11339,29 +11550,19 @@
         },
         {
           "tag": "button",
-          "line": 355,
-          "className": "\"ay-btn-primary flex-none rounded-full text-xs\"",
+          "line": 434,
+          "className": "\"lens-panel-primary\"",
           "type": "\"submit\"",
           "role": null,
           "ariaLabel": null,
           "onClick": null,
           "disabled": "{!linkInput.trim()}"
-        },
-        {
-          "tag": "input",
-          "line": 366,
-          "className": "\"hidden\"",
-          "type": "\"file\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, Zap, ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag }",
+          "bindings": "{ ArrowLeft, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 }",
           "line": 3
         }
       ],
@@ -11777,8 +11978,8 @@
     {
       "file": "client/src/ayrovix/services/liveVisionRuntime.ts",
       "domain": "lens",
-      "sha256": "44f110872075c64c4807fab008688537fb9527fbda3ee78e46d320080939155a",
-      "lines": 436,
+      "sha256": "7f50ab8e87c310e3343e1dec12185d2be490bd53c067cbae3cdadf6b9765fc25",
+      "lines": 492,
       "imports": [
         "./lensApi",
         "./liveScanner",

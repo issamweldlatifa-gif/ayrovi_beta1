@@ -1,0 +1,17 @@
+
+> ayrovi@3.10.4 verify:editorial-customer
+> esbuild verify/editorial-customer-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/editorial-customer-runner.cjs && node .cache/editorial-customer-runner.cjs
+
+
+  .cache/editorial-customer-runner.cjs  1.7mb ⚠️
+
+⚡ Done in 82ms
+[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+235/235 customer checks passed []

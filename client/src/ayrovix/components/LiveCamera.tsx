@@ -1,8 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { CodeScanResult, CodeScanSession } from '../services/qr';
-import { ArrowLeft, Zap, ArrowRight, Barcode, Camera, Check, Image as ImageIcon, ScanSearch, ShoppingBag } from '../../components/QatafoIcons';
+import { ArrowLeft, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 } from '../../components/QatafoIcons';
 import { useLocale } from '../../i18n/LocaleContext';
-import { LensContextHeader } from './LensNavigation';
+import { LensDialog, LensGuide } from './LensHelp';
+import { useNavigationHistory } from '../../navigation/NavigationHistory';
+import { useDialogFocus } from '../../hooks/useDialogFocus';
+import './lens-camera.css';
 import { LiveVisionRuntime, type LiveDetection, type LiveVisionState } from '../services/liveVisionRuntime';
 
 export interface LiveResultsView {
@@ -29,12 +32,12 @@ interface LiveCameraProps {
   onPhotoClose?: () => void;
 }
 
-type CameraMode = 'search' | 'upload' | 'code';
+type CameraPanel = 'help' | 'methods' | 'link' | 'scan';
 type CamMode = 'photo' | 'video';
 
 /**
- * AYROVIX Lens — Camera UX (PHOTO + VIDÉO LIVE) فوق الـ LiveVisionRuntime.
- * الواجهة كما هي؛ الـ runtime يوفّر detection/tracking/confidence/temporal.
+ * AYROVIX Lens — photo capture + live product scanning.
+ * Entry/help panels suspend sampling; results retain their existing shell.
  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.
  */
 export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, overlay = null, onPhotoClose }) => {
@@ -42,22 +45,56 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [mode, setMode] = useState<CameraMode>('search');
+  const navigation = useNavigationHistory();
+  const panelName = navigation.current?.id.startsWith('camera-panel:') ? navigation.current.id.slice(13) : '';
+  const panel = ['help', 'methods', 'link', 'scan'].includes(panelName) ? panelName as CameraPanel : null;
+  const modal = panel && panel !== 'scan' ? panel : null;
+  const mode = panel === 'scan' ? 'code' : 'search';
+  const openPanel = (next: CameraPanel, replace = false) => {
+    setNotice(null);
+    captureEpoch.current++;
+    setCapturing(false);
+    if (replace) navigation.replaceTop({ id: `camera-panel:${next}` });
+    else navigation.pushLayer({ id: `camera-panel:${next}` });
+  };
+  const closePanel = () => navigation.back();
+  const shellRef = useRef<HTMLDivElement>(null);
+  useDialogFocus(shellRef, !photoUrl);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [visible, setVisible] = useState(() => typeof document === 'undefined' || !document.hidden);
+  const captureEpoch = useRef(0);
+  useEffect(() => {
+    const change = () => setVisible(!document.hidden);
+    document.addEventListener('visibilitychange', change);
+    return () => document.removeEventListener('visibilitychange', change);
+  }, []);
+  useEffect(() => {
+    captureEpoch.current++;
+    setCapturing(false);
+    return () => { captureEpoch.current++; };
+  }, [modal, photoUrl, visible]);
   const [camMode, setCamMode] = useState<CamMode>('photo');
   const [torchOn, setTorchOn] = useState(false);
   const [torchAvailable, setTorchAvailable] = useState(false);
-  const [torchHint, setTorchHint] = useState(false);
+  const [torchBusy, setTorchBusy] = useState(false);
+  const torchQueue = useRef<Promise<void>>(Promise.resolve());
+  const torchRequest = useRef(0);
+  const torchPending = useRef(false);
+  const torchAllowed = useRef(true);
+  torchAllowed.current = visible && !modal && !photoUrl;
   const [notice, setNotice] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
   const [linkInput, setLinkInput] = useState('');
-  const [hint, setHint] = useState<string | null>(null);
 
   // ===== LiveVisionRuntime (REAL LIVE) =====
   const [liveState, setLiveState] = useState<LiveVisionState>({ objects: [], status: 'idle' });
   const runtimeRef = useRef<LiveVisionRuntime | null>(null);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
-  const isVideo = liveEnabled && camMode === 'video' && mode === 'search';
+  const liveNotice = liveState.status === 'offline'
+    ? tr('Hors ligne — reconnectez-vous pour la recherche en ligne.', 'غير متصل — أعد الاتصال بالإنترنت لمتابعة البحث عبر الشبكة.')
+    : liveState.status === 'ai-unavailable' ? tr('Recherche en ligne indisponible. Réessayez dans un instant.', 'البحث عبر الإنترنت غير متاح. حاول مجددًا بعد قليل.') : null;
+  const isVideo = liveEnabled && camMode === 'video' && mode === 'search' && !modal && !photoUrl && visible && cameraReady;
 
   useEffect(() => {
     if (!runtimeRef.current) {
@@ -88,78 +125,113 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = stream;
         const video = videoRef.current;
-        if (video) { video.srcObject = stream; await video.play().catch(() => {}); }
+        if (video) { video.srcObject = stream; await video.play(); }
+        if (cancelled) return;
         const track = stream.getVideoTracks()[0];
         try { setTorchAvailable(Boolean(((track.getCapabilities?.() || {}) as any).torch)); } catch {}
       })
-      .catch(() => { if (!cancelled) onCameraFailed(); });
+      .catch(() => {
+        if (cancelled) return;
+        streamRef.current?.getTracks().forEach(t => t.stop());
+        streamRef.current = null;
+        setCameraReady(false);
+        onCameraFailed();
+      });
     return () => { cancelled = true; streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; };
   }, []);
 
   // Code scan (QR/Barcode)
   useEffect(() => {
-    if (mode !== 'code') return;
+    if (mode !== 'code' || !visible || !cameraReady || photoUrl) return;
     const video = videoRef.current;
     if (!video) return;
     let cancelled = false;
     let session: CodeScanSession | null = null;
     void import('../services/qr').then(({ startCodeScan }) => {
       if (cancelled) return;
+      let delivered = false;
       session = startCodeScan(video, (result: CodeScanResult) => {
+        if (cancelled || delivered) return;
+        delivered = true;
         if (result.kind === 'url') onQrUrl(result.value);
         else if (result.kind === 'barcode') onBarcode(result.value);
         else onCodeText(result.value);
       });
-    }).catch(() => setNotice(tr('Le lecteur de code n’a pas pu être chargé.', 'تعذّر تحميل قارئ الرموز.')));
+    }).catch(() => { if (!cancelled) setNotice(tr('Le lecteur de code n’a pas pu être chargé. Essayez un lien produit.', 'تعذّر تحميل قارئ الرموز. جرّب رابط المنتج.')); });
     return () => { cancelled = true; session?.stop(); };
-  }, [mode, onQrUrl, onBarcode, onCodeText]);
+  }, [mode, visible, cameraReady, photoUrl, onQrUrl, onBarcode, onCodeText, tr]);
 
-  // Hint contextuel
-  useEffect(() => {
-    if (mode === 'code') setHint(tr('Visez un QR code ou un code-barres.', 'وجّه الكاميرا إلى رمز QR أو رمز شريطي.'));
-    else if (camMode === 'video') setHint(tr('Déplacez la caméra pour détecter les produits.', 'حرّك الكاميرا لاكتشاف المنتجات.'));
-    else setHint(tr('Cadrez le produit et prenez une photo.', 'ضع المنتج في الإطار والتقط صورة.'));
-    const t = window.setTimeout(() => setHint(null), 2600);
-    return () => window.clearTimeout(t);
-  }, [mode, camMode, tr]);
-
-  const toggleTorch = async () => {
+  // Serialize hardware changes: a pending torch-on must settle before an off request.
+  // Track identity guards prevent callbacks from touching a released camera.
+  const requestTorch = (next: boolean) => {
     const track = streamRef.current?.getVideoTracks()[0];
-    if (!track) { setTorchHint(true); setTimeout(() => setTorchHint(false), 2200); return; }
-    const next = !torchOn;
-    try { await track.applyConstraints({ advanced: [{ torch: next } as any] }); setTorchAvailable(true); setTorchOn(next); }
-    catch { setTorchOn(false); setTorchHint(true); setTimeout(() => setTorchHint(false), 2200); }
+    if (!track || !torchAvailable) return;
+    const request = ++torchRequest.current;
+    torchPending.current = true;
+    setTorchBusy(true);
+    torchQueue.current = torchQueue.current.then(async () => {
+      if (streamRef.current?.getVideoTracks()[0] !== track || (next && !torchAllowed.current)) return;
+      try {
+        await track.applyConstraints({ advanced: [{ torch: next } as any] });
+        if (streamRef.current?.getVideoTracks()[0] === track) setTorchOn(next);
+      } catch {
+        if (streamRef.current?.getVideoTracks()[0] === track) {
+          // Keep the last confirmed state. Never falsely claim the flash was turned off.
+          setNotice(tr('Le réglage du flash a échoué. Réessayez ou fermez la caméra.', 'تعذّر تغيير حالة الفلاش. أعد المحاولة أو أغلق الكاميرا.'));
+        }
+      }
+    }).finally(() => {
+      if (request !== torchRequest.current) return;
+      torchPending.current = false;
+      if (streamRef.current?.getVideoTracks()[0] === track) setTorchBusy(false);
+    });
   };
+  const toggleTorch = () => { if (!torchPending.current) requestTorch(!torchOn); };
+
+  // Panels/background tabs suspend frames AND turn off a supported torch.
+  useEffect(() => {
+    const enabled = visible && !modal && !photoUrl;
+    streamRef.current?.getVideoTracks().forEach(track => { track.enabled = enabled; });
+    if (!enabled && (torchOn || torchPending.current)) requestTorch(false);
+  }, [visible, modal, photoUrl, cameraReady]);
 
   const performCapture = () => {
     const video = videoRef.current;
-    if (!video || video.videoWidth === 0) return;
-    const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    canvas.toBlob((blob) => { if (blob) onPhoto(new File([blob], `ayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' })); }, 'image/jpeg', 0.88);
+    if (!video || video.videoWidth === 0 || !cameraReady || capturing || modal || !visible) return;
+    setCapturing(true);
+    const epoch = ++captureEpoch.current;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('CANVAS_UNAVAILABLE');
+      ctx.drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
+        if (epoch !== captureEpoch.current) return;
+        setCapturing(false);
+        if (blob) onPhoto(new File([blob], `ayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' }));
+        else setNotice(tr('Photo non capturée. Réessayez.', 'لم تُلتقط الصورة. أعد المحاولة.'));
+      }, 'image/jpeg', 0.88);
+    } catch { setCapturing(false); setNotice(tr('Photo non capturée. Réessayez.', 'لم تُلتقط الصورة. أعد المحاولة.')); }
   };
   const handleCentralAction = () => {
-    if (capturing) return;
+    if (capturing || !cameraReady || modal) return;
     if (isVideo) {
-      if (selectedObjects.length > 0) {
-        openLiveResults(selectedObjects);
-        return;
-      }
-      if (active) {
-        openLiveResults([active]);
-        return;
-      }
+      if (selectedObjects.length > 0) { openLiveResults(selectedObjects); return; }
+      if (active) { openLiveResults([active]); return; }
     }
-    setCapturing(true);
-    window.setTimeout(() => {
-      setCapturing(false);
-      performCapture();
-    }, 300);
+    performCapture();
   };
-  const pickFromGallery = () => fileRef.current?.click();
+  const pickFromGallery = () => { captureEpoch.current++; setCapturing(false); fileRef.current?.click(); };
+  const submitLink = (event: React.FormEvent) => {
+    event.preventDefault();
+    try {
+      const url = new URL(linkInput.trim());
+      if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new Error('UNSAFE_URL');
+      // Network/private-host protections remain enforced by the existing server endpoint.
+      onLink(url.href);
+    } catch { setNotice(tr('Collez un lien produit HTTP ou HTTPS valide, sans identifiants.', 'ألصق رابط منتج HTTP أو HTTPS صالحًا، دون بيانات دخول.')); }
+  };
 
   // ===== Collection from runtime objects =====
   const lockedObjects = liveState.objects.filter((o) => o.status !== 'lost');
@@ -177,8 +249,9 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
   };
 
   return (
-    <div className="fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')}>
-      <video ref={videoRef} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${photoUrl ? 'invisible' : ''}`} />
+    <div ref={shellRef} tabIndex={-1} className="lens-camera fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')} onKeyDown={event => { if (event.key === 'Escape' && !photoUrl) { event.preventDefault(); event.stopPropagation(); if (panel) closePanel(); else onClose(); } }}>
+      <div className="lens-camera-stage" inert={Boolean(modal)} aria-hidden={modal ? true : undefined}>
+      <video ref={videoRef} onCanPlay={() => setCameraReady(true)} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${photoUrl ? 'invisible' : ''}`} />
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 ${photoUrl ? 'hidden' : ''}`} />
 
       {/* Photo mode : l'image + la sheet de résultats vivent ICI, dans la coque — aucune page séparée. */}
@@ -190,37 +263,32 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[16] h-20 bg-gradient-to-b from-black/55 to-transparent" />
       )}
 
-      {/* Header — icônes blanches à intérieur transparent + nom de la surface, comme « lens ai » sur la photo de référence */}
-      <div className="absolute left-0 right-0 top-0 z-20 flex h-14 items-center justify-between px-3 pt-1">
-        <button type="button" onClick={photoUrl && onPhotoClose ? onPhotoClose : onClose} className={`grid h-10 w-10 place-items-center rounded-full text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'bg-black/55 backdrop-blur' : ''}`} aria-label={tr('Retour', 'رجوع')}>
+      <header className="lens-camera-header">
+        <button type="button" onClick={panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose} className="lens-camera-icon" aria-label={photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}>
           <ArrowLeft size={22} />
         </button>
-        <p aria-hidden="true" className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-base font-extrabold lowercase tracking-tight text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${photoUrl ? 'rounded-full bg-black/40 px-3 py-0.5 backdrop-blur' : ''}`}>ayrovix</p>
+        <p className="lens-camera-brand" dir="ltr">AYROVIX <span>Lens</span></p>
         {photoUrl ? null : (
-          <button type="button" onClick={toggleTorch} aria-label={torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}
-            className={`grid h-10 w-10 place-items-center text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] ${torchAvailable ? '' : 'opacity-50'}`}>
-            <Zap size={20} />
-          </button>
+          <div className="lens-camera-tools">
+            <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>
+            <button type="button" onClick={toggleTorch} className="lens-camera-icon" disabled={!torchAvailable || torchBusy} aria-busy={torchBusy} aria-pressed={torchOn}
+              title={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : undefined}
+              aria-label={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}><Zap size={22} /></button>
+          </div>
         )}
-      </div>
-
-      {torchHint && (
-        <p className="absolute left-1/2 top-20 z-20 -translate-x-1/2 rounded-full bg-black/70 px-4 py-2 text-xs font-semibold text-white/90">
-          {tr('Flash non disponible — utilisez un bon éclairage.', 'الفلاش غير متاح — استخدم إضاءة جيدة.')}
-        </p>
-      )}
+      </header>
 
       {mode === 'search' && !photoUrl && isVideo && (
         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">
-          {liveState.status === 'ai-unavailable'
-            ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>
+          {liveNotice
+            ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white/80">{liveNotice}</p>
             : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-xs font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>}
         </div>
       )}
 
       {/* Viewfinder + bounding boxes من الـ runtime */}
       {!photoUrl && (
-      <div className="pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">
+      <div className="lens-viewfinder pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">
         <div className="relative aspect-square w-full max-w-[300px]">
           <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-[20px] border-l-2 border-t-2 border-white/90" />
           <span className="absolute right-0 top-0 h-10 w-10 rounded-tr-[20px] border-r-2 border-t-2 border-white/90" />
@@ -260,7 +328,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
             </button>
           )}
 
-          {!isVideo && <div className="lens-scan absolute inset-5 rounded-[18px]" aria-hidden="true" />}
+
         </div>
       </div>
       )}
@@ -290,30 +358,28 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </div>
       )}
 
-      {/* Hint contextuel */}
-      {hint && mode === 'search' && !photoUrl && (
-        <div className="pointer-events-none relative z-10 mx-auto mb-3 flex w-fit items-center gap-2.5 rounded-2xl bg-black/55 px-4 py-2.5 backdrop-blur">
-          {isVideo ? <ScanSearch size={16} className="text-white" /> : <Camera size={16} className="text-white" />}
-          <span>
-            <span className="block text-xs font-extrabold text-white">{isVideo ? tr('Déplacez la caméra', 'حرّك الكاميرا') : tr('Cadrez le produit', 'ضع المنتج في الإطار')}</span>
-            <span className="block text-xs font-semibold text-white/70">{isVideo ? tr('pour détecter les produits', 'لاكتشاف المنتجات') : tr('Nous détectons automatiquement', 'نكتشف تلقائيًا')}</span>
-          </span>
-        </div>
-      )}
-      {hint && mode === 'code' && (
-        <p className="relative z-10 mx-auto mb-2 w-fit rounded-full bg-black/50 px-4 py-1.5 text-xs font-semibold text-white/85 backdrop-blur">{hint}</p>
-      )}
+      {!photoUrl && <div className="lens-camera-guidance" role="status" aria-live="polite">
+        {notice || (!cameraReady ? tr('Ouverture de la caméra…', 'جارٍ تشغيل الكاميرا…') : mode === 'code' ? tr('Visez un code-barres ou un QR.', 'وجّه الكاميرا إلى باركود أو QR.') : camMode === 'video' && liveEnabled ? tr('Visez un produit. Le scan est automatique.', 'وجّه الكاميرا إلى منتج. المسح تلقائي.') : tr('Cadrez le produit, puis prenez la photo.', 'ضع المنتج في الإطار ثم التقط الصورة.'))}
+      </div>}
 
       {/* PHOTO | VIDÉO selector */}
       {mode !== 'code' && !photoUrl && (
-        <div className="relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')}>
+        <div className="relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')} onKeyDown={event => {
+          if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+          event.preventDefault();
+          const available = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'));
+          const index = available.indexOf(document.activeElement as HTMLButtonElement);
+          const step = (event.key === 'ArrowRight' ? 1 : -1) * (direction === 'rtl' ? -1 : 1);
+          const next = event.key === 'Home' ? 0 : event.key === 'End' ? available.length - 1 : (index + step + available.length) % available.length;
+          available[next]?.focus(); available[next]?.click();
+        }}>
           {(['photo', 'video'] as CamMode[]).map((m) => {
             const disabled = m === 'video' && !liveEnabled;
             return (
-              <button key={m} type="button" role="tab" aria-selected={camMode === m} disabled={disabled}
-                onClick={() => { setCamMode(m); setMode('search'); }}
-                className={`relative rounded-full px-5 py-2 text-xs font-extrabold uppercase tracking-[0.08em] transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>
-                {m === 'photo' ? tr('Photo', 'تصوير') : tr('Vidéo (Live)', 'فيديو (مباشر)')}
+              <button key={m} type="button" role="tab" aria-selected={camMode === m} tabIndex={camMode === m ? 0 : -1} disabled={disabled} title={disabled ? tr('Le scan en direct n’est pas activé pour le moment.', 'المسح المباشر غير مفعّل حاليًا.') : undefined}
+                onClick={() => { setCamMode(m); setNotice(null); }}
+                className={`lens-camera-tab relative rounded-full px-5 py-2 text-sm font-semibold transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>
+                {m === 'photo' ? tr('Photo', 'تصوير') : tr('Scan en direct', 'مسح مباشر')}
                 {camMode === m && <span className="absolute -bottom-0.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-white" />}
               </button>
             );
@@ -321,50 +387,53 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarc
         </div>
       )}
 
-      {/* Controls: Importer | Capture/Live-Action | Code */}
-      {!photoUrl && (
-      <div className="relative z-10 flex items-end justify-between px-8 pb-2">
-        <button type="button" onClick={pickFromGallery} className="flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+      {!photoUrl && mode !== 'code' && !liveEnabled && <p className="lens-live-unavailable">{tr('Scan en direct indisponible pour le moment.', 'المسح المباشر غير متاح حاليًا.')}</p>}
+      {/* Controls: import / capture / explicit link-or-code chooser. */}
+      {!photoUrl && mode !== 'code' && (
+      <div className="lens-camera-controls relative z-10">
+        <button type="button" onClick={pickFromGallery} className="lens-camera-action">
           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} /></span>
-          {tr('Importer', 'استيراد')}
+          {tr('Importer', 'استيراد صورة')}
         </button>
 
-        {mode !== 'code' ? (
-          <button type="button" onClick={handleCentralAction} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}
-            className={`grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}>
+        <>
+          <button type="button" onClick={handleCentralAction} disabled={!cameraReady || capturing} aria-busy={capturing} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}
+            className={`lens-camera-shutter grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}>
             <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-transparent text-white ring-2 ring-white' : 'bg-white/95'}`}>
               {isVideo && !capturing && <ScanSearch size={22} />}
             </span>
           </button>
-        ) : (
-          <span className="h-[78px] w-[78px]" />
-        )}
+        </>
 
-        <button type="button" onClick={() => { setNotice(null); setMode(mode === 'code' ? 'search' : 'code'); }} aria-pressed={mode === 'code'}
-          className="flex flex-col items-center gap-1 text-xs font-extrabold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
-          <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent ${mode === 'code' ? 'ring-2 ring-white' : ''}`}><Barcode size={22} /></span>
-          {tr('Barcode', 'باركود')}
+        <button type="button" onClick={() => openPanel('methods')} aria-haspopup="dialog"
+          className="lens-camera-action">
+          <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent `}><Search size={22} /></span>
+          {tr('Lien / code', 'رابط أو رمز')}
         </button>
       </div>
       )}
 
-      {mode === 'code' && (
-        <form className="relative z-10 mx-5 mb-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); if (linkInput.trim()) onLink(linkInput.trim()); }}>
-          <input value={linkInput} onChange={(e) => setLinkInput(e.target.value)} type="url" inputMode="url" placeholder={tr('…ou collez le lien', '…أو ألصق الرابط')}
-            className="min-h-[46px] min-w-0 flex-1 rounded-full border border-white/25 bg-white/15 px-4 text-sm text-white placeholder:text-white/60 backdrop-blur focus:outline-none" />
-          <button type="submit" disabled={!linkInput.trim()} className="ay-btn-primary flex-none rounded-full text-xs">{tr('Analyser', 'تحليل')}</button>
-        </form>
-      )}
-      {mode === 'code' && notice && (
-        <p className="relative z-10 mx-auto mb-2 max-w-xs rounded-2xl bg-danger/25 px-4 py-2 text-center text-xs font-semibold text-white">{notice}</p>
-      )}
-
-      {/* بطاقة شرح الوضعين — محذوفة حسب الطلب (كانت تغطي الواجهة) */}
+      {mode === 'code' && !photoUrl && <div className="lens-scan-actions"><button type="button" onClick={() => openPanel('methods', true)}>{tr('Changer de méthode', 'تغيير طريقة البحث')}</button><button type="button" onClick={closePanel}>{tr('Retour à la photo', 'العودة إلى التصوير')}</button></div>}
 
       <div className="relative z-10 h-[max(0.75rem,env(safe-area-inset-bottom))]" />
 
       <input ref={fileRef} type="file" accept="image/*" className="hidden"
-        onChange={(e) => { const file = e.target.files?.[0]; if (file) { setMode('search'); onPhoto(file); } else setMode('search'); e.target.value = ''; }} />
+        onChange={(e) => { const file = e.target.files?.[0]; if (file) onPhoto(file); e.target.value = ''; }} />
+      </div>
+      {modal && <LensDialog key={modal} title={modal === 'help' ? tr('Guide et règles de Lens', 'دليل Lens وقواعد الاستخدام') : modal === 'methods' ? tr('Retrouver un produit', 'العثور على منتج') : tr('Coller un lien produit', 'لصق رابط منتج')} onClose={closePanel}>
+        {modal === 'help' && <LensGuide />}
+        {modal === 'methods' && <div className="lens-methods"><p className="lens-panel-lead">{tr('Choisissez ce que vous avez sous la main.', 'اختر الطريقة المناسبة لما لديك.')}</p>
+          <button type="button" onClick={() => openPanel('scan', true)}><Barcode size={24} /><span><strong>{tr('Scanner un code', 'مسح رمز')}</strong><small>{tr('Code-barres ou QR · avec la caméra', 'باركود أو QR · باستخدام الكاميرا')}</small></span></button>
+          <button type="button" onClick={() => openPanel('link')}><Link2 size={24} /><span><strong>{tr('Coller un lien produit', 'لصق رابط منتج')}</strong><small>{tr('Depuis la page d’un produit', 'من صفحة منتج في متجر')}</small></span></button>
+        </div>}
+        {modal === 'link' && <form className="lens-link-form" onSubmit={submitLink}>
+          <label htmlFor="lens-product-link">{tr('Lien du produit', 'رابط المنتج')}</label>
+          <input id="lens-product-link" data-dialog-autofocus type="url" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} dir="ltr" required value={linkInput} onChange={e => { setLinkInput(e.target.value); setNotice(null); }} placeholder="https://…" aria-describedby="lens-link-hint" />
+          <p id="lens-link-hint">{tr('Le lien doit mener à un produit autorisé. Les liens restent soumis aux contrôles du service.', 'يجب أن يؤدي الرابط إلى منتج مسموح به. تبقى الروابط خاضعة لفحوص الخدمة.')}</p>
+          {notice && <p role="alert">{notice}</p>}
+          <button type="submit" className="lens-panel-primary" disabled={!linkInput.trim()}>{tr('Rechercher ce produit', 'البحث عن هذا المنتج')}</button>
+        </form>}
+      </LensDialog>}
     </div>
   );
 };

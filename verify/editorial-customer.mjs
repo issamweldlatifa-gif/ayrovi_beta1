@@ -53,6 +53,8 @@ try{
    check(`${locale}/${width}: controls do not cover conversation`,boxes.header<=boxes.messagesTop+1&&boxes.messagesBottom<=boxes.composer+1,boxes);
    await p.getByRole('button',{name:locale==='ar'?'إغلاق SONIM':'Fermer SONIM',exact:true}).click();await p.locator('[data-sonim-tone]').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'Lens — البحث بالصورة':'Lens — recherche par image',exact:true}).click();
+   await p.locator('.lens-access, #ayrovix-url-input').first().waitFor();
+   if(await p.locator('.lens-access').count()){ for(const input of await p.locator('.lens-consent input').all()) await input.check(); await p.locator('.lens-consent .lens-panel-primary').click(); }
    await p.locator('#ayrovix-url-input').waitFor();await inspect('lens','.ayrovix-theme-scope');
    check(`${locale}/${width}: Lens imports new icon family`,await p.locator('.ayrovix-theme-scope [data-editorial-icon]').count()>0);
    await p.goBack();

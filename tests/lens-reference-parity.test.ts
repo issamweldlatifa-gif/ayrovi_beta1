@@ -25,12 +25,12 @@ describe('AYROVIX Lens ↔ Amazon reference parity', () => {
 
   it('P2 — photo mode: back + brand only; no torch, no floating info', () => {
     expect(camera).toContain('{photoUrl ? null : (');
-    expect(camera).toContain('>ayrovix</p>');
+    expect(camera).toContain('AYROVIX <span>Lens</span>');
     expect(camera).not.toContain('photoUrl && analyzing');
     expect(camera).not.toContain("tr('Auto'");
     // torch/tab/bar/hint never render once a photo is in
     expect(camera).toContain("{mode !== 'code' && !photoUrl && (");
-    expect(camera).toContain('{!photoUrl && (\n      <div className="relative z-10 flex items-end justify-between px-8 pb-2">');
+    expect(camera).toContain('className="lens-camera-controls relative z-10"');
   });
 
   it('P3 — dots over the photo + cover-exact ROI math', () => {
@@ -68,7 +68,7 @@ describe('AYROVIX Lens ↔ Amazon reference parity', () => {
     expect(irl).toContain('onReset(); // tiré vers le bas sous le peek');
     // page complète : bouton Réduire + back toujours présent (chip sombre lisible sur blanc comme sur l'image)
     expect(irl).toContain("setSheet(s => s === 'full' ? 'peek' : 'full')");
-    expect(camera).toContain("photoUrl ? 'bg-black/55 backdrop-blur' : ''");
+    expect(camera).toContain('className="lens-camera-header"');
   });
 
   it('P8 — analysis is alive: bouncing scan dots on the photo, pulsing rings on detected products', () => {

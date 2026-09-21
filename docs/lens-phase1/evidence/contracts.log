@@ -1,0 +1,443 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.11 [39m[90m/home/user/ayrovi_beta1[39m
+
+ [32m✓[39m tests/lens-results.test.tsx [2m([22m[2m7 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [31m❯[39m tests/lens-reference-parity.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 12[2mms[22m[39m
+     [32m✓[39m P1 — full-bleed photo on black (no grey frame, no card)[32m 2[2mms[22m[39m
+     [32m✓[39m P2 — photo mode: back + brand only; no torch, no floating info[32m 1[2mms[22m[39m
+     [32m✓[39m P3 — dots over the photo + cover-exact ROI math[32m 0[2mms[22m[39m
+     [32m✓[39m P4 — controls live in the sheet header strip, never floating over the photo in shell[32m 0[2mms[22m[39m
+     [32m✓[39m P5 — single path: no preview interstitial, camera stays mounted and hidden behind the photo[32m 0[2mms[22m[39m
+     [32m✓[39m P6 — readability gradient band under the photo-mode header[32m 0[2mms[22m[39m
+[31m     [31m×[31m P7 — real drawer: follows the finger, magnets peek↔full, pull down under peek returns to Lens camera[39m[32m 7[2mms[22m[39m
+     [32m✓[39m P8 — analysis is alive: bouncing scan dots on the photo, pulsing rings on detected products[32m 0[2mms[22m[39m
+[90mstdout[2m | tests/lens-live.test.ts
+[22m[39m[database] data migration applied (one-shot): rebrand_aysonic_legacy_v1
+[database] data migration applied (one-shot): rebrand_noir_orange_v1
+[database] data migration applied (one-shot): rebrand_zalando_orange_v1
+[database] data migration applied (one-shot): rebrand_neutral_scale_v1
+[database] data migration applied (one-shot): stories_showcase_position_v1
+[database] data migration applied (one-shot): stories_demo_seed_v1
+[database] data migration applied (one-shot): lens_feature_media_v1
+[database] data migration applied (one-shot): payment_methods_default_card_v1
+
+ [32m✓[39m tests/lens-live.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/lens-reference-parity.test.ts[2m > [22mAYROVIX Lens ↔ Amazon reference parity[2m > [22mP7 — real drawer: follows the finger, magnets peek↔full, pull down under peek returns to Lens camera
+[31m[1mAssertionError[22m: expected 'import React, { useEffect, useRef, us…' to contain 'photoUrl ? \'bg-black/55 backdrop-blu…'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- photoUrl ? 'bg-black/55 backdrop-blur' : ''[39m
+[31m+ import React, { useEffect, useRef, useState } from 'react';[39m
+[31m+ import type { CodeScanResult, CodeScanSession } from '../services/qr';[39m
+[31m+ import { ArrowLeft, Zap, ArrowRight, Barcode, Check, Image as ImageIcon, ScanSearch, ShoppingBag, Info, Search, Link2 } from '../../components/QatafoIcons';[39m
+[31m+ import { useLocale } from '../../i18n/LocaleContext';[39m
+[31m+ import { LensDialog, LensGuide } from './LensHelp';[39m
+[31m+ import { useNavigationHistory } from '../../navigation/NavigationHistory';[39m
+[31m+ import { useDialogFocus } from '../../hooks/useDialogFocus';[39m
+[31m+ import './lens-camera.css';[39m
+[31m+ import { LiveVisionRuntime, type LiveDetection, type LiveVisionState } from '../services/liveVisionRuntime';[39m
+[31m+[39m
+[31m+ export interface LiveResultsView {[39m
+[31m+   queryLabel: string | null;[39m
+[31m+   list: import('../types').AyrovixCandidate[];[39m
+[31m+   eventId: string;[39m
+[31m+   detectedPrice?: import('../types').AyrovixDetectedPrice | null;[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ interface LiveCameraProps {[39m
+[31m+   onPhoto: (file: File) => void;[39m
+[31m+   onQrUrl: (url: string) => void;[39m
+[31m+   onBarcode: (code: string) => void;[39m
+[31m+   onCodeText: (value: string) => void;[39m
+[31m+   onLink: (url: string) => void;[39m
+[31m+   onClose: () => void;[39m
+[31m+   onMenu: () => void;[39m
+[31m+   onCameraFailed: () => void;[39m
+[31m+   liveEnabled?: boolean;[39m
+[31m+   onLiveResults?: (view: LiveResultsView) => void;[39m
+[31m+   /** Single-path Google/Amazon Lens : l'image importée reste DANS cette même coque — back + flash + Auto visibles, sheet résultats par-dessus. */[39m
+[31m+   photoUrl?: string | null;[39m
+[31m+   overlay?: React.ReactNode;[39m
+[31m+   onPhotoClose?: () => void;[39m
+[31m+ }[39m
+[31m+[39m
+[31m+ type CameraPanel = 'help' | 'methods' | 'link' | 'scan';[39m
+[31m+ type CamMode = 'photo' | 'video';[39m
+[31m+[39m
+[31m+ /**[39m
+[31m+  * AYROVIX Lens — Camera UX (PHOTO + VIDÉO LIVE) فوق الـ LiveVisionRuntime.[39m
+[31m+  * الواجهة كما هي؛ الـ runtime يوفّر detection/tracking/confidence/temporal.[39m
+[31m+  * LIVE ≠ تسجيل فيديو. الزر المركزي في LIVE = التقاط الحالة الحالية للنتيجة.[39m
+[31m+  */[39m
+[31m+ export const LiveCamera: React.FC<LiveCameraProps> = ({ onPhoto, onQrUrl, onBarcode, onCodeText, onLink, onClose, onMenu, onCameraFailed, liveEnabled = false, onLiveResults, photoUrl = null, overlay = null, onPhotoClose }) => {[39m
+[31m+   const { direction, tr } = useLocale();[39m
+[31m+   const videoRef = useRef<HTMLVideoElement>(null);[39m
+[31m+   const streamRef = useRef<MediaStream | null>(null);[39m
+[31m+   const fileRef = useRef<HTMLInputElement>(null);[39m
+[31m+   const navigation = useNavigationHistory();[39m
+[31m+   const panelName = navigation.current?.id.startsWith('camera-panel:') ? navigation.current.id.slice(13) : '';[39m
+[31m+   const panel = ['help', 'methods', 'link', 'scan'].includes(panelName) ? panelName as CameraPanel : null;[39m
+[31m+   const modal = panel && panel !== 'scan' ? panel : null;[39m
+[31m+   const mode = panel === 'scan' ? 'code' : 'search';[39m
+[31m+   const openPanel = (next: CameraPanel, replace = false) => {[39m
+[31m+     setNotice(null);[39m
+[31m+     if (replace) navigation.replaceTop({ id: `camera-panel:${next}` });[39m
+[31m+     else navigation.pushLayer({ id: `camera-panel:${next}` });[39m
+[31m+   };[39m
+[31m+   const closePanel = () => navigation.back();[39m
+[31m+   const shellRef = useRef<HTMLDivElement>(null);[39m
+[31m+   useDialogFocus(shellRef, !photoUrl);[39m
+[31m+   const [cameraReady, setCameraReady] = useState(false);[39m
+[31m+   const [visible, setVisible] = useState(() => typeof document === 'undefined' || !document.hidden);[39m
+[31m+   const captureEpoch = useRef(0);[39m
+[31m+   useEffect(() => {[39m
+[31m+     const change = () => setVisible(!document.hidden);[39m
+[31m+     document.addEventListener('visibilitychange', change);[39m
+[31m+     return () => document.removeEventListener('visibilitychange', change);[39m
+[31m+   }, []);[39m
+[31m+   useEffect(() => {[39m
+[31m+     captureEpoch.current++;[39m
+[31m+     setCapturing(false);[39m
+[31m+     return () => { captureEpoch.current++; };[39m
+[31m+   }, [modal, photoUrl, visible]);[39m
+[31m+   const [camMode, setCamMode] = useState<CamMode>('photo');[39m
+[31m+   const [torchOn, setTorchOn] = useState(false);[39m
+[31m+   const [torchAvailable, setTorchAvailable] = useState(false);[39m
+[31m+   const [notice, setNotice] = useState<string | null>(null);[39m
+[31m+   const [capturing, setCapturing] = useState(false);[39m
+[31m+   const [linkInput, setLinkInput] = useState('');[39m
+[31m+[39m
+[31m+   // ===== LiveVisionRuntime (REAL LIVE) =====[39m
+[31m+   const [liveState, setLiveState] = useState<LiveVisionState>({ objects: [], status: 'idle' });[39m
+[31m+   const runtimeRef = useRef<LiveVisionRuntime | null>(null);[39m
+[31m+   const [selected, setSelected] = useState<Record<string, boolean>>({});[39m
+[31m+[39m
+[31m+   const isVideo = liveEnabled && camMode === 'video' && mode === 'search' && !modal && !photoUrl && visible && cameraReady;[39m
+[31m+[39m
+[31m+   useEffect(() => {[39m
+[31m+     if (!runtimeRef.current) {[39m
+[31m+       runtimeRef.current = new LiveVisionRuntime({[39m
+[31m+         getVideo: () => videoRef.current,[39m
+[31m+         onState: setLiveState,[39m
+[31m+         onEvent: (type, meta) => {[39m
+[31m+           try {[39m
+[31m+             fetch('/api/ayrovix/live-events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, meta }), keepalive: true }).catch(() => {});[39m
+[31m+           } catch { /* analytics غير حرجة */ }[39m
+[31m+         },[39m
+[31m+       });[39m
+[31m+     }[39m
+[31m+     const runtime = runtimeRef.current;[39m
+[31m+     if (isVideo) runtime.start(); else runtime.stop();[39m
+[31m+     return () => runtime.stop();[39m
+[31m+   }, [isVideo]);[39m
+[31m+[39m
+[31m+   useEffect(() => () => { runtimeRef.current?.stop(); }, []);[39m
+[31m+[39m
+[31m+   // Camera lifecycle[39m
+[31m+   useEffect(() => {[39m
+[31m+     let cancelled = false;[39m
+[31m+     if (!navigator.mediaDevices?.getUserMedia) { onCameraFailed(); return; }[39m
+[31m+     navigator.mediaDevices[39m
+[31m+       .getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false })[39m
+[31m+       .then(async (stream) => {[39m
+[31m+         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }[39m
+[31m+         streamRef.current = stream;[39m
+[31m+         const video = videoRef.current;[39m
+[31m+         if (video) { video.srcObject = stream; await video.play().catch(() => {}); }[39m
+[31m+         const track = stream.getVideoTracks()[0];[39m
+[31m+         try { setTorchAvailable(Boolean(((track.getCapabilities?.() || {}) as any).torch)); } catch {}[39m
+[31m+       })[39m
+[31m+       .catch(() => { if (!cancelled) onCameraFailed(); });[39m
+[31m+     return () => { cancelled = true; streamRef.current?.getTracks().forEach((t) => t.stop()); streamRef.current = null; };[39m
+[31m+   }, []);[39m
+[31m+[39m
+[31m+   // Code scan (QR/Barcode)[39m
+[31m+   useEffect(() => {[39m
+[31m+     if (mode !== 'code' || !visible || !cameraReady || photoUrl) return;[39m
+[31m+     const video = videoRef.current;[39m
+[31m+     if (!video) return;[39m
+[31m+     let cancelled = false;[39m
+[31m+     let session: CodeScanSession | null = null;[39m
+[31m+     void import('../services/qr').then(({ startCodeScan }) => {[39m
+[31m+       if (cancelled) return;[39m
+[31m+       let delivered = false;[39m
+[31m+       session = startCodeScan(video, (result: CodeScanResult) => {[39m
+[31m+         if (cancelled || delivered) return;[39m
+[31m+         delivered = true;[39m
+[31m+         if (result.kind === 'url') onQrUrl(result.value);[39m
+[31m+         else if (result.kind === 'barcode') onBarcode(result.value);[39m
+[31m+         else onCodeText(result.value);[39m
+[31m+       });[39m
+[31m+     }).catch(() => { if (!cancelled) setNotice(tr('Le lecteur de code n’a pas pu être chargé. Essayez un lien produit.', 'تعذّر تحميل قارئ الرموز. جرّب رابط المنتج.')); });[39m
+[31m+     return () => { cancelled = true; session?.stop(); };[39m
+[31m+   }, [mode, visible, cameraReady, photoUrl, onQrUrl, onBarcode, onCodeText, tr]);[39m
+[31m+[39m
+[31m+   // Panels and background tabs suspend camera frames without requesting a new stream.[39m
+[31m+   useEffect(() => {[39m
+[31m+     streamRef.current?.getVideoTracks().forEach(track => { track.enabled = visible && !modal && !photoUrl; });[39m
+[31m+   }, [visible, modal, photoUrl, cameraReady]);[39m
+[31m+[39m
+[31m+   const toggleTorch = async () => {[39m
+[31m+     const track = streamRef.current?.getVideoTracks()[0];[39m
+[31m+     if (!track || !torchAvailable) return;[39m
+[31m+     const next = !torchOn;[39m
+[31m+     try { await track.applyConstraints({ advanced: [{ torch: next } as any] }); setTorchOn(next); }[39m
+[31m+     catch { setTorchOn(false); setTorchAvailable(false); setNotice(tr('Le flash n’est pas disponible sur cet appareil.', 'الفلاش غير متاح على هذا الجهاز.')); }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   const performCapture = () => {[39m
+[31m+     const video = videoRef.current;[39m
+[31m+     if (!video || video.videoWidth === 0 || !cameraReady || capturing || modal || !visible) return;[39m
+[31m+     setCapturing(true);[39m
+[31m+     const epoch = ++captureEpoch.current;[39m
+[31m+     try {[39m
+[31m+       const canvas = document.createElement('canvas');[39m
+[31m+       canvas.width = video.videoWidth; canvas.height = video.videoHeight;[39m
+[31m+       const ctx = canvas.getContext('2d');[39m
+[31m+       if (!ctx) throw new Error('CANVAS_UNAVAILABLE');[39m
+[31m+       ctx.drawImage(video, 0, 0);[39m
+[31m+       canvas.toBlob(blob => {[39m
+[31m+         if (epoch !== captureEpoch.current) return;[39m
+[31m+         setCapturing(false);[39m
+[31m+         if (blob) onPhoto(new File([blob], `ayrovix-${Date.now()}.jpg`, { type: 'image/jpeg' }));[39m
+[31m+         else setNotice(tr('Photo non capturée. Réessayez.', 'لم تُلتقط الصورة. أعد المحاولة.'));[39m
+[31m+       }, 'image/jpeg', 0.88);[39m
+[31m+     } catch { setCapturing(false); setNotice(tr('Photo non capturée. Réessayez.', 'لم تُلتقط الصورة. أعد المحاولة.')); }[39m
+[31m+   };[39m
+[31m+   const handleCentralAction = () => {[39m
+[31m+     if (capturing || !cameraReady || modal) return;[39m
+[31m+     if (isVideo) {[39m
+[31m+       if (selectedObjects.length > 0) { openLiveResults(selectedObjects); return; }[39m
+[31m+       if (active) { openLiveResults([active]); return; }[39m
+[31m+     }[39m
+[31m+     performCapture();[39m
+[31m+   };[39m
+[31m+   const pickFromGallery = () => fileRef.current?.click();[39m
+[31m+   const submitLink = (event: React.FormEvent) => {[39m
+[31m+     event.preventDefault();[39m
+[31m+     try {[39m
+[31m+       const url = new URL(linkInput.trim());[39m
+[31m+       if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new Error('UNSAFE_URL');[39m
+[31m+       // Network/private-host protections remain enforced by the existing server endpoint.[39m
+[31m+       onLink(url.href);[39m
+[31m+     } catch { setNotice(tr('Collez un lien produit HTTP ou HTTPS valide, sans identifiants.', 'ألصق رابط منتج HTTP أو HTTPS صالحًا، دون بيانات دخول.')); }[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   // ===== Collection from runtime objects =====[39m
+[31m+   const lockedObjects = liveState.objects.filter((o) => o.status !== 'lost');[39m
+[31m+   const selectedObjects = lockedObjects.filter((o) => selected[o.trackingId]);[39m
+[31m+   const collectionTotal = selectedObjects.reduce((sum, o) => sum + (o.candidates[0]?.priceTnd ?? o.detectedPrice?.totalPriceTND ?? 0), 0);[39m
+[31m+   const active = [...lockedObjects].reverse().find((o) => o.status === 'locked') || lockedObjects[lockedObjects.length - 1];[39m
+[31m+   const openLiveResults = (objects: LiveDetection[]) => {[39m
+[31m+     if (!onLiveResults || !objects.length) return;[39m
+[31m+     onLiveResults({[39m
+[31m+       queryLabel: objects.length > 1 ? `${objects.length} ${tr('produits détectés', 'منتجات مكتشفة')}` : objects[0].label,[39m
+[31m+       list: objects.flatMap((o) => o.candidates),[39m
+[31m+       eventId: `live_${Date.now()}`,[39m
+[31m+       detectedPrice: objects[0]?.detectedPrice || null,[39m
+[31m+     });[39m
+[31m+   };[39m
+[31m+[39m
+[31m+   return ([39m
+[31m+     <div ref={shellRef} tabIndex={-1} className="lens-camera fixed inset-0 z-[76] flex flex-col bg-ink text-white" dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens — caméra', 'عدسة AYROVIX — الكاميرا')} onKeyDown={event => { if (event.key === 'Escape' && !photoUrl) { event.preventDefault(); event.stopPropagation(); if (panel) closePanel(); else onClose(); } }}>[39m
+[31m+       <div className="lens-camera-stage" inert={Boolean(modal)} aria-hidden={modal ? true : undefined}>[39m
+[31m+       <video ref={videoRef} onCanPlay={() => setCameraReady(true)} muted playsInline className={`absolute inset-0 h-full w-full object-cover ${photoUrl ? 'invisible' : ''}`} />[39m
+[31m+       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 ${photoUrl ? 'hidden' : ''}`} />[39m
+[31m+[39m
+[31m+       {/* Photo mode : l'image + la sheet de résultats vivent ICI, dans la coque — aucune page séparée. */}[39m
+[31m+       {photoUrl && overlay && ([39m
+[31m+         <div className="absolute inset-0 z-[15] overflow-hidden">{overlay}</div>[39m
+[31m+       )}[39m
+[31m+       {/* Bande de lisibilité comme la référence (← + marque seulement, aucun contrôle) */}[39m
+[31m+       {photoUrl && ([39m
+[31m+         <div className="pointer-events-none absolute inset-x-0 top-0 z-[16] h-20 bg-gradient-to-b from-black/55 to-transparent" />[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       <header className="lens-camera-header">[39m
+[31m+         <button type="button" onClick={panel === 'scan' ? closePanel : photoUrl && onPhotoClose ? onPhotoClose : onClose} className="lens-camera-icon" aria-label={photoUrl || panel === 'scan' ? tr('Retour à la caméra', 'العودة إلى الكاميرا') : tr('Quitter Lens', 'مغادرة Lens')}>[39m
+[31m+           <ArrowLeft size={22} />[39m
+[31m+         </button>[39m
+[31m+         <p className="lens-camera-brand" dir="ltr">AYROVIX <span>Lens</span></p>[39m
+[31m+         {photoUrl ? null : ([39m
+[31m+           <div className="lens-camera-tools">[39m
+[31m+             <button type="button" className="lens-camera-icon" onClick={() => openPanel('help')} aria-label={tr('Aide et règles de Lens', 'مساعدة Lens وقواعد الاستخدام')} aria-haspopup="dialog"><Info size={22} /></button>[39m
+[31m+             <button type="button" onClick={toggleTorch} className="lens-camera-icon" disabled={!torchAvailable} aria-pressed={torchOn}[39m
+[31m+               title={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : undefined}[39m
+[31m+               aria-label={!torchAvailable ? tr('Flash indisponible sur cet appareil', 'الفلاش غير متاح على هذا الجهاز') : torchOn ? tr('Éteindre le flash', 'إطفاء الفلاش') : tr('Allumer le flash', 'تشغيل الفلاش')}><Zap size={22} /></button>[39m
+[31m+           </div>[39m
+[31m+         )}[39m
+[31m+       </header>[39m
+[31m+[39m
+[31m+       {mode === 'search' && !photoUrl && isVideo && ([39m
+[31m+         <div className="pointer-events-none absolute left-1/2 top-20 z-20 -translate-x-1/2">[39m
+[31m+           {liveState.status === 'ai-unavailable'[39m
+[31m+             ? <p className="rounded-full bg-black/60 px-4 py-1.5 text-xs font-semibold text-white/80">{tr('Analyse locale — recherche en ligne indisponible', 'تحليل محلي — البحث عبر الإنترنت غير متاح')}</p>[39m
+[31m+             : <p className="flex items-center gap-1.5 rounded-full bg-black/60 px-4 py-1.5 text-xs font-extrabold text-white backdrop-blur border border-white/30"><span className="h-2 w-2 rounded-full bg-white animate-pulse" />{tr('Live', 'مباشر')}</p>}[39m
+[31m+         </div>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {/* Viewfinder + bounding boxes من الـ runtime */}[39m
+[31m+       {!photoUrl && ([39m
+[31m+       <div className="lens-viewfinder pointer-events-none relative z-10 flex flex-1 items-center justify-center px-10">[39m
+[31m+         <div className="relative aspect-square w-full max-w-[300px]">[39m
+[31m+           <span className="absolute left-0 top-0 h-10 w-10 rounded-tl-[20px] border-l-2 border-t-2 border-white/90" />[39m
+[31m+           <span className="absolute right-0 top-0 h-10 w-10 rounded-tr-[20px] border-r-2 border-t-2 border-white/90" />[39m
+[31m+           <span className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-[20px] border-b-2 border-l-2 border-white/90" />[39m
+[31m+           <span className="absolute bottom-0 right-0 h-10 w-10 rounded-br-[20px] border-b-2 border-r-2 border-white/90" />[39m
+[31m+[39m
+[31m+           {isVideo && lockedObjects.filter((o) => o.box).map((o) => {[39m
+[31m+             const isSel = Boolean(selected[o.trackingId]);[39m
+[31m+             const priceText = o.candidates[0]?.priceTnd != null ? ` · ${o.candidates[0].priceTnd.toFixed(0)} DT` : o.detectedPrice?.totalPriceTND != null ? ` · ${o.detectedPrice.totalPriceTND.toFixed(0)} DT` : '';[39m
+[31m+             return ([39m
+[31m+               <button key={o.trackingId} type="button" onClick={() => setSelected((s) => ({ ...s, [o.trackingId]: !s[o.trackingId] }))}[39m
+[31m+                 className={`pointer-events-auto absolute rounded-[14px] border-2 transition-all ${isSel ? 'border-white bg-white/20 ring-2 ring-white' : 'border-white/90 hover:border-white hover:bg-white/10'}`}[39m
+[31m+                 style={{ left: `${o.box!.x * 100}%`, top: `${o.box!.y * 100}%`, width: `${o.box!.w * 100}%`, height: `${o.box!.h * 100}%` }}[39m
+[31m+                 aria-label={o.label}>[39m
+[31m+                 <span className="absolute -top-5 left-0 truncate rounded bg-white px-1.5 py-0.5 text-xs font-extrabold text-ink max-w-[120px]">[39m
+[31m+                   {o.label} · {o.confidence}%{priceText}[39m
+[31m+                 </span>[39m
+[31m+               </button>[39m
+[31m+             );[39m
+[31m+           })}[39m
+[31m+[39m
+[31m+           {isVideo && active && !active.box && ([39m
+[31m+             <span className="absolute inset-6 rounded-[16px] border-2 border-white" aria-hidden="true">[39m
+[31m+               <span className="absolute -top-6 left-0 rounded-md bg-white px-2 py-0.5 text-xs font-extrabold text-ink">{active.label} · {active.confidence}%</span>[39m
+[31m+             </span>[39m
+[31m+           )}[39m
+[31m+[39m
+[31m+           {isVideo && active && ([39m
+[31m+             <button type="button" onClick={() => openLiveResults(selectedObjects.length ? selectedObjects : [active])}[39m
+[31m+               className="pointer-events-auto absolute -bottom-10 left-1/2 z-10 flex w-[105%] -translate-x-1/2 items-center gap-2.5 rounded-2xl bg-black/75 p-2 text-start backdrop-blur border border-white/10 shadow-lg">[39m
+[31m+               <span className="h-11 w-11 flex-none overflow-hidden rounded-icon bg-surface">{active.image && <img src={active.image} alt="" className="h-full w-full object-cover" />}</span>[39m
+[31m+               <span className="min-w-0 flex-1">[39m
+[31m+                 <span className="block truncate text-xs font-extrabold text-white">{active.label}</span>[39m
+[31m+                 <span className="block text-xs font-bold text-white">{active.confidence}%{active.candidates[0]?.priceTnd != null ? ` · ${active.candidates[0].priceTnd.toFixed(2)} DT` : active.detectedPrice?.totalPriceTND != null ? ` · ${active.detectedPrice.totalPriceTND.toFixed(2)} DT` : ''}</span>[39m
+[31m+               </span>[39m
+[31m+               <span className="grid h-8 w-8 flex-none place-items-center rounded-full bg-white/12"><ArrowRight size={15} className={`text-white/80 ${direction === 'rtl' ? 'rotate-180' : ''}`} /></span>[39m
+[31m+             </button>[39m
+[31m+           )}[39m
+[31m+[39m
+[31m+[39m
+[31m+         </div>[39m
+[31m+       </div>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {/* Scan Collection */}[39m
+[31m+       {isVideo && !photoUrl && lockedObjects.length > 1 && ([39m
+[31m+         <div className="relative z-10 mx-4 mb-2 rounded-2xl bg-black/60 p-3 backdrop-blur">[39m
+[31m+           <div className="flex items-center justify-between">[39m
+[31m+             <p className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide text-white/85">[39m
+[31m+               <ShoppingBag size={13} className="text-white" />{lockedObjects.length} {tr('produits détectés', 'منتجات مكتشفة')} · {selectedObjects.length} {tr('sél.', 'محدّد')}[39m
+[31m+             </p>[39m
+[31m+             <p className="text-xs font-black text-white">{collectionTotal.toFixed(2)} DT</p>[39m
+[31m+           </div>[39m
+[31m+           <div className="no-scrollbar mt-2 flex gap-2 overflow-x-auto">[39m
+[31m+             {lockedObjects.map((obj) => ([39m
+[31m+               <button key={obj.trackingId} type="button" onClick={() => setSelected((s) => ({ ...s, [obj.trackingId]: !s[obj.trackingId] }))} aria-pressed={Boolean(selected[obj.trackingId])}[39m
+[31m+                 className={`flex flex-none items-center gap-1.5 rounded-xl border px-2.5 py-1.5 text-xs font-bold ${selected[obj.trackingId] ? 'border-white bg-white/20 text-white' : 'border-white/20 bg-white/10 text-white/70'}`}>[39m
+[31m+                 <span className={`grid h-4 w-4 place-items-center rounded ${selected[obj.trackingId] ? 'bg-white text-ink' : 'bg-white/20'}`}>{selected[obj.trackingId] && <Check size={11} />}</span>[39m
+[31m+                 {obj.label}[39m
+[31m+               </button>[39m
+[31m+             ))}[39m
+[31m+           </div>[39m
+[31m+           <button type="button" onClick={() => openLiveResults(selectedObjects)} disabled={!selectedObjects.length}[39m
+[31m+             className="bg-ink text-white hover:bg-ink/90 mt-2.5 flex w-full items-center justify-center gap-2 rounded-full py-2.5 text-sm font-extrabold text-white">[39m
+[31m+             {tr('Sélectionner les produits', 'اختيار المنتجات')}[39m
+[31m+           </button>[39m
+[31m+         </div>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {!photoUrl && <div className="lens-camera-guidance" role="status" aria-live="polite">[39m
+[31m+         {notice || (!cameraReady ? tr('Ouverture de la caméra…', 'جارٍ تشغيل الكاميرا…') : mode === 'code' ? tr('Visez un code-barres ou un QR.', 'وجّه الكاميرا إلى باركود أو QR.') : camMode === 'video' && liveEnabled ? tr('Visez un produit. Le scan est automatique.', 'وجّه الكاميرا إلى منتج. المسح تلقائي.') : tr('Cadrez le produit, puis prenez la photo.', 'ضع المنتج في الإطار ثم التقط الصورة.'))}[39m
+[31m+       </div>}[39m
+[31m+[39m
+[31m+       {/* PHOTO | VIDÉO selector */}[39m
+[31m+       {mode !== 'code' && !photoUrl && ([39m
+[31m+         <div className="relative z-10 mx-auto mb-3 flex w-fit rounded-full bg-black/45 p-1 backdrop-blur" role="tablist" aria-label={tr('Mode caméra', 'وضع الكاميرا')}>[39m
+[31m+           {(['photo', 'video'] as CamMode[]).map((m) => {[39m
+[31m+             const disabled = m === 'video' && !liveEnabled;[39m
+[31m+             return ([39m
+[31m+               <button key={m} type="button" role="tab" aria-selected={camMode === m} disabled={disabled} title={disabled ? tr('Le scan en direct n’est pas activé pour le moment.', 'المسح المباشر غير مفعّل حاليًا.') : undefined}[39m
+[31m+                 onClick={() => { setCamMode(m); setNotice(null); }}[39m
+[31m+                 className={`lens-camera-tab relative rounded-full px-5 py-2 text-sm font-semibold transition-colors ${camMode === m ? 'text-white' : 'text-white/55'} ${disabled ? 'opacity-40' : ''}`}>[39m
+[31m+                 {m === 'photo' ? tr('Photo', 'تصوير') : tr('Scan en direct', 'مسح مباشر')}[39m
+[31m+                 {camMode === m && <span className="absolute -bottom-0.5 left-1/2 h-[2px] w-8 -translate-x-1/2 rounded-full bg-white" />}[39m
+[31m+               </button>[39m
+[31m+             );[39m
+[31m+           })}[39m
+[31m+         </div>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {!photoUrl && mode !== 'code' && !liveEnabled && <p className="lens-live-unavailable">{tr('Scan en direct indisponible pour le moment.', 'المسح المباشر غير متاح حاليًا.')}</p>}[39m
+[31m+       {/* Controls: import / capture / explicit link-or-code chooser. */}[39m
+[31m+       {!photoUrl && mode !== 'code' && ([39m
+[31m+       <div className="lens-camera-controls relative z-10">[39m
+[31m+         <button type="button" onClick={pickFromGallery} className="lens-camera-action">[39m
+[31m+           <span className="grid h-14 w-14 place-items-center rounded-2xl bg-transparent"><ImageIcon size={22} /></span>[39m
+[31m+           {tr('Importer', 'استيراد صورة')}[39m
+[31m+         </button>[39m
+[31m+[39m
+[31m+         <>[39m
+[31m+           <button type="button" onClick={handleCentralAction} disabled={!cameraReady || capturing} aria-busy={capturing} aria-label={isVideo ? tr('Capturer le résultat live', 'التقاط النتيجة الحالية') : tr('Photographier', 'التقاط صورة')}[39m
+[31m+             className={`lens-camera-shutter grid h-[78px] w-[78px] place-items-center rounded-full border-[3px] border-white/90 bg-transparent transition active:scale-95 ${capturing ? 'scale-90 bg-white/80' : ''}`}>[39m
+[31m+             <span className={`grid h-12 w-12 place-items-center rounded-full transition-transform ${capturing ? 'scale-75 bg-white' : isVideo ? 'bg-transparent text-white ring-2 ring-white' : 'bg-white/95'}`}>[39m
+[31m+               {isVideo && !capturing && <ScanSearch size={22} />}[39m
+[31m+             </span>[39m
+[31m+           </button>[39m
+[31m+         </>[39m
+[31m+[39m
+[31m+         <button type="button" onClick={() => openPanel('methods')} aria-haspopup="dialog"[39m
+[31m+           className="lens-camera-action">[39m
+[31m+           <span className={`grid h-14 w-14 place-items-center rounded-2xl bg-transparent `}><Search size={22} /></span>[39m
+[31m+           {tr('Lien / code', 'رابط أو رمز')}[39m
+[31m+         </button>[39m
+[31m+       </div>[39m
+[31m+       )}[39m
+[31m+[39m
+[31m+       {mode === 'code' && !photoUrl && <div className="lens-scan-actions"><button type="button" onClick={() => openPanel('methods', true)}>{tr('Changer de méthode', 'تغيير طريقة البحث')}</button><button type="button" onClick={closePanel}>{tr('Retour à la photo', 'العودة إلى التصوير')}</button></div>}[39m
+[31m+[39m
+[31m+       <div className="relative z-10 h-[max(0.75rem,env(safe-area-inset-bottom))]" />[39m
+[31m+[39m
+[31m+       <input ref={fileRef} type="file" accept="image/*" className="hidden"[39m
+[31m+         onChange={(e) => { const file = e.target.files?.[0]; if (file) onPhoto(file); e.target.value = ''; }} />[39m
+[31m+       </div>[39m
+[31m+       {modal && <LensDialog key={modal} title={modal === 'help' ? tr('Guide et règles de Lens', 'دليل Lens وقواعد الاستخدام') : modal === 'methods' ? tr('Retrouver un produit', 'العثور على منتج') : tr('Coller un lien produit', 'لصق رابط منتج')} onClose={closePanel}>[39m
+[31m+         {modal === 'help' && <LensGuide />}[39m
+[31m+         {modal === 'methods' && <div className="lens-methods"><p className="lens-panel-lead">{tr('Choisissez ce que vous avez sous la main.', 'اختر الطريقة المناسبة لما لديك.')}</p>[39m
+[31m+           <button type="button" onClick={() => openPanel('scan', true)}><Barcode size={24} /><span><strong>{tr('Scanner un code', 'مسح رمز')}</strong><small>{tr('Code-barres ou QR · avec la caméra', 'باركود أو QR · باستخدام الكاميرا')}</small></span></button>[39m
+[31m+           <button type="button" onClick={() => openPanel('link')}><Link2 size={24} /><span><strong>{tr('Coller un lien produit', 'لصق رابط منتج')}</strong><small>{tr('Depuis la page d’un produit', 'من صفحة منتج في متجر')}</small></span></button>[39m
+[31m+         </div>}[39m
+[31m+         {modal === 'link' && <form className="lens-link-form" onSubmit={submitLink}>[39m
+[31m+           <label htmlFor="lens-product-link">{tr('Lien du produit', 'رابط المنتج')}</label>[39m
+[31m+           <input id="lens-product-link" data-dialog-autofocus type="url" inputMode="url" autoComplete="off" autoCapitalize="none" spellCheck={false} dir="ltr" required value={linkInput} onChange={e => { setLinkInput(e.target.value); setNotice(null); }} placeholder="https://…" aria-describedby="lens-link-hint" />[39m
+[31m+           <p id="lens-link-hint">{tr('Le lien doit mener à un produit autorisé. Les liens restent soumis aux contrôles du service.', 'يجب أن يؤدي الرابط إلى منتج مسموح به. تبقى الروابط خاضعة لفحوص الخدمة.')}</p>[39m
+[31m+           {notice && <p role="alert">{notice}</p>}[39m
+[31m+           <button type="submit" className="lens-panel-primary" disabled={!linkInput.trim()}>{tr('Rechercher ce produit', 'البحث عن هذا المنتج')}</button>[39m
+[31m+         </form>}[39m
+[31m+       </LensDialog>}[39m
+[31m+     </div>[39m
+[31m+   );[39m
+[31m+ };[39m
+[31m+[39m
+
+[36m [2m❯[22m tests/lens-reference-parity.test.ts:[2m71:20[22m[39m
+    [90m 69|[39m     // page complète : bouton Réduire + back toujours présent (chip so…
+    [90m 70|[39m     expect(irl).toContain("setSheet(s => s === 'full' ? 'peek' : 'full…
+    [90m 71|[39m     expect(camera).toContain("photoUrl ? 'bg-black/55 backdrop-blur' :…
+    [90m   |[39m                    [31m^[39m
+    [90m 72|[39m   })[33m;[39m
+    [90m 73|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m2 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m23 passed[39m[22m[90m (24)[39m
+[2m   Start at [22m 04:29:54
+[2m   Duration [22m 3.95s[2m (transform 1.79s, setup 0ms, import 3.42s, tests 101ms, environment 0ms)[22m
