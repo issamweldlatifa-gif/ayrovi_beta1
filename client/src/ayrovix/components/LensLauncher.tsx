@@ -1,3 +1,4 @@
+import type { CustomerSession } from '../../types';
 import { LensAccess, readLensConsent, rememberLensConsent } from './LensHelp';
 import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../services/productSelection';
 import { AppHeader } from '../../design/AppHeader';
@@ -29,6 +30,8 @@ interface LensLauncherProps {
   isOpen: boolean;
   onClose: () => void;
   historyScope?: string | null;
+  customerSession?: CustomerSession | null;
+  onOpenFavorites?: () => void;
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
   cartCount: number;
   onOpenCart: () => void;
@@ -111,6 +114,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   isOpen,
   onClose,
   historyScope,
+  customerSession,
+  onOpenFavorites,
   onOrder,
   cartCount,
   onOpenCart,
@@ -655,6 +660,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           onPhotoClose={closeImage}
           overlay={inImageFlow ? (
             <InteractiveLensResults
+              customerSession={customerSession}
+              onOpenFavorites={onOpenFavorites}
               shell
               view={candidatesView || { queryLabel: null, list: [], eventId: '', detectedPrice: null }}
               previewUrl={previewUrl}
@@ -822,6 +829,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'analyzing' && (
             <InteractiveLensResults
+              customerSession={customerSession}
+              onOpenFavorites={onOpenFavorites}
               view={candidatesView || { queryLabel: null, list: [], eventId: '', detectedPrice: null }}
               previewUrl={previewUrl}
               fallbackImage={previewUrl}
@@ -837,6 +846,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'candidates' && candidatesView && (
             <InteractiveLensResults
+              customerSession={customerSession}
+              onOpenFavorites={onOpenFavorites}
               view={candidatesView}
               previewUrl={previewUrl}
               fallbackImage={previewUrl}

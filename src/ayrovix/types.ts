@@ -55,6 +55,8 @@ export interface AyrovixCandidate {
   id: string;
   kind: 'catalog' | 'external';
   title: string;
+  /** Optional descriptive text supplied by the merchant/search provider. */
+  description?: string | null;
   brand: string | null;
   model: string | null;
   colors: string[];

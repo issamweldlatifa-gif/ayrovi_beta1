@@ -51,28 +51,25 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
     expect(html).toContain('Résultats Lens');
     // Preserve estimates and actions without asserting unverified merchant trust.
     expect(html).not.toContain('Prix vérifiés et marchands fiables');
-    expect(html).toContain('Vérifiez le prix et les conditions dans la fiche produit.');
+    expect(html).not.toContain('Estimation tout inclus');
     expect(html).toContain('Afficher tous les résultats');
-    expect(html).toContain('Prix final estimé');
+    expect(html).not.toContain('Prix final estimé');
     expect(html).toContain('Voir le produit');
     // ROI / interactive controls keep image visible
     expect(html).toContain('Sélectionner un produit');
   });
 
-  it('sorts by match and shows the best first with its % badge', () => {
+  it('preserves ranking while removing percentage badges', () => {
     const html = render();
-    const firstMatch = html.indexOf('94%');
-    expect(firstMatch).toBeGreaterThan(-1);
-    // الـ94% يظهر قبل 91% و87% (ترتيب تنازلي)
-    expect(html.indexOf('94%')).toBeLessThan(html.indexOf('91%'));
-    expect(html.indexOf('91%')).toBeLessThan(html.indexOf('87%'));
+    expect(html.indexOf('data-candidate-id="a"')).toBeLessThan(html.indexOf('data-candidate-id="c"'));
+    expect(html.indexOf('data-candidate-id="c"')).toBeLessThan(html.indexOf('data-candidate-id="b"'));
+    expect(html).not.toContain('94%');
   });
-
-  it('shows price in DT + original currency and merchant link per result', () => {
+  it('shows the unchanged TND price, without extra price labels/currencies', () => {
     const html = render();
     expect(html).toContain('598.00 DT');
-    expect(html).toContain('Prix boutique');
-    expect(html).toContain('EUR');
+    expect(html).not.toContain('Prix boutique');
+    expect(html).not.toContain('EUR');
     expect(html).toContain('Voir le produit');
   });
 

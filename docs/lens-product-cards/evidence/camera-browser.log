@@ -1,0 +1,5 @@
+
+> ayrovi@3.10.4 verify:lens-camera
+> node verify/sonim-actions-runner.mjs verify/lens-camera-entry.mjs verify/lens-camera-fixture.tsx
+
+135/135 Lens entry browser assertions passed

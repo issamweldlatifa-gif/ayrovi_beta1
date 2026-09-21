@@ -1,0 +1,1147 @@
+{
+  "checks": [
+    {
+      "name": "chromium/fr: clean reference card",
+      "pass": true
+    },
+    {
+      "name": "brand and real title separated",
+      "pass": true
+    },
+    {
+      "name": "one price, no converted source price repeated",
+      "pass": true
+    },
+    {
+      "name": "five stars only for real reviews",
+      "pass": true
+    },
+    {
+      "name": "review value and real count",
+      "pass": true
+    },
+    {
+      "name": "yellow stars use official glyphs",
+      "pass": true
+    },
+    {
+      "name": "no made-up top-rating or new badge",
+      "pass": true
+    },
+    {
+      "name": "320: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "390: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "768: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "1360: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "guest opens account without fake save",
+      "pass": true
+    },
+    {
+      "name": "failed save is never shown as saved",
+      "pass": true
+    },
+    {
+      "name": "successful heart uses account API and CSRF",
+      "pass": true
+    },
+    {
+      "name": "heart does not open the product",
+      "pass": true
+    },
+    {
+      "name": "remove reaches account favorite endpoint",
+      "pass": true
+    },
+    {
+      "name": "keyboard opens the original product",
+      "pass": true
+    },
+    {
+      "name": "200% text does not cause horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "chromium/ar: clean reference card",
+      "pass": true
+    },
+    {
+      "name": "brand and real title separated",
+      "pass": true
+    },
+    {
+      "name": "one price, no converted source price repeated",
+      "pass": true
+    },
+    {
+      "name": "five stars only for real reviews",
+      "pass": true
+    },
+    {
+      "name": "review value and real count",
+      "pass": true
+    },
+    {
+      "name": "yellow stars use official glyphs",
+      "pass": true
+    },
+    {
+      "name": "no made-up top-rating or new badge",
+      "pass": true
+    },
+    {
+      "name": "320: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "390: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "768: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "1360: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "guest opens account without fake save",
+      "pass": true
+    },
+    {
+      "name": "failed save is never shown as saved",
+      "pass": true
+    },
+    {
+      "name": "successful heart uses account API and CSRF",
+      "pass": true
+    },
+    {
+      "name": "heart does not open the product",
+      "pass": true
+    },
+    {
+      "name": "remove reaches account favorite endpoint",
+      "pass": true
+    },
+    {
+      "name": "keyboard opens the original product",
+      "pass": true
+    },
+    {
+      "name": "200% text does not cause horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "firefox/fr: clean reference card",
+      "pass": true
+    },
+    {
+      "name": "brand and real title separated",
+      "pass": true
+    },
+    {
+      "name": "one price, no converted source price repeated",
+      "pass": true
+    },
+    {
+      "name": "five stars only for real reviews",
+      "pass": true
+    },
+    {
+      "name": "review value and real count",
+      "pass": true
+    },
+    {
+      "name": "yellow stars use official glyphs",
+      "pass": true
+    },
+    {
+      "name": "no made-up top-rating or new badge",
+      "pass": true
+    },
+    {
+      "name": "320: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "390: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "768: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "1360: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "guest opens account without fake save",
+      "pass": true
+    },
+    {
+      "name": "failed save is never shown as saved",
+      "pass": true
+    },
+    {
+      "name": "successful heart uses account API and CSRF",
+      "pass": true
+    },
+    {
+      "name": "heart does not open the product",
+      "pass": true
+    },
+    {
+      "name": "remove reaches account favorite endpoint",
+      "pass": true
+    },
+    {
+      "name": "keyboard opens the original product",
+      "pass": true
+    },
+    {
+      "name": "200% text does not cause horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "firefox/ar: clean reference card",
+      "pass": true
+    },
+    {
+      "name": "brand and real title separated",
+      "pass": true
+    },
+    {
+      "name": "one price, no converted source price repeated",
+      "pass": true
+    },
+    {
+      "name": "five stars only for real reviews",
+      "pass": true
+    },
+    {
+      "name": "review value and real count",
+      "pass": true
+    },
+    {
+      "name": "yellow stars use official glyphs",
+      "pass": true
+    },
+    {
+      "name": "no made-up top-rating or new badge",
+      "pass": true
+    },
+    {
+      "name": "320: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "390: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "14px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "768: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "1360: portrait image and round corners",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "white 44px favorite circle",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "official typography and regular-weight price",
+      "pass": true,
+      "details": {
+        "ratio": 0.6666666666666666,
+        "radius": "16px",
+        "fit": "contain",
+        "heart": {
+          "w": 44,
+          "h": 44,
+          "round": "50%",
+          "bg": "rgb(255, 255, 255)"
+        },
+        "title": "700",
+        "price": "400",
+        "font": "\"Zalando Sans\", \"Noto Sans Arabic\", sans-serif",
+        "overflow": false
+      }
+    },
+    {
+      "name": "guest opens account without fake save",
+      "pass": true
+    },
+    {
+      "name": "failed save is never shown as saved",
+      "pass": true
+    },
+    {
+      "name": "successful heart uses account API and CSRF",
+      "pass": true
+    },
+    {
+      "name": "heart does not open the product",
+      "pass": true
+    },
+    {
+      "name": "remove reaches account favorite endpoint",
+      "pass": true
+    },
+    {
+      "name": "keyboard opens the original product",
+      "pass": true
+    },
+    {
+      "name": "200% text does not cause horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "no uncaught browser errors",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": [],
+  "scope": "Actual Lens cards with generated images, controlled SerpApi-shaped reviews and mocked account API; not a live provider/account claim."
+}

@@ -56,12 +56,12 @@ describe('Lens Phase 0 UI improvements', () => {
     // Should NOT contain invented product image but should show merchant source name
     expect(html).toContain('Zalando');
     // Should contain favicon fallback logic (google s2 favicons) in source file
-    const src = readFileSync('client/src/ayrovix/components/InteractiveLensResults.tsx','utf8');
-    expect(src).toContain('favicon');
-    expect(src).toContain('google.com/s2/favicons');
+    const src = readFileSync('client/src/ayrovix/components/LensProductCard.tsx','utf8');
+    expect(src).toContain('lens-card-placeholder');
+    expect(src).not.toContain('fallbackImage');
   });
 
-  it('LensResults communicates unavailable sizes/colors and directs to merchant sheet', () => {
+  it('cards do not repeat unavailable sizes/colors copy', () => {
     const view = {
       queryLabel:'Test variants',
       list:[candidate({ id:'v1', colors:[], sizes:[], source:'SHEIN', sourceUrl:'https://shein.com/p' })],
@@ -71,11 +71,11 @@ describe('Lens Phase 0 UI improvements', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
-    expect(html).toContain('Tailles/couleurs');
-    expect(html).toContain('fiche marchand');
+    expect(html).not.toContain('Tailles/couleurs');
+    expect(html).toContain('Voir le produit');
   });
 
-  it('TND final estimate and boutique price are clearly labeled (no invented breakdown)', () => {
+  it('cards retain the TND amount and leave detailed pricing to the product sheet', () => {
     const view = {
       queryLabel:'Prix test',
       list:[candidate({ id:'p1', price:84, currency:'EUR', priceTnd:598, source:'Courir' })],
@@ -85,15 +85,8 @@ describe('Lens Phase 0 UI improvements', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
-    expect(html).toContain('Prix final estimé');
     expect(html).toContain('598.00 DT');
-    expect(html).toContain('Prix boutique');
-    expect(html).toContain('84');
-    expect(html).toContain('EUR');
-    // Must not contain invented breakdown numbers not in API
-    const src = readFileSync('client/src/ayrovix/components/InteractiveLensResults.tsx','utf8');
-    // Ensure we show estimation note but not raw breakdown fields that API doesn't return
-    expect(src).toContain('Estimation tout inclus');
+    for (const text of ['Prix final estimé','Prix boutique','Estimation tout inclus','84 EUR']) expect(html).not.toContain(text);
   });
 
   it('empty state offers a real retry without a misleading history action', () => {

@@ -65,7 +65,7 @@ try{
    check('no brand/back/toolbar over full results',Math.abs(full.top)<1&&full.chrome==='0'&&full.inert&&full.summary==='none',full);
    await p.screenshot({path:`${output}/${engine}-${locale}-full.png`});
    await p.locator('article button').first().click();check('existing product action preserved',await p.evaluate(()=>lensResultsTest.choices[0]==='item-0'));
-   check('price remains unchanged',await p.locator('article').first().innerText().then(s=>s.includes('598.00 DT')&&s.includes('84 EUR')));
+   check('price remains unchanged',await p.locator('article').first().innerText().then(s=>s.includes('598.00 DT')&&!s.includes('84 EUR')&&!s.includes('Estimation')));
    await p.locator('.lens-results-list').evaluate(n=>n.scrollTop=450);
    await p.mouse.move(190,400);await p.mouse.wheel(0,300);await settle(p);
    check('expanded list scrolls without collapsing',await p.locator('.lens-results-list').evaluate(n=>n.scrollTop)>450&&await p.locator('.lens-results').getAttribute('data-expanded')==='true');

@@ -1,6 +1,8 @@
-import { MerchantRating } from './MerchantRating';
+import { LensProductCard } from './LensProductCard';
+import { useLensFavorites } from './useLensFavorites';
+import type { CustomerSession } from '../../types';
 import React, { useMemo, useRef, useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, ShieldCheck } from '../../components/QatafoIcons';
+import { ArrowLeft, ScanSearch, Loader2, Image as ImageIcon } from '../../components/QatafoIcons';
 import type { AyrovixCandidate, AyrovixDetectedPrice } from '../types';
 import { isDisplayableCandidate, isLenientCandidate } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -17,6 +19,8 @@ export interface InteractiveLensView {
 }
 
 interface Props {
+  customerSession?: CustomerSession | null;
+  onOpenFavorites?: () => void;
   view: InteractiveLensView;
   previewUrl: string | null;
   fallbackImage: string | null;
@@ -32,56 +36,9 @@ interface Props {
   shell?: boolean;
 }
 
-function faviconUrl(sourceUrl: string): string | null {
-  try {
-    const host = new URL(sourceUrl).hostname;
-    if (!host || host === 'localhost') return null;
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(host)}&sz=32`;
-  } catch { return null; }
-}
-
-const CandidateImage: React.FC<{ candidate?: AyrovixCandidate; fallback?: string | null; alt: string }> = ({ candidate, fallback, alt }) => {
-  const urls = useMemo(() => {
-    const fromCandidate = candidate ? [...new Set([...(candidate.images || []), candidate.image].filter(Boolean))] : [] as string[];
-    return fromCandidate.length ? fromCandidate : ([fallback].filter(Boolean) as string[]);
-  }, [candidate, fallback]);
-  const [index, setIndex] = useState(0);
-  const favicon = candidate?.sourceUrl ? faviconUrl(candidate.sourceUrl) : null;
-  if (urls[index]) {
-    return <img src={urls[index]} alt={alt} loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setIndex(c => c + 1)} className="h-full w-full object-contain" />;
-  }
-  if (candidate) {
-    if (favicon) {
-      return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-surface p-2 text-center">
-          <div className="grid h-9 w-9 place-items-center rounded-control bg-white text-sm font-black text-ink shadow-sm border border-line">
-            <img src={favicon} alt="" width={18} height={18} loading="lazy" onError={e => { (e.currentTarget as HTMLImageElement).style.display='none'; }} />
-          </div>
-          <span className="max-w-[78px] truncate text-xs font-bold text-muted">{candidate.source}</span>
-        </div>
-      );
-    }
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-surface p-2 text-center">
-        <div className="grid h-9 w-9 place-items-center rounded-control bg-white text-sm font-black text-ink shadow-sm border border-line">
-          <span>{candidate.source.charAt(0).toUpperCase()}</span>
-        </div>
-        <span className="max-w-[78px] truncate text-xs font-bold text-muted">{candidate.source}</span>
-      </div>
-    );
-  }
-  return <div className="grid h-full w-full place-items-center bg-surface text-muted"><ImageIcon size={30} /></div>;
-};
-
-const MatchBadge: React.FC<{ value: number }> = ({ value }) => (
-  <span className="absolute left-1.5 top-1.5 rounded-icon bg-white/95 px-1.5 py-1 text-center shadow-sm">
-    <span className="block text-xs font-extrabold leading-none text-ink">{value}%</span>
-    <span className="block text-xs font-bold text-ink">Match</span>
-  </span>
-);
-
-export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell }) => {
+export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fallbackImage, onChoose, onReset, onCommandDetected, onRoiSearch, onLassoSearch, isLoading, detectedProducts, shell, customerSession, onOpenFavorites }) => {
   const { tr, direction } = useLocale();
+  const favorites = useLensFavorites(customerSession, onOpenFavorites);
   const visible = useMemo(() => {
     const strict = view.list.filter(isDisplayableCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
     return strict.length ? strict : view.list.filter(isLenientCandidate).sort((a, b) => (b.match || 0) - (a.match || 0));
@@ -159,22 +116,6 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
     sw: tr('Ajuster le coin inférieur gauche', 'ضبط الزاوية السفلية اليسرى'),
     se: tr('Ajuster le coin inférieur droit', 'ضبط الزاوية السفلية اليمنى'),
   }[corner]);
-  const priceLine = (c: AyrovixCandidate) => {
-    const isPending = c.priceVerificationStatus === 'PENDING_MANUAL' || (c.price == null && c.priceTnd == null);
-    if (isPending && c.priceTnd == null) {
-      return {
-        tnd: tr('Prix à confirmer', 'السعر قيد التأكيد'),
-        original: c.price != null ? `${Number(c.price).toFixed(Number(c.price)%1?2:0)} ${c.currency||''}` : null,
-        pending: true as const,
-      };
-    }
-    return {
-      tnd: c.priceTnd != null ? `${c.priceTnd.toFixed(2)} DT` : '—',
-      original: c.price != null ? `${Number(c.price).toFixed(Number(c.price)%1?2:0)} ${c.currency||''}` : null,
-      pending: false as const,
-    };
-  };
-
   return (
     <div ref={drawer.rootRef} className={`lens-results ${shell ? 'lens-results-shell' : ''}`} data-expanded={drawer.full} data-has-image={Boolean(previewUrl)} dir={direction}
       onKeyDown={e => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (drawer.full && previewUrl) { drawer.snap(false); handleRef.current?.focus(); } else onReset(); } }}>
@@ -249,25 +190,10 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
                 </div>
               ) : (
                 <>
+                  {favorites.message && <p className="lens-favorite-notice" role="status">{favorites.message === 'auth' ? tr('Connectez-vous à votre compte pour enregistrer vos favoris.', 'سجّل الدخول إلى حسابك لحفظ المفضلة.') : tr('Impossible de mettre à jour les favoris. Réessayez avec le cœur.', 'تعذر تحديث المفضلة. أعد المحاولة من زر القلب.')}</p>}
                   <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {visible.slice(0, 12).map(c => { const pl = priceLine(c); return (
-                      <article key={c.id} className="bg-white p-2.5 rounded-card border border-line/50 flex flex-col">
-                        <div className="relative aspect-square overflow-hidden bg-surface"><CandidateImage candidate={c} fallback={fallbackImage} alt={c.title} /><MatchBadge value={c.match} /></div>
-                        <h4 className="mt-1.5 line-clamp-2 break-words text-xs font-bold leading-snug text-ink">{c.title}</h4>
-                        {c.colors.length > 0 || c.sizes.length > 0 ? (<p className="break-words whitespace-normal text-xs font-semibold leading-snug text-muted">{[c.brand, c.model].filter(Boolean).join(' ') || c.colors.join(' / ') || c.sizes.join(' / ')}</p>) : (<p className="text-xs font-medium text-muted">{tr('Tailles/couleurs : voir la fiche marchand', 'المقاسات/الألوان: انظر صفحة المتجر')}</p>)}
-                        <p className="break-words whitespace-normal text-xs font-medium leading-snug text-muted">{c.source}</p>
-                        <MerchantRating value={c}/>
-                        <div className={`mt-1 px-2 py-1.5 ${pl.pending ? 'bg-amber-50 border border-amber-200' : 'bg-surface'}`}>
-                          <p className="text-xs font-extrabold uppercase tracking-wide text-muted">{pl.pending ? tr('Prix sur devis', 'سعر عند الطلب') : tr('Prix final estimé', 'السعر النهائي التقديري')}</p>
-                          <p className={`text-sm font-black ${pl.pending ? 'text-amber-700' : 'text-ink'}`}>{pl.tnd}</p>
-                          <p className="break-words whitespace-normal text-xs font-semibold leading-snug text-muted">{pl.original ? `${tr('Prix boutique', 'سعر المتجر')} ${pl.original} • ${c.source}` : c.source}</p>
-                          <p className="text-xs font-medium text-muted">{pl.pending ? tr('AYROVIX confirmera le prix avant commande.', 'سيؤكد AYROVIX السعر قبل الطلب.') : tr('Estimation tout inclus (douane + transport + service).', 'تقدير شامل (جمركة + شحن + خدمة).')}</p>
-                        </div>
-                        <button type="button" onClick={() => onChoose(c)} className="mt-2 min-h-11 w-full rounded-control bg-ink py-2 text-xs font-bold text-white">{pl.pending ? tr('Demander le prix', 'طلب السعر') : tr('Voir le produit', 'عرض المنتج')}</button>
-                      </article>
-                    );})}
+                    {visible.slice(0, 12).map(candidate => <LensProductCard key={candidate.id} candidate={candidate} onChoose={onChoose} saved={favorites.isSaved(candidate)} busy={favorites.busy} onFavorite={favorites.toggle} />)}
                   </div>
-                  <div className="mt-3 flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-muted"><ShieldCheck size={14} />{tr('Vérifiez le prix et les conditions dans la fiche produit.', 'تحقق من السعر والشروط في بطاقة المنتج.')}</div>
                 </>
               )}
             </>

@@ -533,6 +533,8 @@ export const App: React.FC = () => {
       {lensSessionActive && (
         <Suspense fallback={null}>
           <LensLauncher
+            customerSession={customerSession}
+            onOpenFavorites={() => { setAccountInitialSection('favorites'); setAccountMessage(''); openAppView('app:account'); }}
             isOpen={isLensOpen}
             historyScope={customerSession?.account.id || null}
             onClose={handleCloseLens}

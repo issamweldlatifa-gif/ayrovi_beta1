@@ -1,0 +1,75 @@
+
+> ayrovi@3.10.4 build
+> npm run build:client && npm run build:server
+
+
+> ayrovi@3.10.4 prebuild:client
+> npm run identity:check
+
+
+> ayrovi@3.10.4 identity:check
+> node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs
+
+AYROVI A: source, stack, pure neutrals, local assets and font hashes verified.
+
+> ayrovi@3.10.4 build:client
+> vite build
+
+vite v8.2.1 building client environment for production...
+[2K
+transforming...✓ 836 modules transformed.
+rendering chunks...
+computing gzip size...
+public/index.html                                     2.24 kB │ gzip:   0.90 kB
+public/assets/adidas-DSiMMEHE.jpg                     6.66 kB
+public/assets/shein-VCX7drB9.jpg                      6.95 kB
+public/assets/ysl-BCgHxbGU.jpg                        7.31 kB
+public/assets/nike-Dnelz9bu.jpg                       7.50 kB
+public/assets/the-north-face-BnBYyhsv.jpg            10.70 kB
+public/assets/dior-DsmacnAf.jpg                      12.88 kB
+public/assets/zara-PLZWEJaL.jpg                      13.32 kB
+public/assets/ellesse-Dw6R_Xvo.jpg                   14.60 kB
+public/assets/jordan-Dycio7Hm.jpg                    17.17 kB
+public/assets/chanel-BRLfpnFi.jpg                    17.21 kB
+public/assets/prada-EeNm87n2.jpg                     19.31 kB
+public/assets/burberry-BGqL7J1S.jpg                  20.05 kB
+public/assets/hermes-BFafVh5d.jpg                    33.98 kB
+public/assets/dolce-gabbana-LtJIoL3G.jpg             34.69 kB
+public/assets/hero-homme-Cxuh9cL5.jpg                41.23 kB
+public/assets/hero-femme-CX_-1i6X.jpg                46.63 kB
+public/assets/versace-CqSoPMYt.jpg                   49.56 kB
+public/assets/about-parallax-C3cZSsmf.jpg            86.05 kB
+public/assets/hero-enfants-DYGXUqF9.jpg             146.33 kB
+public/assets/AiAssistantDrawer-BSDCRqQ_.css          6.59 kB │ gzip:   1.59 kB
+public/assets/CustomerAccountPage-D8k6JAAV.css       11.17 kB │ gzip:   2.63 kB
+public/assets/LensLauncher-C0qgjBi-.css              14.77 kB │ gzip:   3.55 kB
+public/assets/AdminApp-DUn0SF5R.css                 118.37 kB │ gzip:  20.00 kB
+public/assets/index-B8QVJaBo.css                    190.71 kB │ gzip:  31.89 kB
+public/assets/esm-C94RF0_m.js                         0.25 kB │ gzip:   0.20 kB
+public/assets/CheckoutFlowShell-B39vZDOH.js           0.44 kB │ gzip:   0.27 kB
+public/assets/JourneyProgress-BbfJRKKb.js             0.68 kB │ gzip:   0.47 kB
+public/assets/resultPolicy-41holXna.js                0.83 kB │ gzip:   0.45 kB
+public/assets/AboutPage-DodqskTJ.js                   0.83 kB │ gzip:   0.53 kB
+public/assets/useCommercePolicy-CEwdpZPR.js           1.19 kB │ gzip:   0.65 kB
+public/assets/MenuDrawer-COsHBo2w.js                  5.99 kB │ gzip:   2.39 kB
+public/assets/interfaceConfig-BKEN7is7.js             7.04 kB │ gzip:   2.51 kB
+public/assets/CartDrawer-C4qPMw23.js                  8.91 kB │ gzip:   3.38 kB
+public/assets/CustomerPasswordRecovery-C6a6dK6z.js   11.46 kB │ gzip:   4.28 kB
+public/assets/QatafoIcons-BZ-5XKhi.js                15.88 kB │ gzip:   5.14 kB
+public/assets/ProductDrawer-q4A5ykhO.js              17.28 kB │ gzip:   5.03 kB
+public/assets/OrderSuccessModal-yXkINWyT.js          20.27 kB │ gzip:   7.70 kB
+public/assets/ProductResult-C0bcIVlq.js              22.76 kB │ gzip:   7.87 kB
+public/assets/CheckoutModal-C1lIG5U8.js              26.45 kB │ gzip:   8.50 kB
+public/assets/api-rXTKVfPY.js                        29.16 kB │ gzip:   9.64 kB
+public/assets/CustomerAccountPage-ET3LXgD1.js        77.54 kB │ gzip:  20.66 kB
+public/assets/LensLauncher-CEjr3vss.js              116.80 kB │ gzip:  36.99 kB
+public/assets/AiAssistantDrawer-CYAU5FGL.js         118.26 kB │ gzip:  36.91 kB
+public/assets/index-B8VJEsir.js                     203.34 kB │ gzip:  64.36 kB
+public/assets/App-aAzIgHnW.js                       233.51 kB │ gzip:  74.56 kB
+public/assets/qr-C9LzHcXT.js                        411.24 kB │ gzip: 109.94 kB
+public/assets/AdminApp-D8NAaDJT.js                  447.90 kB │ gzip: 106.34 kB
+
+✓ built in 1.28s
+
+> ayrovi@3.10.4 build:server
+> node -e 'require("esbuild").buildSync({entryPoints:["src/server.ts"],bundle:true,platform:"node",target:"node20",outfile:"dist/server.js",external:["better-sqlite3","jsdom","express","compression","cors","dotenv","tesseract.js","multer","sharp","pdf-to-img","mailparser"]})'

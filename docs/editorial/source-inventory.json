@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 204,
-    "customerAndSharedFiles": 155,
-    "controls": 416,
+    "files": 207,
+    "customerAndSharedFiles": 158,
+    "controls": 418,
     "iconAliases": 99,
     "uniqueGlyphs": 96
   },
@@ -10342,8 +10342,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "3b08f13ef17c5e03aeac6decbe9f5639e14fbae96bbeef45018967eb907ce6a0",
-      "lines": 620,
+      "sha256": "c753bfd729940317cfc48bc060f5a5615b23b08c467bbdc8ad70d5c945d8910c",
+      "lines": 622,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -10405,7 +10405,7 @@
         },
         {
           "tag": "CartDrawer",
-          "line": 550,
+          "line": 552,
           "className": null,
           "type": null,
           "role": null,
@@ -10415,7 +10415,7 @@
         },
         {
           "tag": "CheckoutModal",
-          "line": 566,
+          "line": 568,
           "className": null,
           "type": null,
           "role": null,
@@ -10425,7 +10425,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 608,
+          "line": 610,
           "className": null,
           "type": null,
           "role": null,
@@ -10449,10 +10449,12 @@
     {
       "file": "client/src/ayrovix/components/InteractiveLensResults.tsx",
       "domain": "lens",
-      "sha256": "3f6005841c89293a97dc0421331e3c8300151611837a780e87a2fa76365eee4b",
-      "lines": 280,
+      "sha256": "bb24a6831e451a427c57f45e85ab6c3a74b2ff8a59c6d0223618856f995a424c",
+      "lines": 206,
       "imports": [
-        "./MerchantRating",
+        "./LensProductCard",
+        "./useLensFavorites",
+        "../../types",
         "react",
         "../../components/QatafoIcons",
         "../types",
@@ -10468,7 +10470,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 182,
+          "line": 123,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -10478,7 +10480,7 @@
         },
         {
           "tag": "button",
-          "line": 194,
+          "line": 135,
           "className": "{`lens-selection-corner lens-corner-${corner}`}",
           "type": "\"button\"",
           "role": null,
@@ -10488,7 +10490,7 @@
         },
         {
           "tag": "button",
-          "line": 202,
+          "line": 143,
           "className": "\"lens-product-dot\"",
           "type": "\"button\"",
           "role": null,
@@ -10498,7 +10500,7 @@
         },
         {
           "tag": "button",
-          "line": 210,
+          "line": 151,
           "className": "\"lens-sheet-handle\"",
           "type": "\"button\"",
           "role": null,
@@ -10508,7 +10510,7 @@
         },
         {
           "tag": "button",
-          "line": 238,
+          "line": 179,
           "className": "\"mt-2 w-full rounded-control bg-ink py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
@@ -10518,7 +10520,7 @@
         },
         {
           "tag": "button",
-          "line": 247,
+          "line": 188,
           "className": "\"rounded-control bg-ink px-5 py-2 text-xs font-bold text-white\"",
           "type": "\"button\"",
           "role": null,
@@ -10527,21 +10529,21 @@
           "disabled": null
         },
         {
-          "tag": "button",
-          "line": 266,
-          "className": "\"mt-2 min-h-11 w-full rounded-control bg-ink py-2 text-xs font-bold text-white\"",
-          "type": "\"button\"",
+          "tag": "LensProductCard",
+          "line": 195,
+          "className": null,
+          "type": null,
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => onChoose(c)}",
+          "onClick": null,
           "disabled": null
         }
       ],
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowLeft, ScanSearch, Loader2, Image as ImageIcon, ShieldCheck }",
-          "line": 3
+          "bindings": "{ ArrowLeft, ScanSearch, Loader2, Image as ImageIcon }",
+          "line": 5
         }
       ],
       "inlineSvg": [],
@@ -10568,6 +10570,29 @@
       "fontDeclarations": [
         "font-family:var(--ay-font-stack)",
         "font-family:inherit",
+        "font-family:var(--ay-font-stack)"
+      ],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/components/lens-product-card.css",
+      "domain": "lens",
+      "sha256": "82427d97c2db130c3c16bd0042b393ab03f48754984bd485252089b69277f9d6",
+      "lines": 22,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#595959",
+        "#d9d9d9",
+        "#e5b400",
+        "#f5f5f5",
+        "#fff"
+      ],
+      "fontDeclarations": [
         "font-family:var(--ay-font-stack)"
       ],
       "apiReferences": []
@@ -10843,9 +10868,10 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "8eda398197cad688e6317d651c49683190f0224311498807bd699064b0ec4fae",
-      "lines": 939,
+      "sha256": "efe1d9669eebd4705cb833e06ba8039d01f23b10d985ec2ee0746e723de62db8",
+      "lines": 950,
       "imports": [
+        "../../types",
         "./LensHelp",
         "../services/productSelection",
         "../../design/AppHeader",
@@ -10876,7 +10902,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 687,
+          "line": 694,
           "className": null,
           "type": null,
           "role": null,
@@ -10886,7 +10912,7 @@
         },
         {
           "tag": "input",
-          "line": 693,
+          "line": 700,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -10896,7 +10922,7 @@
         },
         {
           "tag": "button",
-          "line": 719,
+          "line": 726,
           "className": "\"lens-drop\"",
           "type": "\"button\"",
           "role": null,
@@ -10906,7 +10932,7 @@
         },
         {
           "tag": "form",
-          "line": 737,
+          "line": 744,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -10916,7 +10942,7 @@
         },
         {
           "tag": "input",
-          "line": 753,
+          "line": 760,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"search\"",
           "role": null,
@@ -10926,7 +10952,7 @@
         },
         {
           "tag": "button",
-          "line": 765,
+          "line": 772,
           "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
           "type": "\"submit\"",
           "role": null,
@@ -10936,7 +10962,7 @@
         },
         {
           "tag": "form",
-          "line": 770,
+          "line": 777,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -10946,7 +10972,7 @@
         },
         {
           "tag": "input",
-          "line": 785,
+          "line": 792,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"url\"",
           "role": null,
@@ -10956,7 +10982,7 @@
         },
         {
           "tag": "button",
-          "line": 787,
+          "line": 794,
           "className": "\"ay-btn-primary flex-none text-xs\"",
           "type": "\"submit\"",
           "role": null,
@@ -10966,7 +10992,7 @@
         },
         {
           "tag": "button",
-          "line": 796,
+          "line": 803,
           "className": "\"text-xs font-bold text-ink underline\"",
           "type": "\"button\"",
           "role": null,
@@ -10976,7 +11002,7 @@
         },
         {
           "tag": "button",
-          "line": 800,
+          "line": 807,
           "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
           "type": "\"button\"",
           "role": null,
@@ -10986,7 +11012,7 @@
         },
         {
           "tag": "button",
-          "line": 858,
+          "line": 869,
           "className": "\"mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -10996,7 +11022,7 @@
         },
         {
           "tag": "button",
-          "line": 869,
+          "line": 880,
           "className": "\"w-full rounded-full bg-ink py-3 text-sm font-bold text-white sm:w-auto sm:px-6\"",
           "type": "\"button\"",
           "role": null,
@@ -11006,7 +11032,7 @@
         },
         {
           "tag": "button",
-          "line": 873,
+          "line": 884,
           "className": "\"w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line sm:w-auto sm:px-6\"",
           "type": "\"button\"",
           "role": null,
@@ -11016,7 +11042,7 @@
         },
         {
           "tag": "button",
-          "line": 896,
+          "line": 907,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11026,7 +11052,7 @@
         },
         {
           "tag": "button",
-          "line": 899,
+          "line": 910,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11036,7 +11062,7 @@
         },
         {
           "tag": "button",
-          "line": 918,
+          "line": 929,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11046,7 +11072,7 @@
         },
         {
           "tag": "button",
-          "line": 921,
+          "line": 932,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11056,7 +11082,7 @@
         },
         {
           "tag": "button",
-          "line": 924,
+          "line": 935,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11066,7 +11092,7 @@
         },
         {
           "tag": "button",
-          "line": 926,
+          "line": 937,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11076,7 +11102,7 @@
         },
         {
           "tag": "button",
-          "line": 927,
+          "line": 938,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11089,7 +11115,7 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles }",
-          "line": 26
+          "line": 27
         }
       ],
       "inlineSvg": [],
@@ -11237,6 +11263,57 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{\n  ArrowLeft, FileText, History, Info, MoreVertical, Moon, ShoppingBag, X,\n}",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/components/LensProductCard.tsx",
+      "domain": "lens",
+      "sha256": "b571b4f35b411468b35c2345ff6146698867400f8f319ae4de71dfe5116cfadd",
+      "lines": 48,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../i18n/LocaleContext",
+        "../types",
+        "./MerchantRating",
+        "./lens-product-card.css"
+      ],
+      "exports": [
+        "lensCardCopy",
+        "LensProductCard"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 36,
+          "className": "\"lens-card-open\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}",
+          "onClick": "{() => onChoose(candidate)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 43,
+          "className": "\"lens-card-favorite\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{saved ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`) : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}",
+          "onClick": "{() => onFavorite(candidate)}",
+          "disabled": "{busy}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Heart, HeartFilled, Image as ImageIcon }",
           "line": 2
         }
       ],
@@ -11520,8 +11597,8 @@
     {
       "file": "client/src/ayrovix/components/MerchantRating.tsx",
       "domain": "lens",
-      "sha256": "43b55d601432ce301694fadc555b00c9de4ad07bfeb6363d630ac9158d470eaa",
-      "lines": 17,
+      "sha256": "d818c6219bcba4a87bb81b0df86e89e22a4e3c3a1ad2072a2b4d36c28e331016",
+      "lines": 24,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -11827,6 +11904,31 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/ayrovix/components/useLensFavorites.ts",
+      "domain": "lens",
+      "sha256": "e6c8732abb27197f1fb9c792ef4a44a7346b5120603d1ca55c8a270affc68d02",
+      "lines": 68,
+      "imports": [
+        "react",
+        "../../customer/api",
+        "../../types",
+        "../types"
+      ],
+      "exports": [
+        "useLensFavorites"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/customer/account/favorites",
+        "/api/customer/account/favorites",
+        "/api/customer/account/favorites"
+      ]
+    },
+    {
       "file": "client/src/ayrovix/components/useLensResultsSheet.ts",
       "domain": "lens",
       "sha256": "0dcbff51f7a69808df27d6ed371beccb2bbca6e3921aa9a6cbefc3529d84bbe2",
@@ -12070,8 +12172,8 @@
     {
       "file": "client/src/ayrovix/types.ts",
       "domain": "lens",
-      "sha256": "5b91dc7d778c8a480ba9ec1ca89101abe936a38c9647074a054d2fd29bd07f1c",
-      "lines": 199,
+      "sha256": "68d1766208c80b509a5f6f55114918eb1e3e9448810e94b2c04926e454dd8200",
+      "lines": 201,
       "imports": [],
       "exports": [],
       "controls": [],

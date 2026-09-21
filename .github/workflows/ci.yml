@@ -98,6 +98,19 @@ jobs:
           name: lens-results-evidence
           path: docs/lens-results/evidence/
 
+      - name: Verify reference product cards, real ratings and favorites
+        id: lens_cards
+        run: |
+          rm -rf docs/lens-product-cards/evidence/
+          npm run verify:lens-cards
+
+      - name: Upload fresh Lens product card evidence
+        if: ${{ !cancelled() && (steps.lens_cards.outcome == 'success' || steps.lens_cards.outcome == 'failure') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: lens-product-cards-evidence
+          path: docs/lens-product-cards/evidence/
+
       - name: Verify editorial voice, products and all icon imports
         run: npm run verify:editorial-states
 

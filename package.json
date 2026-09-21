@@ -36,7 +36,8 @@
     "prebuild:client": "npm run identity:check",
     "verify:identity": "esbuild verify/identity-runtime.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/identity-runtime.cjs && node .cache/identity-runtime.cjs",
     "verify:lens-camera": "node verify/sonim-actions-runner.mjs verify/lens-camera-entry.mjs verify/lens-camera-fixture.tsx",
-    "verify:lens-results": "node verify/sonim-actions-runner.mjs verify/lens-results.mjs verify/lens-results-fixture.tsx"
+    "verify:lens-results": "node verify/sonim-actions-runner.mjs verify/lens-results.mjs verify/lens-results-fixture.tsx",
+    "verify:lens-cards": "node verify/sonim-actions-runner.mjs verify/lens-product-cards.mjs verify/lens-results-fixture.tsx"
   },
   "keywords": [
     "ayrovi",
