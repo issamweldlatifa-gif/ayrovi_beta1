@@ -430,7 +430,7 @@
     {
       "file": "client/src/admin/AdminApp.tsx",
       "domain": "admin",
-      "sha256": "2fd6442b5ea5172b4a8fad9f54b0ca4ef1077cbc19a66aca37bb0a45a8ca1f3c",
+      "sha256": "7a3630ac949448e9fc040e944e01d5ad4fa972a66eb31b464bcdb4ec89dca051",
       "lines": 977,
       "imports": [
         "../../../shared/brand.generated",
@@ -18930,8 +18930,8 @@
     {
       "file": "client/src/main.tsx",
       "domain": "shell-content",
-      "sha256": "868354e64eabae452b2f06ed88ca20169d82ce0a104d314fce44df9fe5a3bb70",
-      "lines": 32,
+      "sha256": "9bc3d810c72a00159bdab91c253089de866f1e72d5cc4790f94215da8cf2d2e4",
+      "lines": 41,
       "imports": [
         "react",
         "react-dom/client",
