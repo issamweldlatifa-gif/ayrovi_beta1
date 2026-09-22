@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900">
+<title>Admin / Modèle 1 — Amazon Seller Central / Commandes</title>
+<rect id="fond" x="0" y="0" width="1440" height="900" rx="0" fill="#EAEDED" stroke="none" stroke-width="1" opacity="1"/>
+<g id="chrome">
+<rect id="chrome-haut" x="0" y="0" width="1440" height="48" rx="0" fill="#232F3E" stroke="none" stroke-width="1" opacity="1"/>
+<text id="marque" x="20" y="30" font-family="Zalando Sans" font-size="15" font-weight="800" fill="#FFFFFF" text-anchor="start" letter-spacing="2">AYROVI</text>
+<text id="compte" x="120" y="29" font-family="Zalando Sans" font-size="11" font-weight="500" fill="#C9D2DA" text-anchor="start" letter-spacing="0">Vendeur · Tunisie</text>
+<rect id="recherche" x="320" y="12" width="460" height="25" rx="3" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<text id="recherche-libelle" x="332" y="29" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#8B8B8B" text-anchor="start" letter-spacing="0">Rechercher une commande, un client, un produit…</text>
+<text id="langue" x="1360" y="29" font-family="Zalando Sans" font-size="11" font-weight="400" fill="#C9D2DA" text-anchor="end" letter-spacing="0">FR/Arabic</text>
+<rect id="chrome-onglets" x="0" y="48" width="1440" height="40" rx="0" fill="#37475A" stroke="none" stroke-width="1" opacity="1"/>
+<text id="onglet-1" x="24" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Tableau de bord</text>
+<rect id="onglet-actif" x="144" y="48" width="132" height="40" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<text id="onglet-2" x="156" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">Commandes</text>
+<text id="onglet-3" x="288" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Arrivages</text>
+<text id="onglet-4" x="420" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Catalogue</text>
+<text id="onglet-5" x="552" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Stock</text>
+<text id="onglet-6" x="684" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Tarification</text>
+</g>
+<g id="navigation">
+<text id="onglet-7" x="816" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Rapports</text>
+<text id="onglet-8" x="948" y="73" font-family="Zalando Sans" font-size="12.5" font-weight="500" fill="#FFFFFF" text-anchor="start" letter-spacing="0">Paramètres</text>
+<rect id="nav" x="0" y="88" width="208" height="812" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="nav-separateur" x1="208" y1="88" x2="208" y2="900" stroke="#D5D9D9" stroke-width="1"/>
+<text id="nav-1" x="16" y="118" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Tableau de bord</text>
+<rect id="nav-actif" x="0" y="131" width="208" height="28" rx="0" fill="#F3F3F4" stroke="none" stroke-width="1" opacity="1"/>
+<text id="nav-2" x="16" y="148" font-family="Zalando Sans" font-size="12" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">Commandes</text>
+<text id="nav-badge-2" x="192" y="148" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#565959" text-anchor="end" letter-spacing="0">12</text>
+<text id="nav-3" x="16" y="178" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Support IA</text>
+<text id="nav-badge-3" x="192" y="178" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#565959" text-anchor="end" letter-spacing="0">4</text>
+<text id="nav-4" x="16" y="208" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Clients</text>
+<text id="nav-5" x="16" y="238" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Arrivages</text>
+<text id="nav-6" x="16" y="268" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Barre sous l’en-tête</text>
+<text id="nav-badge-6" x="192" y="268" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#565959" text-anchor="end" letter-spacing="0">3</text>
+<text id="nav-7" x="16" y="298" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Magazine</text>
+<text id="nav-8" x="16" y="328" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Social</text>
+<text id="nav-9" x="16" y="358" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Arrivages CRM</text>
+<text id="nav-10" x="16" y="388" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Lens</text>
+</g>
+<g id="en-tete-page">
+<text id="nav-11" x="16" y="418" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Tarification</text>
+<text id="nav-12" x="16" y="448" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Stock</text>
+<text id="nav-13" x="16" y="478" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Achats</text>
+<text id="nav-14" x="16" y="508" font-family="Zalando Sans" font-size="12" font-weight="400" fill="#3A4149" text-anchor="start" letter-spacing="0">Rôles &amp; permissions</text>
+<text id="titre" x="232" y="130" font-family="Zalando Sans" font-size="24" font-weight="800" fill="#111" text-anchor="start" letter-spacing="0">Commandes</text>
+<text id="sous-titre" x="232" y="150" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Centre de commandes · 1 248 commandes sur 30 jours · mise à jour 09:41</text>
+<rect id="bouton-primaire" x="1180" y="112" width="132" height="30" rx="3" fill="#FF9900" stroke="none" stroke-width="1" opacity="1"/>
+<text id="bouton-primaire-libelle" x="1246" y="132" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#111111" text-anchor="middle" letter-spacing="0">Acheter la marchandise</text>
+<rect id="bouton-secondaire" x="1322" y="112" width="96" height="30" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+</g>
+<g id="filtres">
+<text id="bouton-secondaire-libelle" x="1370" y="132" font-family="Zalando Sans" font-size="11.5" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Exporter</text>
+<rect id="onglets-vue" x="232" y="172" width="1186" height="34" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<rect id="vue-active" x="240" y="172" width="143" height="34" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="vue-soulignement" x1="240" y1="204" x2="383" y2="204" stroke="#FF9900" stroke-width="3"/>
+<text id="vue-1" x="248" y="194" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">Non expédiées (12)</text>
+<text id="vue-2" x="398" y="194" font-family="Zalando Sans" font-size="11.5" font-weight="500" fill="#565959" text-anchor="start" letter-spacing="0">À vérifier (7)</text>
+<text id="vue-3" x="548" y="194" font-family="Zalando Sans" font-size="11.5" font-weight="500" fill="#565959" text-anchor="start" letter-spacing="0">Annulées (3)</text>
+<text id="vue-4" x="698" y="194" font-family="Zalando Sans" font-size="11.5" font-weight="500" fill="#565959" text-anchor="start" letter-spacing="0">Toutes (1 248)</text>
+<rect id="barre-filtres" x="232" y="214" width="1186" height="44" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<rect id="filtre-1" x="240" y="224" width="180" height="24" rx="999" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="filtre-libelle-1" x="330" y="240" font-family="Zalando Sans" font-size="11" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Période : 30 derniers jours</text>
+<rect id="filtre-2" x="436" y="224" width="180" height="24" rx="999" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="filtre-libelle-2" x="526" y="240" font-family="Zalando Sans" font-size="11" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Statut : tous</text>
+<rect id="filtre-3" x="632" y="224" width="180" height="24" rx="999" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+</g>
+<g id="corps">
+<text id="filtre-libelle-3" x="722" y="240" font-family="Zalando Sans" font-size="11" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Mode de paiement : tous</text>
+<rect id="filtre-4" x="828" y="224" width="180" height="24" rx="999" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="filtre-libelle-4" x="918" y="240" font-family="Zalando Sans" font-size="11" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Gouvernorat : tous</text>
+<rect id="filtre-5" x="1024" y="224" width="180" height="24" rx="999" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="filtre-libelle-5" x="1114" y="240" font-family="Zalando Sans" font-size="11" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">+ Filtre</text>
+<rect id="filtre-6" x="1220" y="224" width="180" height="24" rx="999" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="filtre-libelle-6" x="1310" y="240" font-family="Zalando Sans" font-size="11" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Colonnes ▾</text>
+<rect id="carte-tableau" x="232" y="272" width="830" height="596" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<rect id="barre-actions-lot" x="232" y="272" width="830" height="40" rx="3" fill="#F3F3F4" stroke="none" stroke-width="1" opacity="1"/>
+<rect id="case-tout" x="248" y="284" width="16" height="16" rx="2" fill="#FFFFFF" stroke="#565959" stroke-width="1" opacity="1"/>
+<text id="actions-lot" x="276" y="296" font-family="Zalando Sans" font-size="11.5" font-weight="600" fill="#0F1111" text-anchor="start" letter-spacing="0">3 sélectionnées · Valider l’acompte · Préparer · Émettre la facture · Archiver</text>
+<g id="tableau-commandes">
+<rect id="entete-tableau" x="232" y="312" width="830" height="30" rx="0" fill="#F3F3F4" stroke="none" stroke-width="1" opacity="1"/>
+<text id="entete-Commande" x="242" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">COMMANDE</text>
+<text id="entete-Client" x="358.20000000000005" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">CLIENT</text>
+<text id="entete-Statut" x="491" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">STATUT</text>
+<text id="entete-Paiement" x="607.2" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">PAIEMENT</text>
+<text id="entete-TotalTND" x="740" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">TOTAL TND</text>
+<text id="entete-Art" x="847.9000000000001" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">ART.</text>
+<text id="entete-Crele" x="897.7" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">CRÉÉE LE</text>
+<text id="entete-Suivi" x="997.3000000000001" y="332" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0.9">SUIVI</text>
+<rect id="ligne-1" x="232" y="342" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-1" x1="232" y1="374" x2="1062" y2="374" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-1-1" x="242" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10241</text>
+<text id="cellule-1-2" x="358.20000000000005" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Sonia Ben Ali</text>
+<rect id="etiquette-1" x="487" y="349" width="73.6" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-1" x="495" y="362" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#067D62" text-anchor="start" letter-spacing="0">Confirmée</text>
+<text id="cellule-1-4" x="607.2" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Acompte validé</text>
+<text id="cellule-1-5" x="740" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">412 900</text>
+<text id="cellule-1-6" x="847.9000000000001" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">4</text>
+<text id="cellule-1-7" x="897.7" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">22/09 09:14</text>
+<text id="cellule-1-8" x="997.3000000000001" y="362" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Standard · 29/09</text>
+<rect id="ligne-2" x="232" y="374" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-2" x1="232" y1="406" x2="1062" y2="406" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-2-1" x="242" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10240</text>
+<text id="cellule-2-2" x="358.20000000000005" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Mehdi Trabelsi</text>
+<rect id="etiquette-2" x="487" y="381" width="80" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-2" x="495" y="394" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#0F5A94" text-anchor="start" letter-spacing="0">À vérifier</text>
+<text id="cellule-2-4" x="607.2" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Justificatif reçu</text>
+<text id="cellule-2-5" x="740" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">268 400</text>
+<text id="cellule-2-6" x="847.9000000000001" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">2</text>
+<text id="cellule-2-7" x="897.7" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">22/09 08:02</text>
+<text id="cellule-2-8" x="997.3000000000001" y="394" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">En attente</text>
+<rect id="ligne-3" x="232" y="406" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-3" x1="232" y1="438" x2="1062" y2="438" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-3-1" x="242" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10239</text>
+<text id="cellule-3-2" x="358.20000000000005" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Ines Gharbi</text>
+<rect id="etiquette-3" x="487" y="413" width="86.4" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-3" x="495" y="426" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#8A6116" text-anchor="start" letter-spacing="0">Préparation</text>
+<text id="cellule-3-4" x="607.2" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Payé</text>
+<text id="cellule-3-5" x="740" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">1 120 000</text>
+<text id="cellule-3-6" x="847.9000000000001" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">6</text>
+<text id="cellule-3-7" x="897.7" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">21/09 18:47</text>
+<text id="cellule-3-8" x="997.3000000000001" y="426" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Express · 25/09</text>
+<rect id="ligne-4" x="232" y="438" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-4" x1="232" y1="470" x2="1062" y2="470" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-4-1" x="242" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10238</text>
+<text id="cellule-4-2" x="358.20000000000005" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Walid Chaabane</text>
+<rect id="etiquette-4" x="487" y="445" width="112" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-4" x="495" y="458" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#8A6116" text-anchor="start" letter-spacing="0">Acompte attendu</text>
+<text id="cellule-4-4" x="607.2" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">En attente client</text>
+<text id="cellule-4-5" x="740" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">96 500</text>
+<text id="cellule-4-6" x="847.9000000000001" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">1</text>
+<text id="cellule-4-7" x="897.7" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">21/09 16:20</text>
+<text id="cellule-4-8" x="997.3000000000001" y="458" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Relance J+2</text>
+<rect id="ligne-5" x="232" y="470" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-5" x1="232" y1="502" x2="1062" y2="502" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-5-1" x="242" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10237</text>
+<text id="cellule-5-2" x="358.20000000000005" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Nesrine Khelifi</text>
+<rect id="etiquette-5" x="487" y="477" width="58" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-5" x="495" y="490" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#067D62" text-anchor="start" letter-spacing="0">Livrée</text>
+<text id="cellule-5-4" x="607.2" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Payé</text>
+<text id="cellule-5-5" x="740" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">154 300</text>
+<text id="cellule-5-6" x="847.9000000000001" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">3</text>
+<text id="cellule-5-7" x="897.7" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">21/09 11:05</text>
+<text id="cellule-5-8" x="997.3000000000001" y="490" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Remise 21/09</text>
+<rect id="ligne-6" x="232" y="502" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-6" x1="232" y1="534" x2="1062" y2="534" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-6-1" x="242" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10236</text>
+<text id="cellule-6-2" x="358.20000000000005" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Anis Bouzid</text>
+<rect id="etiquette-6" x="487" y="509" width="58" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-6" x="495" y="522" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#067D62" text-anchor="start" letter-spacing="0">Livrée</text>
+<text id="cellule-6-4" x="607.2" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Payé</text>
+<text id="cellule-6-5" x="740" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">73 200</text>
+<text id="cellule-6-6" x="847.9000000000001" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">2</text>
+<text id="cellule-6-7" x="897.7" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">20/09 15:41</text>
+<text id="cellule-6-8" x="997.3000000000001" y="522" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Remise 21/09</text>
+<rect id="ligne-7" x="232" y="534" width="830" height="32" rx="0" fill="#FFFFFF" stroke="none" stroke-width="1" opacity="1"/>
+<line id="separateur-7" x1="232" y1="566" x2="1062" y2="566" stroke="#D5D9D9" stroke-width="1"/>
+<text id="cellule-7-1" x="242" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">AYR-TN-10235</text>
+<text id="cellule-7-2" x="358.20000000000005" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Rania Dridi</text>
+<rect id="etiquette-7" x="487" y="541" width="60.800000000000004" height="19" rx="999" fill="#F0F2F2" stroke="none" stroke-width="1" opacity="1"/>
+<text id="statut-7" x="495" y="554" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#B12704" text-anchor="start" letter-spacing="0">Annulée</text>
+<text id="cellule-7-4" x="607.2" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Remboursé</text>
+<text id="cellule-7-5" x="740" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="0">38 900</text>
+<text id="cellule-7-6" x="847.9000000000001" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">1</text>
+<text id="cellule-7-7" x="897.7" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">20/09 12:07</text>
+<text id="cellule-7-8" x="997.3000000000001" y="554" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">—</text>
+</g>
+<line id="pied-carte" x1="232" y1="860" x2="1062" y2="860" stroke="#D5D9D9" stroke-width="1"/>
+<text id="pagination" x="248" y="880" font-family="Zalando Sans" font-size="11" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">1–7 sur 1 248 · Pagination 10 / 25 / 50</text>
+<rect id="panneau" x="1078" y="272" width="340" height="596" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="panneau-titre" x="1094" y="300" font-family="Zalando Sans" font-size="13" font-weight="800" fill="#111" text-anchor="start" letter-spacing="0">AYR-TN-10241 · Sonia Ben Ali</text>
+<text id="panneau-sous-titre" x="1094" y="318" font-family="Zalando Sans" font-size="11" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Ariana · Virement bancaire · 4 articles</text>
+<text id="detail-cle-1" x="1094" y="348" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Total</text>
+<text id="detail-valeur-1" x="1402" y="348" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#111" text-anchor="end" letter-spacing="0">412 900 TND</text>
+<line id="detail-separateur-1" x1="1094" y1="360" x2="1402" y2="360" stroke="#EDEDED" stroke-width="1"/>
+<text id="detail-cle-2" x="1094" y="382" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Acompte (20 %)</text>
+<text id="detail-valeur-2" x="1402" y="382" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#111" text-anchor="end" letter-spacing="0">82 580 TND</text>
+<line id="detail-separateur-2" x1="1094" y1="394" x2="1402" y2="394" stroke="#EDEDED" stroke-width="1"/>
+<text id="detail-cle-3" x="1094" y="416" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Tarif appliqué</text>
+<text id="detail-valeur-3" x="1402" y="416" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#111" text-anchor="end" letter-spacing="0">v3 · EUR 1 → 3,412 TND</text>
+<line id="detail-separateur-3" x1="1094" y1="428" x2="1402" y2="428" stroke="#EDEDED" stroke-width="1"/>
+<text id="detail-cle-4" x="1094" y="450" font-family="Zalando Sans" font-size="11.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Livraison</text>
+<text id="detail-valeur-4" x="1402" y="450" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#111" text-anchor="end" letter-spacing="0">Standard · 29/09</text>
+<line id="detail-separateur-4" x1="1094" y1="462" x2="1402" y2="462" stroke="#EDEDED" stroke-width="1"/>
+<rect id="action-valider" x="1094" y="498" width="308" height="32" rx="3" fill="#FF9900" stroke="none" stroke-width="1" opacity="1"/>
+<text id="action-valider-libelle" x="1248" y="518" font-family="Zalando Sans" font-size="12" font-weight="700" fill="#111111" text-anchor="middle" letter-spacing="0">Valider l’acompte</text>
+<rect id="action-secondaire" x="1094" y="538" width="148" height="30" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="action-secondaire-libelle" x="1168" y="557" font-family="Zalando Sans" font-size="11.5" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Préparer</text>
+<rect id="action-tertiaire" x="1254" y="538" width="148" height="30" rx="3" fill="#FFFFFF" stroke="#D5D9D9" stroke-width="1" opacity="1"/>
+<text id="action-tertiaire-libelle" x="1328" y="557" font-family="Zalando Sans" font-size="11.5" font-weight="600" fill="#0F1111" text-anchor="middle" letter-spacing="0">Facture</text>
+<text id="barre-titre" x="1094" y="600" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="1.2">BARRE SOUS L’EN-TÊTE</text>
+<text id="barre-libelles-1" x="1094" y="622" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">Arrivage  ·  وصلات جديدة</text>
+<text id="barre-etat-1" x="1402" y="622" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#067D62" text-anchor="end" letter-spacing="0">actif</text>
+<text id="barre-cible-1" x="1094" y="636" font-family="Zalando Sans" font-size="10" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Arrivage — /arrivage  ·  ordre 10</text>
+<line id="barre-separateur-1" x1="1094" y1="646" x2="1402" y2="646" stroke="#EDEDED" stroke-width="1"/>
+<text id="barre-libelles-2" x="1094" y="660" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">Gift &amp; Cards  ·  هدايا وبطاقات</text>
+<text id="barre-etat-2" x="1402" y="660" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#067D62" text-anchor="end" letter-spacing="0">actif</text>
+<text id="barre-cible-2" x="1094" y="674" font-family="Zalando Sans" font-size="10" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Gift &amp; Cards — /gift-cards  ·  ordre 20</text>
+<line id="barre-separateur-2" x1="1094" y1="684" x2="1402" y2="684" stroke="#EDEDED" stroke-width="1"/>
+<text id="barre-libelles-3" x="1094" y="698" font-family="Zalando Sans" font-size="11.5" font-weight="700" fill="#0F1111" text-anchor="start" letter-spacing="0">Magazine  ·  مجلة AYROVI</text>
+<text id="barre-etat-3" x="1402" y="698" font-family="Zalando Sans" font-size="10.5" font-weight="700" fill="#565959" text-anchor="end" letter-spacing="0">masqué</text>
+<text id="barre-cible-3" x="1094" y="712" font-family="Zalando Sans" font-size="10" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Magazine — /magazine  ·  ordre 30</text>
+<line id="barre-separateur-3" x1="1094" y1="722" x2="1402" y2="722" stroke="#EDEDED" stroke-width="1"/>
+<text id="barre-note" x="1094" y="744" font-family="Zalando Sans" font-size="10.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">Destination = liste fermée : aucun lien mort possible.</text>
+<line id="journal-separateur" x1="1094" y1="762" x2="1402" y2="762" stroke="#D5D9D9" stroke-width="1"/>
+<text id="journal-titre" x="1094" y="784" font-family="Zalando Sans" font-size="9.5" font-weight="700" fill="#565959" text-anchor="start" letter-spacing="1.2">JOURNAL (EXTRAIT)</text>
+<text id="journal-ligne-1" x="1094" y="806" font-family="Zalando Sans" font-size="10.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">22/09 09:15 · APPROVE acompte 82 580 TND (Issam)</text>
+<text id="journal-ligne-2" x="1094" y="824" font-family="Zalando Sans" font-size="10.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">22/09 09:14 · CREATE commande — import Lens</text>
+<text id="journal-ligne-3" x="1094" y="842" font-family="Zalando Sans" font-size="10.5" font-weight="400" fill="#565959" text-anchor="start" letter-spacing="0">21/09 18:47 · UPDATE statut CONFIRMED</text>
+</g>
+</svg>
