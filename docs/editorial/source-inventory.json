@@ -3483,8 +3483,8 @@
     {
       "file": "client/src/admin/back-office/BackOfficeShell.tsx",
       "domain": "admin",
-      "sha256": "fb59f85c070a693b7e734d2cec589c193a62b6943c65e5b8b3f6c193854d12be",
-      "lines": 403,
+      "sha256": "bafc744f4cbef477c8d4737ea29fb2e0d8d6679c7eeacb1712e9eba405754660",
+      "lines": 405,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -3500,7 +3500,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 231,
+          "line": 233,
           "className": "{`${section === item.section ? 'is-active' : ''} ${item.section === 'news' ? 'is-magazine-drop-target' : ''}`.trim()}",
           "type": null,
           "role": null,
@@ -3510,7 +3510,7 @@
         },
         {
           "tag": "button",
-          "line": 256,
+          "line": 258,
           "className": "\"admin-mobile-menu admin-icon-button\"",
           "type": null,
           "role": null,
@@ -3520,7 +3520,7 @@
         },
         {
           "tag": "button",
-          "line": 257,
+          "line": 259,
           "className": "\"admin-icon-button\"",
           "type": null,
           "role": null,
@@ -3530,7 +3530,7 @@
         },
         {
           "tag": "button",
-          "line": 258,
+          "line": 260,
           "className": "\"admin-icon-button\"",
           "type": null,
           "role": null,
@@ -3540,7 +3540,7 @@
         },
         {
           "tag": "button",
-          "line": 260,
+          "line": 262,
           "className": "\"admin-icon-button\"",
           "type": null,
           "role": null,
@@ -3550,7 +3550,7 @@
         },
         {
           "tag": "button",
-          "line": 262,
+          "line": 264,
           "className": "\"admin-icon-button\"",
           "type": null,
           "role": null,
@@ -3560,7 +3560,7 @@
         },
         {
           "tag": "button",
-          "line": 266,
+          "line": 268,
           "className": null,
           "type": null,
           "role": null,
@@ -3570,7 +3570,7 @@
         },
         {
           "tag": "button",
-          "line": 274,
+          "line": 276,
           "className": null,
           "type": null,
           "role": null,
@@ -3580,7 +3580,7 @@
         },
         {
           "tag": "button",
-          "line": 283,
+          "line": 285,
           "className": "{`bo-service ${activeService?.label === group.label ? 'is-active' : ''}`.trim()}",
           "type": "\"button\"",
           "role": null,
@@ -3590,7 +3590,7 @@
         },
         {
           "tag": "button",
-          "line": 301,
+          "line": 303,
           "className": null,
           "type": null,
           "role": null,
@@ -3600,7 +3600,7 @@
         },
         {
           "tag": "button",
-          "line": 307,
+          "line": 309,
           "className": null,
           "type": null,
           "role": "\"tab\"",
@@ -3610,7 +3610,7 @@
         },
         {
           "tag": "button",
-          "line": 313,
+          "line": 315,
           "className": null,
           "type": null,
           "role": "\"tab\"",
@@ -3620,7 +3620,7 @@
         },
         {
           "tag": "button",
-          "line": 325,
+          "line": 327,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -3630,7 +3630,7 @@
         },
         {
           "tag": "button",
-          "line": 331,
+          "line": 333,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -3640,7 +3640,7 @@
         },
         {
           "tag": "button",
-          "line": 354,
+          "line": 356,
           "className": "\"bo-rail-service\"",
           "type": "\"button\"",
           "role": null,
@@ -3650,7 +3650,7 @@
         },
         {
           "tag": "a",
-          "line": 363,
+          "line": 365,
           "className": null,
           "type": null,
           "role": null,
@@ -3660,7 +3660,7 @@
         },
         {
           "tag": "button",
-          "line": 367,
+          "line": 369,
           "className": "\"admin-sidebar-overlay\"",
           "type": null,
           "role": null,
@@ -3670,7 +3670,7 @@
         },
         {
           "tag": "button",
-          "line": 390,
+          "line": 392,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -3682,7 +3682,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{\n  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,\n  LogOut, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,\n}",
+          "bindings": "{\n  Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,\n  LogOut, MapPin, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,\n}",
           "line": 36
         }
       ],
@@ -10975,7 +10975,7 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "efe1d9669eebd4705cb833e06ba8039d01f23b10d985ec2ee0746e723de62db8",
+      "sha256": "eb42ef30084a1bcfb0f82bb419c27100789e8f9bbd456b455d532ef16fc689bd",
       "lines": 950,
       "imports": [
         "../../types",
@@ -12279,8 +12279,8 @@
     {
       "file": "client/src/ayrovix/types.ts",
       "domain": "lens",
-      "sha256": "68d1766208c80b509a5f6f55114918eb1e3e9448810e94b2c04926e454dd8200",
-      "lines": 201,
+      "sha256": "6e2ef410bcc739a09d2946973e64b3ecb02a06e3bf68032fec77ef327e89dc7c",
+      "lines": 211,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -15811,7 +15811,7 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "a8894b7c9f29284db94f90608f887ed7a294aa5a462967c68528f9bbb49d1e7a",
+      "sha256": "674b8e1aa7aff255d3688a9ef53575d9ad6c696bd8c57e8be34fa9e8297f1486",
       "lines": 95,
       "imports": [
         "react",
@@ -16510,7 +16510,7 @@
     {
       "file": "client/src/components/ProductDrawer.tsx",
       "domain": "commerce",
-      "sha256": "ff55375a1353b26f0267767c3abfa31a5344e6d4e70bcb003993feec3bc0da1a",
+      "sha256": "f17c2502b9f8f6704e68f31c6ace9a2139f0984c013649bc01d5d88d9711e67d",
       "lines": 659,
       "imports": [
         "react",
@@ -19822,7 +19822,7 @@
     {
       "file": "client/src/styles/public-discovery.css",
       "domain": "discovery-social",
-      "sha256": "5d3ef13eeedc1f33c01126c8f4d866c9a8be41263ddd5812dc7923e6f243de45",
+      "sha256": "74c97a3bfad830f51bd0e5c54bb45dce97297ce0bfa4a488d85479085add5a34",
       "lines": 62,
       "imports": [],
       "exports": [],
@@ -19834,7 +19834,6 @@
         "#00000099",
         "#262626",
         "#2A2A2A",
-        "#333333",
         "#595959",
         "#8A8A8A",
         "#9E3317",

@@ -221,6 +221,20 @@ const LEGACY_RESOURCE_META: Record<string, {
     notes: 'Conservé : la surface publique et 41 cas de tests en dépendent. Consolidation = migration d’écran, pas de donnée.',
     nav: { group: 'Contenu', order: 20, icon: 'ShoppingBag' },
   },
+  'discovery-sources': {
+    // GLOBAL DISCOVERY — le registre des sources remplace la liste fermée historique
+    // (SHEIN/Amazon/TEMU/AliExpress) : une source est une métadonnée administrable.
+    key: 'discovery.sources', module: 'discovery', domain: 'COMMERCE', label: 'Sources de découverte', singular: 'source',
+    description: 'Registre des sources du web mondial : marketplaces, boutiques, marques, revendeurs — domaine, marché, capacités, fiabilité. Une nouvelle source s’enregistre ici, sans réécrire le code.',
+    section: 'discovery-sources', resourceType: 'discovery_source',
+    nav: { group: 'Catalogue', order: 150, icon: 'Globe2' },
+  },
+  'discovery-markets': {
+    key: 'discovery.markets', module: 'discovery', domain: 'COMMERCE', label: 'Marchés', singular: 'marché',
+    description: 'Couche marchés configurable : pays, langue, devise, paramètres de recherche — expansion progressive, sans architecture par région.',
+    section: 'discovery-markets', resourceType: 'discovery_market',
+    nav: { group: 'Catalogue', order: 160, icon: 'MapPin' },
+  },
   promotions: {
     key: 'marketing.promotions', module: 'marketing', domain: 'CONTENT', label: 'Promotions', singular: 'promotion',
     description: 'Campagnes et codes promo. Le moteur de consommation du code reste à écrire (P2.9).',

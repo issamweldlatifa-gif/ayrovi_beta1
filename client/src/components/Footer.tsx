@@ -63,7 +63,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
     <div className="public-footer-inner">
       <div className="public-footer-message">
         {/* Le pied de page est noir : la marque inverse est forcée (le logo du thème est sombre). */}
-        <img className="public-footer-logo" src="/media/logo-ayrovi-light.png" alt="AYROVI" width={132} height={40} />
+        <img className="public-footer-logo" src="/media/logo-ayrovi-lockup-white-orange.svg" alt="AYROVI" height={26} />
         <h2>{introTitle || tr('Vos envies, notre point de départ.', 'رغباتك، نقطة البداية.')}</h2>
         <p dir="auto">{introText || footerAbout || tr('Nos espaces et les informations utiles, au même endroit.', 'أقسامنا والمعلومات اللي تستحقّها، في بلاصة واحدة.')}</p>
       </div>

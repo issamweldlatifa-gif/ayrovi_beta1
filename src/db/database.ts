@@ -36,12 +36,81 @@ function normalizeCustomerPhone(value: unknown): string {
 }
 
 // مخططات الجداول المشتركة بين الإنشاء الأولي والترقيات (أعدها في مكان واحد فقط)
+const PRODUCTS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS products (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  image TEXT NOT NULL DEFAULT '',
+  additional_images TEXT NOT NULL DEFAULT '[]',
+  brand_id TEXT REFERENCES brands(id) ON DELETE SET NULL,
+  brand_name TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  source_url TEXT NOT NULL DEFAULT '',
+  /* source-agnostic: source_platform est une métadonnée libre (registre discovery_sources), jamais une liste fermée */
+  source_platform TEXT NOT NULL DEFAULT 'OTHER',
+  original_price REAL NOT NULL DEFAULT 0,
+  currency TEXT NOT NULL DEFAULT 'EUR',
+  converted_price REAL NOT NULL DEFAULT 0,
+  customs_fee REAL NOT NULL DEFAULT 0,
+  shipping_fee REAL NOT NULL DEFAULT 0,
+  service_fee REAL NOT NULL DEFAULT 0,
+  final_price REAL NOT NULL DEFAULT 0,
+  express_available INTEGER NOT NULL DEFAULT 0,
+  stock_status TEXT NOT NULL DEFAULT 'AVAILABLE' CHECK(stock_status IN ('AVAILABLE','LIMITED','OUT_OF_STOCK')),
+  status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','ACTIVE','INACTIVE','ARCHIVED')),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`;
+const PRODUCTS_INDEXES_SQL = ['CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);'];
+
+/**
+ * GLOBAL DISCOVERY — registre des sources et couche marchés (source-agnostic).
+ * Une source est une MÉTADONNÉE (domaine, type, marché, capacités, fiabilité),
+ * jamais une liste fermée dans le code. Les adaptateurs existants (amazon/shein/
+ * temu/aliexpress) restent des ENTRÉES de ce registre ; toute nouvelle source
+ * découverte par le moteur (SerpApi, recherche web) peut être enregistrée ici
+ * par l'Admin sans réécriture du code.
+ */
+const DISCOVERY_SOURCES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS discovery_sources (
+  id TEXT PRIMARY KEY,
+  source_id TEXT NOT NULL UNIQUE,
+  name TEXT NOT NULL,
+  domain TEXT NOT NULL DEFAULT '',
+  country TEXT NOT NULL DEFAULT '',
+  market TEXT NOT NULL DEFAULT '',
+  source_type TEXT NOT NULL DEFAULT 'MERCHANT' CHECK(source_type IN ('MARKETPLACE','MERCHANT','BRAND','RETAILER','LOCAL_STORE','AGGREGATOR','GENERIC')),
+  language TEXT NOT NULL DEFAULT '',
+  currency TEXT NOT NULL DEFAULT '',
+  capabilities TEXT NOT NULL DEFAULT '{}',
+  reliability INTEGER NOT NULL DEFAULT 50 CHECK(reliability BETWEEN 0 AND 100),
+  status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE','PAUSED','ARCHIVED')),
+  notes TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`;
+const DISCOVERY_MARKETS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS discovery_markets (
+  id TEXT PRIMARY KEY,
+  code TEXT NOT NULL UNIQUE,
+  label TEXT NOT NULL,
+  country TEXT NOT NULL,
+  language TEXT NOT NULL DEFAULT '',
+  currency TEXT NOT NULL DEFAULT '',
+  locale TEXT NOT NULL DEFAULT '',
+  search_params TEXT NOT NULL DEFAULT '{}',
+  shipping_context TEXT NOT NULL DEFAULT '{}',
+  enabled INTEGER NOT NULL DEFAULT 1,
+  display_order INTEGER NOT NULL DEFAULT 100,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+)`;
+
 const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
   order_number TEXT NOT NULL UNIQUE,
   customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
   account_id TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL,
-  source TEXT NOT NULL DEFAULT 'OTHER' CHECK(source IN ('SHEIN','AMAZON','TEMU','ALIEXPRESS','OTHER','MIXED')),
+  /* source-agnostic: la source d'une commande est une métadonnée libre (registre discovery_sources), jamais une liste fermée */
+  source TEXT NOT NULL DEFAULT 'OTHER',
   arrival_id TEXT REFERENCES arrivals(id) ON DELETE SET NULL,
   status TEXT NOT NULL CHECK(status IN ('CREATED','AWAITING_DEPOSIT','AWAITING_PAYMENT_VERIFICATION','CONFIRMED','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_DELIVERY','DELIVERED','CANCELLED')),
   payment_status TEXT NOT NULL DEFAULT 'PENDING' CHECK(payment_status IN ('PENDING','PENDING_VERIFICATION','PAID','PARTIALLY_PAID','FAILED','REJECTED','REFUNDED')),
@@ -703,31 +772,8 @@ export class QatafoDatabase {
       CREATE INDEX IF NOT EXISTS idx_crm_products_arrival_status ON crm_extracted_products(arrival_id, is_current, extraction_status);
       CREATE INDEX IF NOT EXISTS idx_crm_products_job ON crm_extracted_products(job_id);
 
-      CREATE TABLE IF NOT EXISTS products (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        image TEXT NOT NULL DEFAULT '',
-        additional_images TEXT NOT NULL DEFAULT '[]',
-        brand_id TEXT REFERENCES brands(id) ON DELETE SET NULL,
-        brand_name TEXT NOT NULL DEFAULT '',
-        category TEXT NOT NULL DEFAULT '',
-        source_url TEXT NOT NULL DEFAULT '',
-        source_platform TEXT NOT NULL CHECK(source_platform IN ('SHEIN','AMAZON','TEMU','ALIEXPRESS','OTHER')),
-        original_price REAL NOT NULL DEFAULT 0,
-        currency TEXT NOT NULL DEFAULT 'EUR',
-        converted_price REAL NOT NULL DEFAULT 0,
-        customs_fee REAL NOT NULL DEFAULT 0,
-        shipping_fee REAL NOT NULL DEFAULT 0,
-        service_fee REAL NOT NULL DEFAULT 0,
-        final_price REAL NOT NULL DEFAULT 0,
-        express_available INTEGER NOT NULL DEFAULT 0,
-        stock_status TEXT NOT NULL DEFAULT 'AVAILABLE' CHECK(stock_status IN ('AVAILABLE','LIMITED','OUT_OF_STOCK')),
-        status TEXT NOT NULL DEFAULT 'DRAFT' CHECK(status IN ('DRAFT','ACTIVE','INACTIVE','ARCHIVED')),
-        created_at TEXT NOT NULL,
-        updated_at TEXT NOT NULL
-      );
-      CREATE INDEX IF NOT EXISTS idx_products_status ON products(status);
+      ${PRODUCTS_TABLE_SQL};
+      ${PRODUCTS_INDEXES_SQL.join('\n')}
 
       CREATE TABLE IF NOT EXISTS product_arrivals (
         product_id TEXT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -1773,6 +1819,17 @@ export class QatafoDatabase {
     // ترقية جدول الإعدادات لفئات CHANNELS/DESIGN/INTERFACE (القواعد القديمة كانت ترفضها بصمت)
     this.db.exec(SETTINGS_TABLE_SQL);
     this.rebuildTableIfLegacy('settings', "'INTERFACE'", SETTINGS_TABLE_SQL, []);
+    // GLOBAL DISCOVERY — la source redevient une métadonnée libre : les anciennes
+    // contraintes CHECK(SHEIN/AMAZON/TEMU/ALIEXPRESS) bloquaient toute nouvelle
+    // source. Rebuild sans perte vers le même schéma sans CHECK.
+    this.rebuildTableIfLegacy('orders', 'source-agnostic', ORDERS_TABLE_SQL, ORDERS_INDEXES_SQL);
+    this.rebuildTableIfLegacy('products', 'source-agnostic', PRODUCTS_TABLE_SQL, PRODUCTS_INDEXES_SQL);
+    this.db.exec(DISCOVERY_SOURCES_TABLE_SQL);
+    this.db.exec(DISCOVERY_MARKETS_TABLE_SQL);
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_discovery_sources_domain ON discovery_sources(domain);');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_discovery_sources_status ON discovery_sources(status);');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_discovery_markets_enabled ON discovery_markets(enabled, display_order);');
+    this.seedDiscoveryRegistry();
     // فهرس عمود العربون — بعد الترقية (القواعد القديمة تحصل عليه داخل إعادة البناء)
     this.ensurePricingEngine();
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC)');
@@ -1781,6 +1838,12 @@ export class QatafoDatabase {
     this.runOnceDataMigration('payment_methods_default_card_v1', () => {
       this.db.exec(`UPDATE settings SET setting_value='["CARD","FLOUCI","BANK_TRANSFER","POSTE"]',updated_at=datetime('now')
         WHERE setting_key='payment_methods' AND setting_value NOT LIKE '%CARD%'`);
+    });
+    // GLOBAL DISCOVERY — remplace la copie historique du pied de page qui citait
+    // une liste fermée de boutiques (SHEIN/Amazon/TEMU/AliExpress).
+    this.runOnceDataMigration('global_discovery_footer_copy_v1', () => {
+      this.db.exec(`UPDATE settings SET setting_value='Le monde entier, livré en dinars tunisiens.',updated_at=datetime('now')
+        WHERE setting_key='footer_about' AND setting_value LIKE '%SHEIN%'`);
     });
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_cart_account ON cart_items(account_id, updated_at DESC);
@@ -1990,6 +2053,45 @@ export class QatafoDatabase {
       this.db.pragma('foreign_keys = ON');
     }
     console.info(`[DB] تمت ترقية جدول ${table} إلى المخطط الحالي.`);
+  }
+
+  /**
+   * GLOBAL DISCOVERY — amorçage du registre des sources et de la couche marchés.
+   * Idempotent (INSERT OR IGNORE sur les clés naturelles) : les modifications
+   * de l'Admin ne sont jamais écrasées. Les adaptateurs historiques deviennent
+   * des ENTRÉES du registre ; `generic` couvre toute source web non encore
+   * identifiée — le moteur ne dépend plus d'aucune liste fermée.
+   */
+  private seedDiscoveryRegistry(): void {
+    const now = new Date().toISOString();
+    const src = this.db.prepare(`INSERT OR IGNORE INTO discovery_sources
+      (id, source_id, name, domain, country, market, source_type, language, currency, capabilities, reliability, status, notes, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    const sources: Array<[string, string, string, string, string, string, string, string, string, string, number, string, string]> = [
+      ['src_generic', 'generic', 'Marché international', '*', '', 'GLOBAL', 'GENERIC', '', '', '{}', 40, 'ACTIVE', 'Source web par défaut : toute boutique non encore identifiée dans le registre.'],
+      ['src_amazon', 'amazon', 'Amazon', 'amazon.', '', 'GLOBAL', 'MARKETPLACE', 'multi', 'MULTI', '{"productPage":true,"price":true,"image":true,"variants":true,"sku":"ASIN"}', 85, 'ACTIVE', 'Adaptateur d\'analyse produit existant (ASIN, dp/). Toutes les régions Amazon.'],
+      ['src_shein', 'shein', 'SHEIN', 'shein.', '', 'GLOBAL', 'MARKETPLACE', 'multi', 'MULTI', '{"productPage":true,"price":true,"image":true,"variants":true}', 75, 'ACTIVE', 'Adaptateur d\'analyse produit existant (-p-<id>.html).'],
+      ['src_temu', 'temu', 'TEMU', 'temu.', '', 'GLOBAL', 'MARKETPLACE', 'multi', 'MULTI', '{"productPage":true,"price":true,"image":true,"variants":true}', 70, 'ACTIVE', 'Adaptateur d\'analyse produit existant (goods-<id>.html).'],
+      ['src_aliexpress', 'aliexpress', 'AliExpress', 'aliexpress.', '', 'GLOBAL', 'MARKETPLACE', 'multi', 'MULTI', '{"productPage":true,"price":true,"image":true}', 70, 'ACTIVE', 'Analyse génrique de page produit.'],
+    ];
+    for (const row of sources) src.run(...row, now, now);
+
+    const mkt = this.db.prepare(`INSERT OR IGNORE INTO discovery_markets
+      (id, code, label, country, language, currency, locale, search_params, shipping_context, enabled, display_order, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`);
+    const markets: Array<[string, string, string, string, string, string, string, string, string, number, number]> = [
+      ['mkt_tn', 'TN', 'Tunisie', 'TN', 'fr,ar', 'TND', 'fr-TN', '{"gl":"tn","hl":"fr"}', '{}', 1, 10],
+      ['mkt_fr', 'FR', 'France', 'FR', 'fr', 'EUR', 'fr-FR', '{"gl":"fr","hl":"fr"}', '{}', 1, 20],
+      ['mkt_us', 'US', 'États-Unis', 'US', 'en', 'USD', 'en-US', '{"gl":"us","hl":"en"}', '{}', 1, 30],
+      ['mkt_gb', 'GB', 'Royaume-Uni', 'GB', 'en', 'GBP', 'en-GB', '{"gl":"uk","hl":"en"}', '{}', 1, 40],
+      ['mkt_de', 'DE', 'Allemagne', 'DE', 'de', 'EUR', 'de-DE', '{"gl":"de","hl":"de"}', '{}', 1, 50],
+      ['mkt_ca', 'CA', 'Canada', 'CA', 'en,fr', 'CAD', 'en-CA', '{"gl":"ca","hl":"en"}', '{}', 0, 60],
+      ['mkt_ma', 'MA', 'Maroc', 'MA', 'ar,fr', 'MAD', 'ar-MA', '{"gl":"ma","hl":"fr"}', '{}', 0, 70],
+      ['mkt_dz', 'DZ', 'Algérie', 'DZ', 'ar', 'DZD', 'ar-DZ', '{"gl":"dz","hl":"ar"}', '{}', 0, 80],
+      ['mkt_ae', 'AE', 'Émirats', 'AE', 'ar', 'AED', 'ar-AE', '{"gl":"ae","hl":"ar"}', '{}', 0, 90],
+      ['mkt_jp', 'JP', 'Japon', 'JP', 'ja', 'JPY', 'ja-JP', '{"gl":"jp","hl":"ja"}', '{}', 0, 100],
+    ];
+    for (const row of markets) mkt.run(...row, now, now);
   }
 
   private migrateLegacyArrivalClientStores(): void {
@@ -2474,7 +2576,7 @@ export class QatafoDatabase {
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
       }), 'JSON', 'واجهتي — configuration visuelle de l’interface publique'],
-      ['setting_footer_about', 'DESIGN', 'footer_about', 'La plateforme unifiée pour vos achats internationaux en Dinars Tunisiens. Commandez facilement depuis SHEIN, Amazon, TEMU et AliExpress en toute transparence.', 'STRING', 'Texte de présentation du pied de page'],
+      ['setting_footer_about', 'DESIGN', 'footer_about', 'Le monde entier, livré en dinars tunisiens.', 'STRING', 'Texte de présentation du pied de page'],
     ];
     for (const row of settings) insertSetting.run(...row, now);
 
@@ -2894,8 +2996,9 @@ export class QatafoDatabase {
       totals.shipping = Math.round((totals.shipping + localDelivery) * 1000) / 1000;
       totals.total = Math.round((totals.total + localDelivery) * 1000) / 1000;
       const stores = [...new Set(items.map((item) => item.store.toUpperCase()))];
-      const supportedSources = new Set(['SHEIN','AMAZON','TEMU','ALIEXPRESS']);
-      const source = stores.length > 1 ? 'MIXED' : (supportedSources.has(stores[0]) ? stores[0] : 'OTHER');
+      // GLOBAL DISCOVERY — la source d'une commande est une métadonnée libre :
+      // n'importe quelle boutique mondiale, pas une liste fermée.
+      const source = stores.length > 1 ? 'MIXED' : (stores[0] || 'OTHER');
       const snapshot = JSON.stringify({ ...rules, capturedAt: now });
 
       const depositPercent = this.getDepositPercent();

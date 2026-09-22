@@ -74,6 +74,16 @@ export interface AyrovixCandidate {
   ratingCount?: number | null;
   ratingKind?: 'merchant' | 'match';
   match: number;          // 0..99, score de correspondance déterministe
+  /** GLOBAL DISCOVERY — un même produit trouvé chez plusieurs sources du web mondial
+   *  devient UN candidat avec plusieurs offres (jamais quatre doublons à la suite). */
+  offerCount?: number;
+  offers?: Array<{
+    source: string;
+    sourceUrl: string;
+    price: number | null;
+    currency: string | null;
+    priceTnd: number | null;
+  }>;
 }
 
 export interface AyrovixVariantOption {

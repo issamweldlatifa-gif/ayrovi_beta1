@@ -14,7 +14,6 @@ import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
-const SUPPORTED_STORES = new Set(['amazon', 'shein', 'temu', 'aliexpress', 'generic']);
 const PAYMENT_METHODS = new Set<PaymentMethodCode>(['PENDING_SELECTION', 'COD', 'D17', 'FLOUCI', 'CARD', 'BANK_TRANSFER', 'POSTE']);
 const DEFAULT_PAYMENT_METHODS: PaymentMethodCode[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
 
@@ -225,7 +224,9 @@ export function createApiRouter(
 
     if (
       typeof item.title !== 'string' || !item.title.trim() || item.title.length > 500 ||
-      typeof item.store !== 'string' || !SUPPORTED_STORES.has(item.store) ||
+      // GLOBAL DISCOVERY — toute boutique mondiale est acceptée : la source est une
+      // métadonnée valide (slug court), plus une liste fermée de plateformes.
+      typeof item.store !== 'string' || !/^[a-z0-9][a-z0-9._-]{0,63}$/i.test(item.store.trim()) ||
       typeof item.url !== 'string' || item.url.length > 4096 ||
       typeof item.imageUrl !== 'string' || item.imageUrl.length > 4096 ||
       !Number.isFinite(sourcePrice) || sourcePrice <= 0 || sourcePrice > 1_000_000 ||

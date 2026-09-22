@@ -56,12 +56,14 @@ describe('back office shell (P2.0)', () => {
       // `public-nav` (2026-09-22) : la barre publique sous l'en-tête est une ressource du moteur,
       // donc son écran, ses droits et son audit sont ceux du framework — aucun écran dédié.
       expect(descriptors.map((descriptor) => descriptor.section).sort()).toEqual(
-        ['arrivals', 'assistant', 'brands', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories', 'ticker'].sort());
+        ['arrivals', 'assistant', 'brands', 'discovery-markets', 'discovery-sources', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories', 'ticker'].sort());
       // Les colonnes viennent de ResourceConfig : vérifier une colonne = vérifier le moteur.
       const products = descriptors.find((descriptor) => descriptor.section === 'products')!;
       expect(products.fields.map((field) => field.key)).toEqual(
         ['name', 'description', 'image', 'additional_images', 'brand_id', 'brand_name', 'category', 'source_url', 'source_platform', 'original_price', 'currency', 'express_available', 'stock_status', 'status']);
-      expect(products.fields.find((field) => field.key === 'source_platform')!.type).toBe('select');
+      // GLOBAL DISCOVERY — la source d'un produit est un champ libre (toute boutique
+      // mondiale), plus une liste fermée de plateformes.
+      expect(products.fields.find((field) => field.key === 'source_platform')!.type).toBe('text');
       expect(products.fields.find((field) => field.key === 'additional_images')!.type).toBe('list');
       expect(products.fields.find((field) => field.key === 'express_available')!.type).toBe('boolean');
       expect(products.fields.find((field) => field.key === 'original_price')!.type).toBe('number');
@@ -103,7 +105,7 @@ describe('back office shell (P2.0)', () => {
       expect(result.body.data.problems).toEqual([]);
       expect(result.body.data.status).toBe('ok');
       expect(result.body.data.frameworkVersion).toBe(BACK_OFFICE_FRAMEWORK_VERSION);
-      expect(result.body.data.frameworkRendered).toBe(10);
+      expect(result.body.data.frameworkRendered).toBe(12);
     });
   });
 
@@ -139,7 +141,12 @@ describe('back office shell (P2.0)', () => {
       }
       // 2026-09-22 : `public-nav` (barre publique sous l'en-tête) s'ajoute aux surfaces dérivées.
       expect(sections.has('public-nav'), 'section public-nav absente').toBe(true);
-      expect(sections.size).toBe(52);
+      // GLOBAL DISCOVERY : les registres « sources » et « marchés » rejoignent les
+      // surfaces dérivées — la couche de découverte est administrable.
+      for (const section of ['discovery-sources', 'discovery-markets']) {
+        expect(sections.has(section), `section GLOBAL DISCOVERY absente: ${section}`).toBe(true);
+      }
+      expect(sections.size).toBe(54);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -170,12 +177,14 @@ describe('back office shell (P2.0)', () => {
       const crmAdditions = ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues'];
       // 2026-09-22 : la barre publique sous l'en-tête devient une entrée de navigation à part entière.
       const publicNavAdditions = ['public-nav'];
+      // GLOBAL DISCOVERY : registres administrables des sources et des marchés.
+      const globalDiscoveryAdditions = ['discovery-sources', 'discovery-markets'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -196,8 +205,8 @@ describe('back office shell (P2.0)', () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(49);
-      expect(result.body.data.counts).toMatchObject({ sections: 49, visible: 49 });
+      expect(items.length).toBe(51);
+      expect(result.body.data.counts).toMatchObject({ sections: 51, visible: 51 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
@@ -437,7 +446,8 @@ describe('back office shell (P2.0)', () => {
         .filter((descriptor) => descriptor.nav?.icon)
         .map((descriptor) => descriptor.nav!.icon as string);
       // 2026-09-22 : la barre publique sous l'en-tête ajoute une entrée (icône LayoutGrid).
-      expect(declared.length).toBe(49);
+      // GLOBAL DISCOVERY : +2 (Globe2, MapPin — sources et marchés).
+      expect(declared.length).toBe(51);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

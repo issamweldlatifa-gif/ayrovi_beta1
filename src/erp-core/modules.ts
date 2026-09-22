@@ -48,6 +48,10 @@ export const ERP_MODULES: readonly ErpModuleDefinition[] = [
   // pour ne jamais mélanger la gestion de relation et la machine d'ingestion logistique.
   { key: 'crm360', label: 'CRM 360', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/crm', description: 'Fiches relationnelles, contacts, activités, tâches & follow-ups, notes, issues, communications — module relationnel' },
   { key: 'catalog', label: 'Catalogue', section: 'OPERATIONS', status: 'active', basePermission: 'content:read', apiPrefix: '/catalogue', adminSection: 'products', description: 'P2.1 — produit canonique, variantes/SKU, arborescence de catégories, marques, médias, attributs' },
+  // GLOBAL DISCOVERY — la plateforme n'est plus construite autour d'une liste fermée
+  // de boutiques : les sources du web mondial (marketplaces, marchands, marques,
+  // boutiques locales) et les marchés sont des registres administrables.
+  { key: 'discovery', label: 'Découverte globale', section: 'OPERATIONS', status: 'active', basePermission: 'content:read', apiPrefix: '/discovery-sources', adminSection: 'discovery-sources', description: 'Registre des sources et couche marchés — GLOBAL DISCOVERY, source-agnostic' },
   { key: 'inventory', label: 'Stock', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/inventory', adminSection: 'inventory', description: 'P2.2 — lignes de stock par emplacement, journal de mouvements append-only, inventaires physiques avec validation' },
   { key: 'purchasing', label: 'Achats', section: 'OPERATIONS', status: 'active', basePermission: 'commerce:read', apiPrefix: '/purchasing', adminSection: 'purchasing', description: 'P2.3 — fournisseurs, commandes d’achat avec approbation, réceptions partielles et mouvements de stock' },
   { key: 'shipping', label: 'Expéditions', section: 'OPERATIONS', status: 'legacy', basePermission: 'commerce:read', adminSection: 'orders', description: 'Livraisons client + cartons CRM' },

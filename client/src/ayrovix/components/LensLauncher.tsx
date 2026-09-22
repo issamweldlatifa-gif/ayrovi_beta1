@@ -785,7 +785,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                 <label htmlFor="ayrovix-url-input" className="flex items-center gap-3 text-start">
                   <span>
                     <span className="block text-sm font-extrabold text-ink">{tr('Lien du produit', 'رابط المنتج')}</span>
-                    <span className="mt-0.5 block text-xs font-medium text-muted">SHEIN, Zara, Amazon, AliExpress…</span>
+                    <span className="mt-0.5 block text-xs font-medium text-muted">Toutes les boutiques du monde</span>
                   </span>
                 </label>
                 <div className="flex gap-2">

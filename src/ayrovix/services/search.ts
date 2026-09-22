@@ -236,9 +236,54 @@ export async function searchCandidates(
   });
   // D2-10: strict first, lenient PENDING fallback — never return 0 when lens/web has matches
   return filterWithFallback(
-    [...catalog, ...rescored].filter((candidate) => candidate.match >= 20),
+    groupOffers([...catalog, ...rescored].filter((candidate) => candidate.match >= 20)),
     8,
   );
+}
+
+/**
+ * GLOBAL DISCOVERY — un même produit proposé par plusieurs sources du web mondial
+ * devient UN candidat avec plusieurs offres, jamais quatre doublons à la suite.
+ *
+ * Identité produit par signaux disponibles : marque + recouvrement des tokens du
+ * titre (Jaccard ≥ 0.6 ; le modèle/GTIN, quand il est dans le titre, participe
+ * naturellement aux tokens). Le catalogue AYROVI reste à part : c'est l'offre
+ * propre d'AYROVI, pas une offre externe à regrouper.
+ */
+export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
+  const passthrough = candidates.filter((candidate) => candidate.kind !== 'external');
+  const groups: Array<{ rep: AyrovixCandidate; tokens: Set<string>; brand: string; members: AyrovixCandidate[] }> = [];
+  for (const candidate of candidates) {
+    if (candidate.kind !== 'external') continue;
+    const tokens = new Set(tokenize(`${candidate.brand || ''} ${candidate.title}`));
+    const brand = String(candidate.brand || '').toLowerCase().trim();
+    const group = tokens.size >= 2
+      ? groups.find((entry) => {
+          if (entry.brand !== brand) return false;
+          const inter = [...tokens].filter((token) => entry.tokens.has(token)).length;
+          const union = new Set([...tokens, ...entry.tokens]).size;
+          return union > 0 && inter / union >= 0.6;
+        })
+      : undefined;
+    if (group) {
+      group.members.push(candidate);
+      const repHasPrice = group.rep.priceTnd != null;
+      const candHasPrice = candidate.priceTnd != null;
+      if (candidate.match > group.rep.match || (!repHasPrice && candHasPrice && candidate.match >= group.rep.match)) group.rep = candidate;
+    } else {
+      groups.push({ rep: candidate, tokens, brand, members: [candidate] });
+    }
+  }
+  return [
+    ...passthrough,
+    ...groups.map(({ rep, members }) => {
+      if (members.length === 1) return rep;
+      const offers = members
+        .map((member) => ({ source: member.source, sourceUrl: member.sourceUrl, price: member.price, currency: member.currency, priceTnd: member.priceTnd }))
+        .sort((a, b) => (a.priceTnd ?? Number.POSITIVE_INFINITY) - (b.priceTnd ?? Number.POSITIVE_INFINITY));
+      return { ...rep, offerCount: members.length, offers };
+    }),
+  ];
 }
 
 export interface ProviderSearchHealth {

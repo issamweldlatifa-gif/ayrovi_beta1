@@ -399,7 +399,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <p className="relative z-10 my-2 text-xs text-purple-100/90">
-                  {isUploading ? progressMessage : 'Prenez une photo de votre article sur SHEIN, Amazon ou TEMU.'}
+                  {isUploading ? progressMessage : "Photographiez votre article, où qu'il soit en ligne."}
                 </p>
 
                 <div className="relative z-10 pt-2">
@@ -436,7 +436,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </div>
 
                 <p className="text-xs text-purple-100/90 my-2">
-                  {isScraping ? progressMessage : "Copiez l'URL de votre article depuis SHEIN, AliExpress ou Amazon."}
+                  {isScraping ? progressMessage : "Collez l'URL de votre article, depuis n'importe quelle boutique du monde."}
                 </p>
 
                 <form onSubmit={handleScrapeUrl} className="pt-2 space-y-2 relative z-10">
@@ -445,7 +445,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       type="url"
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
-                      placeholder="https://www.shein.com/..."
+                      placeholder="https://www.votre-boutique.com/produit"
                       dir="ltr"
                       disabled={isUploading || isScraping}
                       className="w-full bg-white/15 border border-white/25 focus:border-white rounded-xl px-3 py-2 text-xs text-white placeholder:text-purple-200/70 focus:outline-none ay-number"

@@ -107,7 +107,9 @@ export const resources: Record<string, ResourceConfig> = {
     required: ['name','source_platform','original_price','currency','status'], searchable: ['name','description','brand_name','category','source_platform'],
     sortable: ['name','source_platform','original_price','final_price','stock_status','status','created_at','updated_at'], defaultSort: 'updated_at',
     jsonFields: ['additional_images'],
-    enums: { source_platform: ['SHEIN','AMAZON','TEMU','ALIEXPRESS','OTHER'], currency: ['TND','EUR','USD','GBP','JPY'], stock_status: ['AVAILABLE','LIMITED','OUT_OF_STOCK'], status: ['DRAFT','ACTIVE','INACTIVE','ARCHIVED'] },
+    // GLOBAL DISCOVERY — source_platform est libre : toute boutique mondiale peut être
+    // la source d'un produit (les valeurs historiques restent des données valides).
+    enums: { currency: ['TND','EUR','USD','GBP','JPY'], stock_status: ['AVAILABLE','LIMITED','OUT_OF_STOCK'], status: ['DRAFT','ACTIVE','INACTIVE','ARCHIVED'] },
     softDelete: { status: 'ARCHIVED' },
   },
   promotions: {
@@ -170,6 +172,27 @@ export const resources: Record<string, ResourceConfig> = {
     fields: ['category','question','answer','keywords','priority','active'], required: ['category','answer'],
     searchable: ['question','answer','category'], sortable: ['category','priority','active','created_at'], defaultSort: 'priority',
     jsonFields: ['keywords'], enums: { category: ['FAQ','PREDEFINED_RESPONSE','DELIVERY','PAYMENT','BRAND','ARRIVAL','PROMOTION','GENERAL'] }, softDelete: { active: 0 },
+  },
+  'discovery-sources': {
+    // GLOBAL DISCOVERY — registre des sources : une source (marketplace, boutique,
+    // marque, revendeur, boutique locale) est une MÉTADONNÉE administrable —
+    // domaine, marché, capacités, fiabilité — jamais une liste fermée dans le code.
+    table: 'discovery_sources', module: 'DISCOVERY', prefix: 'discovery-source', permission: 'content:write',
+    fields: ['source_id','name','domain','country','market','source_type','language','currency','capabilities','reliability','status','notes'],
+    required: ['source_id','name','status'], searchable: ['source_id','name','domain','market','notes'],
+    sortable: ['name','domain','market','source_type','reliability','status','updated_at'], defaultSort: 'name',
+    jsonFields: ['capabilities'], enums: { source_type: ['MARKETPLACE','MERCHANT','BRAND','RETAILER','LOCAL_STORE','AGGREGATOR','GENERIC'], status: ['ACTIVE','PAUSED','ARCHIVED'] },
+    softDelete: { status: 'ARCHIVED' },
+  },
+  'discovery-markets': {
+    // GLOBAL DISCOVERY — couche marchés configurable : pays, langue, devise, locale,
+    // paramètres de recherche et contexte logistique. Expansion progressive des
+    // marchés par configuration, jamais une architecture par région.
+    table: 'discovery_markets', module: 'DISCOVERY', prefix: 'discovery-market', permission: 'content:write',
+    fields: ['code','label','country','language','currency','locale','search_params','shipping_context','enabled','display_order'],
+    required: ['code','label','country'], searchable: ['code','label','country'],
+    sortable: ['label','country','currency','enabled','display_order'], defaultSort: 'display_order',
+    jsonFields: ['search_params','shipping_context'], softDelete: { enabled: 0 },
   },
 };
 

@@ -29,33 +29,33 @@
 .public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:#000000;color:#FFFFFF;font-weight:700}
 /* Specificity keeps the admin-compatible footer adapter from repainting this black footer. */
 .ayrovi-app-shell .public-site-footer{background:#000000!important;color:#FFFFFF!important;text-align:center;padding:0 0 calc(var(--ayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom,0px) + 16px);margin-top:32px}
-.public-footer-inner{display:grid;gap:26px;max-width:1000px;margin:auto;padding:34px 22px 6px}
-.public-footer-message{display:grid;gap:12px;justify-items:center}
-.public-footer-logo{width:132px;height:auto;object-fit:contain}
-.public-footer-message h2{font-size:23px;line-height:1.45;font-weight:600;margin:0;color:#FFFFFF;max-width:640px}
-.public-footer-message p{font-size:13px;line-height:1.9;color:#BDBDBD;margin:0;max-width:580px}
-/* Canaux officiels : la zone est prête pour Facebook, Instagram, TikTok et WhatsApp.
-   Un canal non renseigné reste visible mais inerte — jamais un faux compte public. */
-.public-footer-socials{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:20px 26px;padding-top:26px;border-top:1px solid #262626}
-.public-footer-social-title{flex-basis:100%;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#8A8A8A}
-.public-footer-socials>a,.public-footer-socials>span:not(.public-footer-social-title){display:flex;flex-direction:column;align-items:center;gap:8px;min-width:62px;font-size:10px;font-weight:600;color:#BDBDBD;text-decoration:none}
-.public-footer-social-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#FFFFFF;color:#000000;transition:transform .2s ease}
-.public-footer-social-mark svg{width:22px;height:22px}
+.public-footer-inner{display:grid;gap:16px;max-width:1000px;margin:auto;padding:24px 18px 2px}
+.public-footer-message{display:grid;gap:7px;justify-items:center}
+.public-footer-logo{height:26px;width:auto;object-fit:contain}
+.public-footer-message h2{font-size:17px;line-height:1.35;font-weight:600;margin:0;color:#FFFFFF;max-width:520px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+.public-footer-message p{font-size:12.5px;line-height:1.6;color:#BDBDBD;margin:0;max-width:460px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+/* Canaux officiels : grille fixe 4 colonnes — les marques restent sur une seule ligne
+   quel que soit l'écran, jamais de retour à la ligne. Un canal non renseigné reste
+   visible mais inert — jamais un faux compte public. */
+.public-footer-socials{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;gap:6px 22px;padding-top:14px;border-top:1px solid #262626}
+.public-footer-social-title{grid-column:1/-1;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#8A8A8A}
+.public-footer-socials>a,.public-footer-socials>span:not(.public-footer-social-title){display:grid;justify-items:center;gap:5px;font-size:10px;font-weight:600;color:#BDBDBD;text-decoration:none}
+.public-footer-social-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#FFFFFF;color:#000000;transition:transform .2s ease}
+.public-footer-social-mark svg{width:18px;height:18px}
 .public-footer-socials>a:hover .public-footer-social-mark{transform:translateY(-2px)}
 .public-footer-socials>a:focus-visible .public-footer-social-mark{outline:2px solid #FFFFFF;outline-offset:3px}
 .public-footer-social-unavailable{opacity:.45}
 .public-footer-social-unavailable .public-footer-social-mark{background:#2A2A2A;color:#BDBDBD}
-.public-footer-contacts{display:grid;gap:2px;max-width:1000px;margin:2px auto 0;padding:0 0 22px}
-.public-footer-contacts>button,.public-footer-contacts>div{display:flex;align-items:center;justify-content:center;gap:12px;min-height:70px;text-align:start;border:0;border-bottom:1px solid #333333;background:transparent;color:#FFFFFF;padding:12px 0}
+.public-footer-contacts{display:grid;grid-template-columns:repeat(2,1fr);gap:0 18px;max-width:1000px;margin:0 auto;padding:0 0 8px}
+.public-footer-contacts>button,.public-footer-contacts>div{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;text-align:start;border:0;background:transparent;color:#FFFFFF;padding:6px 0}
 .public-footer-contacts>button{cursor:pointer}
 .public-footer-contacts>button:disabled{cursor:default}
-.public-footer-contacts>:last-child{border-bottom:0}
 .public-footer-contacts svg{color:#BDBDBD;flex-shrink:0}
-.public-footer-contacts strong{display:block;font-size:14px;font-weight:700;color:#FFFFFF}
+.public-footer-contacts strong{display:block;font-size:13px;font-weight:700;color:#FFFFFF}
 .public-footer-contacts>:first-child strong{color:#FF7900}
-.public-footer-contacts small{display:block;margin-top:4px;font-size:11px;color:#BDBDBD}
-.public-footer-bottom{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 18px;border-top:1px solid #262626;padding:14px 18px 0;font-size:11px;line-height:1.8;color:#BDBDBD}
+.public-footer-contacts small{display:block;margin-top:2px;font-size:10.5px;color:#BDBDBD}
+.public-footer-bottom{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 16px;border-top:1px solid #262626;padding:10px 16px 0;font-size:11px;line-height:1.7;color:#BDBDBD}
 .public-footer-bottom a{min-height:44px;display:inline-flex;align-items:center}
 .public-site-footer :focus-visible{outline:2px solid #FFFFFF;outline-offset:4px}
 .ay-customer-root:lang(ar) .public-campaign h2,.ay-customer-root:lang(ar) .public-campaign p{line-height:1.5}
-@media(min-width:768px){.public-campaign-inner{padding:30px 34px 20px}.public-campaign-info{inset-inline-end:24px;top:24px}.public-campaign a{font-size:20px;margin-top:22px}.public-page-links{justify-content:center;gap:40px;overflow:visible}.public-page-links a{flex:0 0 auto;min-width:140px;font-size:17px;min-height:64px}.public-standalone-page{padding:24px 32px 56px}.public-footer-inner{padding:44px 32px 10px;gap:30px}.public-footer-socials{gap:26px 34px}.public-footer-contacts{grid-template-columns:repeat(4,1fr);gap:18px}.public-footer-contacts>button,.public-footer-contacts>div{border:0}.public-footer-message h2{font-size:27px}}
+@media(min-width:768px){.public-campaign-inner{padding:30px 34px 20px}.public-campaign-info{inset-inline-end:24px;top:24px}.public-campaign a{font-size:20px;margin-top:22px}.public-page-links{justify-content:center;gap:40px;overflow:visible}.public-page-links a{flex:0 0 auto;min-width:140px;font-size:17px;min-height:64px}.public-standalone-page{padding:24px 32px 56px}.public-footer-inner{padding:32px 32px 6px;gap:20px}.public-footer-socials{gap:8px 30px}.public-footer-contacts{grid-template-columns:repeat(4,1fr);gap:18px}.public-footer-contacts>button,.public-footer-contacts>div{border:0}.public-footer-message h2{font-size:20px}}

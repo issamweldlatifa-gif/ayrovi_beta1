@@ -4,7 +4,7 @@ import multer from 'multer';
 import type { QatafoDatabase } from '../db/database';
 import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
-import { catalogSearch, externalProductSearch, scoreCandidate, searchCandidates } from './services/search';
+import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
@@ -151,8 +151,11 @@ function rememberAuthenticatedHistory(
   }
 }
 
+/** GLOBAL DISCOVERY — les doublons multi-sources deviennent un produit avec
+ *  plusieurs offres AVANT la coupe finale, pour que la limite serve des produits
+ *  distincts et non quatre fois le même. */
 function mergeCandidates(items: AyrovixCandidate[], limit = 8): AyrovixCandidate[] {
-  return filterWithFallback(items, limit);
+  return filterWithFallback(groupOffers(items), limit);
 }
 
 async function searchByCodeOrText(db: QatafoDatabase, value: string): Promise<AyrovixCandidate[]> {

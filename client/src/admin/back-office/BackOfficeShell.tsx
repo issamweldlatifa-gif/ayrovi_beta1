@@ -35,7 +35,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, Clipboard, Eye, FileText, Gift, Globe2, Grid, History, Home, Image, LayoutGrid, LensBox,
-  LogOut, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,
+  LogOut, MapPin, Menu, MessageSquare, Package, PackageCheck, Palette, Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X, Zap,
 } from '../../components/QatafoIcons';
 import { pushUrlPreservingNavigation } from '../../navigation/NavigationHistory';
 import { labels } from './resource-ui';
@@ -59,6 +59,8 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   Bell, ShieldCheck, Package, MessageSquare, Camera, User, Calculator, Grid, History, Settings, Eye, Palette, Zap, CheckCircle2,
   // P2.3 — trois entrées de navigation d'achats ; le sprite partagé reste la seule source d'icônes.
   Truck, Clipboard, PackageCheck,
+  // GLOBAL DISCOVERY — registres des sources et des marchés (web mondial).
+  Globe2, MapPin,
 };
 
 /**
