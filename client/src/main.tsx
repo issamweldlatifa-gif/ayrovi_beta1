@@ -12,9 +12,18 @@ const isAdminPath = window.location.pathname === '/admin' || window.location.pat
 const PublicApp = lazy(() => import('./App').then((module) => ({ default: module.App })));
 const AdminApp = lazy(() => import('./admin/AdminApp').then((module) => ({ default: module.AdminApp })));
 
+/**
+ * Écran d'amorçage AYROVI — même dessin que le chargeur statique de index.html :
+ * l'emblème pulse et une ligne orange balaie pendant que les modules se chargent.
+ * React remplace le contenu statique de #root au premier rendu ; ce fallback prend
+ * le relais sans page blanche ni saut visuel (les styles vivent dans index.html).
+ */
 const loading = (
-  <div className="grid min-h-screen place-items-center bg-white text-sm font-bold text-ink" role="status" aria-live="polite">
-    Chargement d’AYROVI…
+  <div className="ay-boot" role="status" aria-live="polite" aria-label="AYROVI">
+    <div className="ay-boot-box">
+      <img className="ay-boot-mark" src="/media/logo-ayrovi-mark.svg" alt="" />
+      <span className="ay-boot-line" aria-hidden="true" />
+    </div>
   </div>
 );
 

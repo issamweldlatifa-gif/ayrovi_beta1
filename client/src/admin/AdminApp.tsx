@@ -969,7 +969,7 @@ export const AdminApp:React.FC=()=>{
     loadIdentity().then((identity)=>{if(active)setUser(identity);}).catch((e)=>{if(!(e instanceof ApiError&&e.status===401))console.warn(e);}).finally(()=>{if(active)setLoading(false);});
     return()=>{active=false;window.removeEventListener(ADMIN_SESSION_EXPIRED_EVENT,resetExpiredSession);};
   },[]);
-  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png" alt="" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
+  if(loading)return <div className="admin-boot"><img src="/media/logo-ayrovi.png" alt="" className="ay-boot-mark" style={{width:52,height:52,objectFit:'contain'}} /><span/></div>;
   if(!user)return <LoginPage onAuthenticated={setUser}/>;
   // Un seul provider pour tout le back office : contexte, navigation et descripteurs partagés.
   return <BackOfficeProvider><AdminShell user={user} onLogout={async()=>{await logout();setUser(null);}}/></BackOfficeProvider>;
