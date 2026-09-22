@@ -1,0 +1,371 @@
+{
+  "checkedAt": "2026-09-22T12:37:44.721Z",
+  "expectedChips": 0,
+  "today": true,
+  "checks": [
+    {
+      "name": "fr-390 : un seul pied de page",
+      "pass": true,
+      "details": 1
+    },
+    {
+      "name": "fr-390 : pied de page noir",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : quatre canaux, aucun inventé",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : documents légaux complets",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : aucun visuel de marque tierce",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : aucune marque réseau écrite",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : aucun lien externe fabriqué",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : pastilles = moyens réellement encaissables (0)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "name": "fr-390 : l’absence d’encaissement est dite explicitement",
+      "pass": true,
+      "details": "Aucun encaissement en ligne n’est ouvert aujourd’hui."
+    },
+    {
+      "name": "fr-390 : la règle des 20 % reste affichée",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : détail légal atteignable depuis le bloc",
+      "pass": true
+    },
+    {
+      "name": "fr-390 : colonnes adaptées à la largeur",
+      "pass": true,
+      "details": {
+        "columns": 1,
+        "overflow": false,
+        "rtl": false
+      }
+    },
+    {
+      "name": "fr-390 : aucun débordement horizontal",
+      "pass": true,
+      "details": {
+        "columns": 1,
+        "overflow": false,
+        "rtl": false
+      }
+    },
+    {
+      "name": "fr-390 : sens de lecture correct",
+      "pass": true,
+      "details": {
+        "columns": 1,
+        "overflow": false,
+        "rtl": false
+      }
+    },
+    {
+      "name": "fr-390 : aucune exception JavaScript",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "fr-390 : aucune erreur serveur",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "fr-390 : seules les sondes anonymes répondent 401",
+      "pass": true,
+      "details": [
+        "http://127.0.0.1:3000/api/customer/auth/me"
+      ]
+    },
+    {
+      "name": "fr-1360 : un seul pied de page",
+      "pass": true,
+      "details": 1
+    },
+    {
+      "name": "fr-1360 : pied de page noir",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : quatre canaux, aucun inventé",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : documents légaux complets",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : aucun visuel de marque tierce",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : aucune marque réseau écrite",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : aucun lien externe fabriqué",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : pastilles = moyens réellement encaissables (0)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "name": "fr-1360 : l’absence d’encaissement est dite explicitement",
+      "pass": true,
+      "details": "Aucun encaissement en ligne n’est ouvert aujourd’hui."
+    },
+    {
+      "name": "fr-1360 : la règle des 20 % reste affichée",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : détail légal atteignable depuis le bloc",
+      "pass": true
+    },
+    {
+      "name": "fr-1360 : colonnes adaptées à la largeur",
+      "pass": true,
+      "details": {
+        "columns": 3,
+        "overflow": false,
+        "rtl": false
+      }
+    },
+    {
+      "name": "fr-1360 : aucun débordement horizontal",
+      "pass": true,
+      "details": {
+        "columns": 3,
+        "overflow": false,
+        "rtl": false
+      }
+    },
+    {
+      "name": "fr-1360 : sens de lecture correct",
+      "pass": true,
+      "details": {
+        "columns": 3,
+        "overflow": false,
+        "rtl": false
+      }
+    },
+    {
+      "name": "fr-1360 : aucune exception JavaScript",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "fr-1360 : aucune erreur serveur",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "fr-1360 : seules les sondes anonymes répondent 401",
+      "pass": true,
+      "details": [
+        "http://127.0.0.1:3000/api/customer/auth/me"
+      ]
+    },
+    {
+      "name": "ar-390 : un seul pied de page",
+      "pass": true,
+      "details": 1
+    },
+    {
+      "name": "ar-390 : pied de page noir",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : quatre canaux, aucun inventé",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : documents légaux complets",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : aucun visuel de marque tierce",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : aucune marque réseau écrite",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : aucun lien externe fabriqué",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : pastilles = moyens réellement encaissables (0)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "name": "ar-390 : l’absence d’encaissement est dite explicitement",
+      "pass": true,
+      "details": "ما فمّاش خلاص أونلاين مفتوح اليوم."
+    },
+    {
+      "name": "ar-390 : la règle des 20 % reste affichée",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : détail légal atteignable depuis le bloc",
+      "pass": true
+    },
+    {
+      "name": "ar-390 : colonnes adaptées à la largeur",
+      "pass": true,
+      "details": {
+        "columns": 1,
+        "overflow": false,
+        "rtl": true
+      }
+    },
+    {
+      "name": "ar-390 : aucun débordement horizontal",
+      "pass": true,
+      "details": {
+        "columns": 1,
+        "overflow": false,
+        "rtl": true
+      }
+    },
+    {
+      "name": "ar-390 : sens de lecture correct",
+      "pass": true,
+      "details": {
+        "columns": 1,
+        "overflow": false,
+        "rtl": true
+      }
+    },
+    {
+      "name": "ar-390 : aucune exception JavaScript",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "ar-390 : aucune erreur serveur",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "ar-390 : seules les sondes anonymes répondent 401",
+      "pass": true,
+      "details": [
+        "http://127.0.0.1:3000/api/customer/auth/me"
+      ]
+    },
+    {
+      "name": "ar-1360 : un seul pied de page",
+      "pass": true,
+      "details": 1
+    },
+    {
+      "name": "ar-1360 : pied de page noir",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : quatre canaux, aucun inventé",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : documents légaux complets",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : aucun visuel de marque tierce",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : aucune marque réseau écrite",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : aucun lien externe fabriqué",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : pastilles = moyens réellement encaissables (0)",
+      "pass": true,
+      "details": 0
+    },
+    {
+      "name": "ar-1360 : l’absence d’encaissement est dite explicitement",
+      "pass": true,
+      "details": "ما فمّاش خلاص أونلاين مفتوح اليوم."
+    },
+    {
+      "name": "ar-1360 : la règle des 20 % reste affichée",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : détail légal atteignable depuis le bloc",
+      "pass": true
+    },
+    {
+      "name": "ar-1360 : colonnes adaptées à la largeur",
+      "pass": true,
+      "details": {
+        "columns": 3,
+        "overflow": false,
+        "rtl": true
+      }
+    },
+    {
+      "name": "ar-1360 : aucun débordement horizontal",
+      "pass": true,
+      "details": {
+        "columns": 3,
+        "overflow": false,
+        "rtl": true
+      }
+    },
+    {
+      "name": "ar-1360 : sens de lecture correct",
+      "pass": true,
+      "details": {
+        "columns": 3,
+        "overflow": false,
+        "rtl": true
+      }
+    },
+    {
+      "name": "ar-1360 : aucune exception JavaScript",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "ar-1360 : aucune erreur serveur",
+      "pass": true,
+      "details": []
+    },
+    {
+      "name": "ar-1360 : seules les sondes anonymes répondent 401",
+      "pass": true,
+      "details": [
+        "http://127.0.0.1:3000/api/customer/auth/me"
+      ]
+    }
+  ]
+}

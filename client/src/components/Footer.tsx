@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { FacebookBrandIcon, InstagramBrandIcon, TiktokBrandIcon, WhatsappBrandIcon } from '../design/BrandIcon';
 import { Info, MessageSquare, MapPin, User } from './QatafoIcons';
 import { getCommerceConfig } from '../services/publicApi';
+import { useCommercePolicy } from '../commerce/useCommercePolicy';
+import { FooterPaymentMethods } from './FooterPaymentMethods';
 import { useLocale } from '../i18n/LocaleContext';
 
 interface FooterProps {
@@ -46,6 +48,12 @@ export function footerChannelLinks(channels: unknown): Array<{ id: (typeof socia
 
 export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, onOpenAbout, introTitle, introText }) => {
   const { tr } = useLocale();
+  /**
+   * Les moyens de paiement du pied de page sont ceux de la caisse, littéralement : même policy,
+   * même fonction de disponibilité (`commerce/paymentMethods`). Le pied de page ne peut donc pas
+   * promettre un moyen que la caisse refusera — et quand rien n'est ouvert, il le dit.
+   */
+  const commerce = useCommercePolicy(true);
   const [channels, setChannels] = useState<Record<string, unknown>>({});
   const [footerAbout, setFooterAbout] = useState('');
   useEffect(() => {
@@ -67,6 +75,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
         <h2>{introTitle || tr('Vos envies, notre point de départ.', 'رغباتك، نقطة البداية.')}</h2>
         <p dir="auto">{introText || footerAbout || tr('Nos espaces et les informations utiles, au même endroit.', 'أقسامنا والمعلومات اللي تستحقّها، في بلاصة واحدة.')}</p>
       </div>
+      <div className="public-footer-columns">
       <nav className="public-footer-socials" id="nos-canaux" aria-label={tr('Nos canaux officiels', 'قنواتنا الرسمية')}>
         <span className="public-footer-social-title">{tr('Nos canaux officiels', 'قنواتنا الرسمية')}</span>
         {socialDefinitions.map(({ id, label, Icon }) => {
@@ -77,11 +86,17 @@ export const Footer: React.FC<FooterProps> = ({ onOpenAccount, onOpenAssistant, 
             : <span key={id} className="public-footer-social-unavailable" aria-label={tr(`${label} : lien non renseigné`, `${label}: الرابط غير مضبوط`)} title={tr('Lien non renseigné', 'الرابط غير مضبوط')}>{content}</span>;
         })}
       </nav>
+      {/* Signature publique : uniquement ce qui encaisse réellement (voir FooterPaymentMethods). */}
+      <section className="public-footer-payments" id="paiement" aria-labelledby="public-footer-payments-title">
+        <span className="public-footer-eyebrow" id="public-footer-payments-title">{tr('Moyens de paiement', 'طرق الدفع')}</span>
+        <FooterPaymentMethods policy={commerce.policy} failed={commerce.status === 'error'} />
+      </section>
       <div className="public-footer-contacts">
         <button type="button" onClick={onOpenAssistant} disabled={!onOpenAssistant}><MessageSquare size={22} /><span><strong>{tr('Parlons de votre commande', 'نحكيو على طلبك')}</strong><small>{tr('Contact et accompagnement', 'تواصل ومساعدة')}</small></span></button>
         <button type="button" onClick={onOpenAccount} disabled={!onOpenAccount}><User size={22} /><span><strong>{tr('Votre espace', 'فضاءك')}</strong><small>{tr('Commandes et favoris', 'الطلبات والمفضلة')}</small></span></button>
         <div><MapPin size={22} /><span><strong>{tr('En Tunisie', 'في تونس')}</strong><small>{tr('Vos achats en dinars tunisiens', 'مشترياتك بالدينار التونسي')}</small></span></div>
         {onOpenAbout && <button type="button" onClick={onOpenAbout}><Info size={22} /><span><strong>{tr('À propos d’AYROVI', 'عن AYROVI')}</strong><small>{tr('Notre maison, nos engagements', 'قصتنا والتزاماتنا')}</small></span></button>}
+      </div>
       </div>
     </div>
     <div className="public-footer-bottom">

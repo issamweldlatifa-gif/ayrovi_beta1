@@ -51,7 +51,13 @@ describe('order-backed mobile checkout and customer account', () => {
   });
 
   it('never simulates unavailable gateways and keeps manual proof upload in the profile', () => {
-    expect(checkoutSource).toContain("false; // Flouci/D17 stays visible but cannot be selected without a real gateway.");
+    // La règle « jamais de passerelle simulée » ne vit plus dans la caisse : elle vit dans le
+    // module partagé, avec le pied de page. La caisse la consomme, elle ne la recopie pas.
+    const rule = readFileSync('client/src/commerce/paymentMethods.ts', 'utf8');
+    expect(rule).toContain('Un numéro de téléphone');
+    expect(rule).toContain("available: () => false");
+    expect(checkoutSource).toContain("from '../commerce/paymentMethods'");
+    expect(checkoutSource).not.toMatch(/const isPaymentMethodAvailable = \(method: CheckoutPaymentMethod\) => method === 'CARD'/);
     expect(checkoutSource).toContain('aucune transaction ne sera simulée sans passerelle réelle');
     expect(checkoutSource).not.toContain('type="file"');
     expect(accountSource).toContain('type="file"');

@@ -6,6 +6,9 @@ import { CustomerAddress, CustomerCardInitiation, CustomerInfo, CustomerSession,
 import { getSessionId } from '../utils/session';
 import { customerApi } from '../customer/api';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
+// La disponibilité des moyens de paiement n'est plus décidée ici : elle vient du module partagé,
+// le même que celui du pied de page. Une règle, un endroit (voir client/src/commerce/paymentMethods.ts).
+import { isPaymentMethodAvailable as paymentMethodAvailable } from '../commerce/paymentMethods';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -223,13 +226,18 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
   if (!isOpen) return null;
 
-  const isPaymentMethodAvailable = (method: CheckoutPaymentMethod) => method === 'CARD'
-    ? depositInfo?.cardGatewayAvailable
-    : method === 'BANK_TRANSFER'
-      ? Boolean(depositInfo?.bankRib.trim())
-      : method === 'POSTE'
-        ? Boolean(depositInfo?.posteAccount.trim())
-        : false; // Flouci/D17 stays visible but cannot be selected without a real gateway.
+  /**
+   * Le prédicat vient du module partagé (`commerce/paymentMethods`), sur la policy RÉELLE déjà
+   * chargée par la caisse : pas de second objet intermédiaire, pas de copie de règle. La liste
+   * locale `PAYMENT_METHODS` ne garde que l'ORDRE d'affichage.
+   *
+   * Rappel de comportement : la caisse montre les quatre moyens, y compris indisponibles avec leur
+   * motif — c'est pédagogique ici. Le pied de page, lui, n'affiche que ce qui encaisse vraiment.
+   */
+  const isPaymentMethodAvailable = (method: CheckoutPaymentMethod) => {
+    const policy = commerce.policy;
+    return policy !== null && paymentMethodAvailable(policy, method);
+  };
   const hasAvailablePaymentMethod = PAYMENT_METHODS.some((method) => isPaymentMethodAvailable(method));
   const depositBase = Math.round(totalTND * (depositInfo?.percent ?? 0) / 100 * 1000) / 1000;
   const depositDiscount = formData.paymentMethod.toUpperCase() === 'CARD' && isPaymentMethodAvailable('CARD')

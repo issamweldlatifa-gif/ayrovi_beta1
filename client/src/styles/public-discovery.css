@@ -29,7 +29,11 @@
 .public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:#000000;color:#FFFFFF;font-weight:700}
 /* Specificity keeps the admin-compatible footer adapter from repainting this black footer. */
 .ayrovi-app-shell .public-site-footer{background:#000000!important;color:#FFFFFF!important;text-align:center;padding:0 0 calc(var(--ayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom,0px) + 16px);margin-top:32px}
-.public-footer-inner{display:grid;gap:16px;max-width:1000px;margin:auto;padding:24px 18px 2px}
+.public-footer-inner{display:grid;gap:18px;max-width:1120px;margin:auto;padding:26px 18px 2px}
+/* Bande structurante : canaux | moyens de paiement | accès utiles. Le filet supérieur
+   remplace les filets épars — une seule ligne de conduite sur toute la largeur. */
+.public-footer-columns{display:grid;gap:20px;padding-top:18px;border-top:1px solid #262626}
+.public-footer-eyebrow{display:block;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#8A8A8A}
 .public-footer-message{display:grid;gap:7px;justify-items:center}
 .public-footer-logo{height:26px;width:auto;object-fit:contain}
 .public-footer-message h2{font-size:17px;line-height:1.35;font-weight:600;margin:0;color:#FFFFFF;max-width:520px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
@@ -37,8 +41,9 @@
 /* Canaux officiels : grille fixe 4 colonnes — les marques restent sur une seule ligne
    quel que soit l'écran, jamais de retour à la ligne. Un canal non renseigné reste
    visible mais inert — jamais un faux compte public. */
-.public-footer-socials{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;gap:6px 22px;padding-top:14px;border-top:1px solid #262626}
+.public-footer-socials{display:grid;grid-template-columns:repeat(4,auto);justify-content:center;gap:6px 22px}
 .public-footer-social-title{grid-column:1/-1;font-size:10px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:#8A8A8A}
+.public-footer-socials .public-footer-social-title{grid-column:1/-1}
 .public-footer-socials>a,.public-footer-socials>span:not(.public-footer-social-title){display:grid;justify-items:center;gap:5px;font-size:10px;font-weight:600;color:#BDBDBD;text-decoration:none}
 .public-footer-social-mark{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;background:#FFFFFF;color:#000000;transition:transform .2s ease}
 .public-footer-social-mark svg{width:18px;height:18px}
@@ -46,16 +51,50 @@
 .public-footer-socials>a:focus-visible .public-footer-social-mark{outline:2px solid #FFFFFF;outline-offset:3px}
 .public-footer-social-unavailable{opacity:.45}
 .public-footer-social-unavailable .public-footer-social-mark{background:#2A2A2A;color:#BDBDBD}
-.public-footer-contacts{display:grid;grid-template-columns:repeat(2,1fr);gap:0 18px;max-width:1000px;margin:0 auto;padding:0 0 8px}
+.public-footer-contacts{display:grid;grid-template-columns:minmax(0,1fr);gap:0;width:100%;max-width:460px;margin-inline:auto;padding:0}
 .public-footer-contacts>button,.public-footer-contacts>div{display:flex;align-items:center;justify-content:center;gap:10px;min-height:52px;text-align:start;border:0;background:transparent;color:#FFFFFF;padding:6px 0}
+/* Liste alignée : dans une colonne, chaque accès se lit de gauche à droite (ou de droite à gauche en AR). */
+.public-footer-contacts>button,.public-footer-contacts>div{justify-content:flex-start;text-align:start}
 .public-footer-contacts>button{cursor:pointer}
 .public-footer-contacts>button:disabled{cursor:default}
 .public-footer-contacts svg{color:#BDBDBD;flex-shrink:0}
 .public-footer-contacts strong{display:block;font-size:13px;font-weight:700;color:#FFFFFF}
 .public-footer-contacts>:first-child strong{color:#FF7900}
 .public-footer-contacts small{display:block;margin-top:2px;font-size:10.5px;color:#BDBDBD}
+/* Moyens de paiement : le bloc ne parle QUE de ce qui encaisse (voir FooterPaymentMethods).
+   Zone alignée à gauche (liste et chiffres se lisent), largeur bornée pour rester lisible,
+   et centrée en tant que bloc quand le pied de page est centré (mobile). */
+.public-footer-payments{display:grid;gap:10px;justify-items:center;text-align:start;width:100%;max-width:520px;margin-inline:auto}
+.public-footer-payment-state{display:flex;align-items:center;gap:9px;margin:0;font-size:12.5px;line-height:1.6;color:#FFFFFF}
+.public-footer-payment-state strong{font-weight:700}
+.public-footer-payment-dot{width:7px;height:7px;border-radius:50%;background:#FF7900;flex-shrink:0}
+.public-footer-payment-note{margin:0;font-size:11.5px;line-height:1.7;color:#BDBDBD}
+.public-footer-payment-list{display:grid;gap:8px;justify-self:stretch;width:100%;margin:0;padding:0;list-style:none}
+.public-footer-payment{display:flex;align-items:center;gap:11px;min-height:48px;border:1px solid #262626;padding:8px 12px}
+.public-footer-payment-mark{width:32px;height:32px;display:grid;place-items:center;border-radius:50%;background:#FFFFFF;color:#000000;flex-shrink:0}
+.public-footer-payment strong{display:block;font-size:12.5px;font-weight:700;color:#FFFFFF}
+.public-footer-payment small{display:block;margin-top:2px;font-size:10.5px;color:#BDBDBD}
+/* Chiffres qui nous engagent : intitulé minuscule, valeur en clair, filet entre les lignes. */
+.public-footer-payment-rules{display:grid;gap:8px;margin:0;width:100%}
+.public-footer-payment-rules>div+div{border-top:1px solid #262626;padding-top:8px}
+.public-footer-payment-rules dt{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8A8A8A}
+.public-footer-payment-rules dd{margin:3px 0 0;font-size:11.5px;line-height:1.65;color:#FFFFFF}
+.public-footer-payment-link{min-height:44px;display:inline-flex;align-items:center;font-size:11.5px;color:#BDBDBD;text-decoration:underline;text-underline-offset:3px}
+.public-footer-payment-link:hover{color:#FFFFFF}
+
 .public-footer-bottom{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:4px 16px;border-top:1px solid #262626;padding:10px 16px 0;font-size:11px;line-height:1.7;color:#BDBDBD}
 .public-footer-bottom a{min-height:44px;display:inline-flex;align-items:center}
 .public-site-footer :focus-visible{outline:2px solid #FFFFFF;outline-offset:4px}
 .ay-customer-root:lang(ar) .public-campaign h2,.ay-customer-root:lang(ar) .public-campaign p{line-height:1.5}
 @media(min-width:768px){.public-campaign-inner{padding:30px 34px 20px}.public-campaign-info{inset-inline-end:24px;top:24px}.public-campaign a{font-size:20px;margin-top:22px}.public-page-links{justify-content:center;gap:40px;overflow:visible}.public-page-links a{flex:0 0 auto;min-width:140px;font-size:17px;min-height:64px}.public-standalone-page{padding:24px 32px 56px}.public-footer-inner{padding:32px 32px 6px;gap:20px}.public-footer-socials{gap:8px 30px}.public-footer-contacts{grid-template-columns:repeat(4,1fr);gap:18px}.public-footer-contacts>button,.public-footer-contacts>div{border:0}.public-footer-message h2{font-size:20px}}
+/* Grand écran : le pied de page devient une vraie bande de plateforme — signature à gauche,
+   puis trois colonnes séparées par un filet logique (donc correct en RTL comme en LTR). */
+@media(min-width:768px){
+  .public-footer-inner{gap:22px;padding:34px 32px 8px}
+  .public-footer-message{justify-items:start;text-align:start}
+  .public-footer-columns{grid-template-columns:minmax(0,1fr) minmax(0,1.1fr) minmax(0,1fr);gap:30px;align-items:start;text-align:start}
+  .public-footer-socials{justify-content:start}
+  .public-footer-payments{max-width:none;margin-inline:0;justify-items:start;border-inline-start:1px solid #262626;padding-inline:28px}
+  .public-footer-contacts{grid-template-columns:minmax(0,1fr);gap:0;justify-items:start}
+  .public-footer-contacts>button,.public-footer-contacts>div{justify-content:flex-start}
+}

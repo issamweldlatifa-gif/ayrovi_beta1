@@ -2,11 +2,11 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 211,
-    "customerAndSharedFiles": 160,
-    "controls": 426,
-    "iconAliases": 99,
-    "uniqueGlyphs": 96
+    "files": 213,
+    "customerAndSharedFiles": 162,
+    "controls": 427,
+    "iconAliases": 101,
+    "uniqueGlyphs": 98
   },
   "aliases": [
     {
@@ -180,6 +180,14 @@
     {
       "alias": "CreditCard",
       "glyph": "Card"
+    },
+    {
+      "alias": "Bank",
+      "glyph": "Bank"
+    },
+    {
+      "alias": "Mail",
+      "glyph": "Mail"
     },
     {
       "alias": "ReceiptText",
@@ -12291,6 +12299,28 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/commerce/paymentMethods.ts",
+      "domain": "shell-content",
+      "sha256": "b2b19274fb54944a44b1d51ad8f376b44c7b4b72508471c07a9600bcb7243970",
+      "lines": 129,
+      "imports": [
+        "./policy"
+      ],
+      "exports": [
+        "PAYMENT_METHODS",
+        "PAYMENT_METHOD_ORDER",
+        "paymentMethodById",
+        "isPaymentMethodAvailable",
+        "availablePaymentMethods"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/commerce/policy.ts",
       "domain": "shell-content",
       "sha256": "7841292e69f484155a7684098a59872fedd965b1f819874ceb33358884494a45",
@@ -14466,8 +14496,8 @@
     {
       "file": "client/src/components/CheckoutModal.tsx",
       "domain": "commerce",
-      "sha256": "d6a90784d1c98e4f94a07140a18df88806df313865884d8bdc6e67d6dc539efc",
-      "lines": 618,
+      "sha256": "b95a90e9b0d348c01f7c9c66cb50cb384f9e5b3b446336c35f597ad3af108ecb",
+      "lines": 626,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -14477,6 +14507,7 @@
         "../utils/session",
         "../customer/api",
         "../commerce/useCommercePolicy",
+        "../commerce/paymentMethods",
         "./JourneyProgress",
         "../i18n/LocaleContext",
         "../navigation/NavigationHistory",
@@ -14488,7 +14519,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 395,
+          "line": 403,
           "className": null,
           "type": null,
           "role": null,
@@ -14498,7 +14529,7 @@
         },
         {
           "tag": "form",
-          "line": 406,
+          "line": 414,
           "className": "\"checkout-flow-content ay-safe-bottom space-y-4\"",
           "type": null,
           "role": null,
@@ -14508,7 +14539,7 @@
         },
         {
           "tag": "button",
-          "line": 409,
+          "line": 417,
           "className": "\"ay-btn-secondary mt-2 w-full\"",
           "type": "\"button\"",
           "role": null,
@@ -14518,7 +14549,7 @@
         },
         {
           "tag": "button",
-          "line": 431,
+          "line": 439,
           "className": "{`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-line bg-surface text-ink' : 'border-line bg-white text-muted'}`}",
           "type": "\"button\"",
           "role": null,
@@ -14528,7 +14559,7 @@
         },
         {
           "tag": "input",
-          "line": 446,
+          "line": 454,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15\"",
           "type": "\"text\"",
           "role": null,
@@ -14538,7 +14569,7 @@
         },
         {
           "tag": "input",
-          "line": 462,
+          "line": 470,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 read-only:bg-surface/60\"",
           "type": "\"email\"",
           "role": null,
@@ -14548,7 +14579,7 @@
         },
         {
           "tag": "input",
-          "line": 482,
+          "line": 490,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 ay-number\"",
           "type": "\"tel\"",
           "role": null,
@@ -14558,7 +14589,7 @@
         },
         {
           "tag": "select",
-          "line": 503,
+          "line": 511,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15\"",
           "type": null,
           "role": null,
@@ -14568,7 +14599,7 @@
         },
         {
           "tag": "textarea",
-          "line": 521,
+          "line": 529,
           "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 resize-none py-2\"",
           "type": null,
           "role": null,
@@ -14578,7 +14609,7 @@
         },
         {
           "tag": "button",
-          "line": 531,
+          "line": 539,
           "className": "\"ay-btn-secondary w-full text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -14588,7 +14619,7 @@
         },
         {
           "tag": "button",
-          "line": 538,
+          "line": 546,
           "className": "\"ay-btn-secondary min-w-0 px-2 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -14598,7 +14629,7 @@
         },
         {
           "tag": "button",
-          "line": 539,
+          "line": 547,
           "className": "\"ay-btn-cta min-w-0 px-2 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -14608,7 +14639,7 @@
         },
         {
           "tag": "button",
-          "line": 568,
+          "line": 576,
           "className": "{`checkout-payment-option rounded-card border transition-all ${selected ? 'border-line bg-surface text-ink' : available ? 'border-line bg-surface text-muted hover:border-line/50' : 'border-line bg-surface text-muted'}`}",
           "type": "\"button\"",
           "role": null,
@@ -14618,7 +14649,7 @@
         },
         {
           "tag": "input",
-          "line": 604,
+          "line": 612,
           "className": "\"mt-0.5 h-5 w-5 shrink-0 accent-brand\"",
           "type": "\"checkbox\"",
           "role": null,
@@ -14628,7 +14659,7 @@
         },
         {
           "tag": "a",
-          "line": 605,
+          "line": 613,
           "className": "\"font-black text-ink underline\"",
           "type": null,
           "role": null,
@@ -14638,7 +14669,7 @@
         },
         {
           "tag": "button",
-          "line": 608,
+          "line": 616,
           "className": "\"ay-btn-secondary min-w-0 px-2 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -14648,7 +14679,7 @@
         },
         {
           "tag": "button",
-          "line": 609,
+          "line": 617,
           "className": "\"ay-btn-cta min-w-0 px-2 text-xs sm:text-sm\"",
           "type": "\"submit\"",
           "role": null,
@@ -15811,13 +15842,15 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "674b8e1aa7aff255d3688a9ef53575d9ad6c696bd8c57e8be34fa9e8297f1486",
-      "lines": 95,
+      "sha256": "443278073cc80ffa3844d29118fbeefe831c07fefda40ac7c46577d992ac67b6",
+      "lines": 110,
       "imports": [
         "react",
         "../design/BrandIcon",
         "./QatafoIcons",
         "../services/publicApi",
+        "../commerce/useCommercePolicy",
+        "./FooterPaymentMethods",
         "../i18n/LocaleContext"
       ],
       "exports": [
@@ -15828,7 +15861,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 76,
+          "line": 85,
           "className": null,
           "type": null,
           "role": null,
@@ -15838,7 +15871,7 @@
         },
         {
           "tag": "button",
-          "line": 81,
+          "line": 95,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15848,7 +15881,7 @@
         },
         {
           "tag": "button",
-          "line": 82,
+          "line": 96,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15858,7 +15891,7 @@
         },
         {
           "tag": "button",
-          "line": 84,
+          "line": 98,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15868,7 +15901,7 @@
         },
         {
           "tag": "a",
-          "line": 89,
+          "line": 104,
           "className": null,
           "type": null,
           "role": null,
@@ -15878,7 +15911,7 @@
         },
         {
           "tag": "a",
-          "line": 90,
+          "line": 105,
           "className": null,
           "type": null,
           "role": null,
@@ -15888,7 +15921,7 @@
         },
         {
           "tag": "a",
-          "line": 91,
+          "line": 106,
           "className": null,
           "type": null,
           "role": null,
@@ -15902,6 +15935,45 @@
           "module": "./QatafoIcons",
           "bindings": "{ Info, MessageSquare, MapPin, User }",
           "line": 3
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/components/FooterPaymentMethods.tsx",
+      "domain": "shell-content",
+      "sha256": "4b9a3a3ce24e29a787be00647e917c2b3f669bd14dac521c8ca40be56609a34f",
+      "lines": 101,
+      "imports": [
+        "react",
+        "../i18n/LocaleContext",
+        "../commerce/paymentMethods",
+        "../commerce/policy",
+        "./QatafoIcons"
+      ],
+      "exports": [
+        "FooterPaymentMethods"
+      ],
+      "controls": [
+        {
+          "tag": "a",
+          "line": 98,
+          "className": "\"public-footer-payment-link\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "./QatafoIcons",
+          "bindings": "{ Bank, CreditCard, Mail, Phone }",
+          "line": 5
         }
       ],
       "inlineSvg": [],
@@ -16008,8 +16080,8 @@
     {
       "file": "client/src/components/icons/ayrovi/catalog.tsx",
       "domain": "shared-design",
-      "sha256": "bdd5ca5732ef74f148ff3f760b7179f193a656c9fd2b3e31f89a48e461386065",
-      "lines": 101,
+      "sha256": "7a50987ede3ebd0072119f8e6312d2c15aaec9f0238be4bb027af3f2bb09a15d",
+      "lines": 103,
       "imports": [
         "./AyroviIcon"
       ],
@@ -16055,6 +16127,8 @@
         "AyroviGift",
         "AyroviStar",
         "AyroviCard",
+        "AyroviBank",
+        "AyroviMail",
         "AyroviReceipt",
         "AyroviTruck",
         "AyroviCalculator",
@@ -16823,8 +16897,8 @@
     {
       "file": "client/src/components/QatafoIcons.tsx",
       "domain": "shared-design",
-      "sha256": "4e32b563d888160bc434e06035d6f9e41e288d26884ad71a3519314ff48a17df",
-      "lines": 126,
+      "sha256": "fce7540d0b89a6c0014af811760424bd54998409acf6a3c775c26df13c93e19b",
+      "lines": 128,
       "imports": [
         "./icons/ayrovi",
         "./icons/ayrovi/catalog"
@@ -16873,6 +16947,8 @@
         "Gift",
         "Star",
         "CreditCard",
+        "Bank",
+        "Mail",
         "ReceiptText",
         "Truck",
         "Calculator",
@@ -19824,8 +19900,8 @@
     {
       "file": "client/src/styles/public-discovery.css",
       "domain": "discovery-social",
-      "sha256": "74c97a3bfad830f51bd0e5c54bb45dce97297ce0bfa4a488d85479085add5a34",
-      "lines": 62,
+      "sha256": "4db797794e2b8e459092751ecd4f11257764d192277563575bd11e1c7d1a2869",
+      "lines": 101,
       "imports": [],
       "exports": [],
       "controls": [],

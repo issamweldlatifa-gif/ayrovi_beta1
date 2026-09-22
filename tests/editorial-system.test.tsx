@@ -25,7 +25,12 @@ describe('editorial identity, generated from one versioned source', () => {
     const expected = [...oldCatalogue.matchAll(/createAyroviIcon\('([^']+)'/g)].map(m => m[1]).sort();
     expect(names.slice().sort()).toEqual(expected);
     for (const m of aliases.matchAll(/export const \w+ = I\.Ayrovi(\w+);/g)) expect(names).toContain(m[1]);
-    expect(names).toHaveLength(96);
+    // La famille est un système fermé : toute géométrie déclarée doit être joignable depuis la
+    // porte d'entrée unique. Un dessin orphelin n'est pas un ajout, c'est un doublon en puissance.
+    const published = new Set([...aliases.matchAll(/export const \w+ = I\.Ayrovi(\w+);/g)].map(m => m[1]));
+    expect(names.filter(name => !published.has(name))).toEqual([]);
+    // 98 = 96 concepts d'origine + Bank (virement) + Mail (transfert postal), ajoutés et exportés.
+    expect(names).toHaveLength(98);
   });
   it('defines the area budget, not alpha opacity, and square geometry', () => {
     expect(identity.orangeAreaLimit).toBe(.03);
