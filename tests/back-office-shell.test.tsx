@@ -27,7 +27,7 @@ const NAVIGATION: BackOfficeNavigation = {
     {
       label: 'Vue générale', domain: 'ERP', items: [
         { section: 'dashboard', label: 'Tableau de bord', description: 'Activité', icon: 'Home', group: 'Vue générale', domain: 'ERP', moduleKey: 'dashboard', moduleStatus: 'active', surface: 'custom', navPermission: 'dashboard:read', permitted: true },
-        { section: 'users', label: 'Utilisateurs', description: 'Comptes', icon: 'User', group: 'Vue générale', domain: 'ERP', moduleKey: 'users', moduleStatus: 'active', surface: 'custom', navPermission: 'users:read', permitted: true },
+        { section: 'users', label: 'Utilisateurs', description: 'Comptes', icon: 'User', group: 'Vue générale', domain: 'COMMERCE', moduleKey: 'users', moduleStatus: 'active', surface: 'custom', navPermission: 'users:read', permitted: true },
       ],
     },
     {
@@ -113,35 +113,72 @@ const renderShell = (renderPage: (ctx: any) => React.ReactNode) => renderToStati
 );
 
 describe('BackOfficeShell — navigation pilotée par le registre', () => {
-  it('affiche les groupes et entrées renvoyés par le serveur, avec le statut legacy', () => {
+  it('affiche les services du serveur dans la barre de service et le rail du modèle A', () => {
     const markup = renderShell(() => <div>page</div>);
+    // Barre 2 : les services = les groupes de la navigation serveur, avec leur nombre d'écrans.
+    expect(markup).toContain('Services de la console');
     expect(markup).toContain('Vue générale');
+    expect(markup).toContain('Catalogue');
+    // Rail : uniquement les écrans du service actif (ici « Vue générale »), donc pas de « Produits ».
+    expect(markup).toContain('Écrans — Vue générale');
     expect(markup).toContain('Tableau de bord');
     expect(markup).toContain('Utilisateurs');
-    expect(markup).toContain('Produits');
+    expect(markup).not.toContain('>Produits<');
+    // L'écran actif est marqué, et le pied de rail garde la version du framework.
     expect(markup).toContain('is-active');
-    expect(markup).toContain('legacy');
-    expect(markup).toContain('doublon');
     expect(markup).toContain('framework p2.0');
   });
 
-  it('expose le DomainSwitcher avec les compteurs du registre, jamais une liste figée', () => {
+  it('ne recopie aucun écran deux fois dans le rail', () => {
     const markup = renderShell(() => <div>page</div>);
-    expect(markup).toContain('Domaines du back office');
+    const rail = markup.match(/<nav aria-label="Écrans[^"]*"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(rail, 'le rail doit être identifiable').not.toBe('');
+    for (const label of ['Tableau de bord', 'Utilisateurs']) {
+      expect((rail.match(new RegExp(label, 'g')) ?? []).length, `${label} ne doit apparaître qu'une fois`).toBe(1);
+    }
+    // L'ancien bloc « Au quotidien » recopiait quatre écrans déjà présents : il a été retiré.
+    expect(markup).not.toContain('Au quotidien');
+    expect(markup).not.toContain('bo-nav-quick');
+  });
+
+  it('range le vocabulaire d’atelier dans l’infobulle, plus dans le menu', () => {
+    // L'écran legacy vit dans le service « Catalogue » : on l'ouvre pour l'avoir sous les yeux.
+    withLocation('?section=products', () => {
+      const markup = renderShell(() => <div>page</div>);
+      // Plus de pastille « legacy » / « doublon » affichée à l'opérateur…
+      expect(markup).not.toContain('bo-tag');
+      // …mais l'information n'est pas perdue : elle est dans l'infobulle de l'entrée.
+      expect(markup).toContain('ancienne surface conservée');
+      expect(markup).toContain('maître : catalogue-products');
+    });
+  });
+
+  it('expose le filtre de domaine quand le service mélange les domaines, avec les compteurs du service', () => {
+    const markup = renderShell(() => <div>page</div>);
+    expect(markup).toContain('Domaine du back office');
     expect(markup).toContain('Commerce');
-    expect(markup).toContain('2/3');
     expect(markup).toContain('Tous');
+    // Le compteur est celui du service affiché, pas un total global trompeur.
+    expect(markup).toContain('>ERP</span><small>1</small>');
+    expect(markup).toContain('>Commerce</span><small>1</small>');
   });
 
   it('place les modules planifiés hors navigation : visibles comme roadmap, jamais cliquables', () => {
     const markup = renderShell(() => <div>page</div>);
-    const nav = markup.match(/<nav[\s\S]*?<\/nav>/)?.[0] ?? '';
-    expect(nav).toContain('Modules à venir');
-    expect(nav).toContain('Comptabilité');
+    const rail = markup.match(/<nav aria-label="Écrans[^"]*"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(rail).toContain('Modules à venir');
+    expect(rail).toContain('Comptabilité');
     // L'entrée de navigation doit rester absente : un module sans écran n'est pas une route.
     const links = [...NAVIGATION.groups.flatMap((group) => group.items)].map((item) => item.section);
     expect(links).not.toContain('accounting');
     expect(markup).toContain('bo-roadmap-item');
+  });
+
+  it('garde le « où aller ensuite » sans dupliquer les écrans : les autres services sont listés', () => {
+    const markup = renderShell(() => <div>page</div>);
+    const rail = markup.match(/<nav aria-label="Écrans[^"]*"[\s\S]*?<\/nav>/)?.[0] ?? '';
+    expect(rail).toContain('Autres services');
+    expect(rail).toContain('Catalogue');
   });
 
   it('garde le deep-link ?section=…&request=… et le transmet à la page', () => {

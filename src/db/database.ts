@@ -1651,6 +1651,27 @@ export class QatafoDatabase {
       })();
     }
 
+    // Réparation ponctuelle des libellés arabes de la barre publique (2026-09-22).
+    // Jusqu'ici `labelAr` était la copie du libellé français : un visiteur qui lisait le site en
+    // arabe voyait « Arrivage », « Gift & Cards », « Magazine » en latin, alors que le reste de
+    // la page était traduit. Les lignes restées identiques au contrat sont réalignées ; une ligne
+    // renommée par l'Admin (« Nos arrivages », « عروض الشتاء ») ne correspond plus au contrat et
+    // n'est jamais touchée. Réparation UNE SEULE FOIS — mécanisme `runOnceDataMigration` existant.
+    this.runOnceDataMigration('public_nav_arabic_labels_v1', () => {
+      const at = new Date().toISOString();
+      for (const destination of PUBLIC_NAV_DESTINATIONS) {
+        // Comparaison volontairement défensive : une future destination dont la traduction reste
+        // à écrire (AR = FR) ne doit pas être « traduite » par une valeur vide.
+        const labelAr = String(destination.labelAr);
+        const labelFr = String(destination.labelFr);
+        if (!labelAr || labelAr === labelFr) continue;
+        this.run(
+          'UPDATE public_nav_items SET label_ar=?, updated_at=? WHERE destination=? AND label_ar=? AND label_fr=?',
+          labelAr, at, destination.id, labelFr, labelFr,
+        );
+      }
+    });
+
     // Existing installations need additive migrations because CREATE TABLE IF NOT EXISTS
     // does not add new ownership columns to cart/order tables.
     this.ensureColumn('cart_items', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE CASCADE');

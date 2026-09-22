@@ -1,0 +1,461 @@
+/* ══════════════════════════════════════════════════════════════════════════════════════════════
+   AYROVI — Admin « Console opérationnelle » (modèle A retenu le 2026-09-22)
+
+   Ce que fait cette feuille, et pourquoi elle est SEULE à le faire :
+   • Les 49 écrans de l'admin partagent une coquille et des primitives (`admin.css`, plus les
+     composants de `client/src/design/admin/`). Repeindre la coquille et les primitives suffit
+     donc à faire adopter le modèle A à TOUS les écrans à la fois, sans réécrire 49 fois la même
+     table. C'est une adoption par le socle, pas une décoration écran par écran.
+   • Elle est ADDITIVE : elle est chargée après `admin.css` et ne supprime rien. Les écrans qui
+     n'ont pas encore été revus continuent de fonctionner — ils héritent simplement de la bonne
+     densité, des bons filets et des bons rayons.
+
+   Ce que le modèle A apporte (conventions d'Amazon Seller Central) :
+   1. DEUX BARRES de chrome. Barre 1 (encre) : identité, recherche globale, compte. Barre 2 :
+      navigation par SERVICE. Le rail ne montre que le service actif — fini la liste de 49 entrées.
+   2. DENSITÉ COMPACTE par défaut : lignes de 34 px, en-têtes de table en petites capitales, tout
+      tient à l'écran sans zoom.
+   3. FORME OUTIL : rayons 3–4 px, filets de 1 px, aucun dégradé, aucune ombre sur les cartes.
+      Le contenu prime sur le cadre.
+   4. UNE SEULE ACTION FORTE par écran (bouton primaire), le reste en boutons secondaires.
+   5. Les files d'attente et les états vides disent quoi faire, pas seulement « aucune donnée ».
+
+   La PALETTE reste celle d'AYROVI (charte « Monochrome Premium × Orange d'action ») : ce n'est pas
+   Amazon qu'on copie, ce sont ses conventions de poste de travail. L'orange AYROVI #FF6900 reste le
+   seul déclencheur d'action ; les gris sont ceux de l'échelle neutre du dépôt.
+   ═════════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Rôles du modèle A, portés par la racine de la coquille seulement ─────────────────────── */
+.bo-shell {
+  /* Chrome */
+  --bo-bar: #111110;          /* barre 1 — encre AYROVI */
+  --bo-bar-2: #262626;        /* barre 2 — un pas plus clair, repère de service */
+  --bo-bar-ink: #EDEDED;
+  --bo-bar-muted: #A3A3A3;
+  --bo-rail: #FFFFFF;
+  --bo-canvas: #F2F3F4;       /* page */
+  --bo-card: #FFFFFF;
+  --bo-line: #E3E5E7;
+  --bo-line-soft: #EFF0F1;
+  --bo-line-firm: #D5D9D9;
+  --bo-ink: #111110;
+  --bo-muted: #5A5F66;
+  --bo-soft: #6B7076;
+  --bo-sunken: #F6F7F8;
+  --bo-hover: #F3F3F4;
+  --bo-accent: #FF6900;       /* action unique — identité AYROVI */
+  --bo-accent-soft: #FFF3EA;
+  --bo-ok: #0E7C4A;
+  --bo-ok-soft: #EAF4EF;
+  --bo-warn: #946200;
+  --bo-warn-soft: #FBF3E2;
+  --bo-danger: #B3271E;
+  --bo-danger-soft: #FBEDEB;
+  --bo-info: #1C5DB5;
+  --bo-info-soft: #EAF1FA;
+  /* Géométrie */
+  --bo-row: 34px;
+  --bo-radius: 4px;
+  --bo-radius-sm: 3px;
+  --bo-bar-h: 52px;
+  --bo-service-h: 40px;
+  --bo-rail-w: 252px;
+
+  /* Report sur les rôles historiques : c'est ce report qui fait hériter les 49 écrans. */
+  --admin-surface-page: var(--bo-canvas);
+  --admin-surface-card: var(--bo-card);
+  --admin-surface-sunken: var(--bo-sunken);
+  --admin-surface-soft: var(--bo-sunken);
+  --admin-surface-tint: var(--bo-hover);
+  --admin-line: var(--bo-line);
+  --admin-line-soft: var(--bo-line-soft);
+  --admin-line-firm: var(--bo-line-firm);
+  --admin-ink: var(--bo-ink);
+  --admin-ink-muted: var(--bo-muted);
+  --admin-text-soft: var(--bo-soft);
+  --admin-rail: var(--bo-rail);
+  --admin-on-dark: #FFFFFF;
+  --admin-muted: var(--bo-muted);
+  --admin-bg: var(--bo-canvas);
+  --admin-card: var(--bo-card);
+  --admin-text: var(--bo-ink);
+  --admin-sidebar: var(--bo-rail);
+}
+
+/* Thème sombre : la coquille garde la géométrie du modèle A et reprend les neutres sombres.
+   Les mêmes rôles sont redéfinis sur le même élément (spécificité supérieure) : rien d'autre
+   à maintenir, aucune règle dupliquée par composant. */
+html[data-theme='dark'] .bo-shell {
+  --bo-bar: #0A0A0A;
+  --bo-bar-2: #1A1A1A;
+  --bo-bar-ink: #F2F2F2;
+  --bo-bar-muted: #A8A8A8;
+  --bo-rail: #141414;
+  --bo-canvas: #0F0F0F;
+  --bo-card: #1A1A1A;
+  --bo-line: #2C2C2C;
+  --bo-line-soft: #242424;
+  --bo-line-firm: #383838;
+  --bo-ink: #F5F5F5;
+  --bo-muted: #B4B4B4;
+  --bo-soft: #A0A0A0;
+  --bo-sunken: #202020;
+  --bo-hover: #242424;
+  --bo-accent-soft: #2A1B10;
+  --bo-ok-soft: #12271E;
+  --bo-warn-soft: #2A2314;
+  --bo-danger-soft: #2A1816;
+  --bo-info-soft: #16202B;
+}
+
+/* ── 2. Chrome : les deux barres ────────────────────────────────────────────────────────────── */
+.bo-shell { background: var(--bo-canvas); }
+
+.bo-topbar {
+  position: sticky; top: 0; z-index: 50;
+  min-height: var(--bo-bar-h);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 18px;
+  background: var(--bo-bar);
+  color: var(--bo-bar-ink);
+}
+.bo-topbar-brand { display: flex; align-items: center; gap: 10px; flex: none; }
+.bo-topbar-brand img { width: 26px; height: 26px; object-fit: contain; }
+.bo-topbar-brand div { display: flex; flex-direction: column; line-height: 1.15; }
+.bo-topbar-brand strong { font-size: 14px; font-weight: 800; letter-spacing: .16em; }
+.bo-topbar-brand span { font-size: 8.5px; letter-spacing: .18em; color: var(--bo-bar-muted); }
+.bo-topbar-search { flex: 1 1 320px; max-width: 620px; min-width: 0; display: flex; }
+.bo-topbar-actions { margin-inline-start: auto; display: flex; align-items: center; gap: 4px; flex: none; }
+.bo-topbar .admin-icon-button { color: var(--bo-bar-ink); border-color: transparent; }
+.bo-topbar .admin-icon-button:hover { background: rgba(255, 255, 255, .12); border-color: transparent; color: #FFFFFF; }
+.bo-topbar .admin-search { background: #FFFFFF; border-color: #FFFFFF; color: #4A4A4A; }
+.bo-topbar .admin-search input { color: #111110; }
+.bo-topbar .admin-search button, .bo-topbar .admin-search svg { color: #5A5F66; }
+.bo-topbar .admin-profile > button span strong { color: #FFFFFF; }
+.bo-topbar .admin-profile > button span small, .bo-topbar .admin-profile > button i { color: var(--bo-bar-muted); }
+.bo-topbar .admin-profile > button i { background: rgba(255, 255, 255, .14); color: #FFFFFF; }
+
+.bo-servicebar {
+  position: sticky; top: var(--bo-bar-h); z-index: 49;
+  display: flex; align-items: stretch; gap: 0;
+  padding: 0 10px;
+  background: var(--bo-bar-2);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.bo-servicebar::-webkit-scrollbar { height: 3px; }
+.bo-servicebar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, .28); }
+.bo-service {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: var(--bo-service-h); padding: 0 14px;
+  border: 0; border-bottom: 3px solid transparent;
+  background: transparent; color: var(--bo-bar-ink);
+  font: inherit; font-size: 12.5px; font-weight: 600; white-space: nowrap; cursor: pointer;
+}
+.bo-service:hover { background: rgba(255, 255, 255, .10); }
+.bo-service small { font-size: 10px; font-weight: 700; color: var(--bo-bar-muted); }
+.bo-service.is-active { color: #FFFFFF; font-weight: 800; border-bottom-color: var(--bo-accent); background: rgba(255, 255, 255, .06); }
+.bo-service.is-active small { color: #FFFFFF; }
+
+/* ── 3. Rail : le service actif, et rien d'autre ────────────────────────────────────────────── */
+.bo-shell .admin-sidebar {
+  top: calc(var(--bo-bar-h) + var(--bo-service-h));
+  width: var(--bo-rail-w);
+  background: var(--bo-rail);
+  border-inline-end: 1px solid var(--bo-line);
+  color: var(--bo-ink);
+}
+.bo-shell .admin-workspace { margin-inline-start: var(--bo-rail-w); }
+
+.bo-rail-head {
+  flex: none; display: flex; align-items: center; gap: 8px;
+  padding: 12px 14px; border-bottom: 1px solid var(--bo-line);
+}
+.bo-rail-head > div { display: flex; flex-direction: column; min-width: 0; }
+.bo-rail-head strong { font-size: 13px; font-weight: 800; letter-spacing: -.01em; }
+.bo-rail-head span { font-size: 10.5px; color: var(--bo-muted); }
+.bo-rail-head button {
+  display: none; margin-inline-start: auto; border: 0; background: none; color: var(--bo-muted); cursor: pointer;
+}
+
+/* Filtre de domaine : rendu UNIQUEMENT quand le service mélange plusieurs domaines (sinon c'est
+   un contrôle qui ne filtre rien — le genre de chose en trop qu'on enlève). */
+.bo-domains {
+  flex: none; display: flex; gap: 6px; padding: 8px 12px; overflow-x: auto;
+  border-bottom: 1px solid var(--bo-line-soft); background: var(--bo-rail);
+}
+.bo-domains button {
+  display: inline-flex; align-items: center; gap: 5px; flex: none;
+  padding: 3px 9px; border: 1px solid var(--bo-line-firm); border-radius: 999px;
+  background: var(--bo-card); color: var(--bo-muted);
+  font: inherit; font-size: 10.5px; font-weight: 700; cursor: pointer;
+}
+.bo-domains button:hover { border-color: var(--bo-ink); color: var(--bo-ink); }
+.bo-domains button[aria-selected='true'] { background: var(--bo-ink); border-color: var(--bo-ink); color: #FFFFFF; }
+.bo-domains button small { font-size: 9.5px; font-weight: 700; opacity: .75; }
+
+.bo-shell .admin-sidebar nav { padding: 10px 8px 18px; }
+.bo-shell .admin-sidebar nav > div { margin-bottom: 14px; }
+.bo-shell .admin-sidebar nav > div > span {
+  padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+}
+.bo-shell .admin-sidebar nav button {
+  height: 32px; gap: 10px; padding: 0 10px;
+  border-radius: var(--bo-radius-sm);
+  color: #3B4148; font-size: 12.5px; font-weight: 550;
+}
+html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
+.bo-shell .admin-sidebar nav button svg { width: 16px; height: 16px; flex: none; }
+.bo-shell .admin-sidebar nav button:hover { background: var(--bo-hover); color: var(--bo-ink); }
+.bo-shell .admin-sidebar nav button.is-active { background: var(--bo-accent-soft); color: var(--bo-ink); font-weight: 700; }
+.bo-shell .admin-sidebar nav button.is-active i {
+  inset-inline-start: 0; inset-inline-end: auto; width: 3px; height: 18px; border-radius: 0 2px 2px 0;
+}
+/* Le vocabulaire d'atelier (legacy / doublon) sort du rail : il reste dans l'infobulle et dans le
+   bandeau « ancienne surface ». Un opérateur n'a pas à lire notre dette technique dans son menu. */
+.bo-shell .admin-sidebar nav .bo-tag { display: none; }
+.bo-shell .bo-nav-advanced { margin-bottom: 14px; }
+.bo-shell .bo-nav-advanced summary {
+  padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+}
+.bo-shell .bo-nav-advanced summary em {
+  background: var(--bo-hover); color: var(--bo-muted); border-radius: 999px; padding: 0 6px; font-size: 9.5px;
+}
+.bo-shell .bo-roadmap { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bo-line-soft); }
+.bo-shell .bo-roadmap > span {
+  display: block; padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+}
+.bo-shell .bo-roadmap-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; color: var(--bo-muted); font-size: 12px; }
+.bo-shell .bo-roadmap-item strong { font-weight: 600; }
+.bo-shell .bo-roadmap-item em {
+  margin-inline-start: auto; font-style: normal; font-size: 9.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .08em; color: var(--bo-soft);
+}
+.bo-shell .bo-nav-state { padding: 10px 12px; color: var(--bo-muted); font-size: 12px; }
+.bo-shell .bo-nav-state.is-error { color: var(--bo-danger); }
+.bo-shell .bo-nav-state button { border: 0; background: none; color: inherit; font: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
+
+/* Autres services : le rail ne déroule plus les 49 écrans, mais garde le « où aller ensuite ».
+   Même payload serveur — aucune entrée nouvelle, aucun doublon d'écran. */
+.bo-shell .bo-rail-services { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--bo-line-soft); }
+.bo-shell .bo-rail-services > span {
+  display: block; padding: 0 10px 6px; color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .14em;
+}
+.bo-shell .bo-rail-service {
+  width: 100%; height: 30px; display: flex; align-items: center; gap: 8px;
+  padding: 0 10px; border: 0; border-radius: var(--bo-radius-sm);
+  background: transparent; color: var(--bo-muted); font: inherit; font-size: 12.5px; font-weight: 600;
+  text-align: start; cursor: pointer;
+}
+.bo-shell .bo-rail-service:hover { background: var(--bo-hover); color: var(--bo-ink); }
+.bo-shell .bo-rail-service small { margin-inline-start: auto; font-size: 10px; font-weight: 700; }
+.bo-service-placeholder { flex: 1 1 auto; }
+
+.bo-shell .admin-sidebar-foot { padding: 12px 14px; border-top: 1px solid var(--bo-line); }
+.bo-shell .admin-sidebar-foot a { color: var(--bo-ink); font-size: 12px; font-weight: 600; }
+.bo-shell .admin-sidebar-foot a:hover { color: var(--bo-accent); }
+.bo-shell .admin-sidebar-foot > span { margin-top: 6px; color: var(--bo-soft); font-size: 9.5px; letter-spacing: .04em; }
+
+/* ── 4. En-tête d'écran : fil d'Ariane mince (le titre appartient à l'écran) ────────────────── */
+.bo-screenbar {
+  display: flex; align-items: center; gap: 10px;
+  min-height: 34px; padding: 7px 24px;
+  background: var(--bo-card); border-bottom: 1px solid var(--bo-line);
+  color: var(--bo-muted); font-size: 11.5px;
+}
+.bo-screenbar nav { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bo-screenbar b { font-weight: 600; color: var(--bo-soft); }
+.bo-screenbar strong { color: var(--bo-ink); font-weight: 700; }
+.bo-screenbar .bo-screenbar-end { margin-inline-start: auto; display: flex; align-items: center; gap: 10px; }
+.bo-screenbar code { font-size: 10.5px; color: var(--bo-muted); background: var(--bo-sunken); border-radius: 3px; padding: 1px 6px; }
+.bo-screenbar a { color: var(--bo-ink); font-weight: 600; text-decoration: none; }
+.bo-screenbar a:hover { color: var(--bo-accent); }
+
+.bo-shell .admin-main { max-width: 1680px; padding: 18px 24px 64px; }
+
+/* ── 5. Le contenu : cartes plates, densité d'outil ────────────────────────────────────────── */
+.bo-shell .admin-card,
+.bo-shell .admin-list-card,
+.bo-shell .bo-workspace,
+.bo-shell .admin-metric,
+.bo-shell .admin-queue-card {
+  border: 1px solid var(--bo-line);
+  border-radius: var(--bo-radius);
+  background: var(--bo-card);
+  box-shadow: none;
+}
+.bo-shell .admin-card { padding: 16px; }
+.bo-shell .admin-card-title h3, .bo-shell .admin-card-title h2 { font-size: 14px; font-weight: 800; }
+.bo-shell .admin-card-title p, .bo-shell .admin-card-title span { color: var(--bo-muted); font-size: 11.5px; }
+
+.bo-shell .admin-page-header { align-items: flex-end; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--bo-line); }
+.bo-shell .admin-page-header h1 { font-size: 23px; font-weight: 800; letter-spacing: -.015em; }
+.bo-shell .admin-page-header p { color: var(--bo-muted); font-size: 12.5px; }
+.bo-shell .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .15em; }
+
+/* Boutons : une action forte, le reste sobre. Rayon 3 px, pas d'ombre, pas de dégradé. */
+.bo-shell .admin-button {
+  border-radius: var(--bo-radius-sm); border: 1px solid var(--bo-line-firm);
+  padding: 7px 13px; font-size: 12.5px; font-weight: 700; box-shadow: none;
+}
+.bo-shell .admin-button:hover { border-color: var(--bo-ink); }
+.bo-shell .admin-button--primary {
+  background: var(--bo-accent); border-color: var(--bo-accent); color: #111110;
+}
+.bo-shell .admin-button--primary:hover { background: #E85F00; border-color: #E85F00; color: #111110; }
+.bo-shell .admin-button--secondary { background: var(--bo-card); color: var(--bo-ink); }
+.bo-shell .admin-button--ghost { border-color: transparent; color: var(--bo-ink); }
+.bo-shell .admin-button--ghost:hover { background: var(--bo-hover); border-color: transparent; }
+.bo-shell .admin-button--danger { background: var(--bo-card); border-color: var(--bo-danger); color: var(--bo-danger); }
+.bo-shell .admin-button:disabled { opacity: .55; }
+
+/* Barres d'outils : un seul filet, pas de carte dans la carte. */
+/* Légende du tableau : une ligne d'information, pas un bandeau. */
+.bo-shell .admin-table-caption {
+  caption-side: top; text-align: start; padding: 6px 12px;
+  background: transparent; color: var(--bo-muted); font-size: 11px; font-weight: 500;
+}
+.bo-shell .bo-workspace-count { margin-inline-start: auto; color: var(--bo-muted); font-size: 11.5px; font-weight: 600; }
+
+.bo-shell .admin-list-toolbar,
+.bo-shell .bo-workspace-header,
+.bo-shell .admin-toolbar {
+  min-height: 48px; padding: 8px 12px; gap: 8px;
+  border-bottom: 1px solid var(--bo-line); background: var(--bo-sunken);
+}
+.bo-shell .bo-workspace-header { align-items: center; }
+.bo-shell .bo-workspace-header h2 { font-size: 16px; font-weight: 800; }
+.bo-shell .bo-workspace-header p { color: var(--bo-muted); font-size: 12px; }
+.bo-shell .bo-workspace-header .admin-eyebrow { color: var(--bo-soft); }
+
+.bo-shell .admin-search, .bo-shell .admin-select, .bo-shell .admin-field input,
+.bo-shell .admin-field select, .bo-shell .admin-field textarea {
+  border: 1px solid var(--bo-line-firm); border-radius: var(--bo-radius-sm);
+  background: var(--bo-card); color: var(--bo-ink); font-size: 12.5px;
+}
+.bo-shell .admin-search { min-height: 30px; }
+.bo-shell .admin-search:focus-within, .bo-shell .admin-field input:focus, .bo-shell .admin-field textarea:focus {
+  border-color: var(--bo-accent); box-shadow: 0 0 0 2px var(--bo-accent-soft); outline: none;
+}
+
+/* ── 6. Tables : la densité du modèle A ────────────────────────────────────────────────────── */
+.bo-shell .admin-table { font-size: 12.5px; }
+.bo-shell .admin-table th {
+  height: 32px; padding: 0 12px;
+  background: var(--bo-sunken); color: var(--bo-muted);
+  border-bottom: 1px solid var(--bo-line-firm);
+  font-size: 9.5px; font-weight: 800; letter-spacing: .1em;
+}
+.bo-shell .admin-table td { height: var(--bo-row); padding: 6px 12px; border-bottom: 1px solid var(--bo-line-soft); }
+.bo-shell .admin-table tbody tr:hover td { background: var(--bo-hover); }
+.bo-shell .admin-table-row--clickable:hover td { background: var(--bo-hover); }
+.bo-shell .admin-table tbody tr.is-selected td, .bo-shell .admin-table tbody tr[aria-selected='true'] td {
+  background: var(--bo-accent-soft); box-shadow: inset 2px 0 0 var(--bo-accent);
+}
+.bo-shell .bo-cell-money, .bo-shell .admin-cell-num { font-variant-numeric: tabular-nums; font-weight: 700; }
+.bo-shell .admin-entity > span { width: 30px; height: 30px; border-radius: var(--bo-radius-sm); }
+.bo-shell .admin-entity { min-width: 190px; }
+.bo-shell .admin-entity strong { font-size: 12.5px; font-weight: 650; }
+.bo-shell .admin-entity small { color: var(--bo-muted); font-size: 10.5px; }
+.bo-shell .admin-table-state { min-height: 110px; color: var(--bo-muted); font-size: 12.5px; }
+.bo-shell .admin-table-bulkbar {
+  background: var(--bo-ink); border-radius: var(--bo-radius-sm); color: #FFFFFF; font-size: 12px;
+}
+html[data-theme='dark'] .bo-shell .admin-table-bulkbar { background: var(--bo-card); border: 1px solid var(--bo-line); }
+
+/* Étiquettes d'état : pastilles lisibles, tones sémantiques. */
+.bo-shell .status-badge, .bo-shell .admin-badge {
+  border-radius: 999px; padding: 2px 9px; font-size: 10.5px; font-weight: 700; border: 0;
+}
+.bo-shell .status-badge--success { background: var(--bo-ok-soft); color: var(--bo-ok); }
+.bo-shell .status-badge--warning { background: var(--bo-warn-soft); color: var(--bo-warn); }
+.bo-shell .status-badge--danger { background: var(--bo-danger-soft); color: var(--bo-danger); }
+.bo-shell .status-badge--neutral { background: var(--bo-hover); color: var(--bo-muted); }
+.bo-shell .admin-badge.is-success { background: var(--bo-ok-soft); color: var(--bo-ok); }
+.bo-shell .admin-badge.is-warning { background: var(--bo-warn-soft); color: var(--bo-warn); }
+.bo-shell .admin-badge.is-danger { background: var(--bo-danger-soft); color: var(--bo-danger); }
+
+.bo-shell .admin-pagination { padding: 8px 12px; border-top: 1px solid var(--bo-line); font-size: 11.5px; color: var(--bo-muted); }
+.bo-shell .admin-pagination button { border: 1px solid var(--bo-line-firm); border-radius: var(--bo-radius-sm); }
+
+/* ── 7. Mesures & files d'attente : la page dit quoi faire ──────────────────────────────────── */
+.bo-shell .admin-metrics { gap: 10px; }
+.bo-shell .admin-metric { min-height: 0; padding: 12px 14px; }
+.bo-shell .admin-metric span { color: var(--bo-muted); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+.bo-shell .admin-metric strong { margin: 6px 0 4px; font-size: 21px; letter-spacing: -.02em; }
+.bo-shell .admin-metric small { font-size: 10.5px; color: var(--bo-soft); }
+.bo-shell .admin-metric i { width: 30px; height: 30px; border-radius: var(--bo-radius-sm); background: var(--bo-sunken); color: var(--bo-muted); }
+.bo-shell .admin-metric i svg { width: 16px; }
+
+.bo-shell .admin-queues > header strong { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; }
+.bo-shell .admin-queues > header span { color: var(--bo-muted); font-size: 11.5px; }
+.bo-shell .admin-queue-card { border-inline-start: 3px solid var(--bo-accent); }
+.bo-shell .admin-queue-card > div > span { font-size: 12.5px; font-weight: 700; }
+.bo-shell .admin-queue-card > div > small { font-size: 11px; color: var(--bo-muted); }
+.bo-shell .admin-queue-card > strong { font-size: 19px; }
+.bo-shell .admin-queue-card:not(.is-pending) { border-inline-start-color: var(--bo-line-firm); }
+
+/* ── 8. Bandeaux d'information (ancienne surface) et journal ────────────────────────────────── */
+.bo-shell .bo-notice {
+  display: flex; align-items: center; gap: 10px;
+  margin: 12px 24px 0; padding: 9px 12px;
+  background: var(--bo-warn-soft); border: 1px solid #F0DCB4; border-inline-start: 3px solid var(--bo-accent);
+  border-radius: var(--bo-radius-sm); color: #6B4A00; font-size: 12px;
+}
+html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8C98A; }
+.bo-shell .bo-notice code { background: rgba(0, 0, 0, .06); border-radius: 3px; padding: 1px 5px; font-size: 11px; }
+.bo-shell .bo-notice button {
+  margin-inline-start: auto; border: 1px solid currentColor; background: none; color: inherit;
+  border-radius: var(--bo-radius-sm); padding: 4px 10px; font: inherit; font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.bo-shell .bo-audit li { border-bottom: 1px solid var(--bo-line-soft); padding: 8px 0; font-size: 12px; }
+.bo-shell .bo-audit time { color: var(--bo-muted); font-size: 11px; }
+
+/* ── 9. Fenêtres, champs, palettes ─────────────────────────────────────────────────────────── */
+.bo-shell .admin-modal { border-radius: var(--bo-radius); border: 1px solid var(--bo-line); box-shadow: 0 24px 60px rgba(17, 17, 16, .18); }
+.bo-shell .admin-modal-body { padding: 16px; }
+.bo-shell .admin-field label { font-size: 11.5px; font-weight: 700; }
+.bo-shell .admin-field small, .bo-shell .admin-field-hint { color: var(--bo-muted); font-size: 11px; }
+.bo-shell .bo-workspace-header { align-items: flex-start; }
+.bo-shell .admin-palette { border-radius: var(--bo-radius); border: 1px solid var(--bo-line); box-shadow: 0 24px 60px rgba(17, 17, 16, .22); }
+.bo-shell .admin-palette input { font-size: 13px; }
+.bo-shell .bo-audit-empty { color: var(--bo-muted); font-size: 12px; }
+.bo-shell .admin-empty { color: var(--bo-muted); font-size: 12.5px; }
+
+/* ── 10. Responsive : rail en tiroir, barres qui défilent, tables qui glissent ─────────────── */
+/* Le tiroir mobile suit le point de rupture historique de la coquille (900 px) : la bascule de
+   navigation reste UNE décision, pas deux qui se contredisent. */
+@media (max-width: 900px) {
+  .bo-shell .admin-workspace { margin-inline-start: 0; }
+  .bo-shell .admin-sidebar { top: 0; z-index: 60; box-shadow: 0 0 0 100vmax rgba(17, 17, 16, .35); }
+  .bo-rail-head button { display: grid; place-items: center; }
+  .bo-topbar { gap: 10px; padding: 0 12px; }
+  .bo-topbar-brand span { display: none; }
+  .bo-shell .admin-main { padding: 14px 14px 56px; }
+  .bo-screenbar { padding: 7px 14px; }
+  .bo-shell .bo-notice { margin: 12px 14px 0; }
+  /* Défaut corrigé : la règle historique `@media (max-width:640px) .admin-icon-button{display:none}`
+     masquait aussi le bouton d'ouverture du menu — le rail devenait inatteignable sur téléphone. */
+  .bo-shell .admin-mobile-menu {
+    display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+    border: 1px solid rgba(255, 255, 255, .35); border-radius: var(--bo-radius-sm);
+    background: transparent; color: var(--bo-bar-ink);
+  }
+}
+@media (max-width: 1080px) {
+  .bo-topbar-search { max-width: none; }
+}
+@media (max-width: 700px) {
+  .bo-topbar-search { order: 3; flex-basis: 100%; margin-bottom: 8px; }
+  .bo-topbar { flex-wrap: wrap; padding-bottom: 8px; }
+  .bo-topbar-actions .admin-icon-button[title*='densité'], .bo-topbar-actions .admin-icon-button[title*='Densité'] { display: none; }
+  .bo-service { padding: 0 11px; font-size: 12px; }
+  .bo-shell .admin-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bo-shell .admin-metric strong { font-size: 18px; }
+  .bo-screenbar code { display: none; }
+}
+
+/* ── 11. Mouvement : sobre, jamais décoratif ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .bo-service, .bo-shell .admin-sidebar nav button, .bo-domains button { transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+}

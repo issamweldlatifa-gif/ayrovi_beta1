@@ -63,7 +63,7 @@ export const LensLabPage: React.FC = () => {
 
   return (
     <div className="admin-page">
-      <header className="admin-page-head"><div><span className="admin-eyebrow">AI → Lens Test Lab</span><h2>Tester la Lens sur des images réelles</h2><p>Upload, question, extraction, confiance, OCR et évaluation — sans toucher à la production.</p></div></header>
+      <header className="admin-page-head"><div><span className="admin-eyebrow">IA → banc d’essai Lens</span><h2>Tester la Lens sur des images réelles</h2><p>Upload, question, extraction, confiance, OCR et évaluation — sans toucher à la production.</p></div></header>
 
       <section className="admin-card">
         <Field label="Image (screenshot, photo, panier)"><input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} /></Field>

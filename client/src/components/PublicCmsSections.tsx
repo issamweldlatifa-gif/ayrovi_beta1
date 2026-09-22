@@ -24,6 +24,19 @@ const localMedia: Record<string, string> = {
 const mediaSource = (value: unknown, fallback: string) => localMedia[String(value || '')] || String(value || fallback);
 const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
 
+/**
+ * Les trois destinations de la barre publique (Arrivage, Gift & Cards, Magazine) reçoivent leur
+ * libellé (FR et AR) du contrat partagé — une seule source, la même que l'Admin, l'API publique
+ * et le routage. Cette table ne décrit plus que ce qui lui appartient en propre : l'accroche et
+ * la description éditoriale. « Social » n'est pas une destination du contrat : son libellé reste
+ * ici, en attendant une décision produit.
+ */
+const cmsPageContent: Record<'arrivals' | 'promotions' | 'stories' | 'news', { eyebrow: string; eyebrowAr: string; description: string; descriptionAr: string }> = {
+  arrivals: { eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
+  promotions: { eyebrow: 'Cadeaux, cartes et avantages', eyebrowAr: 'هدايا وبطاقات وامتيازات', description: 'Les avantages et codes publiés par l’équipe AYROVI. Seules les offres disponibles sont affichées.', descriptionAr: 'الامتيازات والرموز المنشورة من فريق AYROVI. نعرض فقط ما هو متاح فعليًا.' },
+  stories: { eyebrow: 'Social AYROVI', eyebrowAr: 'تواصل AYROVI', description: 'Stories et publications de la communauté AYROVI.', descriptionAr: 'قصص ومنشورات مجتمع AYROVI.' },
+  news: { eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
+};
 const pageDefinitions: Array<{
   id: CmsPage;
   label: string;
@@ -32,12 +45,16 @@ const pageDefinitions: Array<{
   eyebrowAr: string;
   description: string;
   descriptionAr: string;
-}> = [
-  { id: 'arrivals', label: 'Arrivage', labelAr: 'Arrivage', eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
-  { id: 'promotions', label: 'Gift & Cards', labelAr: 'Gift & Cards', eyebrow: 'Cadeaux, cartes et avantages', eyebrowAr: 'هدايا وبطاقات وامتيازات', description: 'Les avantages et codes publiés par l’équipe AYROVI. Seules les offres disponibles sont affichées.', descriptionAr: 'الامتيازات والرموز المنشورة من فريق AYROVI. نعرض فقط ما هو متاح فعليًا.' },
-  { id: 'stories', label: 'Social', labelAr: 'التواصل', eyebrow: 'Social AYROVI', eyebrowAr: 'تواصل AYROVI', description: 'Stories et publications de la communauté AYROVI.', descriptionAr: 'قصص ومنشورات مجتمع AYROVI.' },
-  { id: 'news', label: 'Magazine', labelAr: 'Magazine', eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
-];
+}> = (['arrivals', 'promotions', 'stories', 'news'] as const).map((id) => {
+  // Libellé : contrat partagé quand la page y figure, libellé local sinon (Social).
+  const shared = PUBLIC_PAGES.find((page) => page.id === id);
+  return {
+    id,
+    label: shared?.label ?? (id === 'stories' ? 'Social' : id),
+    labelAr: shared?.labelAr ?? (id === 'stories' ? 'التواصل' : id),
+    ...cmsPageContent[id],
+  };
+});
 
 function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
   const { tr } = useLocale();

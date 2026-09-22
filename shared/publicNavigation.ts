@@ -8,9 +8,14 @@
  * `/gift-cards`, `/magazine`) : le routage SPA des pages plein écran s'appuie dessus.
  */
 export const PUBLIC_NAV_DESTINATIONS = [
-  { id: 'arrivals', href: '/arrivage', labelFr: 'Arrivage', labelAr: 'Arrivage', adminLabel: 'Arrivage — /arrivage' },
-  { id: 'promotions', href: '/gift-cards', labelFr: 'Gift & Cards', labelAr: 'Gift & Cards', adminLabel: 'Gift & Cards — /gift-cards' },
-  { id: 'news', href: '/magazine', labelFr: 'Magazine', labelAr: 'Magazine', adminLabel: 'Magazine — /magazine' },
+  // `labelAr` est le libellé RÉELLEMENT affiché quand le visiteur lit le site en arabe.
+  // Il était jusqu'ici la copie du libellé français : en mode arabe, les trois onglets de tête
+  // et les trois pages plein écran s'affichaient donc en latin (« Arrivage », « Gift & Cards »,
+  // « Magazine ») alors que le reste de la page était traduit. Corrigé le 2026-09-22 — la
+  // réparation des lignes déjà en base suit la même source (voir `repairPublicNavTranslations`).
+  { id: 'arrivals', href: '/arrivage', labelFr: 'Arrivage', labelAr: 'وصلات جديدة', adminLabel: 'Arrivage — /arrivage' },
+  { id: 'promotions', href: '/gift-cards', labelFr: 'Gift & Cards', labelAr: 'هدايا وبطاقات', adminLabel: 'Gift & Cards — /gift-cards' },
+  { id: 'news', href: '/magazine', labelFr: 'Magazine', labelAr: 'مجلة AYROVI', adminLabel: 'Magazine — /magazine' },
 ] as const;
 
 export type PublicNavDestinationId = (typeof PUBLIC_NAV_DESTINATIONS)[number]['id'];

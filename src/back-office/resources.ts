@@ -215,7 +215,7 @@ const LEGACY_RESOURCE_META: Record<string, {
     nav: { group: 'Contenu', order: 10, icon: 'Calendar' },
   },
   products: {
-    key: 'cms.products', module: 'cms', domain: 'CONTENT', label: 'Produits (ancienne surface)', singular: 'produit',
+    key: 'cms.products', module: 'cms', domain: 'CONTENT', label: 'Produits', singular: 'produit',
     description: 'Ancien écran générique sur `products`. Le maître canonique est le module Catalogue (P2.1).',
     section: 'products', resourceType: 'product', canonicalOf: 'catalog.product',
     notes: 'Conservé : la surface publique et 41 cas de tests en dépendent. Consolidation = migration d’écran, pas de donnée.',
@@ -239,7 +239,7 @@ const LEGACY_RESOURCE_META: Record<string, {
     section: 'news', nav: { group: 'Contenu', order: 50, icon: 'FileText' },
   },
   brands: {
-    key: 'cms.brands', module: 'cms', domain: 'CONTENT', label: 'Marques (ancienne surface)', singular: 'marque',
+    key: 'cms.brands', module: 'cms', domain: 'CONTENT', label: 'Marques', singular: 'marque',
     description: 'Ancien écran générique sur `brands` ; le canonique est Catalogue › Marques.',
     section: 'brands', resourceType: 'brand', canonicalOf: 'catalog.brand',
     nav: { group: 'Contenu', order: 60, icon: 'Tag' },
@@ -248,7 +248,7 @@ const LEGACY_RESOURCE_META: Record<string, {
     key: 'cms.hero-slides', module: 'cms', domain: 'CONTENT', label: 'Hero slides', singular: 'slide',
     description: 'Diaporama du hero (table `hero_slides`).',
     section: 'hero', aliases: ['hero-slides'], resourceType: 'hero_visual', nav: null,
-    navlessReason: 'Table `hero_slides` éditée par le moteur générique ; l’écran visible est « Hero Management » (content.hero-visuals). Deep links `hero` et `hero-slides` conservés.',
+    navlessReason: 'Table `hero_slides` éditée par le moteur générique ; l’écran visible est « Visuels d’accueil » (content.hero-visuals). Deep links `hero` et `hero-slides` conservés.',
   },
   announcements: {
     key: 'cms.announcements', module: 'cms', domain: 'CONTENT', label: 'Ticker annonces', singular: 'annonce',
@@ -693,7 +693,7 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     fields: [], actions: ['list', 'view', 'export'], audit: { module: 'AUDIT', resourceType: 'audit_event' },
   },
   {
-    key: 'core.audit-legacy', label: 'Journal d’audit (legacy)', singular: 'ligne', module: 'audit', domain: 'ERP',
+    key: 'core.audit-legacy', label: 'Journal d’audit', singular: 'ligne', module: 'audit', domain: 'ERP',
     description: 'Ancien lecteur de `audit_logs` — conservé pour compatibilité, fusionné visuellement avec « Audit (ERP) » plus tard.',
     navPermission: 'audit:read', permissions: { list: 'audit:read' },
     section: 'audit', nav: { group: 'Système', order: 460, icon: 'History' },
@@ -742,7 +742,7 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit', 'approve'], audit: { module: 'MAGAZINE_AGENT', resourceType: 'magazine_draft' },
   },
   {
-    key: 'content.hero-visuals', label: 'Hero Management', singular: 'visuel', module: 'cms', domain: 'CONTENT',
+    key: 'content.hero-visuals', label: 'Visuels d’accueil', singular: 'visuel', module: 'cms', domain: 'CONTENT',
     description: 'Visuels du hero d’accueil (table `hero_visuals`, distincte de `hero_slides`).',
     navPermission: 'content:read', permissions: { list: 'cms:read', edit: 'cms:write' },
     section: 'hero-visuals', nav: { group: 'Contenu', order: 70, icon: 'Image' },
@@ -764,14 +764,14 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['list', 'view', 'edit'], audit: { module: 'HOME_SECTIONS', resourceType: 'home_block' },
   },
   {
-    key: 'marketing.ai-discovery', label: 'AI Discovery', singular: 'rapport', module: 'marketing', domain: 'CONTENT',
+    key: 'marketing.ai-discovery', label: 'Découverte IA', singular: 'rapport', module: 'marketing', domain: 'CONTENT',
     description: 'Agrégats de découverte produit par l’IA.', navPermission: 'reports:read', permissions: { view: 'reports:read' },
     section: 'ai-discovery', nav: { group: 'Commerce', order: 235, icon: 'ChartLine' },
     surface: 'custom', component: 'AiDiscoveryPage', api: { prefix: '/ai-discovery', kind: 'generic' },
     columns: [], fields: [], actions: ['view'], audit: { module: 'AI_DISCOVERY', resourceType: 'discovery' },
   },
   {
-    key: 'ai.lens-lab', label: 'Lens Test Lab', singular: 'test', module: 'settings', domain: 'ERP',
+    key: 'ai.lens-lab', label: 'Lens — banc d’essai', singular: 'test', module: 'settings', domain: 'ERP',
     description: 'Laboratoire d’objectifs — fonction de réglages, volontairement sous `settings:write`.',
     navPermission: 'settings:write', permissions: { view: 'settings:write', edit: 'settings:write' },
     section: 'lens-lab', nav: { group: 'Commerce', order: 232, icon: 'Camera' },

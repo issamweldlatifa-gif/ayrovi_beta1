@@ -53,7 +53,13 @@ describe('barre publique sous l’en-tête', () => {
     expect(items.map((item) => item.destination)).toEqual(PUBLIC_NAV_DESTINATIONS.map((destination) => destination.id));
     expect(items.map((item) => item.href)).toEqual(PUBLIC_NAV_DESTINATIONS.map((destination) => destination.href));
     expect(items.map((item) => item.order)).toEqual([...items.map((item) => item.order)].sort((a, b) => a - b));
-    expect(items[0]).toMatchObject({ labelFr: 'Arrivage', labelAr: 'Arrivage' });
+    // 2026-09-22 : le libellé arabe n'est plus la copie du français — l'onglet doit se lire en
+    // arabe quand le visiteur lit le site en arabe (le contrat partagé est la seule source).
+    expect(items[0]).toMatchObject({ labelFr: 'Arrivage', labelAr: PUBLIC_NAV_DESTINATIONS[0].labelAr });
+    expect(items[0].labelAr, 'le libellé AR doit être réellement arabe').toMatch(/[\u0600-\u06FF]/);
+    for (const item of items) {
+      expect(item.labelAr, `${item.destination} : libellé AR manquant`).toMatch(/[\u0600-\u06FF]/);
+    }
   });
 
   test('l’écran Admin est une ressource du framework, rangée dans « Contenu »', () => {

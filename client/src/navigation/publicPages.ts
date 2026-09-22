@@ -11,6 +11,7 @@ export const PUBLIC_PAGES = PUBLIC_NAV_DESTINATIONS.map((destination) => ({
   id: destination.id,
   href: destination.href,
   label: destination.labelFr,
+  labelAr: destination.labelAr,
 }));
 
 export type PublicPageId = PublicNavDestinationId;

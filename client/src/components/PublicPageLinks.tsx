@@ -16,7 +16,7 @@ const fallbackLinks: PublicNavLink[] = PUBLIC_PAGES.map(page => ({
   destination: page.id,
   href: page.href,
   labelFr: page.label,
-  labelAr: page.label,
+  labelAr: page.labelAr,
 }));
 
 /**

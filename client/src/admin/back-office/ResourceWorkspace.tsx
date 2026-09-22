@@ -74,15 +74,19 @@ export const ResourceTableView: React.FC<{
   canWrite?: boolean;
   onEdit?: (row: Record<string, any>) => void;
   onArchive?: (row: Record<string, any>) => void;
+  /** Historique d'UNE ligne : la question se pose sur un enregistrement, jamais sur la liste. */
+  onAudit?: (row: Record<string, any>) => void;
   onRetry?: () => void;
   emptyAction?: React.ReactNode;
-}> = ({ descriptor, rows, loading, error, capabilities, canWrite, onEdit, onArchive, onRetry, emptyAction }) => {
+}> = ({ descriptor, rows, loading, error, capabilities, canWrite, onEdit, onArchive, onAudit, onRetry, emptyAction }) => {
   const mayEdit = descriptor.actions.includes('edit') && capabilities?.edit !== false && (canWrite ?? true);
   const mayArchive = descriptor.actions.includes('delete') && capabilities?.delete !== false && (canWrite ?? true);
   const rowActions: TableRowAction<Record<string, any>>[] = [];
   // Une action refusée reste visible mais inerte, avec son motif : jamais un 403 après le clic.
   if (descriptor.actions.includes('edit')) rowActions.push({ key: 'edit', label: 'Modifier', disabled: !mayEdit, reason: 'Édition refusée pour ce rôle', onRun: (row) => onEdit?.(row) });
   if (descriptor.actions.includes('delete')) rowActions.push({ key: 'archive', label: 'Archiver', tone: 'danger', disabled: !mayArchive, reason: 'Archivage refusé pour ce rôle', onRun: (row) => onArchive?.(row) });
+  // Lecture seule pour tout le monde : consulter l'historique n'est pas une écriture.
+  if (onAudit && descriptor.actions.includes('view')) rowActions.push({ key: 'audit', label: 'Journal', onRun: (row) => onAudit(row) });
   return <DataTable
     columns={buildColumns(descriptor)} rows={rows} loading={loading} error={error} onRetry={onRetry}
     emptyText={`Aucun·e ${descriptor.singular} pour le moment.`} emptyAction={emptyAction}
@@ -235,10 +239,13 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
         <Select value={status} onChange={(event) => setStatus(event.target.value)}
           options={[{ value: '', label: 'Tous les statuts' }, ...statusValues.map((value) => ({ value, label: descriptor.statuses?.find((item) => item.value === value)?.label ?? value }))]} />
       )}
-      <Button type="button" variant="ghost" onClick={() => setAuditOf(rows[0] ?? null)}>Journal du premier résultat</Button>
+      {/* Le compte de résultats est utile au quotidien ; « Journal du premier résultat », qui
+          ouvrait l'historique d'une ligne choisie au hasard, ne l'était pas. L'historique est
+          maintenant une action par ligne, là où la question se pose. */}
+      <span className="bo-workspace-count">{pagination.total} résultat{pagination.total > 1 ? 's' : ''}</span>
     </div>
     <ResourceTableView descriptor={descriptor} rows={rows} loading={loading} error={error} onRetry={() => void load()}
-      capabilities={capabilities} canWrite={mayWrite} onEdit={openEdit} onArchive={archive} />
+      capabilities={capabilities} canWrite={mayWrite} onEdit={openEdit} onArchive={archive} onAudit={setAuditOf} />
     <Pagination {...pagination} onChange={(page: number) => void load(page)} />
     <Modal open={modal} title={`${editing ? 'Modifier' : 'Créer'} ${descriptor.singular}`} onClose={() => setModal(false)} wide>
       <ResourceForm definition={{ fields: fieldDefinitionsFor(descriptor) }} value={form} onChange={setForm} onSubmit={save} busy={busy} />

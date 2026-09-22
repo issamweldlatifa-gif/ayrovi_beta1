@@ -11,6 +11,10 @@ import {
   ImageUploader, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast,
 } from './components';
 import './admin.css';
+// Modèle A « Console opérationnelle » (2026-09-22) : couche additive chargée APRÈS admin.css.
+// Elle ne supprime aucune règle — elle redéfinit la densité, les filets, les rayons et le chrome
+// pour que les écrans existants héritent du modèle retenu sans être réécrits un par un.
+import '../styles/admin-console.css';;
 import { LensLabPage, AiDiscoveryPage } from './AiLabPages';
 import { SocialAdminPage } from './SocialAdminPage';
 import { InventoryMovementsPage, InventoryStockPage, InventoryStocktakesPage } from './InventoryPage';
