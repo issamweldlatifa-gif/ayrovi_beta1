@@ -9,7 +9,12 @@
 import React, { useMemo } from 'react';
 import { Calendar } from '../../components/QatafoIcons';
 
-export const DatePicker: React.FC<{ value?: string; onChange: (value: string) => void; required?: boolean }> = ({ value, onChange, required }) => {
+/**
+ * `label` donne un nom accessible au champ. Sans lui, l'input reste annoncé « champ date » par un
+ * lecteur d'écran : c'est le cas des sélecteurs de période, qui n'ont pas d'étiquette visible.
+ * Les formulaires du framework passent déjà un `Field` autour, donc ils n'ont rien à changer.
+ */
+export const DatePicker: React.FC<{ value?: string; onChange: (value: string) => void; required?: boolean; label?: string }> = ({ value, onChange, required, label }) => {
   const localValue = useMemo(() => {
     if (!value) return '';
     const date = new Date(value);
@@ -17,5 +22,5 @@ export const DatePicker: React.FC<{ value?: string; onChange: (value: string) =>
     date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
     return date.toISOString().slice(0, 16);
   }, [value]);
-  return <div className="admin-date-input"><Calendar size={18} /><input type="datetime-local" value={localValue} required={required} onChange={(event) => onChange(event.target.value ? new Date(event.target.value).toISOString() : '')} /></div>;
+  return <div className="admin-date-input"><Calendar size={18} /><input type="datetime-local" value={localValue} required={required} aria-label={label} title={label} onChange={(event) => onChange(event.target.value ? new Date(event.target.value).toISOString() : '')} /></div>;
 };

@@ -142,11 +142,16 @@ describe('markup des primitives — figé par contrat', () => {
     ['Form', <Form onSubmit={() => {}} className="x"><span /></Form>, '<form class="admin-form x"><span></span></form>'],
     ['PageHeader avec eyebrow de domaine', <PageHeader title="Stock" description="mouvements" eyebrow="AYROVI STOCK" />,
       '<div class="admin-page-header"><div><span class="admin-eyebrow">AYROVI STOCK</span><h1>Stock</h1><p>mouvements</p></div></div>'],
+    // Contrat amendé le 2026-09-22 : les deux flèches portent aussi un `title`. Un bouton grisé
+    // (ici « page précédente » en page 1) doit dire pourquoi il l'est, à la souris comme au clavier.
     ['Pagination à la première page', <Pagination page={1} totalPages={3} total={1} onChange={() => {}} />,
-      '<div class="admin-pagination"><span>1 résultat</span><div><button type="button" disabled="" aria-label="Page précédente">'],
+      '<div class="admin-pagination"><span>1 résultat</span><div><button type="button" disabled="" aria-label="Page précédente" title="Page précédente">'],
     ['Search vide', <Search value="" onChange={() => {}} />, '<label class="admin-search"><svg'],
+    // Contrat amendé le 2026-09-22 : un `<select>` de filtre n'a pas d'étiquette visible ; il reçoit
+    // donc le libellé de son premier choix comme nom accessible (« Tous les statuts », « A »…),
+    // sauf si l'appelant fournit déjà un `aria-label`/`aria-labelledby`.
     ['Select', <Select options={[{ value: 'a', label: 'A' }, { value: 'b', label: 'B' }]} />,
-      '<div class="admin-select"><select><option value="a">A</option><option value="b">B</option></select><svg'],
+      '<div class="admin-select"><select aria-label="A"><option value="a">A</option><option value="b">B</option></select><svg'],
     ['StatusBadge connu', <StatusBadge status="OUT_OF_STOCK" />, '<span class="status-badge status-badge--danger">Épuisé</span>'],
     ['StatusBadge inconnu', <StatusBadge status="weird" />, '<span class="status-badge status-badge--neutral">weird</span>'],
     ['Switch en position haute', <Switch checked onLabel="Visible" offLabel="Masquée" onChange={() => {}} />,

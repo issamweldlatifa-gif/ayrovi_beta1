@@ -25,8 +25,13 @@
    seul déclencheur d'action ; les gris sont ceux de l'échelle neutre du dépôt.
    ═════════════════════════════════════════════════════════════════════════════════════════════ */
 
-/* ── 1. Rôles du modèle A, portés par la racine de la coquille seulement ─────────────────────── */
-.bo-shell {
+/* ── 1. Rôles du modèle A, portés par la racine de la coquille et par la porte d'entrée ────────
+   `.admin-login` (écran de connexion) et `.admin-boot` (amorçage de session) reçoivent les mêmes
+   rôles que `.bo-shell` : c'est ce qui fait que la connexion n'est pas un écran « d'avant ».
+   Aucun composant n'est réécrit, aucun jeton n'est dupliqué. ─────────────────────────────────── */
+.bo-shell,
+.admin-login,
+.admin-boot {
   /* Chrome */
   --bo-bar: #111110;          /* barre 1 — encre AYROVI */
   --bo-bar-2: #262626;        /* barre 2 — un pas plus clair, repère de service */
@@ -85,7 +90,9 @@
 /* Thème sombre : la coquille garde la géométrie du modèle A et reprend les neutres sombres.
    Les mêmes rôles sont redéfinis sur le même élément (spécificité supérieure) : rien d'autre
    à maintenir, aucune règle dupliquée par composant. */
-html[data-theme='dark'] .bo-shell {
+html[data-theme='dark'] .bo-shell,
+html[data-theme='dark'] .admin-login,
+html[data-theme='dark'] .admin-boot {
   --bo-bar: #0A0A0A;
   --bo-bar-2: #1A1A1A;
   --bo-bar-ink: #F2F2F2;
@@ -291,23 +298,25 @@ html[data-theme='dark'] .bo-shell .admin-sidebar nav button { color: #D6D6D6; }
 .bo-shell .admin-page-header { align-items: flex-end; gap: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--bo-line); }
 .bo-shell .admin-page-header h1 { font-size: 23px; font-weight: 800; letter-spacing: -.015em; }
 .bo-shell .admin-page-header p { color: var(--bo-muted); font-size: 12.5px; }
-.bo-shell .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .15em; }
+:is(.bo-shell, .admin-login) .admin-eyebrow { color: var(--bo-soft); font-size: 9.5px; font-weight: 800; letter-spacing: .15em; }
 
-/* Boutons : une action forte, le reste sobre. Rayon 3 px, pas d'ombre, pas de dégradé. */
-.bo-shell .admin-button {
+/* Boutons : une action forte, le reste sobre. Rayon 3 px, pas d'ombre, pas de dégradé.
+   Portée étendue à `.admin-login` : la connexion doit montrer l'action forte en orange, comme
+   partout ailleurs dans le poste de travail (avant ce correctif, elle restait en noir). */
+:is(.bo-shell, .admin-login) .admin-button {
   border-radius: var(--bo-radius-sm); border: 1px solid var(--bo-line-firm);
   padding: 7px 13px; font-size: 12.5px; font-weight: 700; box-shadow: none;
 }
-.bo-shell .admin-button:hover { border-color: var(--bo-ink); }
-.bo-shell .admin-button--primary {
+:is(.bo-shell, .admin-login) .admin-button:hover { border-color: var(--bo-ink); }
+:is(.bo-shell, .admin-login) .admin-button--primary {
   background: var(--bo-accent); border-color: var(--bo-accent); color: #111110;
 }
-.bo-shell .admin-button--primary:hover { background: #E85F00; border-color: #E85F00; color: #111110; }
-.bo-shell .admin-button--secondary { background: var(--bo-card); color: var(--bo-ink); }
-.bo-shell .admin-button--ghost { border-color: transparent; color: var(--bo-ink); }
-.bo-shell .admin-button--ghost:hover { background: var(--bo-hover); border-color: transparent; }
-.bo-shell .admin-button--danger { background: var(--bo-card); border-color: var(--bo-danger); color: var(--bo-danger); }
-.bo-shell .admin-button:disabled { opacity: .55; }
+:is(.bo-shell, .admin-login) .admin-button--primary:hover { background: #E85F00; border-color: #E85F00; color: #111110; }
+:is(.bo-shell, .admin-login) .admin-button--secondary { background: var(--bo-card); color: var(--bo-ink); }
+:is(.bo-shell, .admin-login) .admin-button--ghost { border-color: transparent; color: var(--bo-ink); }
+:is(.bo-shell, .admin-login) .admin-button--ghost:hover { background: var(--bo-hover); border-color: transparent; }
+:is(.bo-shell, .admin-login) .admin-button--danger { background: var(--bo-card); border-color: var(--bo-danger); color: var(--bo-danger); }
+:is(.bo-shell, .admin-login) .admin-button:disabled { opacity: .55; }
 
 /* Barres d'outils : un seul filet, pas de carte dans la carte. */
 /* Légende du tableau : une ligne d'information, pas un bandeau. */
@@ -458,4 +467,123 @@ html[data-theme='dark'] .bo-shell .bo-notice { border-color: #3A3018; color: #E8
 /* ── 11. Mouvement : sobre, jamais décoratif ───────────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
   .bo-service, .bo-shell .admin-sidebar nav button, .bo-domains button { transition: background 120ms ease-out, color 120ms ease-out, border-color 120ms ease-out; }
+}
+
+/* ── 12. Accès : connexion et création de compte portent le modèle A ────────────────────────────
+   La porte d'entrée est la première impression du poste de travail : elle suit donc les mêmes
+   conventions que les 49 écrans (deux surfaces, filets de 1 px, rayon 4 px, AUCUN dégradé, une
+   seule action forte en orange, densité compacte). Ce qui a changé par rapport à l'écran
+   précédent : plus de grands cercles décoratifs ni de dégradés, un cartouche de statut serveur
+   réellement alimenté par /api/health, et une bande de pied qui dit quoi faire en cas de blocage.
+   Tout est additif : la feuille historique reste intacte et le retour arrière consiste à retirer
+   l'import de cette feuille dans AdminApp.tsx. ─────────────────────────────────────────────── */
+
+.admin-login {
+  grid-template-columns: minmax(380px, 1fr) minmax(440px, .92fr);
+  background: var(--bo-canvas);
+}
+.admin-login-brand {
+  justify-content: center;
+  padding: clamp(40px, 5.5vw, 84px);
+  background-color: var(--bo-bar);
+  /* Trame technique de 1 px : repère de « salle de contrôle », sans dégradé ni halo. */
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, .045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, .045) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+.admin-login-brand::before, .admin-login-brand::after { content: none; }
+.admin-login-brand__mark {
+  width: 48px; height: 48px; margin-bottom: 22px;
+  border: 1px solid rgba(255, 255, 255, .18); border-radius: var(--bo-radius);
+  background: rgba(255, 255, 255, .06); color: #FFFFFF;
+}
+/* Verrou A.ROVI : il porte déjà le nom, donc plus de mot « AYROVI » à côté (identité 2026-09-22).
+   `align-self: flex-start` est indispensable : le panneau est un conteneur flex en colonne, où
+   l'étirement transversal écrasait la hauteur imposée et centrait l'art dans une boîte trop large
+   (l'emblème n'était plus aligné sur le titre). */
+.admin-login-brand__lockup { display: block; align-self: flex-start; width: auto; height: 32px; margin-bottom: 18px; }
+.admin-login-brand > span { font-size: 10px; letter-spacing: .24em; color: var(--bo-bar-muted); }
+.admin-login-brand h1 { margin: 16px 0 14px; font-size: clamp(30px, 3.4vw, 46px); line-height: 1.02; letter-spacing: -.045em; }
+.admin-login-brand > p { max-width: 520px; font-size: 14.5px; line-height: 1.75; color: var(--bo-bar-muted); }
+.admin-login-grid { max-width: 520px; margin-top: 38px; border-top: 1px solid rgba(255, 255, 255, .14); }
+.admin-login-grid article { padding: 16px 12px 0 0; }
+.admin-login-grid strong { font-size: 20px; letter-spacing: -.02em; }
+.admin-login-grid span { font-size: 10px; letter-spacing: .14em; }
+/* Bande de pied de la marque : version réelle + canal de support (aucune donnée inventée). */
+.admin-login-foot {
+  display: grid; gap: 6px;
+  max-width: 520px; margin-top: 34px; padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, .14);
+  font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--bo-bar-muted);
+}
+.admin-login-foot > div { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.admin-login-foot b { font-weight: 800; color: #FFFFFF; letter-spacing: .14em; }
+.admin-login-foot i { font-style: normal; opacity: .4; }
+
+.admin-login-panel { background: var(--bo-canvas); padding: clamp(24px, 4vw, 60px); }
+.admin-login-box {
+  width: min(100%, 452px);
+  padding: clamp(22px, 3vw, 32px);
+  border: 1px solid var(--bo-line);
+  border-radius: var(--bo-radius);
+  background: var(--bo-card);
+}
+.admin-login-box h2 { margin: 10px 0 6px; font-size: 30px; letter-spacing: -.035em; }
+.admin-login-box > p { margin: 0 0 26px; font-size: 13px; line-height: 1.65; color: var(--bo-muted); }
+.admin-login-box .admin-field input:not([type='checkbox']) { height: 40px; border-radius: var(--bo-radius-sm); }
+.admin-login-box .admin-field input:focus, .admin-login-box .admin-field select:focus {
+  border-color: var(--bo-accent); box-shadow: 0 0 0 3px var(--bo-accent-soft); outline: none;
+}
+.admin-login-box .admin-password button { border-radius: var(--bo-radius-sm); color: var(--bo-ink); font-size: 11px; }
+.admin-login-box .admin-password button:hover, .admin-login-box .admin-password button[aria-pressed='true'] { color: var(--bo-accent); }
+.admin-login-box .admin-field { font-size: 11px; }
+.admin-login-submit { min-height: 46px; border-radius: var(--bo-radius-sm); font-size: 13px; }
+
+/* Cartouche d'état : élément VIVANT, alimenté par /api/health. En panne, il propose de réessayer. */
+.admin-login-status {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 20px; padding: 9px 11px;
+  border: 1px solid var(--bo-line); border-radius: var(--bo-radius-sm);
+  background: var(--bo-sunken);
+  font-size: 11.5px; letter-spacing: .02em; color: var(--bo-muted);
+}
+.admin-login-status b { font-weight: 750; color: var(--bo-ink); }
+.admin-login-status i {
+  width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--bo-soft);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, .04);
+}
+.admin-login-status[data-state='ok'] i { background: var(--bo-ok); box-shadow: 0 0 0 3px var(--bo-ok-soft); }
+.admin-login-status[data-state='down'] { border-color: var(--bo-danger); background: var(--bo-danger-soft); color: var(--bo-danger); }
+.admin-login-status[data-state='down'] b { color: var(--bo-danger); }
+.admin-login-status[data-state='down'] i { background: var(--bo-danger); box-shadow: 0 0 0 3px var(--bo-danger-soft); }
+.admin-login-status button {
+  margin-inline-start: auto; padding: 3px 9px; cursor: pointer;
+  border: 1px solid currentColor; border-radius: var(--bo-radius-sm);
+  background: transparent; color: inherit; font: inherit; font-weight: 750;
+}
+.admin-login-status button:hover { background: rgba(0, 0, 0, .05); }
+
+/* Rappel du mot de passe oublié : la console n'a pas d'auto-réinitialisation, elle dit qui appeler. */
+.admin-login-help {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--bo-line-soft);
+  font-size: 11.5px; line-height: 1.6; color: var(--bo-soft);
+}
+.admin-login-help svg { flex: none; margin-top: 1px; color: var(--bo-soft); }
+.admin-login-help code { padding: 1px 5px; border: 1px solid var(--bo-line); border-radius: 3px; background: var(--bo-sunken); font-size: 11px; color: var(--bo-ink); }
+.admin-login-security { margin-top: 16px; padding-top: 14px; font-size: 11.5px; gap: 8px; }
+.admin-login-security svg { color: var(--bo-ok); }
+
+/* Création / invitation d'un compte administrateur (section Utilisateurs) : même densité. */
+.bo-shell .admin-modal .admin-field input:not([type='checkbox']),
+.bo-shell .admin-modal .admin-field select { height: 40px; border-radius: var(--bo-radius-sm); }
+
+@media (max-width: 1080px) {
+  .admin-login { display: block; }
+  .admin-login-brand { display: none; }
+  .admin-login-panel { min-height: 100dvh; display: grid; place-items: center; padding: 22px; }
+  .admin-login-box { padding: 24px 20px; }
+  .admin-login-mobile-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; color: var(--bo-ink); }
+  .admin-login-mobile-logo strong { font-size: 14px; letter-spacing: .16em; }
 }

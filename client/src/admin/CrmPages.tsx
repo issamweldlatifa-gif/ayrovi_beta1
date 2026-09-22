@@ -74,13 +74,23 @@ const CrmHeader: React.FC<{ title: string; description: string; action?: React.R
 /* Tableau de bord — KPI réels, aucune donnée de démonstration   */
 /* ============================================================ */
 
-type Dashboard = {
-  parties: Record<string, number>; contacts: number;
-  activities: { open: number; completed30d: number };
-  tasks: { open: number; overdue: number; dueToday: number; upcoming: number; followUps: number; completed30d: number };
-  issues: { open: number; inProgress: number; waiting: number; resolved30d: number; total: number };
-  recentlyActive: number; ownerNextActions: Array<Record<string, any>>;
+/**
+ * Le serveur sert `{ metrics: {...}, recent: [...] }` : le client lisait `d.parties` à la racine et
+ * `d.tasks` en direct, donc `d.parties.customersActive` levait une TypeError dès l'ouverture — un
+ * écran vide sans message. Corrigé le 2026-09-22 : la forme servie est décrite ici, chaque branche
+ * est optionnelle et lue avec un repli, pour qu'une réponse partielle n'efface plus l'écran.
+ */
+type DashboardMetrics = {
+  parties?: Record<string, number>;
+  contacts?: number;
+  activities?: { open?: number; completed30d?: number };
+  tasks?: { open?: number; overdue?: number; dueToday?: number; upcoming?: number; followUps?: number; completed30d?: number };
+  issues?: { open?: number; inProgress?: number; waiting?: number; resolved30d?: number; total?: number };
+  recentlyActive?: number;
+  ownerNextActions?: Array<Record<string, any>>;
+  generatedAt?: string;
 };
+type Dashboard = { metrics?: DashboardMetrics; recent?: Array<Record<string, any>> };
 
 export const CrmDashboardPage: React.FC = () => {
   const [dashboard, setDashboard] = useState<Dashboard | null>(null);
@@ -95,13 +105,14 @@ export const CrmDashboardPage: React.FC = () => {
   }, []);
   useEffect(() => { load(); }, [load]);
 
+  const m = dashboard?.metrics ?? {};
   const d = dashboard;
   const cells = d ? [
-    { label: 'Clients actifs', value: String(d.parties.customersActive ?? 0) },
-    { label: 'Clients (30 j)', value: String(d.parties.customersNew30d ?? 0) },
-    { label: 'Tâches en retard', value: String(d.tasks.overdue ?? 0) },
-    { label: 'À faire aujourd’hui', value: String(d.tasks.dueToday ?? 0) },
-    { label: 'Issues vivantes', value: String((d.issues.open ?? 0) + (d.issues.inProgress ?? 0) + (d.issues.waiting ?? 0)) },
+    { label: 'Clients actifs', value: String(m.parties?.customersActive ?? 0) },
+    { label: 'Clients (30 j)', value: String(m.parties?.customersNew30d ?? 0) },
+    { label: 'Tâches en retard', value: String(m.tasks?.overdue ?? 0) },
+    { label: 'À faire aujourd’hui', value: String(m.tasks?.dueToday ?? 0) },
+    { label: 'Issues vivantes', value: String((m.issues?.open ?? 0) + (m.issues?.inProgress ?? 0) + (m.issues?.waiting ?? 0)) },
   ] : null;
 
   const ownerColumns = [
@@ -121,9 +132,9 @@ export const CrmDashboardPage: React.FC = () => {
       {d && (
         <section className="admin-card" style={{ marginTop: 16 }}>
           <div className="admin-card__title"><h3>Prochaines actions par responsable</h3>
-            <span>{d.recentlyActive} fiches actives sur 14 jours · {d.contacts} contacts actifs</span></div>
+            <span>{m.recentlyActive ?? 0} fiches actives sur 14 jours · {m.contacts ?? 0} contacts actifs</span></div>
           <DataTable
-            columns={ownerColumns} rows={d.ownerNextActions ?? []} loading={loading} error={error || undefined}
+            columns={ownerColumns} rows={m.ownerNextActions ?? []} loading={loading} error={error || undefined}
             onRetry={() => load()} emptyText="Aucune charge relationnelle assignée — créez une tâche ou une issue."
           />
         </section>

@@ -33,9 +33,21 @@ app.disable('x-powered-by');
 if (process.env.NODE_ENV === 'production' || process.env.RENDER) app.set('trust proxy', 1);
 app.use((req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
+  // La console d'exploitation ne doit JAMAIS être affichée dans un cadre : une page du site
+  // (ou un contenu CMS) suffirait sinon à superposer des boutons d'admin invisibles sur un
+  // écran de connexion — le clic de l'administrateur partirait dans la console. C'est le seul
+  // durcissement spécifique à la console ; les pages publiques restent encadrables en same-origin.
+  const isAdminSurface = /^\/admin(\/|$)/.test(req.path);
   // Une politique unique, déclarée avant toutes les routes. Les vidéos CMS peuvent
-  // provenir d'un CDN HTTPS; object-src reste interdit et l'iframe est same-origin en production.
-  const frameAncestors = isProd ? "frame-ancestors 'self';" : '';
+  // provenir d'un CDN HTTPS; object-src reste interdit et l'iframe est same-origin.
+  //
+  // Mise en cadre : la console est la seule surface qui décide des prix et des remboursements.
+  // En production elle n'est donc encadrable par PERSONNE (`'none'` + `X-Frame-Options: DENY`).
+  // Hors production, l'aperçu de développement est lui-même rendu DANS un cadre : y appliquer la
+  // règle de production rendrait la console simplement invisible. On n'y émet donc pas de
+  // `frame-ancestors` — la contrainte de cadre reste une garantie de production, et elle est
+  // projetée plus bas dans le rapport d'audit pour ne jamais être présentée comme vérifiée en dev.
+  const frameAncestors = !isProd ? '' : (isAdminSurface ? "frame-ancestors 'none';" : "frame-ancestors 'self';");
   res.setHeader('Content-Security-Policy', [
     "default-src 'self'",
     "script-src 'self'",
@@ -60,8 +72,10 @@ app.use((req, res, next) => {
   const requestId = /^[A-Za-z0-9._:-]{8,100}$/.test(suppliedRequestId) ? suppliedRequestId : randomUUID();
   res.setHeader('X-Request-ID', requestId);
   (req as any).requestId = requestId;
+  // L'en-tête complémentaire (navigateurs qui n'appliquent pas la CSP) suit la même règle : DENY
+  // sur la console, SAMEORIGIN sur le site public, rien hors production (aperçu encadré).
   if (isProd) {
-    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('X-Frame-Options', isAdminSurface ? 'DENY' : 'SAMEORIGIN');
     res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
   }
   next();

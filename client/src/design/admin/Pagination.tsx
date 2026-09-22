@@ -13,9 +13,9 @@ export const Pagination: React.FC<{ page: number; totalPages: number; total: num
   <div className="admin-pagination">
     <span>{total} résultat{total === 1 ? '' : 's'}</span>
     <div>
-      <button type="button" onClick={() => onChange(page - 1)} disabled={page <= 1} aria-label="Page précédente"><ArrowLeft size={17} /></button>
+      <button type="button" onClick={() => onChange(page - 1)} disabled={page <= 1} aria-label="Page précédente" title="Page précédente"><ArrowLeft size={17} /></button>
       <strong>{page} / {Math.max(totalPages, 1)}</strong>
-      <button type="button" onClick={() => onChange(page + 1)} disabled={page >= totalPages} aria-label="Page suivante"><ArrowRight size={17} /></button>
+      <button type="button" onClick={() => onChange(page + 1)} disabled={page >= totalPages} aria-label="Page suivante" title="Page suivante"><ArrowRight size={17} /></button>
     </div>
   </div>
 );

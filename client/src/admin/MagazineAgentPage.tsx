@@ -234,7 +234,12 @@ export const MagazineAgentPage: React.FC<MagazineAgentPageProps> = ({ canWrite, 
           <form className="mag-chat-composer" onSubmit={generate}>
             <label htmlFor="mag-agent-command">أمر المحرر</label>
             <textarea id="mag-agent-command" value={command} onChange={(event) => setCommand(event.target.value.slice(0, 1200))} disabled={busy || !canWrite} rows={4} placeholder="مثال: اليوم ولّد 10 مقالات شتوية، أو ولّد ريلز لاسم منتج موجود في قاعدة البيانات" />
-            <div><small>{command.length} / 1200 · الحد الأقصى 10 أفكار في الدفعة</small><button type="submit" disabled={!command.trim() || busy || !canWrite}>{busy ? <Loader2 /> : <ArrowUp />}إرسال</button></div>
+            <div><small>{command.length} / 1200 · الحد الأقصى 10 أفكار في الدفعة</small><button
+              type="submit"
+              disabled={!command.trim() || busy || !canWrite}
+              /* Un bouton grisé doit dire POURQUOI il l'est : commande vide, requête en cours, ou droits. */
+              title={!canWrite ? 'لا تملك صلاحية الكتابة في هذا القسم.' : !command.trim() ? 'اكتب الطلب أولاً في السطر أعلاه.' : busy ? 'جارٍ توليد الأفكار…' : 'إرسال الطلب إلى AYROVI AI Core'}
+            >{busy ? <Loader2 /> : <ArrowUp />}إرسال</button></div>
           </form>
           <aside className="mag-rights-note"><CheckCircle2 /><p><strong>مراجعة بشرية إلزامية</strong><span>الصور العامة مرجعية فقط. علامة «مرخص للنشر» تظهر فقط لمقاطع Pexels/Pixabay التي أعادها مزود API.</span></p></aside>
         </section>

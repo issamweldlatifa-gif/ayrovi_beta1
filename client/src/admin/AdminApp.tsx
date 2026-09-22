@@ -2,10 +2,11 @@ import { FONT_STACK } from '../../../shared/brand.generated';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Check, RefreshCw, ExternalLink, AlertCircle, Bell, Calculator, Calendar, Camera, ChartLine, CheckCircle2, CreditCard, Eye, Gift, Globe2, Grid,
-  History, Home, Image, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,
+  History, Home, Image, Info, LayoutGrid, LensBox, Link2, LogOut, Menu, MessageSquare, Package, Palette, Pencil, Percent, Plus, Search as SearchIcon,
   Settings, ShieldCheck, ShoppingBag, Sparkles, Tag, Truck, User, X,
 } from '../components/QatafoIcons';
 import { ADMIN_SESSION_EXPIRED_EVENT, adminApi, ApiError, loadIdentity, login, logout, queryString } from './api';
+import { csvFileName, downloadCsv } from './csv';
 import {
   Badge, Button, CardTitle, ConfirmDialog, DataColumn, DataTable, DatePicker, Field, Filters, Form,
   ImageUploader, Modal, PageHeader, Pagination, Search, Select, StatusBadge, Toast,
@@ -136,24 +137,107 @@ const resources: Record<string, ResourceDefinition> = {
 
 
 
+/**
+ * Porte d'entrée de la console — modèle A.
+ *
+ * Elle porte les MÊMES rôles de couleur, les mêmes filets de 1 px et le même rayon de 4 px que la
+ * coquille (voir `admin-console.css` §12) : la connexion n'est plus un écran « d'avant ».
+ *
+ * Trois éléments de cet écran sont VIVANTS, et c'est vérifiable :
+ *  1. le cartouche d'état est alimenté par `/api/health` — il affiche la version réelle du serveur ;
+ *  2. le bouton « Réessayer » rejoue la sonde sur place, sans recharger la page ;
+ *  3. l'œil du mot de passe porte un état accessible (`aria-pressed`) et pas seulement une icône.
+ */
 const LoginPage: React.FC<{ onAuthenticated: (user: UserIdentity) => void }> = ({ onAuthenticated }) => {
   const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [show, setShow] = useState(false);
+  const [health, setHealth] = useState<{ state: 'checking' | 'ok' | 'down'; version?: string }>({ state: 'checking' });
+  const probe = useCallback(async () => {
+    setHealth({ state: 'checking' });
+    try {
+      const response = await fetch('/api/health', { credentials: 'omit' });
+      const data = await response.json();
+      setHealth(data?.status === 'ok' ? { state: 'ok', version: typeof data.version === 'string' ? data.version : undefined } : { state: 'down' });
+    } catch { setHealth({ state: 'down' }); }
+  }, []);
+  useEffect(() => { void probe(); }, [probe]);
   const submit = async (event: React.FormEvent) => {
     event.preventDefault(); setBusy(true); setError('');
     try { onAuthenticated(await login(email, password)); } catch (reason: any) { setError(reason.message); } finally { setBusy(false); }
   };
   return (
     <main className="admin-login">
-      <section className="admin-login-brand"><div className="admin-login-brand__mark"><img src="/media/logo-ayrovi.png" alt="AYROVI" style={{width:40,height:40,objectFit:"contain"}} /></div><span>AYROVI / CONTROL</span><h1>Le commerce mondial,<br />piloté depuis Tunis.</h1><p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité.</p><div className="admin-login-grid"><article><strong>24</strong><span>gouvernorats</span></article><article><strong>4</strong><span>rôles sécurisés</span></article><article><strong>100%</strong><span>backend-driven</span></article></div></section>
-      <section className="admin-login-panel"><div className="admin-login-box"><div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" style={{height:20,width:'auto',objectFit:'contain'}} /></div><span className="admin-eyebrow">Espace sécurisé</span><h2>Bienvenue.</h2><p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
-        <Form onSubmit={submit}>
-          <Field label="Adresse email" required full><input type="email" value={email} autoComplete="username" onChange={(e) => setEmail(e.target.value)} placeholder="admin@ayrovi.tn" required /></Field>
-          <Field label="Mot de passe" required full><div className="admin-password"><input type={show ? 'text' : 'password'} value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} required /><button type="button" onClick={() => setShow(!show)}>{show ? 'Masquer' : 'Afficher'}</button></div></Field>
-          {error && <div className="admin-login-error"><AlertCircle size={18} />{error}</div>}
-          <Button busy={busy} className="admin-login-submit" type="submit">Se connecter</Button>
-        </Form>
-        <div className="admin-login-security"><ShieldCheck size={18} /><span>Session HttpOnly, protection CSRF et permissions par rôle.</span></div>
-      </div></section>
+      {/*
+      {/* Identité : le verrou A.ROVI porte le nom une seule fois (emblème + « YROVI »), ici en
+          version blanche puisque le panneau est en encre. La ligne de service dit ce qu'on ouvre. */}
+      <section className="admin-login-brand">
+        <img src="/media/logo-ayrovi-lockup-white-orange.svg" alt="AYROVI" className="admin-login-brand__lockup" />
+        <span>CONSOLE D’EXPLOITATION</span>
+        <h1>Le commerce mondial,<br />piloté depuis Tunis.</h1>
+        <p>Contenu, arrivages, commandes, tarification et assistance — une seule source de vérité, la même que le site public.</p>
+        <div className="admin-login-grid">
+          <article><strong>24</strong><span>gouvernorats</span></article>
+          <article><strong>4</strong><span>rôles sécurisés</span></article>
+          <article><strong>100%</strong><span>backend-driven</span></article>
+        </div>
+        <div className="admin-login-foot">
+          <div><b>v{health.version ?? '—'}</b><i>·</i><span>Console d’exploitation</span></div>
+          <div><span>Session chiffrée</span><i>·</i><span>CSRF</span><i>·</i><span>Droits par rôle</span></div>
+        </div>
+      </section>
+      <section className="admin-login-panel">
+        <div className="admin-login-box">
+          <div className="admin-login-mobile-logo"><img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" style={{ height: 20, width: 'auto', objectFit: 'contain' }} /></div>
+          {/* Cartouche d'état : la sonde est réelle, donc le chiffre affiché est celui du serveur en face. */}
+          <div className="admin-login-status" data-state={health.state} role="status" aria-live="polite">
+            <i aria-hidden="true" />
+            {health.state === 'ok' && <span><b>Serveur opérationnel</b>{health.version ? ` · v${health.version}` : ''}</span>}
+            {health.state === 'checking' && <span><b>Vérification du serveur…</b></span>}
+            {health.state === 'down' && <span><b>Serveur injoignable</b> — la connexion échouera tant que l’API ne répond pas.</span>}
+            {health.state === 'down' && <button type="button" onClick={() => void probe()}>Réessayer</button>}
+          </div>
+          <span className="admin-eyebrow">Accès sécurisé</span>
+          <h2>Bienvenue.</h2>
+          <p>Connectez-vous avec le compte administrateur configuré sur le serveur.</p>
+          <Form onSubmit={submit}>
+            <Field label="Adresse email" required full>
+              <input type="email" name="email" value={email} autoComplete="username" inputMode="email" autoFocus aria-describedby="admin-login-email-help" onChange={(e) => setEmail(e.target.value)} placeholder="admin@ayrovi.tn" required />
+            </Field>
+            <Field label="Mot de passe" required full>
+              <div className="admin-password">
+                <input type={show ? 'text' : 'password'} name="password" value={password} autoComplete="current-password" onChange={(e) => setPassword(e.target.value)} required />
+                <button
+                  type="button"
+                  onClick={() => setShow(!show)}
+                  aria-pressed={show}
+                  aria-label={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  title={show ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >{show ? 'Masquer' : 'Afficher'}</button>
+              </div>
+              <small id="admin-login-email-help">Le mot de passe n’est jamais stocké en clair : le serveur ne compare qu’une empreinte.</small>
+            </Field>
+            {error && <div className="admin-login-error" role="alert"><AlertCircle size={18} />{error}</div>}
+            <Button busy={busy} className="admin-login-submit" type="submit">Se connecter</Button>
+          </Form>
+          {/* Pas d'auto-réinitialisation publique côté console — c'est un choix de sécurité, pas un
+              oubli. On remplace donc l'impasse par la procédure réelle du serveur (`src/admin/auth.ts`). */}
+          <div className="admin-login-help">
+            <Info size={16} />
+            <span>
+              Première connexion ou mot de passe perdu ? La console n’expose <b>aucune</b> réinitialisation publique.
+              {' '}
+              <details style={{ display: 'inline' }}>
+                <summary style={{ display: 'inline', cursor: 'pointer', fontWeight: 750 }}>Voir la procédure serveur</summary>
+                <span style={{ display: 'block', marginTop: 6 }}>
+                  Sur la machine du serveur, définissez <code>ADMIN_EMAIL</code> et <code>ADMIN_PASSWORD</code> (12 caractères minimum) puis redémarrez :
+                  le compte est créé au premier démarrage. Si un administrateur existe déjà et que son mot de passe est inconnu,
+                  ajoutez <code>ADMIN_BOOTSTRAP_RESET=yes</code> le temps d’un démarrage — le couple est alors ré-appliqué — puis retirez la variable.
+                </span>
+              </details>
+            </span>
+          </div>
+          <div className="admin-login-security"><ShieldCheck size={18} /><span>Session HttpOnly, protection CSRF et permissions par rôle.</span></div>
+        </div>
+      </section>
     </main>
   );
 };
@@ -712,8 +796,44 @@ const UsersPage:React.FC=()=>{
   <Modal open={modal} title="Créer un utilisateur" onClose={()=>setModal(false)}><Form onSubmit={e=>{e.preventDefault();create();}}><Field label="Nom" required full><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} required/></Field><Field label="Email" required full><input type="email" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} required/></Field><Field label="Mot de passe" hint="12 caractères minimum" required full><input type="password" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} required/></Field><Field label="Rôle" full><Select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} options={options(['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'])}/></Field><Button busy={busy} type="submit">Créer le compte</Button></Form></Modal>{toast&&<Toast {...toast}/>}</>;
 };
 
-const AuditPage:React.FC=()=>{const[rows,setRows]=useState<any[]>([]);const[page,setPage]=useState({page:1,totalPages:1,total:0});const[loading,setLoading]=useState(true);const load=async(p=1)=>{setLoading(true);const r=await adminApi<any>(`/audit-logs?page=${p}&pageSize=30`);setRows(r.data);setPage(r.pagination);setLoading(false);};useEffect(()=>{load();},[]);return <><PageHeader title="Journal d’audit" description="Qui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après."/><section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[{key:'created_at',label:'Date',render:r=>formatDate(r.created_at,true)},{key:'user_name',label:'Acteur'},{key:'action',label:'Action',render:r=><StatusBadge status={r.action}/>},{key:'module',label:'Module'},{key:'entity_id',label:'Cible',render:r=><code>{r.entity_id||'—'}</code>},{key:'changes',label:'Modification',render:r=><small>{r.old_value?'Valeur précédente conservée':''}{r.old_value&&r.new_value?' → ':''}{r.new_value?'Nouvelle valeur conservée':''}</small>}]}/><Pagination {...page} onChange={load}/></section></>};
-
+/**
+ * Journal d'audit — qui a fait quoi, quand, sur quelle donnée, avec les valeurs avant/après.
+ *
+ * Deux ajouts du 2026-09-22, tirés de l'usage réel d'un journal :
+ *  • l'export CSV de la page courante (l'opérateur doit pouvoir transmettre une période à un tiers
+ *    — comptable, assurance, contrôle — sans lui donner un accès à la console) ;
+ *  • un bouton de rechargement, parce qu'un journal se consulte après une action, et qu'on ne
+ *    devrait pas avoir à recharger toute la console pour voir sa propre trace arriver.
+ * Les colonnes de l'export sont EXACTEMENT celles de la table, dans le même ordre.
+ */
+const AuditPage:React.FC=()=>{
+  const AUDIT_COLUMNS=[
+    {key:'created_at',label:'Date'},{key:'user_name',label:'Acteur'},{key:'action',label:'Action'},
+    {key:'module',label:'Module'},{key:'entity_id',label:'Cible'},
+    {key:'old_value',label:'Valeur précédente'},{key:'new_value',label:'Nouvelle valeur'},
+  ];
+  const[rows,setRows]=useState<any[]>([]);const[page,setPage]=useState({page:1,totalPages:1,total:0});const[loading,setLoading]=useState(true);
+  const load=async(p=1)=>{setLoading(true);try{const r=await adminApi<any>(`/audit-logs?page=${p}&pageSize=30`);setRows(r.data);setPage(r.pagination);}finally{setLoading(false);}};
+  useEffect(()=>{load();},[]);
+  return <>
+    <PageHeader title="Journal d’audit" description="Qui a fait quoi, quand, sur quelle donnée — avec valeurs avant et après." action={
+      <div className="admin-filters">
+        <Button variant="secondary" type="button" onClick={()=>void load(page.page)} busy={loading}>Rafraîchir</Button>
+        <Button variant="secondary" type="button" disabled={loading||rows.length===0}
+          title={rows.length===0?'Aucune entrée à exporter sur cette page.':`Exporter les ${rows.length} entrées affichées en CSV`}
+          onClick={()=>downloadCsv(csvFileName('ayrovi-journal-audit'),AUDIT_COLUMNS,rows)}>Exporter CSV</Button>
+      </div>
+    }/>
+    <section className="admin-list-card"><DataTable rows={rows} loading={loading} columns={[
+      {key:'created_at',label:'Date',render:r=>formatDate(r.created_at,true)},
+      {key:'user_name',label:'Acteur'},
+      {key:'action',label:'Action',render:r=><StatusBadge status={r.action}/>},
+      {key:'module',label:'Module'},
+      {key:'entity_id',label:'Cible',render:r=><code>{r.entity_id||'—'}</code>},
+      {key:'changes',label:'Modification',render:r=><small>{r.old_value?'Valeur précédente conservée':''}{r.old_value&&r.new_value?' → ':''}{r.new_value?'Nouvelle valeur conservée':''}</small>},
+    ]}/><Pagination {...page} onChange={load}/></section>
+  </>;
+};
 
 // ===== التقارير المالية: مداخيل / مصاريف / أرباح =====
 const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
@@ -726,7 +846,7 @@ const ReportsPage:React.FC<{canWrite:boolean}>=({canWrite})=>{
   const add=async()=>{setBusy(true);try{await adminApi('/expenses',{method:'POST',body:JSON.stringify({...form,amountTnd:Number(form.amountTnd)})});setForm({label:'',category:'OTHER',amountTnd:'',expenseDate:today,notes:''});await load();setToast({message:'Dépense enregistrée.',tone:'success'});}catch(e:any){setToast({message:e.message,tone:'error'});}finally{setBusy(false);}};
   const remove=async(id:string)=>{try{await adminApi(`/expenses/${id}`,{method:'DELETE'});await load();}catch(e:any){setToast({message:e.message,tone:'error'});}};
   const maxMonthly=Math.max(1,...((report?.monthly||[]) as any[]).flatMap(m=>[m.income,m.expenses]));
-  return <><PageHeader title="Rapports financiers" description="Revenus encaissés (acomptes confirmés), dépenses et bénéfice net — calculés depuis la base." action={<div className="admin-report-range"><input type="date" value={from} onChange={e=>setFrom(e.target.value)}/><span>→</span><input type="date" value={to} onChange={e=>setTo(e.target.value)}/></div>}/>
+  return <><PageHeader title="Rapports financiers" description="Revenus encaissés (acomptes confirmés), dépenses et bénéfice net — calculés depuis la base." action={<div className="admin-report-range"><input type="date" value={from} aria-label="Début de la période" title="Début de la période" onChange={e=>setFrom(e.target.value)}/><span>→</span><input type="date" value={to} aria-label="Fin de la période" title="Fin de la période" onChange={e=>setTo(e.target.value)}/></div>}/>
   {report&&<div className="admin-kpi-grid">
     <section className="admin-kpi"><span>Revenus encaissés</span><strong className="is-income">{formatMoney(report.income)}</strong><small>{report.incomeCount} acompte(s) confirmé(s)</small></section>
     <section className="admin-kpi"><span>Dépenses</span><strong className="is-expense">{formatMoney(report.expenses)}</strong><small>{report.expensesCount} ligne(s)</small></section>
@@ -837,6 +957,11 @@ const AdminShell:React.FC<{user:UserIdentity;onLogout:()=>void}>=({user,onLogout
 
 export const AdminApp:React.FC=()=>{
   const[user,setUser]=useState<UserIdentity|null>(null);const[loading,setLoading]=useState(true);
+  // Le titre de l'onglet : la console s'annonce comme console, pas avec le titre marketing du site.
+  useEffect(()=>{
+    const previous=document.title;document.title='AYROVI · Console d’exploitation';
+    return()=>{document.title=previous;};
+  },[]);
   useEffect(()=>{
     let active=true;
     const resetExpiredSession=()=>{if(active){setUser(null);setLoading(false);}};

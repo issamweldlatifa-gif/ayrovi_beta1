@@ -9,6 +9,19 @@
 import React from 'react';
 import { ChevronDown } from '../../components/QatafoIcons';
 
-export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { options: Array<{ value: string; label: string }> }> = ({ options, ...props }) => (
-  <div className="admin-select"><select {...props}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><ChevronDown size={16} /></div>
-);
+/**
+ * Nom accessible du champ : un `<select>` posé comme filtre (« Tous les statuts », « Toutes les
+ * catégories »…) n'avait ni étiquette ni `aria-label` — un lecteur d'écran annonçait « liste ».
+ * Le libellé du premier choix décrit exactement le filtre ; il sert donc de nom par défaut, et un
+ * `aria-label` explicite reste prioritaire quand l'appelant en fournit un.
+ */
+export const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement> & { options: Array<{ value: string; label: string }> }> = ({ options, ...props }) => {
+  const accessibleName = (props as Record<string, unknown>)['aria-label'] || (props as Record<string, unknown>)['aria-labelledby']
+    ? undefined : options[0]?.label;
+  return (
+    <div className="admin-select">
+      <select aria-label={accessibleName} {...props}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select>
+      <ChevronDown size={16} />
+    </div>
+  );
+};

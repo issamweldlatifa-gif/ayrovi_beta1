@@ -99,7 +99,7 @@ occupe dans la foulée.
 
 | Contrôle | Résultat |
 | --- | --- |
-| `npx vitest run` | **1489 tests / 95 fichiers** — tous verts |
+| `npx vitest run` | **1514 tests / 96 fichiers** — tous verts |
 | `npm run typecheck` | propre (serveur + client) |
 | `npm run design:check` | vert (identité, inventaire, icônes) |
 | `npm run verify:public-nav` | 20/20 |
@@ -144,3 +144,108 @@ Les écrans métier, eux, n'ont jamais été touchés : ils héritent du style p
   و**أهم شي**: الترجمات العربية للتبويبات كانت نسخة من الفرنسية — تصلّحت (وصلات جديدة · هدايا
   وبطاقات · مجلة AYROVI) في العقد المشترك وفي قاعدة البيانات.
 - **الفحوصات:** 1489 تست ✅ · typecheck ✅ · design:check ✅ · 20/20 و129/129 و102/102 ✅.
+
+---
+
+## 5. Deuxième tour (toujours 2026-09-22) — « que chaque élément réponde »
+
+Demande : *« ترقية ادمين… كل عنصر يستجيب… فحص كامل… اي عنصر زائد احذف… تطوير في كل شي حتى شاشات
+ادمين… تثبت ان كل عنصر يعمل… لا تنسى تحديث واجهة دخول ادمين… تدقيق كامل وكشف ثغرات وإصلاحات »*.
+Traduction en travail : plus rien de décoratif, plus rien de gris sans raison, plus rien de cassé,
+et la porte d'entrée alignée sur le modèle A.
+
+### 5.1 L'audit, refait pour de vrai
+
+`verify/admin-audit.mjs` visite **les 49 écrans du plan servi par le serveur** et relève, écran par
+écran : erreurs JS, réponses HTTP en échec, liens morts, boutons sans nom accessible, champs sans
+étiquette, images sans `alt`, boutons désactivés sans motif, débordement horizontal.
+
+Le premier passage donnait **34 écrans à problème** — dont un vrai plantage. Le second (ci-dessous)
+donne **0 / 49**. Le détail lisible est dans `audit/RAPPORT.md`, la donnée brute dans `audit/audit.json`.
+
+| Défaut trouvé | Cause réelle | Correctif |
+| --- | --- | --- |
+| `crm-dashboard` plantait (`Cannot read properties of undefined`) | Le serveur renvoie `{ data: { metrics, recent } }`, le client lisait `d.parties` à la racine | Typage `Dashboard = { metrics?, recent? }` + lecture via `m = dashboard?.metrics ?? {}` |
+| 27 champs sans nom accessible sur 20 écrans | Les `Select` de filtre n'ont pas d'étiquette visible ; 2 champs de période non étiquetés | `Select` dérive son nom du premier choix (un `aria-label` explicite reste prioritaire), `DatePicker` accepte `label`, les deux `<input type=date>` de Rapports sont étiquetés |
+| 34 écrans avec 2 boutons grisés sans motif | Flèches « page précédente/suivante » et boutons de réordonnancement aux extrémités | `title` sur les deux flèches de pagination, `moveHint()` partagé pour les quatre écrans qui réordonnent, motif sur le bouton « إرسال » de l'agent éditorial |
+| Sondes de sécurité fausses (200 partout) | L'audit interrogeait les routes protégées **avec** le contexte déjà authentifié | Contexte anonyme séparé → **401 partout**, + révocation de session et détection de fuite de secrets |
+
+### 5.2 L'écran de connexion passe au modèle A
+
+`admin-console.css` portait les rôles de couleur sur `.bo-shell` seulement : la connexion restait
+donc un écran « d'avant » (bouton noir, grand halo décoratif). Désormais les rôles sont portés par
+`.bo-shell`, **`.admin-login` et `.admin-boot`** — la connexion hérite des mêmes filets, du même
+rayon de 4 px et de la même action orange, sans qu'aucun jeton ne soit recopié.
+
+Trois éléments de l'écran de connexion sont **vivants** (et vérifiables) :
+
+1. un cartouche d'état alimenté par `/api/health` — il affiche la vraie version du serveur et propose
+   **Réessayer** s'il ne répond pas ;
+2. l'œil du mot de passe porte un **état accessible** (`aria-pressed`) et une infobulle, pas seulement
+   un mot ;
+3. l'erreur de connexion est annoncée (`role="alert"`), et le bloc « mot de passe perdu » décrit la
+   **procédure réelle du serveur** (`ADMIN_EMAIL`/`ADMIN_PASSWORD`, puis `ADMIN_BOOTSTRAP_RESET=yes`)
+   au lieu de renvoyer vers une commande qui n'existe pas.
+
+Titre d'onglet : `AYROVI · Console d'exploitation` (la console ne s'annonce plus avec le titre
+marketing du site public).
+Captures : `audit/login-desktop.png` et `audit/login-mobile.png` — elles sont régénérées par l'audit.
+
+Identité : la connexion utilise le **verrou A.ROVI** (`logo-ayrovi-lockup-white-orange.svg` sur le
+panneau en encre, version noire sur la carte mobile). Le nom n'y est donc plus écrit deux fois. Un
+détail mesuré au passage : dans un conteneur flex en colonne, l'étirement transversal écrasait la
+hauteur imposée et centrait l'art dans une boîte trop large — l'emblème n'était plus aligné sur le
+titre. Corrigé par `align-self: flex-start` (mesuré : boîte 170 × 32, calée sur la marge du titre).
+
+### 5.3 Deux ajouts de développeur (pas de la décoration)
+
+| Ajout | Où | Ce qu'il fait |
+| --- | --- | --- |
+| **Export CSV** | `client/src/admin/csv.ts`, branché sur le moteur de ressources (`public-nav`, `inventory`) et sur le journal d'audit | Exporte **exactement les lignes et les colonnes affichées**. BOM UTF-8 (Excel lit l'arabe et les accents), échappement RFC 4180, et **formules neutralisées** : une valeur de CMS commençant par `=` ne s'exécute jamais dans le tableur de l'administrateur. |
+| **Journal d'audit : Rafraîchir + Exporter** | `AuditPage` | On consulte un journal juste après une action : on ne devrait pas recharger toute la console pour voir sa propre trace. Le bouton d'export est grisé avec son motif quand la page est vide. |
+
+Preuves en direct (Playwright, téléchargement réel) : `ayrovi-public-nav-20260922-0452.csv` (4 lignes,
+BOM présent), `ayrovi-journal-audit-20260922-0452.csv` (20 lignes, en-tête `Date,Acteur,Action,Module,
+Cible,Valeur précédente,Nouvelle valeur`).
+
+### 5.4 Durcissement : mise en cadre
+
+La console décide des prix et des remboursements : en **production** elle n'est encadrable par
+personne (`frame-ancestors 'none'` + `X-Frame-Options: DENY`), le site public le reste en
+`'self'`/`SAMEORIGIN`. Hors production, aucune contrainte n'est émise : l'aperçu de développement est
+lui-même rendu dans un cadre, et y appliquer la règle de production rendrait la console invisible.
+Cette différence est **écrite noir sur blanc dans le rapport d'audit** (section « projection
+production »), pour ne jamais présenter comme mesuré ce qui n'est que déclaré.
+
+### 5.5 Vérifications du second tour
+
+| Contrôle | Résultat |
+| --- | --- |
+| `verify/admin-audit.mjs` | **49/49 écrans sans défaut** · 0 erreur JS · 0 HTTP en échec · 0 écran vide ou bloqué |
+| Sécurité (contexte anonyme) | 10/10 surfaces en **401** · écriture sans CSRF **403** · cookie volé après déconnexion **401** · 0 fuite de secrets |
+| `npx vitest run` | **1514 tests / 96 fichiers** — dont 25 nouveaux gardes (`tests/admin-console-upgrade.test.tsx`) |
+| `npm run typecheck` | propre (serveur + client) |
+| `npm run design:check` | vert |
+| `npm run verify:public-nav` / `public-additions` / `identity` | 20/20 · 129/129 · 102/102 |
+
+Contrats amendés **parce que le comportement a changé**, jamais pour faire passer un test :
+`tests/design-primitives.test.tsx` — `Select` (nom accessible dérivé) et `Pagination` (infobulle sur
+les flèches).
+
+### ملخص بالعربي — الجولة الثانية
+
+- **عملت فحص كامل** على **49 شاشة** بالبرنامج: كل شاشة تتفتح، ما فماش خطأ JS، ما فماش طلب فاشل،
+  ما فماش زر بلا اسم، ما فماش خانة بلا تسمية، ما فماش صورة بلا وصف. **النتيجة: 49/49 نظاف.**
+- **تصلّح crash حقيقي** كان في `crm-dashboard` (السيرفر يرجع `data.metrics` والكلاينت كان يقرا من
+  الجذر) — تو الشاشة تحلّ عادي.
+- **27 خانة كانت بلا تسمية** (فلترات + زوز تواريخ في التقارير) — ولّاو كلهم عندهم اسم مقروء.
+- **34 شاشة كان فيها زوز أزرار رمادية بلا سبب** — تو كل زر رمادي يقول **علاش** هو رمادي.
+- **واجهة دخول الادمين ولّات بنفس ستايل النموذج A**: نفس الألوان ونفس الفواصل، زر « Se connecter »
+  ولّى **برتقالي** (الأكشن الوحيد)، وفمّا **كارتوس حالة** يقرا `/api/health` ويوري version الحقيقي
+  مع زر « Réessayer »، وعين كلمة السر فيها `aria-pressed`، والتيتل ولّى `AYROVI · Console`.
+- **زوز إضافات جديدة**: **تصدير CSV** (نفس السطور ونفس الأعمدة اللي في الشاشة، بـ BOM باش Excel
+  يقرا العربي، وبلا خطر formule) و**الjournal: Rafraîchir + Exporter**.
+- **أمان**: التصديق تجرّب من **contexte فارغ** → 401 في كل بلاصة، الكتابة بلا CSRF → 403، الكوكي
+  مسروق بعد logout → 401، وما فماش سربان أسرار. وفي **production** الكونسول ما يتفتحش في cadre
+  (clickjacking) — وهذي حاجة مكتوبة في التقرير بأمانة: ما تنقاسش في dev.
+- **الفحوصات**: 1514 تست / 96 ملف ✅ · typecheck ✅ · design:check ✅ · 20/20 · 129/129 · 102/102 ✅.

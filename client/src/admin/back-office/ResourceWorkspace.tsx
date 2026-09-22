@@ -10,10 +10,11 @@
  * `ContentPage` (mêmes libellés, mêmes colonnes) et les écrans métier gardent leurs composants.
  * `ResourceWorkspace` est le patron de référence, exercé par les tests, pas un écran de plus.
  */
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FileText } from '../../components/QatafoIcons';
 import { adminApi } from '../api';
 import { Button, DataColumn, DataTable, Modal, Pagination, Search, Select, StatusBadge, Toast, type TableRowAction } from '../components';
+import { csvFileName, downloadCsv } from '../csv';
 import { formatDate, formatMoney, ResourceForm, type FieldDefinition } from './resource-ui';
 import { RESOURCE_ACTION_LABELS, useBackOffice, type ResourceDescriptor } from './framework';
 
@@ -221,6 +222,18 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
     } finally { setBusy(false); }
   };
 
+  /**
+   * Colonnes de l'export = colonnes visibles à l'écran, dans le même ordre. `buildColumns` est la
+   * fonction qui alimente le tableau : l'export ne peut donc pas diverger de ce qui est affiché.
+   */
+  const exportColumns = useMemo(
+    // `label` est un noeud React dans la table : à l'export on le ramène à du texte (le libellé du
+    // descripteur serveur, qui est toujours une chaîne).
+    () => buildColumns(descriptor).map((column) => ({ key: String(column.key), label: String(column.label ?? column.key) })),
+    [descriptor],
+  );
+  const exportRows = () => downloadCsv(csvFileName(`ayrovi-${descriptor.section}`), exportColumns, rows);
+
   const statusValues = descriptor.status?.values ?? [];
   return <section className="admin-list-card bo-workspace">
     <header className="bo-workspace-header">
@@ -243,6 +256,15 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
           ouvrait l'historique d'une ligne choisie au hasard, ne l'était pas. L'historique est
           maintenant une action par ligne, là où la question se pose. */}
       <span className="bo-workspace-count">{pagination.total} résultat{pagination.total > 1 ? 's' : ''}</span>
+      {/* Export du tableau courant : mêmes lignes, mêmes colonnes, mêmes filtres que l'écran.
+          Désactivé quand la page est vide, avec la raison écrite noir sur blanc. */}
+      <Button
+        type="button"
+        variant="secondary"
+        onClick={exportRows}
+        disabled={loading || rows.length === 0}
+        title={rows.length === 0 ? 'Aucune ligne à exporter sur cette page.' : `Exporter les ${rows.length} ligne${rows.length > 1 ? 's' : ''} affichée${rows.length > 1 ? 's' : ''} en CSV`}
+      >Exporter CSV</Button>
     </div>
     <ResourceTableView descriptor={descriptor} rows={rows} loading={loading} error={error} onRetry={() => void load()}
       capabilities={capabilities} canWrite={mayWrite} onEdit={openEdit} onArchive={archive} onAudit={setAuditOf} />

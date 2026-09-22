@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Check, Square, Monitor, ArrowDown, ArrowUp, Image as ImageIcon, RefreshCw, X } from '../components/QatafoIcons';
 import { Button, ConfirmDialog, DataTable, Field, StatusBadge, Switch, Toast } from './components';
 import { adminApi } from './api';
+import { moveHint } from './moveHint';
 
 /**
  * HERO MANAGEMENT — Visual + Contenu.
@@ -313,8 +314,8 @@ export const HeroVisualsPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) =
             <li key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
               <span>{index + 1}. {HERO_ELEMENT_LABELS[key] || key}</span>
               <span style={{ display: 'flex', gap: 6 }}>
-                <Button variant="ghost" disabled={!canWrite || index === 0} onClick={() => moveHeroKey(index, -1)} aria-label="Monter"><ArrowUp size={15} /></Button>
-                <Button variant="ghost" disabled={!canWrite || index === heroKeys.length - 1} onClick={() => moveHeroKey(index, 1)} aria-label="Descendre"><ArrowDown size={15} /></Button>
+                <Button variant="ghost" disabled={!canWrite || index === 0} onClick={() => moveHeroKey(index, -1)} aria-label="Monter" title={moveHint(-1, !canWrite, index === 0)}><ArrowUp size={15} /></Button>
+                <Button variant="ghost" disabled={!canWrite || index === heroKeys.length - 1} onClick={() => moveHeroKey(index, 1)} aria-label="Descendre" title={moveHint(1, !canWrite, index === heroKeys.length - 1)}><ArrowDown size={15} /></Button>
               </span>
             </li>
           ))}
