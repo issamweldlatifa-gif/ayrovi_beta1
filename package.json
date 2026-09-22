@@ -39,7 +39,8 @@
     "verify:lens-results": "node verify/sonim-actions-runner.mjs verify/lens-results.mjs verify/lens-results-fixture.tsx",
     "verify:lens-cards": "node verify/sonim-actions-runner.mjs verify/lens-product-cards.mjs verify/lens-results-fixture.tsx",
     "verify:public-additions": "esbuild verify/public-additions-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/public-additions-runner.cjs && node .cache/public-additions-runner.cjs",
-    "verify:public-nav": "node verify/public-navigation.mjs"
+    "verify:public-nav": "node verify/public-navigation.mjs",
+    "verify:customer-auth": "esbuild verify/customer-auth-functional.ts --bundle --platform=node --packages=external --outfile=.cache/auth-functional.cjs --log-level=error && node .cache/auth-functional.cjs"
   },
   "keywords": [
     "ayrovi",

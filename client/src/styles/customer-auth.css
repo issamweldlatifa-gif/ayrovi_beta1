@@ -1,5 +1,27 @@
 /* Customer authentication — ÉDITORIAL v2, deliberately scoped to this screen.
    Shared Button / Field / Input remain the component source of truth. */
+
+/**
+ * Bloc légal de l'écran de connexion — deux jetons, deux décisions.
+ *
+ * `--ay-auth-legal-rule` : le filet qui détache le bloc légal du contenu, et celui qui SÉPARE les
+ *                          deux liens entre eux (1px, vertical).
+ * `--ay-auth-legal-wash` : le lavis de fond du bloc (1 % d'encre). À cette dose c'est un souffle,
+ *                          pas une couleur : il groupe la ligne sans la repeindre.
+ *
+ * Le réglage est centralisé ici. La variante bleue s'active en ajoutant `data-legal-tone="blue"`
+ * sur `.ay-auth` : la charte AYROVI est monochrome + orange, donc le bleu n'est pas la valeur par
+ * défaut — mais il ne coûte qu'un attribut, et rien d'autre n'est à modifier.
+ */
+.ay-auth {
+  --ay-auth-legal-rule: var(--ayrovi-border-soft);
+  --ay-auth-legal-wash: color-mix(in srgb, var(--ayrovi-text-primary) 1%, transparent);
+}
+.ay-auth[data-legal-tone='blue'] {
+  --ay-auth-legal-rule: color-mix(in srgb, #1c5db5 24%, transparent);
+  --ay-auth-legal-wash: color-mix(in srgb, #1c5db5 4%, transparent);
+}
+
 .ay-auth {
   --ayrovi-radius-control: 0px;
   color-scheme: light;
@@ -71,12 +93,28 @@
 .ay-auth__consent a { text-decoration: underline; text-underline-offset: 2px; }
 .ay-auth__switch { display: flex; flex-wrap: wrap; gap: 0 var(--ayrovi-space-2); align-items: center; justify-content: center; margin-block-start: var(--ayrovi-space-4); font-size: var(--text-small); }
 .ay-auth__switch button { min-height: var(--ayrovi-touch-target); font-weight: 600; text-decoration: underline; text-underline-offset: 4px; }
-.ay-auth__footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0 var(--ayrovi-space-5); border-top: 1px solid var(--ayrovi-border-soft); margin-block-start: var(--ayrovi-space-3); padding-block-start: var(--ayrovi-space-2); color: var(--ayrovi-text-secondary); font-size: var(--text-caption); }
-.ay-auth__footer a { display: inline-flex; align-items: center; min-height: var(--ayrovi-touch-target); }
-.ay-auth__footer a:hover { text-decoration: underline; color: var(--ayrovi-text-primary); }
+/* Bloc légal : filet de séparation au-dessus, lavis de 1 %, et filet VERTICAL entre les deux liens.
+   `border-inline-start` suit le sens de lecture : le filet se place entre les deux liens en français
+   comme en arabe, sans règle `[dir]` dédiée. */
+.ay-auth__footer { margin-block-start: var(--ayrovi-space-4); border-top: 1px solid var(--ay-auth-legal-rule); background: var(--ay-auth-legal-wash); color: var(--ayrovi-text-secondary); font-size: var(--text-caption); }
+.ay-auth__legal { display: flex; align-items: stretch; justify-content: center; }
+.ay-auth__legal a {
+  display: inline-flex; align-items: center; min-height: var(--ayrovi-touch-target);
+  padding-inline: var(--ayrovi-space-4); color: inherit;
+  /* Soulignement discret : sans lui, ces liens ne se distinguent pas d'un texte mort. */
+  text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px;
+  text-decoration-color: color-mix(in srgb, var(--ayrovi-text-secondary) 45%, transparent);
+}
+.ay-auth__legal a + a { border-inline-start: 1px solid var(--ay-auth-legal-rule); }
+.ay-auth__legal a:hover, .ay-auth__legal a:focus-visible { color: var(--ayrovi-text-primary); text-decoration-color: currentColor; }
+.ay-auth__legal a:focus-visible { outline: 2px solid var(--ayrovi-focus-ring); outline-offset: -2px; }
 .ay-auth__config { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--ayrovi-space-3); font-size: var(--text-small); }
 .ay-auth button, .ay-auth a, .ay-auth input { transition-duration: var(--ayrovi-motion-fast); }
-.ay-auth button:disabled { cursor: wait; opacity: 0.6; }
+/* Avant : tout bouton désactivé affichait un curseur d'ATTENTE — même quand il ne se passait rien.
+   Le curseur d'attente est désormais réservé au traitement réseau réel (le formulaire porte
+   `aria-busy`), et un bouton inactif dit « non » au lieu de dire « patientez ». */
+.ay-auth button:disabled { cursor: not-allowed; opacity: 0.6; }
+.ay-auth form[aria-busy='true'] button, .ay-auth [aria-busy='true'] button { cursor: wait; }
 @media (min-width: 600px) {
   .ay-auth { background: var(--ayrovi-bg-surface); padding-block: var(--ayrovi-space-8); }
   .ay-auth__container { border-radius: var(--ayrovi-radius-sheet); overflow: hidden; background: var(--ayrovi-bg-main); box-shadow: var(--ayrovi-shadow-card); }

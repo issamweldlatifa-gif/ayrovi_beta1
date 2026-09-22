@@ -644,7 +644,10 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
               </div>
               <div className="ay-auth__intro">
                 <h1 id="auth-title" tabIndex={-1}>{emailMode === 'login' ? tr('Connectez-vous.', 'تسجيل الدخول') : tr('Créez votre compte.', 'أنشئ حسابك.')}</h1>
-                <p>{emailMode === 'login' ? tr('Connectez-vous à votre univers AYROVI.', 'سجّل دخولك إلى عالم AYROVI.') : tr('Le monde du shopping vous attend.', 'عالم من التسوّق بانتظارك.')}</p>
+                {/* Le sous-titre ne répète plus le verbe du titre (« Connectez-vous. » / « Connectez-vous
+                    à votre univers… ») : il dit ce qu'il y a DERRIÈRE la porte, ce qui est la seule
+                    information utile à cet endroit. */}
+                <p>{emailMode === 'login' ? tr('Vos commandes, vos favoris et votre panier, au même endroit.', 'طلباتك، مفضّلاتك وسلّتك — في مكان واحد.') : tr('Le monde du shopping vous attend.', 'عالم من التسوّق بانتظارك.')}</p>
               </div>
             </header>
             <div className="ay-auth__card">
@@ -677,22 +680,31 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                   <fieldset disabled={authBusy} className="ay-auth__fields">
                     <legend className="sr-only">{emailMode === 'login' ? tr('Connexion par e-mail', 'الدخول بالبريد الإلكتروني') : tr('Créer un compte par e-mail', 'إنشاء حساب بالبريد الإلكتروني')}</legend>
                     {emailMode === 'register' && <FormField label={tr('Nom et prénom', 'الاسم واللقب')} htmlFor="auth-name">
-                      <ManualAuthInput id="auth-name" name="name" maxLength={100} value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Votre nom complet', 'اسمك الكامل')} required />
+                      {/* Un placeholder qui recopie l'étiquette n'apprend rien. Celui-ci montre le FORMAT attendu. */}
+                      <ManualAuthInput id="auth-name" name="name" maxLength={100} autoComplete="name" enterKeyHint="next" value={emailName} onChange={(e) => setEmailName(e.target.value)} placeholder={tr('Ex. Sarra Ben Ali', 'مثال: سارة بن علي')} required />
                     </FormField>}
                     <FormField label={tr('Adresse e-mail', 'البريد الإلكتروني')} htmlFor="auth-email">
-                      <ManualAuthInput id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('Votre adresse e-mail', 'بريدك الإلكتروني')} required />
+                      <ManualAuthInput id="auth-email" name="email" type="email" inputMode="email" dir="ltr" autoCapitalize="none" spellCheck={false} maxLength={180} autoComplete="email" enterKeyHint="next" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} placeholder={tr('vous@exemple.tn', 'you@example.tn')} required />
                     </FormField>
                     <FormField label={tr('Mot de passe', 'كلمة المرور')} htmlFor="auth-password">
                       <div className="ay-auth__password">
                         <Lock className="ay-auth__lock h-5 w-5" aria-hidden />
-                        <ManualAuthInput id="auth-password" name="password" type={showPassword ? 'text' : 'password'} minLength={8} maxLength={100} value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} placeholder={tr('Votre mot de passe', 'كلمة المرور الخاصة بك')} aria-describedby={emailMode === 'register' ? 'auth-password-hint' : undefined} required />
+                        {/* Plus de placeholder ici : l'étiquette dit déjà « Mot de passe », et la règle de
+                            longueur s'affiche sous le champ à l'inscription. `minLength` ne s'applique donc
+                            qu'à l'inscription — à la connexion, c'est le serveur qui tranche (compte ancien). */}
+                        <ManualAuthInput id="auth-password" name="password" type={showPassword ? 'text' : 'password'} minLength={emailMode === 'register' ? 8 : undefined} maxLength={100} autoComplete={emailMode === 'register' ? 'new-password' : 'current-password'} enterKeyHint="go" value={emailPassword} onChange={(e) => setEmailPassword(e.target.value)} aria-describedby={emailMode === 'register' ? 'auth-password-hint' : undefined} required />
                         <button type="button" onClick={() => setShowPassword(!showPassword)} aria-controls="auth-password" aria-pressed={showPassword} aria-label={showPassword ? tr('Masquer le mot de passe', 'إخفاء كلمة المرور') : tr('Afficher le mot de passe', 'إظهار كلمة المرور')} className="ay-auth__password-toggle">
                           {showPassword ? <EyeOff className="h-5 w-5" aria-hidden /> : <Eye className="h-5 w-5" aria-hidden />}
                         </button>
                       </div>
                       {emailMode === 'register' && <p id="auth-password-hint" className="ay-auth__hint">{tr('Au moins 8 caractères.', '8 أحرف على الأقل.')}</p>}
                     </FormField>
-                    <Button type="submit" disabled={authBusy || !emailAddress.trim() || !emailPassword || (emailMode === 'register' && !emailName.trim())} className="ay-auth__submit">
+                    {/* Un bouton gris sans explication est un bouton mort : l'utilisateur ne sait pas
+                        s'il doit remplir quelque chose ou si le site est en panne. Le bouton reste donc
+                        ACTIF — les champs sont `required`, donc le navigateur guide la saisie et le
+                        serveur tranche. Seule l'attente réseau le désactive (et là, le curseur d'attente
+                        est légitime). */}
+                    <Button type="submit" disabled={authBusy} className="ay-auth__submit">
                       {authBusy && <Loader2 className="h-5 w-5 animate-spin" aria-hidden />}
                       {authBusy ? tr('Veuillez patienter…', 'يرجى الانتظار…') : emailMode === 'login' ? tr('Se connecter', 'تسجيل الدخول') : tr('Créer mon compte', 'إنشاء حسابي')}
                     </Button>
@@ -720,9 +732,15 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                 document.getElementById('auth-title')?.focus();
               }}>{emailMode === 'login' ? tr('Créer un compte', 'إنشاء حساب') : tr('Se connecter', 'تسجيل الدخول')}</button>
             </p>}
+            {/* Bloc légal. Ce qui a changé : les deux liens ne sont plus une seule phrase grise
+                indifférenciée — un filet de 1px les SÉPARE, un autre filet détache le bloc du CTA
+                au-dessus, et chaque lien porte un soulignement discret pour qu'on voie qu'il se clique.
+                (Le contrat est le même : mêmes URL, même ouverture en nouvel onglet, même texte.) */}
             {emailMode === 'login' && <footer className="ay-auth__footer">
-              <a href="/terms.html" target="_blank" rel="noreferrer">{tr("Conditions d’utilisation", 'شروط الاستخدام')}</a>
-              <a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Confidentialité', 'الخصوصية')}</a>
+              <nav className="ay-auth__legal" aria-label={tr('Informations légales', 'معلومات قانونية')}>
+                <a href="/terms.html" target="_blank" rel="noreferrer">{tr("Conditions d’utilisation", 'شروط الاستخدام')}</a>
+                <a href="/privacy.html" target="_blank" rel="noreferrer">{tr('Confidentialité', 'الخصوصية')}</a>
+              </nav>
             </footer>}
             </div>
           </div>

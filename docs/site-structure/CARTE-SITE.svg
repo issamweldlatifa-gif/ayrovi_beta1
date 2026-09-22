@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1120" width="1600" height="1120" role="img" aria-labelledby="carte-titre carte-desc" font-family="'Zalando Sans','Noto Sans Arabic',Helvetica,Arial,sans-serif">
+  <title id="carte-titre">AYROVI — carte du site public : cinq espaces, un service admin par espace</title>
+  <desc id="carte-desc">Découpe proposée du site client en cinq espaces (Acheter, Découvrir, Suivre, Confiance, Assister), le chrome permanent qui les traverse, et le service d'administration qui alimente chacun. Bandeau bleu à 1% pour marquer les zones de revue.</desc>
+
+  <!-- ══ calque 0 : fond ══════════════════════════════════════════════════════════════════════ -->
+  <g id="fond">
+    <rect width="1600" height="1120" fill="#FFFFFF"/>
+  </g>
+
+  <!-- ══ calque 1 : titre ══════════════════════════════════════════════════════════════════════ -->
+  <g id="titre">
+    <text x="56" y="72" font-size="15" font-weight="800" letter-spacing="3" fill="#111110">AYROVI · CARTE DU SITE</text>
+    <text x="56" y="118" font-size="40" font-weight="800" letter-spacing="-1.2" fill="#111110">Cinq espaces, une seule règle : une place = une fonction.</text>
+    <text x="56" y="152" font-size="17" fill="#5A5F66">Chaque zone du site est nourrie par UN service de la console, et aucun écran de la console n'est orphelin.</text>
+    <rect x="56" y="176" width="64" height="3" fill="#FF6900"/>
+  </g>
+
+  <!-- ══ calque 2 : chrome permanent ═══════════════════════════════════════════════════════════ -->
+  <g id="chrome">
+    <rect x="56" y="212" width="1488" height="96" fill="#F6F7F8" stroke="#E3E5E7"/>
+    <text x="80" y="240" font-size="12" font-weight="800" letter-spacing="2" fill="#5A5F66">CHROME PERMANENT — visible sur tout le site</text>
+    <g font-size="13" fill="#111110">
+      <text x="80" y="268" font-weight="700">Bandeau d'annonce</text>
+      <text x="80" y="288" font-size="11" fill="#5A5F66">piloté (ticker)</text>
+      <text x="252" y="268" font-weight="700">En-tête</text>
+      <text x="252" y="288" font-size="11" fill="#5A5F66">logo · recherche · compte · panier</text>
+      <text x="560" y="268" font-weight="700">Barre d'onglets</text>
+      <text x="560" y="288" font-size="11" fill="#5A5F66">Arrivage · Gift &amp; Cards · Magazine</text>
+      <text x="880" y="268" font-weight="700">Menu</text>
+      <text x="880" y="288" font-size="11" fill="#5A5F66">5 groupes · FR/AR</text>
+      <text x="1080" y="268" font-weight="700">Pied de page</text>
+      <text x="1080" y="288" font-size="11" fill="#5A5F66">marque · canaux · légal</text>
+      <text x="1330" y="268" font-weight="700">Barre mobile</text>
+      <text x="1330" y="288" font-size="11" fill="#5A5F66">4 accès + panier</text>
+    </g>
+  </g>
+
+  <!-- ══ calque 3 : les cinq espaces ═══════════════════════════════════════════════════════════ -->
+  <g id="espaces">
+    <!-- 1 ACHETER -->
+    <g>
+      <rect x="56" y="340" width="284" height="474" fill="#FFFFFF" stroke="#E3E5E7"/>
+      <rect x="56" y="340" width="284" height="4" fill="#FF6900"/>
+      <text x="80" y="384" font-size="28" font-weight="800" fill="#111110">01</text>
+      <text x="140" y="384" font-size="20" font-weight="800" letter-spacing="-0.4" fill="#111110">ACHETER</text>
+      <text x="80" y="412" font-size="15" fill="#5A5F66" direction="rtl" text-anchor="end">التسوّق</text>
+      <text x="80" y="446" font-size="12.5" fill="#111110">Le parcours qui mène au panier,</text>
+      <text x="80" y="464" font-size="12.5" fill="#111110">et pas un clic de plus.</text>
+      <g font-size="12" fill="#5A5F66">
+        <text x="80" y="496">Accueil (hero, LENS, stories)</text>
+        <text x="80" y="518">Tous les produits</text>
+        <text x="80" y="540">Fiche produit</text>
+        <text x="80" y="562">Recherche + LENS photo</text>
+        <text x="80" y="584">Panier</text>
+        <text x="80" y="606">Commande (checkout)</text>
+      </g>
+      <line x1="80" y1="640" x2="316" y2="640" stroke="#E3E5E7"/>
+      <text x="80" y="664" font-size="11" font-weight="800" letter-spacing="1" fill="#5A5F66">NOURRI PAR</text>
+      <text x="80" y="688" font-size="12.5" font-weight="700" fill="#111110">Catalogue</text>
+      <text x="80" y="708" font-size="11" fill="#5A5F66">Catalogue · Contenu (hero, LENS)</text>
+      <text x="80" y="730" font-size="11" fill="#5A5F66">Tarification</text>
+    </g>
+
+    <!-- 2 DÉCOUVRIR -->
+    <g>
+      <rect x="358" y="340" width="284" height="474" fill="#FFFFFF" stroke="#E3E5E7"/>
+      <rect x="358" y="340" width="284" height="4" fill="#111110"/>
+      <text x="382" y="384" font-size="28" font-weight="800" fill="#111110">02</text>
+      <text x="442" y="384" font-size="20" font-weight="800" letter-spacing="-0.4" fill="#111110">DÉCOUVRIR</text>
+      <text x="382" y="412" font-size="15" fill="#5A5F66" direction="rtl" text-anchor="end">استكشف</text>
+      <text x="382" y="446" font-size="12.5" fill="#111110">Ce qui donne envie de revenir :</text>
+      <text x="382" y="464" font-size="12.5" fill="#111110">le récit et le rythme.</text>
+      <g font-size="12" fill="#5A5F66">
+        <text x="382" y="496">Arrivage (/arrivage)</text>
+        <text x="382" y="518">Gift &amp; Cards (/gift-cards)</text>
+        <text x="382" y="540">Magazine (/magazine)</text>
+        <text x="382" y="562">Social (stories)</text>
+        <text x="382" y="584">Marques partenaires</text>
+        <text x="382" y="606">Bandeau d'annonce</text>
+      </g>
+      <line x1="382" y1="640" x2="618" y2="640" stroke="#E3E5E7"/>
+      <text x="382" y="664" font-size="11" font-weight="800" letter-spacing="1" fill="#5A5F66">NOURRI PAR</text>
+      <text x="382" y="688" font-size="12.5" font-weight="700" fill="#111110">Contenu</text>
+      <text x="382" y="708" font-size="11" fill="#5A5F66">Barre publique · Arrivages · Promos</text>
+      <text x="382" y="730" font-size="11" fill="#5A5F66">Magazine · Ticker · Social</text>
+    </g>
+
+    <!-- 3 SUIVRE -->
+    <g>
+      <rect x="660" y="340" width="284" height="474" fill="#FFFFFF" stroke="#E3E5E7"/>
+      <rect x="660" y="340" width="284" height="4" fill="#111110"/>
+      <text x="684" y="384" font-size="28" font-weight="800" fill="#111110">03</text>
+      <text x="744" y="384" font-size="20" font-weight="800" letter-spacing="-0.4" fill="#111110">SUIVRE</text>
+      <text x="684" y="412" font-size="15" fill="#5A5F66" direction="rtl" text-anchor="end">تابع</text>
+      <text x="684" y="446" font-size="12.5" fill="#111110">L'après-achat : c'est là qu'on</text>
+      <text x="684" y="464" font-size="12.5" fill="#111110">gagne un client qui revient.</text>
+      <g font-size="12" fill="#5A5F66">
+        <text x="684" y="496">Mon compte</text>
+        <text x="684" y="518">Mes commandes + suivi</text>
+        <text x="684" y="540">Acompte et paiement</text>
+        <text x="684" y="562">Mes favoris</text>
+        <text x="684" y="584">Mes adresses</text>
+        <text x="684" y="606">Support (ticket / IA)</text>
+      </g>
+      <line x1="684" y1="640" x2="920" y2="640" stroke="#E3E5E7"/>
+      <text x="684" y="664" font-size="11" font-weight="800" letter-spacing="1" fill="#5A5F66">NOURRI PAR</text>
+      <text x="684" y="688" font-size="12.5" font-weight="700" fill="#111110">Commerce</text>
+      <text x="684" y="708" font-size="11" fill="#5A5F66">Commandes · Clients</text>
+      <text x="684" y="730" font-size="11" fill="#5A5F66">Support · CRM 360</text>
+    </g>
+
+    <!-- 4 CONFIANCE -->
+    <g>
+      <rect x="962" y="340" width="284" height="474" fill="#FFFFFF" stroke="#E3E5E7"/>
+      <rect x="962" y="340" width="284" height="4" fill="#111110"/>
+      <text x="986" y="384" font-size="28" font-weight="800" fill="#111110">04</text>
+      <text x="1046" y="384" font-size="20" font-weight="800" letter-spacing="-0.4" fill="#111110">CONFIANCE</text>
+      <text x="986" y="412" font-size="15" fill="#5A5F66" direction="rtl" text-anchor="end">ثقة</text>
+      <text x="986" y="446" font-size="12.5" fill="#111110">Les pages qui répondent avant</text>
+      <text x="986" y="464" font-size="12.5" fill="#111110">que la question ne se pose.</text>
+      <g font-size="12" fill="#5A5F66">
+        <text x="986" y="496">À propos d'AYROVI</text>
+        <text x="986" y="518">Conditions (/terms.html)</text>
+        <text x="986" y="540">Confidentialité (/privacy.html)</text>
+        <text x="986" y="562">Suppression des données</text>
+        <text x="986" y="584">Contact et canaux officiels</text>
+        <text x="986" y="606">Livraison et retours</text>
+      </g>
+      <line x1="986" y1="640" x2="1222" y2="640" stroke="#E3E5E7"/>
+      <text x="986" y="664" font-size="11" font-weight="800" letter-spacing="1" fill="#5A5F66">NOURRI PAR</text>
+      <text x="986" y="688" font-size="12.5" font-weight="700" fill="#111110">Système</text>
+      <text x="986" y="708" font-size="11" fill="#5A5F66">Réglages · واجهتي · Canaux</text>
+      <text x="986" y="730" font-size="11" fill="#5A5F66">Journal d'audit</text>
+    </g>
+
+    <!-- 5 ASSISTER -->
+    <g>
+      <rect x="1264" y="340" width="280" height="474" fill="#FFFFFF" stroke="#E3E5E7"/>
+      <rect x="1264" y="340" width="280" height="4" fill="#111110"/>
+      <text x="1288" y="384" font-size="28" font-weight="800" fill="#111110">05</text>
+      <text x="1348" y="384" font-size="20" font-weight="800" letter-spacing="-0.4" fill="#111110">ASSISTER</text>
+      <text x="1288" y="412" font-size="15" fill="#5A5F66" direction="rtl" text-anchor="end">مساعدة</text>
+      <text x="1288" y="446" font-size="12.5" fill="#111110">La couche IA : elle aide à choisir,</text>
+      <text x="1288" y="464" font-size="12.5" fill="#111110">elle ne remplace pas l'humain.</text>
+      <g font-size="12" fill="#5A5F66">
+        <text x="1288" y="496">AYROVI AI (assistant)</text>
+        <text x="1288" y="518">AYROVIX Lens (photo)</text>
+        <text x="1288" y="540">AYVISI Vision (bientôt)</text>
+        <text x="1288" y="562">Réponses vérifiées par l'Admin</text>
+      </g>
+      <line x1="1288" y1="640" x2="1520" y2="640" stroke="#E3E5E7"/>
+      <text x="1288" y="664" font-size="11" font-weight="800" letter-spacing="1" fill="#5A5F66">NOURRI PAR</text>
+      <text x="1288" y="688" font-size="12.5" font-weight="700" fill="#111110">Contenu · IA</text>
+      <text x="1288" y="708" font-size="11" fill="#5A5F66">Assistant (base de connaissance)</text>
+      <text x="1288" y="730" font-size="11" fill="#5A5F66">LENS · Découverte IA</text>
+    </g>
+  </g>
+
+  <!-- ══ calque 4 : la revue, par espace ═══════════════════════════════════════════════════════ -->
+  <g id="revue">
+    <rect x="56" y="850" width="1488" height="212" fill="#F6F7F8" stroke="#E3E5E7"/>
+    <rect x="56" y="850" width="1488" height="3" fill="#1C5DB5"/>
+    <text x="80" y="886" font-size="12" font-weight="800" letter-spacing="2" fill="#1C5DB5">LA REVUE — CE QU'ON VÉRIFIE DANS CHAQUE ESPACE</text>
+    <g font-size="12.5" fill="#111110">
+      <text x="80" y="920" font-weight="700">1. Un seul chemin par intention</text>
+      <text x="80" y="941" fill="#5A5F66">Trouver, comparer, commander : chaque but a</text>
+      <text x="80" y="959" fill="#5A5F66">une entrée évidente, et zéro doublon de menu.</text>
+
+      <text x="470" y="920" font-weight="700">2. Rien qui ne serve</text>
+      <text x="470" y="941" fill="#5A5F66">Chaque bloc affiché est branché sur une donnée</text>
+      <text x="470" y="959" fill="#5A5F66">réelle. Bloc décoratif = bloc supprimé.</text>
+
+      <text x="860" y="920" font-weight="700">3. La même règle en FR et en AR</text>
+      <text x="860" y="941" fill="#5A5F66">Aucun libellé latin qui traîne en arabe, aucun</text>
+      <text x="860" y="959" fill="#5A5F66">texte qui répète son titre, RTL vérifié à 390 px.</text>
+
+      <text x="1230" y="920" font-weight="700">4. Mesuré, pas supposé</text>
+      <text x="1230" y="941" fill="#5A5F66">Captures avant/après, comptage des clics,</text>
+      <text x="1230" y="959" fill="#5A5F66">0 erreur console, 0 débordement horizontal.</text>
+    </g>
+    <line x1="80" y1="986" x2="1520" y2="986" stroke="#D5D9D9"/>
+    <text x="80" y="1014" font-size="12.5" fill="#111110"><tspan font-weight="800">Ordre proposé :</tspan> 01 Acheter (le chiffre) → 03 Suivre (la fidélité) → 04 Confiance (la preuve) → 02 Découvrir (le rythme) → 05 Assister (la couche IA).</text>
+    <text x="80" y="1038" font-size="12" fill="#5A5F66">La revue se fait espace par espace, avec une capture FR et AR à 390 px et à 1360 px, et une vérification en base de ce qui est affiché.</text>
+  </g>
+
+  <!-- ══ calque 5 : note de méthode ═══════════════════════════════════════════════════════════ -->
+  <g id="note">
+    <text x="56" y="1096" font-size="11.5" fill="#6B7076">Carte produite le 2026-09-22 — AYROVI, Tunis. Chrome piloté depuis la console : barre publique, bandeau, sections d'accueil, canaux du pied de page.</text>
+  </g>
+</svg>
