@@ -95,7 +95,8 @@
         "overflow": false,
         "bad": [],
         "loaded": [
-          "Zalando Sans"
+          "Zalando Sans",
+          "Noto Sans Arabic"
         ]
       }
     },
@@ -114,7 +115,8 @@
         "overflow": false,
         "bad": [],
         "loaded": [
-          "Zalando Sans"
+          "Zalando Sans",
+          "Noto Sans Arabic"
         ]
       }
     },
@@ -133,7 +135,8 @@
         "overflow": false,
         "bad": [],
         "loaded": [
-          "Zalando Sans"
+          "Zalando Sans",
+          "Noto Sans Arabic"
         ]
       }
     },
@@ -152,7 +155,8 @@
         "overflow": false,
         "bad": [],
         "loaded": [
-          "Zalando Sans"
+          "Zalando Sans",
+          "Noto Sans Arabic"
         ]
       }
     },
@@ -301,8 +305,7 @@
         "overflow": false,
         "bad": [],
         "loaded": [
-          "Zalando Sans",
-          "Noto Sans Arabic"
+          "Zalando Sans"
         ]
       }
     },

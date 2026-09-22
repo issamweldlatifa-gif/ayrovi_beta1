@@ -1,4 +1,5 @@
 import { enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
+import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
 import { Router } from 'express';
 import { cardGatewayAvailable } from '../services/paymentGateway';
@@ -130,6 +131,26 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT id,image,video,title,subtitle,cta,target_url targetUrl,display_order displayOrder
       FROM hero_slides WHERE active=1 ORDER BY display_order,id`);
     res.json({ success: true, data: rows });
+  });
+
+  router.get('/navigation', (_req, res) => {
+    // Barre publique sous l'en-tête : seules les entrées actives sont servies, dans l'ordre Admin.
+    // Aucun chemin n'est inventé côté client — `href` vient du contrat partagé.
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    const rows = db.all<any>('SELECT id,destination,label_fr,label_ar,display_order FROM public_nav_items WHERE active=1 ORDER BY display_order,id');
+    const data = rows.flatMap((row) => {
+      const destination = publicNavDestination(row.destination);
+      if (!destination) return [];
+      return [{
+        id: String(row.id),
+        destination: destination.id,
+        href: destination.href,
+        labelFr: String(row.label_fr || destination.labelFr),
+        labelAr: String(row.label_ar || row.label_fr || destination.labelAr),
+        order: Number(row.display_order) || 0,
+      }];
+    });
+    res.json({ success: true, data });
   });
 
   router.get('/announcement-messages', (_req, res) => {

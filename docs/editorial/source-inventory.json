@@ -4,7 +4,7 @@
   "totals": {
     "files": 210,
     "customerAndSharedFiles": 161,
-    "controls": 429,
+    "controls": 427,
     "iconAliases": 99,
     "uniqueGlyphs": 96
   },
@@ -3631,8 +3631,8 @@
     {
       "file": "client/src/admin/back-office/framework.tsx",
       "domain": "admin",
-      "sha256": "3609c9a23338d1c7438a4dfb416a6e05fab00709e5a45a93f07fca39a7801595",
-      "lines": 259,
+      "sha256": "e040438fa15682802f18ee420155cd6a50aedc1fb9cb8f293179aabb9702dea9",
+      "lines": 261,
       "imports": [
         "react",
         "../api"
@@ -3719,9 +3719,10 @@
     {
       "file": "client/src/admin/back-office/resource-ui.tsx",
       "domain": "admin",
-      "sha256": "42932e19ac8b5718c23ebdf9915a49d3552d21b7c8ad2e1cadc591f1c8919323",
-      "lines": 88,
+      "sha256": "500907ac9328ce5099b924b5449917125377900316ee35d30354ea925ded137d",
+      "lines": 92,
       "imports": [
+        "../../../../shared/publicNavigation",
         "react",
         "../../components/QatafoIcons",
         "../components"
@@ -3737,7 +3738,7 @@
       "controls": [
         {
           "tag": "Field",
-          "line": 72,
+          "line": 76,
           "className": null,
           "type": null,
           "role": null,
@@ -3747,7 +3748,7 @@
         },
         {
           "tag": "textarea",
-          "line": 73,
+          "line": 77,
           "className": null,
           "type": null,
           "role": null,
@@ -3757,7 +3758,7 @@
         },
         {
           "tag": "input",
-          "line": 75,
+          "line": 79,
           "className": null,
           "type": "\"number\"",
           "role": null,
@@ -3767,7 +3768,7 @@
         },
         {
           "tag": "textarea",
-          "line": 79,
+          "line": 83,
           "className": null,
           "type": null,
           "role": null,
@@ -3777,7 +3778,7 @@
         },
         {
           "tag": "input",
-          "line": 80,
+          "line": 84,
           "className": null,
           "type": null,
           "role": null,
@@ -3787,7 +3788,7 @@
         },
         {
           "tag": "Button",
-          "line": 83,
+          "line": 87,
           "className": null,
           "type": "\"submit\"",
           "role": null,
@@ -3800,7 +3801,7 @@
         {
           "module": "../../components/QatafoIcons",
           "bindings": "{ CheckCircle2 }",
-          "line": 14
+          "line": 15
         }
       ],
       "inlineSvg": [],
@@ -3811,8 +3812,8 @@
     {
       "file": "client/src/admin/back-office/ResourceWorkspace.tsx",
       "domain": "admin",
-      "sha256": "39cecfd57567fdc204ece8c1d34c92e68a39045eaf97369f5c26e7bcf10bab5c",
-      "lines": 219,
+      "sha256": "f529def89f6ea0a17e7189ad03b2a3f2ddb6f988561b893c98167ea305cf2b39",
+      "lines": 252,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -3832,7 +3833,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 196,
+          "line": 229,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -3842,7 +3843,7 @@
         },
         {
           "tag": "Button",
-          "line": 197,
+          "line": 230,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -3852,7 +3853,7 @@
         },
         {
           "tag": "Button",
-          "line": 205,
+          "line": 238,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -3862,7 +3863,7 @@
         },
         {
           "tag": "Modal",
-          "line": 210,
+          "line": 243,
           "className": null,
           "type": null,
           "role": null,
@@ -3872,7 +3873,7 @@
         },
         {
           "tag": "Modal",
-          "line": 213,
+          "line": 246,
           "className": null,
           "type": null,
           "role": null,
@@ -10342,8 +10343,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "607a5c0e3d7809349bb8c7309df82020b12d7df52a480ae00a8c071e4f8829dc",
-      "lines": 634,
+      "sha256": "acb1a435aa4bca9371ce399d1028cc81f4de55268bb6c1d33d40bfbd95d25397",
+      "lines": 638,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -10388,7 +10389,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 506,
+          "line": 510,
           "className": null,
           "type": null,
           "role": null,
@@ -10398,7 +10399,7 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 521,
+          "line": 525,
           "className": null,
           "type": null,
           "role": null,
@@ -10408,7 +10409,7 @@
         },
         {
           "tag": "CartDrawer",
-          "line": 564,
+          "line": 568,
           "className": null,
           "type": null,
           "role": null,
@@ -10418,7 +10419,7 @@
         },
         {
           "tag": "CheckoutModal",
-          "line": 580,
+          "line": 584,
           "className": null,
           "type": null,
           "role": null,
@@ -10428,7 +10429,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 622,
+          "line": 626,
           "className": null,
           "type": null,
           "role": null,
@@ -15707,64 +15708,34 @@
     {
       "file": "client/src/components/Footer.tsx",
       "domain": "shell-content",
-      "sha256": "2bdd96d9f0bd3bb3e648c412b13e66b60293a5658a61b77c9034351ca8aafe37",
-      "lines": 74,
+      "sha256": "a8894b7c9f29284db94f90608f887ed7a294aa5a462967c68528f9bbb49d1e7a",
+      "lines": 95,
       "imports": [
         "react",
         "../design/BrandIcon",
         "./QatafoIcons",
         "../services/publicApi",
-        "../i18n/LocaleContext",
-        "../navigation/publicPages"
+        "../i18n/LocaleContext"
       ],
       "exports": [
         "safeChannelUrl",
+        "footerChannelLinks",
         "Footer"
       ],
       "controls": [
         {
           "tag": "a",
-          "line": 44,
+          "line": 76,
           "className": null,
           "type": null,
           "role": null,
-          "ariaLabel": null,
+          "ariaLabel": "{`${tr('AYROVI sur', 'AYROVI على')} ${label}`}",
           "onClick": null,
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 45,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onOpenAbout}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 46,
-          "className": null,
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onOpenAssistant}",
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 53,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": "{label}",
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 62,
+          "line": 81,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15774,7 +15745,7 @@
         },
         {
           "tag": "button",
-          "line": 63,
+          "line": 82,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -15783,8 +15754,18 @@
           "disabled": "{!onOpenAccount}"
         },
         {
+          "tag": "button",
+          "line": 84,
+          "className": null,
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onOpenAbout}",
+          "disabled": null
+        },
+        {
           "tag": "a",
-          "line": 68,
+          "line": 89,
           "className": null,
           "type": null,
           "role": null,
@@ -15794,7 +15775,7 @@
         },
         {
           "tag": "a",
-          "line": 69,
+          "line": 90,
           "className": null,
           "type": null,
           "role": null,
@@ -15804,7 +15785,7 @@
         },
         {
           "tag": "a",
-          "line": 70,
+          "line": 91,
           "className": null,
           "type": null,
           "role": null,
@@ -15816,7 +15797,7 @@
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ MessageSquare, MapPin, User }",
+          "bindings": "{ Info, MessageSquare, MapPin, User }",
           "line": 3
         }
       ],
@@ -16720,8 +16701,8 @@
     {
       "file": "client/src/components/PublicPageLinks.tsx",
       "domain": "shell-content",
-      "sha256": "3ff4dc2c731ea4f4f65c6371a7f949ceb9c065396626f2669420c9d0bf66c6f7",
-      "lines": 11,
+      "sha256": "2f794ea037a9466451d13bb403d6ce22f3ec182cd446a50d8cb49674a0aa5de6",
+      "lines": 56,
       "imports": [
         "react",
         "../navigation/publicPages",
@@ -16733,7 +16714,7 @@
       "controls": [
         {
           "tag": "a",
-          "line": 8,
+          "line": 53,
           "className": null,
           "type": null,
           "role": null,
@@ -16746,7 +16727,9 @@
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
-      "apiReferences": []
+      "apiReferences": [
+        "/api/public/navigation"
+      ]
     },
     {
       "file": "client/src/components/QatafoIcons.tsx",
@@ -18931,9 +18914,11 @@
     {
       "file": "client/src/navigation/publicPages.ts",
       "domain": "shell-content",
-      "sha256": "c19ea67237428262335c49f689d8eb5ce70cbd186bf0a0adf252a7f66cb1683a",
-      "lines": 12,
-      "imports": [],
+      "sha256": "821d31a1042f29b9d889714a113f62548d181085312e06aaf329dde08dee7677",
+      "lines": 22,
+      "imports": [
+        "../../../shared/publicNavigation"
+      ],
       "exports": [
         "PUBLIC_PAGES",
         "publicPageForPath"
@@ -19714,8 +19699,8 @@
     {
       "file": "client/src/styles/public-discovery.css",
       "domain": "discovery-social",
-      "sha256": "2dcf2ccb9ccc89edfc143baa79a4b4fae309a4c75f8fe38ab4cd41dd46afd9b3",
-      "lines": 55,
+      "sha256": "5d3ef13eeedc1f33c01126c8f4d866c9a8be41263ddd5812dc7923e6f243de45",
+      "lines": 62,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19724,8 +19709,11 @@
       "colors": [
         "#000000",
         "#00000099",
+        "#262626",
+        "#2A2A2A",
         "#333333",
         "#595959",
+        "#8A8A8A",
         "#9E3317",
         "#BDBDBD",
         "#D3451F",

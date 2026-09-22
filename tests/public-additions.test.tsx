@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { publicPageForPath, PUBLIC_PAGES } from '../client/src/navigation/publicPages';
 import { PublicPageLinks } from '../client/src/components/PublicPageLinks';
-import { Footer, safeChannelUrl } from '../client/src/components/Footer';
+import { Footer, footerChannelLinks, safeChannelUrl } from '../client/src/components/Footer';
 import { publishedCampaign } from '../client/src/components/TopAnnouncementBar';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 
@@ -39,12 +39,31 @@ describe('additions without replacing the homepage', () => {
     for (const page of PUBLIC_PAGES) expect(html).toContain(`href="${page.href}"`);
     expect(html).not.toContain('role="tab'); expect(html).not.toContain('<button');
   });
-  it('renders a footer with official destinations and legal documents, no phantom social accounts or payment badges', () => {
+  /**
+   * Décision produit du 2026-09-22 : le pied de page ne recopie plus le sommaire de pages
+   * (Arrivage / Gift & Cards / Magazine) — ces destinations vivent dans la barre sous l'en-tête,
+   * pilotée depuis l'Admin. Le pied de page redevient une signature : marque, canaux, accès utiles,
+   * documents légaux.
+   */
+  it('renders a brand footer with legal documents, without the page summary or phantom accounts', () => {
     const html = renderToStaticMarkup(<LocaleProvider><Footer onOpenAccount={() => {}} onOpenAssistant={() => {}} onOpenAbout={() => {}} /></LocaleProvider>);
-    for (const href of ['/arrivage', '/gift-cards', '/magazine', '/privacy.html', '/terms.html', '/data-deletion.html']) expect(html).toContain(`href="${href}"`);
+    for (const href of ['/privacy.html', '/terms.html', '/data-deletion.html']) expect(html).toContain(`href="${href}"`);
+    for (const href of ['/arrivage', '/gift-cards', '/magazine']) expect(html).not.toContain(`href="${href}"`);
     expect(html).not.toContain('href="https://');
     expect(html).not.toContain('VISA'); expect(html).not.toContain('Mastercard');
+    expect(html).toContain('id="nos-canaux"');
+    // La zone des canaux reste en place et prête : chaque canal non renseigné est inerte, pas inventé.
     expect(html).toContain('public-footer-social-unavailable');
+  });
+
+  it('publishes only the social channels that the Admin actually filled in', () => {
+    expect(footerChannelLinks({})).toEqual([]);
+    expect(footerChannelLinks(null)).toEqual([]);
+    expect(footerChannelLinks({ facebook: 'javascript:alert(1)', instagram: 'https://a:b@instagram.com' })).toEqual([]);
+    expect(footerChannelLinks({ facebook: ' https://facebook.com/ayrovi ', tiktok: 'https://tiktok.com/@ayrovi' })).toEqual([
+      { id: 'facebook', label: 'Facebook', href: 'https://facebook.com/ayrovi' },
+      { id: 'tiktok', label: 'TikTok', href: 'https://tiktok.com/@ayrovi' },
+    ]);
   });
   it('only removes the empty fallback eyebrow, not the title or hero image', () => {
     const hero = readFileSync('client/src/components/EvergreenHero.tsx', 'utf8');

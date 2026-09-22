@@ -6,6 +6,7 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
+import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
 import { ensureCatalogueSchema } from '../catalogue/bootstrap';
 import { ensureInventorySchema } from '../inventory/bootstrap';
@@ -98,6 +99,22 @@ const SETTINGS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS settings (
 const ANNOUNCEMENT_MESSAGES_TABLE_SQL = `CREATE TABLE IF NOT EXISTS announcement_messages (
   id TEXT PRIMARY KEY,
   text TEXT NOT NULL,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);`;
+
+/**
+ * Barre publique sous l'en-tête (onglets Arrivage / Gift & Cards / Magazine).
+ * `destination` est une clé de `shared/publicNavigation.ts` — jamais une URL libre : le chemin
+ * réel vient du contrat partagé, donc l'Admin ne peut pas publier un lien mort.
+ */
+const PUBLIC_NAV_ITEMS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS public_nav_items (
+  id TEXT PRIMARY KEY,
+  destination TEXT NOT NULL,
+  label_fr TEXT NOT NULL,
+  label_ar TEXT NOT NULL,
   display_order INTEGER NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL,
@@ -1439,6 +1456,9 @@ export class QatafoDatabase {
     // شريط الإعلانات العلوي (Trust Ticker) — إنشاء الجدول وزرع الرسائل الافتراضية مرة واحدة
     this.db.exec(ANNOUNCEMENT_MESSAGES_TABLE_SQL);
 
+    // Barre publique sous l'en-tête — les onglets sont pilotés depuis l'Admin (onglet de navigation).
+    this.db.exec(PUBLIC_NAV_ITEMS_TABLE_SQL);
+
     // نظام Hero — جدول visuals قابل للتوسع مستقبلاً (صور متعددة/موبايل)
     this.db.exec(HERO_VISUALS_TABLE_SQL);
 
@@ -1615,6 +1635,19 @@ export class QatafoDatabase {
         ].entries()) {
           insertSeed.run(`announcement_${randomUUID()}`, text, index + 1, 1, seededAt, seededAt);
         }
+      })();
+    }
+
+    // Barre publique : les trois destinations officielles existent dès la première installation.
+    // L'Admin peut ensuite renommer, réordonner ou désactiver chacune d'elles — et en ajouter
+    // une seconde entrée vers la même destination (par ex. « Nouveautés » → Arrivage).
+    if (!(this.db.prepare('SELECT COUNT(*) count FROM public_nav_items').get() as { count: number }).count) {
+      const seededNavAt = new Date().toISOString();
+      const insertNav = this.db.prepare('INSERT INTO public_nav_items (id,destination,label_fr,label_ar,display_order,active,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?)');
+      this.db.transaction(() => {
+        PUBLIC_NAV_DESTINATIONS.forEach((destination, index) => {
+          insertNav.run(`public_nav_${randomUUID()}`, destination.id, destination.labelFr, destination.labelAr, (index + 1) * 10, 1, seededNavAt, seededNavAt);
+        });
       })();
     }
 

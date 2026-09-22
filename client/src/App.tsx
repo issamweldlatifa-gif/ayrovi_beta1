@@ -476,15 +476,19 @@ export const App: React.FC = () => {
       )}
 
       {/* Sections publiques — visibilité, ordre, médias et contenu pilotés depuis Admin → واجهتي. */}
+      {/* Les pages plein écran (Arrivage, Gift & Cards, Magazine) n'affichent plus de copie du
+          pied de page : décision produit du 2026-09-22. Le pied de page appartient à l'accueil. */}
       {publicPage
         ? <PublicCmsSections standalonePage={publicPage} homepageVisible={false} isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />
         : <div className="managed-public-sections">{publicSections}</div>}
-      <Footer logoUrl={interfaceConfig.logoUrl}
+      {/* Le pied de page appartient à l'accueil : les pages plein écran (Arrivage, Gift & Cards,
+          Magazine) n'en affichent plus de copie — décision produit du 2026-09-22. */}
+      {!publicPage && <Footer logoUrl={interfaceConfig.logoUrl}
         introTitle={interfaceConfig.sections.find(section => section.id === 'footer')?.title}
         introText={interfaceConfig.sections.find(section => section.id === 'footer')?.subtitle}
         onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
         onOpenAssistant={() => openAppView('app:assistant')}
-        onOpenAbout={() => openAppView('app:about')} />
+        onOpenAbout={() => openAppView('app:about')} />}
 
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton hidden={navigation.stack.length > 0} />

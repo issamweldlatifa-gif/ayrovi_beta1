@@ -49,6 +49,7 @@ import { createPurchasingRouter } from '../purchasing/routes';
 import { createCrmRouter } from '../crm/routes';
 import { createBackOfficeRouter } from '../back-office/routes';
 import { registerFrameworkResources } from '../back-office/resources';
+import { PUBLIC_NAV_DESTINATION_IDS } from '../../shared/publicNavigation';
 import { createArrivalIngestionRouter } from '../arrival-ingestion/routes';
 import type { ArrivalIngestionDependencies } from '../arrival-ingestion/types';
 import { getAyrovixStats } from '../ayrovix/events';
@@ -150,6 +151,15 @@ export const resources: Record<string, ResourceConfig> = {
     fields: ['text','display_order','active'], required: ['text'],
     searchable: ['text'], sortable: ['text','display_order','active','created_at'], defaultSort: 'display_order',
     softDelete: { active: 0 },
+  },
+  // Barre publique sous l'en-tête — entièrement pilotée depuis l'Admin (décision 2026-09-22).
+  // `destination` est une clé fermée du contrat partagé : le libellé est libre, la cible ne l'est pas.
+  'public-nav': {
+    table: 'public_nav_items', module: 'PUBLIC_NAV', prefix: 'public-nav-item', permission: 'content:write',
+    // `label_fr` d'abord : c'est le libellé que le visiteur lit, il porte la colonne principale.
+    fields: ['label_fr','label_ar','destination','display_order','active'], required: ['destination','label_fr'],
+    searchable: ['label_fr','label_ar','destination'], sortable: ['destination','label_fr','display_order','active','created_at'],
+    defaultSort: 'display_order', enums: { destination: [...PUBLIC_NAV_DESTINATION_IDS] }, softDelete: { active: 0 },
   },
   'ai-knowledge': {
     // P1 closure gate — la base de connaissances de l'assistant n'est pas un reglage.

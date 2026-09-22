@@ -51,10 +51,12 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('le registre de ressources est la source unique', () => {
-    test('les 9 ressources du moteur générique sont dérivées, pas recopiées', () => {
+    test('les 10 ressources du moteur générique sont dérivées, pas recopiées', () => {
       const descriptors = resourceDescriptors().filter((descriptor) => descriptor.surface === 'framework');
+      // `public-nav` (2026-09-22) : la barre publique sous l'en-tête est une ressource du moteur,
+      // donc son écran, ses droits et son audit sont ceux du framework — aucun écran dédié.
       expect(descriptors.map((descriptor) => descriptor.section).sort()).toEqual(
-        ['arrivals', 'assistant', 'brands', 'hero', 'news', 'products', 'promotions', 'stories', 'ticker'].sort());
+        ['arrivals', 'assistant', 'brands', 'hero', 'news', 'products', 'promotions', 'public-nav', 'stories', 'ticker'].sort());
       // Les colonnes viennent de ResourceConfig : vérifier une colonne = vérifier le moteur.
       const products = descriptors.find((descriptor) => descriptor.section === 'products')!;
       expect(products.fields.map((field) => field.key)).toEqual(
@@ -101,7 +103,7 @@ describe('back office shell (P2.0)', () => {
       expect(result.body.data.problems).toEqual([]);
       expect(result.body.data.status).toBe('ok');
       expect(result.body.data.frameworkVersion).toBe(BACK_OFFICE_FRAMEWORK_VERSION);
-      expect(result.body.data.frameworkRendered).toBe(9);
+      expect(result.body.data.frameworkRendered).toBe(10);
     });
   });
 
@@ -135,7 +137,9 @@ describe('back office shell (P2.0)', () => {
       for (const section of ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues']) {
         expect(sections.has(section), `section E5 absente: ${section}`).toBe(true);
       }
-      expect(sections.size).toBe(51);
+      // 2026-09-22 : `public-nav` (barre publique sous l'en-tête) s'ajoute aux surfaces dérivées.
+      expect(sections.has('public-nav'), 'section public-nav absente').toBe(true);
+      expect(sections.size).toBe(52);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -164,12 +168,14 @@ describe('back office shell (P2.0)', () => {
       // E5 a ajouté six surfaces (CRM 360), citées nommément — la preuve d'équivalence grandit,
       // elle ne s'aligne jamais sur le serveur.
       const crmAdditions = ['crm-dashboard', 'crm-parties', 'crm-contacts', 'crm-activities', 'crm-tasks', 'crm-issues'];
+      // 2026-09-22 : la barre publique sous l'en-tête devient une entrée de navigation à part entière.
+      const publicNavAdditions = ['public-nav'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -186,19 +192,19 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5)', async () => {
+    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(48);
-      expect(result.body.data.counts).toMatchObject({ sections: 48, visible: 48 });
+      expect(items.length).toBe(49);
+      expect(result.body.data.counts).toMatchObject({ sections: 49, visible: 49 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
 
     test('un rôle ne voit que ce que la permission autorise — sans jamais enlever davantage', async () => {
       const cases: Array<[Session, string[], string[]]> = [
-        [content, ['products', 'ticker', 'news'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
+        [content, ['products', 'ticker', 'news', 'public-nav'], ['users', 'erp-permissions', 'lens-lab', 'erp-employees', 'customers']],
         [orders, ['orders', 'arrival-ingestion'], ['users', 'settings', 'products', 'erp-audit']],
         [admin, ['reports', 'products', 'arrival-ingestion'], ['users', 'erp-permissions', 'erp-employees']],
       ];
@@ -250,7 +256,7 @@ describe('back office shell (P2.0)', () => {
       const result = await content.agent.get('/api/admin/back-office/resources');
       expect(result.status).toBe(200);
       const resources = result.body.data.resources as any[];
-      expect(resources.length).toBeGreaterThanOrEqual(39);
+      expect(resources.length).toBeGreaterThanOrEqual(40);
       expect(result.body.data.modules.map((section: any) => section.section))
         .toEqual(['CORE', 'OPERATIONS', 'FINANCE', 'CONTENT', 'SYSTEM']);
       const news = resources.find((item) => item.key === 'cms.news')!;
@@ -391,6 +397,27 @@ describe('back office shell (P2.0)', () => {
     });
   });
 
+  /**
+   * Régression 2026-09-22 — l'écran généré par `ResourceWorkspace` (premier écran concerné :
+   * la barre publique sous l'en-tête) ne chargeait aucune liste et se croyait sans droits :
+   * la fonction de chargement existait sans être appelée, et les capacités n'étaient lues que
+   * dans la liste `/resources`, qui ne les porte pas. Ces deux assertions tiennent le contrat.
+   */
+  describe('écran du framework : chargement et capacités réelles', () => {
+    const workspace = () => fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/back-office/ResourceWorkspace.tsx'), 'utf8');
+    test('la liste se charge au montage, sans dépendre de la page courante', () => {
+      const source = workspace();
+      expect(source, 'la liste doit être chargée par un effet').toMatch(/useEffect\(\(\) => \{[\s\S]*?void load\(1\)/);
+      expect(source, 'la page courante ne doit pas re-déclencher un chargement en boucle').toContain('const pageRef = useRef(pagination.page);');
+    });
+    test('les capacités viennent de la matrice centrale, pas d’une seconde autorité', () => {
+      const source = workspace();
+      expect(source).toContain('capabilitiesFor(descriptor.section)');
+      expect(source).toContain('loadCapabilities(descriptor.section)');
+      expect(source, 'aucune règle locale ne doit remplacer la matrice').not.toContain("permissions.includes(");
+    });
+  });
+
   describe("contrat d'icônes de la navigation (P3/T2)", () => {
     const shellPath = 'client/src/admin/back-office/BackOfficeShell.tsx';
     const spritePath = 'client/src/components/QatafoIcons.tsx';
@@ -409,7 +436,8 @@ describe('back office shell (P2.0)', () => {
       const declared = resourceDescriptors()
         .filter((descriptor) => descriptor.nav?.icon)
         .map((descriptor) => descriptor.nav!.icon as string);
-      expect(declared.length).toBe(48);
+      // 2026-09-22 : la barre publique sous l'en-tête ajoute une entrée (icône LayoutGrid).
+      expect(declared.length).toBe(49);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

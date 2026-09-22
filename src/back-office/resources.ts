@@ -1,3 +1,5 @@
+import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
+
 /**
  * AYROVI Back Office (P2.0) — Resource Framework registry.
  *
@@ -79,6 +81,8 @@ export interface BackOfficeColumnDef {
   render?: 'entity' | 'status' | 'money' | 'datetime' | 'code' | 'number' | 'text';
   sortable?: boolean;
   hiddenByDefault?: boolean;
+  /** Traduction lisible d'une valeur technique (clé d'énumération) pour les listes. */
+  labels?: Record<string, string>;
 }
 
 export interface BackOfficeResourceDescriptor {
@@ -146,6 +150,18 @@ const FIELD_LABELS: Record<string, string> = {
   original_price: 'Prix d’origine', final_price: 'Prix final', currency: 'Devise',
   discount_type: 'Type de remise', value: 'Valeur', promo_code: 'Code promo', usage_limit: 'Limite d’utilisation',
   usage_count: 'Utilisations', stock_status: 'État du stock', express_available: 'Disponible en express',
+  label_fr: 'Libellé (français)', label_ar: 'Libellé (arabe)', destination: 'Destination',
+};
+
+/**
+ * Aides de saisie par champ — affichées sous le champ dans le formulaire généré.
+ * Un Admin doit comprendre une contrainte avant de la heurter, pas après un refus serveur.
+ */
+const FIELD_HINTS: Record<string, string> = {
+  destination: 'Destination officielle du site. Le chemin réel (/arrivage, /gift-cards, /magazine) vient du contrat public : impossible de publier un lien mort.',
+  label_fr: 'Texte affiché en français dans la barre sous l’en-tête.',
+  label_ar: 'Texte affiché en arabe. Laisser vide reprend le libellé français.',
+  display_order: 'Plus le nombre est petit, plus l’onglet est à gauche.',
 };
 
 const LONG_TEXT = new Set(['description', 'content', 'summary', 'answer']);
@@ -178,7 +194,11 @@ function columnFor(field: string, config: FrameworkResourceConfig): BackOfficeCo
   if (config.jsonFields?.includes(field) || field === 'content' || field === 'description' || field === 'answer') {
     return { key: field, label: labelFor(field), render: 'text', sortable: false, hiddenByDefault: true };
   }
-  return { key: field, label: labelFor(field), render, sortable: config.sortable.includes(field) };
+  const column: BackOfficeColumnDef = { key: field, label: labelFor(field), render, sortable: config.sortable.includes(field) };
+  // Une clé d'énumération se lit comme son libellé Admin : la colonne « Destination » affiche
+  // « Arrivage — /arrivage », jamais la clé `arrivals` (l'écran et le formulaire disent la même chose).
+  if (field === 'destination') column.labels = Object.fromEntries(PUBLIC_NAV_DESTINATIONS.map((item) => [item.id, item.adminLabel]));
+  return column;
 }
 
 /** Par ressource du moteur : à quel module elle appartient, et où la navigation la montre. */
@@ -235,6 +255,12 @@ const LEGACY_RESOURCE_META: Record<string, {
     description: 'Bandeau d’annonces du haut de page.',
     section: 'ticker', resourceType: 'announcement', nav: { group: 'Contenu', order: 110, icon: 'Bell' },
   },
+  'public-nav': {
+    key: 'cms.public-nav', module: 'cms', domain: 'CONTENT', label: 'Barre sous l’en-tête', singular: 'onglet public',
+    description: 'Onglets affichés sous l’en-tête du site (Arrivage, Gift & Cards, Magazine) : libellés FR/AR, ordre et visibilité. La destination est choisie dans une liste fermée — aucun lien mort possible.',
+    section: 'public-nav', resourceType: 'public_nav_item',
+    nav: { group: 'Contenu', order: 70, icon: 'LayoutGrid' },
+  },
   'ai-knowledge': {
     key: 'ai.knowledge', module: 'settings', permissionModule: 'ai', domain: 'ERP', label: 'Assistant IA', singular: 'entrée de connaissance',
     description: 'Base de connaissances servie à l’assistant (FAQ, réponses prédéfinies).',
@@ -272,6 +298,7 @@ function descriptorFromLegacyConfig(name: string, config: FrameworkResourceConfi
       type: fieldKind(field, config),
       required: config.required.includes(field),
       ...(config.enums?.[field] ? { options: config.enums[field] } : {}),
+      ...(FIELD_HINTS[field] ? { hint: FIELD_HINTS[field] } : {}),
     })),
     actions: meta.actions ?? ['list', 'view', 'create', 'edit', 'delete'],
     audit: { module: config.module, resourceType: meta.resourceType ?? name },

@@ -10,15 +10,15 @@
  * `ContentPage` (mêmes libellés, mêmes colonnes) et les écrans métier gardent leurs composants.
  * `ResourceWorkspace` est le patron de référence, exercé par les tests, pas un écran de plus.
  */
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { FileText } from '../../components/QatafoIcons';
 import { adminApi } from '../api';
 import { Button, DataColumn, DataTable, Modal, Pagination, Search, Select, StatusBadge, Toast, type TableRowAction } from '../components';
 import { formatDate, formatMoney, ResourceForm, type FieldDefinition } from './resource-ui';
-import { RESOURCE_ACTION_LABELS, type ResourceDescriptor } from './framework';
+import { RESOURCE_ACTION_LABELS, useBackOffice, type ResourceDescriptor } from './framework';
 
 /** Un seul endroit sait dessiner une cellule — les écrans ne réinventent plus le rendu. */
-export function renderCell(kind: string | undefined, row: Record<string, any>, column: string): React.ReactNode {
+export function renderCell(kind: string | undefined, row: Record<string, any>, column: string, labels?: Record<string, string>): React.ReactNode {
   const raw = row[column];
   switch (kind) {
     case 'money': return <strong className="bo-cell-money">{formatMoney(raw)}</strong>;
@@ -36,7 +36,12 @@ export function renderCell(kind: string | undefined, row: Record<string, any>, c
         <div><strong>{String(raw || 'Sans titre')}</strong>{subtitle ? <small>{String(subtitle)}</small> : null}</div>
       </div>;
     }
-    default: return raw === null || raw === undefined || raw === '' ? '—' : Array.isArray(raw) ? raw.join(', ') : String(raw);
+    default: {
+      if (raw === null || raw === undefined || raw === '') return '—';
+      if (Array.isArray(raw)) return raw.join(', ');
+      // Une clé technique traduite par le descripteur se lit comme dans le formulaire.
+      return String(labels?.[String(raw)] ?? raw);
+    }
   }
 }
 
@@ -48,7 +53,7 @@ export function buildColumns(descriptor: ResourceDescriptor, options: { hidden?:
       key: column.key,
       label: column.label,
       sortable: Boolean(column.sortable),
-      render: (row: Record<string, any>) => renderCell(column.render, row, column.key),
+      render: (row: Record<string, any>) => renderCell(column.render, row, column.key, column.labels),
     }));
 }
 
@@ -125,6 +130,14 @@ export const AuditTrailPanel: React.FC<{ resourceType: string; resourceId: strin
  */
 export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWriteFallback?: boolean }> = ({ descriptor, canWriteFallback = false }) => {
   const prefix = descriptor.api.prefix;
+  /**
+   * Les capacités viennent de la matrice centrale (`/back-office/resources/:key`), pas d'une
+   * seconde autorité : la coquille les met en cache par section. Sans ce chargement, un écran du
+   * framework se croyait sans droits — boutons grisés alors que la route acceptait l'écriture
+   * (corrigé le 2026-09-22, en même temps que le chargement de liste ci-dessous).
+   */
+  const { capabilitiesFor, loadCapabilities } = useBackOffice();
+  useEffect(() => { void loadCapabilities(descriptor.section); }, [descriptor.section, loadCapabilities]);
   const [rows, setRows] = useState<Record<string, any>[]>([]);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 20, total: 0, totalPages: 1 });
   const [search, setSearch] = useState('');
@@ -139,7 +152,14 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
   const [auditOf, setAuditOf] = useState<Record<string, any> | null>(null);
 
-  const load = useCallback(async (page = pagination.page) => {
+  /**
+   * La page courante vit dans une `ref` : `load` ne change plus d'identité quand on tourne une
+   * page, donc le seul déclencheur de chargement reste la requête (recherche, filtre, tri).
+   */
+  const pageRef = useRef(pagination.page);
+  pageRef.current = pagination.page;
+
+  const load = useCallback(async (page = pageRef.current) => {
     if (!prefix) return;
     setLoading(true); setError('');
     try {
@@ -154,9 +174,22 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
       setError(reason?.status === 403 ? 'Permission refusée pour cette ressource.' : reason?.message || 'Liste indisponible.');
       setRows([]);
     } finally { setLoading(false); }
-  }, [prefix, pagination.page, search, status, sort, descriptor.status]);
+  }, [prefix, search, status, sort, descriptor.status]);
 
-  const capabilities = descriptor.capabilities ?? {};
+  /**
+   * Chargement de la liste. Sans cet effet, un écran du framework restait indéfiniment sur
+   * « Chargement… » : la fonction existait, personne ne l'appelait. Corrigé le 2026-09-22 —
+   * la barre sous l'en-tête est le premier écran à dépendre entièrement de ce workspace.
+   * La frappe est amortie (200 ms) et revient en page 1 : mêmes règles que les listes legacy.
+   */
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void load(1); }, 200);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  const capabilities = capabilitiesFor(descriptor.section) ?? descriptor.capabilities ?? {};
+  // Règle identique aux écrans legacy : la matrice décide, et tant qu'elle n'a rien dit (`null`,
+  // endpoint indisponible) on retombe sur le droit legacy transmis par la coquille.
   const mayWrite = capabilities.create !== false && capabilities.edit !== false && (canWriteFallback || capabilities.create === true || capabilities.edit === true);
 
   const openCreate = () => { setEditing(null); setForm({}); setModal(true); };
@@ -205,7 +238,7 @@ export const ResourceWorkspace: React.FC<{ descriptor: ResourceDescriptor; canWr
       <Button type="button" variant="ghost" onClick={() => setAuditOf(rows[0] ?? null)}>Journal du premier résultat</Button>
     </div>
     <ResourceTableView descriptor={descriptor} rows={rows} loading={loading} error={error} onRetry={() => void load()}
-      capabilities={capabilities} canWrite={canWriteFallback} onEdit={openEdit} onArchive={archive} />
+      capabilities={capabilities} canWrite={mayWrite} onEdit={openEdit} onArchive={archive} />
     <Pagination {...pagination} onChange={(page: number) => void load(page)} />
     <Modal open={modal} title={`${editing ? 'Modifier' : 'Créer'} ${descriptor.singular}`} onClose={() => setModal(false)} wide>
       <ResourceForm definition={{ fields: fieldDefinitionsFor(descriptor) }} value={form} onChange={setForm} onSubmit={save} busy={busy} />

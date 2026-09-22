@@ -1,3 +1,4 @@
+import { PUBLIC_NAV_DESTINATIONS } from '../../../../shared/publicNavigation';
 /**
  * P2.0 — primitives partagées du back office (une seule implémentation par fonction).
  *
@@ -37,6 +38,9 @@ export const labels: Record<string, string> = {
   FAQ: 'FAQ', PREDEFINED_RESPONSE: 'Réponse prédéfinie', PAYMENT: 'Paiement', BRAND: 'Marque', ARRIVAL: 'Arrivage', GENERAL: 'Général',
   PENDING: 'En attente', IN_PROGRESS: 'En cours', RESOLVED: 'Résolu', CLOSED: 'Fermé', NORMAL: 'Normale', HIGH: 'Haute',
   SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', CONTENT_MANAGER: 'Contenu', ORDER_MANAGER: 'Commandes',
+  // Destinations de la barre publique sous l'en-tête : libellés pris au contrat partagé,
+  // jamais recopiés (l'Admin choisit une cible lisible, pas une URL libre).
+  ...Object.fromEntries(PUBLIC_NAV_DESTINATIONS.map((destination) => [destination.id, destination.adminLabel])),
 };
 
 export const options = (values: string[]) => values.map((value) => ({ value, label: labels[value] || value }));

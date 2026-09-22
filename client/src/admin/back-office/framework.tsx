@@ -29,6 +29,8 @@ export interface BackOfficeColumnDef {
   render?: 'entity' | 'status' | 'money' | 'datetime' | 'code' | 'text';
   sortable?: boolean;
   hiddenByDefault?: boolean;
+  /** Traduction lisible d'une valeur technique (clé d'énumération) : la liste dit la même chose que le formulaire. */
+  labels?: Record<string, string>;
 }
 
 export interface BackOfficeStatusValue {

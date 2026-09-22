@@ -67,7 +67,8 @@ try {
       await page.locator(`[data-public-page="${id}"]`).waitFor();
       check(`${locale}: ${href} is a new document`, await page.evaluate(() => window.__documentProof === undefined));
       check(`${locale}: ${href} not a homepage panel`, await page.locator('.managed-public-sections').count() === 0 && await page.locator('.public-campaign').count() === 0);
-      check(`${locale}: ${href} footer remains`, await page.locator('[data-site-footer]').count() === 1);
+      // 2026-09-22 : les pages plein écran ne recopient plus le pied de page de l'accueil.
+      check(`${locale}: ${href} has no duplicated footer`, await page.locator('[data-site-footer]').count() === 0);
       for (const width of [320, 390]) {
         await page.setViewportSize({ width, height: 844 });
         check(`${locale}: ${href}/${width} page fits`, await page.locator('[data-public-page]').evaluate(e => e.scrollWidth <= e.clientWidth));

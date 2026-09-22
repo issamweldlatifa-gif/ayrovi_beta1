@@ -142,7 +142,7 @@
       "pass": true
     },
     {
-      "name": "fr: /arrivage footer remains",
+      "name": "fr: /arrivage has no duplicated footer",
       "pass": true
     },
     {
@@ -178,7 +178,7 @@
       "pass": true
     },
     {
-      "name": "fr: /gift-cards footer remains",
+      "name": "fr: /gift-cards has no duplicated footer",
       "pass": true
     },
     {
@@ -214,7 +214,7 @@
       "pass": true
     },
     {
-      "name": "fr: /magazine footer remains",
+      "name": "fr: /magazine has no duplicated footer",
       "pass": true
     },
     {
@@ -398,7 +398,7 @@
       "pass": true
     },
     {
-      "name": "ar: /arrivage footer remains",
+      "name": "ar: /arrivage has no duplicated footer",
       "pass": true
     },
     {
@@ -434,7 +434,7 @@
       "pass": true
     },
     {
-      "name": "ar: /gift-cards footer remains",
+      "name": "ar: /gift-cards has no duplicated footer",
       "pass": true
     },
     {
@@ -470,7 +470,7 @@
       "pass": true
     },
     {
-      "name": "ar: /magazine footer remains",
+      "name": "ar: /magazine has no duplicated footer",
       "pass": true
     },
     {
