@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Menu, User } from './QatafoIcons';
+import { Menu, ShoppingBag, User } from './QatafoIcons';
 import { useLocale } from '../i18n/LocaleContext';
 import { Button } from '../design/Button';
 
@@ -23,6 +23,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenMenuDrawer,
   onOpenAccount,
   onGoHome,
+  onOpenCart,
+  cartCount = 0,
   isAuthenticated = false,
   logoUrl,
 }) => {
@@ -83,7 +85,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             />
           )}
         </button>
-        <div className="flex justify-end">
+        <div className="flex items-center justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onOpenCart}
+            className={`relative ${iconButtonClass ?? ''}`}
+            aria-label={cartCount > 0
+              ? tr(`Ouvrir mon panier, ${cartCount} article${cartCount > 1 ? 's' : ''}`, `فتح سلّتي، ${cartCount} منتج`)
+              : tr('Ouvrir mon panier', 'فتح سلّتي')}
+            title={tr('Mon panier', 'سلّتي')}
+          >
+            <ShoppingBag className="h-6 w-6" />
+            {cartCount > 0 && <span className="absolute bottom-1.5 end-1.5 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
+          </Button>
           <Button
             variant="ghost"
             size="icon"

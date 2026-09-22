@@ -314,6 +314,12 @@ export const App: React.FC = () => {
     }
   };
 
+  /** Espace 01 ACHETER : la carte du catalogue ouvre le tiroir de commande déjà utilisé par LENS. */
+  const openCatalogProduct = (product: ScrapedProduct) => {
+    setExtractedProduct(product);
+    openAppView('app:product');
+  };
+
   const handleNewClientOrder = () => {
     setExtractedProduct(null);
   };
@@ -420,7 +426,7 @@ export const App: React.FC = () => {
           )}
         </>
       );
-      else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} homepageVisible={false} />;
+      else if (section.id === 'cms') content = <PublicCmsSections isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenProduct={openCatalogProduct} homepageVisible={false} />;
       else if (section.id === 'brands') content = <PartnerBrandsSlider title={section.title} subtitle={section.subtitle} coverImage={section.image} />;
       else if (section.id === 'about') content = <AboutSection coverImage={section.image} title={section.title} subtitle={section.subtitle} />;
       else content = <Footer logoUrl={interfaceConfig.logoUrl} introTitle={section.title} introText={section.subtitle} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenAssistant={() => openAppView('app:assistant')} />;
@@ -479,7 +485,7 @@ export const App: React.FC = () => {
       {/* Les pages plein écran (Arrivage, Gift & Cards, Magazine) n'affichent plus de copie du
           pied de page : décision produit du 2026-09-22. Le pied de page appartient à l'accueil. */}
       {publicPage
-        ? <PublicCmsSections standalonePage={publicPage} homepageVisible={false} isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />
+        ? <PublicCmsSections standalonePage={publicPage} homepageVisible={false} isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} onOpenProduct={openCatalogProduct} />
         : <div className="managed-public-sections">{publicSections}</div>}
       {/* Le pied de page appartient à l'accueil : les pages plein écran (Arrivage, Gift & Cards,
           Magazine) n'en affichent plus de copie — décision produit du 2026-09-22. */}

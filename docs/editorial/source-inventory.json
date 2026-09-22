@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 213,
-    "customerAndSharedFiles": 162,
-    "controls": 427,
+    "files": 214,
+    "customerAndSharedFiles": 163,
+    "controls": 429,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -10454,8 +10454,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "acb1a435aa4bca9371ce399d1028cc81f4de55268bb6c1d33d40bfbd95d25397",
-      "lines": 638,
+      "sha256": "559411c2ba4d4789aba28b85dff8b218e2bc6a45a3aabe7872c232b5f326b0b8",
+      "lines": 644,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -10490,7 +10490,7 @@
       "controls": [
         {
           "tag": "MenuDrawer",
-          "line": 463,
+          "line": 469,
           "className": null,
           "type": null,
           "role": null,
@@ -10500,7 +10500,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 510,
+          "line": 516,
           "className": null,
           "type": null,
           "role": null,
@@ -10510,7 +10510,7 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 525,
+          "line": 531,
           "className": null,
           "type": null,
           "role": null,
@@ -10520,7 +10520,7 @@
         },
         {
           "tag": "CartDrawer",
-          "line": 568,
+          "line": 574,
           "className": null,
           "type": null,
           "role": null,
@@ -10530,7 +10530,7 @@
         },
         {
           "tag": "CheckoutModal",
-          "line": 584,
+          "line": 590,
           "className": null,
           "type": null,
           "role": null,
@@ -10540,7 +10540,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 626,
+          "line": 632,
           "className": null,
           "type": null,
           "role": null,
@@ -12291,6 +12291,24 @@
       "lines": 211,
       "imports": [],
       "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/commerce/catalogProduct.ts",
+      "domain": "shell-content",
+      "sha256": "8c085ab6c1463ef2891d7808fde3907c69f83eac1dc9e5f3b3f84f327c6197ef",
+      "lines": 75,
+      "imports": [
+        "../types"
+      ],
+      "exports": [
+        "catalogProductToScraped"
+      ],
       "controls": [],
       "icons": [],
       "inlineSvg": [],
@@ -16263,7 +16281,7 @@
     {
       "file": "client/src/components/MenuDrawer.tsx",
       "domain": "shell-content",
-      "sha256": "edbe4b62b9cd0d43dc6925aec20b355b4893a61a5c254c294b8347e069775cb1",
+      "sha256": "2c33beacab976ada42804c38b0af60459db7b2c1382746418ffe8e1e8c4ddd04",
       "lines": 131,
       "imports": [
         "react",
@@ -16388,8 +16406,8 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "1afd2c4953e5ef80dc6a0ecf0117e8336900b955d5db1dc3711ffc8ae2bc5266",
-      "lines": 103,
+      "sha256": "d58ecd32fb53e96d22cca020463c0f45fa09194f07ff28b0f456122b1a281f7e",
+      "lines": 118,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -16402,7 +16420,7 @@
       "controls": [
         {
           "tag": "Button",
-          "line": 64,
+          "line": 66,
           "className": "{iconButtonClass}",
           "type": null,
           "role": null,
@@ -16412,7 +16430,7 @@
         },
         {
           "tag": "button",
-          "line": 68,
+          "line": 70,
           "className": "\"flex items-center bg-transparent\"",
           "type": "\"button\"",
           "role": null,
@@ -16422,7 +16440,17 @@
         },
         {
           "tag": "Button",
-          "line": 87,
+          "line": 89,
+          "className": "{`relative ${iconButtonClass ?? ''}`}",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{cartCount > 0\n              ? tr(`Ouvrir mon panier, ${cartCount} article${cartCount > 1 ? 's' : ''}`, `فتح سلّتي، ${cartCount} منتج`)\n              : tr('Ouvrir mon panier', 'فتح سلّتي')}",
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 102,
           "className": "{`relative ${iconButtonClass ?? ''}`}",
           "type": null,
           "role": null,
@@ -16434,7 +16462,7 @@
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ Menu, User }",
+          "bindings": "{ Menu, ShoppingBag, User }",
           "line": 2
         }
       ],
@@ -16767,8 +16795,8 @@
     {
       "file": "client/src/components/PublicCmsSections.tsx",
       "domain": "shell-content",
-      "sha256": "9a964b685f4016fc4304ebbf79acae183cf5f303f4a48d6aa673fe756a02cd61",
-      "lines": 266,
+      "sha256": "c58a65174275777713b1ff122104947a9bc1c630d54b3d99920ff981579f503e",
+      "lines": 302,
       "imports": [
         "react",
         "../assets/hero-homme.jpg",
@@ -16782,7 +16810,10 @@
         "../services/publicApi",
         "../social/StoryTab",
         "../social/types",
-        "../navigation/NavigationHistory"
+        "../navigation/NavigationHistory",
+        "./QatafoIcons",
+        "../commerce/catalogProduct",
+        "../types"
       ],
       "exports": [
         "PublicCmsSections"
@@ -16790,7 +16821,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 164,
+          "line": 184,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -16800,7 +16831,27 @@
         },
         {
           "tag": "ContentCard",
-          "line": 170,
+          "line": 190,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 219,
+          "className": "\"mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-line px-4 text-sm font-black text-ink transition hover:border-ink disabled:cursor-not-allowed disabled:text-muted\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{open}",
+          "disabled": "{soldOut}"
+        },
+        {
+          "tag": "ContentCard",
+          "line": 230,
           "className": null,
           "type": null,
           "role": null,
@@ -16810,17 +16861,7 @@
         },
         {
           "tag": "ContentCard",
-          "line": 194,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "ContentCard",
-          "line": 204,
+          "line": 240,
           "className": null,
           "type": null,
           "role": null,
@@ -16830,7 +16871,7 @@
         },
         {
           "tag": "a",
-          "line": 212,
+          "line": 248,
           "className": "\"public-page-back\"",
           "type": null,
           "role": null,
@@ -16840,7 +16881,7 @@
         },
         {
           "tag": "button",
-          "line": 233,
+          "line": 269,
           "className": "\"min-h-11 min-w-0 whitespace-nowrap bg-transparent px-0.5 py-2 text-center text-xs font-black text-ink transition-colors hover:text-ink focus-visible:text-ink sm:text-lg\"",
           "type": "\"button\"",
           "role": null,
@@ -16854,6 +16895,11 @@
           "module": "./QatafoIcons",
           "bindings": "{ ArrowLeft }",
           "line": 6
+        },
+        {
+          "module": "./QatafoIcons",
+          "bindings": "{ ShoppingBag }",
+          "line": 14
         }
       ],
       "inlineSvg": [],

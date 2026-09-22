@@ -90,7 +90,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
 
           <div className="flex-1 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
             <MenuGroup title={tr('Découvrir', 'استكشف')}>
-              {PUBLIC_PAGES.map(page => <a key={page.id} href={page.href} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-surface">{page.label}</a>)}
+              {PUBLIC_PAGES.map(page => <a key={page.id} href={page.href} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-surface">{locale === 'ar' ? page.labelAr : page.label}</a>)}
               <MenuItem label={tr('Social', 'التواصل')} onClick={() => openCms('stories')} />
             </MenuGroup>
 

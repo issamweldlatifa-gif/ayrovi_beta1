@@ -11,6 +11,9 @@ import { getPublicHome } from '../services/publicApi';
 import { StoryTab, HomeStoryStrip } from '../social/StoryTab';
 import type { StoryCta } from '../social/types';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
+import { ShoppingBag } from './QatafoIcons';
+import { catalogProductToScraped, type CatalogProduct } from '../commerce/catalogProduct';
+import type { ScrapedProduct } from '../types';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
 type CmsPage = keyof HomeData;
@@ -31,11 +34,20 @@ const pad = (value: number) => String(Math.max(0, value)).padStart(2, '0');
  * la description éditoriale. « Social » n'est pas une destination du contrat : son libellé reste
  * ici, en attendant une décision produit.
  */
-const cmsPageContent: Record<'arrivals' | 'promotions' | 'stories' | 'news', { eyebrow: string; eyebrowAr: string; description: string; descriptionAr: string }> = {
+const cmsPageContent: Record<'arrivals' | 'promotions' | 'products' | 'stories' | 'news', { eyebrow: string; eyebrowAr: string; description: string; descriptionAr: string }> = {
   arrivals: { eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
+  // Espace 01 ACHETER : l'entrée « Tous les produits » du menu existait mais ne menait à rien
+  // (la page n'était pas déclarée). Le catalogue est désormais une page réelle, branchée sur les
+  // produits ACTIFs servis par l'API — et sur rien d'autre.
+  products: { eyebrow: 'Le catalogue AYROVI', eyebrowAr: 'كتالوج AYROVI', description: 'Tout ce qui est commandable aujourd’hui, au prix final en dinars tunisiens.', descriptionAr: 'كل ما يمكن طلبه اليوم، بسعر نهائي بالدينار التونسي.' },
   promotions: { eyebrow: 'Cadeaux, cartes et avantages', eyebrowAr: 'هدايا وبطاقات وامتيازات', description: 'Les avantages et codes publiés par l’équipe AYROVI. Seules les offres disponibles sont affichées.', descriptionAr: 'الامتيازات والرموز المنشورة من فريق AYROVI. نعرض فقط ما هو متاح فعليًا.' },
   stories: { eyebrow: 'Social AYROVI', eyebrowAr: 'تواصل AYROVI', description: 'Stories et publications de la communauté AYROVI.', descriptionAr: 'قصص ومنشورات مجتمع AYROVI.' },
   news: { eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
+};
+/** Pages qui ne figurent pas dans la barre publique : leur libellé vit ici, dans les deux langues. */
+const localPageLabels: Partial<Record<CmsPage, { label: string; labelAr: string }>> = {
+  products: { label: 'Tous les produits', labelAr: 'كل المنتجات' },
+  stories: { label: 'Social', labelAr: 'التواصل' },
 };
 const pageDefinitions: Array<{
   id: CmsPage;
@@ -45,16 +57,17 @@ const pageDefinitions: Array<{
   eyebrowAr: string;
   description: string;
   descriptionAr: string;
-}> = (['arrivals', 'promotions', 'stories', 'news'] as const).map((id) => {
-  // Libellé : contrat partagé quand la page y figure, libellé local sinon (Social).
+}> = (['products', 'arrivals', 'promotions', 'stories', 'news'] as const).map((id) => {
+  // Libellé : contrat partagé quand la page y figure, libellé local sinon (catalogue, Social).
   const shared = PUBLIC_PAGES.find((page) => page.id === id);
   return {
     id,
-    label: shared?.label ?? (id === 'stories' ? 'Social' : id),
-    labelAr: shared?.labelAr ?? (id === 'stories' ? 'التواصل' : id),
+    label: shared?.label ?? localPageLabels[id]?.label ?? id,
+    labelAr: shared?.labelAr ?? localPageLabels[id]?.labelAr ?? id,
     ...cmsPageContent[id],
   };
 });
+
 
 function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
   const { tr } = useLocale();
@@ -97,9 +110,16 @@ function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number
   );
 }
 
-interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; homepageVisible?: boolean; standalonePage?: PublicPageId; }
+interface PublicCmsSectionsProps {
+  isAuthenticated?: boolean;
+  onOpenAccount?: () => void;
+  /** Ouvre le tiroir de commande sur un produit du catalogue (espace 01 ACHETER). */
+  onOpenProduct?: (product: ScrapedProduct) => void;
+  homepageVisible?: boolean;
+  standalonePage?: PublicPageId;
+}
 
-export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount, homepageVisible = true, standalonePage }) => {
+export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount, onOpenProduct, homepageVisible = true, standalonePage }) => {
   const navigation = useNavigationHistory();
   const { tr, isArabic, direction, formatMoney } = useLocale();
   const cmsLayerId = navigation.stack[0]?.id || '';
@@ -185,9 +205,25 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
 
     if (page === 'products') return home.products.length ? (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {home.products.map((product) => <article key={product.id} className="overflow-hidden rounded-card border border-line bg-white shadow-card"><div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div><div className="p-5"><p className="text-xs font-black uppercase tracking-[0.16em] text-ink">{product.brandName || product.sourcePlatform}</p><h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2><p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p><div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-ink-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-xs font-black uppercase tracking-wider ${product.stockStatus === 'OUT_OF_STOCK' ? 'text-danger' : 'text-success'}`}>{product.stockStatus === 'OUT_OF_STOCK' ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div></div></article>)}
+        {(home.products as CatalogProduct[]).map((product) => {
+          const soldOut = String(product.stockStatus || '').toUpperCase() === 'OUT_OF_STOCK';
+          const open = () => onOpenProduct?.(catalogProductToScraped(product));
+          return <article key={product.id} className="flex flex-col overflow-hidden rounded-card border border-line bg-white shadow-card">
+            <div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div>
+            <div className="flex flex-1 flex-col p-5">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-ink">{product.brandName || product.sourcePlatform}</p>
+              <h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2>
+              <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p>
+              <div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-ink-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-xs font-black uppercase tracking-wider ${soldOut ? 'text-danger' : 'text-success'}`}>{soldOut ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div>
+              {/* Une seule action par carte : mener au tiroir de commande, qui calcule et encaisse. */}
+              {onOpenProduct && <button type="button" onClick={open} disabled={soldOut} className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-line px-4 text-sm font-black text-ink transition hover:border-ink disabled:cursor-not-allowed disabled:text-muted">
+                <ShoppingBag className="h-4 w-4" />{soldOut ? tr('Indisponible', 'غير متوفر') : tr('Commander', 'اطلب الآن')}
+              </button>}
+            </div>
+          </article>;
+        })}
       </div>
-    ) : <EmptyContent label="Produits" />;
+    ) : <EmptyContent label={tr('produits', 'منتجات')} />;
 
     if (page === 'promotions') return home.promotions.length ? (
       <div className="grid gap-6 lg:grid-cols-2">{home.promotions.map((promotion, index) => (
