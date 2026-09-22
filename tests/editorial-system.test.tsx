@@ -32,7 +32,7 @@ describe('editorial identity, generated from one versioned source', () => {
     expect(identity.orangeAreaExclusions).toEqual(['product-images']);
     expect(identity.geometry.controlRadius).toBe(0);
     expect(identity.geometry.minTarget).toBeGreaterThanOrEqual(44);
-    expect(identity.geometry.iconStroke).toBe(1.3);
+    expect(identity.geometry.iconStroke).toBe(1.5);
   });
   for (const tone of ['colors', 'darkColors'] as const) {
     it(`has readable semantic text pairs in ${tone}`, () => {
@@ -69,7 +69,7 @@ describe('editorial SVG renderer', () => {
     const doc = new JSDOM(html).window.document;
     const svg = doc.querySelector('svg')!;
     expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
-    expect(svg.getAttribute('stroke-width')).toBe('1.3');
+    expect(svg.getAttribute('stroke-width')).toBe('1.5');
     expect(svg.getAttribute('stroke-linecap')).toBe('square');
     expect(svg.getAttribute('aria-hidden')).toBe('true');
     expect(svg.querySelectorAll('script,image,foreignObject,use,a,style')).toHaveLength(0);

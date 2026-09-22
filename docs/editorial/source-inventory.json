@@ -14172,7 +14172,7 @@
     {
       "file": "client/src/components/assistant/VoiceLevel.tsx",
       "domain": "sonim",
-      "sha256": "208651e7873cbd7caf3fe1934a858ce0dca20accaf8a0ca9ea12a6d211aec9d6",
+      "sha256": "d7217e1020c9ec1923e4454477ffeb020fa96ccabe4aeafb6c5bbaf6f6454ac9",
       "lines": 11,
       "imports": [
         "react",
@@ -14221,7 +14221,7 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "75722c63a7e863bb70ac75d19e7c77205742908fb6afb010b8916f81ab80a358",
+      "sha256": "c1b61743471c6b235a9616f16d87bc55972fe903e8cba18ca900c23c9fdc78cc",
       "lines": 102,
       "imports": [
         "react",
@@ -14286,7 +14286,7 @@
       ],
       "inlineSvg": [],
       "colors": [
-        "#666666",
+        "#000000",
         "#ff6900"
       ],
       "fontDeclarations": [],
@@ -17143,7 +17143,7 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "e9d13fed7aa6a4ba71774214dc7b0f6702b8a8ce092257f7b9657de3a811426f",
+      "sha256": "ffd6234744d4f6e30842cc14b334c7889c5c0c6692623f320fa1471c6eddf27f",
       "lines": 300,
       "imports": [
         "../../../shared/brand.generated",
@@ -18238,7 +18238,7 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "54c5b0ed8b1134391d3f6c979f0262d10a7d5d51fac8f463cf91d4332c15d9c0",
+      "sha256": "68715a02986503f6710dd360fef231a8dfa3fca24f3b4b0261c8c3c5e45d38d5",
       "lines": 576,
       "imports": [],
       "exports": [],

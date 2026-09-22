@@ -21,7 +21,7 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
   });
   it('locks geometry but preserves semantic selected-state fills',()=>{
     const html=renderToStaticMarkup(<Icons.Star fill="currentColor" strokeWidth={9} strokeLinecap="round" viewBox="0 0 90 90" style={{strokeWidth:99}}/>);
-    expect(html).toContain('fill="currentColor"');expect(html).toContain('stroke-width="1.3"');expect(html).toContain('stroke-linecap="square"');expect(html).toContain('viewBox="0 0 24 24"');expect(html).not.toContain('stroke-width:99');
+    expect(html).toContain('fill="currentColor"');expect(html).toContain('stroke-width="1.5"');expect(html).toContain('stroke-linecap="square"');expect(html).toContain('viewBox="0 0 24 24"');expect(html).not.toContain('stroke-width:99');
   });
   it('the real header renders Menu and User through CustomerIdentity, without replacing the logo',()=>{
     const html=renderToStaticMarkup(<LocaleProvider><CustomerIdentity><Navbar onOpenMenuDrawer={()=>{}} onOpenAccount={()=>{}} onGoHome={()=>{}} onOpenCart={()=>{}} logoUrl="/media/logo-ayrovi.png" /></CustomerIdentity></LocaleProvider>);
@@ -42,7 +42,7 @@ describe('every compatibility icon resolves to the approved geometry',()=>{
     for(const item of accountSections){
       const html=renderToStaticMarkup(<IconDirectionProvider direction="ltr"><item.icon /></IconDirectionProvider>);
       expect(html,item.id).toContain('data-editorial-icon=');
-      expect(html,item.id).toContain('stroke-width="1.3"');
+      expect(html,item.id).toContain('stroke-width="1.5"');
     }
   });
 });

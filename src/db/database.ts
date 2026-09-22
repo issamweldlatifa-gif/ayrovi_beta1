@@ -1845,6 +1845,21 @@ export class QatafoDatabase {
       this.db.exec(`UPDATE settings SET setting_value='Le monde entier, livré en dinars tunisiens.',updated_at=datetime('now')
         WHERE setting_key='footer_about' AND setting_value LIKE '%SHEIN%'`);
     });
+    // Décision identité 2026-09-22 : les icônes passent à l'encre noire (au lieu du
+    // gris #666666) et au trait 1.5 — plus de présence, sans excès. Uniquement si
+    // l'Admin n'a pas personnalisé la couleur : son choix prime toujours.
+    this.runOnceDataMigration('icon_ink_default_v1', () => {
+      const row = this.get<any>('SELECT setting_value FROM settings WHERE setting_key=?', 'interface_config');
+      if (!row?.setting_value) return;
+      try {
+        const config = JSON.parse(row.setting_value);
+        if (config?.icons?.color === '#666666') {
+          config.icons.color = '#000000';
+          this.run('UPDATE settings SET setting_value=?, updated_at=datetime(\'now\') WHERE setting_key=?',
+            JSON.stringify(config), 'interface_config');
+        }
+      } catch { /* config illisible : ne jamais casser le démarrage pour une couleur */ }
+    });
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_cart_account ON cart_items(account_id, updated_at DESC);
       CREATE INDEX IF NOT EXISTS idx_orders_account ON orders(account_id, created_at DESC);
@@ -2571,7 +2586,7 @@ export class QatafoDatabase {
         typography: { preset: 'ayrovi-a', body: FONT_STACK, display: FONT_STACK, baseSize: 16, align: 'start', headingColor: '#111111', textColor: '#666666', lineHeight: 1.5, letterSpacing: -0.011, headingScale: 1 },
         colors: { pageBackground: '#ffffff', surfaceBackground: '#ffffff', surfaceAlt: '#f8f9fa', borderColor: '#eaeaea', primary: '#111111', primaryDark: '#0a0a0a', primaryLight: '#3f3f46', accent: '#ff6900', headerBackground: '#ffffff', headerText: '#111111', announcementBackground: '#0a0a0a', announcementText: '#ffffff', heroBackground: '#0a0a0a', heroText: '#ffffff', footerBackground: '#ffffff', footerText: '#111111', success: '#15803d', warning: '#666666', danger: '#dc2626' },
         buttons: { background: '#111111', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#111111', borderColor: '#111111', borderWidth: 1, radius: 12, height: 44, shape: 'soft' },
-        icons: { library: 'ayrovi', color: '#666666', activeColor: '#ff6900', size: 28, style: 'outline' },
+        icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
         navigation: { background: '#ffffff', color: '#111111', activeBackground: '#0a0a0a', showLabels: true, height: 80, lensLabel: 'Lens', aiLabel: 'SONIM', visionLabel: 'Vision' },
         slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
         layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },

@@ -31,11 +31,11 @@ describe('customer identity integration, not a reference-only kit', () => {
   });
   it('renders the NEW geometry through existing screen imports, not just the standalone board', () => {
     const html=renderToStaticMarkup(<IconDirectionProvider direction="ltr"><Search /></IconDirectionProvider>);
-    expect(html).toContain('data-editorial-icon="Search"');expect(html).toContain('stroke-width="1.3"');
+    expect(html).toContain('data-editorial-icon="Search"');expect(html).toContain('stroke-width="1.5"');
   });
   it('uses editorial everywhere including admin/default and preserved navigation', () => {
     expect(renderToStaticMarkup(<Search />)).toContain('data-editorial-icon');
-    expect(renderToStaticMarkup(<LensBox />)).toContain('stroke-width="1.3"');
+    expect(renderToStaticMarkup(<LensBox />)).toContain('stroke-width="1.5"');
     const app=readFileSync('client/src/App.tsx','utf8');
     expect(app.match(/data-preserved-navigation/g)).toHaveLength(2);
     expect(app).not.toContain('family="legacy"');

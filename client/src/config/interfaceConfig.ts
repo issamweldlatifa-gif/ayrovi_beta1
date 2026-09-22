@@ -160,7 +160,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
     background: '#000000', color: '#ffffff', secondaryBackground: '#ffffff', secondaryColor: '#000000',
     borderColor: '#000000', borderWidth: 1, radius: 12, height: 44, shape: 'soft',
   },
-  icons: { library: 'ayrovi', color: '#666666', activeColor: '#ff6900', size: 28, style: 'outline' },
+  icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
     homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
