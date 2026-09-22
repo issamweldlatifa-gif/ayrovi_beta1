@@ -27,6 +27,7 @@
 .ay-auth__header .ay-runtime-button--ghost { color: var(--ayrovi-text-primary) !important; }
 .ay-auth__brand { display: flex; align-items: center; justify-self: center; gap: 8px; font-size: 16px; font-weight: 700; letter-spacing: .1em; }
 .ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--ayrovi-bg-main); border-radius: 0; flex-shrink: 0; }
+.ay-auth__logo--wordmark { width: auto; height: 22px; padding: 0; background: none; }
 .ay-auth__intro { text-align: center; margin-block-start: var(--ayrovi-space-4); }
 .ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-family: var(--ayrovi-font-display); font-size: 32px; line-height: 1.5; font-weight: 400; font-synthesis: none; letter-spacing: 0; }
 .ay-auth__intro p { font-size: var(--text-small); line-height: 1.5; margin-block-start: var(--ayrovi-space-2); }

@@ -80,7 +80,7 @@ export function CustomerPasswordRecovery({ reset = false, onBack, initialEmail =
       <header className="ay-auth__hero">
         <div className="ay-auth__header">
           <Button variant="ghost" size="icon" onClick={back} disabled={busy} aria-label={tr('Retour à la connexion', 'العودة لتسجيل الدخول')}><ArrowLeft className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} aria-hidden /></Button>
-          <div className="ay-auth__brand" dir="ltr"><img src="/media/logo-ayrovi.png" alt="" width={32} height={32} className="ay-auth__logo" /><span>AYROVI</span></div><span aria-hidden />
+          <div className="ay-auth__brand" dir="ltr"><img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" className="ay-auth__logo ay-auth__logo--wordmark" /></div><span aria-hidden />
         </div>
         <div className="ay-auth__intro">
           <h1>{done ? tr('C’est fait !', 'تم بنجاح!') : mode === 'request' ? tr('Mot de passe oublié ?', 'نسيت كلمة المرور؟') : tr('Un nouveau départ.', 'بداية جديدة.')}</h1>

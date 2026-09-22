@@ -638,8 +638,7 @@ export const CustomerAccountPage: React.FC<CustomerAccountPageProps> = ({
                   <ArrowLeft className={`h-5 w-5 ${isArabic ? 'rotate-180' : ''}`} aria-hidden />
                 </Button>
                 <div className="ay-auth__brand" dir="ltr">
-                  <img src="/media/logo-ayrovi.png" alt="" width={32} height={32} className="ay-auth__logo" />
-                  <span>AYROVI</span>
+                  <img src="/media/logo-ayrovi-lockup-black-orange.svg" alt="AYROVI" className="ay-auth__logo ay-auth__logo--wordmark" />
                 </div>
                 <span aria-hidden />
               </div>
