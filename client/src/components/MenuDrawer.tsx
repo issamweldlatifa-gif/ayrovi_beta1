@@ -4,6 +4,7 @@ import { useDialogFocus } from '../hooks/useDialogFocus';
 import { safePublicHref } from '../utils/publicLinks';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useLocale } from '../i18n/LocaleContext';
+import { PUBLIC_PAGES } from '../navigation/publicPages';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import type { CustomerSession } from '../types';
 import { Button, buttonClasses } from '../design/Button';
@@ -89,10 +90,8 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
 
           <div className="flex-1 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
             <MenuGroup title={tr('Découvrir', 'استكشف')}>
-              <MenuItem label={tr('Arrivages', 'المنتجات القادمة')} onClick={() => openCms('arrivals')} />
-              <MenuItem label={tr('Promotions', 'العروض')} onClick={() => openCms('promotions')} />
+              {PUBLIC_PAGES.map(page => <a key={page.id} href={page.href} className="flex min-h-11 w-full items-center gap-3 rounded-control px-3 py-2.5 text-start text-sm font-bold text-ink transition hover:bg-surface">{page.label}</a>)}
               <MenuItem label={tr('Social', 'التواصل')} onClick={() => openCms('stories')} />
-              <MenuItem label={tr('Magazine', 'مجلتي')} onClick={() => openCms('news')} />
             </MenuGroup>
 
             <MenuGroup title={tr('Suite IA', 'مجموعة الذكاء الاصطناعي')}>

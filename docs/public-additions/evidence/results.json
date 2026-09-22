@@ -1,0 +1,523 @@
+{
+  "scope": "Actual built app, isolated SQLite, deterministic CMS response dates/campaign/error fixtures. No live customer writes.",
+  "checks": [
+    {
+      "name": "fr: seeded story records retained",
+      "pass": true
+    },
+    {
+      "name": "fr/320: original hero remains",
+      "pass": true
+    },
+    {
+      "name": "fr/320: original Lens remains",
+      "pass": true
+    },
+    {
+      "name": "fr/320: Stories remain",
+      "pass": true
+    },
+    {
+      "name": "fr/320: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "fr/320: no duplicate eyebrow",
+      "pass": true
+    },
+    {
+      "name": "fr/320: header then ad then links then old content",
+      "pass": true
+    },
+    {
+      "name": "fr/320: approved ad color and white type",
+      "pass": true
+    },
+    {
+      "name": "fr/320: footer is black",
+      "pass": true
+    },
+    {
+      "name": "fr/320: showcase still uses original CMS title",
+      "pass": true
+    },
+    {
+      "name": "fr/390: original hero remains",
+      "pass": true
+    },
+    {
+      "name": "fr/390: original Lens remains",
+      "pass": true
+    },
+    {
+      "name": "fr/390: Stories remain",
+      "pass": true
+    },
+    {
+      "name": "fr/390: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "fr/390: no duplicate eyebrow",
+      "pass": true
+    },
+    {
+      "name": "fr/390: header then ad then links then old content",
+      "pass": true
+    },
+    {
+      "name": "fr/390: approved ad color and white type",
+      "pass": true
+    },
+    {
+      "name": "fr/390: footer is black",
+      "pass": true
+    },
+    {
+      "name": "fr/390: showcase still uses original CMS title",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: original hero remains",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: original Lens remains",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: Stories remain",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: no duplicate eyebrow",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: header then ad then links then old content",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: approved ad color and white type",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: footer is black",
+      "pass": true
+    },
+    {
+      "name": "fr/1360: showcase still uses original CMS title",
+      "pass": true
+    },
+    {
+      "name": "fr: info contains service messages",
+      "pass": true
+    },
+    {
+      "name": "fr: info restores focus",
+      "pass": true
+    },
+    {
+      "name": "fr: original story order 0",
+      "pass": true
+    },
+    {
+      "name": "fr: original story order 1",
+      "pass": true
+    },
+    {
+      "name": "fr: original Story interaction still opens",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage is a new document",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage not a homepage panel",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage footer remains",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage/320 page fits",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage/390 page fits",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage menu uses real destination links",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage legacy Social still works",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage reload works",
+      "pass": true
+    },
+    {
+      "name": "fr: /arrivage returns to intact homepage",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards is a new document",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards not a homepage panel",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards footer remains",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards/320 page fits",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards/390 page fits",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards menu uses real destination links",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards legacy Social still works",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards reload works",
+      "pass": true
+    },
+    {
+      "name": "fr: /gift-cards returns to intact homepage",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine is a new document",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine not a homepage panel",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine footer remains",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine/320 page fits",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine/390 page fits",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine menu uses real destination links",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine legacy Social still works",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine reload works",
+      "pass": true
+    },
+    {
+      "name": "fr: /magazine returns to intact homepage",
+      "pass": true
+    },
+    {
+      "name": "fr: ad uses real supplied campaign text",
+      "pass": true
+    },
+    {
+      "name": "fr: published codes retained under Gift & Cards",
+      "pass": true
+    },
+    {
+      "name": "fr: failure is explicit, not false empty content",
+      "pass": true
+    },
+    {
+      "name": "fr: retry recovers",
+      "pass": true
+    },
+    {
+      "name": "ar: seeded story records retained",
+      "pass": true
+    },
+    {
+      "name": "ar/320: original hero remains",
+      "pass": true
+    },
+    {
+      "name": "ar/320: original Lens remains",
+      "pass": true
+    },
+    {
+      "name": "ar/320: Stories remain",
+      "pass": true
+    },
+    {
+      "name": "ar/320: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "ar/320: no duplicate eyebrow",
+      "pass": true
+    },
+    {
+      "name": "ar/320: header then ad then links then old content",
+      "pass": true
+    },
+    {
+      "name": "ar/320: approved ad color and white type",
+      "pass": true
+    },
+    {
+      "name": "ar/320: footer is black",
+      "pass": true
+    },
+    {
+      "name": "ar/320: showcase still uses original CMS title",
+      "pass": true
+    },
+    {
+      "name": "ar/390: original hero remains",
+      "pass": true
+    },
+    {
+      "name": "ar/390: original Lens remains",
+      "pass": true
+    },
+    {
+      "name": "ar/390: Stories remain",
+      "pass": true
+    },
+    {
+      "name": "ar/390: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "ar/390: no duplicate eyebrow",
+      "pass": true
+    },
+    {
+      "name": "ar/390: header then ad then links then old content",
+      "pass": true
+    },
+    {
+      "name": "ar/390: approved ad color and white type",
+      "pass": true
+    },
+    {
+      "name": "ar/390: footer is black",
+      "pass": true
+    },
+    {
+      "name": "ar/390: showcase still uses original CMS title",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: original hero remains",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: original Lens remains",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: Stories remain",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: no horizontal overflow",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: no duplicate eyebrow",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: header then ad then links then old content",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: approved ad color and white type",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: footer is black",
+      "pass": true
+    },
+    {
+      "name": "ar/1360: showcase still uses original CMS title",
+      "pass": true
+    },
+    {
+      "name": "ar: info contains service messages",
+      "pass": true
+    },
+    {
+      "name": "ar: info restores focus",
+      "pass": true
+    },
+    {
+      "name": "ar: original story order 0",
+      "pass": true
+    },
+    {
+      "name": "ar: original story order 1",
+      "pass": true
+    },
+    {
+      "name": "ar: original Story interaction still opens",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage is a new document",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage not a homepage panel",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage footer remains",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage/320 page fits",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage/390 page fits",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage menu uses real destination links",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage legacy Social still works",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage reload works",
+      "pass": true
+    },
+    {
+      "name": "ar: /arrivage returns to intact homepage",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards is a new document",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards not a homepage panel",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards footer remains",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards/320 page fits",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards/390 page fits",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards menu uses real destination links",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards legacy Social still works",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards reload works",
+      "pass": true
+    },
+    {
+      "name": "ar: /gift-cards returns to intact homepage",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine is a new document",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine not a homepage panel",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine footer remains",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine/320 page fits",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine/390 page fits",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine menu uses real destination links",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine legacy Social still works",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine reload works",
+      "pass": true
+    },
+    {
+      "name": "ar: /magazine returns to intact homepage",
+      "pass": true
+    },
+    {
+      "name": "ar: ad uses real supplied campaign text",
+      "pass": true
+    },
+    {
+      "name": "ar: published codes retained under Gift & Cards",
+      "pass": true
+    },
+    {
+      "name": "ar: failure is explicit, not false empty content",
+      "pass": true
+    },
+    {
+      "name": "ar: retry recovers",
+      "pass": true
+    },
+    {
+      "name": "no browser exceptions",
+      "pass": true,
+      "details": []
+    }
+  ],
+  "errors": []
+}

@@ -1,0 +1,12 @@
+{
+  "baseline": "ac8f2b07741712be1e2634944565b0a04fe6e4d0",
+  "hero_stories_lens_composition_unchanged": true,
+  "protected_paths_unchanged": true,
+  "protected_paths": [
+    "client/src/components/StoriesShowcase.tsx",
+    "client/src/social",
+    "client/src/ayrovix",
+    "client/src/components/LensFeature.tsx",
+    "android"
+  ]
+}

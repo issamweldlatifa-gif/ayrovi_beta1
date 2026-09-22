@@ -32,7 +32,8 @@ async function requestPublic<T>(path: string): Promise<PublicResponse<T>> {
 }
 
 /** One bootstrap request supplies Hero, brands and all public CMS sections. */
-export function getPublicHome(): Promise<PublicResponse<PublicHomeData>> {
+export function getPublicHome(options: { refresh?: boolean } = {}): Promise<PublicResponse<PublicHomeData>> {
+  if (options.refresh) homeRequest = null;
   if (!homeRequest) {
     homeRequest = requestPublic<PublicHomeData>('/api/public/home').catch((error) => {
       homeRequest = null;

@@ -1,5 +1,8 @@
 import { customerTheme } from './design/editorial/customerTheme';
 import React, { Suspense, lazy, useState, useEffect, useRef } from 'react';
+import './styles/public-discovery.css';
+import { PublicPageLinks } from './components/PublicPageLinks';
+import { publicPageForPath } from './navigation/publicPages';
 import { TopAnnouncementBar } from './components/TopAnnouncementBar';
 import { Navbar } from './components/Navbar';
 import { EvergreenHero } from './components/EvergreenHero';
@@ -65,6 +68,7 @@ const ManagedSectionFrame: React.FC<{ section: InterfaceSectionConfig; children:
 
 export const App: React.FC = () => {
   const navigation = useNavigationHistory();
+  const publicPage = publicPageForPath(window.location.pathname);
   const { tr, locale } = useLocale();
   const appView = navigation.stack[0]?.id || 'home';
   const isProductDrawerOpen = appView === 'app:product';
@@ -381,9 +385,8 @@ export const App: React.FC = () => {
     openAppView('app:order-success', true);
   };
 
-  // HOMEPAGE CLEANUP: الصفحة تنتهي عند الـ Trust Bar — لا فوتر ولا أي محتوى تحته.
-  // الأقسام القديمة (brands/about) والفوتر محذوفة من العرض لا من المشروع،
-  // مع إبقاء cms لأنها تستضيف صفحات CMS بملء الشاشة (تُفتح من Discovery/Menu).
+  // Preserve the existing homepage composition and the CMS-controlled Stories/Lens order.
+  // Discovery links and the shared footer are additions outside this unchanged content.
   const publicSections = [...interfaceConfig.sections]
     .filter((section) => section.visible && !['brands', 'about', 'footer'].includes(section.id))
     .sort((a, b) => a.order - b.order)
@@ -427,14 +430,13 @@ export const App: React.FC = () => {
   return (
     <div className="ayrovi-app-shell interface-page-shell min-h-screen flex flex-col text-ink relative" style={customerTheme(locale, interfaceConfig)}>
       
-      {/* Top Yellow Notice Bar */}
-      <TopAnnouncementBar onLearnMore={handleToggleProductDrawer} />
 
       {/* Header: Left Menu, Center Fig Logo + AYROVI, Right Profile */}
       <div data-preserved-navigation style={{ display: 'contents' }}>
       <Navbar
         onOpenMenuDrawer={() => openAppView('app:menu')}
         onGoHome={() => {
+          if (publicPage) { window.location.assign('/'); return; }
           navigation.goHome();
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
@@ -450,6 +452,8 @@ export const App: React.FC = () => {
         logoUrl={interfaceConfig.logoUrl}
       />
       </div>
+
+      {!publicPage && <><TopAnnouncementBar /><PublicPageLinks /></>}
 
       {appView === 'app:about' && <Suspense fallback={null}><AboutPage section={interfaceConfig.sections.find(section => section.id === 'about')} onClose={closeAppView} /></Suspense>}
 
@@ -472,7 +476,15 @@ export const App: React.FC = () => {
       )}
 
       {/* Sections publiques — visibilité, ordre, médias et contenu pilotés depuis Admin → واجهتي. */}
-      <div className="managed-public-sections">{publicSections}</div>
+      {publicPage
+        ? <PublicCmsSections standalonePage={publicPage} homepageVisible={false} isAuthenticated={Boolean(customerSession)} onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }} />
+        : <div className="managed-public-sections">{publicSections}</div>}
+      <Footer logoUrl={interfaceConfig.logoUrl}
+        introTitle={interfaceConfig.sections.find(section => section.id === 'footer')?.title}
+        introText={interfaceConfig.sections.find(section => section.id === 'footer')?.subtitle}
+        onOpenAccount={() => { setAccountInitialSection('home'); openAppView('app:account'); }}
+        onOpenAssistant={() => openAppView('app:assistant')}
+        onOpenAbout={() => openAppView('app:about')} />
 
       {/* Floating Scroll To Top FAB Button */}
       <ScrollToTopButton hidden={navigation.stack.length > 0} />

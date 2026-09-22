@@ -11,7 +11,7 @@ interface ContentCardProps {
   description?: string;
   badge?: string;
   children?: React.ReactNode;
-  dir?: 'ltr' | 'rtl';
+  dir?: 'ltr' | 'rtl' | 'auto';
 }
 
 const variantClasses: Record<ContentCardVariant, { body: string; eyebrow: string; description: string }> = {

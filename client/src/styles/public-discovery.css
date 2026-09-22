@@ -1,0 +1,54 @@
+/* Additive public navigation, real destinations, and approved advertising/footer treatment. */
+.public-campaign{background:#D3451F;color:#FFFFFF;border-bottom:3px solid #9E3317}
+.public-campaign-inner{position:relative;max-width:1280px;margin:auto;padding:24px 16px 12px}
+.public-campaign h2,.public-campaign p{padding-inline-end:40px;margin:0;font-size:clamp(24px,3vw,36px);line-height:1.18;font-weight:500;overflow-wrap:anywhere}
+.public-campaign p{margin-top:4px}
+.public-campaign a{display:inline-flex;align-items:center;gap:10px;color:inherit;min-height:44px;margin-top:16px;font-size:18px;font-weight:700;text-decoration:none}
+.public-campaign a:hover{text-decoration:underline;text-underline-offset:5px}
+.public-campaign-info{position:absolute;inset-inline-end:6px;top:17px;display:grid;place-items:center;width:44px;height:44px;padding:0;border:0;background:transparent;color:inherit;cursor:pointer}
+.public-campaign :focus-visible{outline:2px solid #FFFFFF;outline-offset:3px}
+.public-campaign-dialog{width:min(520px,calc(100% - 32px));max-height:85dvh;margin:auto;padding:24px;border:1px solid #D9D9D9;background:#FFFFFF;color:#000000;overflow-y:auto}
+.public-campaign-dialog::backdrop{background:#00000099}
+.public-campaign-dialog header{display:flex;align-items:start;justify-content:space-between;gap:16px}
+.public-campaign-dialog h2{font-size:24px;font-weight:500;margin:0}
+.public-campaign-dialog button{display:grid;place-items:center;min-width:44px;min-height:44px;border:0;background:transparent;color:inherit;cursor:pointer}
+.public-campaign-dialog p,.public-campaign-dialog li{font-size:15px;line-height:1.8;overflow-wrap:anywhere}
+.public-campaign-dialog ul{padding-inline-start:22px;margin:18px 0}
+.public-campaign-dialog a{min-height:44px;display:inline-flex;align-items:center;gap:8px;color:inherit;font-weight:700}
+.public-page-links{display:grid;grid-template-columns:1fr 1.3fr 1fr;border-bottom:1px solid #D9D9D9;background:#FFFFFF;color:#000000;padding:0 8px}
+.public-page-links a{min-height:58px;display:flex;align-items:center;justify-content:center;padding:10px 4px;font-size:14px;font-weight:500;white-space:nowrap}
+.public-page-links a:hover{text-decoration:underline;text-underline-offset:6px}
+.public-standalone-page{width:100%;max-width:1280px;margin:auto;padding:16px 20px 48px;min-height:55dvh}
+.public-page-back{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-bottom:20px;font-size:14px;font-weight:700}
+.public-page-content{padding-top:28px}
+.public-content-state{padding:36px 20px;border:1px solid #D9D9D9;text-align:center;background:#FFFFFF;color:#000000}
+.public-content-state h2{font-size:24px;line-height:1.5;font-weight:500}
+.public-content-state p{margin-top:12px;line-height:1.8;color:#595959}
+.public-content-state button{margin-top:18px;min-height:44px;border:0;padding:10px 22px;background:#000000;color:#FFFFFF;font-weight:700}
+/* Specificity keeps the admin-compatible footer adapter from repainting this black footer. */
+.ayrovi-app-shell .public-site-footer{background:#000000!important;color:#FFFFFF!important;text-align:center;padding:0 0 calc(var(--ayrovi-bottom-nav-height,72px) + env(safe-area-inset-bottom,0px) + 16px);margin-top:32px}
+.public-footer-nav{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:0 22px;padding:12px 16px;border-bottom:1px solid #333333}
+.public-footer-nav a,.public-footer-nav button{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:0;background:transparent;color:#BDBDBD;font-size:11px;font-weight:700;text-transform:uppercase;cursor:pointer;padding:4px 0}
+.public-footer-nav a:hover,.public-footer-nav button:hover{color:#FFFFFF;text-decoration:underline;text-underline-offset:5px}
+.public-footer-socials{display:flex;justify-content:center;gap:20px;flex-wrap:wrap;padding:28px 16px 0}
+.public-footer-socials>a,.public-footer-socials>span{display:flex;align-items:center;flex-direction:column;gap:9px;font-size:10px;color:#BDBDBD}
+.public-footer-social-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:50%;background:#FFFFFF;color:#000000}
+.public-footer-social-mark svg{width:24px;height:24px}
+.public-footer-social-unavailable .public-footer-social-mark{background:#BDBDBD}
+.public-footer-message{padding:25px 22px 0;max-width:900px;margin:auto}
+.public-footer-message h2{font-size:24px;line-height:1.5;font-weight:500;margin:0;color:#FFFFFF}
+.public-footer-message p{font-size:13px;line-height:1.9;color:#BDBDBD;margin:7px 0 0}
+.public-footer-contacts{display:grid;max-width:1000px;margin:24px auto 0;padding:0 22px 24px}
+.public-footer-contacts>button,.public-footer-contacts>div{display:flex;align-items:center;justify-content:center;gap:12px;min-height:70px;text-align:start;border:0;border-bottom:1px solid #333333;background:transparent;color:#FFFFFF;padding:12px 0}
+.public-footer-contacts>button{cursor:pointer}
+.public-footer-contacts>button:disabled{cursor:default}
+.public-footer-contacts>:last-child{border-bottom:0}
+.public-footer-contacts svg{color:#BDBDBD;flex-shrink:0}
+.public-footer-contacts strong{display:block;font-size:14px;font-weight:700;color:#FFFFFF}
+.public-footer-contacts>:first-child strong{color:#FF7900}
+.public-footer-contacts small{display:block;margin-top:4px;font-size:11px;color:#BDBDBD}
+.public-footer-bottom{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:6px 18px;border-top:1px solid #333333;padding:14px 18px 0;font-size:11px;line-height:1.8;color:#BDBDBD}
+.public-footer-bottom a{min-height:44px;display:inline-flex;align-items:center}
+.public-site-footer :focus-visible{outline:2px solid #FFFFFF;outline-offset:4px}
+.ay-customer-root:lang(ar) .public-campaign h2,.ay-customer-root:lang(ar) .public-campaign p{line-height:1.5}
+@media(min-width:768px){.public-campaign-inner{padding:30px 34px 20px}.public-campaign-info{inset-inline-end:24px;top:24px}.public-campaign a{font-size:20px;margin-top:22px}.public-page-links{display:flex;justify-content:center;gap:40px}.public-page-links a{min-width:140px;font-size:17px;min-height:64px}.public-standalone-page{padding:24px 32px 56px}.public-footer-nav{gap:30px}.public-footer-socials{gap:30px}.public-footer-contacts{grid-template-columns:repeat(3,1fr);gap:25px}.public-footer-contacts>button,.public-footer-contacts>div{border:0}.public-footer-message h2{font-size:27px}}

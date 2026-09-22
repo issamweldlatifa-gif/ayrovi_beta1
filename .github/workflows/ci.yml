@@ -71,6 +71,18 @@ jobs:
         id: editorial_customer
         run: npm run verify:editorial-customer
 
+      - name: Verify additive homepage, standalone pages and footer
+        run: |
+          rm -rf docs/public-additions/evidence/
+          npm run verify:public-additions
+
+      - name: Upload public additions evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-additions-evidence
+          path: docs/public-additions/evidence/
+
       - name: Verify Lens camera entry, help, consent and navigation
         id: lens_camera
         run: |

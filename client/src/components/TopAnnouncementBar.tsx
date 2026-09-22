@@ -1,88 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
+import { ArrowRight, Info, X } from './QatafoIcons';
+import { useLocale } from '../i18n/LocaleContext';
+import { getPublicHome } from '../services/publicApi';
 
-interface TopAnnouncementBarProps {
-  onLearnMore?: () => void;
+interface TopAnnouncementBarProps { onLearnMore?: () => void; }
+export interface PublishedCampaign { title: string; description: string; href: string; }
+/** Only published, currently valid provider data; never invent a discount. */
+export function publishedCampaign(rows: unknown, now: number): PublishedCampaign | null {
+  if (!Array.isArray(rows)) return null;
+  const active = rows.find(row => row && typeof row.name === 'string' && row.name.trim()
+    && row.status === 'ACTIVE' && Number.isFinite(Date.parse(row.starts_at)) && Date.parse(row.starts_at) <= now
+    && Number.isFinite(Date.parse(row.ends_at)) && Date.parse(row.ends_at) > now);
+  return active ? { title: active.name.trim(), description: typeof active.description === 'string' ? active.description : '', href: '/gift-cards' } : null;
 }
 
-/** الرسالة الاحتياطية — لا يبقى الشريط فارغاً أبداً (المواصفة #10) */
-const FALLBACK_MESSAGE = 'Prix confirmé avant commande';
-
-/** الرسائل الافتراضية قبل تحميل محتوى الـ Admin أو عند فشل الطلب */
-const DEFAULT_MESSAGES = [
-  'Prix confirmé avant commande',
-  'Dédouanement inclus',
-  'Acompte sécurisé 20 %',
-  'Livraison dans les 24 gouvernorats',
-  'Service client 7j/7',
-];
-
-const HOLD_MS = 3400; // زمن عرض كل رسالة (3–4 ثوانٍ)
-const EXIT_MS = 440;  // زمن خروج الرسالة القديمة قبل دخول الجديدة
-
+/** Advertising block below Navbar. Original service messages remain available in Info. */
 export const TopAnnouncementBar: React.FC<TopAnnouncementBarProps> = () => {
-  const [messages, setMessages] = useState<string[]>(DEFAULT_MESSAGES);
-  const [index, setIndex] = useState(0);
-  const [leaving, setLeaving] = useState(false);
-
-  // الرسائل ديناميكية من الـ Admin — والتصميم ثابت لا يُدار من الـ Admin
+  const { tr } = useLocale();
+  const [campaign, setCampaign] = useState<PublishedCampaign | null>(null);
+  const [messages, setMessages] = useState<string[]>([]);
+  const [infoOpen, setInfoOpen] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const infoId = useId();
   useEffect(() => {
-    let cancelled = false;
-    fetch('/api/public/announcement-messages')
-      .then((response) => (response.ok ? response.json() : null))
-      .then((result) => {
-        if (cancelled || !result?.success || !Array.isArray(result.data)) return;
-        const texts = result.data.map((row: any) => String(row.text || '').trim()).filter(Boolean);
-        if (texts.length) {
-          setMessages(texts);
-          setIndex(0);
-        }
-      })
-      .catch(() => {/* الفشل يُبقي الرسائل الافتراضية */ });
-    return () => { cancelled = true; };
+    let active = true;
+    getPublicHome().then(payload => {
+      if (active) setCampaign(publishedCampaign(payload.data?.promotions, Date.parse(payload.serverTime || '') || Date.now()));
+    }).catch(() => { /* Neutral discovery banner, not a fabricated offer. */ });
+    const controller = new AbortController();
+    fetch('/api/public/announcement-messages', { signal: controller.signal }).then(r => r.ok ? r.json() : null).then(payload => {
+      if (active && payload?.success && Array.isArray(payload.data)) setMessages(payload.data.map((row: { text?: unknown }) => typeof row?.text === 'string' ? row.text.trim() : '').filter(Boolean));
+    }).catch(() => { /* Existing CMS content remains untouched on the server. */ });
+    return () => { active = false; controller.abort(); };
   }, []);
-
-  // Vertical Ticker: الرسالة الحالية تصعد وتختفي ثم تدخل التالية من الأسفل
   useEffect(() => {
-    if (messages.length < 2) return;
-    let cancelled = false;
-    let cycleTimer = 0;
-    let swapTimer = 0;
-    const schedule = () => {
-      cycleTimer = window.setTimeout(() => {
-        if (cancelled) return;
-        setLeaving(true);
-        swapTimer = window.setTimeout(() => {
-          if (cancelled) return;
-          setIndex((current) => (current + 1) % messages.length);
-          setLeaving(false);
-          schedule();
-        }, EXIT_MS);
-      }, HOLD_MS);
-    };
-    schedule();
-    return () => {
-      cancelled = true;
-      window.clearTimeout(cycleTimer);
-      window.clearTimeout(swapTimer);
-    };
-  }, [messages]);
-
-  const message = messages.length ? messages[Math.min(index, messages.length - 1)] : FALLBACK_MESSAGE;
-
-  return (
-    <div
-      className="interface-announcement relative z-10 flex min-h-[44px] w-full items-center justify-center overflow-hidden px-4 text-center sm:h-[48px]"
-      role="status"
-      aria-live="polite"
-    >
-      {/* الرسالة الحالية — Fade + translate عمودي فقط */}
-      <span
-        className={`block text-sm font-bold leading-snug tracking-tight sm:text-base ${leaving ? 'announcement-out' : 'announcement-in'}`}
-      >
-        {message}
-      </span>
-      {/* خط AYROVI البرتقالي السفلي ثابت + وميض ضوئي شبه محسوس عند كل تبديل */}
-      <span key={index} aria-hidden className="announcement-sweep" />
-    </div>
-  );
+    const node = dialog.current;
+    if (!infoOpen || !node) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    node.showModal();
+    return () => { document.body.style.overflow = overflow; if (node.open) node.close(); };
+  }, [infoOpen]);
+  const title = campaign?.title || tr('Découvrez les nouveautés AYROVI.', 'اكتشف جديد AYROVI.');
+  const description = campaign?.description || tr('Vos prochaines découvertes commencent ici.', 'اختياراتك الجديدة تبدأ من هنا.');
+  return <>
+    <section className="public-campaign relative z-10" aria-labelledby={titleId} data-public-campaign>
+      <div className="public-campaign-inner">
+        <button type="button" className="public-campaign-info" onClick={() => setInfoOpen(true)} aria-label={tr('Informations et conditions', 'المعلومات والشروط')} aria-haspopup="dialog"><Info size={24} /></button>
+        <h2 id={titleId}>{title}</h2>
+        <p>{description}</p>
+        <a href={campaign?.href || '/arrivage'}>{tr('Découvrir', 'اكتشف')}<ArrowRight size={24} /></a>
+      </div>
+    </section>
+    <dialog ref={dialog} className="public-campaign-dialog" aria-labelledby={infoId} onClose={() => setInfoOpen(false)}>
+      <header><h2 id={infoId}>{tr('Informations et conditions', 'المعلومات والشروط')}</h2><button type="button" onClick={() => setInfoOpen(false)} aria-label={tr('Fermer', 'إغلاق')}><X size={24} /></button></header>
+      <p>{description}</p>
+      {messages.length > 0 && <ul>{messages.map((message, index) => <li key={index} dir="auto">{message}</li>)}</ul>}
+      <a href={campaign?.href || '/arrivage'}>{tr('Voir les détails', 'اطّلع على التفاصيل')}<ArrowRight size={20} /></a>
+    </dialog>
+  </>;
 };

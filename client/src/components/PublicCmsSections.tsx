@@ -3,6 +3,8 @@ import heroHomme from '../assets/hero-homme.jpg';
 import heroFemme from '../assets/hero-femme.jpg';
 import heroEnfants from '../assets/hero-enfants.jpg';
 import { ContentCard } from '../discovery/ContentCard';
+import { ArrowLeft } from './QatafoIcons';
+import { PUBLIC_PAGES, type PublicPageId } from '../navigation/publicPages';
 import { TabHeader } from '../discovery/TabHeader';
 import { useLocale } from '../i18n/LocaleContext';
 import { getPublicHome } from '../services/publicApi';
@@ -31,10 +33,10 @@ const pageDefinitions: Array<{
   description: string;
   descriptionAr: string;
 }> = [
-  { id: 'arrivals', label: 'Arrivages', labelAr: 'القادم', eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
-  { id: 'promotions', label: 'Promotions', labelAr: 'العروض', eyebrow: 'Offres en cours', eyebrowAr: 'عروض متاحة', description: 'Les avantages et codes publiés par l’équipe AYROVI.', descriptionAr: 'العروض والرموز التي ينشرها فريق AYROVI.' },
+  { id: 'arrivals', label: 'Arrivage', labelAr: 'Arrivage', eyebrow: 'Sélections à venir', eyebrowAr: 'اختيارات قادمة', description: 'Les dates officielles et les comptes à rebours AYROVI.', descriptionAr: 'المواعيد الرسمية والعدّ التنازلي لدى AYROVI.' },
+  { id: 'promotions', label: 'Gift & Cards', labelAr: 'Gift & Cards', eyebrow: 'Cadeaux, cartes et avantages', eyebrowAr: 'هدايا وبطاقات وامتيازات', description: 'Les avantages et codes publiés par l’équipe AYROVI. Seules les offres disponibles sont affichées.', descriptionAr: 'الامتيازات والرموز المنشورة من فريق AYROVI. نعرض فقط ما هو متاح فعليًا.' },
   { id: 'stories', label: 'Social', labelAr: 'التواصل', eyebrow: 'Social AYROVI', eyebrowAr: 'تواصل AYROVI', description: 'Stories et publications de la communauté AYROVI.', descriptionAr: 'قصص ومنشورات مجتمع AYROVI.' },
-  { id: 'news', label: 'مجلتي', labelAr: 'مجلتي', eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
+  { id: 'news', label: 'Magazine', labelAr: 'Magazine', eyebrow: 'Magazine AYROVI', eyebrowAr: 'مجلة AYROVI', description: 'Mode, tendances et choix éditoriaux reliés aux produits AYROVI.', descriptionAr: 'موضة واتجاهات واختيارات تحريرية مرتبطة بمنتجات AYROVI.' },
 ];
 
 function Countdown({ target, serverOffset }: { target: string; serverOffset: number }) {
@@ -70,7 +72,7 @@ function EmptyContent({ label }: { label: string }) {
 
 function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number] }) {
   const { isArabic } = useLocale();
-  const localDirection = definition.id === 'news' ? 'rtl' : (isArabic ? 'rtl' : 'ltr');
+  const localDirection = isArabic ? 'rtl' : 'ltr';
   return (
     <div className="border-b border-line pb-8" dir={localDirection}>
       <div><p className="text-xs font-black uppercase tracking-[0.2em] text-ink">{isArabic ? definition.eyebrowAr : definition.eyebrow}</p><h1 id={`cms-page-${definition.id}`} className="mt-3 font-display text-4xl font-black leading-none tracking-tight text-ink sm:text-6xl">{isArabic ? definition.labelAr : definition.label}</h1><p className="mt-4 max-w-2xl text-base leading-7 text-muted">{isArabic ? definition.descriptionAr : definition.description}</p></div>
@@ -78,36 +80,46 @@ function PageIntro({ definition }: { definition: (typeof pageDefinitions)[number
   );
 }
 
-interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; homepageVisible?: boolean; }
+interface PublicCmsSectionsProps { isAuthenticated?: boolean; onOpenAccount?: () => void; homepageVisible?: boolean; standalonePage?: PublicPageId; }
 
-export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount, homepageVisible = true }) => {
+export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenticated = false, onOpenAccount, homepageVisible = true, standalonePage }) => {
   const navigation = useNavigationHistory();
   const { tr, isArabic, direction, formatMoney } = useLocale();
   const cmsLayerId = navigation.stack[0]?.id || '';
   const cmsPageId = cmsLayerId.startsWith('cms:') ? cmsLayerId.slice(4) : '';
-  const activePage = pageDefinitions.some((page) => page.id === cmsPageId) ? cmsPageId as CmsPage : null;
-  const openCmsPage = (page: CmsPage) => navigation.navigate([{ id: `cms:${page}` }]);
+  const overlayPage = pageDefinitions.some((page) => page.id === cmsPageId) ? cmsPageId as CmsPage : null;
+  const activePage = overlayPage || standalonePage || null;
+  const openCmsPage = (page: CmsPage) => {
+    const destination = PUBLIC_PAGES.find(item => item.id === page);
+    if (standalonePage && destination) window.location.assign(destination.href);
+    else navigation.navigate([{ id: `cms:${page}` }]);
+  };
   const closeCmsPage = () => navigation.back();
   const [home, setHome] = useState<HomeData>(emptyHome);
   const [serverOffset, setServerOffset] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     const startedAt = Date.now();
-    getPublicHome()
+    setLoaded(false);
+    setFailed(false);
+    getPublicHome({ refresh: attempt > 0 })
       .then((payload) => {
-        if (cancelled || !payload.success || !payload.data) return;
+        if (cancelled) return;
+        if (!payload.success || !payload.data) throw new Error('PUBLIC_CONTENT_UNAVAILABLE');
         setHome({ ...emptyHome, ...payload.data });
         if (payload.serverTime) setServerOffset(new Date(payload.serverTime).getTime() - Math.round((startedAt + Date.now()) / 2));
         setLoaded(true);
       })
-      .catch(() => setLoaded(true));
+      .catch(() => { if (!cancelled) { setFailed(true); setLoaded(true); } });
     return () => { cancelled = true; };
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
-    if (!activePage) return undefined;
+    if (!overlayPage) return undefined;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') closeCmsPage(); };
@@ -116,7 +128,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', closeOnEscape);
     };
-  }, [activePage]);
+  }, [overlayPage]);
 
   const activeArrivals = useMemo(
     () => home.arrivals.filter((arrival) => new Date(arrival.expectedArrivalAt).getTime() > Date.now() + serverOffset),
@@ -132,6 +144,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
   };
 
   const renderPageContent = (page: CmsPage) => {
+    if (failed) return <div className="public-content-state" role="alert"><p>{tr('Le contenu est momentanément indisponible.', 'المحتوى غير متاح مؤقتًا.')}</p><button type="button" onClick={() => setAttempt(value => value + 1)}>{tr('Réessayer', 'أعد المحاولة')}</button></div>;
     if (!loaded) return <div className="grid gap-5 sm:grid-cols-2"><div className="h-96 animate-pulse bg-surface/20" /><div className="h-96 animate-pulse bg-surface/20" /></div>;
 
     if (page === 'arrivals') return activeArrivals.length ? (
@@ -165,18 +178,24 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
           {promotion.promo_code && <span className="inline-block rounded-control border border-white/25 bg-white/10 px-4 py-2 ay-number text-sm font-bold">{tr('Code', 'الرمز')} : {promotion.promo_code}</span>}
         </ContentCard>
       ))}</div>
-    ) : <EmptyContent label={tr('Promotions', 'العروض')} />;
+    ) : <div className="public-content-state"><h2>{tr('Aucun cadeau, carte ou avantage publié pour le moment.', 'لا توجد هدايا أو بطاقات أو امتيازات منشورة حاليًا.')}</h2><p>{tr('Les nouveautés apparaîtront ici dès leur publication. Aucune carte payante n’est proposée actuellement.', 'تظهر المستجدات هنا عند نشرها. لا نعرض حاليًا بطاقة مدفوعة.')}</p></div>;
 
     if (page === 'stories') return <StoryTab isAuthenticated={isAuthenticated} onRequireAuth={() => onOpenAccount?.()} onCta={handleStoryCta} />;
 
     return home.news.length ? (
       <div className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">{home.news.map((item) => (
-        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={String(item.category || 'AYROVI').replaceAll('_', ' ')} dir="rtl">
+        <ContentCard key={item.id} variant="magazine" image={mediaSource(item.image, heroHomme)} title={item.title} description={item.summary} eyebrow={String(item.category || 'AYROVI').replaceAll('_', ' ')} dir="auto">
           <p className="text-xs font-bold text-muted">{item.author}</p>
         </ContentCard>
       ))}</div>
     ) : <EmptyContent label="مجلتي" />;
   };
+
+  if (standalonePage && !overlayPage && activeDefinition) return <main className="public-standalone-page" data-public-page={standalonePage} dir={direction}>
+    <a className="public-page-back" href="/"><ArrowLeft size={20} />{tr('Accueil', 'الرئيسية')}</a>
+    <PageIntro definition={activeDefinition} />
+    <div className="public-page-content">{renderPageContent(standalonePage)}</div>
+  </main>;
 
   return (
     <>
