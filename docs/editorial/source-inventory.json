@@ -16406,7 +16406,7 @@
     {
       "file": "client/src/components/Navbar.tsx",
       "domain": "shell-content",
-      "sha256": "d58ecd32fb53e96d22cca020463c0f45fa09194f07ff28b0f456122b1a281f7e",
+      "sha256": "1cc5ca40a5e6dbc06bcfa00af4b493870f60b49118654354e462b42e756421ef",
       "lines": 118,
       "imports": [
         "react",
