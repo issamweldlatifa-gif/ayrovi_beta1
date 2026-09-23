@@ -503,6 +503,32 @@ describe('AYSONIC platform', () => {
     }
   });
 
+  test('heavy cart lines surface requires_weight_validation for the frontend warning (matrice 23/09/2026)', async () => {
+    const sessionId = uniqueSession('heavy');
+    try {
+      // PC portable = tech_computers, poids par défaut 2,2 kg → ×3 = 6,6 kg > 5 kg.
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId)
+        .send({ ...createCartItem('PC portable gamer MSI'), quantity: 3 });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+
+      const cart = await request(app).get('/api/cart/items').set('x-session-id', sessionId);
+      expect(cart.status).toBe(200);
+      expect(cart.body.items).toHaveLength(1);
+      expect(cart.body.items[0].requiresWeightValidation).toBe(true);
+
+      // Une ligne légère (0,5 kg × 1) ne lève pas le drapeau.
+      const lightSession = uniqueSession('light');
+      const lightAdd = await request(app).post('/api/cart/items').set('x-session-id', lightSession)
+        .send(createCartItem('t-shirt coton bio'));
+      expect(lightAdd.status).toBe(201);
+      const lightCart = await request(app).get('/api/cart/items').set('x-session-id', lightSession);
+      expect(lightCart.body.items[0].requiresWeightValidation).toBe(false);
+      db.clearCart(lightSession);
+    } finally {
+      db.clearCart(sessionId);
+    }
+  });
+
   test('cart and checkout remain isolated between client sessions', async () => {
     const addResponse = await customerAgent
       .post('/api/cart/items')

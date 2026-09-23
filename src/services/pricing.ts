@@ -44,6 +44,15 @@ export interface PricingRules {
  */
 export const MAX_ORDER_TOTAL_TND = 100_000;
 
+/**
+ * Garde-fou « cargo lourd » (matrice management 23/09/2026) : au-delà de 5 kg
+ * (poids SerpApi ou poids par défaut de la catégorie), le devis porte
+ * requires_weight_validation=true — le fret international reste soumis à la
+ * validation finale de l'équipe ops (protection contre la perte sur les colis
+ * lourds). Le frontend affiche l'avertissement localisé correspondant.
+ */
+export const HEAVY_CARGO_KG_THRESHOLD = 5;
+
 export interface PriceBreakdown {
   originalPrice: number;
   currency: string;
@@ -61,6 +70,8 @@ export interface PriceBreakdown {
   discountTND: number;
   localDeliveryTND: number;
   weightKg: number;
+  /** Cargo lourd (> 5 kg) : fret soumis à validation finale de l'équipe ops. */
+  requiresWeightValidation: boolean;
   categoryId: string;
   categoryLabel: string;
   categoryStatus: CustomsCategoryStatus;
@@ -162,6 +173,38 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
     defaultWeightKg: 0.5,
     status: 'ALLOWED',
   },
+  {
+    // Matrice management 23/09/2026 — décoration / art de la table / textile maison
+    // récupérés via Lens (droit 25 %, poids par défaut 1,5 kg).
+    id: 'home_decor_living',
+    label: 'Décoration & maison',
+    keywords: [
+      'tapis', 'rideau', 'coussin', 'housse de couette', 'drap de lit', 'couverture',
+      'plaid', 'miroir', 'cadre photo', 'tableau décoratif', 'vase', 'bougie parfumée',
+      'lampe de table', 'lustre', 'suspension lumineuse', 'veilleuse', 'ruban led',
+      'étagère', 'organisateur de rangement', 'boîte de rangement', 'horloge murale',
+      'figurine décorative', 'plantes artificielles', 'assiettes', 'verres', 'couverts',
+      'tasse', 'mug', 'poêle', 'casserole', 'ustensiles de cuisine',
+      'bouteille isotherme', 'gourde',
+    ],
+    customsRate: 0.25,
+    tvaRate: 0.19,
+    defaultWeightKg: 1.5,
+    status: 'ALLOWED',
+  },
+  {
+    // Matrice management 23/09/2026 — catégorie de repli OCREX (capture de panier
+    // Shein/Temu) : reçoit le prix brut extrait par la Vision API, sans les
+    // remises flash expirées. Produit identifié => sa catégorie réelle gagne
+    // (correspondance la plus longue) ; le repli ne joue que sur un panier mixte.
+    id: 'mixed_chinese_market',
+    label: 'Panier mixte (Shein / Temu)',
+    keywords: ['shein', 'temu', 'panier shein', 'panier temu', 'articles chinois', 'mixed_cart'],
+    customsRate: 0.3,
+    tvaRate: 0.19,
+    defaultWeightKg: 0.25,
+    status: 'ALLOWED',
+  },
 ];
 
 export function millimes(value: number): number {
@@ -200,23 +243,54 @@ function normalizeMatchText(value: string): string {
   return value.toLocaleLowerCase('fr').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+/**
+ * « Broad matching » à la française (matrice management 23/09/2026) :
+ * singulier/pluriel indifférent — « rideaux » doit matcher « rideau »,
+ * « suppléments » doit matcher « supplement ». On singularise les tokens
+ * (finale -s / -x) SANS tomber dans le substring naïf : « arme » ne doit
+ * jamais matcher « pharmacie » (faux positif RESTRICTED = vente perdue),
+ * contrairement à un includes() brut.
+ */
+function singularizeFrToken(value: string): string {
+  return value.replace(/[sx]$/, '');
+}
+
+function broadMatchHaystack(value: string): string {
+  return ` ${normalizeMatchText(value).split(' ').map(singularizeFrToken).filter(Boolean).join(' ')} `;
+}
+
+/** Catégorie de repli OCREX (matrice 23/09/2026) : panier mixte Shein/Temu. */
+const OCREX_FALLBACK_CATEGORY_ID = 'mixed_chinese_market';
+
 export function classifyCustomsCategory(
   text: string,
   categories: CustomsCategory[] = DEFAULT_CUSTOMS_CATEGORIES,
 ): { category: CustomsCategory; uncertain: boolean } {
-  const haystack = ` ${normalizeMatchText(text)} `;
+  const haystack = broadMatchHaystack(text);
   const pool = categories.length ? categories : DEFAULT_CUSTOMS_CATEGORIES;
-  const restricted = pool.find((item) => item.status === 'RESTRICTED' && item.keywords.some((keyword) => haystack.includes(` ${normalizeMatchText(keyword)} `)));
+  // Les mots-clés subissent la MÊME singularisation que le haystack, mot à mot.
+  const phraseTokens = (keyword: string) => normalizeMatchText(keyword).split(' ').map(singularizeFrToken).filter(Boolean).join(' ');
+  const restricted = pool.find((item) => item.status === 'RESTRICTED' && item.keywords.some((keyword) => haystack.includes(` ${phraseTokens(keyword)} `)));
   if (restricted) return { category: restricted, uncertain: false };
+  // Le repli OCREX ne joue QUE si aucun produit n'est identifié : « robe boutique
+  // shein » reste Habillement ; « panier shein » (rien d'identifié) → panier mixte.
+  const ocrexFallback = pool.find((item) => item.id === OCREX_FALLBACK_CATEGORY_ID && item.status !== 'RESTRICTED');
+  const matchCategory = (category: CustomsCategory): { category: CustomsCategory; length: number } | null => {
+    let bestInCategory: { category: CustomsCategory; length: number } | null = null;
+    for (const keyword of category.keywords) {
+      const token = phraseTokens(keyword);
+      if (token.length < 3 || !haystack.includes(` ${token} `)) continue;
+      if (!bestInCategory || token.length > bestInCategory.length) bestInCategory = { category, length: token.length };
+    }
+    return bestInCategory;
+  };
   let best: { category: CustomsCategory; length: number } | null = null;
   for (const category of pool) {
-    if (category.status === 'RESTRICTED') continue;
-    for (const keyword of category.keywords) {
-      const token = normalizeMatchText(keyword);
-      if (token.length < 3 || !haystack.includes(` ${token} `)) continue;
-      if (!best || token.length > best.length) best = { category, length: token.length };
-    }
+    if (category.status === 'RESTRICTED' || category.id === OCREX_FALLBACK_CATEGORY_ID) continue;
+    const match = matchCategory(category);
+    if (match && (!best || match.length > best.length)) best = match;
   }
+  if (!best && ocrexFallback) best = matchCategory(ocrexFallback);
   const fallback = pool.find((item) => item.id === 'fashion_clothing') || pool.find((item) => item.status === 'ALLOWED') || pool[0];
   if (!best) return { category: fallback, uncertain: true };
   return { category: best.category, uncertain: false };
@@ -272,6 +346,7 @@ export function calculatePrice(
     discountTND: 0,
     localDeliveryTND,
     weightKg,
+    requiresWeightValidation: weightKg > HEAVY_CARGO_KG_THRESHOLD,
     categoryId: category.id,
     categoryLabel: category.label,
     categoryStatus: category.status,
@@ -319,6 +394,7 @@ export function calculatePrice(
     discountTND,
     localDeliveryTND,
     weightKg,
+    requiresWeightValidation: weightKg > HEAVY_CARGO_KG_THRESHOLD,
     categoryId: category.id,
     categoryLabel: category.label,
     categoryStatus: category.status,

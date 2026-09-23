@@ -37,6 +37,7 @@ export function createApiRouter(
           ...item,
           lineTotalTND: breakdown.totalTND,
           pricingVersion: breakdown.pricingVersion,
+          requiresWeightValidation: breakdown.requiresWeightValidation,
           convertedPriceTND: breakdown.convertedPriceTND,
           customsFeeTND: breakdown.customsFeeTND,
           shippingFeeTND: breakdown.shippingFeeTND,
