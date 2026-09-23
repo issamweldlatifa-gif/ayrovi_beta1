@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
+import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { resolveActiveHeroVisual } from '../services/heroVisual';
@@ -79,6 +80,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         expressFeeTND: pricing.expressFeeTND,
         categories: pricing.categories.map((item) => ({ id: item.id, label: item.label, status: item.status })),
       },
+      // Moteur de promotions (management 23/09/2026) : offre du jour tunisienne,
+      // appliquée sur le prix produit converti — les cartes l'affichent en badge.
+      promo: (() => { const day = resolvePromoForQuote(db); return day ? { percent: day.percent, label: day.label, day: tunisIsoDay() } : null; })(),
       governorates: Array.isArray(facts.governorates) ? facts.governorates : [],
       paymentMethods: Array.isArray(facts.payment_methods) ? facts.payment_methods : [],
       deliveryDelay: String(facts.delivery_delay || ''),
@@ -331,6 +335,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         rpdPercent: pricing.rpdPercent,
         expressFeeTND: pricing.expressFeeTND,
       },
+      promo: (() => { const day = resolvePromoForQuote(db); return day ? { percent: day.percent, label: day.label, day: tunisIsoDay() } : null; })(),
       facts, arrivals, promotions, brands, knowledge,
     } });
   });

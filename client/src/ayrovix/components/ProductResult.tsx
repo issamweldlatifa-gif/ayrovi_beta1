@@ -61,6 +61,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const selection = resolveProductSelection(product, requestedSize, color);
   const selectedOption = selection.option;
   const { price: selectedPrice, currency: selectedCurrency, priceTnd: selectedPriceTnd } = selection.offer;
+  // Promo (management 23/09/2026) : le serveur fournit prix remisé + original ;
+  // on n'affiche le barré + badge QUE si la sélection correspond au devis remisé.
+  const promo = product.promo ?? null;
+  const promoMatchesSelection = promo != null && selectedPriceTnd != null && Math.abs(selectedPriceTnd - promo.priceTnd) < 0.001;
   const incompleteVariantQuote = selection.offer.fromVariant && !completeProductOffer(selection.offer);
   const selectionNotice = incompleteVariantQuote ? productSelectionLabels.incomplete : selection.kind === 'ambiguous' ? productSelectionLabels.ambiguous : productSelectionLabels.general;
   const displayedPriceVerified = priceVerified && selectedPriceTnd !== null && !selection.generalEstimate && !incompleteVariantQuote;
@@ -188,7 +192,17 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{displayedPriceVerified ? tr('Prix total calculé', 'السعر الإجمالي المحسوب') : tr('Prix total estimé', 'السعر الإجمالي التقديري')}</p>
             <p className="mt-1 break-words text-3xl font-black leading-none tracking-tight text-ink">
               <bdi dir="ltr">{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
+              {promoMatchesSelection && promo && (
+                <bdi dir="ltr" className="ms-2 align-middle text-base font-bold leading-none text-muted line-through">{`${promo.originalPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}`}</bdi>
+              )}
             </p>
+            {promoMatchesSelection && promo && (
+              <p className="mt-2">
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black text-white" style={{ background: 'var(--ayrovi-primary)' }}>
+                  {tr(`Offre du jour −${promo.percent} %`, `عرض اليوم −${promo.percent}٪`)}
+                </span>
+              </p>
+            )}
             <p className="mt-1 break-words text-xs font-semibold leading-snug text-muted">
               {validPrice && selectedPrice != null && selectedCurrency
                 ? `${tr('Prix boutique', 'سعر المتجر')} ${selectedPrice.toFixed(2)} ${selectedCurrency}`

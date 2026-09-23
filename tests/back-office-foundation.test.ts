@@ -146,7 +146,12 @@ describe('back office shell (P2.0)', () => {
       for (const section of ['discovery-sources', 'discovery-markets']) {
         expect(sections.has(section), `section GLOBAL DISCOVERY absente: ${section}`).toBe(true);
       }
-      expect(sections.size).toBe(54);
+      // 2026-09-23 : le moteur de promotions (grille jour + règles ciblées) ajoute
+      // sa surface d'administration dans Commerce.
+      for (const section of ['promos']) {
+        expect(sections.has(section), `section promos absente: ${section}`).toBe(true);
+      }
+      expect(sections.size).toBe(55);
     });
 
     test('la navigation serveur couvre exactement les entrées de la barre latérale legacy', () => {
@@ -179,12 +184,14 @@ describe('back office shell (P2.0)', () => {
       const publicNavAdditions = ['public-nav'];
       // GLOBAL DISCOVERY : registres administrables des sources et des marchés.
       const globalDiscoveryAdditions = ['discovery-sources', 'discovery-markets'];
+      // 2026-09-23 : le moteur de promotions ajoute sa surface (section « promos »).
+      const promoEngineAdditions = ['promos'];
       const navigable = backOfficeSections();
       const sections = resourceDescriptors()
         .filter((descriptor) => descriptor.nav && navigable.includes(descriptor.section))
         .map((descriptor) => descriptor.section)
         .sort();
-      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions].sort()]);
+      expect(sections).toEqual([...[...legacyIds, ...p22Additions, ...p23Additions, ...crmAdditions, ...publicNavAdditions, ...globalDiscoveryAdditions, ...promoEngineAdditions].sort()]);
       // 3) et le client ne réintroduit aucune copie de cette liste.
       const adminApp = fs.readFileSync(path.resolve(process.cwd(), 'client/src/admin/AdminApp.tsx'), 'utf8');
       expect(adminApp, 'le client ne doit plus porter de liste de navigation').not.toContain('const navGroups');
@@ -201,12 +208,12 @@ describe('back office shell (P2.0)', () => {
   });
 
   describe('navigation dérivée du registre + permissions + statut de module', () => {
-    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique', async () => {
+    test('SUPER_ADMIN voit les 36 entrées legacy + les 3 du stock (P2.2) + les 3 des achats (P2.3) + les 6 du CRM 360 (E5) + la barre publique + la section promos', async () => {
       const result = await superAdmin.agent.get('/api/admin/back-office/navigation');
       expect(result.status).toBe(200);
       const items = result.body.data.groups.flatMap((group: any) => group.items);
-      expect(items.length).toBe(51);
-      expect(result.body.data.counts).toMatchObject({ sections: 51, visible: 51 });
+      expect(items.length).toBe(52);
+      expect(result.body.data.counts).toMatchObject({ sections: 52, visible: 52 });
       expect(result.body.data.groups.map((group: any) => group.label)).toEqual(
         ['Vue générale', 'Contenu', 'Catalogue', 'Commerce', 'CRM', 'ERP', 'Système']);
     });
@@ -447,7 +454,8 @@ describe('back office shell (P2.0)', () => {
         .map((descriptor) => descriptor.nav!.icon as string);
       // 2026-09-22 : la barre publique sous l'en-tête ajoute une entrée (icône LayoutGrid).
       // GLOBAL DISCOVERY : +2 (Globe2, MapPin — sources et marchés).
-      expect(declared.length).toBe(51);
+      // 2026-09-23 : le moteur de promotions ajoute son entrée (icône Tag).
+      expect(declared.length).toBe(52);
       const missing = [...new Set(declared)].filter((name) => !card.has(name));
       expect(missing, 'noms d\u2019icône sans clé dans ICONS').toEqual([]);
     });

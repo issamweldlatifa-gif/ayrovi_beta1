@@ -5,6 +5,8 @@ import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, MAX_ORDER_TOTAL_TND, orderLocalDelivery, PricingRules } from '../services/pricing';
+import { millimes } from '../services/pricing';
+import { DEFAULT_DAY_LADDER, dayLabelFr, resolvePromoForQuote, type PromoRule, type PromoScope } from '../services/promotions';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
@@ -1832,6 +1834,7 @@ export class QatafoDatabase {
     this.seedDiscoveryRegistry();
     // فهرس عمود العربون — بعد الترقية (القواعد القديمة تحصل عليه داخل إعادة البناء)
     this.ensurePricingEngine();
+    this.ensurePromoEngine();
     this.db.exec('CREATE INDEX IF NOT EXISTS idx_orders_deposit ON orders(deposit_status, created_at DESC)');
     // One-shot: legacy installs had no CARD option in the default payment methods.
     // (was: re-ran on every boot, silently re-adding CARD after an admin removed it)
@@ -2561,6 +2564,58 @@ export class QatafoDatabase {
     }
   }
 
+  /**
+   * Moteur de promotions (décisions management 23/09/2026) : grille « jour »
+   * (lundi → dimanche, échelle légère 1-4 %) surchargée par des règles
+   * catégorie/produit. La remise s'applique sur le prix produit converti avec
+   * un plancher de commission (voir src/services/promotions.ts).
+   */
+  private ensurePromoEngine() {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS promo_rules (
+        id TEXT PRIMARY KEY,
+        scope TEXT NOT NULL CHECK(scope IN ('DAY','CATEGORY','PRODUCT')),
+        target TEXT NOT NULL,
+        percent REAL NOT NULL,
+        label TEXT NOT NULL DEFAULT '',
+        active INTEGER NOT NULL DEFAULT 1,
+        starts_at TEXT NOT NULL DEFAULT '',
+        ends_at TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_promo_rules_scope ON promo_rules(scope, target, active);
+    `);
+    const now = new Date().toISOString();
+    // PROMO_ENGINE_ENABLED=false (vitest) : les 7 règles DAY sont semées mais
+    // inactives, pour que les tests historiques (panier, checkout) gardent des
+    // montants sans remise — les tests promo les activent explicitement.
+    // En production l'env est absent → actives.
+    const seedActive = process.env.PROMO_ENGINE_ENABLED === 'false' ? 0 : 1;
+    const seed = this.db.prepare(`INSERT OR IGNORE INTO promo_rules
+      (id,scope,target,percent,label,active,starts_at,ends_at,created_at,updated_at)
+      VALUES (?,?,?,?,?,?,'','',?,?)`);
+    DEFAULT_DAY_LADDER.forEach((percent, index) => {
+      seed.run(`day_${index + 1}`, 'DAY', String(index + 1), percent, `Offre ${dayLabelFr(index + 1)}`, seedActive, now, now);
+    });
+    // Snapshot promo par commande (gelé comme pricing_snapshot).
+    this.ensureColumn('orders', 'promo_json', "TEXT NOT NULL DEFAULT ''");
+  }
+
+  public getPromoRules(): PromoRule[] {
+    return this.all<any>('SELECT * FROM promo_rules ORDER BY scope,target,id').map((row) => ({
+      id: String(row.id),
+      scope: (['DAY', 'CATEGORY', 'PRODUCT'].includes(row.scope) ? row.scope : 'DAY') as PromoScope,
+      target: String(row.target || ''),
+      percent: Number(row.percent) || 0,
+      label: String(row.label || ''),
+      active: Number(row.active) === 1,
+      starts_at: String(row.starts_at || ''),
+      ends_at: String(row.ends_at || ''),
+      updated_at: String(row.updated_at || ''),
+    }));
+  }
+
   private seedCoreData() {
     const now = new Date().toISOString();
     // Graine = photo du marché au 23/09/2026 (EUR 3.370911 · USD 2.943498 ·
@@ -3056,11 +3111,30 @@ export class QatafoDatabase {
           input.name, accountPhoneDigits, input.governorate, input.address, now, customer.id);
       }
 
+      const promoApplied: Array<{ itemId: string; title: string; categoryId: string; percent: number; label: string; source: string; ruleId: string; discountTND: number }> = [];
       const breakdowns = items.map((item) => {
-        const price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+        let price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
           quantity: item.quantity, includeLocalDelivery: false, title: item.title,
         });
         if (!price || price.restricted) throw new Error('INVALID_CART_PRICE');
+        // Moteur de promotions : remise sur le prix produit converti (base de la
+        // commission, jamais sur le total CIF) — recomputée via discountTND pour
+        // rester sur LE seul chemin de calcul. Gelée dans promo_json ci-dessous.
+        const promo = resolvePromoForQuote(this, { categoryId: price.categoryId });
+        if (promo) {
+          const promoDiscount = millimes(price.convertedPriceTND * promo.percent / 100);
+          if (promoDiscount > 0) {
+            price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+              quantity: item.quantity, includeLocalDelivery: false, title: item.title, discountTND: promoDiscount,
+            })!;
+            if (price.restricted) throw new Error('INVALID_CART_PRICE');
+            promoApplied.push({
+              itemId: item.id, title: item.title, categoryId: price.categoryId,
+              percent: promo.percent, label: promo.label, source: promo.source, ruleId: promo.ruleId,
+              discountTND: promoDiscount,
+            });
+          }
+        }
         return { item, price };
       });
       const localDelivery = orderLocalDelivery(rules);
@@ -3098,12 +3172,12 @@ export class QatafoDatabase {
         id,order_number,customer_id,account_id,source,arrival_id,status,payment_status,payment_method,
         deposit_percent,deposit_amount_tnd,deposit_discount_tnd,deposit_status,
         subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,
-        pricing_snapshot,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,terms_accepted_at,locale,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        pricing_snapshot,promo_json,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,terms_accepted_at,locale,notes,created_at,updated_at
+      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
         depositPercent, depositAmount, depositDiscount,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
-      snapshot, input.governorate, input.address, normalizedPhone, input.email, input.latitude, input.longitude,
+      snapshot, promoApplied.length ? JSON.stringify({ resolvedAt: now, items: promoApplied }) : '', input.governorate, input.address, normalizedPhone, input.email, input.latitude, input.longitude,
       input.termsAcceptedAt, input.locale, '', now, now);
 
       for (const { item, price } of breakdowns) {

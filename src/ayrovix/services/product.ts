@@ -59,6 +59,7 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     currency: scraped.sourcePrice > 0 ? scraped.sourceCurrency : null,
     priceTnd: tnd?.priceTnd ?? (Number.isFinite(scraped.totalPriceTND) && scraped.totalPriceTND > 0 ? scraped.totalPriceTND : null),
     exchangeRate: tnd?.exchangeRate ?? null,
+    promo: tnd?.promo ?? null,
     colors: scraped.variants?.colors || [],
     sizes: scraped.variants?.sizes || [],
     variantOptions,

@@ -149,7 +149,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="text-xs font-black text-ink">
+                        {item.promo && item.originalLineTotalTND != null && (
+                          <span className="me-1.5 align-middle text-xs font-bold text-muted line-through">{formatMoney(item.originalLineTotalTND)}</span>
+                        )}
                         {formatMoney(item.lineTotalTND ?? item.priceTND * item.quantity)}
+                        {item.promo && (
+                          <span className="ms-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-black text-white" style={{ background: 'var(--ayrovi-primary)' }}>{`−${item.promo.percent}%`}</span>
+                        )}
                       </div>
 
                       {/* Quantity Controls */}

@@ -594,6 +594,14 @@ const CUSTOM_RESOURCES: BackOfficeResourceDescriptor[] = [
     columns: [], fields: [], actions: ['view', 'edit'], audit: { module: 'PRICING', resourceType: 'pricing_config' },
   },
   {
+    key: 'catalog.promos', label: 'Promotions & offres', singular: 'règle promo', module: 'catalog', domain: 'COMMERCE',
+    description: 'Moteur de promotions : grille jour de la semaine + règles catégorie/produit, plafonnées par le plancher de commission.',
+    navPermission: 'commerce:read', permissions: { view: 'catalog:read', edit: 'catalog:write' },
+    section: 'promos', nav: { group: 'Commerce', order: 251, icon: 'Tag' },
+    surface: 'custom', component: 'PromosPage', api: { prefix: '/promos', kind: 'generic' },
+    columns: [], fields: [], actions: ['view', 'edit'], audit: { module: 'PRICING', resourceType: 'promo_rules' },
+  },
+  {
     key: 'crm.arrival', label: 'Arrivals CRM', singular: 'arrivage', module: 'crm', domain: 'CRM',
     description: 'Ingestion d’arrivages : documents, extraction IA, revue, classification, cartons, expédition vers Warehouse Core.',
     navPermission: 'commerce:read',

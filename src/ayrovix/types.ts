@@ -55,6 +55,8 @@ export interface AyrovixCandidate {
   id: string;
   kind: 'catalog' | 'external';
   title: string;
+  /** Promo du jour côté serveur (management 23/09/2026) — prix déjà remisé. */
+  promo?: AyrovixPromo | null;
   /** Optional descriptive text supplied by the merchant/search provider. */
   description?: string | null;
   brand: string | null;
@@ -83,6 +85,7 @@ export interface AyrovixCandidate {
     price: number | null;
     currency: string | null;
     priceTnd: number | null;
+    promo?: AyrovixPromo | null;
   }>;
 }
 
@@ -99,6 +102,14 @@ export interface AyrovixVariantOption {
   priceToken?: string | null;
 }
 
+/** Promo moteur (management 23/09/2026) : prix remisé + original barré + badge. */
+export interface AyrovixPromo {
+  percent: number;
+  label: string;
+  priceTnd: number;
+  originalPriceTnd: number;
+}
+
 /** Fiche produit confirmée, prête pour le Calculator puis le panier. */
 export interface AyrovixProduct {
   title: string;
@@ -113,6 +124,8 @@ export interface AyrovixProduct {
   currency: string | null;
   priceTnd: number | null;
   exchangeRate: number | null;
+  /** Promo du jour appliquée par le serveur (prix déjà remisé, original conservé). */
+  promo?: AyrovixPromo | null;
   colors: string[];
   sizes: string[];
   variantOptions?: AyrovixVariantOption[];
