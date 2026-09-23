@@ -6,7 +6,8 @@ import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
-import { calculatePrice, orderLocalDelivery } from '../services/pricing';
+import { calculatePrice, millimes, orderLocalDelivery } from '../services/pricing';
+import { resolvePromoForQuote } from '../services/promotions';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
@@ -29,12 +30,31 @@ export function createApiRouter(
     const rules = db.getPricingRules();
     return (items: ReturnType<AyroviDatabase['getItems']>) => {
       const pricedItems = items.map((item) => {
-        const breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+        let breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
           quantity: item.quantity, includeLocalDelivery: false, title: item.title,
         });
         if (!breakdown || breakdown.restricted) throw new Error('CART_PRICING_FAILED');
+        // Promo (management 23/09/2026) : remise sur le prix produit converti,
+        // recalculée par LE moteur pour garder un seul chemin de prix.
+        const originalLineTotalTND = breakdown.totalTND;
+        const promo = resolvePromoForQuote(db, { categoryId: breakdown.categoryId });
+        let promoInfo: { percent: number; label: string; discountTND: number } | null = null;
+        if (promo) {
+          const promoDiscount = millimes(breakdown.convertedPriceTND * promo.percent / 100);
+          if (promoDiscount > 0) {
+            const repriced = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+              quantity: item.quantity, includeLocalDelivery: false, title: item.title, discountTND: promoDiscount,
+            });
+            if (repriced && !repriced.restricted) {
+              promoInfo = { percent: promo.percent, label: promo.label, discountTND: promoDiscount };
+              breakdown = repriced;
+            }
+          }
+        }
         return {
           ...item,
+          originalLineTotalTND: promoInfo ? originalLineTotalTND : undefined,
+          promo: promoInfo,
           lineTotalTND: breakdown.totalTND,
           pricingVersion: breakdown.pricingVersion,
           requiresWeightValidation: breakdown.requiresWeightValidation,

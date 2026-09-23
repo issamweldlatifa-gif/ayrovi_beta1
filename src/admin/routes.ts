@@ -17,6 +17,7 @@ import {
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { parsePublicHttpUrl } from '../services/safeUrl';
 import { refreshFxRates } from '../services/fxRates';
+import { capPromoPercent, MIN_COMMISSION_FLOOR_PERCENT, resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
 import { storeLensVideo, resolveLensVideoUrl } from '../services/lensMedia';
 import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
@@ -1941,6 +1942,91 @@ export function createAdminRouter(
       console.error('[FX Refresh Error]', error);
       return res.status(500).json({ success: false, error: 'Le rafraîchissement des taux a échoué.' });
     }
+  });
+
+  /**
+   * Moteur de promotions (management 23/09/2026) : grille jour + règles ciblées.
+   * La remise s'applique sur le prix produit converti, plafonnée par le plancher
+   * de commission (voir src/services/promotions.ts).
+   */
+  router.get('/promos', requireAdmin(db, 'commerce:read'), (_req, res) => {
+    const commissionPercent = db.getPricingRules().commissionPercent;
+    const today = resolvePromoForQuote(db);
+    res.json({
+      success: true,
+      data: {
+        rules: db.getPromoRules(),
+        today: today ? { isoDay: tunisIsoDay(), percent: today.percent, label: today.label, source: today.source, ruleId: today.ruleId } : null,
+        commissionPercent,
+        floorPercent: MIN_COMMISSION_FLOOR_PERCENT,
+        capPercent: capPromoPercent(90, commissionPercent),
+      },
+    });
+  });
+
+  router.put('/promos/:id', requireAdmin(db, 'pricing:write'), (req, res) => {
+    const rule = db.get<any>('SELECT * FROM promo_rules WHERE id=?', String(req.params.id || ''));
+    if (!rule) return res.status(404).json({ success: false, error: 'Règle promo introuvable.' });
+    const patch: Record<string, unknown> = {};
+    if (req.body?.percent !== undefined) {
+      const percent = Number(req.body.percent);
+      if (!Number.isFinite(percent) || percent <= 0 || percent > 90) return res.status(400).json({ success: false, error: 'Le pourcentage doit être entre 0,1 et 90.' });
+      patch.percent = percent;
+    }
+    if (req.body?.active !== undefined) patch.active = req.body.active ? 1 : 0;
+    if (req.body?.label !== undefined) {
+      const label = String(req.body.label || '').trim().slice(0, 80);
+      patch.label = label;
+    }
+    for (const field of ['starts_at', 'ends_at'] as const) {
+      if (req.body?.[field] === undefined) continue;
+      const value = String(req.body[field] || '').trim();
+      if (value && Number.isNaN(Date.parse(value))) return res.status(400).json({ success: false, error: 'Date invalide (ISO attendu).' });
+      patch[field] = value;
+    }
+    if (!Object.keys(patch).length) return res.status(400).json({ success: false, error: 'Aucune modification reçue.' });
+    db.run(`UPDATE promo_rules SET ${Object.keys(patch).map((field) => `${field}=?`).join(',')},updated_at=? WHERE id=?`,
+      ...Object.values(patch), new Date().toISOString(), rule.id);
+    const after = db.get<any>('SELECT * FROM promo_rules WHERE id=?', rule.id);
+    audit(db, req, 'UPDATE', 'PRICING', String(rule.id), rule, after);
+    return res.json({ success: true, data: { rule: after } });
+  });
+
+  router.post('/promos', requireAdmin(db, 'pricing:write'), (req, res) => {
+    const scope = String(req.body?.scope || '');
+    if (scope !== 'CATEGORY' && scope !== 'PRODUCT') return res.status(400).json({ success: false, error: 'Portée invalide : CATEGORY ou PRODUCT uniquement (la grille jour se modifie).' });
+    const target = String(req.body?.target || '').trim();
+    if (!target || target.length > 120) return res.status(400).json({ success: false, error: 'Cible manquante.' });
+    if (scope === 'CATEGORY' && !db.getCustomsCategories().some((item) => item.id === target)) {
+      return res.status(400).json({ success: false, error: 'Catégorie douanière inconnue.' });
+    }
+    if (scope === 'PRODUCT' && !db.get<any>('SELECT id FROM products WHERE id=?', target)) {
+      return res.status(400).json({ success: false, error: 'Produit introuvable.' });
+    }
+    const percent = Number(req.body?.percent);
+    if (!Number.isFinite(percent) || percent <= 0 || percent > 90) return res.status(400).json({ success: false, error: 'Le pourcentage doit être entre 0,1 et 90.' });
+    const starts_at = String(req.body?.starts_at || '').trim();
+    const ends_at = String(req.body?.ends_at || '').trim();
+    if ((starts_at && Number.isNaN(Date.parse(starts_at))) || (ends_at && Number.isNaN(Date.parse(ends_at)))) {
+      return res.status(400).json({ success: false, error: 'Dates invalides (ISO attendu).' });
+    }
+    const now = new Date().toISOString();
+    const id = `promo_${randomUUID()}`;
+    db.run(`INSERT INTO promo_rules (id,scope,target,percent,label,active,starts_at,ends_at,created_at,updated_at)
+      VALUES (?,?,?,?,?,1,?,?,?,?)`,
+      id, scope, target, percent, String(req.body?.label || '').trim().slice(0, 80), starts_at, ends_at, now, now);
+    const created = db.get<any>('SELECT * FROM promo_rules WHERE id=?', id);
+    audit(db, req, 'CREATE', 'PRICING', id, null, created);
+    return res.status(201).json({ success: true, data: { rule: created } });
+  });
+
+  router.delete('/promos/:id', requireAdmin(db, 'pricing:write'), (req, res) => {
+    const rule = db.get<any>('SELECT * FROM promo_rules WHERE id=?', String(req.params.id || ''));
+    if (!rule) return res.status(404).json({ success: false, error: 'Règle promo introuvable.' });
+    if (rule.scope === 'DAY') return res.status(400).json({ success: false, error: 'La grille jour ne se supprime pas : désactivez le jour concerné.' });
+    db.run('DELETE FROM promo_rules WHERE id=?', rule.id);
+    audit(db, req, 'DELETE', 'PRICING', String(rule.id), rule, null);
+    return res.json({ success: true, data: { deleted: rule.id } });
   });
 
   router.post('/pricing/preview', requireAdmin(db, 'commerce:read'), (req, res) => {

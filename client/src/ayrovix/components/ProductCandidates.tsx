@@ -48,7 +48,17 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
                 <h4 className="ay-readable text-sm font-bold leading-snug text-ink" title={candidate.title}>{candidate.title}</h4>
                 <p className="ay-readable mt-0.5 text-xs font-semibold text-muted">{candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}</p>
                 <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <p className="text-base font-black leading-none text-ink">{candidate.priceTnd != null ? `${candidate.priceTnd.toFixed(2)} DT` : '—'}</p>
+                  <p className="text-base font-black leading-none text-ink">
+                    {candidate.promo && (
+                      <bdi dir="ltr" className="me-1.5 align-middle text-xs font-bold text-muted line-through">{`${candidate.promo.originalPriceTnd.toFixed(2)} DT`}</bdi>
+                    )}
+                    {candidate.priceTnd != null ? `${candidate.priceTnd.toFixed(2)} DT` : '—'}
+                  </p>
+                  {candidate.promo && (
+                    <p className="mt-1">
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-black text-white" style={{ background: 'var(--ayrovi-primary)' }}>{`−${candidate.promo.percent}%`}</span>
+                    </p>
+                  )}
                   <p className="text-xs font-semibold text-muted">{Number(candidate.price).toFixed(Number(candidate.price) % 1 ? 2 : 0)} {candidate.currency}</p>
                   <MerchantRating value={candidate}/>
                 </div>

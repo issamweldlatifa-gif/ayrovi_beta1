@@ -81,6 +81,9 @@ export interface CartItem {
   priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
   /** Cargo lourd > 5 kg : fret international soumis à validation finale de l'équipe. */
   requiresWeightValidation?: boolean;
+  /** Promo moteur (management 23/09/2026) : remise déjà appliquée au lineTotalTND. */
+  promo?: { percent: number; label: string; discountTND: number } | null;
+  originalLineTotalTND?: number;
   quantity: number;
   createdAt: string;
   updatedAt: string;

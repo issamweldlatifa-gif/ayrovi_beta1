@@ -17,6 +17,10 @@ export default defineConfig({
       CUSTOMER_AUTH_SECRET: 'test-customer-auth-secret-0123456789abcdef0123456789abcdef',
       // OTP hermétique : un .env avec webhook placeholder ne doit pas casser la suite.
       CUSTOMER_OTP_PROVIDER: 'console',
+      // Moteur de promotions : la grille DAY est semée inactive pour que les
+      // montants des tests historiques restent sans remise (tests/promo-engine
+      // l'active explicitement). Production : env absent = actif.
+      PROMO_ENGINE_ENABLED: 'false',
       // AYROVIX : hermétique — aucune clé IA ne fuit dans la suite ; les tests la simulent.
       ANTHROPIC_API_KEY: '',
       SERPAPI_KEY: '',

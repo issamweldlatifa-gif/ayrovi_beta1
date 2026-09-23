@@ -1,6 +1,6 @@
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
-import { estimateTnd } from './currency';
+import { estimateWithDb } from './currency';
 import { filterDisplayableCandidates, filterWithFallback } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
@@ -87,7 +87,7 @@ export function catalogSearch(
   const candidates = rows.map((row) => {
     const title = `${row.brand_name ? `${row.brand_name} ` : ''}${row.name}`;
     const match = scoreCandidate(identification, query, { title: row.name, brand: row.brand_name });
-    const estimated = estimateTnd(rules, Number(row.original_price) || null, String(row.currency || 'EUR'));
+    const estimated = estimateWithDb(db, Number(row.original_price) || null, String(row.currency || 'EUR'));
     return {
       id: `cat_${row.id}`,
       kind: 'catalog' as const,
@@ -101,7 +101,10 @@ export function catalogSearch(
       image: row.image || '',
       price: Number(row.original_price) || null,
       currency: row.currency || null,
-      priceTnd: Number(row.final_price) > 0 ? Number(row.final_price) : (estimated?.priceTnd ?? null),
+      priceTnd: estimated?.promo
+        ? estimated.priceTnd // promo active : le prix remisé du moteur fait foi
+        : (Number(row.final_price) > 0 ? Number(row.final_price) : (estimated?.priceTnd ?? null)),
+      promo: estimated?.promo ?? null,
       match,
     } satisfies AyrovixCandidate;
   }).filter((candidate) => candidate.match >= 35);
@@ -226,10 +229,11 @@ export async function searchCandidates(
     : await externalProductSearch(query, 6, deadline);
   const rules = db.getPricingRules();
   const rescored = external.map((candidate) => {
-    const estimated = candidate.price != null ? estimateTnd(rules, candidate.price, candidate.currency || 'EUR') : null;
+    const estimated = candidate.price != null ? estimateWithDb(db, candidate.price, candidate.currency || 'EUR') : null;
     return {
       ...candidate,
-      priceTnd: candidate.priceTnd ?? estimated?.priceTnd ?? null,
+      priceTnd: estimated?.promo ? estimated.priceTnd : (candidate.priceTnd ?? estimated?.priceTnd ?? null),
+      promo: estimated?.promo ?? null,
       priceVerificationStatus: candidate.price != null ? candidate.priceVerificationStatus : ('PENDING_MANUAL' as const),
       match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)),
     };
@@ -279,7 +283,7 @@ export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] 
     ...groups.map(({ rep, members }) => {
       if (members.length === 1) return rep;
       const offers = members
-        .map((member) => ({ source: member.source, sourceUrl: member.sourceUrl, price: member.price, currency: member.currency, priceTnd: member.priceTnd }))
+        .map((member) => ({ source: member.source, sourceUrl: member.sourceUrl, price: member.price, currency: member.currency, priceTnd: member.priceTnd, promo: member.promo ?? null }))
         .sort((a, b) => (a.priceTnd ?? Number.POSITIVE_INFINITY) - (b.priceTnd ?? Number.POSITIVE_INFINITY));
       return { ...rep, offerCount: members.length, offers };
     }),
