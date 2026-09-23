@@ -130,7 +130,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                 {product.source}
               </span>
             </div>
-            <div className="ayrovix-product-gallery-stage bg-surface">
+            <div className="ayrovix-product-gallery-stage bg-white">
               {activeImage
                 ? <img
                     src={activeImage}
@@ -191,14 +191,14 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div className="border-s-2 border-ink ps-4 py-1">
             <p className="text-xs font-extrabold uppercase tracking-[0.12em] text-muted">{displayedPriceVerified ? tr('Prix total calculé', 'السعر الإجمالي المحسوب') : tr('Prix total estimé', 'السعر الإجمالي التقديري')}</p>
             <p className="mt-1 break-words text-3xl font-black leading-none tracking-tight text-ink">
-              <bdi dir="ltr">{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
+              <bdi dir="ltr" style={promoMatchesSelection ? { color: 'var(--ayrovi-promo)' } : undefined}>{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
               {promoMatchesSelection && promo && (
                 <bdi dir="ltr" className="ms-2 align-middle text-base font-bold leading-none text-muted line-through">{`${promo.originalPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}`}</bdi>
               )}
             </p>
             {promoMatchesSelection && promo && (
               <p className="mt-2">
-                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black text-white" style={{ background: 'var(--ayrovi-primary)' }}>
+                <span className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-black text-white" style={{ background: 'var(--ayrovi-promo)' }}>
                   {tr(`Offre du jour −${promo.percent} %`, `عرض اليوم −${promo.percent}٪`)}
                 </span>
               </p>

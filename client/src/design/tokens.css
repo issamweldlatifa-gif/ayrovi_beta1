@@ -153,6 +153,10 @@ html[data-theme='dark'] {
     --ayrovi-danger: #dc2626;
     --ayrovi-danger-soft: #fdecec;
 
+    /* — commerce : prix remisé + badge promo (référence Zalando, 2026-09-23) —
+       SEUL accent rouge de la vitrine ; réservé au prix promo et à son badge. */
+    --ayrovi-promo: #dc2626;
+
     /* — échelle neutre : alias de la canonique (la slate est absorbée, P0 P4/T2) — */
     --ayrovi-primary: var(--ayrovi-text-primary);
     --ayrovi-primary-dark: var(--ayrovi-ink-deep);

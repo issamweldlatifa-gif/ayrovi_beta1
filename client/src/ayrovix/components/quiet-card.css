@@ -1,0 +1,172 @@
+/* QUIET CARD v2 — pièces partagées (cadre studio, prix, actions).
+ * Blanc unifié, filet hairline unique, aucune boîte interne.
+ * Référence Zalando (décision client 2026-09-23) : promo ROUGE. */
+
+/* 1. Cadre studio : canvas blanc unifié + padding + hairline + coins arrondis.
+ *    mix-blend-mode: multiply → le blanc des photos marchand se fond dans le
+ *    canvas blanc ; les photos sombres restent nettes et cadrées. */
+.ay-studio-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 0.5rem;
+  border: 1px solid var(--ayrovi-neutral-200, #e5e5e5);
+  border-radius: var(--ayrovi-radius-card, 14px);
+  background: #fff;
+  contain: layout paint;
+}
+
+.ay-studio-frame__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+  mix-blend-mode: multiply;
+  user-select: none;
+}
+
+.ay-studio-frame__placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  color: #595959;
+  text-align: center;
+}
+
+.ay-studio-frame__caption {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 0.8125rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 2. Prix : le prix remisé est l'élément le plus fort de la carte et il est
+ *    ROUGE (--ayrovi-promo). L'original barré et la note restent gris. */
+.ay-quiet-price {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+}
+
+.ay-quiet-price__original {
+  color: var(--ayrovi-neutral-500, #595959);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: line-through;
+}
+
+.ay-quiet-price__current {
+  color: var(--ayrovi-text-primary, #000);
+  font-weight: 900;
+}
+
+.ay-quiet-price--grid .ay-quiet-price__current { font-size: 1rem; line-height: 1.5; }
+.ay-quiet-price--list .ay-quiet-price__current { font-size: 1.0625rem; line-height: 1.4; }
+
+/* Promo : prix remisé rouge — l'élément le plus fort de la carte. */
+.ay-quiet-price__current--promo { color: var(--ayrovi-promo, #dc2626); }
+
+.ay-quiet-price__badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--ayrovi-promo, #dc2626);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.ay-quiet-price__note {
+  flex-basis: 100%;
+  color: var(--ayrovi-neutral-500, #595959);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* 3. Actions : principal encre (le rouge promo reste l'accent unique de la
+ *    carte), icônes discrètes en hairline, cibles tactiles 44px. */
+.ay-quiet-actions {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.ay-quiet-actions__primary {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--ayrovi-text-primary, #000);
+  border-radius: var(--ayrovi-radius-control, 12px);
+  background: var(--ayrovi-text-primary, #000);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.ay-quiet-actions__primary:hover { opacity: 0.88; }
+.ay-quiet-actions__primary:active { transform: scale(0.98); }
+.ay-quiet-actions__primary:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
+
+.ay-quiet-actions__icons {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.ay-quiet-actions__icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--ayrovi-neutral-200, #e5e5e5);
+  border-radius: var(--ayrovi-radius-control, 12px);
+  background: #fff;
+  color: var(--ayrovi-text-primary, #000);
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease, transform 0.16s ease;
+}
+
+.ay-quiet-actions__icon:hover { border-color: var(--ayrovi-text-primary, #000); }
+.ay-quiet-actions__icon:active { transform: scale(0.96); }
+.ay-quiet-actions__icon:disabled { cursor: not-allowed; opacity: 0.45; transform: none; }
+
+.ay-quiet-actions__spin { animation: ay-quiet-spin 0.9s linear infinite; }
+
+@keyframes ay-quiet-spin {
+  to { transform: rotate(360deg); }
+}
+
+.ay-quiet-actions button:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-quiet-actions__primary,
+  .ay-quiet-actions__icon { transition: none; }
+  .ay-quiet-actions__spin { animation: none; }
+}

@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 215,
-    "customerAndSharedFiles": 163,
-    "controls": 429,
+    "files": 217,
+    "customerAndSharedFiles": 165,
+    "controls": 431,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -10934,7 +10934,7 @@
     {
       "file": "client/src/ayrovix/components/lens-product-card.css",
       "domain": "lens",
-      "sha256": "82427d97c2db130c3c16bd0042b393ab03f48754984bd485252089b69277f9d6",
+      "sha256": "d24447d0c016a6ce2adf8cb3db3371165eff11005b1d9168ef119e9028006e2b",
       "lines": 22,
       "imports": [],
       "exports": [],
@@ -10946,7 +10946,7 @@
         "#595959",
         "#d9d9d9",
         "#e5b400",
-        "#f5f5f5",
+        "#e5e5e5",
         "#fff"
       ],
       "fontDeclarations": [
@@ -11631,14 +11631,15 @@
     {
       "file": "client/src/ayrovix/components/LensProductCard.tsx",
       "domain": "lens",
-      "sha256": "b571b4f35b411468b35c2345ff6146698867400f8f319ae4de71dfe5116cfadd",
-      "lines": 48,
+      "sha256": "e83e5133b3e0b4eaf65c8a278e0833a78a5b292514cf2424fdff8df171e2c77f",
+      "lines": 54,
       "imports": [
         "react",
         "../../components/QatafoIcons",
         "../../i18n/LocaleContext",
         "../types",
         "./MerchantRating",
+        "./quiet-card",
         "./lens-product-card.css"
       ],
       "exports": [
@@ -11648,7 +11649,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 36,
+          "line": 37,
           "className": "\"lens-card-open\"",
           "type": "\"button\"",
           "role": null,
@@ -11658,7 +11659,7 @@
         },
         {
           "tag": "button",
-          "line": 43,
+          "line": 49,
           "className": "\"lens-card-favorite\"",
           "type": "\"button\"",
           "role": null,
@@ -11981,8 +11982,8 @@
     {
       "file": "client/src/ayrovix/components/ProductCandidates.tsx",
       "domain": "lens",
-      "sha256": "cf3ed73b33fb4d60091c51947ed665239a94cd97689c76d19a6ddc3d6f96da57",
-      "lines": 77,
+      "sha256": "e309d634324871c62ccd2ebf6a95bf8ac1e810fe094bd83bc3e8e6656ebb731d",
+      "lines": 108,
       "imports": [
         "./MerchantRating",
         "react",
@@ -11990,7 +11991,8 @@
         "../../components/QatafoIcons",
         "../types",
         "../services/resultPolicy",
-        "../../i18n/LocaleContext"
+        "../../i18n/LocaleContext",
+        "./quiet-card"
       ],
       "exports": [
         "ProductCandidates"
@@ -11998,18 +12000,18 @@
       "controls": [
         {
           "tag": "button",
-          "line": 66,
-          "className": "\"ay-btn-primary min-h-11 flex-1 px-3 text-xs\"",
+          "line": 45,
+          "className": "\"relative w-[92px] flex-none self-start\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": null,
+          "ariaLabel": "{tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}",
           "onClick": "{() => onChoose(candidate)}",
           "disabled": null
         },
         {
           "tag": "a",
-          "line": 67,
-          "className": "\"ay-btn-secondary ay-readable-label min-h-11 px-3 text-xs\"",
+          "line": 91,
+          "className": "\"ay-readable-label mt-2 inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
           "ariaLabel": "{tr(`Ouvrir ${candidate.title} chez ${candidate.source}`, `فتح ${candidate.title} لدى ${candidate.source}`)}",
@@ -12020,7 +12022,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ ArrowUpRight, Image as ImageIcon, Star }",
+          "bindings": "{ ArrowUpRight, MessageCircle, ArrowRightLeft, ShoppingBag }",
           "line": 4
         }
       ],
@@ -12032,7 +12034,7 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "d1bc16476e4e4e73162f331cf64460fbb07fbfabd6d6c6c1de8deda6c241b3dc",
+      "sha256": "eb0da0b35193020a8ae38e5345cbfc90eab98fc45703c6c6a826f6db88337277",
       "lines": 336,
       "imports": [
         "../services/productSelection",
@@ -12255,6 +12257,76 @@
         }
       ],
       "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/components/quiet-card.css",
+      "domain": "lens",
+      "sha256": "ac0c13ddc40fd80b3f0dd46209e65b6f082284c27643e614929f7b25c113d5a7",
+      "lines": 173,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [
+        "#000",
+        "#595959",
+        "#dc2626",
+        "#e5e5e5",
+        "#fff"
+      ],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/components/quiet-card.tsx",
+      "domain": "lens",
+      "sha256": "b8fd2ede3e6ab82b488356abd474270091a2a6e0771cc344c9b9bcee7523fd7d",
+      "lines": 171,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../types",
+        "./quiet-card.css"
+      ],
+      "exports": [
+        "StudioImageFrame",
+        "QuietPromoPrice",
+        "QuietCardActions"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 140,
+          "className": "\"ay-quiet-actions__primary\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onPrimary}",
+          "disabled": "{primaryBusy || primaryDisabled}"
+        },
+        {
+          "tag": "button",
+          "line": 155,
+          "className": "\"ay-quiet-actions__icon\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{label}",
+          "onClick": "{onClick}",
+          "disabled": "{busy || disabled}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Image as ImageIcon, Loader2 }",
+          "line": 15
+        }
+      ],
       "inlineSvg": [],
       "colors": [],
       "fontDeclarations": [],
@@ -14585,8 +14657,8 @@
     {
       "file": "client/src/components/CartDrawer.tsx",
       "domain": "commerce",
-      "sha256": "3b76d6779df4e9e3f3c7074e9d87be95ba322d55f2ab27acb830528db99123eb",
-      "lines": 235,
+      "sha256": "339c4247cdfe78a1aade63af08b3c57f91ecfae72bae27a5b7faa6bee747c752",
+      "lines": 234,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -14596,7 +14668,8 @@
         "./JourneyProgress",
         "../i18n/LocaleContext",
         "../commerce/useCommercePolicy",
-        "../ayrovix/services/resultPolicy"
+        "../ayrovix/services/resultPolicy",
+        "../ayrovix/components/quiet-card"
       ],
       "exports": [
         "CartDrawer"
@@ -14604,7 +14677,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 63,
+          "line": 64,
           "className": "\"absolute inset-0 h-full w-full cursor-default bg-ink/40 backdrop-blur-xs transition-opacity\"",
           "type": "\"button\"",
           "role": null,
@@ -14614,7 +14687,7 @@
         },
         {
           "tag": "AppHeader",
-          "line": 73,
+          "line": 74,
           "className": null,
           "type": null,
           "role": null,
@@ -14624,7 +14697,7 @@
         },
         {
           "tag": "button",
-          "line": 90,
+          "line": 91,
           "className": "\"ay-btn-primary mt-2 min-h-12 text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -14634,7 +14707,7 @@
         },
         {
           "tag": "button",
-          "line": 114,
+          "line": 113,
           "className": "\"grid h-11 w-11 shrink-0 place-items-center rounded-control text-muted transition-colors hover:bg-danger/5 hover:text-danger\"",
           "type": "\"button\"",
           "role": null,
@@ -14644,7 +14717,7 @@
         },
         {
           "tag": "a",
-          "line": 141,
+          "line": 140,
           "className": "\"mt-1 inline-block text-xs font-bold text-ink underline\"",
           "type": null,
           "role": null,
@@ -14654,7 +14727,7 @@
         },
         {
           "tag": "button",
-          "line": 163,
+          "line": 162,
           "className": "\"flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35\"",
           "type": "\"button\"",
           "role": null,
@@ -14664,7 +14737,7 @@
         },
         {
           "tag": "button",
-          "line": 175,
+          "line": 174,
           "className": "\"flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35\"",
           "type": "\"button\"",
           "role": null,
@@ -14674,7 +14747,7 @@
         },
         {
           "tag": "summary",
-          "line": 196,
+          "line": 195,
           "className": "\"flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 font-black [&::-webkit-details-marker]:hidden\"",
           "type": null,
           "role": null,
@@ -14684,7 +14757,7 @@
         },
         {
           "tag": "a",
-          "line": 201,
+          "line": 200,
           "className": "\"inline-flex min-h-11 items-center underline\"",
           "type": null,
           "role": null,
@@ -14694,7 +14767,7 @@
         },
         {
           "tag": "button",
-          "line": 206,
+          "line": 205,
           "className": "\"ay-btn-secondary mt-2 w-full\"",
           "type": "\"button\"",
           "role": null,
@@ -14704,7 +14777,7 @@
         },
         {
           "tag": "button",
-          "line": 213,
+          "line": 212,
           "className": "\"ay-btn-secondary min-h-12 w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -14714,7 +14787,7 @@
         },
         {
           "tag": "button",
-          "line": 218,
+          "line": 217,
           "className": "\"ay-btn-cta w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -18602,8 +18675,8 @@
     {
       "file": "client/src/design/tokens.css",
       "domain": "shared-design",
-      "sha256": "68715a02986503f6710dd360fef231a8dfa3fca24f3b4b0261c8c3c5e45d38d5",
-      "lines": 576,
+      "sha256": "89010a02430cc208cae41ee9777994f7c364e401d864c955eb6da75a0e5f81ff",
+      "lines": 580,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19278,8 +19351,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "15c6d3581e00403f0e07af92dbfc4b628e970a26cf34dd785802343007e7b579",
-      "lines": 1222,
+      "sha256": "906d00612cd7f6136daf22784c22548e2bafbb92e453fa4dd77bd804a213e98c",
+      "lines": 1224,
       "imports": [],
       "exports": [],
       "controls": [],

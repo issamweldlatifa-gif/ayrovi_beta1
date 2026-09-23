@@ -7,6 +7,7 @@ import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
 import { validProductUrl } from '../ayrovix/services/resultPolicy';
+import { StudioImageFrame, QuietPromoPrice } from '../ayrovix/components/quiet-card';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -98,11 +99,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   key={item.id}
                   className="bg-surface border border-line rounded-card p-3.5 flex gap-3.5 items-start group hover:border-line/40 transition-all"
                 >
-                  {/* Thumbnail */}
-                  <div className="w-16 h-16 rounded-card bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center">
-                    {item.imageUrl ? (
-                      <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-                    ) : null}
+                  {/* Vignette — cadre studio unifié : blanc + hairline + multiply */}
+                  <div className="w-16 h-16 flex-shrink-0">
+                    <StudioImageFrame src={item.imageUrl} alt={item.title} ratio="1 / 1" />
                   </div>
 
                   {/* Info */}
@@ -149,13 +148,13 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="text-xs font-black text-ink">
-                        {item.promo && item.originalLineTotalTND != null && (
-                          <span className="me-1.5 align-middle text-xs font-bold text-muted line-through">{formatMoney(item.originalLineTotalTND)}</span>
-                        )}
-                        {formatMoney(item.lineTotalTND ?? item.priceTND * item.quantity)}
-                        {item.promo && (
-                          <span className="ms-1.5 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-black text-white" style={{ background: 'var(--ayrovi-primary)' }}>{`−${item.promo.percent}%`}</span>
-                        )}
+                        <QuietPromoPrice
+                          priceTnd={item.lineTotalTND ?? item.priceTND * item.quantity}
+                          promo={item.promo ?? null}
+                          originalTnd={item.originalLineTotalTND}
+                          format={formatMoney}
+                          variant="list"
+                        />
                       </div>
 
                       {/* Quantity Controls */}
