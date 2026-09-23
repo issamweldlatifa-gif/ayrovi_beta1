@@ -18,6 +18,7 @@ import { createCustomerRouter, facebookOAuthAvailable, googleOAuthAvailable } fr
 import { phoneOtpAvailable } from './customer/otp';
 import { mailerReady } from './services/mailer';
 import { processCustomerAuthMail } from './customer/accountMail';
+import { startFxRatesScheduler } from './services/fxRates';
 import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
 import { cardGatewayAvailable } from './services/paymentGateway';
@@ -368,6 +369,13 @@ const customerMailTimer = process.env.NODE_ENV !== 'test'
   ? setInterval(() => { void processCustomerAuthMail(db).catch(() => console.warn('[Customer Auth Mail] Worker unavailable')); }, 15_000)
   : null;
 customerMailTimer?.unref();
+
+// Taux de change LIVE (audit pricing 23/09/2026) : aligne pricing_config sur le
+// marché (ExchangeRate-API par défaut), version++ et re-tarification inclus.
+// Jamais en test ; se suspend quand un admin saisit un taux manuellement.
+if (process.env.NODE_ENV !== 'test') {
+  startFxRatesScheduler(db);
+}
 
 // Start Server
 let httpServer: Server | null = null;

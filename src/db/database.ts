@@ -4,7 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { CartItem, AddToCartRequest } from '../types';
-import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, orderLocalDelivery, PricingRules } from '../services/pricing';
+import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, MAX_ORDER_TOTAL_TND, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
@@ -2229,6 +2229,9 @@ export class QatafoDatabase {
     this.ensureColumn('pricing_config', 'rpd_percent', 'REAL NOT NULL DEFAULT 3');
     this.ensureColumn('pricing_config', 'rpd_minimum_tnd', 'REAL NOT NULL DEFAULT 10');
     this.ensureColumn('pricing_config', 'default_tva_rate', 'REAL NOT NULL DEFAULT 0.19');
+    // Provenance des taux (audit 23/09/2026) : seed | live (API) | manual (saisie admin).
+    this.ensureColumn('pricing_config', 'fx_source', "TEXT NOT NULL DEFAULT 'seed'");
+    this.ensureColumn('pricing_config', 'fx_updated_at', "TEXT NOT NULL DEFAULT ''");
     this.db.exec(`CREATE TABLE IF NOT EXISTS customs_categories (
       id TEXT PRIMARY KEY,
       label TEXT NOT NULL,
@@ -2247,6 +2250,33 @@ export class QatafoDatabase {
     DEFAULT_CUSTOMS_CATEGORIES.forEach((category, index) => {
       insert.run(category.id, category.label, JSON.stringify(category.keywords), category.customsRate,
         category.tvaRate, category.defaultWeightKg, category.status, index + 1, now);
+    });
+    // Enrichissement FR de la matrice douanière (audit 23/09/2026 — Lens opère en fr).
+    // One-shot : seules les catégories dont les mots-clés correspondent EXACTEMENT
+    // à l'ancienne graine sont migrées ; une matrice personnalisée par l'admin reste intacte.
+    this.runOnceDataMigration('customs_categories_fr_keywords_v1', () => {
+      const legacyKeywords: Record<string, string[]> = {
+        restricted: ['drone', 'weapon', 'arme', 'vape', 'cigarette electronique', 'supplement', 'complément alimentaire', 'steroid'],
+        tech_computers: ['laptop', 'macbook', 'notebook', 'ultrabook', 'pc parts', 'cpu', 'gpu', 'ordinateur portable'],
+        electronics_gadgets: ['headphones', 'casque', 'smartwatch', 'earbuds', 'airpods', 'charger', 'chargeur', 'phone', 'iphone', 'samsung', 'tablet'],
+        fashion_shoes: ['sneakers', 'sneaker', 'boots', 'boot', 'shoes', 'shoe', 'chaussures', 'chaussure', 'baskets', 'basket'],
+        beauty_fragrance: ['perfume', 'parfum', 'cosmetics', 'cosmetic', 'makeup', 'maquillage'],
+        fashion_clothing: ['t-shirt', 'tshirt', 'hoodie', 'jeans', 'jacket', 'dress', 'robe', 'ensemble', 'matching set', 'chemise', 'pantalon'],
+      };
+      const byId = new Map(DEFAULT_CUSTOMS_CATEGORIES.map((category) => [category.id, category]));
+      for (const [id, legacy] of Object.entries(legacyKeywords)) {
+        const row = this.get<any>('SELECT keywords FROM customs_categories WHERE id=?', id);
+        if (!row) continue;
+        let stored: string[] = [];
+        try { stored = JSON.parse(row.keywords); } catch { stored = []; }
+        const untouched = Array.isArray(stored)
+          && stored.length === legacy.length
+          && legacy.every((keyword, index) => stored[index] === keyword);
+        const next = byId.get(id);
+        if (untouched && next && JSON.stringify(next.keywords) !== JSON.stringify(stored)) {
+          this.run('UPDATE customs_categories SET keywords=?,updated_at=? WHERE id=?', JSON.stringify(next.keywords), now, id);
+        }
+      }
     });
     // One-shot legacy rebrand (was: executed on every boot).
     this.runOnceDataMigration('rebrand_aysonic_legacy_v1', () => {
@@ -2533,11 +2563,15 @@ export class QatafoDatabase {
 
   private seedCoreData() {
     const now = new Date().toISOString();
+    // Graine = photo du marché au 23/09/2026 (EUR 3.370911 · USD 2.943498 ·
+    // GBP 3.929098 · JPY 0.018701, source ExchangeRate-API). En production, le
+    // service live (src/services/fxRates.ts) prend le relais au premier boot ;
+    // la graine ne sert que de repli si l'API est injoignable. Les anciennes
+    // valeurs (4/4/4.8/0.0265 ≈ +20 % au-dessus du marché) sont abandonnées.
     this.db.prepare(`
       INSERT OR IGNORE INTO pricing_config (
-        id, version, rate_eur, rate_usd, rate_gbp, rate_jpy, customs_fee_percent,
-        shipping_fee_tnd, service_fee_percent, minimum_service_fee_tnd, express_fee_tnd, updated_at
-      ) VALUES ('default', 1, 4, 4, 4.8, 0.0265, 0, 25, 8, 10, 15, ?)
+        id, version, rate_eur, rate_usd, rate_gbp, rate_jpy, express_fee_tnd, updated_at
+      ) VALUES ('default', 1, 3.370911, 2.943498, 3.929098, 0.018701, 15, ?)
     `).run(now);
 
     const insertSetting = this.db.prepare(`
@@ -2793,12 +2827,43 @@ export class QatafoDatabase {
       defaultTvaRate: Number(row.default_tva_rate ?? 0.19),
       expressFeeTND: Number(row.express_fee_tnd),
       categories: this.getCustomsCategories(),
-      customsFeePercent: Number(row.customs_fee_percent),
-      shippingFeeTND: Number(row.shipping_fee_tnd),
-      serviceFeePercent: Number(row.service_fee_percent),
-      minimumServiceFeeTND: Number(row.minimum_service_fee_tnd),
+      fxSource: String(row.fx_source || 'seed'),
+      fxUpdatedAt: String(row.fx_updated_at || ''),
       updatedAt: row.updated_at,
     };
+  }
+
+  /**
+   * Applique des taux de change LIVE (src/services/fxRates.ts) : version++,
+   * provenance 'live', re-tarification des produits en une transaction.
+   * Différence assumée avec le PUT admin : une fiche produit invalide est
+   * IGNORÉE (comptée) plutôt que de faire échouer la cotation du marché —
+   * un job de fond ne doit jamais être bloqué par une seule fiche sale.
+   */
+  public applyLiveFxRates(
+    snapshot: { rateEUR: number; rateUSD: number; rateGBP: number; rateJPY: number; fetchedAt: string },
+    updatedBy: string,
+  ): { before: PricingRules; after: PricingRules; repriced: number; skipped: number } {
+    return this.transaction(() => {
+      const before = this.getPricingRules();
+      this.run(
+        `UPDATE pricing_config SET rate_eur=?,rate_usd=?,rate_gbp=?,rate_jpy=?,fx_source='live',fx_updated_at=?,version=version+1,updated_at=?,updated_by=? WHERE id='default'`,
+        snapshot.rateEUR, snapshot.rateUSD, snapshot.rateGBP, snapshot.rateJPY,
+        snapshot.fetchedAt, snapshot.fetchedAt, updatedBy,
+      );
+      const after = this.getPricingRules();
+      const products = this.all<any>('SELECT id,original_price,currency,name FROM products');
+      let repriced = 0;
+      let skipped = 0;
+      for (const product of products) {
+        const price = calculatePrice(after, Number(product.original_price), String(product.currency), { title: String(product.name || '') });
+        if (!price) { skipped += 1; continue; }
+        this.run('UPDATE products SET converted_price=?,customs_fee=?,shipping_fee=?,service_fee=?,final_price=?,updated_at=? WHERE id=?',
+          price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.totalTND, snapshot.fetchedAt, product.id);
+        repriced += 1;
+      }
+      return { before, after, repriced, skipped };
+    });
   }
 
   public updateCustomsCategories(raw: unknown) {
@@ -3010,6 +3075,8 @@ export class QatafoDatabase {
       }), { subtotal: 0, customs: 0, shipping: 0, service: 0, express: 0, discount: 0, total: 0 });
       totals.shipping = Math.round((totals.shipping + localDelivery) * 1000) / 1000;
       totals.total = Math.round((totals.total + localDelivery) * 1000) / 1000;
+      // Plafond sanitaire (audit 23/09/2026) : au-delà, accompagnement humain obligatoire.
+      if (totals.total > MAX_ORDER_TOTAL_TND) throw new Error('ORDER_TOTAL_CAP');
       const stores = [...new Set(items.map((item) => item.store.toUpperCase()))];
       // GLOBAL DISCOVERY — la source d'une commande est une métadonnée libre :
       // n'importe quelle boutique mondiale, pas une liste fermée.

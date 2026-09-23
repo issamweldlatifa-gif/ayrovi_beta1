@@ -38,9 +38,9 @@ describe('Admin CIF desk', () => {
       .send({ originalPrice: 50, currency: 'EUR', quantity: 1, title: 'sneakers Nike Air Force 1', weightKg: 1.2 });
     expect(preview.status).toBe(200);
     expect(preview.body.data.categoryId).toBe('fashion_shoes');
-    expect(preview.body.data.totalTND).toBe(381.415);
+    expect(preview.body.data.totalTND).toBe(328.056);
     expect(preview.body.data.depositPercent).toBe(20);
-    expect(preview.body.data.depositTND).toBe(76.283);
+    expect(preview.body.data.depositTND).toBe(65.611);
   });
 
   test('unknown category ids are refused and do not mutate the matrix', async () => {
@@ -60,7 +60,7 @@ describe('Admin CIF desk', () => {
       VALUES (?,'Desk Client',? ,?,'ACTIVE',?,?)`, accountId, `desk-${Date.now()}@ayrovi.test`, now, now, now);
     db.addItem(sessionId, {
       store: 'shein', url: 'https://www.shein.com/sneakers-p-1.html', title: 'sneakers Nike Air Force 1',
-      imageUrl: '/uploads/product.jpg', sourcePrice: 50, sourceCurrency: 'EUR', priceTND: 381.415, quantity: 1,
+      imageUrl: '/uploads/product.jpg', sourcePrice: 50, sourceCurrency: 'EUR', priceTND: 328.056, quantity: 1,
     }, accountId);
     const order = db.createOrderFromCart(sessionId, {
       name: 'Desk Client', email: 'desk@ayrovi.test', phone: '98111000', governorate: 'Tunis', address: 'Tunis',
@@ -82,7 +82,7 @@ describe('Admin CIF desk', () => {
     expect(preview.status).toBe(200);
     expect(preview.body.data.depositPercent).toBe(25);
     expect(preview.body.data.depositTND).toBe(Math.round(preview.body.data.totalTND * 25 * 10) / 1000);
-    expect(preview.body.data.totalTND).not.toBe(381.415);
+    expect(preview.body.data.totalTND).not.toBe(328.056);
 
     const historical = await admin.get(`/api/admin/orders/${order.orderId}`);
     expect(historical.status).toBe(200);

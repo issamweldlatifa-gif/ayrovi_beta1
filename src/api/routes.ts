@@ -201,7 +201,12 @@ export function createApiRouter(
     const calculatedPrice = calculatePrice(db.getPricingRules(), sourcePrice, sourceCurrency, { title: String(item.title || '') });
     const calculatedPriceTND = calculatedPrice && !calculatedPrice.restricted ? calculatedPrice.totalTND : null;
     const ayrovixItem = typeof item.priceVerificationStatus === 'string' || typeof item.priceToken === 'string';
-    const priceVerificationStatus = item.priceVerificationStatus === 'PENDING_MANUAL' ? 'PENDING_MANUAL' : 'VERIFIED';
+    // Audit 23/09/2026 — honnêteté des états : un article ajouté à la main (sans
+    // estimate Lens signée) est PENDING_MANUAL par défaut ; seule une quote signée
+    // (priceToken vérifié ci-dessous) peut revendiquer VERIFIED.
+    const priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL' = ayrovixItem
+      ? (item.priceVerificationStatus === 'PENDING_MANUAL' ? 'PENDING_MANUAL' : 'VERIFIED')
+      : 'PENDING_MANUAL';
     const requestedSize = String(item.requestedSize || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
     const requestedColor = String(item.requestedColor || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, 100);
     const customerNote = String(item.customerNote || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 1000);
@@ -483,6 +488,7 @@ export function createApiRouter(
       });
     } catch (error: any) {
       if (error?.message === 'EMPTY_CART') return res.status(400).json({ success: false, error: 'Votre panier est vide.' });
+      if (error?.message === 'ORDER_TOTAL_CAP') return res.status(400).json({ success: false, code: 'ORDER_TOTAL_CAP', error: 'Le montant total dépasse la limite des commandes en ligne. Contactez le support AYROVI : nous accompagnons les gros volumes personnellement.' });
       if (error?.message === 'ACCOUNT_UNAVAILABLE') return res.status(403).json({ success: false, code: 'ACCOUNT_UNAVAILABLE', error: 'Votre compte n’est plus actif. Contactez le support AYROVI.' });
       console.error('[Checkout Error]', error);
       return res.status(500).json({ success: false, error: 'La commande n’a pas pu être enregistrée.' });
