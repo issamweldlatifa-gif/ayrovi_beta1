@@ -65,6 +65,57 @@ describe('AYSONIC CIF pricing engine', () => {
     expect(classifyCustomsCategory('console PS5 manette incluse').category.id).toBe('electronics_gadgets');
   });
 
+  test('HOME_DECOR_LIVING classifies decor/kitchenware titles, plurals included (matrice 23/09/2026)', () => {
+    expect(classifyCustomsCategory('tapis berbère salon 200x300').category.id).toBe('home_decor_living');
+    expect(classifyCustomsCategory('rideaux occultants chambre').category.id).toBe('home_decor_living'); // pluriel -x
+    expect(classifyCustomsCategory('coussins déco canapé').category.id).toBe('home_decor_living');     // pluriel -s
+    expect(classifyCustomsCategory('mug en céramique 350ml').category.id).toBe('home_decor_living');
+    expect(classifyCustomsCategory('horloge murale design').category.id).toBe('home_decor_living');
+    expect(classifyCustomsCategory('bouteille isotherme inox').category.id).toBe('home_decor_living');
+    // Le verrou RESTRICTED ne dérive pas sur « pharmacie » (arme ⊄ pharmacie en correspondance par mot).
+    expect(classifyCustomsCategory('crème hydratante parapharmacie').category.id).toBe('beauty_fragrance');
+    expect(classifyCustomsCategory('compléments alimentaires protéines').category.status).toBe('RESTRICTED');
+  });
+
+  test('MIXED_CHINESE_MARKET is the fallback basket for the OCREX flow (matrice 23/09/2026)', () => {
+    expect(classifyCustomsCategory('panier shein').category.id).toBe('mixed_chinese_market');
+    expect(classifyCustomsCategory('Panier Temu articles divers').category.id).toBe('mixed_chinese_market');
+    expect(classifyCustomsCategory('articles chinois').category.id).toBe('mixed_chinese_market');
+    // Un article identifié garde SA catégorie réelle (correspondance la plus longue) :
+    expect(classifyCustomsCategory('robe été boutique shein').category.id).toBe('fashion_clothing');
+  });
+
+  test('live matrix seeds the two management categories with their rates', () => {
+    const live = db.getPricingRules();
+    const decor = live.categories.find((item) => item.id === 'home_decor_living');
+    const mixed = live.categories.find((item) => item.id === 'mixed_chinese_market');
+    expect(decor).toBeDefined();
+    expect(decor!.customsRate).toBe(0.25);
+    expect(decor!.tvaRate).toBe(0.19);
+    expect(decor!.defaultWeightKg).toBe(1.5);
+    expect(decor!.keywords).toContain('housse de couette');
+    expect(mixed).toBeDefined();
+    expect(mixed!.customsRate).toBe(0.3);
+    expect(mixed!.tvaRate).toBe(0.19);
+    expect(mixed!.defaultWeightKg).toBe(0.25);
+    expect(mixed!.keywords).toContain('panier shein');
+  });
+
+  test('heavy cargo (> 5 kg) flags requires_weight_validation, quantity included (matrice 23/09/2026)', () => {
+    const live = db.getPricingRules();
+    // Poids explicite au-delà du seuil → drapeau levé.
+    const heavy = calculatePrice(live, 100, 'EUR', { title: 'tapis salon', weightKg: 6 })!;
+    expect(heavy.requiresWeightValidation).toBe(true);
+    const light = calculatePrice(live, 100, 'EUR', { title: 'tapis salon', weightKg: 4.9 })!;
+    expect(light.requiresWeightValidation).toBe(false);
+    expect(calculatePrice(live, 100, 'EUR', { title: 'tapis salon', weightKg: 5 })!.requiresWeightValidation).toBe(false); // seuil strict
+    // Le poids par DÉFAUT compte : décor 1,5 kg × 4 = 6 kg → drapeau ; × 3 = 4,5 kg → non.
+    expect(calculatePrice(live, 100, 'EUR', { title: 'coussin déco', quantity: 4 })!.requiresWeightValidation).toBe(true);
+    expect(calculatePrice(live, 100, 'EUR', { title: 'coussin déco', quantity: 3 })!.requiresWeightValidation).toBe(false);
+    // Le drapeau voyage aussi dans les estimations Lens.
+    expect(estimateTnd(live, 100, 'EUR')!.requiresWeightValidation).toBe(false);
+  });
+
   test('Lens estimates expose the effective (buffered) rate actually used', () => {
     const estimate = estimateTnd(rules(), 50, 'EUR');
     expect(estimate).not.toBeNull();

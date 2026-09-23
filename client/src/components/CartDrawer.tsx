@@ -143,6 +143,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
                       <p className="mt-1 flex items-center gap-1 text-xs font-bold text-muted">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
+                    {item.requiresWeightValidation && (
+                      <p className="mt-1 flex items-center gap-1 text-xs font-bold text-muted">{tr('Colis lourd : le fret international sera confirmé par notre équipe avant paiement', 'منتج ثقيل: يتم تأكيد الشحن الدولي من قبل فريقنا قبل الدفع')}</p>
+                    )}
 
                     <div className="flex items-center justify-between mt-2.5">
                       <div className="text-xs font-black text-ink">
