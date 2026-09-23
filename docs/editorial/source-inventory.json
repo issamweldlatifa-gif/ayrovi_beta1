@@ -14353,8 +14353,8 @@
     {
       "file": "client/src/components/CartDrawer.tsx",
       "domain": "commerce",
-      "sha256": "2207dc9c5f7d2d779ce60fc659d0f3e01119a5eeeb2fe2aae1ada56e4630fd78",
-      "lines": 226,
+      "sha256": "dd84aabe490bf2dbd653d1f3b42ffe6b8d4d7f11b1ef9c215382f7f2255a93aa",
+      "lines": 229,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -14422,7 +14422,7 @@
         },
         {
           "tag": "button",
-          "line": 154,
+          "line": 157,
           "className": "\"flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35\"",
           "type": "\"button\"",
           "role": null,
@@ -14432,7 +14432,7 @@
         },
         {
           "tag": "button",
-          "line": 166,
+          "line": 169,
           "className": "\"flex h-11 w-11 items-center justify-center rounded-icon text-muted hover:bg-surface hover:text-ink disabled:cursor-not-allowed disabled:opacity-35\"",
           "type": "\"button\"",
           "role": null,
@@ -14442,7 +14442,7 @@
         },
         {
           "tag": "summary",
-          "line": 187,
+          "line": 190,
           "className": "\"flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 font-black [&::-webkit-details-marker]:hidden\"",
           "type": null,
           "role": null,
@@ -14452,7 +14452,7 @@
         },
         {
           "tag": "a",
-          "line": 192,
+          "line": 195,
           "className": "\"inline-flex min-h-11 items-center underline\"",
           "type": null,
           "role": null,
@@ -14462,7 +14462,7 @@
         },
         {
           "tag": "button",
-          "line": 197,
+          "line": 200,
           "className": "\"ay-btn-secondary mt-2 w-full\"",
           "type": "\"button\"",
           "role": null,
@@ -14472,7 +14472,7 @@
         },
         {
           "tag": "button",
-          "line": 204,
+          "line": 207,
           "className": "\"ay-btn-secondary min-h-12 w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -14482,7 +14482,7 @@
         },
         {
           "tag": "button",
-          "line": 209,
+          "line": 212,
           "className": "\"ay-btn-cta w-full text-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -20022,8 +20022,8 @@
     {
       "file": "client/src/types.ts",
       "domain": "shell-content",
-      "sha256": "b1542481e3046ad8c358762d2bec8f426da0f1e164bd9e33d6256cf0fe329d4e",
-      "lines": 379,
+      "sha256": "69bf68d7bbf9541d55e57418f8e878ef6f7f573d9ce27bd5ec8196841b757685",
+      "lines": 381,
       "imports": [],
       "exports": [],
       "controls": [],

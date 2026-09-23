@@ -79,6 +79,8 @@ export interface CartItem {
   customerNote: string;
   referenceUrl: string;
   priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  /** Cargo lourd > 5 kg : fret international soumis à validation finale de l'équipe. */
+  requiresWeightValidation?: boolean;
   quantity: number;
   createdAt: string;
   updatedAt: string;

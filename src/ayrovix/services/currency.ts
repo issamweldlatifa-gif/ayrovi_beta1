@@ -10,6 +10,8 @@ import type { PricingRules } from '../../services/pricing';
 export interface TndEstimate {
   priceTnd: number;      // total "tout inclus" (produit + transport + douane + service)
   exchangeRate: number;  // taux EFFECTIF appliqué (marché × buffer) — identique au calcul
+  /** Cargo lourd > 5 kg : fret soumis à validation finale de l'équipe ops. */
+  requiresWeightValidation: boolean;
   breakdown: {
     convertedPriceTND: number;
     customsFeeTND: number;
@@ -31,6 +33,7 @@ export function estimateTnd(rules: PricingRules, price: number | null, currency:
   return {
     priceTnd: priced.totalTND,
     exchangeRate: rate,
+    requiresWeightValidation: priced.requiresWeightValidation,
     breakdown: {
       convertedPriceTND: priced.convertedPriceTND,
       customsFeeTND: priced.customsFeeTND,
