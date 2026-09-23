@@ -494,6 +494,8 @@
   margin: auto;
   object-fit: contain;
   object-position: center;
+  /* Quiet Card v2 : le blanc des photos marchand se fond dans le canvas blanc. */
+  mix-blend-mode: multiply;
   transform: none;
 }
 

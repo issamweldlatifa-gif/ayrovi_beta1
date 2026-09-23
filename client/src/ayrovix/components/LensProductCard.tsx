@@ -3,6 +3,7 @@ import { Heart, HeartFilled, Image as ImageIcon } from '../../components/QatafoI
 import { useLocale } from '../../i18n/LocaleContext';
 import type { AyrovixCandidate } from '../types';
 import { MerchantRating } from './MerchantRating';
+import { QuietPromoPrice } from './quiet-card';
 import './lens-product-card.css';
 
 export function lensCardCopy(candidate: AyrovixCandidate) {
@@ -38,7 +39,12 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
       <h4 className="lens-card-title" dir="auto">{heading}</h4>
       {description && <p className="lens-card-description" dir="auto">{description}</p>}
       <MerchantRating value={candidate} stars />
-      <p id={priceId} className="lens-card-price">{hasPrice ? <bdi dir="ltr">{candidate.priceTnd!.toFixed(2)} DT</bdi> : tr('Prix à confirmer', 'السعر قيد التأكيد')}</p>
+      {/* Quiet Card v2 : promo rouge (barré + remisé + badge) quand elle existe. */}
+      <p id={priceId} className="lens-card-price">
+        {hasPrice
+          ? <QuietPromoPrice priceTnd={candidate.priceTnd} promo={candidate.promo ?? null} format={(value) => `${value.toFixed(2)} DT`} variant="grid" />
+          : tr('Prix à confirmer', 'السعر قيد التأكيد')}
+      </p>
     </button>
     <button type="button" className="lens-card-favorite" aria-pressed={saved} disabled={busy} aria-busy={busy}
       aria-label={saved ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`) : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}
