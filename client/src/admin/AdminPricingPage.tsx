@@ -13,10 +13,17 @@ const statuses = [
   { value: 'RESTRICTED', label: 'Bloqué' },
 ];
 
+const fxSourceLabel = (source: unknown) => {
+  if (source === 'live') return 'API live (marché)';
+  if (source === 'manual') return 'Saisie manuelle — auto suspendue';
+  return 'Valeurs d’installation';
+};
+
 export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
   const [form, setForm] = useState<any>(null);
   const [preview, setPreview] = useState<any>(null);
   const [busy, setBusy] = useState(false);
+  const [fxBusy, setFxBusy] = useState(false);
   const [toast, setToast] = useState<{ message: string; tone: 'success' | 'error' } | null>(null);
 
   useEffect(() => { adminApi<any>('/pricing').then((result) => setForm(result.data)); }, []);
@@ -76,6 +83,18 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
     }
   };
 
+  // Taux de change live (audit 23/09/2026) : tir manuel depuis l'API de change.
+  const refreshFx = async () => {
+    setFxBusy(true);
+    try {
+      const result = await adminApi<any>('/pricing/fx-refresh', { method: 'POST' });
+      setForm(result.data);
+      setToast({ message: `Taux actualisés (${result.fx?.provider || 'API live'}) — ${result.fx?.repriced ?? 0} produit(s) re-tarifié(s).`, tone: 'success' });
+    } catch (error: any) {
+      setToast({ message: error.message, tone: 'error' });
+    } finally { setFxBusy(false); }
+  };
+
   const categories = (form.categories || []).map((category: any) => ({
     ...category,
     keywordsText: category.keywordsText ?? (category.keywords || []).join(', '),
@@ -94,6 +113,15 @@ export const PricingPage: React.FC<{ canWrite: boolean }> = ({ canWrite }) => {
     </div>
 
     <div className="admin-pricing-layout">
+      <section className="admin-card">
+        <CardTitle title="Taux de change" subtitle={`Source : ${fxSourceLabel(form.fxSource)}${form.fxUpdatedAt ? ` · alignés le ${new Date(form.fxUpdatedAt).toLocaleString('fr-TN')}` : ''}`} />
+        <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--admin-text-soft)' }}>
+          Synchronisation automatique sur le marché (ExchangeRate-API). La marge change (%) reste le seul markup appliqué au-dessus du taux réel.
+          {form.fxSource === 'manual' ? ' Vous avez saisi un taux manuellement : la synchronisation est suspendue — « Actualiser » la réactive.' : ''}
+        </p>
+        {canWrite ? <Button busy={fxBusy} onClick={refreshFx}>Actualiser les taux maintenant</Button> : undefined}
+      </section>
+
       <section className="admin-card">
         <CardTitle title="Paramètres du moteur" subtitle={`Mise à jour ${form.updatedAt ? new Date(form.updatedAt).toLocaleString('fr-TN') : '—'}`} />
         <div className="admin-pricing-grid">

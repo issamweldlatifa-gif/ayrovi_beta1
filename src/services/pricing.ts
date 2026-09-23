@@ -27,13 +27,22 @@ export interface PricingRules {
   defaultTvaRate: number;
   expressFeeTND: number;
   categories: CustomsCategory[];
-  /** Legacy aliases kept on snapshots / public config. */
-  customsFeePercent: number;
-  shippingFeeTND: number;
-  serviceFeePercent: number;
-  minimumServiceFeeTND: number;
+  /**
+   * Provenance des taux de change (audit 23/09/2026) :
+   * 'seed' = valeurs d'installation, 'live' = API de change (src/services/fxRates.ts),
+   * 'manual' = saisie admin — la synchronisation automatique se suspend.
+   */
+  fxSource?: string;
+  fxUpdatedAt?: string;
   updatedAt: string;
 }
+
+/**
+ * Plafond sanitaire du total commande (audit 23/09/2026) : au-delà, la commande
+ * exige un accompagnement humain (négociation, acompte, assurance) plutôt qu'un
+ * tunnel en ligne. 100 000 TND ≈ un panier premium excessif pour la beta.
+ */
+export const MAX_ORDER_TOTAL_TND = 100_000;
 
 export interface PriceBreakdown {
   originalPrice: number;
@@ -65,7 +74,10 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
   {
     id: 'restricted',
     label: 'Articles réglementés',
-    keywords: ['drone', 'weapon', 'arme', 'vape', 'cigarette electronique', 'supplement', 'complément alimentaire', 'steroid'],
+    keywords: [
+      'drone', 'weapon', 'arme', 'vape', 'cigarette electronique', 'e liquide',
+      'supplement', 'complément alimentaire', 'steroid', 'steroide', 'produit dopant',
+    ],
     customsRate: 0,
     tvaRate: 0.19,
     defaultWeightKg: 0.5,
@@ -74,7 +86,13 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
   {
     id: 'tech_computers',
     label: 'Informatique',
-    keywords: ['laptop', 'macbook', 'notebook', 'ultrabook', 'pc parts', 'cpu', 'gpu', 'ordinateur portable'],
+    keywords: [
+      'laptop', 'macbook', 'notebook', 'ultrabook', 'pc parts', 'cpu', 'gpu',
+      'ordinateur', 'ordinateur portable', 'pc portable', 'chromebook', 'netbook',
+      'imac', 'mac mini', 'station de travail', 'tour pc', 'boitier pc',
+      'carte mere', 'carte graphique', 'processeur', 'disque dur', 'ssd',
+      'barrette memoire', 'memoire vive', 'ram', 'ecran pc', 'moniteur', 'unité centrale',
+    ],
     customsRate: 0,
     tvaRate: 0.19,
     defaultWeightKg: 2.2,
@@ -83,7 +101,14 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
   {
     id: 'electronics_gadgets',
     label: 'Électronique',
-    keywords: ['headphones', 'casque', 'smartwatch', 'earbuds', 'airpods', 'charger', 'chargeur', 'phone', 'iphone', 'samsung', 'tablet'],
+    keywords: [
+      'headphones', 'casque', 'smartwatch', 'earbuds', 'airpods', 'charger', 'chargeur',
+      'phone', 'iphone', 'samsung', 'tablet', 'téléphone', 'smartphone', 'tablette', 'ipad',
+      'ecouteurs', 'ecouteur', 'enceinte', 'haut parleur', 'batterie externe', 'powerbank',
+      'cable', 'clavier', 'souris', 'ecran', 'television', 'appareil photo', 'camera', 'caméra',
+      'console', 'playstation', 'xbox', 'nintendo', 'manette', 'montre connectée',
+      'coque', 'etui', 'verre trempe',
+    ],
     customsRate: 0.15,
     tvaRate: 0.19,
     defaultWeightKg: 0.35,
@@ -92,7 +117,12 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
   {
     id: 'fashion_shoes',
     label: 'Chaussures',
-    keywords: ['sneakers', 'sneaker', 'boots', 'boot', 'shoes', 'shoe', 'chaussures', 'chaussure', 'baskets', 'basket'],
+    keywords: [
+      'sneakers', 'sneaker', 'boots', 'boot', 'shoes', 'shoe', 'chaussures', 'chaussure',
+      'baskets', 'basket', 'sandale', 'sandales', 'bottine', 'bottines', 'mocassin', 'mocassins',
+      'escarpin', 'escarpins', 'claquette', 'claquettes', 'talon', 'loafer', 'loafers', 'derby',
+      'chausson', 'ballerine', 'ballerines', 'flip flops',
+    ],
     customsRate: 0.3,
     tvaRate: 0.19,
     defaultWeightKg: 1.2,
@@ -101,7 +131,12 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
   {
     id: 'beauty_fragrance',
     label: 'Beauté / parfum',
-    keywords: ['perfume', 'parfum', 'cosmetics', 'cosmetic', 'makeup', 'maquillage'],
+    keywords: [
+      'perfume', 'parfum', 'cosmetics', 'cosmetic', 'makeup', 'maquillage',
+      'eau de parfum', 'eau de toilette', 'cologne', 'mascara', 'rouge à lèvres',
+      'fond de teint', 'vernis', 'serum', 'crème', 'soin', 'shampoing', 'déodorant',
+      'gel douche',
+    ],
     customsRate: 0.2,
     tvaRate: 0.19,
     defaultWeightKg: 0.4,
@@ -110,7 +145,18 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
   {
     id: 'fashion_clothing',
     label: 'Habillement',
-    keywords: ['t-shirt', 'tshirt', 'hoodie', 'jeans', 'jacket', 'dress', 'robe', 'ensemble', 'matching set', 'chemise', 'pantalon'],
+    keywords: [
+      't-shirt', 'tshirt', 'hoodie', 'jeans', 'jacket', 'dress', 'robe', 'ensemble',
+      'matching set', 'chemise', 'pantalon', 'pull', 'sweat', 'sweatshirt', 'veste',
+      'blouson', 'manteau', 'doudoune', 'parka', 'trench', 'jean', 'short', 'shorts',
+      'jogging', 'survêtement', 'combinaison', 'jupe', 'top', 'débardeur', 'caraco',
+      'pyjama', 'chaussettes', 'sous-vêtement', 'lingerie', 'bikini', 'maillot de bain',
+      'blouse', 'gilet', 'cardigan', 'costume', 'ceinture', 'casquette', 'bonnet',
+      'écharpe', 'foulard', 'gants', 'sac à main', 'lunettes', 'lunettes de soleil',
+      'shirt', 'pants', 'trousers', 'coat', 'sweater', 'pullover', 'skirt', 'jumpsuit',
+      'romper', 'bodysuit', 'swimsuit', 'underwear', 'belt', 'handbag', 'sunglasses',
+      'scarf', 'gloves',
+    ],
     customsRate: 0.3,
     tvaRate: 0.19,
     defaultWeightKg: 0.5,
@@ -140,11 +186,18 @@ export function getEffectiveExchangeRate(rules: PricingRules, currency: string):
   if (base == null) return null;
   if (currency.trim().toUpperCase() === 'TND') return 1;
   const buffer = Math.max(0, Number(rules.exchangeBufferPercent) || 0) / 100;
-  return millimes(base * (1 + buffer));
+  // 6 décimales, pas 3 : un taux est un MULTIPLICATEUR, pas un montant en millimes.
+  // Arrondir au millime écrasait le JPY (0.0265×1.03 → 0.027 au lieu de 0.027295,
+  // soit −1 % sur chaque conversion yen — audit 23/09/2026).
+  return Math.round(base * (1 + buffer) * 1e6) / 1e6;
 }
 
 function normalizeMatchText(value: string): string {
-  return value.toLocaleLowerCase('fr').normalize('NFKD').replace(/[\u0300-\u036f]/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim();
+  // NFKD + SUPPRESSION des diacritiques (et non remplacement par un espace) :
+  // « téléphone » et « telephone » doivent produire le même token, sinon la
+  // matrice douanière — pilotée sur des titres français (LENS_COUNTRY=fr) —
+  // rate la moitié des intitulés réels (audit 23/09/2026).
+  return value.toLocaleLowerCase('fr').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
 export function classifyCustomsCategory(

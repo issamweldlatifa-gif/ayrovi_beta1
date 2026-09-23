@@ -67,6 +67,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       pricing: {
         version: pricing.version,
         rates: { EUR: pricing.rateEUR, USD: pricing.rateUSD, GBP: pricing.rateGBP, JPY: pricing.rateJPY, TND: 1 },
+        // Transparence (audit 23/09/2026) : provenance et fraîcheur des taux affichés.
+        ratesSource: pricing.fxSource || 'seed',
+        ratesUpdatedAt: pricing.fxUpdatedAt || null,
         exchangeBufferPercent: pricing.exchangeBufferPercent,
         freightPerKgTND: pricing.freightPerKgTND,
         localDeliveryTND: pricing.localDeliveryTND,
@@ -318,6 +321,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       pricing: {
         version: pricing.version,
         rates: { EUR: pricing.rateEUR, USD: pricing.rateUSD, GBP: pricing.rateGBP, JPY: pricing.rateJPY, TND: 1 },
+        // Transparence (audit 23/09/2026) : provenance et fraîcheur des taux affichés.
+        ratesSource: pricing.fxSource || 'seed',
+        ratesUpdatedAt: pricing.fxUpdatedAt || null,
         exchangeBufferPercent: pricing.exchangeBufferPercent,
         freightPerKgTND: pricing.freightPerKgTND,
         localDeliveryTND: pricing.localDeliveryTND,

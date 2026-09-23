@@ -1,5 +1,5 @@
 import type { QatafoDatabase } from '../../db/database';
-import { calculatePrice, getExchangeRate } from '../../services/pricing';
+import { calculatePrice, getEffectiveExchangeRate } from '../../services/pricing';
 import type { PricingRules } from '../../services/pricing';
 
 /**
@@ -9,7 +9,7 @@ import type { PricingRules } from '../../services/pricing';
 
 export interface TndEstimate {
   priceTnd: number;      // total "tout inclus" (produit + transport + douane + service)
-  exchangeRate: number;
+  exchangeRate: number;  // taux EFFECTIF appliqué (marché × buffer) — identique au calcul
   breakdown: {
     convertedPriceTND: number;
     customsFeeTND: number;
@@ -20,7 +20,10 @@ export interface TndEstimate {
 
 export function estimateTnd(rules: PricingRules, price: number | null, currency: string | null): TndEstimate | null {
   if (!price || !currency || !Number.isFinite(price) || price <= 0) return null;
-  const rate = getExchangeRate(rules, currency);
+  // Audit 23/09/2026 : afficher le taux nu (4.0) tandis que le moteur calcule au taux
+  // effectif bufferisé (4.12) présentait deux chiffres contradictoires pour un même produit.
+  // On expose désormais le taux réellement appliqué.
+  const rate = getEffectiveExchangeRate(rules, currency);
   if (!rate) return null;
   const priced = calculatePrice(rules, price, currency);
   if (priced?.restricted) return null;

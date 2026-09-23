@@ -61,6 +61,17 @@ services:
         sync: false
       - key: TWILIO_VERIFY_SERVICE_SID
         sync: false
+      # Taux de change LIVE (audit pricing 23/09/2026) : ExchangeRate-API ouvert par
+      # défaut (sans clé). FX_RATES_URL peut cibler un autre fournisseur et embarquer
+      # sa clé. Une saisie manuelle de taux dans l'admin suspend la synchronisation.
+      - key: FX_RATES_ENABLED
+        value: 'true'
+      - key: FX_RATES_URL
+        sync: false
+      - key: FX_RATES_INTERVAL_HOURS
+        value: '24'
+      - key: FX_RATES_TIMEOUT_MS
+        value: '10000'
       - key: MAIL_PROVIDER
         sync: false
       - key: MAIL_API_KEY

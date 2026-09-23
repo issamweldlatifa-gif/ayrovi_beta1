@@ -16,6 +16,7 @@ import {
 } from '../services/heroVisual';
 import { normalizeUploadedImage } from '../services/imageValidation';
 import { parsePublicHttpUrl } from '../services/safeUrl';
+import { refreshFxRates } from '../services/fxRates';
 import { runLensPipeline, hashImage } from '../ayrovix/services/lensPipeline';
 import { storeLensVideo, resolveLensVideoUrl } from '../services/lensMedia';
 import { analyzeOcrText } from '../ayrovix/services/ocrPrices';
@@ -1861,6 +1862,10 @@ export function createAdminRouter(
       if (!Number.isFinite(value) || value < 0 || (apiField.startsWith('rate') && value <= 0)) return res.status(400).json({ success: false, error: `Valeur invalide pour ${apiField}.` });
       payload[dbField] = value;
     }
+    // Saisie manuelle d'un taux → la synchronisation live se SUSPEND (fx_source='manual') :
+    // les taux choisis par l'admin ne sont jamais écrasés en silence par l'API.
+    // Elle reprend via le bouton « Actualiser les taux » (POST /pricing/fx-refresh).
+    const manualRateOverride = ['rate_eur', 'rate_usd', 'rate_gbp', 'rate_jpy'].some((field) => field in payload);
     const hasCategories = Array.isArray(req.body?.categories);
     let nextDeposit: number | undefined;
     if (req.body?.depositPercent !== undefined) {
@@ -1876,8 +1881,14 @@ export function createAdminRouter(
       db.transaction(() => {
         if (hasCategories) db.updateCustomsCategories(req.body.categories);
         if (Object.keys(payload).length) {
-          db.run(`UPDATE pricing_config SET ${Object.keys(payload).map((field) => `${field}=?`).join(',')},version=version+1,updated_at=?,updated_by=? WHERE id='default'`,
-            ...Object.values(payload), new Date().toISOString(), admin(req).id);
+          const columns = Object.keys(payload).map((field) => `${field}=?`);
+          const values: unknown[] = [...Object.values(payload)];
+          if (manualRateOverride) {
+            columns.push("fx_source='manual'", 'fx_updated_at=?');
+            values.push(new Date().toISOString());
+          }
+          db.run(`UPDATE pricing_config SET ${columns.join(',')},version=version+1,updated_at=?,updated_by=? WHERE id='default'`,
+            ...values, new Date().toISOString(), admin(req).id);
         } else if (hasCategories) {
           db.run(`UPDATE pricing_config SET version=version+1,updated_at=?,updated_by=? WHERE id='default'`, new Date().toISOString(), admin(req).id);
         }
@@ -1902,6 +1913,33 @@ export function createAdminRouter(
         return res.status(400).json({ success: false, error: 'Catégorie ou acompte invalide. Les identifiants inconnus sont refusés.' });
       }
       throw error;
+    }
+  });
+
+  /**
+   * POST /api/admin/pricing/fx-refresh — tire les taux de change LIVE maintenant
+   * (audit 23/09/2026). Force la synchronisation même si fx_source='manual' :
+   * c'est un geste admin explicite, audité, qui replace la source sur 'live'.
+   */
+  router.post('/pricing/fx-refresh', requireAdmin(db, 'pricing:write'), async (req, res) => {
+    try {
+      const outcome = await refreshFxRates(db, {
+        force: true,
+        actor: { id: admin(req).id || null, name: admin(req).name || 'Admin', ipAddress: req.ip || null },
+      });
+      if (!outcome.applied) {
+        const reasons: Record<string, string> = {
+          disabled: 'La synchronisation live est désactivée (FX_RATES_ENABLED=false).',
+          invalid: 'La réponse de l’API de change a été rejetée par les bandes de sanité. Les taux en place restent appliqués.',
+          error: 'L’API de change est injoignable. Les taux en place restent appliqués.',
+        };
+        return res.status(503).json({ success: false, code: `FX_REFRESH_${(outcome.reason || 'error').toUpperCase()}`, error: reasons[outcome.reason || 'error'] || 'Rafraîchissement impossible.' });
+      }
+      const desk = { ...db.getPricingRules(), depositPercent: db.getDepositPercent() };
+      return res.json({ success: true, data: desk, fx: { provider: outcome.provider, repriced: outcome.repriced } });
+    } catch (error: any) {
+      console.error('[FX Refresh Error]', error);
+      return res.status(500).json({ success: false, error: 'Le rafraîchissement des taux a échoué.' });
     }
   });
 

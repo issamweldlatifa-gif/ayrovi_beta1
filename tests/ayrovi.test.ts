@@ -449,6 +449,60 @@ describe('AYSONIC platform', () => {
     }
   });
 
+  test('manual cart items default to PENDING_MANUAL — only signed Lens quotes can claim VERIFIED', async () => {
+    const sessionId = uniqueSession('manual-pending');
+    try {
+      // Ajout 100 % manuel : ni priceToken ni priceVerificationStatus envoyés.
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(createCartItem('Veste en cuir ajoutée à la main'));
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      expect(added.body.cartItem.priceVerificationStatus).toBe('PENDING_MANUAL');
+      // Le prix reste calculé côté serveur — l'état honnête, pas le prix, change.
+      expect(added.body.cartItem.priceTND).toBe(quoteEur(21.99, { title: 'Veste en cuir ajoutée à la main' }).totalTND);
+
+      // Une quote Lens signée VERIFIED passe toujours VERIFIED (couverture anti-régression).
+      const quote = { price: 21.99, currency: 'EUR', title: 'ensemble tendance', status: 'VERIFIED' as const };
+      const priceToken = createAyrovixPriceToken(quote);
+      const lensAdd = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        ...createCartItem('ensemble tendance'), priceVerificationStatus: 'VERIFIED', priceToken,
+      });
+      expect(lensAdd.status, JSON.stringify(lensAdd.body)).toBe(201);
+      expect(lensAdd.body.cartItem.priceVerificationStatus).toBe('VERIFIED');
+    } finally {
+      db.clearCart(sessionId);
+    }
+  });
+
+  test('orders above the sanity cap are refused with a dedicated code', async () => {
+    const sessionId = uniqueSession('cap');
+    let capItemId = '';
+    try {
+      const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send({
+        ...createCartItem('Montre de luxe factice'),
+        sourcePrice: 50_000, // 50 000 € ≈ 173 602 TND au taux graine > plafond 100 000 TND
+        sourceCurrency: 'EUR',
+      });
+      expect(added.status, JSON.stringify(added.body)).toBe(201);
+      capItemId = String(added.body.cartItem.id);
+      expect(added.body.totalTND).toBeGreaterThan(100_000);
+
+      const checkout = await customerAgent.post('/api/checkout').set('x-session-id', sessionId).set('x-csrf-token', customerCsrf).send({
+        ...checkoutDefaults,
+        name: 'Client Cap Test',
+        phone: '+216 98 123 456',
+        city: 'Tunis',
+        address: 'Avenue Habib Bourguiba, Tunis',
+        paymentMethod: 'bank_transfer',
+      });
+      expect(checkout.status).toBe(400);
+      expect(checkout.body.code).toBe('ORDER_TOTAL_CAP');
+    } finally {
+      // Le checkout échoué a déjà ATTACHÉ la ligne au panier du compte : la purge
+      // par id est chirurgicale (clearCart par session ne suffit plus après attach).
+      if (capItemId) db.run('DELETE FROM cart_items WHERE id=?', capItemId);
+      db.clearCart(sessionId);
+    }
+  });
+
   test('cart and checkout remain isolated between client sessions', async () => {
     const addResponse = await customerAgent
       .post('/api/cart/items')
@@ -967,7 +1021,8 @@ describe('AYSONIC platform', () => {
 
     const context = await request(app).get('/api/public/assistant-context');
     expect(context.status).toBe(200);
-    expect(context.body.data.pricing.rates.EUR).toBe(4);
+    // Graine = photo du marché 23/09/2026 (audit pricing) ; le service live aligne en production.
+    expect(context.body.data.pricing.rates.EUR).toBe(3.370911);
     expect(context.body.data.facts.governorates).toHaveLength(24);
     expect(context.body.data.knowledge.length).toBeGreaterThan(0);
     expect(JSON.stringify(context.body)).not.toContain('password_hash');
