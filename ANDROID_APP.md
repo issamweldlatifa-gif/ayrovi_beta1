@@ -19,7 +19,7 @@ Aucun chemin dupliqué — `isNativeApp()` garde les ponts natifs hors du web.
 
 ## Mode de chargement : coque vivante (décision verrouillée par test)
 
-L'app charge **le site en direct** depuis `https://eta1-1.onrender.com` (page et API même origine →
+L'app charge **le site en direct** depuis `https://ayrovi-beta1.onrender.com` (page et API même origine →
 **aucune config CORS requise**, et chaque push sur main est dans l'app sans rebuild).
 Le client appelle l'API en chemins relatifs (`fetch('/api/…', credentials:'same-origin')`) — c'est
 pourquoi un bundle local seul afficherait une page vide : ne pas retirer `server.url` sans ajouter

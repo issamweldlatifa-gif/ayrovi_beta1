@@ -25,7 +25,13 @@ const config: CapacitorConfig = {
     // appels viseraient https://localhost (inexistant) = écran vide + Lens mort.
     // En live : même origine que le navigateur → zéro CORS, zéro rebuild à chaque
     //mise à jour  du web, et getUserMedia/Camera gérés par la WebView Capacitor (permission CAMERA accordée).
-    url: 'https://eta1-1.onrender.com',
+    // 2026-09-23 : l'ancienne URL eta1-1.onrender.com a été perdue (service supprimé —
+    // le sous-domaine réaffecté à une application externe qui répond « Internal
+    // Server Error »). URL vérifiée saine : ayrovi-beta1.onrender.com (GET /api/ready
+    // → 200, base ok). À terme : basculer sur le domaine officiel ayrovi.tn dès que
+    // son DNS sera raccordé au service Render, pour ne plus dépendre d'un
+    // sous-domaine onrender.com réaffectable.
+    url: 'https://ayrovi-beta1.onrender.com',
     // aucun sous-domaine externe navigable dans la coque
     allowNavigation: [],
   },

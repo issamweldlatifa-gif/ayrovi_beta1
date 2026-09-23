@@ -19,7 +19,9 @@ describe('AYROVI Android shell (Capacitor)', () => {
     expect(cfg).toContain('handleBackButton: true');
     expect(cfg).toContain("appId: 'app.ayrovi.mobile'");
     // live mode EST la décision (API en chemins relatifs côté client)
-    expect(cfg).toContain("url: 'https://eta1-1.onrender.com'");
+    // 2026-09-23 : bascule vers le service Render vérifié sain (l'ancienne URL
+    // eta1-1 a été perdue — voir capacitor.config.ts).
+    expect(cfg).toContain("url: 'https://ayrovi-beta1.onrender.com'");
   });
 
   it('manifest: INTERNET + CAMERA requis pour Lens, caméra optionnelle (feature not required)', () => {
