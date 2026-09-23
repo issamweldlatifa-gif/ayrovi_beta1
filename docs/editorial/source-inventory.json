@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 217,
-    "customerAndSharedFiles": 165,
-    "controls": 431,
+    "files": 218,
+    "customerAndSharedFiles": 166,
+    "controls": 441,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -11225,8 +11225,8 @@
     {
       "file": "client/src/ayrovix/components/LensLauncher.tsx",
       "domain": "lens",
-      "sha256": "eb42ef30084a1bcfb0f82bb419c27100789e8f9bbd456b455d532ef16fc689bd",
-      "lines": 950,
+      "sha256": "eb57b0b25d130f0926ff59941930c6e1ab92292aafa822e4af3890cf560350b7",
+      "lines": 966,
       "imports": [
         "../../types",
         "./LensHelp",
@@ -11251,7 +11251,8 @@
         "../services/resultPolicy",
         "./LensNavigation",
         "./InteractiveLensResults",
-        "../../components/QatafoIcons"
+        "../../components/QatafoIcons",
+        "../services/productAttributes"
       ],
       "exports": [
         "LensLauncher"
@@ -11259,7 +11260,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 694,
+          "line": 696,
           "className": null,
           "type": null,
           "role": null,
@@ -11268,8 +11269,18 @@
           "disabled": null
         },
         {
-          "tag": "input",
+          "tag": "button",
           "line": 700,
+          "className": "\"relative grid h-11 w-11 place-items-center rounded-control border border-line bg-white text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Ouvrir le panier (${cartCount} articles)`, `فتح السلة (${cartCount} منتج)`)}",
+          "onClick": "{onOpenCart}",
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 716,
           "className": "\"hidden\"",
           "type": "\"file\"",
           "role": null,
@@ -11279,7 +11290,7 @@
         },
         {
           "tag": "button",
-          "line": 726,
+          "line": 742,
           "className": "\"lens-drop\"",
           "type": "\"button\"",
           "role": null,
@@ -11289,7 +11300,7 @@
         },
         {
           "tag": "form",
-          "line": 744,
+          "line": 760,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -11299,7 +11310,7 @@
         },
         {
           "tag": "input",
-          "line": 760,
+          "line": 776,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"search\"",
           "role": null,
@@ -11309,7 +11320,7 @@
         },
         {
           "tag": "button",
-          "line": 772,
+          "line": 788,
           "className": "\"ay-btn-primary flex-none text-xs disabled:opacity-40\"",
           "type": "\"submit\"",
           "role": null,
@@ -11319,7 +11330,7 @@
         },
         {
           "tag": "form",
-          "line": 777,
+          "line": 793,
           "className": "\"bg-white p-4\"",
           "type": null,
           "role": null,
@@ -11329,7 +11340,7 @@
         },
         {
           "tag": "input",
-          "line": 792,
+          "line": 808,
           "className": "\"min-h-[46px] min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 text-sm text-ink placeholder:text-muted focus:border-line focus:outline-none\"",
           "type": "\"url\"",
           "role": null,
@@ -11339,7 +11350,7 @@
         },
         {
           "tag": "button",
-          "line": 794,
+          "line": 810,
           "className": "\"ay-btn-primary flex-none text-xs\"",
           "type": "\"submit\"",
           "role": null,
@@ -11349,7 +11360,7 @@
         },
         {
           "tag": "button",
-          "line": 803,
+          "line": 819,
           "className": "\"text-xs font-bold text-ink underline\"",
           "type": "\"button\"",
           "role": null,
@@ -11359,7 +11370,7 @@
         },
         {
           "tag": "button",
-          "line": 807,
+          "line": 823,
           "className": "\"max-w-full truncate rounded-full border border-line bg-white px-3 py-1.5 text-left text-xs font-semibold text-ink hover:border-line/30\"",
           "type": "\"button\"",
           "role": null,
@@ -11369,7 +11380,7 @@
         },
         {
           "tag": "button",
-          "line": 869,
+          "line": 885,
           "className": "\"mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -11379,7 +11390,7 @@
         },
         {
           "tag": "button",
-          "line": 880,
+          "line": 896,
           "className": "\"w-full rounded-full bg-ink py-3 text-sm font-bold text-white sm:w-auto sm:px-6\"",
           "type": "\"button\"",
           "role": null,
@@ -11389,7 +11400,7 @@
         },
         {
           "tag": "button",
-          "line": 884,
+          "line": 900,
           "className": "\"w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line sm:w-auto sm:px-6\"",
           "type": "\"button\"",
           "role": null,
@@ -11399,7 +11410,7 @@
         },
         {
           "tag": "button",
-          "line": 907,
+          "line": 923,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11409,7 +11420,7 @@
         },
         {
           "tag": "button",
-          "line": 910,
+          "line": 926,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11419,7 +11430,7 @@
         },
         {
           "tag": "button",
-          "line": 929,
+          "line": 945,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11429,7 +11440,7 @@
         },
         {
           "tag": "button",
-          "line": 932,
+          "line": 948,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11439,7 +11450,7 @@
         },
         {
           "tag": "button",
-          "line": 935,
+          "line": 951,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11449,7 +11460,7 @@
         },
         {
           "tag": "button",
-          "line": 937,
+          "line": 953,
           "className": "\"ay-btn-secondary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11459,7 +11470,7 @@
         },
         {
           "tag": "button",
-          "line": 938,
+          "line": 954,
           "className": "\"ay-btn-primary text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -11471,7 +11482,7 @@
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles }",
+          "bindings": "{ Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles, ShoppingBag }",
           "line": 27
         }
       ],
@@ -11982,8 +11993,8 @@
     {
       "file": "client/src/ayrovix/components/ProductCandidates.tsx",
       "domain": "lens",
-      "sha256": "e309d634324871c62ccd2ebf6a95bf8ac1e810fe094bd83bc3e8e6656ebb731d",
-      "lines": 108,
+      "sha256": "e699b367ac312912900dd37289bd442c12fa66211a2b86163cd14dc55546fa77",
+      "lines": 109,
       "imports": [
         "./MerchantRating",
         "react",
@@ -12010,7 +12021,7 @@
         },
         {
           "tag": "a",
-          "line": 91,
+          "line": 92,
           "className": "\"ay-readable-label mt-2 inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
@@ -12034,8 +12045,8 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "eb0da0b35193020a8ae38e5345cbfc90eab98fc45703c6c6a826f6db88337277",
-      "lines": 336,
+      "sha256": "fe23b3000bc52caa5c9a7395ded716c22463dcdf4e1d4849dc88ac6b40751f28",
+      "lines": 513,
       "imports": [
         "../services/productSelection",
         "./MerchantRating",
@@ -12044,7 +12055,8 @@
         "../types",
         "../../components/QatafoIcons",
         "../services/resultPolicy",
-        "../../i18n/LocaleContext"
+        "../../i18n/LocaleContext",
+        "../services/productAttributes"
       ],
       "exports": [
         "ProductResult"
@@ -12052,7 +12064,17 @@
       "controls": [
         {
           "tag": "button",
-          "line": 153,
+          "line": 171,
+          "className": "\"flex h-full w-full items-center justify-center\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Agrandir la photo du produit', 'تكبير صورة المنتج')}",
+          "onClick": "{() => setLightboxOpen(true)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 196,
           "className": "{`ayrovix-thumbnail shrink-0 rounded-control border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12062,7 +12084,7 @@
         },
         {
           "tag": "a",
-          "line": 181,
+          "line": 223,
           "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
@@ -12071,108 +12093,38 @@
           "disabled": null
         },
         {
-          "tag": "input",
-          "line": 241,
-          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
-          "type": "\"url\"",
+          "tag": "button",
+          "line": 277,
+          "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
+          "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": null,
+          "onClick": "{() => setGuideOpen(true)}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 262,
-          "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
+          "line": 289,
+          "className": "{`min-h-11 rounded-control border text-sm font-extrabold transition ${sizeChoice === size ? 'border-ink border-2 bg-white text-ink' : 'border-line bg-white text-ink hover:border-ink'}`}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Diminuer la quantité', 'تقليل الكمية')}",
-          "onClick": "{() => setQuantity((value) => Math.max(1, value - 1))}",
-          "disabled": "{quantity <= 1}"
-        },
-        {
-          "tag": "input",
-          "line": 263,
-          "className": "\"h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none\"",
-          "type": "\"number\"",
-          "role": null,
-          "ariaLabel": "{tr('Quantité', 'الكمية')}",
-          "onClick": null,
+          "ariaLabel": null,
+          "onClick": "{() => setSizeChoice(size)}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 264,
-          "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
+          "line": 301,
+          "className": "{`min-h-11 min-w-12 rounded-control border px-3 text-sm font-extrabold transition ${sizeChoice === size ? 'border-ink border-2 bg-white text-ink' : 'border-line bg-white text-ink hover:border-ink'}`}",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Augmenter la quantité', 'زيادة الكمية')}",
-          "onClick": "{() => setQuantity((value) => Math.min(99, value + 1))}",
-          "disabled": "{quantity >= 99}"
-        },
-        {
-          "tag": "summary",
-          "line": 269,
-          "className": "\"cursor-pointer list-none break-words text-xs font-extrabold text-ink\"",
-          "type": null,
-          "role": null,
           "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 273,
-          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "select",
-          "line": 278,
-          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 285,
-          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": "{tr('Autre taille', 'مقاس آخر')}",
-          "onClick": null,
+          "onClick": "{() => setSizeChoice(size)}",
           "disabled": null
         },
         {
           "tag": "a",
-          "line": 296,
-          "className": "\"mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 304,
-          "className": "\"w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 315,
+          "line": 325,
           "className": "\"ay-btn-secondary min-h-[52px] px-4 text-sm break-words\"",
           "type": null,
           "role": null,
@@ -12182,22 +12134,172 @@
         },
         {
           "tag": "button",
-          "line": 319,
+          "line": 329,
           "className": "\"ay-btn-cta min-h-[52px] flex-1 px-5 text-sm break-words\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
-          "onClick": "{() => {\n              setSubmitted(true);\n              if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });\n            }}",
+          "onClick": "{() => {\n              setSubmitted(true);\n              // Lien/quantité à corriger ? On ouvre l'accordéon « Modifier » au lieu d'échouer muettement.\n              if (!isUrlValid || !validQuantity) { setFormOpen(true); return; }\n              if (canOrder) onOrder({ size: requestedSize, color: color.trim(), option: selectedOption, quantity, customerNote: customerNote.trim(), manualUrl: manualUrl.trim() });\n            }}",
           "disabled": "{ordering || !validPrice || depositPercent === null || incompleteVariantQuote}"
         },
         {
           "tag": "button",
-          "line": 331,
+          "line": 347,
           "className": "\"ay-btn-secondary mt-2 min-h-11\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => setConfigAttempt(value => value + 1)}",
+          "disabled": null
+        },
+        {
+          "tag": "summary",
+          "line": 352,
+          "className": "\"flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-extrabold text-ink [&::-webkit-details-marker]:hidden\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 362,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
+          "type": "\"url\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 383,
+          "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Diminuer la quantité', 'تقليل الكمية')}",
+          "onClick": "{() => setQuantity((value) => Math.max(1, value - 1))}",
+          "disabled": "{quantity <= 1}"
+        },
+        {
+          "tag": "input",
+          "line": 384,
+          "className": "\"h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none\"",
+          "type": "\"number\"",
+          "role": null,
+          "ariaLabel": "{tr('Quantité', 'الكمية')}",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 385,
+          "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Augmenter la quantité', 'زيادة الكمية')}",
+          "onClick": "{() => setQuantity((value) => Math.min(99, value + 1))}",
+          "disabled": "{quantity >= 99}"
+        },
+        {
+          "tag": "input",
+          "line": 392,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 397,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 404,
+          "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Autre taille', 'مقاس آخر')}",
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 415,
+          "className": "\"mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "textarea",
+          "line": 423,
+          "className": "\"w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 449,
+          "className": "\"grid h-11 w-11 place-items-center rounded-full border border-line text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer la photo', 'إغلاق الصورة')}",
+          "onClick": "{() => setLightboxOpen(false)}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 462,
+          "className": "\"absolute start-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Photo précédente', 'الصورة السابقة')}",
+          "onClick": "{showPrev}",
+          "disabled": "{imageIndex === 0}"
+        },
+        {
+          "tag": "button",
+          "line": 463,
+          "className": "\"absolute end-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Photo suivante', 'الصورة التالية')}",
+          "onClick": "{showNext}",
+          "disabled": "{imageIndex >= imageUrls.length - 1}"
+        },
+        {
+          "tag": "button",
+          "line": 475,
+          "className": "\"grid h-11 w-11 place-items-center rounded-full border border-line text-ink\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Fermer le guide', 'إغلاق الدليل')}",
+          "onClick": "{() => setGuideOpen(false)}",
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 501,
+          "className": "\"ay-btn-secondary inline-flex min-h-11 items-center gap-1 px-4 text-xs\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
           "disabled": null
         }
       ],
@@ -12209,7 +12311,7 @@
         },
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star }",
+          "bindings": "{ Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as ImageIcon, Star, X, ChevronLeft, ChevronRight }",
           "line": 6
         }
       ],
@@ -12527,6 +12629,27 @@
       "imports": [],
       "exports": [
         "loadLocalDetector"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/services/productAttributes.ts",
+      "domain": "lens",
+      "sha256": "be32728ad727fbe26b7ad3b4164241c2ab4bd44b01ca1cc0a3af854865e0286a",
+      "lines": 143,
+      "imports": [],
+      "exports": [
+        "classifyProduct",
+        "productClassLabel",
+        "extractCapacity",
+        "pricePer100",
+        "usesCapacity",
+        "presentSizes"
       ],
       "controls": [],
       "icons": [],
@@ -13105,8 +13228,8 @@
     {
       "file": "client/src/components/assistant/AiAssistantDrawer.tsx",
       "domain": "sonim",
-      "sha256": "2217d64c8e3b4f4a3dff519580f4d4db3914d93c09a5bb4aaa16071d261fa98e",
-      "lines": 1029,
+      "sha256": "e1f2faedd043923b0ac825de1ab6bf376a54539ad8f8cbbd4a74d0b3677c843a",
+      "lines": 1030,
       "imports": [
         "../../ayrovix/services/productSelection",
         "./media/useAssistantAttachments",
@@ -13145,7 +13268,7 @@
       "controls": [
         {
           "tag": "AssistantVoiceModeScreen",
-          "line": 868,
+          "line": 869,
           "className": null,
           "type": null,
           "role": null,
@@ -13155,7 +13278,7 @@
         },
         {
           "tag": "button",
-          "line": 925,
+          "line": 926,
           "className": "\"ay-btn-secondary mt-2 min-h-11 px-3 text-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -13165,7 +13288,7 @@
         },
         {
           "tag": "AssistantAttachmentSheet",
-          "line": 1000,
+          "line": 1001,
           "className": null,
           "type": null,
           "role": null,
@@ -13175,7 +13298,7 @@
         },
         {
           "tag": "AssistantFeedbackSheet",
-          "line": 1012,
+          "line": 1013,
           "className": null,
           "type": null,
           "role": null,

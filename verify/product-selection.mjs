@@ -44,7 +44,7 @@ try{
    if(mode==='lens'){await page.locator('.lens-access, #ayrovix-url-input').first().waitFor(); if(await page.locator('.lens-access').count()){for(const input of await page.locator('.lens-consent input').all())await input.check(); await page.locator('.lens-consent .lens-panel-primary').click();} await page.locator('#ayrovix-url-input').fill(base.sourceUrl);await page.getByRole('button',{name:ar?'تحليل':'Analyser',exact:true}).click();}
    else await page.getByRole('button',{name:ar?'تحديث المنتج وفتحه':'Actualiser et ouvrir le produit',exact:true}).click();
    const card=page.locator('.flow-product');await card.waitFor();const order=card.getByRole('button',{name:ar?'اطلب · عربون 25%':'Commander · 25%',exact:true});await order.waitFor();
-   await card.locator('details summary').click();
+   await card.evaluate(el=>el.querySelectorAll('details').forEach(details=>{details.open=true;}));
    const size=card.getByRole('combobox',{name:ar?'المقاس':'Taille',exact:true});
    if(scenario.size==='XXL'){await size.selectOption('__other__');await card.getByRole('textbox',{name:ar?'مقاس آخر':'Autre taille',exact:true}).fill('XXL');}else await size.selectOption(scenario.size);
    await card.locator('input[list]').fill(scenario.color);

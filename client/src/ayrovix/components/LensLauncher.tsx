@@ -24,7 +24,8 @@ import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
 import { InteractiveLensResults } from './InteractiveLensResults';
-import { Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles } from '../../components/QatafoIcons';
+import { Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles, ShoppingBag } from '../../components/QatafoIcons';
+import { classifyProduct, productClassLabel } from '../services/productAttributes';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -62,7 +63,8 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     title: candidate.title,
     brand: candidate.brand,
     model: candidate.model,
-    description: '',
+    // P1 : la description produite par nos moteurs (AI/SerpAPI) arrive enfin à la carte.
+    description: candidate.description || candidate.model || '',
     image: candidate.image,
     images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
     source: candidate.source,
@@ -124,7 +126,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 }) => {
   const [lensAccepted, setLensAccepted] = useState(readLensConsent);
   const navigation = useNavigationHistory();
-  const { tr, direction } = useLocale();
+  const { tr, direction, isArabic } = useLocale();
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
   const stageLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('lens:') && layer.id !== 'lens:history');
   const stageValue = stageLayer?.id.slice('lens:'.length);
@@ -691,7 +693,21 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
         {['home', 'error', 'barcode', 'product'].includes(stage) && (
-          <AppHeader title="LENS" onBack={stage === 'home' ? handleClose : stage === 'product' ? goBack : reset} />
+          <AppHeader
+            title={stage === 'product' && product ? productClassLabel(classifyProduct(product.title, product.description), isArabic) : 'LENS'}
+            onBack={stage === 'home' ? handleClose : stage === 'product' ? goBack : reset}
+            actions={(
+              <button
+                type="button"
+                onClick={onOpenCart}
+                aria-label={tr(`Ouvrir le panier (${cartCount} articles)`, `فتح السلة (${cartCount} منتج)`)}
+                className="relative grid h-11 w-11 place-items-center rounded-control border border-line bg-white text-ink"
+              >
+                <ShoppingBag size={20} />
+                {cartCount > 0 && <span className="absolute -top-1.5 end-0 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
+              </button>
+            )}
+          />
         )}
 
         <main className={stage === 'candidates' || stage === 'analyzing' || stage === 'product' ? "flex flex-1 flex-col min-h-0 overflow-hidden" : "ay-safe-bottom flex-1 overflow-y-auto px-4 py-4 pb-8"}>
