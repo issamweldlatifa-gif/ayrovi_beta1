@@ -251,7 +251,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   const [activeColor, setActiveColor] = useState<string | null>(null);
   const galleryImages = useMemo(() => {
     const set = activeColor ? colorImageSets?.[activeColor.toLocaleLowerCase()] : null;
-    return set && set.length ? set : imageUrls;
+    // سقف العرض 4 صور (طلب العميل 24/09 18:35: «أربعة فقط تكفي») — الجلب
+    // الكامل يبقى محفوظاً في الملف/الprofiles، والمعرض يعرض أول 4.
+    const merged = set && set.length ? set : imageUrls;
+    return merged.slice(0, 4);
   }, [activeColor, colorImageSets, imageUrls]);
 
   const activeImage = galleryImages[imageIndex] || '';

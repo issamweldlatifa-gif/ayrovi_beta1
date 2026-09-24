@@ -106,6 +106,19 @@ describe('isolation — GARDE ANTI-FUITE intérieur produit (24/09/2026)', () =>
   });
 });
 
+describe('isolation — TRIM هوامش شفافة (المنتج يملأ البطاقة)', () => {
+  it('يقصّ الهوامش الميتة: ناتج العزل أصغر من الصورة الأصلية', async () => {
+    // 200×300: خلفية #ededed + منتج أحمر 100×160 (هوامش ميتة حوله)
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300"><rect width="200" height="300" fill="#ededed"/><rect x="50" y="70" width="100" height="160" fill="#c0392b"/></svg>`;
+    const result = await isolateBuffer(await sharp(Buffer.from(svg)).png().toBuffer());
+    expect(result.png).not.toBeNull();
+    const meta = await sharp(result.png!).metadata();
+    expect(meta.width).toBeLessThan(160); // بدل 200
+    expect(meta.height).toBeLessThan(240); // بدل 300
+    expect((meta.width ?? 0) > 80).toBe(true); // المنتج نفسه لم يبتلع
+  });
+});
+
 describe('isolation — garde SSRF', () => {
   it.each([
     'http://127.0.0.1/x.jpg',
@@ -190,7 +203,10 @@ describe('isolation — chroma-key CONNECTÉ (fix anti-fantôme 24/09/2026)', ()
     expect(result.kind).toBe('uniform');
     expect(result.png).not.toBeNull();
     const { data, info } = await sharp(result.png!).raw().toBuffer({ resolveWithObject: true });
-    const centerAlpha = data[((info.height * 100 + 100) * info.channels) + 3];
+    // après TRIM des marges : le résultat EST le produit — centre opaque.
+    const cx = info.width >> 1;
+    const cy = info.height >> 1;
+    const centerAlpha = data[((info.height * cy + cx) * info.channels) + 3];
     expect(centerAlpha).toBeGreaterThan(200); // le produit n'est pas un fantôme
   });
 });

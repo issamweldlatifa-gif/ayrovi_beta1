@@ -12025,8 +12025,8 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "326e8ce0faaf46a428d0a3f6bc0342fafe55a78ee26e73914b294045837f89cd",
-      "lines": 1186,
+      "sha256": "323f1d6d75fc29317972ffc480655c82a9fdca4d0b562cc7c5cbe37ecd5ef6cc",
+      "lines": 1189,
       "imports": [
         "../services/productSelection",
         "./MerchantRating",
@@ -12045,7 +12045,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 333,
+          "line": 336,
           "className": "\"inline-flex items-center gap-1.5 text-sm font-bold text-ink hover:opacity-80 transition\"",
           "type": "\"button\"",
           "role": null,
@@ -12055,7 +12055,7 @@
         },
         {
           "tag": "button",
-          "line": 347,
+          "line": 350,
           "className": "\"relative p-1.5 text-ink hover:opacity-75 transition\"",
           "type": "\"button\"",
           "role": null,
@@ -12065,7 +12065,7 @@
         },
         {
           "tag": "button",
-          "line": 382,
+          "line": 385,
           "className": "\"grid h-10 w-10 place-items-center rounded-full bg-white text-ink border border-neutral-300 shadow-md transition hover:scale-105 active:scale-95 pointer-events-auto\"",
           "type": "\"button\"",
           "role": null,
@@ -12075,7 +12075,7 @@
         },
         {
           "tag": "button",
-          "line": 408,
+          "line": 411,
           "className": "\"flex h-full w-full items-center justify-center cursor-zoom-in\"",
           "type": "\"button\"",
           "role": null,
@@ -12085,7 +12085,7 @@
         },
         {
           "tag": "button",
-          "line": 458,
+          "line": 461,
           "className": "{`ayrovix-thumbnail shrink-0 aspect-[9/13] w-12 overflow-hidden rounded-xl bg-white p-0.5 transition ${selected ? 'border-2 border-black ring-1 ring-black/10' : 'border border-line/60'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12095,7 +12095,7 @@
         },
         {
           "tag": "a",
-          "line": 569,
+          "line": 572,
           "className": "\"inline-flex items-center gap-1.5 text-xs font-bold text-ink underline decoration-ink/40 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
@@ -12105,7 +12105,7 @@
         },
         {
           "tag": "button",
-          "line": 605,
+          "line": 608,
           "className": "{`shrink-0 rounded-xl overflow-hidden transition ${\n                        selected ? 'border-2 border-black p-0.5' : 'border border-line/60 p-0.5 hover:border-black/50'\n                      }`}",
           "type": "\"button\"",
           "role": "\"radio\"",
@@ -12115,7 +12115,7 @@
         },
         {
           "tag": "button",
-          "line": 636,
+          "line": 639,
           "className": "\"w-full text-start rounded-xl bg-[#f5f5f5] p-3.5 flex items-center gap-3.5 transition hover:bg-[#ececec]\"",
           "type": "\"button\"",
           "role": null,
@@ -12125,7 +12125,7 @@
         },
         {
           "tag": "button",
-          "line": 657,
+          "line": 660,
           "className": "\"w-full text-start rounded-xl bg-[#f5f5f5] p-3.5 flex items-center gap-3.5 transition hover:bg-[#ececec]\"",
           "type": "\"button\"",
           "role": null,
@@ -12135,7 +12135,7 @@
         },
         {
           "tag": "button",
-          "line": 719,
+          "line": 722,
           "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -12145,7 +12145,7 @@
         },
         {
           "tag": "button",
-          "line": 730,
+          "line": 733,
           "className": "\"flex min-h-[52px] w-full items-center justify-between rounded-xl border border-black bg-white px-4 text-sm font-semibold text-ink transition hover:bg-surface shadow-xs\"",
           "type": "\"button\"",
           "role": null,
@@ -12155,7 +12155,7 @@
         },
         {
           "tag": "input",
-          "line": 744,
+          "line": 747,
           "className": "\"flex min-h-[52px] w-full rounded-xl border border-line bg-white px-4 text-sm font-semibold text-ink placeholder:text-muted focus:border-black focus:outline-none shadow-xs\"",
           "type": "\"text\"",
           "role": null,
@@ -12165,7 +12165,7 @@
         },
         {
           "tag": "button",
-          "line": 769,
+          "line": 772,
           "className": "\"ay-btn-cta w-full rounded-full bg-black py-4 px-6 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[52px] shadow-sm\"",
           "type": "\"button\"",
           "role": null,
@@ -12175,7 +12175,7 @@
         },
         {
           "tag": "button",
-          "line": 792,
+          "line": 795,
           "className": "\"w-full rounded-full border border-black bg-white py-3.5 px-6 text-sm font-bold text-black transition hover:bg-surface active:scale-[0.99] flex items-center justify-center gap-2 min-h-[48px]\"",
           "type": "\"button\"",
           "role": null,
@@ -12185,7 +12185,7 @@
         },
         {
           "tag": "summary",
-          "line": 813,
+          "line": 816,
           "className": "\"flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-xs font-extrabold text-ink [&::-webkit-details-marker]:hidden\"",
           "type": null,
           "role": null,
@@ -12195,7 +12195,7 @@
         },
         {
           "tag": "button",
-          "line": 821,
+          "line": 824,
           "className": "\"ay-btn-secondary mt-2 min-h-11\"",
           "type": "\"button\"",
           "role": null,
@@ -12205,7 +12205,7 @@
         },
         {
           "tag": "input",
-          "line": 831,
+          "line": 834,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
           "type": "\"url\"",
           "role": null,
@@ -12215,7 +12215,7 @@
         },
         {
           "tag": "button",
-          "line": 852,
+          "line": 855,
           "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12225,7 +12225,7 @@
         },
         {
           "tag": "input",
-          "line": 853,
+          "line": 856,
           "className": "\"h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none\"",
           "type": "\"number\"",
           "role": null,
@@ -12235,7 +12235,7 @@
         },
         {
           "tag": "button",
-          "line": 854,
+          "line": 857,
           "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12245,7 +12245,7 @@
         },
         {
           "tag": "input",
-          "line": 861,
+          "line": 864,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -12255,7 +12255,7 @@
         },
         {
           "tag": "select",
-          "line": 866,
+          "line": 869,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -12265,7 +12265,7 @@
         },
         {
           "tag": "input",
-          "line": 873,
+          "line": 876,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none\"",
           "type": null,
           "role": null,
@@ -12275,7 +12275,7 @@
         },
         {
           "tag": "a",
-          "line": 884,
+          "line": 887,
           "className": "\"mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline\"",
           "type": null,
           "role": null,
@@ -12285,7 +12285,7 @@
         },
         {
           "tag": "textarea",
-          "line": 892,
+          "line": 895,
           "className": "\"w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -12295,7 +12295,7 @@
         },
         {
           "tag": "button",
-          "line": 918,
+          "line": 921,
           "className": "\"grid h-11 w-11 place-items-center rounded-full border border-line text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -12305,7 +12305,7 @@
         },
         {
           "tag": "button",
-          "line": 931,
+          "line": 934,
           "className": "\"absolute start-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12315,7 +12315,7 @@
         },
         {
           "tag": "button",
-          "line": 932,
+          "line": 935,
           "className": "\"absolute end-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12325,7 +12325,7 @@
         },
         {
           "tag": "button",
-          "line": 943,
+          "line": 946,
           "className": "\"absolute end-4 top-4 grid h-9 w-9 place-items-center rounded-full text-ink hover:bg-surface\"",
           "type": "\"button\"",
           "role": null,
@@ -12335,7 +12335,7 @@
         },
         {
           "tag": "button",
-          "line": 970,
+          "line": 973,
           "className": "\"w-full mt-4 rounded-full bg-black py-3.5 text-xs font-bold text-white transition hover:opacity-90\"",
           "type": "\"button\"",
           "role": null,
@@ -12345,7 +12345,7 @@
         },
         {
           "tag": "button",
-          "line": 987,
+          "line": 990,
           "className": "\"grid h-10 w-10 place-items-center rounded-full text-ink hover:bg-surface\"",
           "type": "\"button\"",
           "role": null,
@@ -12355,7 +12355,7 @@
         },
         {
           "tag": "a",
-          "line": 1066,
+          "line": 1069,
           "className": "\"ay-btn-secondary inline-flex min-h-11 items-center gap-1.5 px-4 text-xs font-bold w-full justify-center\"",
           "type": null,
           "role": null,
@@ -12365,7 +12365,7 @@
         },
         {
           "tag": "button",
-          "line": 1095,
+          "line": 1098,
           "className": "\"inline-flex items-center gap-1 text-sm font-bold text-ink hover:opacity-80\"",
           "type": "\"button\"",
           "role": null,
@@ -12375,7 +12375,7 @@
         },
         {
           "tag": "button",
-          "line": 1103,
+          "line": 1106,
           "className": "\"grid h-8 w-8 place-items-center rounded-full text-ink hover:bg-surface shrink-0\"",
           "type": "\"button\"",
           "role": null,
@@ -12385,7 +12385,7 @@
         },
         {
           "tag": "button",
-          "line": 1119,
+          "line": 1122,
           "className": "{`flex-1 py-3 text-center text-sm font-bold transition border-b-2 ${\n                  sizeTab === 'french' ? 'border-black text-ink' : 'border-transparent text-muted hover:text-ink'\n                }`}",
           "type": "\"button\"",
           "role": null,
@@ -12395,7 +12395,7 @@
         },
         {
           "tag": "button",
-          "line": 1128,
+          "line": 1131,
           "className": "{`flex-1 py-3 text-center text-sm font-bold transition border-b-2 ${\n                  sizeTab === 'brand' ? 'border-black text-ink' : 'border-transparent text-muted hover:text-ink'\n                }`}",
           "type": "\"button\"",
           "role": null,
@@ -12405,7 +12405,7 @@
         },
         {
           "tag": "button",
-          "line": 1151,
+          "line": 1154,
           "className": "{`flex w-full items-center justify-between py-4 px-2 text-start transition ${\n                      isSelected ? 'bg-surface font-extrabold text-ink' : 'hover:bg-neutral-50 text-ink'\n                    }`}",
           "type": "\"button\"",
           "role": null,
@@ -19617,8 +19617,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "042c17c5c097f3afc1c57854d6844b7c3767718f15e463b8fb637527974fbb9d",
-      "lines": 1241,
+      "sha256": "792e7d8241d70fec5574d46f9ea58b1f443b3b2d30826777523bed7ff25f01e5",
+      "lines": 1244,
       "imports": [],
       "exports": [],
       "controls": [],

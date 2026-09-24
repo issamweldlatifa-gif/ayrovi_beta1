@@ -48,7 +48,12 @@ describe('AYROVIX product gallery rendering', () => {
   it('uses the unchanged original source for both the main image and selected thumbnail', () => {
     const markup = renderGallery();
     expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(2);
-    for (const src of images) expect(markup).toContain(`src="${src}"`);
+    // سقف العرض 4 صور (طلب العميل 24/09 18:35 «أربعة فقط تكفي») — أول 4 تُعرض،
+    // البقية تبقى في الprofiles/الملف لكنها لا تُصيَّر.
+    const firstFour = images.slice(0, 4);
+    for (const src of firstFour) expect(markup).toContain(`src="${src}"`);
+    expect(markup).not.toContain(`src="${images[4]}"`);
+    expect(markup).toContain('1 / 4');
     expect(markup).toContain('ayrovix-product-gallery-image');
     expect(markup).toContain('ayrovix-thumbnail-image');
     expect(markup).toContain('aria-current="true"');

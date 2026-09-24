@@ -180,6 +180,26 @@ export function backgroundLikeShare(image: RawImage, background: { r: number; g:
 }
 
 /**
+ * TRIM TRANSPARENT (fix 24/09 18:35 — «المنتج يملأ البطاقة») : بعد العزل،
+ * هوامش الشفافية الميتة حول المنتج تُقصّ — البطاقة (object-fit contain على
+ * كانفاس ‎#f6f6f6‎) تكبّر المنتج إلى أقصى الحد بدل عرض صورة التاجر بهوامشها
+ * الفارغة. لا يغيّر البكسلات داخل المنتج — فقط يحذف الفراغ الميت.
+ */
+export async function trimTransparentMargins(png: Buffer): Promise<Buffer> {
+  try {
+    const trimmed = await sharp(png).trim({ background: { r: 0, g: 0, b: 0, alpha: 0 }, threshold: 0 }).toBuffer();
+    // أمان: لا نقبل قصّاً يبتلع الصورة (أقل من 15% من المساحة الأصلية).
+    const original = await sharp(png).metadata();
+    const result = await sharp(trimmed).metadata();
+    if (!result.width || !result.height || !original.width || !original.height) return png;
+    if (result.width < original.width * 0.15 || result.height < original.height * 0.15) return png;
+    return trimmed;
+  } catch {
+    return png;
+  }
+}
+
+/**
  * GARDE ANTI-FUITE (fix 24/09/2026 — captures «taches blanches DANS le produit») :
  * des zones transparentes ENFERMÉES dans le produit (aucun contact avec le bord
  * de l'image) signifient que le chroma-key a remonté DANS le produit via une
@@ -262,7 +282,7 @@ export async function isolateBuffer(buffer: Buffer): Promise<{ kind: IsolationKi
   if (light) {
     try {
       const segmented = await segmentBuffer(buffer);
-      if (segmented) return { kind: 'segmented', png: segmented };
+      if (segmented) return { kind: 'segmented', png: await trimTransparentMargins(segmented) };
     } catch { /* repli chroma-key ci-dessous */ }
   }
   chromaKeyConnected(image, analysis.color, coreUsed, light ? 26 : FEATHER_TOLERANCE);
@@ -272,12 +292,12 @@ export async function isolateBuffer(buffer: Buffer): Promise<{ kind: IsolationKi
   if (hasEnclosedTransparency(image)) {
     try {
       const segmented = await segmentBuffer(buffer);
-      if (segmented) return { kind: 'segmented', png: segmented };
+      if (segmented) return { kind: 'segmented', png: await trimTransparentMargins(segmented) };
     } catch { /* pas de filet */ }
     return { kind: 'uniform', png: null };
   }
-  const png = await sharp(image.data, { raw: { width: image.width, height: image.height, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
-  return { kind: 'uniform', png };
+  const raw = await sharp(image.data, { raw: { width: image.width, height: image.height, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
+  return { kind: 'uniform', png: await trimTransparentMargins(raw) };
 }
 
 /* ── 4. Téléchargement protégé (SSRF) ───────────────────────────── */

@@ -320,12 +320,22 @@ function absoluteImages(values: unknown[], baseUrl: string): string[] {
       if (/\.(svg|ico|gif)$/i.test(url.pathname)) continue;
       if (/(?:favicon|sprite|loader|spinner|placeholder|1x1|tracking|pixel)/i.test(url.href)) continue;
       const width = Number(url.searchParams.get('imwidth') || url.searchParams.get('width') || 0) || 0;
-      const existing = seenPath.get(url.pathname);
+      // Shopify & co encodent AUSSI la taille dans le chemin (_1200x1200.jpg,
+      // _3000x.jpg, _grande.jpg…) : la clé normalisée retire ces suffixes —
+      // un même fichier servi en 3 tailles = UNE photo, on garde la plus
+      // grande (l'original sans suffixe l'emporte toujours).
+      const sizeInPath = url.pathname.match(/_(\d{2,4})(?:x\d{0,4})?(?:@2x)?(?=\.[a-z]{3,4}$)/i);
+      const namedSize = url.pathname.match(/_(?:grande|large|medium|small|compact|thumbnail|pico|icon)(?=\.[a-z]{3,4}$)/i);
+      const pathWidth = sizeInPath ? Math.max(Number(sizeInPath[1]), Number(sizeInPath[2] || 0)) : namedSize ? 600 : 99_999;
+      const key = url.pathname
+        .replace(/_(?:\d{2,4}(?:x\d{0,4})?@2x|\d{2,4}(?:x\d{0,4})?|grande|large|medium|small|compact|thumbnail|pico|icon)(?=\.[a-z]{3,4}$)/i, '')
+        .toLowerCase();
+      const existing = seenPath.get(key);
       if (existing) {
-        if (width > existing.width) output[existing.index] = url.toString();
+        if (Math.max(width, pathWidth) > existing.width) output[existing.index] = url.toString();
         continue;
       }
-      seenPath.set(url.pathname, { index: output.length, width });
+      seenPath.set(key, { index: output.length, width: Math.max(width, pathWidth) });
       output.push(url.toString());
       if (output.length >= 48) break;
     } catch { /* invalid merchant image */ }
