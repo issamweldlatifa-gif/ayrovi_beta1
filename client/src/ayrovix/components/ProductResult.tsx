@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 import {
   Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Check, Hourglass, Image as ImageIcon,
-  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, Truck, Package, Info, ShieldCheck, ShoppingBag, Person, Tag,
+  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, Info, ShieldCheck, ShoppingBag, Person, Tag, Camera,
 } from '../../components/QatafoIcons';
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -203,10 +203,18 @@ export const ProductResult: React.FC<ProductResultProps> = ({
     return [];
   }, [sizePresentation.options]);
 
-  const imageUrls = useMemo(
-    () => [...new Set([...(product.images || []), product.image].filter(Boolean))],
-    [product.image, product.images],
-  );
+  const imageUrls = useMemo(() => {
+    const raw = [...(product.images || []), product.image].filter(Boolean);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const url of raw) {
+      const clean = String(url).trim();
+      if (!clean || seen.has(clean)) continue;
+      seen.add(clean);
+      out.push(clean);
+    }
+    return out;
+  }, [product.image, product.images]);
   const activeImage = imageUrls[imageIndex] || '';
   const sizeOptions = [...new Set(product.sizes)];
 
@@ -320,19 +328,25 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 >
                   {promo.label || 'Promo'}
                 </span>
-              ) : <span />}
+              ) : (
+                <span
+                  className="rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto bg-[#dc2626]"
+                >
+                  Promo
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => setIsFavorite((v) => !v)}
                 aria-label={tr('Ajouter aux favoris', 'إضافة إلى المفضلة')}
-                className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-md transition hover:scale-105 active:scale-95 pointer-events-auto"
+                className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink border border-neutral-300 shadow-md transition hover:scale-105 active:scale-95 pointer-events-auto"
               >
                 {isFavorite ? <HeartFilled size={20} className="text-[#dc2626]" /> : <Heart size={20} />}
               </button>
             </div>
 
-            {/* Stage de l'image — grand, aéré, sans cadre sombre, couleur pure */}
-            <div className="ayrovix-product-gallery-stage bg-[#f0f2f2] relative flex aspect-[3/4] w-full items-center justify-center p-3 sm:p-5">
+            {/* Stage de l'image — 2/3 portrait, plein format sans marge, fond studio identique aux petites cartes */}
+            <div className="ayrovix-product-gallery-stage bg-[#f0f2f2] relative flex aspect-[2/3] w-full items-center justify-center p-0 overflow-hidden">
               {activeImage ? (
                 <button
                   type="button"
@@ -342,7 +356,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 >
                   <img
                     src={rawFallback ? activeImage : (isolatedMediaUrl(activeImage) ?? activeImage)}
-                    alt={product.title}
+                    alt={cleanTitle}
                     referrerPolicy="no-referrer"
                     decoding="async"
                     fetchPriority="high"
@@ -350,22 +364,80 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                     data-isolated={!rawFallback && Boolean(isolatedMediaUrl(activeImage))}
                     onError={() => {
                       if (!rawFallback && isolatedMediaUrl(activeImage)) setRawFallback(true);
-                      else setImageIndex((current) => Math.min(current + 1, imageUrls.length));
+                      else setImageIndex((current) => Math.min(current + 1, imageUrls.length - 1));
                     }}
-                    className={`ayrovix-product-gallery-image h-full w-full object-contain transition-transform duration-200 ${
-                      !rawFallback && isolatedMediaUrl(activeImage) ? 'is-isolated' : ''
-                    }`}
-                    style={{ mixBlendMode: 'normal' }}
+                    className="h-full w-full object-cover transition-transform duration-300"
+                    style={{
+                      mixBlendMode: !rawFallback && Boolean(isolatedMediaUrl(activeImage)) ? 'normal' : 'multiply',
+                    }}
                   />
                 </button>
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={48} /></div>
               )}
+
+              {/* Bouton de recherche visuelle (flottant en bas à droite, identique Zalando Screenshot 2) */}
+              <div className="absolute bottom-3.5 right-3.5 z-10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const searchTrigger = document.querySelector('[data-ayrovi-search-trigger]') as HTMLElement;
+                    if (searchTrigger) searchTrigger.click();
+                    else window.dispatchEvent(new CustomEvent('ayrovi:new-search'));
+                  }}
+                  aria-label={tr('Recherche visuelle', 'بحث بصري')}
+                  className="grid h-10 w-10 place-items-center rounded-full bg-black text-white shadow-lg transition hover:scale-105 active:scale-95"
+                >
+                  <Camera size={19} />
+                </button>
+              </div>
+
+              {/* Indicateur de pagination photo 1 / N (en bas à gauche, identique Zalando Screenshot 2) */}
+              {imageUrls.length > 1 && (
+                <div className="absolute bottom-3.5 left-3.5 z-10 pointer-events-none">
+                  <span className="rounded-md bg-white/90 backdrop-blur-xs px-2.5 py-1 text-xs font-bold text-ink shadow-xs">
+                    {imageIndex + 1} / {imageUrls.length}
+                  </span>
+                </div>
+              )}
+
+              {/* Flèches de navigation carrousel */}
+              {imageUrls.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageIndex((c) => (c > 0 ? c - 1 : imageUrls.length - 1));
+                    }}
+                    aria-label={tr('Photo précédente', 'الصورة السابقة')}
+                    className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-ink shadow-md hover:bg-white transition"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setImageIndex((c) => (c < imageUrls.length - 1 ? c + 1 : 0));
+                    }}
+                    aria-label={tr('Photo suivante', 'الصورة التالية')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-ink shadow-md hover:bg-white transition"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* Vignettes d'angles complémentaires — affichées seulement si plusieurs images réelles */}
-            {imageUrls.length > 1 && (
-              <div className="ayrovix-thumbnail-strip flex gap-2.5 overflow-x-auto bg-[#f0f2f2] px-3.5 pb-3.5 pt-1" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
+            {/* Bandeau Article Populaire (identique Zalando Screenshot 2) */}
+            <div className="w-full bg-[#495057] text-white py-2 px-3 text-center text-xs font-bold tracking-wide">
+              {tr('Article populaire', 'منتج شائع ورائج')}
+            </div>
+
+            {/* Vignettes d'angles complémentaires — affichées seulement si plus de 2 images distinctes */}
+            {imageUrls.length > 2 && (
+              <div className="ayrovix-thumbnail-strip flex gap-2.5 overflow-x-auto bg-[#f0f2f2] px-3.5 pb-3.5 pt-2" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
                 {imageUrls.map((url, index) => {
                   const selected = imageIndex === index;
                   return (
@@ -373,11 +445,20 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                       key={`${url}-${index}`}
                       type="button"
                       onClick={() => setImageIndex(index)}
-                      className={`ayrovix-thumbnail shrink-0 h-16 w-12 overflow-hidden rounded-xl bg-white p-1 transition ${selected ? 'border-2 border-black ring-1 ring-black/10' : 'border border-line/60'}`}
+                      className={`ayrovix-thumbnail shrink-0 h-16 w-12 overflow-hidden rounded-xl bg-white p-0.5 transition ${selected ? 'border-2 border-black ring-1 ring-black/10' : 'border border-line/60'}`}
                       aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}
                       aria-current={selected ? 'true' : undefined}
                     >
-                      <img src={url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" className="ayrovix-thumbnail-image h-full w-full object-contain" style={{ mixBlendMode: 'normal' }} />
+                      <img
+                        src={url}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        draggable={false}
+                        referrerPolicy="no-referrer"
+                        className="ayrovix-thumbnail-image h-full w-full object-cover"
+                        style={{ mixBlendMode: 'multiply' }}
+                      />
                     </button>
                   );
                 })}
@@ -631,8 +712,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({
 
           {/* Description produit */}
           {product.description ? (
-            <div className="pt-2 border-t border-line/60">
-              <p className="break-words text-sm font-normal leading-relaxed text-muted">{product.description}</p>
+            <div className="pt-3 border-t border-line/60 space-y-1.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-ink">{tr('Détails & description', 'تفاصيل ووصف المنتج')}</h3>
+              <p className="break-words text-sm font-normal leading-relaxed text-ink/80 whitespace-pre-line">{product.description}</p>
             </div>
           ) : null}
 
@@ -676,24 +758,6 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             >
               <span>{tr('Calculer un autre article', 'حساب منتج آخر')}</span>
             </button>
-
-            {/* Garanties de livraison et retour faciles */}
-            <div className="rounded-xl border border-line bg-surface/50 p-4 space-y-3 text-xs mt-3">
-              <div className="flex items-start gap-3">
-                <Truck className="h-4 w-4 text-ink shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-ink">{tr('Livraison Standard · Gratuite', 'توصيل قياسي · مجاني')}</p>
-                  <p className="text-muted">{tr('Délai estimé : 3 à 5 jours ouvrés en Tunisie', 'المدة التقديرية: 3 إلى 5 أيام عمل في تونس')}</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Package className="h-4 w-4 text-ink shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-bold text-ink">{tr('Achat vérifié et suivi sécurisé', 'شراء مؤكد وتتبع آمن')}</p>
-                  <p className="text-muted">{tr('Acheté et expédié via AYROVI — l’équipe confirme la disponibilité et le prix avant l’achat.', 'يُشترى ويُشحن عبر AYROVI — الفريق يؤكد التوفر والسعر قبل الشراء.')}</p>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

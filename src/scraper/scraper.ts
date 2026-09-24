@@ -87,9 +87,11 @@ export class SmartLinkScraper {
       url: cleanUrl,
       externalId,
       title: title.trim(),
-      description: merchantResult.verified
-        ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
-        : `Article extrait depuis ${storeName}. Prix en attente de vérification manuelle.`,
+      description: (merchantResult.data?.description && merchantResult.data.description.length > 5)
+        ? merchantResult.data.description
+        : (merchantResult.verified
+          ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
+          : `Article extrait depuis ${storeName}. Prix en attente de vérification manuelle.`),
       images,
       mainImage: images.length > 0 ? images[0] : '',
       sourcePrice: Math.round(price * 100) / 100,

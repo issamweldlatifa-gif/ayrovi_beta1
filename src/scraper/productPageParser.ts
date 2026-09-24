@@ -5,6 +5,7 @@ import type { ProductVariantDetail, ProductVariants, StoreType } from '../types'
 export interface ParsedProductPage {
   title: string;
   brand?: string;
+  description?: string;
   price: number;
   currency: string;
   images: string[];
@@ -265,9 +266,11 @@ function absoluteImages(values: unknown[], baseUrl: string): string[] {
       // The product page (or any HTML document) is not a product image.
       if (base && url.hostname === base.hostname && url.pathname === base.pathname) continue;
       if (/\.(html?|xhtml|php|aspx?|jsp|cfm)$/i.test(url.pathname)) continue;
+      if (/\.(svg|ico|gif)$/i.test(url.pathname)) continue;
+      if (/(?:favicon|sprite|loader|spinner|placeholder|1x1|tracking|pixel)/i.test(url.href)) continue;
       seen.add(normalized);
       output.push(normalized);
-      if (output.length >= 8) break;
+      if (output.length >= 24) break;
     } catch { /* invalid merchant image */ }
   }
   return output;
@@ -411,17 +414,68 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       for (const detail of details) if (!detail.color) detail.color = colors[0];
     }
 
+    const ldDescription = typeof productLd?.description === 'string' ? productLd.description.trim() : '';
+    const domDescription = text(
+      '#productDescription, #feature-bullets, #detailBullets_feature_div, [itemprop="description"], [data-testid*="description" i], [class*="product-intro__description" i], [class*="detail-desc" i], [class*="goods-desc" i], .product-description, #description, [data-testid*="product-details" i]'
+    );
+    const metaDescription = meta('meta[name="description"]') || meta('meta[property="og:description"]') || meta('meta[name="twitter:description"]');
+    const description = (ldDescription || domDescription || metaDescription || '').slice(0, 3000);
+
+    const jsonLdImages: unknown[] = [];
+    for (const node of jsonLd) {
+      if (node?.image) jsonLdImages.push(node.image);
+      if (node?.['@type'] === 'ImageObject' && (node.url || node.contentUrl)) {
+        jsonLdImages.push(node.url || node.contentUrl);
+      }
+    }
+
+    const domImageNodes = Array.from(document.querySelectorAll(
+      'img[data-old-hires], img[data-zoom-image], img[data-high-res-src], img[data-src], img[data-lazy-src], #altImages img, #imageBlock img, [data-testid*="gallery" i] img, [data-testid*="thumbnail" i] img, [data-testid*="product-image" i] img, picture source[srcset], picture img, .product-gallery img, [class*="thumbnail" i] img, [class*="gallery" i] img, [class*="image" i] img'
+    ));
+    const domImages: string[] = [];
+    for (const node of domImageNodes) {
+      const srcset = node.getAttribute?.('srcset') || node.getAttribute?.('data-srcset');
+      if (srcset) {
+        for (const entry of srcset.split(',')) {
+          const candidate = entry.trim().split(/\s+/)[0];
+          if (candidate) domImages.push(candidate);
+        }
+      }
+      for (const attr of ['data-old-hires', 'data-zoom-image', 'data-high-res-src', 'data-src', 'data-lazy-src', 'src']) {
+        const val = node.getAttribute?.(attr);
+        if (val) domImages.push(val);
+      }
+    }
+
+    const scriptImages: string[] = [];
+    for (const node of Array.from(document.querySelectorAll('script#__NEXT_DATA__, script[type="application/json"]'))) {
+      const textContent = node.textContent || '';
+      if (!textContent || textContent.length > 2_000_000) continue;
+      const urls = textContent.match(/https?:\/\/[^"'\s\\]+\.(?:jpe?g|png|webp)(?:\?[^"'\s\\]*)?/gi) || [];
+      for (const u of urls) {
+        if (/ztat\.net|media-amazon|ltwebstatic|shein\.com|zara\.net|asos-media/i.test(u)) {
+          scriptImages.push(u);
+        }
+      }
+    }
+
     const imageCandidates: unknown[] = [
-      meta('meta[property="og:image"]'), meta('meta[name="twitter:image"]'), productLd?.image,
-      embeddedProduct?.featured_image, embeddedProduct?.featuredImage, embeddedProduct?.images,
-      document.querySelector('#landingImage, #main-image, img[data-old-hires], img[class*="main-img"]')?.getAttribute('data-old-hires') || '',
-      document.querySelector('#landingImage, #main-image, img[class*="main-img"]')?.getAttribute('src') || '',
+      meta('meta[property="og:image"]'),
+      meta('meta[name="twitter:image"]'),
+      productLd?.image,
+      ...jsonLdImages,
+      embeddedProduct?.featured_image,
+      embeddedProduct?.featuredImage,
+      embeddedProduct?.images,
+      ...scriptImages,
+      ...domImages,
     ];
     const images = absoluteImages(imageCandidates, baseUrl);
 
     return {
       title,
       brand: brand || undefined,
+      description: description || undefined,
       price,
       currency,
       images,
