@@ -1063,6 +1063,43 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_admin_notifications_date ON admin_notifications(created_at DESC);
 
+      /* PROFILS PRODUITS (24/09/2026) : la fiche marchand complète (description,
+       * toutes les photos, images par couleur, variantes) est mise en cache par
+       * URL — un seul crawl sert TOUS les visiteurs, l'enrichissement Lens devient
+       * instantané. Fraîcheur gérée côté service (TTL), ligne réécrite à chaque crawl. */
+      CREATE TABLE IF NOT EXISTS product_profiles (
+        id TEXT PRIMARY KEY,
+        url_hash TEXT NOT NULL UNIQUE,
+        url TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        images_count INTEGER NOT NULL DEFAULT 0,
+        has_description INTEGER NOT NULL DEFAULT 0,
+        fetched_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_product_profiles_fetched ON product_profiles(fetched_at DESC);
+
+      /* VEILLE PRIX — «راقب السعر» (24/09/2026) : le client surveille un produit ;
+       * le vérificateur périodique relit la fiche marchand et notifie tout changement. */
+      CREATE TABLE IF NOT EXISTS price_watchers (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+        url TEXT NOT NULL,
+        title TEXT NOT NULL,
+        image_url TEXT NOT NULL DEFAULT '',
+        source TEXT NOT NULL DEFAULT '',
+        target_price_tnd REAL,
+        last_price_tnd REAL,
+        last_currency TEXT NOT NULL DEFAULT '',
+        last_price REAL,
+        failure_count INTEGER NOT NULL DEFAULT 0,
+        status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE','DEAD')),
+        last_checked_at TEXT,
+        created_at TEXT NOT NULL,
+        UNIQUE(account_id, url)
+      );
+      CREATE INDEX IF NOT EXISTS idx_price_watchers_due ON price_watchers(status, last_checked_at);
+      CREATE INDEX IF NOT EXISTS idx_price_watchers_account ON price_watchers(account_id, created_at DESC);
+
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,
         label TEXT NOT NULL,

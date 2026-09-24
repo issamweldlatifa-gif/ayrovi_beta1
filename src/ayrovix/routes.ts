@@ -18,6 +18,7 @@ import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
 import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
+import { warmIsolation } from '../services/imageIsolation';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
@@ -399,6 +400,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const candidates = deduped;
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(candidates);
+      // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
+      warmIsolation([...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])], 8);
       const securedPrice = tokenizedDetectedPrice(priceResult);
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
@@ -466,6 +469,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       });
       const securedProduct = tokenizedProduct(result.product);
       const securedAlternates = tokenizedCandidates(result.alternates);
+      // La galerie complète du produit est préparée en arrière-plan (isolation + WebP).
+      warmIsolation([...securedProduct.images, securedProduct.image, ...securedAlternates.map((item) => item.image)], 10);
       const historyMatch = securedProduct.price != null ? null : securedAlternates[0];
       if (req.body?.recordHistory !== false) rememberAuthenticatedHistory(db, req, {
         eventId,

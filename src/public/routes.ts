@@ -6,7 +6,10 @@ import { cardGatewayAvailable } from '../services/paymentGateway';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
-import { getIsolatedImage, isPublicHttpUrl, readCachedPng } from '../services/imageIsolation';
+import { getIsolatedImage, isPublicHttpUrl, readCachedPng, fetchRemoteImage, warmIsolation } from '../services/imageIsolation';
+import path from 'node:path';
+import fs from 'node:fs';
+import sharp from 'sharp';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { resolveActiveHeroVisual } from '../services/heroVisual';
@@ -130,7 +133,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     if (!isPublicHttpUrl(url)) { res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' }); return; }
     try {
       const meta = await getIsolatedImage(url);
-      if (meta.kind === 'uniform' && meta.file) {
+      if (meta.file) {
         const png = readCachedPng(meta.file);
         res.setHeader('Content-Type', 'image/png');
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
@@ -144,6 +147,42 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.redirect(302, url);
   });
 
+
+  // PROXY IMAGES PROPRE AU SITE (24/09/2026) : l'image marchand est redimensionnée
+  // (WebP) et servie depuis notre domaine — pas de hotlink fragile, des octets
+  // divisés, et un cache disque par (URL, largeur). Le rendu reste chaîné côté
+  // client : isolé → proxy → original.
+  const PROXY_WIDTHS = new Set([156, 320, 480, 760, 1000]);
+  router.get('/media/img', async (req, res) => {
+    const url = String(req.query.u || '');
+    const width = Number(req.query.w || 760);
+    if (!isPublicHttpUrl(url)) { res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' }); return; }
+    if (!PROXY_WIDTHS.has(width)) { res.status(400).json({ success: false, error: 'INVALID_WIDTH' }); return; }
+    try {
+      const crypto = await import('node:crypto');
+      const dir = process.env.AYROVI_PROXY_CACHE_DIR || path.resolve(process.cwd(), 'data', 'media-proxy');
+      const key = crypto.createHash('sha256').update(`${width}|${url}`).digest('hex').slice(0, 32);
+      const file = path.join(dir, `${key}.webp`);
+      if (!fs.existsSync(file)) {
+        const buffer = await fetchRemoteImage(url);
+        const resized = await sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 })
+          .rotate()
+          .resize({ width, withoutEnlargement: true })
+          .webp({ quality: 78 })
+          .toBuffer();
+        fs.mkdirSync(dir, { recursive: true });
+        fs.writeFileSync(file, resized);
+      }
+      res.setHeader('Content-Type', 'image/webp');
+      res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=2592000');
+      res.send(fs.readFileSync(file));
+      return;
+    } catch {
+      // réseau/format — l'original reste le repli naturel du client.
+      res.setHeader('Cache-Control', 'public, max-age=600');
+      res.redirect(302, url);
+    }
+  });
 
   router.post('/pricing/preview', (req, res) => {
     const originalPrice = Number(req.body?.originalPrice);

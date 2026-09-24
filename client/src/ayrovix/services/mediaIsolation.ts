@@ -11,6 +11,13 @@ export function isolatedMediaUrl(url: string | null | undefined): string | null 
   return `/api/public/media/isolated?url=${encodeURIComponent(url)}`;
 }
 
+/** REDIMENSIONNEMENT par NOTRE serveur (WebP) — plus léger et sans hotlink fragile. */
+export function proxiedMediaUrl(url: string | null | undefined, width = 760): string | null {
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) return null;
+  return `/api/public/media/img?u=${encodeURIComponent(url)}&w=${width}`;
+}
+
 /**
  * [iso(u0), u0, iso(u1), u1, …] — CHAQUE image tente d'abord sa version isolée,
  * puis retombe sur son original si le PNG isolé échoue (cycle onError du cadre).
@@ -22,6 +29,8 @@ export function withIsolation(urls: string[]): string[] {
   for (const url of urls) {
     const isolated = isolatedMediaUrl(url);
     if (isolated) output.push(isolated);
+    const proxied = proxiedMediaUrl(url);
+    if (proxied) output.push(proxied);
     output.push(url);
   }
   return output;

@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 import {
   Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Check, Hourglass, Image as ImageIcon,
-  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, Info, ShieldCheck, ShoppingBag, Person, Tag, Camera,
+  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, Info, ShieldCheck, ShoppingBag, Person, Tag,
 } from '../../components/QatafoIcons';
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -122,6 +122,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   const markIsolatedMiss = (url: string) => setIsolatedMiss((prev) => (prev[url] ? prev : { ...prev, [url]: true }));
   const withIsolated = (url: string) => isolatedSrc(url, isolatedMiss);
   const [lightboxOpen, setLightboxOpen] = useState(false);
+  // SWIPE sur la grande photo (remplace les flèches supprimées — référence Zalando).
+  const stageTouchStart = useRef<number | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [recommendOpen, setRecommendOpen] = useState(false);
   const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false);
@@ -340,7 +342,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:items-start">
         {/* Media — canvas studio unifié, image spacieuse, pure et confortable sans assombrissement */}
         <div className="flow-media min-w-0">
-          <div className="relative overflow-hidden rounded-2xl bg-[#f6f6f6]">
+          <div className="relative overflow-hidden rounded-none -mx-3 sm:mx-0 sm:rounded-2xl bg-[#f6f6f6]">
             {/* Overlay Badges */}
             <div className="absolute inset-x-3.5 top-3.5 z-10 flex items-center justify-between pointer-events-none">
               {promo ? (
@@ -370,7 +372,18 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             {/* Stage de l'image — ratio ZALANDO RÉEL 9/13 (packshot mesuré 1000×1444),
                 canvas studio #f6f6f6 (couleur mesurée au pixel près sur la page marchand),
                 image entière en object-fit contain — jamais de rognage du produit. */}
-            <div className="ayrovix-product-gallery-stage bg-[#f6f6f6] relative flex aspect-[9/13] w-full items-center justify-center p-0 overflow-hidden">
+            <div
+              className="ayrovix-product-gallery-stage bg-[#f6f6f6] relative flex aspect-[9/13] w-full items-center justify-center p-0 overflow-hidden"
+              onTouchStart={(event) => { stageTouchStart.current = event.touches[0]?.clientX ?? null; }}
+              onTouchEnd={(event) => {
+                const start = stageTouchStart.current;
+                stageTouchStart.current = null;
+                if (start == null || galleryImages.length < 2) return;
+                const delta = (event.changedTouches[0]?.clientX ?? start) - start;
+                if (Math.abs(delta) < 40) return;
+                if (delta < 0) showNext(); else showPrev();
+              }}
+            >
               {activeImage ? (
                 <button
                   type="button"
@@ -397,21 +410,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={48} /></div>
               )}
 
-              {/* Bouton de recherche visuelle (flottant en bas à droite, identique Zalando Screenshot 2) */}
-              <div className="absolute bottom-3.5 right-3.5 z-10">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const searchTrigger = document.querySelector('[data-ayrovi-search-trigger]') as HTMLElement;
-                    if (searchTrigger) searchTrigger.click();
-                    else window.dispatchEvent(new CustomEvent('ayrovi:new-search'));
-                  }}
-                  aria-label={tr('Recherche visuelle', 'بحث بصري')}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-black text-white shadow-lg transition hover:scale-105 active:scale-95"
-                >
-                  <Camera size={19} />
-                </button>
-              </div>
+              {/* Bouton de recherche visuelle supprimé (décision client 24/09/2026) —
+                  la recherche visuelle reste accessible depuis Lens. */}
 
               {/* Indicateur de pagination photo 1 / N (en bas à gauche, identique Zalando Screenshot 2) */}
               {galleryImages.length > 1 && (
@@ -422,39 +422,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 </div>
               )}
 
-              {/* Flèches de navigation carrousel */}
-              {galleryImages.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setImageIndex((c) => (c > 0 ? c - 1 : galleryImages.length - 1));
-                    }}
-                    aria-label={tr('Photo précédente', 'الصورة السابقة')}
-                    className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-ink shadow-md hover:bg-white transition"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setImageIndex((c) => (c < galleryImages.length - 1 ? c + 1 : 0));
-                    }}
-                    aria-label={tr('Photo suivante', 'الصورة التالية')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-ink shadow-md hover:bg-white transition"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </>
-              )}
+              {/* Flèches supprimées (décision client 24/09/2026 — référence Zalando) :
+                  navigation par SWIPE sur la photo + vignettes ci-dessous. */}
             </div>
 
-            {/* Bandeau Article Populaire (identique Zalando Screenshot 2) */}
-            <div className="w-full bg-[#495057] text-white py-2 px-3 text-center text-xs font-bold tracking-wide">
-              {tr('Article populaire', 'منتج شائع ورائج')}
-            </div>
+            {/* Bandeau « Article populaire » supprimé (décision client 24/09/2026). */}
 
             {/* Vignettes d'angles complémentaires — TOUTES les images du marchand (pas seulement la première),
                 chacune isolée en premier avec repli brut, ratio Zalando 9/13, sans rognage. */}

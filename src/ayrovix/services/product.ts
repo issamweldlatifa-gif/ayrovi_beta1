@@ -1,5 +1,6 @@
 import { isSelectableVariant } from '../../../shared/variantPolicy';
 import type { QatafoDatabase } from '../../db/database';
+import { createHash } from 'node:crypto';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyrovixCandidate, AyrovixProduct } from '../types';
@@ -138,9 +139,45 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
   const url = sanitizeProductUrl(scraper.cleanPastedUrl(rawUrl));
   if (!url) throw new InvalidUrlError('Ce lien ne peut pas être analysé.');
 
+  // PROFIL PRODUIT PERSISTANT (24/09/2026 — «كل الصور وكل المعلومات لكل منتج») :
+  // une fiche crawlée (description complète, TOUTES les photos, images par
+  // couleur, tailles, disponibilité) est stockée par URL et resservie telle
+  // quelle pendant 6 h — le premier scan paie le crawl, TOUS les suivants sont
+  // instantanés et complets, même depuis la grille Lens (enrichissement).
+  const urlHash = createHash('sha256').update(url).digest('hex');
+  const profileTtlMs = 6 * 3_600_000;
+  try {
+    const cached = db.get<{ payload: string; fetched_at: string }>(
+      'SELECT payload,fetched_at FROM product_profiles WHERE url_hash=?', urlHash,
+    );
+    if (cached && Date.now() - Date.parse(cached.fetched_at) < profileTtlMs) {
+      const product = JSON.parse(cached.payload) as AyrovixProduct;
+      if (product?.title) {
+        const catalog = catalogSearch(db, null, product.title, 4);
+        const alternates = filterDisplayableCandidates(
+          catalog.map((candidate) => ({ ...candidate, match: scoreCandidate(null, product.title, candidate) })),
+          8,
+        );
+        return { product, alternates };
+      }
+    }
+  } catch { /* profil illisible → recrawl normal */ }
+
   try {
     const scraped = await scraper.scrapeProduct(url);
     if (scraped?.title) {
+      const product = toAyrovixProduct(db, scraped);
+      try {
+        db.run(`INSERT INTO product_profiles (id,url_hash,url,payload,images_count,has_description,fetched_at)
+          VALUES (?,?,?,?,?,?,?)
+          ON CONFLICT(url_hash) DO UPDATE SET payload=excluded.payload,
+            images_count=excluded.images_count, has_description=excluded.has_description,
+            fetched_at=excluded.fetched_at`,
+          `profile_${urlHash.slice(0, 24)}`, urlHash, url,
+          JSON.stringify(product), product.images.length,
+          (product.description || '').trim().length >= 40 ? 1 : 0, new Date().toISOString(),
+        );
+      } catch { /* persistance best-effort — le produit reste servi */ }
       const catalog = catalogSearch(db, null, scraped.title, 4);
       const external = scraped.sourcePrice > 0 ? [] : await externalProductSearch(scraped.title, 6).catch(() => []);
       const alternates = filterDisplayableCandidates(
@@ -149,7 +186,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
       );
       // A rendered/direct merchant price avoids a paid text search. If the
       // price is still absent, return the real page diagnostics plus alternates.
-      return { product: toAyrovixProduct(db, scraped), alternates };
+      return { product, alternates };
     }
   } catch (e) {
     if (e instanceof UnsafeUrlError || (e as any)?.code === 'UNSAFE_URL') {

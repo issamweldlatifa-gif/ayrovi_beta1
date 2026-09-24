@@ -16,6 +16,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { segmentBuffer } from './segmentation';
 
 const MAX_DIMENSION = 900;
 const MAX_BYTES = 8 * 1024 * 1024;
@@ -29,7 +30,7 @@ const FEATHER_TOLERANCE = 44;
 /** Au-dessus de ce niveau de gris moyen, on considère le fond « blanc ». */
 const WHITE_LEVEL = 241;
 
-export type IsolationKind = 'white' | 'uniform' | 'complex';
+export type IsolationKind = 'white' | 'uniform' | 'complex' | 'segmented';
 
 export interface EdgeAnalysis {
   kind: IsolationKind;
@@ -263,11 +264,20 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
   const pngPath = path.join(dir, `${key}.png`);
   try {
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as CachedIsolation;
-    if (meta.kind === 'uniform' && meta.file && fs.existsSync(path.join(dir, meta.file))) return meta;
+    if (meta.file && fs.existsSync(path.join(dir, meta.file))) return meta;
     return meta;
   } catch { /* pas encore en cache */ }
   const buffer = await fetchRemoteImage(rawUrl);
-  const result = await isolateBuffer(buffer);
+  let result = await isolateBuffer(buffer);
+  // 3ᵉ couche (24/09/2026) : fond COMPLEXE (pièce, miroir, extérieur) → le modèle
+  // local u2netp prend le relais. Absence du runtime/modèle → null silencieux et
+  // le comportement historique (original intact) s'applique.
+  if (result.kind === 'complex' && !result.png) {
+    try {
+      const segmented = await segmentBuffer(buffer);
+      if (segmented) result = { kind: 'segmented', png: segmented };
+    } catch { /* repli : original */ }
+  }
   const meta: CachedIsolation = { kind: result.kind, file: null };
   if (result.png) {
     fs.mkdirSync(dir, { recursive: true });
@@ -277,6 +287,14 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(metaPath, JSON.stringify(meta));
   return meta;
+}
+
+/** Chauffe le cache en arrière-plan — le premier visiteur ne paie plus le travail. */
+export function warmIsolation(urls: Array<string | null | undefined>, limit = 6): void {
+  const targets = urls.filter((url): url is string => Boolean(url && /^https?:\/\//i.test(url))).slice(0, limit);
+  for (const url of targets) {
+    void getIsolatedImage(url).catch(() => { /* chauffe best-effort */ });
+  }
 }
 
 export function readCachedPng(file: string): Buffer {

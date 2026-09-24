@@ -1,7 +1,7 @@
 {
   "name": "ayrovi",
   "version": "3.10.4",
-  "description": "AYSONIC \u2014 Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
+  "description": "AYSONIC — Universal Cross-Border Shopping & Visual AI Platform (React + Vite + TypeScript)",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
@@ -79,6 +79,7 @@
     "mailparser": "^3.9.17",
     "motion": "^13.1.0",
     "multer": "^2.4.0",
+    "onnxruntime-web": "^1.30.0",
     "pdf-lib": "^1.17.1",
     "pdf-to-img": "^5.0.0",
     "postcss": "^8.5.26",
