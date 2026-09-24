@@ -1,5 +1,13 @@
 import type { AyrovixCandidate } from '../types';
 import { isUnsafeHostname } from '../../services/safeUrl';
+import { isUsedListing } from './productCondition';
+
+// NEUF UNIQUEMENT (demande client 24/09/2026) : toute annonce explicitement
+// d'occasion est écartée — une seule photo, pas de fiche complète, isolation
+// cassée. Appliqué aux deux niveaux (strict et lenient) ci-dessous.
+function notUsed(candidate: AyrovixCandidate): boolean {
+  return !isUsedListing({ title: candidate.title, description: candidate.description, sourceUrl: candidate.sourceUrl });
+}
 
 /**
  * One policy for every AYROVIX surface (Lens, QR, Assistant and alternates).
@@ -52,6 +60,7 @@ export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 8
   const seen = new Set<string>();
   return items
     .filter(isDisplayableCandidate)
+    .filter(notUsed)
     .map(withDisplayRating)
     .filter((item) => {
       const key = `${item.sourceUrl}|${item.title.toLowerCase()}`;
@@ -67,6 +76,7 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 8): A
   const seen = new Set<string>();
   return items
     .filter(isLenientCandidate)
+    .filter(notUsed)
     .map(withDisplayRating)
     .filter((item) => {
       const key = `${item.sourceUrl}|${item.title.toLowerCase()}`;

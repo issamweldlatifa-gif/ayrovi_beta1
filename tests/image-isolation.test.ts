@@ -9,7 +9,7 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import request from 'supertest';
-import { analyzeEdges, chromaKey, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
+import { analyzeEdges, chromaKey, chromaKeyConnected, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
 import { app } from '../src/server';
 
 const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-isolated-'));
@@ -125,5 +125,36 @@ describe('isolation — endpoint public', () => {
     expect(response.status).toBe(400);
     expect(spy).not.toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('isolation — chroma-key CONNECTÉ (fix anti-fantôme 24/09/2026)', () => {
+  it('ne mange PAS un produit clair sur fond clair (l’ancien global le rendait translucide)', () => {
+    // Produit #fcfcfc sur fond #eee : distance 14 — l'ancien chroma-key GLOBAL
+    // l'effaçait entièrement ; le key CONNECTÉ ne retire que le fond relié au bord.
+    const image = rawImage(40, 40, (x, y) => (x > 10 && x < 30 && y > 10 && y < 30 ? [252, 252, 252] : [238, 238, 238]));
+    chromaKeyConnected(image, { r: 238, g: 238, b: 238 }, 12, 26);
+    const alpha = (x: number, y: number) => image.data[(y * 40 + x) * 4 + 3];
+    expect(alpha(5, 5)).toBe(0);      // fond connecté au bord → transparent
+    expect(alpha(20, 20)).toBe(255);  // produit CLAIR au centre → opaque
+    expect(alpha(15, 15)).toBe(255);  // cœur du produit intact
+  });
+
+  it('isole encore un produit contrasté sur fond gris (non-régression)', () => {
+    const image = rawImage(40, 40, (x, y) => (x > 10 && x < 30 && y > 10 && y < 30 ? [200, 30, 30] : [221, 221, 221]));
+    chromaKeyConnected(image, { r: 221, g: 221, b: 221 });
+    const alpha = (x: number, y: number) => image.data[(y * 40 + x) * 4 + 3];
+    expect(alpha(5, 5)).toBe(0);
+    expect(alpha(20, 20)).toBe(255);
+  });
+
+  it('pipeline : un produit gris clair sur fond gris reste OPAQUE après isolateBuffer', async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#ececec"/><rect x="50" y="50" width="100" height="100" fill="#dddddd"/></svg>`;
+    const result = await isolateBuffer(await sharp(Buffer.from(svg)).png().toBuffer());
+    expect(result.kind).toBe('uniform');
+    expect(result.png).not.toBeNull();
+    const { data, info } = await sharp(result.png!).raw().toBuffer({ resolveWithObject: true });
+    const centerAlpha = data[((info.height * 100 + 100) * info.channels) + 3];
+    expect(centerAlpha).toBeGreaterThan(200); // le produit n'est pas un fantôme
   });
 });

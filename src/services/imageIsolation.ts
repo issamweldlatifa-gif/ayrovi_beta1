@@ -47,33 +47,138 @@ export interface RawImage {
 /* ── 1. Analyse des bords — PURE ─────────────────────────────────── */
 export function analyzeEdges(image: RawImage): EdgeAnalysis {
   const { data, width, height } = image;
-  const samples: Array<[number, number, number]> = [];
   const band = 3; // on goûte plusieurs pixels d'épaisseur pour résister au bruit JPEG
+  const top: Array<[number, number, number]> = [];
+  const bottom: Array<[number, number, number]> = [];
+  const left: Array<[number, number, number]> = [];
+  const right: Array<[number, number, number]> = [];
   for (let y = 0; y < band; y++) {
     for (let x = 0; x < width; x += Math.max(1, Math.floor(width / 64))) {
-      push(x, y); push(x, height - 1 - y);
+      push(x, y, top); push(x, height - 1 - y, bottom);
     }
   }
   for (let x = 0; x < band; x++) {
     for (let y = 0; y < height; y += Math.max(1, Math.floor(height / 64))) {
-      push(x, y); push(width - 1 - x, y);
+      push(y * width, y, left); push(y * width + width - 1, y, right);
     }
   }
-  function push(x: number, y: number) {
+  function push(x: number, y: number, into: Array<[number, number, number]>) {
     const offset = (y * width + x) * 4;
-    if (offset + 2 < data.length) samples.push([data[offset], data[offset + 1], data[offset + 2]]);
+    if (offset + 2 < data.length) into.push([data[offset], data[offset + 1], data[offset + 2]]);
   }
-  const count = samples.length || 1;
-  const mean = samples.reduce((acc, [r, g, b]) => [acc[0] + r / count, acc[1] + g / count, acc[2] + b / count] as [number, number, number], [0, 0, 0]);
-  const variance = samples.reduce((acc, [r, g, b]) => acc + ((r - mean[0]) ** 2 + (g - mean[1]) ** 2 + (b - mean[2]) ** 2) / count, 0) / 3;
-  const spread = Math.sqrt(variance);
-  const color = { r: Math.round(mean[0]), g: Math.round(mean[1]), b: Math.round(mean[2]) };
-  if (spread > UNIFORM_SPREAD) return { kind: 'complex', color, spread: Math.round(spread * 10) / 10 };
-  if (color.r >= WHITE_LEVEL && color.g >= WHITE_LEVEL && color.b >= WHITE_LEVEL) return { kind: 'white', color, spread: Math.round(spread * 10) / 10 };
-  return { kind: 'uniform', color, spread: Math.round(spread * 10) / 10 };
+  // ROBUSTE + PAR CÔTÉ (fix 24/09/2026) : sur un vrai packshot, les pieds du
+  // produit TOUCHENT souvent le bord bas — côté bas pollué ne doit pas disqualifier
+  // l'image entière (l'ancienne moyenne globale la classait « complexe » et le
+  // fond restait non isolé). Verdict : uniforme si ≥3 côtés sur 4 le sont,
+  // médiane par côté pour ignorer badges/ombres douces.
+  const sides = [top, bottom, left, right];
+  const medians = sides.map((side) => ([0, 1, 2] as const).map((channel) => {
+    const column = side.map((sample) => sample[channel]).sort((a, b) => a - b);
+    return column[Math.floor(column.length / 2)] ?? 0;
+  }));
+  const tolerance = 18;
+  const sideStats = sides.map((side, index) => {
+    const median = medians[index];
+    const close = side.filter((sample) => Math.max(Math.abs(sample[0] - median[0]), Math.abs(sample[1] - median[1]), Math.abs(sample[2] - median[2])) <= tolerance).length;
+    return { median, uniform: side.length > 0 && close / side.length >= 0.9 };
+  });
+  const uniformCount = sideStats.filter((stat) => stat.uniform).length;
+  const reference = medians[0];
+  const median = ([0, 1, 2] as const).map((channel) => Math.round(
+    medians.filter((_, index) => sideStats[index].uniform)
+      .map((values) => values[channel])
+      .sort((a, b) => a - b)
+      .at(Math.floor(medians.filter((_, index) => sideStats[index].uniform).length / 2)) ?? reference[channel],
+  ));
+  const color = { r: median[0], g: median[1], b: median[2] };
+  if (uniformCount < 3) return { kind: 'complex', color, spread: 255 };
+  if (color.r >= WHITE_LEVEL && color.g >= WHITE_LEVEL && color.b >= WHITE_LEVEL) return { kind: 'white', color, spread: 0 };
+  return { kind: 'uniform', color, spread: 0 };
 }
 
-/* ── 2. Chroma-key — PURE : le fond uniforme devient transparent ── */
+/* ── 2. Chroma-key CONNECTÉ (fix 24/09/2026 — «الصورة تتشوه») ─────────────
+ * L'ancien chroma-key GLOBAL retirait TOUT pixel proche du fond, y compris le
+ * PRODUIT lui-même : un article blanc/gris clair sur fond studio clair devenait
+ * un fantôme translucide. Désormais on ne retire que les pixels RELIÉS AU BORD
+ * de l'image (flood-fill) : le fond est contigu au cadre, le produit non —
+ * un tee-shirt blanc au centre reste donc opaque même s'il a la couleur du fond.
+ */
+export function chromaKeyConnected(
+  image: RawImage,
+  background: { r: number; g: number; b: number },
+  coreTolerance = CORE_TOLERANCE,
+  featherTolerance = FEATHER_TOLERANCE,
+): void {
+  const { data, width, height } = image;
+  const total = width * height;
+  const distanceOf = (pixel: number): number => {
+    const offset = pixel * 4;
+    return Math.max(
+      Math.abs(data[offset] - background.r),
+      Math.abs(data[offset + 1] - background.g),
+      Math.abs(data[offset + 2] - background.b),
+    );
+  };
+  const isBackground = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  let head = 0;
+  let tail = 0;
+  const push = (pixel: number) => {
+    if (!isBackground[pixel] && distanceOf(pixel) <= coreTolerance) {
+      isBackground[pixel] = 1;
+      queue[tail++] = pixel;
+    }
+  };
+  for (let x = 0; x < width; x++) { push(x); push((height - 1) * width + x); }
+  for (let y = 0; y < height; y++) { push(y * width); push(y * width + width - 1); }
+  while (head < tail) {
+    const pixel = queue[head++];
+    const x = pixel % width;
+    const y = (pixel - x) / width;
+    if (x > 0) push(pixel - 1);
+    if (x < width - 1) push(pixel + 1);
+    if (y > 0) push(pixel - width);
+    if (y < height - 1) push(pixel + width);
+  }
+  // Le fond connecté devient transparent…
+  for (let pixel = 0; pixel < total; pixel++) {
+    if (isBackground[pixel]) data[pixel * 4 + 3] = 0;
+  }
+  // …et UNE seule bande de flou sur la vraie frontière (anticrénelage).
+  for (let pixel = 0; pixel < total; pixel++) {
+    if (isBackground[pixel]) continue;
+    const offset = pixel * 4;
+    if (data[offset + 3] === 0) continue;
+    const x = pixel % width;
+    const touchesBackground = (x > 0 && isBackground[pixel - 1])
+      || (x < width - 1 && isBackground[pixel + 1])
+      || (pixel >= width && isBackground[pixel - width])
+      || (pixel + width < total && isBackground[pixel + width]);
+    if (!touchesBackground) continue;
+    const distance = distanceOf(pixel);
+    if (distance <= coreTolerance) data[offset + 3] = 0;
+    else if (distance <= featherTolerance) data[offset + 3] = Math.round((data[offset + 3] * (distance - coreTolerance)) / (featherTolerance - coreTolerance));
+  }
+}
+
+/** Part (0..1) de pixels quasi identiques au fond — détecte les produits clairs sur fond clair. */
+export function backgroundLikeShare(image: RawImage, background: { r: number; g: number; b: number }, tolerance = FEATHER_TOLERANCE): number {
+  const { data } = image;
+  let close = 0;
+  let count = 0;
+  for (let offset = 0; offset < data.length; offset += 16) {
+    count += 1;
+    const distance = Math.max(
+      Math.abs(data[offset] - background.r),
+      Math.abs(data[offset + 1] - background.g),
+      Math.abs(data[offset + 2] - background.b),
+    );
+    if (distance <= tolerance) close += 1;
+  }
+  return count ? close / count : 0;
+}
+
+/* ── 2bis. Ancien chroma-key GLOBAL (conservé pour les tests purs) ────────── */
 export function chromaKey(image: RawImage, background: { r: number; g: number; b: number }): Buffer {
   const { data } = image;
   for (let offset = 0; offset < data.length; offset += 4) {
@@ -96,8 +201,18 @@ export async function isolateBuffer(buffer: Buffer): Promise<{ kind: IsolationKi
   const image: RawImage = { data, width: info.width, height: info.height, channels: 4 };
   const analysis = analyzeEdges(image);
   if (analysis.kind !== 'uniform') return { kind: analysis.kind, png: null };
-  const keyed = chromaKey(image, analysis.color);
-  const png = await sharp(keyed, { raw: { width: image.width, height: image.height, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
+  // Adaptatif : produit CLAIR sur fond CLAIR (part élevée à seuil large) → seuils
+  // resserrés ; le chroma-key CONNECTÉ ne retire de toute façon que le fond relié
+  // au bord, jamais le produit au centre.
+  const share = backgroundLikeShare(image, analysis.color);
+  const light = share > 0.55;
+  const coreUsed = light ? 12 : CORE_TOLERANCE;
+  // Garde anti-fantôme (fix 24/09/2026) : si QUASI TOUTE l'image (produit compris)
+  // est indistinguable du fond MÊME au seuil serré, isoler reviendrait à effacer
+  // le produit → on ne touche à rien, l'original (multiply) est plus fidèle.
+  if (backgroundLikeShare(image, analysis.color, coreUsed) > 0.97) return { kind: 'uniform', png: null };
+  chromaKeyConnected(image, analysis.color, coreUsed, light ? 26 : FEATHER_TOLERANCE);
+  const png = await sharp(image.data, { raw: { width: image.width, height: image.height, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
   return { kind: 'uniform', png };
 }
 

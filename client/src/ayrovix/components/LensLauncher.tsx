@@ -534,6 +534,46 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     setProduct(candidateToProduct(candidate));
     setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
     enterStage('product');
+    // ENRICHISSEMENT PROGRESSIF (fix 24/09/2026 — «الوصف منقوص وصور ناقصة») :
+    // la grille de recherche ne donne qu'un extrait (snippet SerpAPI). Dès que
+    // la page produit est ouverte, on relit la VRAIE fiche marchand : description
+    // complète, TOUTES les photos, images par couleur, tailles, disponibilité.
+    // L'affichage n'attend jamais ce rappel — les données arrivent en surcouche.
+    const enrichUrl = candidate.sourceUrl;
+    if (!enrichUrl || !/^https?:\/\//i.test(enrichUrl)) return;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 12_000);
+    fetch('/api/ayrovix/analyze-url', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url: enrichUrl, recordHistory: false, channel: 'url' }),
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('ENRICH_UNAVAILABLE'))))
+      .then((payload) => {
+        const full = payload?.data?.product;
+        if (!full) return;
+        setProduct((current) => {
+          if (!current || current.sourceUrl !== enrichUrl) return current; // l'utilisateur a changé de produit
+          const images = [...new Set([...(current.images || []), ...(full.images || [])].filter(Boolean))];
+          const colorImages = { ...(full.colorImages || {}) };
+          if (current.colorImages) for (const [key, set] of Object.entries(current.colorImages)) colorImages[key] = [...new Set([...(colorImages[key] || []), ...set])];
+          const description = (full.description || '').trim().length > (current.description || '').trim().length ? full.description : current.description;
+          return {
+            ...current,
+            description,
+            images,
+            colorImages: Object.keys(colorImages).length ? colorImages : current.colorImages ?? null,
+            image: current.image || full.image || '',
+            sizes: current.sizes.length ? current.sizes : full.sizes || [],
+            colors: current.colors.length ? current.colors : full.colors || [],
+            brand: current.brand || full.brand || null,
+            availability: full.availability && full.availability !== 'unknown' ? full.availability : current.availability,
+          };
+        });
+      })
+      .catch(() => { /* l'extrait reste affiché — jamais de page cassée */ })
+      .finally(() => clearTimeout(timeout));
   };
 
   const handleOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
