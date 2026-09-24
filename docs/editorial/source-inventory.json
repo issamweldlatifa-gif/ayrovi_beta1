@@ -10934,8 +10934,8 @@
     {
       "file": "client/src/ayrovix/components/lens-product-card.css",
       "domain": "lens",
-      "sha256": "10df13dc874ac46dc1a7a83b8fd0f6cd73c337f61ed43d55a16fa61b13ecd482",
-      "lines": 20,
+      "sha256": "b6ea0829ea2a565668e71d75014eef8564a2527f0bc62cd71f2381b76665c5ff",
+      "lines": 26,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -10944,7 +10944,9 @@
       "colors": [
         "#000",
         "#595959",
+        "#d9d9d9",
         "#dc2626",
+        "#e5b400",
         "#f0f2f2",
         "#f6f6f6",
         "#fff",

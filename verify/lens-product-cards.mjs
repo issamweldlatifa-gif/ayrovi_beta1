@@ -30,8 +30,8 @@ try{
    for(const width of [320,390,768,1360]){
     await p.setViewportSize({width,height:844});await p.waitForTimeout(60);
     const g=await first.evaluate(n=>{const media=n.querySelector('.lens-card-media'),heart=n.querySelector('.lens-card-favorite');const m=media.getBoundingClientRect(),h=heart.getBoundingClientRect();return {ratio:m.width/m.height,radius:getComputedStyle(media).borderRadius,fit:getComputedStyle(media.querySelector('img')).objectFit,heart:{w:h.width,h:h.height,round:getComputedStyle(heart).borderRadius,bg:getComputedStyle(heart).backgroundColor},title:getComputedStyle(n.querySelector('h4')).fontWeight,price:getComputedStyle(n.querySelector('.lens-card-price')).fontWeight,font:getComputedStyle(n).fontFamily,overflow:document.documentElement.scrollWidth>innerWidth};});
-    check(`${width}: portrait image and round corners`,Math.abs(g.ratio-2/3)<.01&&parseFloat(g.radius)>=12&&g.fit==='contain',g);
-    check('white 44px favorite circle',g.heart.w>=44&&g.heart.h>=44&&g.heart.round==='50%'&&g.heart.bg==='rgb(255, 255, 255)',g);
+    check(`${width}: portrait image and round corners`,Math.abs(g.ratio-9/13)<.01&&parseFloat(g.radius)>=12&&g.fit==='cover',g);
+    check('white 40px favorite circle',g.heart.w>=40&&g.heart.h>=40&&g.heart.round==='50%'&&g.heart.bg==='rgb(255, 255, 255)',g);
     check('official typography and regular-weight price',g.font.includes('Zalando Sans')&&g.font.includes('Noto Sans Arabic')&&g.title==='700'&&g.price==='400'&&!g.overflow,g);
    }
    await p.setViewportSize({width:390,height:844});
