@@ -48,6 +48,21 @@ export interface LensTrace {
 const traces = new Map<string, LensTrace>();
 const MAX_TRACES = 500;
 
+/* ── Persistance DB (24/09/2026) : le Map en mémoire (≤500) disparaît au
+ * redémarrage — le rapport admin p50/p95 doit survivre. Le store est
+ * injecté par src/db/database.ts (aucune dépendance directe better-sqlite3
+ * ici), l'écriture est best-effort : une panne DB n'casse JAMAIS le pipeline
+ * Lens. Aucune image, aucun texte produit — uniquement durées/tailles/IDs. */
+interface LensTraceStore {
+  save: (requestId: string, traceJson: string, totalBackendMs: number | null, createdAt: string) => void;
+  loadRecent: (limit: number) => Array<{ trace: string }>;
+}
+let traceStore: LensTraceStore | null = null;
+
+export function registerLensTracePersistence(store: LensTraceStore): void {
+  traceStore = store;
+}
+
 export function startTrace(requestId: string): LensTrace {
   const t: LensTrace = { requestId, startedAt: new Date().toISOString() };
   traces.set(requestId, t);
@@ -66,8 +81,19 @@ export function endTrace(trace: LensTrace): void {
   // مثال:
   // [LensTrace ayx_c4d9...] {"requestId":"ayx_c4d9...","normalizeMs":310,"serpApiTotalMs":3300,...}
   console.log(`[LensTrace ${trace.requestId}] ${JSON.stringify(trace)}`);
-  // اختياري: حفظ في DB للتحليل (بدون صورة)
-  // db.run('INSERT INTO ayrovix_lens_traces (request_id, trace, created_at) VALUES (?,?,?)', trace.requestId, JSON.stringify(trace), new Date().toISOString());
+  // Persistance DB (24/09/2026) — best-effort, jamais bloquante.
+  if (traceStore) {
+    try {
+      traceStore.save(
+        trace.requestId,
+        JSON.stringify(trace),
+        Number.isFinite(trace.totalBackendMs) ? trace.totalBackendMs! : null,
+        trace.startedAt,
+      );
+    } catch (error) {
+      console.warn(`[LensTrace ${trace.requestId}] persistance DB ignorée:`, error instanceof Error ? error.message : error);
+    }
+  }
 }
 
 export function getTrace(requestId: string): LensTrace | undefined {
@@ -106,7 +132,23 @@ export interface LensPerformanceReport {
 }
 
 export function lensPerformanceReport(): LensPerformanceReport {
-  const recent = Array.from(traces.values());
+  // 24/09/2026 : échantillon DB (survit aux redémarrages) ∪ Map vivant —
+  // dédupliqué par requestId, le vivant fait foi (valeurs plus fraîches).
+  const merged = new Map<string, LensTrace>();
+  if (traceStore) {
+    try {
+      for (const row of traceStore.loadRecent(2000)) {
+        try {
+          const parsed = JSON.parse(row.trace) as LensTrace;
+          if (parsed && typeof parsed.requestId === 'string') merged.set(parsed.requestId, parsed);
+        } catch { /* ligne corrompue : on l'ignore honnêtement */ }
+      }
+    } catch (error) {
+      console.warn('[LensTrace] lecture DB ignorée:', error instanceof Error ? error.message : error);
+    }
+  }
+  for (const trace of traces.values()) merged.set(trace.requestId, trace);
+  const recent = Array.from(merged.values());
   const withPipeline = recent.filter((trace) => typeof trace.pipelineCacheHit === 'boolean');
   return {
     sampleSize: recent.length,

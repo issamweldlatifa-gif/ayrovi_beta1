@@ -76,6 +76,8 @@ export interface AyrovixCandidate {
   priceTnd: number | null;
   priceToken?: string | null;
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
+  /** Preuve de disponibilité marchand (niveaux de confiance 24/09/2026). */
+  availability?: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   rating?: number | null;
   ratingCount?: number | null;
   ratingKind?: 'merchant' | 'match';

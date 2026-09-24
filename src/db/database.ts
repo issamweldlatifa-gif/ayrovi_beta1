@@ -3,6 +3,7 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
+import { registerLensTracePersistence } from '../ayrovix/services/lensPerformanceTrace';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, MAX_ORDER_TOTAL_TND, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { millimes } from '../services/pricing';
@@ -296,6 +297,12 @@ export class QatafoDatabase {
     this.db.pragma('busy_timeout = 5000');
     this.backupBeforeArrivalMultistoreMigration(resolvedPath, existingDatabase);
     this.initSchema();
+    registerLensTracePersistence({
+      save: (requestId, trace, totalBackendMs, createdAt) => {
+        this.db.prepare('INSERT OR REPLACE INTO ayrovix_lens_traces (request_id, trace, total_backend_ms, created_at) VALUES (?, ?, ?, ?)').run(requestId, trace, totalBackendMs, createdAt);
+      },
+      loadRecent: (limit) => this.db.prepare('SELECT trace FROM ayrovix_lens_traces ORDER BY created_at DESC LIMIT ?').all(limit) as Array<{ trace: string }>,
+    });
     this.initErpCoreSchema();
     this.initCatalogueSchema();
     this.initInventorySchema();
@@ -1099,6 +1106,18 @@ export class QatafoDatabase {
       );
       CREATE INDEX IF NOT EXISTS idx_price_watchers_due ON price_watchers(status, last_checked_at);
       CREATE INDEX IF NOT EXISTS idx_price_watchers_account ON price_watchers(account_id, created_at DESC);
+
+      /* LENS PERFORMANCE TRACES (24/09/2026) : persistance des traces de
+       * performance (aucune image, aucun texte produit — uniquement des
+       * durées/tailles/IDs) pour que le rapport admin p50/p95 survit au
+       * redémarrage — le Map en mémoire (≤500) ne suffit plus. */
+      CREATE TABLE IF NOT EXISTS ayrovix_lens_traces (
+        request_id TEXT PRIMARY KEY,
+        trace TEXT NOT NULL,
+        total_backend_ms INTEGER,
+        created_at TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_lens_traces_created ON ayrovix_lens_traces(created_at DESC);
 
       CREATE TABLE IF NOT EXISTS expenses (
         id TEXT PRIMARY KEY,

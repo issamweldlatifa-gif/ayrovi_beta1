@@ -7,7 +7,7 @@ import type { AyrovixCandidate, AyrovixProduct } from '../types';
 import { estimateWithDb } from './currency';
 import { catalogSearch, scoreCandidate, externalProductSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
-import { filterDisplayableCandidates } from './candidatePolicy';
+import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
 
 /**
  * AYROVIX product-link layer.
@@ -178,6 +178,11 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
           (product.description || '').trim().length >= 40 ? 1 : 0, new Date().toISOString(),
         );
       } catch { /* persistance best-effort — le produit reste servi */ }
+      // NIVEAUX DE CONFIANCE : un profil PROUVÉ (description + ≥2 photos)
+            // fait de ce marchand un marchand de confiance pour les prochains Lens.
+      if (product.images.length >= 2 && (product.description || '').trim().length >= 40) {
+        registerTrustedMerchantHost(url);
+      }
       const catalog = catalogSearch(db, null, scraped.title, 4);
       const external = scraped.sourcePrice > 0 ? [] : await externalProductSearch(scraped.title, 6).catch(() => []);
       const alternates = filterDisplayableCandidates(

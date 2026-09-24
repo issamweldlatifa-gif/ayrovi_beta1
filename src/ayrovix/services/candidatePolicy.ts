@@ -27,6 +27,59 @@ export function hasValidProductUrl(raw: unknown): boolean {
   }
 }
 
+/* ── NIVEAUX DE CONFIANCE MARCHAND (24/09/2026, demande client) ──
+ * « trusted »  : notre catalogue, ou un marchand DÉJÀ PROUVÉ (profil complet
+ *                récupéré par le passé : description + ≥2 photos) → priorité
+ *                d'affichage.
+ * « verified » : marchand inconnu qui se PROUVE sur la fiche courante :
+ *                ≥2 images + description réelle + disponibilité explicite.
+ * « unknown »  : tout le reste → affiché APRÈS les deux niveaux supérieurs.
+ * Aucune invention : le trust se gagne par des preuves, jamais par une liste
+ * figée sans historique. */
+export type MerchantTrust = 'trusted' | 'verified' | 'unknown';
+
+const trustedMerchantHosts = new Set<string>();
+
+function hostOf(rawUrl: string): string {
+  try {
+    return new URL(rawUrl).hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
+/** Un profil complet crawlé prouve le marchand (appelé par product profiles). */
+export function registerTrustedMerchantHost(rawUrl: string): void {
+  const host = hostOf(rawUrl);
+  if (host) trustedMerchantHosts.add(host);
+}
+
+export function isTrustedMerchantHost(rawUrl: string): boolean {
+  return trustedMerchantHosts.has(hostOf(rawUrl));
+}
+
+/** Disponibilité explicite uniquement — « unknown » n'est pas une preuve. */
+function hasExplicitAvailability(candidate: AyrovixCandidate): boolean {
+  const availability = (candidate as { availability?: string }).availability;
+  return availability === 'in_stock' || availability === 'limited';
+}
+
+export function merchantTrust(candidate: AyrovixCandidate): MerchantTrust {
+  if (candidate.kind === 'catalog' || isTrustedMerchantHost(candidate.sourceUrl)) return 'trusted';
+  const images = new Set([candidate.image, ...(Array.isArray(candidate.images) ? candidate.images : [])].filter(Boolean));
+  const hasEnoughImages = images.size >= 2;
+  const hasRealDescription = typeof candidate.description === 'string' && candidate.description.trim().length >= 40;
+  if (hasEnoughImages && hasRealDescription && hasExplicitAvailability(candidate)) return 'verified';
+  return 'unknown';
+}
+
+const TRUST_RANK: Record<MerchantTrust, number> = { trusted: 0, verified: 1, unknown: 2 };
+
+function byTrustThenMatch(left: AyrovixCandidate, right: AyrovixCandidate): number {
+  const tierDelta = TRUST_RANK[merchantTrust(left)] - TRUST_RANK[merchantTrust(right)];
+  return tierDelta !== 0 ? tierDelta : right.match - left.match;
+}
+
 export function isDisplayableCandidate(candidate: AyrovixCandidate): boolean {
   return Number.isFinite(Number(candidate.price))
     && Number(candidate.price) > 0
@@ -68,7 +121,7 @@ export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 8
       seen.add(key);
       return true;
     })
-    .sort((left, right) => right.match - left.match)
+    .sort(byTrustThenMatch)
     .slice(0, limit);
 }
 
@@ -84,7 +137,7 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 8): A
       seen.add(key);
       return true;
     })
-    .sort((left, right) => right.match - left.match)
+    .sort(byTrustThenMatch)
     .slice(0, limit);
 }
 
