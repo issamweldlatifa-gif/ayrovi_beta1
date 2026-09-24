@@ -122,7 +122,7 @@ try{
  // All imports also work in the ordinary document, not only the selected screens.
  const ctx=await browser.newContext({viewport:{width:1000,height:900}}),p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'icons'}));await p.locator('[data-icon-gallery]').waitFor();
  const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('101 public icon imports match reference drawings',gallery.count===101&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
- await p.route('**/api/public/commerce-config',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product'}));await p.getByRole('alert').waitFor();
+ await p.route('**/api/public/commerce-config',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product'}));await p.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));await p.getByRole('alert').waitFor();
  check('failed config never invents a payment percentage',!(await p.locator('.flow-product').innerText()).includes('20%'));
  check('failed config disables ordering',await p.locator('.ay-btn-cta').isDisabled());
  await p.unroute('**/api/public/commerce-config');await p.getByRole('button',{name:'Réessayer',exact:true}).click();await p.getByRole('button',{name:/Commander/}).waitFor();check('retry loads actual server conditions',await p.locator('.ay-btn-cta').isEnabled());
