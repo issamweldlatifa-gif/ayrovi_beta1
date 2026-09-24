@@ -70,6 +70,51 @@ function parsePrice(raw: unknown): number {
   return Number.isFinite(value) && value > 0 && value < 1_000_000 ? value : 0;
 }
 
+
+/**
+ * NETTOYAGE DE DESCRIPTION (fix 24/09/2026 — captures client) : le DOM d'une
+ * fiche marchand déborde de bruit — scripts inline (gaDataLayer/GTM…), URLs,
+ * libellés d'interface (Ajouter au panier, Guide des tailles, Qté…), phrases
+ * répétées. La fiche ne doit JAMAIS afficher ça : on retire scripts/styles du
+ * document AVANT extraction (voir plus bas) et on passe chaque description au
+ * peigne fin ici — filtrage ligne à ligne (JS, UI, URLs, prix, Réf.), puis
+ * déduplication des phrases, longueur bornée.
+ */
+const NOISE_LINES: RegExp[] = [
+  /https?:\/\/|www\./i,
+  /(?:=>|\bfunction\b|\bconst\b|\blet\b|\bvar\b|\breturn\b|\btypeof\b|window\.|document\.|dataLayer|gaDataLayer|\bGTM\b|gtag\s*\(|\)\s*\(\)|\}\)\s*\(\))/,
+  /(?:ajouter\s+au\s+panier|s[ée]lectionnez\s+une\s+taille|choisissez\s+votre\s+taille|guide\s+des\s+tailles|quelle?s?\s+est\s+ma\s+taille|quelle?s?\s+est\s+ma\s+correspondance|m['’]alerter|r[ée]server\s+en\s+boutique|enregistrer\s+ma\s+taille|recalculer\s+ma\s+taille|mes\s+pr[ée]f[ée]rences\s+cookie|pr[ée]f[ée]rences\s+de\s+cookies|qt[ée]\s*:|livraison\s+[àa]\s+domicile|livraison\s+estim[ée]e|disponibilit[ée]\s+en\s+boutique|prend?ez\s+vos\s+mesures|m[èe]tre\s+ruban|tour\s+de\s+(bassin|poitrine|taille)\s*:|saisissez\s+votre\s+taille|[ée]quivalence\s+en\s+t\d|bons\s+plans|ajouter\s+à\s+la\s+sélection|المستعمل|أضف\s+إلى\s+السلة|اختر\s+مقاسك|دليل\s+المقاسات|التوصيل)/i,
+  /^\s*(?:r[ée]f\.?|réf)\s*[:.]?\s*\w{4,}\s*$/i,
+  /\d+(?:[.,]\d{1,2})?\s*(?:€|\$|£|EUR|USD|GBP|TND|DT)/i,
+  /^\s*(?:\d+[.,]\d+|\d{1,2}[./]\d{1,2}(?:[./]\d{2,4})?)\s*$/,
+];
+const MIN_SENTENCE = 12;
+
+export function cleanDescription(raw: string, maxLength = 1400): string {
+  const lines = String(raw || '').split(/\r?\n|(?<=[.!?؟])\s{2,}/);
+  const survivors = lines.filter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return false;
+    return !NOISE_LINES.some((pattern) => pattern.test(trimmed));
+  });
+  // Phrases : déduplication insensible à la casse/espaces, on garde l'ordre.
+  const sentences = survivors.join(' ').split(/(?<=[.!?؟。])\s+|\s*[|·]\s*/);
+  const seen = new Set<string>();
+  const kept: string[] = [];
+  for (const candidate of sentences) {
+    const trimmed = candidate.replace(/\s+/g, ' ').trim();
+    if (trimmed.length < MIN_SENTENCE) continue;
+    if (NOISE_LINES.some((pattern) => pattern.test(trimmed))) continue;
+    const key = trimmed.toLocaleLowerCase('fr').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    kept.push(trimmed);
+  }
+  const joined = kept.join(' ').replace(/\s+([,.!?؟])/g, '$1').trim();
+  if (!joined) return '';
+  return joined.length <= maxLength ? joined : `${joined.slice(0, maxLength).replace(/\s+\S*$/, '')}…`;
+}
+
 function currencyCode(raw: string): string {
   const value = raw.toUpperCase();
   if (value.includes('€') || value.includes('EUR')) return 'EUR';
@@ -350,6 +395,11 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       return score(b) - score(a);
     })[0] || null;
 
+    // HYGIÈNE DOM (fix 24/09/2026) : les <script>/<style> inline polluent tout
+    // textContent (gaDataLayer, GTM…) — purgés APRÈS l'extraction des données
+    // embarquées ci-dessus, AVANT titre/prix/description/texte contextuel.
+    for (const noisy of document.querySelectorAll('script, style, noscript, template, iframe')) noisy.remove();
+
     let title = meta('meta[property="og:title"]') || meta('meta[name="twitter:title"]')
       || text('#productTitle, h1.product-title-word-break, h1, [class*="product-intro__name"], [class*="goods-name"]')
       || String(productLd?.name || embeddedProduct?.title || embeddedProduct?.name || document.title || '');
@@ -407,9 +457,9 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     )).filter((node: any) => !node.disabled && !UNAVAILABLE.test(node.textContent || ''))
       .map((node: any) => cleanLabel(node.getAttribute?.('data-value') || node.value || node.textContent));
     const domColors = Array.from(document.querySelectorAll(
-      'select[name*="color" i] option, select[name*="colour" i] option, select[name*="couleur" i] option, #variation_color_name option, [data-testid*="color" i] button',
-    )).filter((node: any) => !node.disabled && !UNAVAILABLE.test(node.textContent || ''))
-      .map((node: any) => cleanLabel(node.getAttribute?.('data-value') || node.getAttribute?.('aria-label') || node.value || node.textContent));
+      'select[name*="color" i] option, select[name*="colour" i] option, select[name*="couleur" i] option, #variation_color_name option, [data-testid*="color" i] button, [data-color], input[type="radio"][name*="color" i], input[type="radio"][name*="couleur" i], [class*="swatch" i] [aria-label], [class*="swatch" i] [title]',
+    )).filter((node: any) => !node.disabled && !UNAVAILABLE.test(node.textContent || '') && !UNAVAILABLE.test(node.getAttribute?.('aria-label') || ''))
+      .map((node: any) => cleanLabel(node.getAttribute?.('data-color') || node.getAttribute?.('data-value') || node.getAttribute?.('aria-label') || node.getAttribute?.('title') || node.value || node.textContent));
 
     const namedSizes: string[] = [];
     const namedColors: string[] = [];
@@ -431,7 +481,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       '#productDescription, #feature-bullets, #detailBullets_feature_div, [itemprop="description"], [data-testid*="description" i], [class*="product-intro__description" i], [class*="detail-desc" i], [class*="goods-desc" i], .product-description, #description, [data-testid*="product-details" i]'
     );
     const metaDescription = meta('meta[name="description"]') || meta('meta[property="og:description"]') || meta('meta[name="twitter:description"]');
-    const description = (ldDescription || domDescription || metaDescription || '').slice(0, 3000);
+    const description = cleanDescription(ldDescription || domDescription || metaDescription || '', 1400);
 
     const jsonLdImages: unknown[] = [];
     for (const node of jsonLd) {

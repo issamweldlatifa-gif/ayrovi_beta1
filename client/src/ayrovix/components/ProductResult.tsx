@@ -228,6 +228,16 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   // une couleur bascule TOUTE la galerie (grande image, vignettes, lightbox) vers
   // le jeu de cette couleur ; sans données réelles pour une couleur, la galerie
   // complète reste affichée — on n'invente jamais d'image.
+  // EXTRAIT COURT sous le nom (demande client 24/09/2026) : 1-2 phrases
+  // propres de la description (déjà nettoyée côté scraper) — le reste vit
+  // dans la section Détails & description.
+  const shortDescription = useMemo(() => {
+    const clean = (product.description || '').replace(/\s+/g, ' ').trim();
+    if (clean.length < 30) return '';
+    const cut = clean.slice(0, 180);
+    const lastStop = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('؟ '));
+    return (lastStop > 60 ? cut.slice(0, lastStop + 1) : cut.replace(/\s+\S*$/, '')).trim();
+  }, [product.description]);
   const colorImageSets = product.colorImages && typeof product.colorImages === 'object' ? product.colorImages : null;
   const [activeColor, setActiveColor] = useState<string | null>(null);
   const galleryImages = useMemo(() => {
@@ -474,6 +484,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               {cleanTitle}
             </h1>
             {/* Avis / Évaluation sociale */}
+            {shortDescription && (
+              <p className="break-words text-sm leading-relaxed text-ink/80 line-clamp-2">{shortDescription}</p>
+            )}
             <div className="flex items-center gap-2 pt-1">
               <span className="inline-flex items-center gap-1 rounded bg-[#f5f5f5] px-2 py-0.5 text-xs font-bold text-ink">
                 ★ {tr('Très bien', 'ممتاز')}

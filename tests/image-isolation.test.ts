@@ -9,11 +9,12 @@ import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import request from 'supertest';
-import { analyzeEdges, chromaKey, chromaKeyConnected, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
+import { analyzeEdges, chromaKey, chromaKeyConnected, hasEnclosedTransparency, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
 import { app } from '../src/server';
 
 const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-isolated-'));
 process.env.AYROVI_ISOLATED_CACHE_DIR = cacheDir;
+process.env.AYROVI_SEGMENTATION = 'false'; // tests déterministes : pas de modèle ONNX
 afterAll(() => { fs.rmSync(cacheDir, { recursive: true, force: true }); });
 
 function rawImage(width: number, height: number, paint: (x: number, y: number) => [number, number, number]): RawImage {
@@ -67,6 +68,41 @@ describe('isolation — pipeline sharp', () => {
     const result = await isolateBuffer(await sharp(Buffer.from(svg)).png().toBuffer());
     expect(result.kind).toBe('white');
     expect(result.png).toBeNull();
+  });
+});
+
+describe('isolation — GARDE ANTI-FUITE intérieur produit (24/09/2026)', () => {
+  it('détecte un trou transparent ENFERMÉ (tache blanche dans le produit)', () => {
+    // Produit gris 60×60 centré avec un trou (fond supprimé) au milieu.
+    const image = rawImage(80, 80, (x, y) => {
+      const inProduct = x >= 10 && x < 70 && y >= 10 && y < 70;
+      const inHole = x >= 30 && x < 40 && y >= 30 && y < 40;
+      return inProduct && !inHole ? [120, 120, 120] : [237, 237, 237];
+    });
+    chromaKey(image, { r: 237, g: 237, b: 237 }); // retire fond ET trou
+    expect(hasEnclosedTransparency(image)).toBe(true);
+  });
+
+  it('ne déclenche PAS la garde pour un vrai détourage (fond ouvert au bord)', () => {
+    const image = rawImage(80, 80, (x, y) => (x >= 20 && x < 60 && y >= 20 && y < 60 ? [120, 120, 120] : [237, 237, 237]));
+    chromaKey(image, { r: 237, g: 237, b: 237 });
+    expect(hasEnclosedTransparency(image)).toBe(false);
+  });
+
+  it('isolateBuffer ne livre AUCUN PNG troué : redirection vers l\'original', async () => {
+    // Gris clair sur gris clair AVEC un trou enfermé : le chroma-key connecté
+    // du pipeline peut lécher l'intérieur → sans segmentation dispo, on
+    // redirige (png:null) au lieu de griffer le produit.
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#e9e9e9"/><rect x="40" y="40" width="120" height="120" fill="#dcdcdc"/><rect x="90" y="90" width="20" height="20" fill="#e9e9e9"/></svg>`;
+    const result = await isolateBuffer(await sharp(Buffer.from(svg)).png().toBuffer());
+    if (result.png) {
+      const { data, info } = await sharp(result.png).raw().toBuffer({ resolveWithObject: true });
+      // Aucun pixel transparent à l'intérieur de l'emprise produit (centre).
+      const center = data[((info.height * 100 + 100) * info.channels) + 3];
+      expect(center).toBeGreaterThan(200);
+    } else {
+      expect(result.kind).toBe('uniform'); // redirection honnête
+    }
   });
 });
 

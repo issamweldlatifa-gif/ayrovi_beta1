@@ -26,7 +26,7 @@ const UNIFORM_SPREAD = 10;
 /** Distance couleur du fond en dessous de laquelle un pixel est retiré (cœur). */
 const CORE_TOLERANCE = 26;
 /** Distance où le pixel est à demi-retiré (anticrénelage des bords). */
-const FEATHER_TOLERANCE = 44;
+export const FEATHER_TOLERANCE = 44;
 /** Au-dessus de ce niveau de gris moyen, on considère le fond « blanc ». */
 const WHITE_LEVEL = 241;
 
@@ -179,6 +179,50 @@ export function backgroundLikeShare(image: RawImage, background: { r: number; g:
   return count ? close / count : 0;
 }
 
+/**
+ * GARDE ANTI-FUITE (fix 24/09/2026 — captures «taches blanches DANS le produit») :
+ * des zones transparentes ENFERMÉES dans le produit (aucun contact avec le bord
+ * de l'image) signifient que le chroma-key a remonté DANS le produit via une
+ * frontière douce — un produit gris sur fond gris, typiquement. Détection pure
+ * : composantes 4-voisines des pixels alpha≈0 qui ne touchent PAS le cadre.
+ */
+export function hasEnclosedTransparency(image: RawImage, minArea = 64): boolean {
+  const { data, width, height } = image;
+  const total = width * height;
+  const seen = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  for (let start = 0; start < total; start++) {
+    if (seen[start] || data[start * 4 + 3] !== 0) continue;
+    let head = 0;
+    let tail = 0;
+    let size = 0;
+    let touchesBorder = false;
+    seen[start] = 1;
+    queue[tail++] = start;
+    while (head < tail) {
+      const pixel = queue[head++];
+      size += 1;
+      const x = pixel % width;
+      const y = (pixel - x) / width;
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) touchesBorder = true;
+      const neighbours = [
+        x > 0 ? pixel - 1 : -1,
+        x < width - 1 ? pixel + 1 : -1,
+        pixel >= width ? pixel - width : -1,
+        pixel + width < total ? pixel + width : -1,
+      ];
+      for (const neighbour of neighbours) {
+        if (neighbour >= 0 && !seen[neighbour] && data[neighbour * 4 + 3] === 0) {
+          seen[neighbour] = 1;
+          queue[tail++] = neighbour;
+        }
+      }
+    }
+    if (!touchesBorder && size >= minArea) return true;
+  }
+  return false;
+}
+
 /* ── 2bis. Ancien chroma-key GLOBAL (conservé pour les tests purs) ────────── */
 export function chromaKey(image: RawImage, background: { r: number; g: number; b: number }): Buffer {
   const { data } = image;
@@ -212,7 +256,26 @@ export async function isolateBuffer(buffer: Buffer): Promise<{ kind: IsolationKi
   // est indistinguable du fond MÊME au seuil serré, isoler reviendrait à effacer
   // le produit → on ne touche à rien, l'original (multiply) est plus fidèle.
   if (backgroundLikeShare(image, analysis.color, coreUsed) > 0.97) return { kind: 'uniform', png: null };
+  // Produit CLAIR sur fond CLAIR → le chroma-key, même connecté, risque de
+  // remonter dans le produit (les captures «taches blanches») : on privilégie
+  // la SEGMENTATION (produit réel) quand elle est disponible.
+  if (light) {
+    try {
+      const segmented = await segmentBuffer(buffer);
+      if (segmented) return { kind: 'segmented', png: segmented };
+    } catch { /* repli chroma-key ci-dessous */ }
+  }
   chromaKeyConnected(image, analysis.color, coreUsed, light ? 26 : FEATHER_TOLERANCE);
+  // Dernier filet : des trous transparents ENFERMÉS = fuite confirmée → on tente
+  // la segmentation, et sans filet disponible on ne livre RIEN (l'original
+  // intact vaut mieux qu'un produit griffé de taches transparentes).
+  if (hasEnclosedTransparency(image)) {
+    try {
+      const segmented = await segmentBuffer(buffer);
+      if (segmented) return { kind: 'segmented', png: segmented };
+    } catch { /* pas de filet */ }
+    return { kind: 'uniform', png: null };
+  }
   const png = await sharp(image.data, { raw: { width: image.width, height: image.height, channels: 4 } }).png({ compressionLevel: 9 }).toBuffer();
   return { kind: 'uniform', png };
 }
