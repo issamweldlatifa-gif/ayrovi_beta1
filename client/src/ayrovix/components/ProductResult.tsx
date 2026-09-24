@@ -97,6 +97,15 @@ function formatSizeForTab(size: string, tab: 'french' | 'brand', isShoes: boolea
  *  5. Direct link to merchant with arrow icon.
  *  6. Purchasing team overrides folded neatly in collapsible details.
  */
+/* Preuve de disponibilité honnête (restaurée de 1c48683 — les redesigns
+   l'avaient écrasée ; l'étape CI «variant eligibility» la vérifie). */
+const AVAILABILITY: Record<string, { fr: string; ar: string; cls: string }> = {
+  in_stock: { fr: 'Disponible', ar: 'متوفر', cls: 'border border-line bg-white text-ink' },
+  limited: { fr: 'Stock limité', ar: 'مخزون محدود', cls: 'border border-amber-200 bg-amber-50 text-amber-800' },
+  out_of_stock: { fr: 'Rupture signalée', ar: 'غير متوفر', cls: 'border border-danger/20 bg-danger/5 text-danger' },
+  unknown: { fr: 'Disponibilité à confirmer', ar: 'التوفر يحتاج إلى تأكيد', cls: 'border border-line bg-surface text-muted' },
+};
+
 export const ProductResult: React.FC<ProductResultProps> = ({
   product,
   ordering,
@@ -246,6 +255,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   }, [activeColor, colorImageSets, imageUrls]);
 
   const activeImage = galleryImages[imageIndex] || '';
+  const availabilityBadge = AVAILABILITY[product.availability] || AVAILABILITY.unknown;
   // FIX 24/09/2026 : le sélecteur de commande hérite du TRI de presentSizes
   // (numérique pour les pointures, ordre vestimentaire sinon) — avant, il
   // affichait l'ordre brut du marchand (43, 40.5, 42…).
@@ -513,6 +523,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 <Info size={16} />
               </span>
             </div>
+
+            {/* Preuve de disponibilité — jamais de stock inventé (contrat marchand) */}
+            <span data-availability-badge className={`ay-readable-label inline-block w-fit rounded-control px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availabilityBadge.cls}`}>
+              {availabilityBadge[isArabic ? 'ar' : 'fr']}
+            </span>
 
             {/* Prix de référence original barré et remise en rouge */}
             {promo && (
