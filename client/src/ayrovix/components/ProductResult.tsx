@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 import {
   Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Check, Hourglass, Image as ImageIcon,
-  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, ScanSearch, Truck, Package, Info,
+  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, ScanSearch, Truck, Package, Info, ShieldCheck, ShoppingBag,
 } from '../../components/QatafoIcons';
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -82,6 +82,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [guideOpen, setGuideOpen] = useState(false);
   const [recommendOpen, setRecommendOpen] = useState(false);
   const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false);
+  const [sizeDrawerOpen, setSizeDrawerOpen] = useState(false);
+  const [sizeTab, setSizeTab] = useState<'french' | 'brand'>('french');
+  const [isFavorite, setIsFavorite] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [addedRecently, setAddedRecently] = useState(false);
   const [depositPercent, setDepositPercent] = useState<number | null>(null);
@@ -155,6 +158,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
     setGuideOpen(false);
     setRecommendOpen(false);
     setSizeDropdownOpen(false);
+    setSizeDrawerOpen(false);
+    setSizeTab('french');
     setFormOpen(false);
     setAddedRecently(false);
   }, [product.sourceUrl, product.image]);
@@ -193,32 +198,62 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
   return (
     <div className="flow-product" dir={direction}>
+      {/* ── En-tête mobile épuré Zalando / Ayrovi : Catégorie + Panier ── */}
+      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-line/60">
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              window.history.back();
+            }
+          }}
+          className="inline-flex items-center gap-1.5 text-sm font-bold text-ink hover:opacity-80 transition"
+          aria-label={tr('Retour à la catégorie', 'رجوع للفئة')}
+        >
+          <ChevronLeft size={18} className="rtl:rotate-180" />
+          <span>{productClassLabel(productClass, isArabic)}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const cartTrigger = document.querySelector('[data-ayrovi-cart-trigger]') as HTMLElement;
+            if (cartTrigger) cartTrigger.click();
+            else window.dispatchEvent(new CustomEvent('ayrovi:open-cart'));
+          }}
+          className="relative p-1 text-ink hover:opacity-75 transition"
+          aria-label={tr('Panier', 'السلة')}
+        >
+          <ShoppingBag size={22} />
+        </button>
+      </div>
+
       {/* ── 1. LE PRODUIT D'ABORD — image immersive studio + infos ── */}
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:items-start">
-        {/* Media — canvas studio unifié, image pleine et pure */}
+        {/* Media — canvas studio unifié, image spacieuse, pure et confortable */}
         <div className="flow-media min-w-0">
           <div className="relative overflow-hidden rounded-2xl bg-surface border border-line/60">
             {/* Overlay Badges */}
-            <div className="absolute inset-x-3 top-3 z-10 flex items-center justify-between pointer-events-none">
+            <div className="absolute inset-x-3.5 top-3.5 z-10 flex items-center justify-between pointer-events-none">
               {promo ? (
                 <span
                   className="rounded px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto"
                   style={{ background: 'var(--ayrovi-promo)' }}
                 >
-                  {promo.badgeLabel || 'Promo'}
+                  {promo.label || 'Promo'}
                 </span>
               ) : <span />}
               <button
                 type="button"
+                onClick={() => setIsFavorite((v) => !v)}
                 aria-label={tr('Ajouter aux favoris', 'إضافة إلى المفضلة')}
-                className="grid h-10 w-10 place-items-center rounded-full bg-white/95 text-ink shadow-sm transition hover:bg-white pointer-events-auto"
+                className="grid h-10 w-10 place-items-center rounded-full bg-white text-ink shadow-md transition hover:scale-105 active:scale-95 pointer-events-auto"
               >
-                <Heart size={20} />
+                {isFavorite ? <HeartFilled size={20} className="text-[#dc2626]" /> : <Heart size={20} />}
               </button>
             </div>
 
-            {/* Stage de l'image */}
-            <div className="ayrovix-product-gallery-stage bg-white relative flex aspect-[3/4] w-full items-center justify-center p-4">
+            {/* Stage de l'image — confort visuel, pureté des couleurs sans assombrissement */}
+            <div className="ayrovix-product-gallery-stage bg-white relative flex aspect-[3/4] w-full items-center justify-center p-6 sm:p-8">
               {activeImage ? (
                 <button
                   type="button"
@@ -233,11 +268,14 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                     decoding="async"
                     fetchPriority="high"
                     draggable={false}
+                    data-isolated={!rawFallback && Boolean(isolatedMediaUrl(activeImage))}
                     onError={() => {
                       if (!rawFallback && isolatedMediaUrl(activeImage)) setRawFallback(true);
                       else setImageIndex((current) => Math.min(current + 1, imageUrls.length));
                     }}
-                    className="ayrovix-product-gallery-image h-full w-full object-contain mix-blend-multiply"
+                    className={`ayrovix-product-gallery-image h-full w-full object-contain transition-transform duration-200 ${
+                      !rawFallback && isolatedMediaUrl(activeImage) ? 'is-isolated' : 'mix-blend-multiply'
+                    }`}
                   />
                 </button>
               ) : (
@@ -252,7 +290,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               </div>
             </div>
 
-            {/* Vignettes d'angles complémentaires */}
+            {/* Vignettes d'angles complémentaires — affichées seulement si plusieurs images réelles */}
             {imageUrls.length > 1 && (
               <div className="ayrovix-thumbnail-strip flex gap-2 overflow-x-auto border-t border-line/60 bg-white px-3 py-3" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
                 {imageUrls.map((url, index) => {
@@ -368,11 +406,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </div>
           )}
 
-          {/* Conseil de taille (Advisory Box) */}
+          {/* Conseil de taille et garanties selon la catégorie réelle du produit */}
           {isClothing && (
             <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <Info size={16} aria-hidden="true" />
+                <Info size={16} className="shrink-0 text-muted" aria-hidden="true" />
                 <span>{tr("Vous n'êtes pas sûr·e de votre taille ?", 'لست متأكدًا من مقاسك؟')}</span>
               </div>
               <button
@@ -388,7 +426,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           {isShoes && (
             <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <Info size={16} aria-hidden="true" />
+                <Info size={16} className="shrink-0 text-muted" aria-hidden="true" />
                 <span>{tr('Trouvez la taille qui correspond à vos mensurations', 'لقا المقاس اللي ياسعك')}</span>
               </div>
               <button
@@ -401,8 +439,32 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </div>
           )}
 
-          {/* Sélecteur de taille (Taille / Pointure) */}
-          {sizePresentation.options.length > 0 && !isBeauty && (
+          {isBeauty && (
+            <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
+                <ShieldCheck size={16} className="shrink-0 text-[#10b981]" aria-hidden="true" />
+                <span>{tr('Authenticité garantie · Stock neuf et scellé', 'أصلي 100% · منتج جديد ومختوم')}</span>
+              </div>
+              <span className="text-xs font-bold text-muted">
+                {tr('Qualité certifiée', 'جودة معتمدة')}
+              </span>
+            </div>
+          )}
+
+          {productClass === 'electronics' && (
+            <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
+                <ShieldCheck size={16} className="shrink-0 text-[#10b981]" aria-hidden="true" />
+                <span>{tr("Garantie constructeur & conformité d'origine", 'ضمان المصنّع ومطابقة أصلية')}</span>
+              </div>
+              <span className="text-xs font-bold text-muted">
+                {tr('Certifié conforme', 'مطابق للمواصفات')}
+              </span>
+            </div>
+          )}
+
+          {/* Sélecteur de taille (Taille / Pointure — affiché seulement si des tailles réelles existent) */}
+          {sizePresentation.options.length > 0 && !isBeauty && productClass !== 'electronics' && productClass !== 'home' && (
             <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-ink">{isShoes ? tr('Pointure', 'المقاس') : tr('Taille', 'المقاس')}</label>
@@ -417,35 +479,17 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                 )}
               </div>
 
-              {/* Menu déroulant Votre taille */}
+              {/* Menu déroulant / Déclencheur tiroir Votre taille */}
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setSizeDropdownOpen((v) => !v)}
+                  onClick={() => setSizeDrawerOpen(true)}
                   className="flex min-h-[48px] w-full items-center justify-between rounded-control border border-line bg-white px-3.5 text-sm font-semibold text-ink transition hover:border-ink"
-                  aria-expanded={sizeDropdownOpen}
+                  aria-expanded={sizeDrawerOpen}
                 >
                   <span>{sizeChoice ? `${tr('Taille :', 'المقاس:')} ${sizeChoice}` : tr('Votre taille', 'اختر مقاسك')}</span>
-                  <ChevronDown size={18} className={`transition-transform ${sizeDropdownOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown size={18} className={`transition-transform ${sizeDrawerOpen ? 'rotate-180' : ''}`} />
                 </button>
-                {sizeDropdownOpen && (
-                  <div className="absolute inset-x-0 top-full z-20 mt-1 max-h-60 overflow-y-auto rounded-control border border-line bg-white p-1.5 shadow-lg">
-                    {sizePresentation.options.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => {
-                          setSizeChoice(size);
-                          setSizeDropdownOpen(false);
-                        }}
-                        className={`flex w-full items-center justify-between rounded px-3 py-2 text-sm font-bold transition ${sizeChoice === size ? 'bg-surface text-ink font-extrabold' : 'hover:bg-surface/60 text-ink'}`}
-                      >
-                        <span>{size}</span>
-                        <span className="text-xs font-normal text-muted">{tr('Disponible', 'متوفر')}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Grille rapide de tailles (5 colonnes pour chaussures / chips pour vêtements) */}
@@ -488,8 +532,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             </div>
           ) : null}
 
-          {/* ── 2. CTA UNIQUE — "Ajouter au panier" encre pleine ── */}
-          <div className="pt-3 space-y-3">
+          {/* ── 2. CTA — "Ajouter au panier" + "Calculer un autre article" ── */}
+          <div className="pt-3 space-y-2.5">
             <button
               type="button"
               onClick={handleAddToCart}
@@ -516,8 +560,21 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               )}
             </button>
 
+            {/* Bouton secondaire : Calculer un autre article */}
+            <button
+              type="button"
+              onClick={() => {
+                const searchTrigger = document.querySelector('[data-ayrovi-search-trigger]') as HTMLElement;
+                if (searchTrigger) searchTrigger.click();
+                else window.dispatchEvent(new CustomEvent('ayrovi:new-search'));
+              }}
+              className="w-full rounded-full border border-ink bg-white py-3.5 px-6 text-sm font-bold text-ink transition hover:bg-surface active:scale-[0.99] flex items-center justify-center gap-2 min-h-[48px]"
+            >
+              <span>{tr('Calculer un autre article', 'حساب منتج آخر')}</span>
+            </button>
+
             {/* Garanties de livraison et retour faciles */}
-            <div className="rounded-xl border border-line bg-surface/50 p-4 space-y-3 text-xs">
+            <div className="rounded-xl border border-line bg-surface/50 p-4 space-y-3 text-xs mt-3">
               <div className="flex items-start gap-3">
                 <Truck className="h-4 w-4 text-ink shrink-0 mt-0.5" />
                 <div>
@@ -789,6 +846,86 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                 </a>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Tiroir / Modal de sélection de taille (modèle Zalando fidèle) ── */}
+      {sizeDrawerOpen && (
+        <div
+          className="fixed inset-0 z-[95] flex items-end justify-center bg-black/50"
+          role="dialog"
+          aria-modal="true"
+          aria-label={tr('Choisir votre taille', 'اختيار المقاس')}
+          onClick={() => setSizeDrawerOpen(false)}
+        >
+          <div
+            className="w-full max-w-lg rounded-t-3xl bg-white p-5 shadow-2xl transition-transform"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: '82vh' }}
+          >
+            {/* Barre de glissement */}
+            <div className="mx-auto -mt-1 mb-3 h-1 w-10 rounded-full bg-line" />
+
+            {/* En-tête du tiroir avec bouton fermeture */}
+            <div className="flex items-center justify-between pb-3">
+              <h3 className="text-base font-extrabold text-ink">{tr('Sélectionnez une taille', 'حدد المقاس')}</h3>
+              <button
+                type="button"
+                onClick={() => setSizeDrawerOpen(false)}
+                aria-label={tr('Fermer', 'إغلاق')}
+                className="grid h-8 w-8 place-items-center rounded-full text-ink hover:bg-surface"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Onglets dual-tab Zalando : Taille française / Taille marque */}
+            <div className="flex border-b border-line mb-2">
+              <button
+                type="button"
+                onClick={() => setSizeTab('french')}
+                className={`flex-1 py-2.5 text-center text-xs font-bold transition border-b-2 ${
+                  sizeTab === 'french' ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                }`}
+              >
+                {tr('Taille française', 'المقاس الفرنسي')}
+              </button>
+              <button
+                type="button"
+                onClick={() => setSizeTab('brand')}
+                className={`flex-1 py-2.5 text-center text-xs font-bold transition border-b-2 ${
+                  sizeTab === 'brand' ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                }`}
+              >
+                {tr('Taille marque', 'مقاس الماركة')}
+              </button>
+            </div>
+
+            {/* Liste des tailles réelles disponibles uniquement */}
+            <div className="max-h-[55vh] overflow-y-auto divide-y divide-line/50">
+              {sizePresentation.options.map((size) => {
+                const isSelected = sizeChoice === size;
+                return (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => {
+                      setSizeChoice(size);
+                      setSizeDrawerOpen(false);
+                    }}
+                    className={`flex w-full items-center justify-between py-3.5 px-3 text-start transition rounded-lg ${
+                      isSelected ? 'bg-surface font-extrabold text-ink' : 'hover:bg-surface/50 text-ink'
+                    }`}
+                  >
+                    <span className="text-sm font-bold">{size}</span>
+                    <span className="text-xs font-medium text-muted">
+                      {isSelected ? tr('Sélectionné', 'محدد') : tr('Disponible', 'متوفر')}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

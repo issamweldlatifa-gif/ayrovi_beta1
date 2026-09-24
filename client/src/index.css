@@ -499,6 +499,14 @@
   transform: none;
 }
 
+/* Rendu fidèle et éclatant pour les images détourées (PNG transparents) : aucune altération de couleur */
+.ayrovix-product-gallery-image[data-isolated="true"],
+.ayrovix-thumbnail-image[data-isolated="true"],
+.ayrovix-product-gallery-image.is-isolated,
+.ayrovix-thumbnail-image.is-isolated {
+  mix-blend-mode: normal;
+}
+
 .ayrovix-product-media-contain {
   display: block;
   width: 100%;
