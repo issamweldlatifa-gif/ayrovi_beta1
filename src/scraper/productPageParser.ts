@@ -398,7 +398,11 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     // HYGIÈNE DOM (fix 24/09/2026) : les <script>/<style> inline polluent tout
     // textContent (gaDataLayer, GTM…) — purgés APRÈS l'extraction des données
     // embarquées ci-dessus, AVANT titre/prix/description/texte contextuel.
-    for (const noisy of document.querySelectorAll('script, style, noscript, template, iframe')) noisy.remove();
+    for (const noisy of document.querySelectorAll(
+      // Les scripts-DATA (application/json, ld+json) restent : ce sont des
+      // galeries/fiches embarquées, pas du code exécuté par la page.
+      'script:not([type="application/json"]):not([type="application/ld+json"]), style, noscript, template, iframe',
+    )) noisy.remove();
 
     let title = meta('meta[property="og:title"]') || meta('meta[name="twitter:title"]')
       || text('#productTitle, h1.product-title-word-break, h1, [class*="product-intro__name"], [class*="goods-name"]')
@@ -492,7 +496,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     }
 
     const domImageNodes = Array.from(document.querySelectorAll(
-      'img[data-old-hires], img[data-zoom-image], img[data-high-res-src], img[data-src], img[data-lazy-src], #altImages img, #imageBlock img, [data-testid*="gallery" i] img, [data-testid*="thumbnail" i] img, [data-testid*="product-image" i] img, picture source[srcset], picture img, .product-gallery img, [class*="thumbnail" i] img, [class*="gallery" i] img, [class*="image" i] img'
+      'img[data-old-hires], img[data-zoom-image], img[data-high-res-src], img[data-src], img[data-lazy-src], img[srcset], img[data-srcset], #altImages img, #imageBlock img, [data-testid*="gallery" i] img, [data-testid*="thumbnail" i] img, [data-testid*="product-image" i] img, picture source[srcset], picture img, .product-gallery img, [class*="thumbnail" i] img, [class*="gallery" i] img, [class*="image" i] img'
     ));
     const domImages: string[] = [];
     for (const node of domImageNodes) {
@@ -509,15 +513,22 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       }
     }
 
+    /* GALERIE JSON UNIVERSELLE (fix 24/09/2026 — Kiabi 2/2 au lieu de N) :
+     * l'ancienne liste d'autorisation (ztat/media-amazon/shein/zara/asos)
+     * jetait les galeries JSON de TOUS LES AUTRES marchands (Kiabi…). Le DOM
+     * statique ne contient souvent que les 2 premières slides — le reste vit
+     * dans le JSON embarqué. On accepte donc TOUTES les URLs d'images des
+     * scripts JSON, filtrées par une liste de REJET du bruit (icônes, logos,
+     * bannières, pixels de tracking, placeholders). */
     const scriptImages: string[] = [];
+    const JSON_IMAGE_NOISE = /sprite|logo|icone?|icon|banner|banniere|paiement|payment|paypal|visa|mastercard|flag|picto|badge|newsletter|favicon|placeholder|tracking|pixel|avatar|emoji|loader|spinner|arrow|chevron|social|facebook|instagram|tiktok|pinterest|youtube|twitter|breadcrumb|livraison|delivery\.(?:jpe?g|png|webp)/i;
     for (const node of Array.from(document.querySelectorAll('script#__NEXT_DATA__, script[type="application/json"]'))) {
       const textContent = node.textContent || '';
       if (!textContent || textContent.length > 2_000_000) continue;
       const urls = textContent.match(/https?:\/\/[^"'\s\\]+\.(?:jpe?g|png|webp)(?:\?[^"'\s\\]*)?/gi) || [];
       for (const u of urls) {
-        if (/ztat\.net|media-amazon|ltwebstatic|shein\.com|zara\.net|asos-media/i.test(u)) {
-          scriptImages.push(u);
-        }
+        const file = (u.split('?')[0].split('/').pop()) || u;
+        if (!JSON_IMAGE_NOISE.test(file)) scriptImages.push(u);
       }
     }
 

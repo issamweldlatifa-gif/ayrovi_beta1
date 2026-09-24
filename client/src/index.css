@@ -495,8 +495,12 @@
   max-width: 100%;
   max-height: 100%;
   margin: auto;
-  object-fit: contain;
-  object-position: center;
+  /* CARTE COMPLÈTE (demande client 24/09 11:06 — capture Kiabi) : la photo
+     remplit TOUTE la carte (largeur ET hauteur) comme chez Zalando — plus
+     aucune bande blanche au-dessus/en-dessous. cover rogne marginalement,
+     exactement le comportement du marchand de référence. */
+  object-fit: cover;
+  object-position: center top;
   /* Quiet Card v2 : le blanc des photos marchand se fond dans le canvas blanc. */
   mix-blend-mode: multiply;
   transform: none;

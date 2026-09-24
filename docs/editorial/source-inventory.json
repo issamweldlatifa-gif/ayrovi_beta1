@@ -19607,8 +19607,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "c53a51205167f1a289205e94bc0a5297943b930c76a45fcac0aaa428856974a8",
-      "lines": 1235,
+      "sha256": "87d5383cfd52f4baf939ad371ea0f6860264543a756d383495f3225b0e44c8b7",
+      "lines": 1239,
       "imports": [],
       "exports": [],
       "controls": [],
