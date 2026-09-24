@@ -534,6 +534,12 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               </p>
             )}
 
+            {/* إشعار الاختيار غير المكتمل/التقدير العام (restauré de 1c48683 —
+                contrat «general estimate is honest and localized») */}
+            {(incompleteVariantQuote || selection.generalEstimate) && (
+              <p data-variant-selection-notice role={incompleteVariantQuote ? 'alert' : 'status'} className="break-words border-s-2 border-line ps-3 text-sm leading-relaxed text-muted">{tr(selectionNotice[0], selectionNotice[1])}</p>
+            )}
+
             {/* Preuve de disponibilité — jamais de stock inventé (contrat marchand) */}
             <span data-availability-badge className={`ay-readable-label inline-block w-fit rounded-control px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availabilityBadge.cls}`}>
               {availabilityBadge[isArabic ? 'ar' : 'fr']}
