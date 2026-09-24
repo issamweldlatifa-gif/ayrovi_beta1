@@ -3,6 +3,8 @@ import { X, Camera, Link2, ArrowUpRight, ArrowRight, Loader2, Clipboard, Package
 import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
+import { ProductResult } from '../ayrovix/components/ProductResult';
+import type { AyrovixProduct } from '../ayrovix/types';
 
 interface ProductDrawerProps {
   isOpen: boolean;
@@ -67,6 +69,28 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
   const isOpenRef = useRef(isOpen);
+
+  const ayrovixProduct: AyrovixProduct | null = React.useMemo(() => {
+    if (!product) return null;
+    return {
+      title: product.title,
+      brand: product.brand || product.storeName || null,
+      model: null,
+      description: product.description || '',
+      image: product.mainImage || uploadPreview || '',
+      images: product.images && product.images.length ? product.images : [product.mainImage || uploadPreview || ''].filter(Boolean),
+      source: product.storeName || product.store,
+      sourceUrl: product.url,
+      price: product.sourcePrice,
+      currency: product.sourceCurrency,
+      priceTnd: product.totalPriceTND,
+      exchangeRate: null,
+      colors: product.variants?.colors || [],
+      sizes: product.variants?.sizes || [],
+      variantOptions: [],
+      availability: product.availability || 'unknown',
+    };
+  }, [product, uploadPreview]);
 
   useBodyScrollLock(isOpen);
 
@@ -483,7 +507,40 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             </div>
           )}
 
-          {step === 'details' && (
+          {step === 'details' && ayrovixProduct ? (
+            <div className="py-2">
+              <ProductResult
+                product={ayrovixProduct}
+                ordering={isAddingToCart}
+                priceVerified={true}
+                onOrder={(selection) => {
+                  setIsAddingToCart(true);
+                  setErrorMsg(null);
+                  void onAddToCart({
+                    store: product?.store || 'generic',
+                    externalId: product?.externalId || null,
+                    url: selection.manualUrl || product?.url || '',
+                    title: (product?.title || title).trim(),
+                    imageUrl: product?.mainImage || uploadPreview || '',
+                    sourcePrice: Number(product?.sourcePrice || sourcePrice),
+                    sourceCurrency: product?.sourceCurrency || currency,
+                    priceTND: product?.totalPriceTND || orderTotalTND,
+                    variant: [selection.size && `Taille: ${selection.size}`, selection.color && `Couleur: ${selection.color}`].filter(Boolean).join(' · ') || undefined,
+                    quantity: selection.quantity,
+                  }).then((cartSummary) => {
+                    if (!isOpenRef.current) return;
+                    setIsAddingToCart(false);
+                    if (cartSummary) {
+                      setCheckoutSummary(cartSummary);
+                      onCheckoutRequested();
+                    } else {
+                      setErrorMsg("L'article n'a pas pu être ajouté. Vérifiez votre connexion puis réessayez.");
+                    }
+                  });
+                }}
+              />
+            </div>
+          ) : step === 'details' && (
             <div className="space-y-5">
               <div className="bg-surface border border-line rounded-2xl p-4 flex gap-4 items-center">
                 <div className="w-20 h-20 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
@@ -622,7 +679,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
         {/* Full-page footer actions */}
         <div className="space-y-2.5 border-t border-line bg-white px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-5">
-          {step === 'details' && (
+          {step === 'details' && !ayrovixProduct && (
             <button
               type="button"
               onClick={() => void handleProceedToCheckoutForm()}

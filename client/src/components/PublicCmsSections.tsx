@@ -11,7 +11,7 @@ import { getPublicHome } from '../services/publicApi';
 import { StoryTab, HomeStoryStrip } from '../social/StoryTab';
 import type { StoryCta } from '../social/types';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
-import { ShoppingBag } from './QatafoIcons';
+import { ShoppingBag, Heart } from './QatafoIcons';
 import { catalogProductToScraped, type CatalogProduct } from '../commerce/catalogProduct';
 import type { ScrapedProduct } from '../types';
 
@@ -204,23 +204,57 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
     ) : <EmptyContent label={tr('Arrivages', 'القادم')} />;
 
     if (page === 'products') return home.products.length ? (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8">
         {(home.products as CatalogProduct[]).map((product) => {
           const soldOut = String(product.stockStatus || '').toUpperCase() === 'OUT_OF_STOCK';
           const open = () => onOpenProduct?.(catalogProductToScraped(product));
-          return <article key={product.id} className="flex flex-col overflow-hidden rounded-card border border-line bg-white shadow-card">
-            <div className="aspect-[4/5] overflow-hidden bg-surface"><img src={mediaSource(product.image, heroFemme)} alt={product.name} className="h-full w-full object-cover transition duration-700 hover:scale-105" /></div>
-            <div className="flex flex-1 flex-col p-5">
-              <p className="text-xs font-black uppercase tracking-[0.16em] text-ink">{product.brandName || product.sourcePlatform}</p>
-              <h2 className="mt-2 text-lg font-black text-ink">{product.name}</h2>
-              <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{product.description}</p>
-              <div className="mt-4 flex items-center justify-between gap-3"><strong className="text-lg text-ink-deep">{formatMoney(product.finalPrice)}</strong><span className={`text-xs font-black uppercase tracking-wider ${soldOut ? 'text-danger' : 'text-success'}`}>{soldOut ? tr('Indisponible', 'غير متوفر') : tr('Disponible', 'متوفر')}</span></div>
-              {/* Une seule action par carte : mener au tiroir de commande, qui calcule et encaisse. */}
-              {onOpenProduct && <button type="button" onClick={open} disabled={soldOut} className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-control border border-line px-4 text-sm font-black text-ink transition hover:border-ink disabled:cursor-not-allowed disabled:text-muted">
-                <ShoppingBag className="h-4 w-4" />{soldOut ? tr('Indisponible', 'غير متوفر') : tr('Commander', 'اطلب الآن')}
-              </button>}
-            </div>
-          </article>;
+          return (
+            <article key={product.id} className="lens-product-card group relative flex flex-col text-start">
+              <button
+                type="button"
+                onClick={open}
+                disabled={soldOut}
+                className="lens-card-open w-full text-start cursor-pointer disabled:cursor-not-allowed"
+                aria-label={tr(`Voir le produit : ${product.name}`, `عرض المنتج: ${product.name}`)}
+              >
+                {/* Media stage Zalando standard: 2/3 portrait, rounded-2xl, soft grey canvas */}
+                <div className="lens-card-media relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#f0f2f2] flex items-center justify-center">
+                  <img
+                    src={mediaSource(product.image, heroFemme)}
+                    alt={product.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover mix-blend-multiply transition duration-500 group-hover:scale-105"
+                  />
+                  {product.originalPrice && product.convertedPrice && product.originalPrice > product.convertedPrice && (
+                    <span className="lens-card-promo-badge">Promo</span>
+                  )}
+                  {/* Floating circular white heart button */}
+                  <div className="lens-card-favorite pointer-events-none">
+                    <Heart size={20} />
+                  </div>
+                </div>
+
+                {/* Typography Zalando standard: Bold Brand (700) + Regular title (400) */}
+                <h4 className="lens-card-title mt-2.5 text-sm font-bold text-ink truncate">
+                  {product.brandName || product.sourcePlatform || 'AYROVI'}
+                </h4>
+                <p className="lens-card-description mt-0.5 text-xs text-[#595959] line-clamp-2">
+                  {product.name}
+                </p>
+
+                {/* Price display & action */}
+                <div className="lens-card-price mt-1.5 flex items-baseline justify-between gap-2">
+                  <strong className="text-sm font-black text-ink">
+                    {formatMoney(product.finalPrice)}
+                  </strong>
+                  <span className={`text-[11px] font-bold ${soldOut ? 'text-danger' : 'text-success'}`}>
+                    {soldOut ? tr('Indisponible', 'غير متوفر') : tr('Commander', 'اطلب الآن')}
+                  </span>
+                </div>
+              </button>
+            </article>
+          );
         })}
       </div>
     ) : <EmptyContent label={tr('produits', 'منتجات')} />;
