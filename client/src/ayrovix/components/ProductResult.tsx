@@ -524,6 +524,16 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               </span>
             </div>
 
+            {/* SOURCE MONÉTAIRE (restauré de 1c48683) : le prix du marchand dans
+                SA devise reste visible à côté de la conversion TND — contrat
+                «displayed monetary source agrees with selection». */}
+            {validPrice && selectedPrice != null && selectedCurrency && (
+              <p className="break-words text-xs font-medium text-muted">
+                {tr('Prix boutique', 'سعر المتجر')}{' '}
+                <bdi dir="ltr">{selectedPrice.toFixed(2)} {selectedCurrency}</bdi>
+              </p>
+            )}
+
             {/* Preuve de disponibilité — jamais de stock inventé (contrat marchand) */}
             <span data-availability-badge className={`ay-readable-label inline-block w-fit rounded-control px-2.5 py-1 text-xs font-extrabold uppercase tracking-wide ${availabilityBadge.cls}`}>
               {availabilityBadge[isArabic ? 'ar' : 'fr']}
