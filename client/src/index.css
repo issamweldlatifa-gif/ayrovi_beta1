@@ -500,7 +500,9 @@
      aucune bande blanche au-dessus/en-dessous. cover rogne marginalement,
      exactement le comportement du marchand de référence. */
   object-fit: cover;
-  object-position: center top;
+  /* center 20% : الغلاف يقصّ من فراغ الرأس الفارغ (صور الاستوديو تترك هامشاً
+     فوق المنتج) بدل حذف القدمين — المنتج يملأ البطاقة كزالاندو. */
+  object-position: center 20%;
   /* Quiet Card v2 : le blanc des photos marchand se fond dans le canvas blanc. */
   mix-blend-mode: multiply;
   transform: none;

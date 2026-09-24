@@ -12025,7 +12025,7 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "1ea44e32e9902dcb3d739fdc03b545e0d24da5ccf934c471ba18f6ba6577997f",
+      "sha256": "326e8ce0faaf46a428d0a3f6bc0342fafe55a78ee26e73914b294045837f89cd",
       "lines": 1186,
       "imports": [
         "../services/productSelection",
@@ -19617,8 +19617,8 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "87d5383cfd52f4baf939ad371ea0f6860264543a756d383495f3225b0e44c8b7",
-      "lines": 1239,
+      "sha256": "042c17c5c097f3afc1c57854d6844b7c3767718f15e463b8fb637527974fbb9d",
+      "lines": 1241,
       "imports": [],
       "exports": [],
       "controls": [],

@@ -329,7 +329,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   return (
     <div className="flow-product" dir={direction}>
       {/* ── En-tête mobile épuré Zalando : < [Catégorie] à gauche, Panier à droite ── */}
-      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-line/40">
+      <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-line/40">
         <button
           type="button"
           onClick={() => {
