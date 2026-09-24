@@ -14,6 +14,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Loader2 } from '../../components/QatafoIcons';
 import type { AyrovixPromo } from '../types';
+import { withIsolation } from '../services/mediaIsolation';
 import './quiet-card.css';
 
 /* ────────────────────────────────────────────────────────────────────
@@ -32,13 +33,18 @@ export interface StudioImageFrameProps {
   /** Libellé du placeholder quand aucune source n'est disponible. */
   placeholderLabel?: string;
   loading?: 'lazy' | 'eager';
+  /**
+   * Isolation d'arrière-plan (défaut : oui) : la première image distante passe
+   * par le pipeline serveur qui retire le fond studio ; l'URL brute reste en repli.
+   */
+  isolate?: boolean;
 }
 
 export const StudioImageFrame: React.FC<StudioImageFrameProps> = ({
-  src, alt, fallbackSources, ratio = '1 / 1', className = '', children, placeholderLabel, loading = 'lazy',
+  src, alt, fallbackSources, ratio = '1 / 1', className = '', children, placeholderLabel, loading = 'lazy', isolate = true,
 }) => {
   const urls = useMemo(
-    () => [...new Set([src, ...(fallbackSources || [])].filter((value): value is string => Boolean(value)))],
+    () => withIsolation([...new Set([src, ...(fallbackSources || [])].filter((value): value is string => Boolean(value)))]),
     [src, fallbackSources],
   );
   const [index, setIndex] = useState(0);

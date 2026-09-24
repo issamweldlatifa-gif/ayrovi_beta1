@@ -6,6 +6,7 @@ import { cardGatewayAvailable } from '../services/paymentGateway';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
+import { getIsolatedImage, isPublicHttpUrl, readCachedPng } from '../services/imageIsolation';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { resolveActiveHeroVisual } from '../services/heroVisual';
@@ -120,6 +121,29 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.json({ success: true, data: commerceConfig(), serverTime: new Date().toISOString() });
   });
+
+  // ISOLATION D'ARRIÈRE-PLAN (24/09/2026) : fond studio uniforme (gris, couleur)
+  // → PNG transparent ; fond blanc ou complexe → redirection vers l'original.
+  // Jamais d'erreur bloquante : en cas d'échec on redirige, l'<img> vit sa vie.
+  router.get('/media/isolated', async (req, res) => {
+    const url = String(req.query.url || '');
+    if (!isPublicHttpUrl(url)) { res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' }); return; }
+    try {
+      const meta = await getIsolatedImage(url);
+      if (meta.kind === 'uniform' && meta.file) {
+        const png = readCachedPng(meta.file);
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        res.send(png);
+        return;
+      }
+    } catch {
+      // réseau indisponible, format exotique… on rend l'original.
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.redirect(302, url);
+  });
+
 
   router.post('/pricing/preview', (req, res) => {
     const originalPrice = Number(req.body?.originalPrice);

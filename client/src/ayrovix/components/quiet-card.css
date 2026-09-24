@@ -61,10 +61,12 @@
   gap: 0 0.5rem;
 }
 
+/* Règle client 24/09 : l'original barré est FIN et gris — le remisé (rouge,
+   noir le plus fort) porte seul le poids de l'offre. */
 .ay-quiet-price__original {
   color: var(--ayrovi-neutral-500, #595959);
-  font-size: 0.875rem;
-  font-weight: 700;
+  font-size: 0.8125rem;
+  font-weight: 500;
   text-decoration: line-through;
 }
 

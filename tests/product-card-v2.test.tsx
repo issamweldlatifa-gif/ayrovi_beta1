@@ -102,6 +102,29 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(html).toContain('Tailles/couleurs non listées par le marchand');
   });
 
+  it('typographie dictée par le client : description GRISE et fine, barré gris fin, remisé le plus fort', () => {
+    const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
+    // Description : corps gris, graisse normale — jamais du noir.
+    expect(html).toMatch(/<p class="break-words text-sm font-normal leading-relaxed text-muted">[^<]*Sérum contour des yeux/);
+    // Barré : fin (font-normal) et gris — le remisé porte seul le poids de l'offre.
+    const src = read('client/src/ayrovix/components/ProductResult.tsx');
+    expect(src).toContain('text-sm font-normal leading-none text-muted line-through');
+    const shared = read('client/src/ayrovix/components/quiet-card.css');
+    expect(shared).toMatch(/\.ay-quiet-price__original\s*\{[^}]*font-weight:\s*500/);
+    const grid = read('client/src/ayrovix/components/lens-product-card.css');
+    expect(grid).toMatch(/\.lens-product-card \.lens-card-description\{[^}]*color:#595959/);
+  });
+
+  it('isolation d’arrière-plan : la vitrine proxyfie les images marchand distantes, jamais les locales', () => {
+    const src = read('client/src/ayrovix/components/ProductResult.tsx');
+    expect(src).toContain('isolatedMediaUrl(activeImage) ?? activeImage');
+    expect(read('client/src/ayrovix/components/quiet-card.tsx')).toContain('withIsolation(');
+    expect(read('client/src/ayrovix/components/LensProductCard.tsx')).toContain('withIsolation(');
+    // Les chemins locaux restent intacts (fixtures, uploads).
+    const helper = read('client/src/ayrovix/services/mediaIsolation.ts');
+    expect(helper).toContain('/api/public/media/isolated?url=');
+  });
+
   it('photo cliquable plein écran : ✕, flèches, swipe — et trust line honnête', () => {
     const src = read('client/src/ayrovix/components/ProductResult.tsx');
     expect(src).toContain('setLightboxOpen(true)');
