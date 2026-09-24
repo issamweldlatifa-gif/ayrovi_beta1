@@ -91,9 +91,16 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
     }
     const merchantRating = Number(row?.rating ?? row?.product_rating);
     const ratingCount = Number(row?.reviews ?? row?.reviews_count);
-    const images = [...new Set([row?.thumbnail, row?.image]
+    const rawImages = [
+      row?.original_image,
+      row?.image,
+      ...(Array.isArray(row?.images) ? row.images : []),
+      row?.thumbnail,
+      ...(Array.isArray(row?.thumbnails) ? row.thumbnails : []),
+    ];
+    const images = [...new Set(rawImages
       .map((value) => String(value || '').trim())
-      .filter((value) => /^https?:\/\//i.test(value)))].slice(0, 2);
+      .filter((value) => /^https?:\/\//i.test(value)))];
     const index = results.length;
     const hasPrice = Number.isFinite(extractedPrice) && extractedPrice > 0 && !!currency;
     results.push({

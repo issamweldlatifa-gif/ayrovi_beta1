@@ -46,13 +46,14 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
       priceTnd: variantTnd?.priceTnd ?? null,
     };
   });
+  const gallery = [...new Set([scraped.mainImage, ...(scraped.images || [])].filter(Boolean))];
   return {
     title: scraped.title,
     brand: scraped.brand || null,
     model: null,
     description: scraped.description || '',
-    image: scraped.mainImage,
-    images: scraped.images || [],
+    image: scraped.mainImage || gallery[0] || '',
+    images: gallery,
     source: scraped.storeName,
     sourceUrl: scraped.url,
     price: scraped.sourcePrice > 0 ? scraped.sourcePrice : null,

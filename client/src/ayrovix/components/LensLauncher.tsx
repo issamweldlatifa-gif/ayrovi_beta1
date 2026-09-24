@@ -76,6 +76,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     ratingCount: candidate.ratingCount ?? null,
     ratingKind: candidate.ratingKind || 'match',
     priceToken: candidate.priceToken || null,
+    promo: candidate.promo || null,
     priceVerified: candidate.priceVerificationStatus === 'VERIFIED',
     priceVerificationStatus: candidate.priceVerificationStatus || 'PENDING_MANUAL',
     exchangeRate: null,
@@ -696,15 +697,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           <AppHeader
             title={stage === 'product' && product ? productClassLabel(classifyProduct(product.title, product.description), isArabic) : 'LENS'}
             onBack={stage === 'home' ? handleClose : stage === 'product' ? goBack : reset}
+            showLogo={stage !== 'product'}
+            className={stage === 'product' ? 'border-b-0 bg-transparent' : ''}
             actions={(
               <button
                 type="button"
                 onClick={onOpenCart}
                 aria-label={tr(`Ouvrir le panier (${cartCount} articles)`, `فتح السلة (${cartCount} منتج)`)}
-                className="relative grid h-11 w-11 place-items-center rounded-control border border-line bg-white text-ink"
+                className="relative grid h-11 w-11 place-items-center rounded-full bg-transparent text-ink hover:bg-surface transition"
               >
-                <ShoppingBag size={20} />
-                {cartCount > 0 && <span className="absolute -top-1.5 end-0 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
+                <ShoppingBag size={22} />
+                {cartCount > 0 && <span className="absolute -top-1 end-0 min-w-4 rounded-full border-2 border-white bg-ink px-1 text-center text-micro font-black leading-4 text-white" aria-hidden="true">{cartCount}</span>}
               </button>
             )}
           />
