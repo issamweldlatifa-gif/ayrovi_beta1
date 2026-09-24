@@ -738,9 +738,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             <button
               type="button"
               onClick={handleAddToCart}
-              aria-label={depositPercent ? tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`) : tr('Ajouter au panier', 'زيد للسلة')}
-              disabled={ordering || !validPrice || incompleteVariantQuote || (depositPercent === null && !configError)}
-              className="w-full rounded-full bg-black py-4 px-6 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[52px] shadow-sm"
+              aria-label={depositPercent ? tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`) : configError ? tr('Commande indisponible', 'الطلب غير متاح') : tr('Ajouter au panier', 'زيد للسلة')}
+              disabled={ordering || !validPrice || incompleteVariantQuote || depositPercent === null}
+              className="ay-btn-cta w-full rounded-full bg-black py-4 px-6 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[52px] shadow-sm"
             >
               {ordering ? (
                 <>
@@ -784,7 +784,12 @@ export const ProductResult: React.FC<ProductResultProps> = ({
           <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span>
         </summary>
         <div className="space-y-4 border-t border-line px-4 py-4">
-          {depositPercent === null && !configError && (
+          {configError ? (
+            <div role="alert" className="border border-line p-3 text-sm text-danger">
+              <p>{tr("Impossible de charger les conditions du serveur. Aucune commande n'a été envoyée.", 'تعذّر تحميل شروط الطلب من الخادم. لم يُرسل أي طلب.')}</p>
+              <button type="button" className="ay-btn-secondary mt-2 min-h-11" onClick={() => setConfigAttempt(value => value + 1)}>{tr('Réessayer', 'إعادة المحاولة')}</button>
+            </div>
+          ) : depositPercent === null && (
             <p className="break-words text-xs font-medium text-muted">{tr('Conditions en cours de chargement…', 'جارٍ تحميل شروط الدفع…')}</p>
           )}
           <p className="break-words text-xs leading-relaxed text-muted">{tr("Ces informations seront transmises à l'équipe d'achat avec votre commande.", 'ستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.')}</p>
