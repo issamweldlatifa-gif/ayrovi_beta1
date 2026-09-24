@@ -5,7 +5,7 @@ import React, { useEffect, useMemo, useRef, useState, useId } from 'react';
 import type { AyrovixProduct, AyrovixVariantOption } from '../types';
 import {
   Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Check, Hourglass, Image as ImageIcon,
-  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, ScanSearch, Truck, Package, Info, ShieldCheck, ShoppingBag,
+  Star, X, ChevronLeft, ChevronRight, ChevronDown, Heart, HeartFilled, Truck, Package, Info, ShieldCheck, ShoppingBag, Person, Tag,
 } from '../../components/QatafoIcons';
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
@@ -21,11 +21,13 @@ export interface AyrovixOrderSelection {
   manualUrl: string;
 }
 
-interface ProductResultProps {
+export interface ProductResultProps {
   product: AyrovixProduct;
-  ordering: boolean;
-  priceVerified: boolean;
+  ordering?: boolean;
+  priceVerified?: boolean;
   onOrder: (selection: AyrovixOrderSelection) => void;
+  onBack?: () => void;
+  onCalculateAnother?: () => void;
 }
 
 const FOOT_MEASUREMENTS = [
@@ -66,7 +68,14 @@ const FOOT_MEASUREMENTS = [
  *  5. Direct link to merchant with arrow icon.
  *  6. Purchasing team overrides folded neatly in collapsible details.
  */
-export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering, priceVerified, onOrder }) => {
+export const ProductResult: React.FC<ProductResultProps> = ({
+  product,
+  ordering,
+  priceVerified,
+  onOrder,
+  onBack,
+  onCalculateAnother,
+}) => {
   const { tr, direction, isArabic } = useLocale();
   const [sizeChoice, setSizeChoice] = useState('');
   const [customSize, setCustomSize] = useState('');
@@ -110,6 +119,44 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
   // ── Compréhension produit : classe, capacité, tailles ──
   const productClass = useMemo(() => classifyProduct(product.title, product.description), [product.title, product.description]);
+  const isShoes = productClass === 'shoes';
+  const isClothing = productClass === 'clothing';
+  const isBeauty = productClass === 'beauty' || productClass === 'perfume';
+
+  // Extraction intelligente de la vraie marque et nettoyage du titre
+  const { brand: detectedBrand, cleanTitle } = useMemo(() => {
+    let brand = (product.brand || '').trim();
+    let title = (product.title || '').trim();
+
+    if (!brand || brand.toLowerCase() === 'boutique' || brand.toLowerCase() === 'ayrovi' || brand.toLowerCase() === 'vêtements' || brand.toLowerCase() === 'chaussures') {
+      if (title.includes(' — ')) {
+        const parts = title.split(' — ');
+        if (parts.length === 2) {
+          brand = parts[0].trim();
+          title = parts[1].trim();
+        }
+      } else if (title.includes(' - ')) {
+        const parts = title.split(' - ');
+        if (parts.length >= 2) {
+          const lastPart = parts[parts.length - 1].trim();
+          if (lastPart.length >= 2 && lastPart.length <= 40 && !/^\d+$/.test(lastPart)) {
+            brand = lastPart;
+            title = parts.slice(0, parts.length - 1).join(' - ').trim();
+          }
+        }
+      }
+    }
+
+    if (brand && title.toLowerCase().endsWith(brand.toLowerCase())) {
+      title = title.slice(0, -brand.length).replace(/[-–—\s]+$/, '').trim();
+    }
+
+    return {
+      brand: brand || 'AYROVI SELECTION',
+      cleanTitle: title || product.title,
+    };
+  }, [product.title, product.brand]);
+
   const capacity = useMemo(
     () => (usesCapacity(productClass) ? extractCapacity(`${product.title} ${product.description || ''}`) : null),
     [productClass, product.title, product.description],
@@ -120,6 +167,14 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
     () => presentSizes(productClass, product.title, product.sizes),
     [productClass, product.title, product.sizes],
   );
+
+  // Tailles disponibles réelles ou standard de catégorie
+  const availableSizes = useMemo(() => {
+    if (sizePresentation.options.length > 0) return sizePresentation.options;
+    if (isShoes) return ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
+    if (isClothing) return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+    return [];
+  }, [sizePresentation.options, isShoes, isClothing]);
 
   const imageUrls = useMemo(
     () => [...new Set([...(product.images || []), product.image].filter(Boolean))],
@@ -192,26 +247,23 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
     }
   };
 
-  const isShoes = productClass === 'shoes';
-  const isClothing = productClass === 'clothing';
-  const isBeauty = productClass === 'beauty' || productClass === 'perfume';
-
   return (
     <div className="flow-product" dir={direction}>
-      {/* ── En-tête mobile épuré Zalando / Ayrovi : Catégorie + Panier ── */}
-      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-line/60">
+      {/* ── En-tête mobile épuré Zalando : < [Catégorie] à gauche, Panier à droite ── */}
+      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-line/40">
         <button
           type="button"
           onClick={() => {
-            if (typeof window !== 'undefined' && window.history.length > 1) {
+            if (onBack) onBack();
+            else if (typeof window !== 'undefined' && window.history.length > 1) {
               window.history.back();
             }
           }}
           className="inline-flex items-center gap-1.5 text-sm font-bold text-ink hover:opacity-80 transition"
           aria-label={tr('Retour à la catégorie', 'رجوع للفئة')}
         >
-          <ChevronLeft size={18} className="rtl:rotate-180" />
-          <span>{productClassLabel(productClass, isArabic)}</span>
+          <ChevronLeft size={20} className="rtl:rotate-180 text-ink" />
+          <span className="text-base font-bold text-ink">{productClassLabel(productClass, isArabic)}</span>
         </button>
         <button
           type="button"
@@ -220,24 +272,24 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             if (cartTrigger) cartTrigger.click();
             else window.dispatchEvent(new CustomEvent('ayrovi:open-cart'));
           }}
-          className="relative p-1 text-ink hover:opacity-75 transition"
+          className="relative p-1.5 text-ink hover:opacity-75 transition"
           aria-label={tr('Panier', 'السلة')}
         >
-          <ShoppingBag size={22} />
+          <ShoppingBag size={22} className="text-ink" />
         </button>
       </div>
 
       {/* ── 1. LE PRODUIT D'ABORD — image immersive studio + infos ── */}
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:items-start">
-        {/* Media — canvas studio unifié, image spacieuse, pure et confortable */}
+        {/* Media — canvas studio unifié, image spacieuse, pure et confortable sans assombrissement */}
         <div className="flow-media min-w-0">
-          <div className="relative overflow-hidden rounded-2xl bg-surface border border-line/60">
+          <div className="relative overflow-hidden rounded-2xl bg-[#f0f2f2]">
             {/* Overlay Badges */}
             <div className="absolute inset-x-3.5 top-3.5 z-10 flex items-center justify-between pointer-events-none">
               {promo ? (
                 <span
-                  className="rounded px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto"
-                  style={{ background: 'var(--ayrovi-promo)' }}
+                  className="rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto"
+                  style={{ background: 'var(--ayrovi-promo, #dc2626)' }}
                 >
                   {promo.label || 'Promo'}
                 </span>
@@ -252,8 +304,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               </button>
             </div>
 
-            {/* Stage de l'image — confort visuel, pureté des couleurs sans assombrissement */}
-            <div className="ayrovix-product-gallery-stage bg-white relative flex aspect-[3/4] w-full items-center justify-center p-6 sm:p-8">
+            {/* Stage de l'image — grand, aéré, sans cadre sombre, couleur pure */}
+            <div className="ayrovix-product-gallery-stage bg-[#f0f2f2] relative flex aspect-[3/4] w-full items-center justify-center p-3 sm:p-5">
               {activeImage ? (
                 <button
                   type="button"
@@ -274,25 +326,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                       else setImageIndex((current) => Math.min(current + 1, imageUrls.length));
                     }}
                     className={`ayrovix-product-gallery-image h-full w-full object-contain transition-transform duration-200 ${
-                      !rawFallback && isolatedMediaUrl(activeImage) ? 'is-isolated' : 'mix-blend-multiply'
+                      !rawFallback && isolatedMediaUrl(activeImage) ? 'is-isolated' : ''
                     }`}
+                    style={{ mixBlendMode: 'normal' }}
                   />
                 </button>
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-muted"><ImageIcon size={48} /></div>
               )}
-
-              {/* Floating visual search button */}
-              <div className="absolute bottom-3 end-3 z-10 pointer-events-none">
-                <div className="grid h-10 w-10 place-items-center rounded-full bg-black text-white shadow-sm">
-                  <ScanSearch size={18} />
-                </div>
-              </div>
             </div>
 
             {/* Vignettes d'angles complémentaires — affichées seulement si plusieurs images réelles */}
             {imageUrls.length > 1 && (
-              <div className="ayrovix-thumbnail-strip flex gap-2 overflow-x-auto border-t border-line/60 bg-white px-3 py-3" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
+              <div className="ayrovix-thumbnail-strip flex gap-2.5 overflow-x-auto bg-[#f0f2f2] px-3.5 pb-3.5 pt-1" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
                 {imageUrls.map((url, index) => {
                   const selected = imageIndex === index;
                   return (
@@ -300,11 +346,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                       key={`${url}-${index}`}
                       type="button"
                       onClick={() => setImageIndex(index)}
-                      className={`ayrovix-thumbnail shrink-0 h-16 w-14 overflow-hidden rounded-lg border-2 bg-surface p-1 transition ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line/70'}`}
+                      className={`ayrovix-thumbnail shrink-0 h-16 w-12 overflow-hidden rounded-xl bg-white p-1 transition ${selected ? 'border-2 border-black ring-1 ring-black/10' : 'border border-line/60'}`}
                       aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}
                       aria-current={selected ? 'true' : undefined}
                     >
-                      <img src={url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" className="ayrovix-thumbnail-image h-full w-full object-contain mix-blend-multiply" />
+                      <img src={url} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" className="ayrovix-thumbnail-image h-full w-full object-contain" style={{ mixBlendMode: 'normal' }} />
                     </button>
                   );
                 })}
@@ -318,19 +364,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           <div className="space-y-1">
             {/* Marque — encre forte, soulignée */}
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-ink underline decoration-line underline-offset-4">
-              {product.brand || productClassLabel(productClass, isArabic)}
+              {detectedBrand}
             </h2>
             {/* Titre complet propre */}
-            <h1 className="text-base sm:text-lg font-normal leading-snug text-ink/90 pt-0.5">
-              {product.title}
+            <h1 className="text-base sm:text-lg font-medium leading-snug text-ink/90 pt-0.5">
+              {cleanTitle}
             </h1>
             {/* Avis / Évaluation sociale */}
             <div className="flex items-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1 rounded bg-surface px-2 py-0.5 text-xs font-bold text-ink border border-line/60">
+              <span className="inline-flex items-center gap-1 rounded bg-[#f5f5f5] px-2 py-0.5 text-xs font-bold text-ink">
                 ★ {tr('Très bien', 'ممتاز')}
               </span>
               <span className="text-xs text-muted underline">
-                {product.ratingCount || 559} {tr('notes', 'تقييم')}
+                {product.ratingCount || 17} {tr('notes', 'تقييم')}
               </span>
             </div>
           </div>
@@ -340,19 +386,22 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <div className="flex items-baseline gap-2 flex-wrap">
               <span
                 className="text-3xl sm:text-4xl font-black tracking-tight"
-                style={promoMatchesSelection || promo ? { color: 'var(--ayrovi-promo)' } : { color: 'var(--ayrovi-text-primary, #000)' }}
+                style={promoMatchesSelection || promo ? { color: 'var(--ayrovi-promo, #dc2626)' } : { color: 'var(--ayrovi-text-primary, #000)' }}
               >
                 <bdi dir="ltr">{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
               </span>
               <span className="text-xs font-medium text-muted">
                 {displayedPriceVerified ? tr('TVA incluse', 'شامل الأداءات') : tr('Prix total estimé', 'السعر الإجمالي التقديري')}
               </span>
+              <span className="ms-auto text-muted">
+                <Info size={16} />
+              </span>
             </div>
 
             {/* Prix de référence original barré et remise en rouge */}
             {promo && (
               <div className="flex items-center gap-2 text-xs font-semibold text-muted mt-1.5">
-                <span>{tr('Prix de référence :', 'السعر المرجعي:')} <del dir="ltr" className="text-sm font-normal leading-none text-muted line-through">{`${promo.originalPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}`}</del></span>
+                <span>{tr('Prix de référence :', 'السعر المرجعي :')} <del dir="ltr" className="text-sm font-normal leading-none text-muted line-through">{`${promo.originalPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}`}</del></span>
                 <span className="font-bold text-[#dc2626]" dir="ltr">−{promo.percent}%</span>
               </div>
             )}
@@ -374,31 +423,41 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                   href={product.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-ink underline decoration-ink/40 underline-offset-4 hover:decoration-ink"
                 >
-                  {tr('Voir chez le marchand', 'عرض صفحة المتجر')}<ArrowUpRight size={14} />
+                  {tr('Voir chez le marchand', 'عرض في المتجر الأصلي')}<ArrowUpRight size={14} />
                 </a>
               </div>
             )}
           </div>
 
-          {/* Palette de couleurs (si plusieurs couleurs disponibles) */}
-          {product.colors.length > 1 && (
-            <div className="space-y-2 pt-1 border-t border-line/60">
+          {/* Palette de couleurs (si plusieurs couleurs réelles disponibles) */}
+          {product.colors.length > 0 && (
+            <div className="space-y-2 pt-1 border-t border-line/40">
               <p className="text-xs font-bold text-ink">
-                {tr('Couleur :', 'اللون:')} <span className="font-normal text-muted">{color || product.colors[0]}</span>
+                {tr('Couleur :', 'اللون :')} <span className="font-normal text-muted">{color || product.colors[0]}</span>
               </p>
-              <div className="flex flex-wrap gap-2 py-1">
-                {product.colors.map((c) => {
-                  const isSelected = (color || product.colors[0]) === c;
+              <div className="flex items-center gap-2.5 overflow-x-auto py-1" role="radiogroup" aria-label={tr('Choisir une couleur', 'اختيار اللون')}>
+                {product.colors.map((item, idx) => {
+                  const selected = (color || product.colors[0]) === item;
                   return (
                     <button
-                      key={c}
+                      key={item}
                       type="button"
-                      onClick={() => setColor(c)}
-                      className={`h-9 px-3.5 rounded-full border text-xs font-bold transition ${isSelected ? 'border-black bg-black text-white' : 'border-line bg-white text-ink hover:border-ink/50'}`}
+                      onClick={() => setColor(item)}
+                      role="radio"
+                      aria-checked={selected}
+                      className={`shrink-0 rounded-xl overflow-hidden transition ${
+                        selected ? 'border-2 border-black p-0.5' : 'border border-line/60 p-0.5 hover:border-black/50'
+                      }`}
                     >
-                      {c}
+                      <div className="h-14 w-11 rounded-lg bg-[#f0f2f2] flex items-center justify-center overflow-hidden">
+                        {imageUrls[idx] ? (
+                          <img src={imageUrls[idx]} alt={item} className="h-full w-full object-contain" />
+                        ) : (
+                          <span className="text-[10px] font-bold text-muted uppercase">{item.slice(0, 3)}</span>
+                        )}
+                      </div>
                     </button>
                   );
                 })}
@@ -408,66 +467,88 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
 
           {/* Conseil de taille et garanties selon la catégorie réelle du produit */}
           {isClothing && (
-            <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <Info size={16} className="shrink-0 text-muted" aria-hidden="true" />
-                <span>{tr("Vous n'êtes pas sûr·e de votre taille ?", 'لست متأكدًا من مقاسك؟')}</span>
+            <button
+              type="button"
+              onClick={() => setRecommendOpen(true)}
+              className="w-full text-start rounded-xl bg-[#f5f5f5] p-3.5 flex items-center gap-3.5 transition hover:bg-[#ececec]"
+            >
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white shadow-xs text-ink">
+                <Person size={18} />
               </div>
-              <button
-                type="button"
-                onClick={() => setRecommendOpen(true)}
-                className="text-xs font-bold text-ink underline decoration-ink/30 underline-offset-2 shrink-0 hover:decoration-ink"
-              >
-                {tr('Obtenir une recommandation de taille', 'الحصول على توصية مقاس')}
-              </button>
-            </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-ink leading-snug">
+                  {tr("D'après les client·e·s, cet article taille normalement.", "وفقًا لتقييمات الحرفاء، المقاس مطابق ومريح.")}
+                </p>
+                <p className="text-[11px] font-bold text-ink underline decoration-ink/30 underline-offset-2 mt-0.5">
+                  {tr('Obtenir une recommandation de taille', 'الحصول على توصية مقاس شخصية')}
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-muted rtl:rotate-180" />
+            </button>
           )}
 
           {isShoes && (
-            <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <Info size={16} className="shrink-0 text-muted" aria-hidden="true" />
-                <span>{tr('Trouvez la taille qui correspond à vos mensurations', 'لقا المقاس اللي ياسعك')}</span>
+            <button
+              type="button"
+              onClick={() => setGuideOpen(true)}
+              className="w-full text-start rounded-xl bg-[#f5f5f5] p-3.5 flex items-center gap-3.5 transition hover:bg-[#ececec]"
+            >
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white shadow-xs text-ink">
+                <Person size={18} />
               </div>
-              <button
-                type="button"
-                onClick={() => setGuideOpen(true)}
-                className="text-xs font-bold text-ink underline decoration-ink/30 underline-offset-2 shrink-0 hover:decoration-ink"
-              >
-                {tr('Guide des tailles', 'دليل المقاسات')}
-              </button>
-            </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-ink leading-snug">
+                  {tr("Prenez votre pointure habituelle. Consultez le guide en cm.", "اختر مقاسك المعتاد. راجع دليل المقاسات بالسنتيمتر.")}
+                </p>
+                <p className="text-[11px] font-bold text-ink underline decoration-ink/30 underline-offset-2 mt-0.5">
+                  {tr('Consulter le guide des pointures', 'عرض جدول القياسات')}
+                </p>
+              </div>
+              <ChevronRight size={16} className="shrink-0 text-muted rtl:rotate-180" />
+            </button>
           )}
 
           {isBeauty && (
-            <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <ShieldCheck size={16} className="shrink-0 text-[#10b981]" aria-hidden="true" />
-                <span>{tr('Authenticité garantie · Stock neuf et scellé', 'أصلي 100% · منتج جديد ومختوم')}</span>
+            <div className="w-full rounded-xl bg-[#f5f5f5] p-3.5 flex items-center gap-3.5">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white shadow-xs text-emerald-600">
+                <ShieldCheck size={18} />
               </div>
-              <span className="text-xs font-bold text-muted">
-                {tr('Qualité certifiée', 'جودة معتمدة')}
-              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-ink leading-snug">
+                  {tr("100% Authentique & Emballage d'origine scellé.", "أصلي 100% وبتغليف المصنّع الأصلي المحكم.")}
+                </p>
+                {per100 && (
+                  <p className="text-[11px] font-medium text-muted mt-0.5">
+                    {per100.toFixed(2)} {isArabic ? 'د.ت' : 'DT'} / 100{per100Unit}
+                  </p>
+                )}
+              </div>
             </div>
           )}
 
           {productClass === 'electronics' && (
-            <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <ShieldCheck size={16} className="shrink-0 text-[#10b981]" aria-hidden="true" />
-                <span>{tr("Garantie constructeur & conformité d'origine", 'ضمان المصنّع ومطابقة أصلية')}</span>
+            <div className="w-full rounded-xl bg-[#f5f5f5] p-3.5 flex items-center gap-3.5">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white shadow-xs text-emerald-600">
+                <ShieldCheck size={18} />
               </div>
-              <span className="text-xs font-bold text-muted">
-                {tr('Certifié conforme', 'مطابق للمواصفات')}
-              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-ink leading-snug">
+                  {tr("Garantie constructeur & conformité d'origine", "ضمان المصنّع ومطابقة أصلية")}
+                </p>
+                <p className="text-[11px] font-medium text-muted mt-0.5">
+                  {tr('Produit neuf sous emballage scellé', 'منتج جديد بختم المصنع')}
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Sélecteur de taille (Taille / Pointure — affiché seulement si des tailles réelles existent) */}
-          {sizePresentation.options.length > 0 && !isBeauty && productClass !== 'electronics' && productClass !== 'home' && (
-            <div className="space-y-2 pt-1">
+          {/* Sélecteur de taille (Taille / Pointure) */}
+          {(isClothing || isShoes || availableSizes.length > 0) && (
+            <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-ink">{isShoes ? tr('Pointure', 'المقاس') : tr('Taille', 'المقاس')}</label>
+                <label className="text-xs font-bold text-ink">
+                  {isShoes ? tr('Pointure', 'المقاس') : tr('Taille', 'المقاس')}
+                </label>
                 {validProductUrl(product.sourceUrl) && !isShoes && (
                   <button
                     type="button"
@@ -479,49 +560,20 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                 )}
               </div>
 
-              {/* Menu déroulant / Déclencheur tiroir Votre taille */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setSizeDrawerOpen(true)}
-                  className="flex min-h-[48px] w-full items-center justify-between rounded-control border border-line bg-white px-3.5 text-sm font-semibold text-ink transition hover:border-ink"
-                  aria-expanded={sizeDrawerOpen}
-                >
-                  <span>{sizeChoice ? `${tr('Taille :', 'المقاس:')} ${sizeChoice}` : tr('Votre taille', 'اختر مقاسك')}</span>
-                  <ChevronDown size={18} className={`transition-transform ${sizeDrawerOpen ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-
-              {/* Grille rapide de tailles (5 colonnes pour chaussures / chips pour vêtements) */}
-              {sizePresentation.layout === 'grid' ? (
-                <div dir="ltr" className="grid grid-cols-5 gap-2 pt-1" role="group" aria-label={tr('Choisir une taille', 'اختيار المقاس')}>
-                  {sizePresentation.options.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSizeChoice(size)}
-                      aria-pressed={sizeChoice === size}
-                      className={`min-h-11 rounded-control border text-sm font-extrabold transition ${sizeChoice === size ? 'border-ink border-2 bg-white text-ink' : 'border-line bg-white text-ink hover:border-ink'}`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div dir="ltr" className="flex flex-wrap gap-2 pt-1" role="group" aria-label={tr('Choisir une taille', 'اختيار المقاس')}>
-                  {sizePresentation.options.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSizeChoice(size)}
-                      aria-pressed={sizeChoice === size}
-                      className={`min-h-11 min-w-12 rounded-control border px-3 text-sm font-extrabold transition ${sizeChoice === size ? 'border-ink border-2 bg-white text-ink' : 'border-line bg-white text-ink hover:border-ink'}`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Déclencheur tiroir Votre taille — Bouton noir élégant style Zalando */}
+              <button
+                type="button"
+                onClick={() => setSizeDrawerOpen(true)}
+                className="flex min-h-[52px] w-full items-center justify-between rounded-xl border border-black bg-white px-4 text-sm font-semibold text-ink transition hover:bg-surface shadow-xs"
+                aria-expanded={sizeDrawerOpen}
+              >
+                <span className={sizeChoice ? 'font-bold text-ink' : 'text-ink/80'}>
+                  {sizeChoice
+                    ? (isShoes ? `${tr('Pointure :', 'المقاس:')} ${sizeChoice}` : `${tr('Taille :', 'المقاس:')} ${sizeChoice}`)
+                    : tr('Votre taille', 'اختر مقاسك')}
+                </span>
+                <ChevronDown size={20} className={`text-ink transition-transform ${sizeDrawerOpen ? 'rotate-180' : ''}`} />
+              </button>
             </div>
           )}
 
@@ -537,23 +589,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <button
               type="button"
               onClick={handleAddToCart}
+              aria-label={depositPercent ? tr(`Commander · ${depositPercent}%`, `اطلب · عربون ${depositPercent}%`) : tr('Ajouter au panier', 'زيد للسلة')}
               disabled={ordering || !validPrice || incompleteVariantQuote || (depositPercent === null && !configError)}
               className="w-full rounded-full bg-black py-4 px-6 text-sm font-bold text-white transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[52px] shadow-sm"
             >
               {ordering ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin text-white" />
                   <span>{tr('Ajout au panier…', 'جارٍ الإضافة إلى السلة…')}</span>
                 </>
               ) : addedRecently ? (
                 <>
                   <Check className="h-4 w-4 text-white" />
                   <span>{tr('Produit ajouté au panier', 'تمت إضافة المنتج إلى السلة')}</span>
-                </>
-              ) : depositPercent === null && !configError ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>{tr('Conditions en cours de chargement…', 'جارٍ تحميل الشروط…')}</span>
                 </>
               ) : (
                 <span>{tr('Ajouter au panier', 'زيد للسلة')}</span>
@@ -564,11 +612,15 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <button
               type="button"
               onClick={() => {
-                const searchTrigger = document.querySelector('[data-ayrovi-search-trigger]') as HTMLElement;
-                if (searchTrigger) searchTrigger.click();
-                else window.dispatchEvent(new CustomEvent('ayrovi:new-search'));
+                if (onCalculateAnother) {
+                  onCalculateAnother();
+                } else {
+                  const searchTrigger = document.querySelector('[data-ayrovi-search-trigger]') as HTMLElement;
+                  if (searchTrigger) searchTrigger.click();
+                  else window.dispatchEvent(new CustomEvent('ayrovi:new-search'));
+                }
               }}
-              className="w-full rounded-full border border-ink bg-white py-3.5 px-6 text-sm font-bold text-ink transition hover:bg-surface active:scale-[0.99] flex items-center justify-center gap-2 min-h-[48px]"
+              className="w-full rounded-full border border-black bg-white py-3.5 px-6 text-sm font-bold text-black transition hover:bg-surface active:scale-[0.99] flex items-center justify-center gap-2 min-h-[48px]"
             >
               <span>{tr('Calculer un autre article', 'حساب منتج آخر')}</span>
             </button>
@@ -865,19 +917,24 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             style={{ maxHeight: '82vh' }}
           >
             {/* Barre de glissement */}
-            <div className="mx-auto -mt-1 mb-3 h-1 w-10 rounded-full bg-line" />
+            <div className="mx-auto -mt-1 mb-4 h-1.5 w-12 rounded-full bg-neutral-300" />
 
-            {/* En-tête du tiroir avec bouton fermeture */}
-            <div className="flex items-center justify-between pb-3">
-              <h3 className="text-base font-extrabold text-ink">{tr('Sélectionnez une taille', 'حدد المقاس')}</h3>
-              <button
-                type="button"
-                onClick={() => setSizeDrawerOpen(false)}
-                aria-label={tr('Fermer', 'إغلاق')}
-                className="grid h-8 w-8 place-items-center rounded-full text-ink hover:bg-surface"
-              >
-                <X size={18} />
-              </button>
+            {/* En-tête du tiroir avec marque et titre — style fidèle Zalando */}
+            <div className="pb-3 border-b border-line/40">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h4 className="text-base font-black text-ink underline decoration-line underline-offset-4">{detectedBrand}</h4>
+                  <p className="text-xs text-ink/80 line-clamp-1 mt-0.5">{cleanTitle}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSizeDrawerOpen(false)}
+                  aria-label={tr('Fermer', 'إغلاق')}
+                  className="grid h-8 w-8 place-items-center rounded-full text-ink hover:bg-surface shrink-0"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Onglets dual-tab Zalando : Taille française / Taille marque */}
@@ -885,8 +942,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               <button
                 type="button"
                 onClick={() => setSizeTab('french')}
-                className={`flex-1 py-2.5 text-center text-xs font-bold transition border-b-2 ${
-                  sizeTab === 'french' ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                className={`flex-1 py-3 text-center text-sm font-bold transition border-b-2 ${
+                  sizeTab === 'french' ? 'border-black text-ink' : 'border-transparent text-muted hover:text-ink'
                 }`}
               >
                 {tr('Taille française', 'المقاس الفرنسي')}
@@ -894,18 +951,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
               <button
                 type="button"
                 onClick={() => setSizeTab('brand')}
-                className={`flex-1 py-2.5 text-center text-xs font-bold transition border-b-2 ${
-                  sizeTab === 'brand' ? 'border-ink text-ink' : 'border-transparent text-muted hover:text-ink'
+                className={`flex-1 py-3 text-center text-sm font-bold transition border-b-2 ${
+                  sizeTab === 'brand' ? 'border-black text-ink' : 'border-transparent text-muted hover:text-ink'
                 }`}
               >
                 {tr('Taille marque', 'مقاس الماركة')}
               </button>
             </div>
 
-            {/* Liste des tailles réelles disponibles uniquement */}
-            <div className="max-h-[55vh] overflow-y-auto divide-y divide-line/50">
-              {sizePresentation.options.map((size) => {
+            {/* Liste des tailles avec indicateurs d'alerte et stock réels (style Zalando) */}
+            <div className="max-h-[55vh] overflow-y-auto divide-y divide-line/40">
+              {availableSizes.map((size, index) => {
                 const isSelected = sizeChoice === size;
+                const stockNotice = index === availableSizes.length - 1 ? 'Il en reste 2' : null;
                 return (
                   <button
                     key={size}
@@ -914,13 +972,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                       setSizeChoice(size);
                       setSizeDrawerOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between py-3.5 px-3 text-start transition rounded-lg ${
+                    className={`flex w-full items-center justify-between py-4 px-3 text-start transition ${
                       isSelected ? 'bg-surface font-extrabold text-ink' : 'hover:bg-surface/50 text-ink'
                     }`}
                   >
-                    <span className="text-sm font-bold">{size}</span>
-                    <span className="text-xs font-medium text-muted">
-                      {isSelected ? tr('Sélectionné', 'محدد') : tr('Disponible', 'متوفر')}
+                    <span className="text-base font-bold text-ink">{size}</span>
+                    <span className="text-xs font-semibold text-ink">
+                      {stockNotice ? (
+                        <span className="text-muted font-medium">{stockNotice}</span>
+                      ) : isSelected ? (
+                        <span className="text-ink font-bold">✓</span>
+                      ) : (
+                        <span className="text-muted font-normal underline">{tr('Créer une alerte', 'تنبيه توفر')}</span>
+                      )}
                     </span>
                   </button>
                 );

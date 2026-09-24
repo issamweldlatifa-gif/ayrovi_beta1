@@ -350,29 +350,31 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       />
 
       <section className="relative flex h-screen h-[100dvh] min-h-0 w-full flex-col overflow-hidden bg-white">
-        <div className="flex items-center justify-between border-b border-line bg-surface px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center font-black text-xs">
-              +
+        {step === 'input' && (
+          <div className="flex items-center justify-between border-b border-line bg-surface px-5 pb-3.5 pt-[max(0.875rem,env(safe-area-inset-top))]">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-ink text-white flex items-center justify-center font-black text-xs">
+                +
+              </div>
+              <div>
+                <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
+                  AYROVIX Lens — Nouvelle commande
+                </h3>
+                <p className="text-xs text-muted font-medium">Conversion transparente et garantie</p>
+              </div>
             </div>
-            <div>
-              <h3 id="lens-page-title" className="font-extrabold text-base sm:text-lg text-ink">
-                {step === 'input' ? "AYROVIX Lens — Nouvelle commande" : "AYROVIX Lens — Prix en dinars"}
-              </h3>
-              <p className="text-xs text-muted font-medium">Conversion transparente et garantie</p>
-            </div>
-          </div>
 
-          <button
-            ref={closeButtonRef}
-            type="button"
-            onClick={handleCloseDrawer}
-            className="w-9 h-9 rounded-full bg-white border border-line text-muted hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2"
-            aria-label="Fermer Lens"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+            <button
+              ref={closeButtonRef}
+              type="button"
+              onClick={handleCloseDrawer}
+              className="w-9 h-9 rounded-full bg-white border border-line text-muted hover:text-ink flex items-center justify-center transition-colors shadow-xs cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/10 focus-visible:ring-offset-2"
+              aria-label="Fermer Lens"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
         {errorMsg && (
           <div className="mx-5 mt-3 p-3 rounded-xl bg-danger/5 border border-danger/20 text-danger text-xs font-semibold">
@@ -380,7 +382,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           </div>
         )}
 
-        <div className="ay-safe-bottom flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
+        <div className={step === 'details' ? "ay-safe-bottom flex-1 overflow-y-auto px-3 sm:px-4 py-2" : "ay-safe-bottom flex-1 overflow-y-auto p-5 sm:p-6 space-y-5"}>
           {step === 'input' && (
             <div className="space-y-5">
               <div className="text-center space-y-1">
@@ -508,11 +510,16 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
           )}
 
           {step === 'details' && ayrovixProduct ? (
-            <div className="py-2">
+            <div className="py-1">
               <ProductResult
                 product={ayrovixProduct}
                 ordering={isAddingToCart}
                 priceVerified={true}
+                onBack={handleCloseDrawer}
+                onCalculateAnother={() => {
+                  navigation.replaceTop({ id: 'product:input' });
+                  onNewClientOrder();
+                }}
                 onOrder={(selection) => {
                   setIsAddingToCart(true);
                   setErrorMsg(null);

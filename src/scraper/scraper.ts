@@ -100,7 +100,7 @@ export class SmartLinkScraper {
       totalPriceTND,
       variants,
       availability: liveData?.availability || 'unknown',
-      brand: urlInfo.brand || storeName.split(' ')[0],
+      brand: merchantResult.data?.brand || urlInfo.brand || storeName.split(' ')[0],
       priceVerified: merchantResult.verified && price > 0,
       verificationProvider: merchantResult.provider,
       verificationMethod: merchantResult.method,

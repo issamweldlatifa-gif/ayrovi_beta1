@@ -92,10 +92,10 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
     const merchantRating = Number(row?.rating ?? row?.product_rating);
     const ratingCount = Number(row?.reviews ?? row?.reviews_count);
     const rawImages = [
+      row?.thumbnail,
       row?.original_image,
       row?.image,
       ...(Array.isArray(row?.images) ? row.images : []),
-      row?.thumbnail,
       ...(Array.isArray(row?.thumbnails) ? row.thumbnails : []),
     ];
     const images = [...new Set(rawImages

@@ -4,6 +4,7 @@ import type { ProductVariantDetail, ProductVariants, StoreType } from '../types'
 
 export interface ParsedProductPage {
   title: string;
+  brand?: string;
   price: number;
   currency: string;
   images: string[];
@@ -340,6 +341,19 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     title = title.replace(/\s*\|\s*(SHEIN|Amazon|TEMU|AliExpress).*$/i, '')
       .replace(/\s*:\s*Amazon\.[a-z.]+/i, '').trim();
 
+    const ldBrand = productLd?.brand?.name || (typeof productLd?.brand === 'string' ? productLd.brand : '') || embeddedProduct?.vendor || embeddedProduct?.brand || '';
+    const metaBrand = meta('meta[property="product:brand"]') || meta('meta[name="brand"]') || meta('meta[property="og:brand"]');
+    let brand = cleanLabel(ldBrand || metaBrand);
+    if (!brand && title.includes(' - ')) {
+      const parts = title.split(' - ');
+      if (parts.length >= 2) {
+        const candidate = parts[parts.length - 1].trim();
+        if (candidate.length >= 2 && candidate.length <= 40 && !looksLikeSize(candidate)) {
+          brand = candidate;
+        }
+      }
+    }
+
     const offers = Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers;
     const selectorPrice = storeType === 'amazon'
       ? text('.apexPriceToPay .a-offscreen, #corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen, #priceblock_dealprice, #newBuyBoxPrice')
@@ -407,6 +421,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
 
     return {
       title,
+      brand: brand || undefined,
       price,
       currency,
       images,

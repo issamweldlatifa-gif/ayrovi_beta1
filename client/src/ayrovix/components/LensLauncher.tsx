@@ -693,7 +693,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   return (
     <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
-        {['home', 'error', 'barcode', 'product'].includes(stage) && (
+        {['home', 'error', 'barcode'].includes(stage) && (
           <AppHeader
             title={stage === 'product' && product ? productClassLabel(classifyProduct(product.title, product.description), isArabic) : 'LENS'}
             onBack={stage === 'home' ? handleClose : stage === 'product' ? goBack : reset}
@@ -882,31 +882,17 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'product' && product && (
             <div className="flex flex-1 flex-col min-h-0 overflow-y-auto bg-white">
-              <div className="mx-auto w-full max-w-6xl px-4 py-3 pb-6 lg:px-6 lg:py-6">
-                {/* Back context — keeps Lens image reachable without wasting viewport */}
-                {previewUrl && (
-                  <button type="button" onClick={goBack} className="mb-3 inline-flex items-center gap-2 text-xs font-bold text-muted hover:text-ink">
-                    <span className="grid h-7 w-7 place-items-center rounded-full border border-line bg-white">‹</span>
-                    {tr('Retour aux résultats', 'العودة إلى النتائج')}
-                    <span className="hidden sm:inline-flex items-center gap-1.5 ml-2 rounded-full border border-line bg-surface px-2 py-1">
-                      <img src={previewUrl} alt="" className="h-6 w-6 object-cover rounded" />
-                      <span className="text-xs font-semibold text-muted">{tr('Votre image', 'صورتك')}</span>
-                    </span>
-                  </button>
-                )}
-                <ProductResult product={product} ordering={ordering} priceVerified={verifiedPriceUrl} onOrder={(v) => void handleOrder(v)} />
-                <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                  <button type="button" onClick={reset} className="w-full rounded-full bg-ink py-3 text-sm font-bold text-white sm:w-auto sm:px-6">
-                    {tr('Calculer un autre produit', 'حساب منتج آخر')}
-                  </button>
-                  {!verifiedPriceUrl && candidatesView?.list.length ? (
-                    <button type="button" onClick={goBack} className="w-full rounded-full bg-white py-3 text-sm font-bold text-ink border border-line sm:w-auto sm:px-6">
-                      {tr('Retour aux autres résultats', 'العودة إلى النتائج الأخرى')}
-                    </button>
-                  ) : null}
-                </div>
+              <div className="mx-auto w-full max-w-5xl px-3 sm:px-4 py-3 pb-8">
+                <ProductResult
+                  product={product}
+                  ordering={ordering}
+                  priceVerified={verifiedPriceUrl}
+                  onOrder={(v) => void handleOrder(v)}
+                  onBack={goBack}
+                  onCalculateAnother={reset}
+                />
                 {urlResult && urlResult.alternates.length > 0 && (
-                  <section className="mt-8">
+                  <section className="mt-8 pt-6 border-t border-line/60">
                     <h3 className="mb-3 text-xs font-extrabold uppercase tracking-wide text-muted">{tr('Autres correspondances', 'مطابقات أخرى')}</h3>
                     <ProductCandidates candidates={urlResult.alternates} onChoose={handleChooseCandidate} />
                   </section>
