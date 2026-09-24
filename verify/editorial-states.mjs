@@ -44,7 +44,10 @@ try{
    await page.evaluate(()=>window.setEditorialFixture({kind:'product'}));await page.getByRole('button',{name:/Commander|اطلب/}).waitFor();
    // Product card v2 : le formulaire vit dans l'accordéon « Modifier la commande » — on l'ouvre avant de le piloter.
    await page.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));
-   const card=page.locator('.flow-product');const size=await card.evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: product has no horizontal overflow`,size.scroll<=size.width+1,size);
+   // المسرح ملء-حافة-إلى-حافة بهوامش سالبة متعمدة (توازن زالاندو) — يخرج من
+   // صندوق البطاقة عمداً. العقد المُحسّوس فعلياً: حاوية التمرير لا تتمرر
+   // جانبياً (نفس مقياس عدّاء Lens: documentElement/scroll container).
+   const card=page.locator('[data-fixture="product"]');const size=await card.evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: product has no horizontal overflow`,size.scroll<=size.width+1,size);
    check(`${key}: missing review is not synthesized`,await page.locator('[data-merchant-rating]').count()===0);
    const icons=await inspectEditorialIcons(page,'.flow-product');check(`${key}: product geometry`,icons.count>0&&!icons.errors.length,icons);
    const quantity=page.getByRole('spinbutton',{name:locale==='ar'?'الكمية':'Quantité',exact:true});await quantity.fill('1.5');await page.getByRole('button',{name:/Commander|اطلب/}).click();
