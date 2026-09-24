@@ -577,7 +577,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                         {swatchImage ? (
                           <img src={swatchImage} alt={item} loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                         ) : (
-                          <span className="text-[10px] font-bold text-muted uppercase">{item.slice(0, 3)}</span>
+                          <span className="text-xs font-bold text-muted uppercase">{item.slice(0, 3)}</span>
                         )}
                       </div>
                     </button>
@@ -601,7 +601,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 <p className="text-xs font-semibold text-ink leading-snug">
                   {tr("D'après les client·e·s, cet article taille normalement.", "وفقًا لتقييمات الحرفاء، المقاس مطابق ومريح.")}
                 </p>
-                <p className="text-[11px] font-bold text-ink underline decoration-ink/30 underline-offset-2 mt-0.5">
+                <p className="text-xs font-bold text-ink underline decoration-ink/30 underline-offset-2 mt-0.5">
                   {tr('Obtenir une recommandation de taille', 'الحصول على توصية مقاس شخصية')}
                 </p>
               </div>
@@ -622,7 +622,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 <p className="text-xs font-semibold text-ink leading-snug">
                   {tr("Prenez votre pointure habituelle. Consultez le guide en cm.", "اختر مقاسك المعتاد. راجع دليل المقاسات بالسنتيمتر.")}
                 </p>
-                <p className="text-[11px] font-bold text-ink underline decoration-ink/30 underline-offset-2 mt-0.5">
+                <p className="text-xs font-bold text-ink underline decoration-ink/30 underline-offset-2 mt-0.5">
                   {tr('Consulter le guide des pointures', 'عرض جدول القياسات')}
                 </p>
               </div>
@@ -640,7 +640,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                   {tr("100% Authentique & Emballage d'origine scellé.", "أصلي 100% وبتغليف المصنّع الأصلي المحكم.")}
                 </p>
                 {per100 && (
-                  <p className="text-[11px] font-medium text-muted mt-0.5">
+                  <p className="text-xs font-medium text-muted mt-0.5">
                     {per100.toFixed(2)} {isArabic ? 'د.ت' : 'DT'} / 100{per100Unit}
                   </p>
                 )}
@@ -657,7 +657,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 <p className="text-xs font-semibold text-ink leading-snug">
                   {tr("Garantie constructeur & conformité d'origine", "ضمان المصنّع ومطابقة أصلية")}
                 </p>
-                <p className="text-[11px] font-medium text-muted mt-0.5">
+                <p className="text-xs font-medium text-muted mt-0.5">
                   {tr('Produit neuf sous emballage scellé', 'منتج جديد بختم المصنع')}
                 </p>
               </div>
@@ -771,6 +771,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({
           <span className="font-medium text-muted">{tr('(optionnel)', '(اختياري)')}</span>
         </summary>
         <div className="space-y-4 border-t border-line px-4 py-4">
+          {depositPercent === null && !configError && (
+            <p className="break-words text-xs font-medium text-muted">{tr('Conditions en cours de chargement…', 'جارٍ تحميل شروط الدفع…')}</p>
+          )}
           <p className="break-words text-xs leading-relaxed text-muted">{tr("Ces informations seront transmises à l'équipe d'achat avec votre commande.", 'ستُرسل هذه المعلومات إلى فريق الشراء مع طلبك.')}</p>
           <p data-variant-stock-notice className="break-words text-xs leading-relaxed text-muted">{tr('Le choix d’une taille ou couleur ne confirme pas son stock.', 'اختيار المقاس أو اللون لا يؤكّد توفره لدى المتجر.')}</p>
 
@@ -1118,7 +1121,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                           {tr('Il en reste 2', 'بقي 2 قطع')}
                         </span>
                       ) : isSelected ? (
-                        <span className="text-black font-bold">✓</span>
+                        <span className="inline-flex items-center text-black"><Check size={16} /></span>
                       ) : null}
                     </span>
                   </button>

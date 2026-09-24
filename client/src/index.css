@@ -476,12 +476,14 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  /* Ratio ZALANDO RÉEL (mesuré 24/09/2026 sur zalando.fr) : packshot 1000×1444 = 9/13. */
+  /* Ratio ZALANDO RÉEL (mesuré 24/09/2026 sur zalando.fr) : packshot 1000×1444 = 9/13.
+     Carte PLEIN bord : zéro padding interne — la photo occupe toute la carte
+     (largeur ET hauteur), le canvas studio #f6f6f6 la remplit. */
   aspect-ratio: 9 / 13;
   box-sizing: border-box;
   place-items: center;
   overflow: hidden;
-  padding: clamp(0.75rem, 3vw, 1.5rem);
+  padding: 0;
   contain: layout paint;
 }
 
@@ -554,7 +556,7 @@
 @media (min-width: 640px) {
   .ayrovix-product-gallery-stage {
     aspect-ratio: 9 / 13;
-    padding: clamp(1rem, 3vw, 2rem);
+    padding: 0;
   }
 }
 

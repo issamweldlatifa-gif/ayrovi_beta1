@@ -248,7 +248,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
                   <strong className="text-sm font-black text-ink">
                     {formatMoney(product.finalPrice)}
                   </strong>
-                  <span className={`text-[11px] font-bold ${soldOut ? 'text-danger' : 'text-success'}`}>
+                  <span className={`text-xs font-bold ${soldOut ? 'text-danger' : 'text-success'}`}>
                     {soldOut ? tr('Indisponible', 'غير متوفر') : tr('Commander', 'اطلب الآن')}
                   </span>
                 </div>

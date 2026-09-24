@@ -19,6 +19,7 @@ import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } fr
 import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { warmIsolation } from '../services/imageIsolation';
+import { addPriceWatcher, listPriceWatchers, removePriceWatcher } from './services/priceWatch';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
@@ -607,6 +608,35 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       console.warn('[AYROVIX analyze-text]', error?.message || 'unknown');
       return res.status(502).json({ success: false, code: 'TEXT_SEARCH_FAILED', error: 'La recherche par mot-clé a échoué. Vérifiez votre connexion.' });
     }
+  });
+
+  // VEILLE PRIX — «راقب السعر» (24/09/2026) : réservée au compte client connecté.
+  router.post('/watch', (req: Request, res: Response) => {
+    const account = resolveCustomer(db, req);
+    if (!account) return res.status(401).json({ success: false, error: 'Connectez-vous pour surveiller un prix.' });
+    const created = addPriceWatcher(db, account.id, {
+      url: String(req.body?.url || ''),
+      title: String(req.body?.title || ''),
+      imageUrl: String(req.body?.imageUrl || ''),
+      source: String(req.body?.source || ''),
+      targetPriceTnd: req.body?.targetPriceTnd == null ? null : Number(req.body.targetPriceTnd),
+    });
+    if (!created) return res.status(400).json({ success: false, error: 'Lien de produit invalide.' });
+    res.json({ success: true, data: created });
+  });
+
+  router.get('/watch', (req: Request, res: Response) => {
+    const account = resolveCustomer(db, req);
+    if (!account) return res.status(401).json({ success: false, error: 'Connectez-vous pour voir vos veilles.' });
+    res.json({ success: true, data: listPriceWatchers(db, account.id) });
+  });
+
+  router.delete('/watch/:id', (req: Request, res: Response) => {
+    const account = resolveCustomer(db, req);
+    if (!account) return res.status(401).json({ success: false, error: 'Connectez-vous.' });
+    const removed = removePriceWatcher(db, account.id, String(req.params.id || ''));
+    if (!removed) return res.status(404).json({ success: false, error: 'Veille introuvable.' });
+    res.json({ success: true });
   });
 
   router.post('/review-request', (req: Request, res: Response) => {

@@ -65,6 +65,7 @@ import {
   listAyrovixReviews,
   updateAyrovixReview,
 } from '../ayrovix/reviews';
+import { lensPerformanceReport } from '../ayrovix/services/lensPerformanceTrace';
 import {
   GenerateMagazineInput,
   MagazineAgentProviderError,
@@ -528,7 +529,13 @@ export function createAdminRouter(
     updatedAt: row.updated_at,
   } : null);
 
-  router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
+    // PERFORMANCE LENS (24/09/2026) : p50/p95 réels de l'échantillon vivant (500
+  // dernières traces) — aucune donnée personnelle, uniquement des durées.
+  router.get('/lens-performance', requireAdmin(db, 'dashboard:read'), (_req, res) => {
+    res.json({ success: true, data: lensPerformanceReport() });
+  });
+
+router.get('/lens-hero', requireAdmin(db, 'content:read'), (_req, res) => {
     res.json({ success: true, data: lensRowForApi(db.get<any>("SELECT * FROM lens_hero_settings WHERE id='global'")) });
   });
 

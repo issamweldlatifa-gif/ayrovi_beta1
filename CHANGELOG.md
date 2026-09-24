@@ -333,3 +333,10 @@ All notable AYROVI changes are recorded in this file.
 ### Deployment note
 - Konnect production credentials and official bank/postal coordinates must be configured on the server/Admin before those payment options become operational.
 - SQLite, uploaded proofs and generated invoices require a Render Persistent Disk or another durable storage strategy; without it, redeploys can lose local state and files.
+### Added (24/09/2026 — socle d'échelle)
+- **Profils produits persistants (`product_profiles`)** : chaque fiche marchand crawlée (description complète, toutes les photos, images par couleur, tailles, disponibilité) est stockée par URL et resservie 6 h — le premier scan paie le crawl, tous les suivants sont instantanés. L'enrichissement Lens sert désormais le profil en cache.
+- **Veille prix «راقب السعر» (`price_watchers` + scheduler)** : le client surveille un produit ; relecture horaire (watcher toutes les 6 h) du prix marchand réel, notification client à la BAISSE constatée, mise à la mort après 8 échecs avec notification dédiée. API `/api/ayrovix/watch` (compte requis) + `startPriceWatchScheduler` (timers unref, `AYROVI_PRICE_WATCH=false` pour couper).
+- **Segmentation IA locale (3ᵉ couche d'isolation)** : `src/services/segmentation.ts` exécute u2netp (4,6 Mo, commis sha256-épinglé) via onnxruntime-web (WASM — aucune binaire native, aucun API payant). Les fonds complexes (pièce, miroir) sont détourés en local, avec garde-fous (1ᵉʳ plan 3–97 %, anti-îlots) et dégradation silencieuse. `getIsolatedImage` chaîne : chroma-key connecté → segmentation → original.
+- **Proxy images WebP `/api/public/media/img`** : redimensionnement serveur (156→1000 px), cache disque par (URL, largeur), chaîne client isolé → proxy → original.
+- **Chauffe du cache (`warmIsolation`)** : lancée à l'arrivée des candidats Lens et des résultats URL — le premier visiteur ne paie plus l'isolation.
+- **Performance Lens côté Admin** : `GET /api/admin/lens-performance` (permission `dashboard:read`) — p50/p95 réels de l'échantillon vivant (backend, SerpAPI, rendu, chargement images, taux de cache pipeline).

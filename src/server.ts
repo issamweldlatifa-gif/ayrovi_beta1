@@ -19,6 +19,7 @@ import { phoneOtpAvailable } from './customer/otp';
 import { mailerReady } from './services/mailer';
 import { processCustomerAuthMail } from './customer/accountMail';
 import { startFxRatesScheduler } from './services/fxRates';
+import { startPriceWatchScheduler } from './ayrovix/services/priceWatch';
 import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
 import { cardGatewayAvailable } from './services/paymentGateway';
@@ -375,6 +376,7 @@ customerMailTimer?.unref();
 // Jamais en test ; se suspend quand un admin saisit un taux manuellement.
 if (process.env.NODE_ENV !== 'test') {
   startFxRatesScheduler(db);
+  startPriceWatchScheduler(db, scraper);
 }
 
 // Start Server

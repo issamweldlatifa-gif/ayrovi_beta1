@@ -53,7 +53,7 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
 
   it('la fiche produit et la vignette panier utilisent le canvas blanc (plus de fond surface/cover)', () => {
     const result = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(result).toContain('ayrovix-product-gallery-stage bg-white');
+    expect(result).toContain('ayrovix-product-gallery-stage bg-[#f6f6f6]');
     expect(result).not.toContain('object-cover');
     const galleryCss = read('client/src/index.css');
     expect(galleryCss).toMatch(/\.ayrovix-product-gallery-image,[\s\S]*?mix-blend-mode:\s*multiply/);
@@ -123,11 +123,11 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><ProductResult product={product} ordering={false} priceVerified onOrder={vi.fn()} /></LocaleProvider>,
     );
-    expect(html).toContain("color:var(--ayrovi-promo)");
+    expect(html).toContain("color:var(--ayrovi-promo, #dc2626)");
     expect(html).toContain('line-through');
     expect(html).toContain('650.00');
     expect(html).toContain('604.50');
-    expect(html).toContain('background:var(--ayrovi-promo)');
+    expect(html).toContain('background:var(--ayrovi-promo, #dc2626)');
     expect(html).not.toContain('background:var(--ayrovi-primary)');
   });
 });

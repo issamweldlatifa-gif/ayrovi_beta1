@@ -77,3 +77,46 @@ export function getTrace(requestId: string): LensTrace | undefined {
 export function getRecentTraces(limit = 20): LensTrace[] {
   return Array.from(traces.values()).slice(-limit);
 }
+
+/* ── Agrégats ADMIN (24/09/2026) — p50/p95 honnêtes sur l'échantillon vivant ── */
+export interface Percentiles {
+  count: number;
+  p50: number | null;
+  p95: number | null;
+}
+
+function percentilesOf(values: Array<number | undefined>): Percentiles {
+  const clean = values.filter((value): value is number => Number.isFinite(value as number) && (value as number) >= 0).sort((a, b) => a - b);
+  if (!clean.length) return { count: 0, p50: null, p95: null };
+  return {
+    count: clean.length,
+    p50: Math.round(clean[Math.floor(clean.length * 0.5)]),
+    p95: Math.round(clean[Math.min(clean.length - 1, Math.floor(clean.length * 0.95))]),
+  };
+}
+
+export interface LensPerformanceReport {
+  sampleSize: number;
+  totalBackendMs: Percentiles;
+  serpApiTotalMs: Percentiles;
+  frontendRenderMs: Percentiles;
+  imagesLoadMs: Percentiles;
+  pipelineCacheHitRate: number | null;
+  generatedAt: string;
+}
+
+export function lensPerformanceReport(): LensPerformanceReport {
+  const recent = Array.from(traces.values());
+  const withPipeline = recent.filter((trace) => typeof trace.pipelineCacheHit === 'boolean');
+  return {
+    sampleSize: recent.length,
+    totalBackendMs: percentilesOf(recent.map((trace) => trace.totalBackendMs)),
+    serpApiTotalMs: percentilesOf(recent.map((trace) => trace.serpApiTotalMs)),
+    frontendRenderMs: percentilesOf(recent.map((trace) => trace.frontendRenderMs)),
+    imagesLoadMs: percentilesOf(recent.map((trace) => trace.imagesLoadMs)),
+    pipelineCacheHitRate: withPipeline.length
+      ? Math.round((withPipeline.filter((trace) => trace.pipelineCacheHit).length / withPipeline.length) * 100)
+      : null,
+    generatedAt: new Date().toISOString(),
+  };
+}
