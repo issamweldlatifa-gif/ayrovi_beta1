@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 218,
-    "customerAndSharedFiles": 166,
+    "files": 219,
+    "customerAndSharedFiles": 167,
     "controls": 441,
     "iconAliases": 101,
     "uniqueGlyphs": 98
@@ -10934,7 +10934,7 @@
     {
       "file": "client/src/ayrovix/components/lens-product-card.css",
       "domain": "lens",
-      "sha256": "d24447d0c016a6ce2adf8cb3db3371165eff11005b1d9168ef119e9028006e2b",
+      "sha256": "11d13366e3e6e750d77eaded6685eace8fa6962a70a2d88a577de954a1502843",
       "lines": 22,
       "imports": [],
       "exports": [],
@@ -11642,8 +11642,8 @@
     {
       "file": "client/src/ayrovix/components/LensProductCard.tsx",
       "domain": "lens",
-      "sha256": "e83e5133b3e0b4eaf65c8a278e0833a78a5b292514cf2424fdff8df171e2c77f",
-      "lines": 54,
+      "sha256": "ac705c1199b45cc504c4d753665c85a804da5db088b637847091456d6889feb5",
+      "lines": 55,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -11651,6 +11651,7 @@
         "../types",
         "./MerchantRating",
         "./quiet-card",
+        "../services/mediaIsolation",
         "./lens-product-card.css"
       ],
       "exports": [
@@ -11660,7 +11661,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 37,
+          "line": 38,
           "className": "\"lens-card-open\"",
           "type": "\"button\"",
           "role": null,
@@ -11670,7 +11671,7 @@
         },
         {
           "tag": "button",
-          "line": 49,
+          "line": 50,
           "className": "\"lens-card-favorite\"",
           "type": "\"button\"",
           "role": null,
@@ -12045,8 +12046,8 @@
     {
       "file": "client/src/ayrovix/components/ProductResult.tsx",
       "domain": "lens",
-      "sha256": "fe23b3000bc52caa5c9a7395ded716c22463dcdf4e1d4849dc88ac6b40751f28",
-      "lines": 513,
+      "sha256": "a6469e2572e14cc279be05d90c8e67471f4649014a14cc622aaea02e6eb7e61d",
+      "lines": 521,
       "imports": [
         "../services/productSelection",
         "./MerchantRating",
@@ -12056,7 +12057,8 @@
         "../../components/QatafoIcons",
         "../services/resultPolicy",
         "../../i18n/LocaleContext",
-        "../services/productAttributes"
+        "../services/productAttributes",
+        "../services/mediaIsolation"
       ],
       "exports": [
         "ProductResult"
@@ -12064,7 +12066,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 171,
+          "line": 175,
           "className": "\"flex h-full w-full items-center justify-center\"",
           "type": "\"button\"",
           "role": null,
@@ -12074,7 +12076,7 @@
         },
         {
           "tag": "button",
-          "line": 196,
+          "line": 204,
           "className": "{`ayrovix-thumbnail shrink-0 rounded-control border-2 bg-surface ${selected ? 'border-ink ring-2 ring-black/10' : 'border-line'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12084,7 +12086,7 @@
         },
         {
           "tag": "a",
-          "line": 223,
+          "line": 231,
           "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": null,
           "role": null,
@@ -12094,7 +12096,7 @@
         },
         {
           "tag": "button",
-          "line": 277,
+          "line": 285,
           "className": "\"inline-flex items-center gap-1 text-xs font-bold text-ink underline decoration-ink/20 underline-offset-4 hover:decoration-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -12104,7 +12106,7 @@
         },
         {
           "tag": "button",
-          "line": 289,
+          "line": 297,
           "className": "{`min-h-11 rounded-control border text-sm font-extrabold transition ${sizeChoice === size ? 'border-ink border-2 bg-white text-ink' : 'border-line bg-white text-ink hover:border-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12114,7 +12116,7 @@
         },
         {
           "tag": "button",
-          "line": 301,
+          "line": 309,
           "className": "{`min-h-11 min-w-12 rounded-control border px-3 text-sm font-extrabold transition ${sizeChoice === size ? 'border-ink border-2 bg-white text-ink' : 'border-line bg-white text-ink hover:border-ink'}`}",
           "type": "\"button\"",
           "role": null,
@@ -12124,7 +12126,7 @@
         },
         {
           "tag": "a",
-          "line": 325,
+          "line": 333,
           "className": "\"ay-btn-secondary min-h-[52px] px-4 text-sm break-words\"",
           "type": null,
           "role": null,
@@ -12134,7 +12136,7 @@
         },
         {
           "tag": "button",
-          "line": 329,
+          "line": 337,
           "className": "\"ay-btn-cta min-h-[52px] flex-1 px-5 text-sm break-words\"",
           "type": "\"button\"",
           "role": null,
@@ -12144,7 +12146,7 @@
         },
         {
           "tag": "button",
-          "line": 347,
+          "line": 355,
           "className": "\"ay-btn-secondary mt-2 min-h-11\"",
           "type": "\"button\"",
           "role": null,
@@ -12154,7 +12156,7 @@
         },
         {
           "tag": "summary",
-          "line": 352,
+          "line": 360,
           "className": "\"flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-extrabold text-ink [&::-webkit-details-marker]:hidden\"",
           "type": null,
           "role": null,
@@ -12164,7 +12166,7 @@
         },
         {
           "tag": "input",
-          "line": 362,
+          "line": 370,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none transition focus:border-ink\"",
           "type": "\"url\"",
           "role": null,
@@ -12174,7 +12176,7 @@
         },
         {
           "tag": "button",
-          "line": 383,
+          "line": 391,
           "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12184,7 +12186,7 @@
         },
         {
           "tag": "input",
-          "line": 384,
+          "line": 392,
           "className": "\"h-11 min-w-0 flex-1 border-x border-line bg-white text-center text-sm font-extrabold text-ink outline-none\"",
           "type": "\"number\"",
           "role": null,
@@ -12194,7 +12196,7 @@
         },
         {
           "tag": "button",
-          "line": 385,
+          "line": 393,
           "className": "\"inline-flex items-center justify-center h-11 w-[44px] shrink-0 text-lg font-bold text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12204,7 +12206,7 @@
         },
         {
           "tag": "input",
-          "line": 392,
+          "line": 400,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -12214,7 +12216,7 @@
         },
         {
           "tag": "select",
-          "line": 397,
+          "line": 405,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -12224,7 +12226,7 @@
         },
         {
           "tag": "input",
-          "line": 404,
+          "line": 412,
           "className": "\"min-h-[46px] w-full rounded-control border border-line bg-white px-3 text-sm text-ink outline-none\"",
           "type": null,
           "role": null,
@@ -12234,7 +12236,7 @@
         },
         {
           "tag": "a",
-          "line": 415,
+          "line": 423,
           "className": "\"mt-2 inline-flex items-center gap-1 break-words text-xs font-extrabold text-amber-900 underline\"",
           "type": null,
           "role": null,
@@ -12244,7 +12246,7 @@
         },
         {
           "tag": "textarea",
-          "line": 423,
+          "line": 431,
           "className": "\"w-full resize-none rounded-control border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-ink\"",
           "type": null,
           "role": null,
@@ -12254,7 +12256,7 @@
         },
         {
           "tag": "button",
-          "line": 449,
+          "line": 457,
           "className": "\"grid h-11 w-11 place-items-center rounded-full border border-line text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -12264,7 +12266,7 @@
         },
         {
           "tag": "button",
-          "line": 462,
+          "line": 470,
           "className": "\"absolute start-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12274,7 +12276,7 @@
         },
         {
           "tag": "button",
-          "line": 463,
+          "line": 471,
           "className": "\"absolute end-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30\"",
           "type": "\"button\"",
           "role": null,
@@ -12284,7 +12286,7 @@
         },
         {
           "tag": "button",
-          "line": 475,
+          "line": 483,
           "className": "\"grid h-11 w-11 place-items-center rounded-full border border-line text-ink\"",
           "type": "\"button\"",
           "role": null,
@@ -12294,7 +12296,7 @@
         },
         {
           "tag": "a",
-          "line": 501,
+          "line": 509,
           "className": "\"ay-btn-secondary inline-flex min-h-11 items-center gap-1 px-4 text-xs\"",
           "type": null,
           "role": null,
@@ -12367,8 +12369,8 @@
     {
       "file": "client/src/ayrovix/components/quiet-card.css",
       "domain": "lens",
-      "sha256": "ac0c13ddc40fd80b3f0dd46209e65b6f082284c27643e614929f7b25c113d5a7",
-      "lines": 173,
+      "sha256": "8db052d492a14e669c0431e94d55601ba19eeae46cc88ed3d889c61475ad9b7e",
+      "lines": 175,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -12387,12 +12389,13 @@
     {
       "file": "client/src/ayrovix/components/quiet-card.tsx",
       "domain": "lens",
-      "sha256": "b8fd2ede3e6ab82b488356abd474270091a2a6e0771cc344c9b9bcee7523fd7d",
-      "lines": 171,
+      "sha256": "9c01494b76d2feccedcf953a7790412eea4338dbb2c6f8635b6bd3561bd33156",
+      "lines": 177,
       "imports": [
         "react",
         "../../components/QatafoIcons",
         "../types",
+        "../services/mediaIsolation",
         "./quiet-card.css"
       ],
       "exports": [
@@ -12403,7 +12406,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 140,
+          "line": 146,
           "className": "\"ay-quiet-actions__primary\"",
           "type": "\"button\"",
           "role": null,
@@ -12413,7 +12416,7 @@
         },
         {
           "tag": "button",
-          "line": 155,
+          "line": 161,
           "className": "\"ay-quiet-actions__icon\"",
           "type": "\"button\"",
           "role": null,
@@ -12629,6 +12632,23 @@
       "imports": [],
       "exports": [
         "loadLocalDetector"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/ayrovix/services/mediaIsolation.ts",
+      "domain": "lens",
+      "sha256": "043931ed5babd311e19e230b6d1a9b12f69b37b3d54264737d7e64d65a5e6f05",
+      "lines": 21,
+      "imports": [],
+      "exports": [
+        "isolatedMediaUrl",
+        "withIsolation"
       ],
       "controls": [],
       "icons": [],

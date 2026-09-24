@@ -7,6 +7,7 @@ import { Loader2, ArrowUpRight, CheckCircle2 as CheckCircle, Hourglass, Image as
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 import { classifyProduct, productClassLabel, extractCapacity, pricePer100, presentSizes, usesCapacity } from '../services/productAttributes';
+import { isolatedMediaUrl } from '../services/mediaIsolation';
 
 export interface AyrovixOrderSelection {
   size: string;
@@ -63,6 +64,8 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
   const [manualUrl, setManualUrl] = useState(product.sourceUrl || '');
   const [submitted, setSubmitted] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  // Isolation : la tentative isolée d'abord, la brute en repli pour LA MÊME image.
+  const [rawFallback, setRawFallback] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -125,6 +128,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
     return () => { cancelled = true; clearTimeout(timeout); controller.abort(); };
   }, [configAttempt]);
 
+  useEffect(() => { setRawFallback(false); }, [imageIndex]);
   useEffect(() => {
     setImageIndex(0);
     setSizeChoice('');
@@ -175,13 +179,17 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
                     className="flex h-full w-full items-center justify-center"
                   >
                     <img
-                      src={activeImage}
+                      src={rawFallback ? activeImage : (isolatedMediaUrl(activeImage) ?? activeImage)}
                       alt={product.title}
                       referrerPolicy="no-referrer"
                       decoding="async"
                       fetchPriority="high"
                       draggable={false}
-                      onError={() => setImageIndex((current) => Math.min(current + 1, imageUrls.length))}
+                      onError={() => {
+                        // 1) repli sur l'image brute de la MÊME photo, 2) photo suivante.
+                        if (!rawFallback && isolatedMediaUrl(activeImage)) setRawFallback(true);
+                        else setImageIndex((current) => Math.min(current + 1, imageUrls.length));
+                      }}
                       className="ayrovix-product-gallery-image"
                     />
                   </button>
@@ -233,7 +241,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
             <p className="mt-1 break-words text-3xl font-black leading-none tracking-tight text-ink">
               <bdi dir="ltr" style={promoMatchesSelection ? { color: 'var(--ayrovi-promo)' } : undefined}>{selectedPriceTnd != null && Number.isFinite(selectedPriceTnd) ? `${selectedPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}` : '—'}</bdi>
               {promoMatchesSelection && promo && (
-                <bdi dir="ltr" className="ms-2 align-middle text-base font-bold leading-none text-muted line-through">{`${promo.originalPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}`}</bdi>
+                <bdi dir="ltr" className="ms-2 align-middle text-sm font-normal leading-none text-muted line-through">{`${promo.originalPriceTnd.toFixed(2)} ${isArabic ? 'د.ت' : 'DT'}`}</bdi>
               )}
             </p>
             {promoMatchesSelection && promo && (
@@ -314,7 +322,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           {(incompleteVariantQuote || selection.generalEstimate) && <p data-variant-selection-notice role={incompleteVariantQuote ? 'alert' : 'status'} className="break-words border-s-2 border-line ps-3 text-sm leading-relaxed text-muted">{tr(selectionNotice[0], selectionNotice[1])}</p>}
 
           {/* Description — même corps de texte que le reste (jamais un pavé minuscule) */}
-          {product.description ? <p className="break-words text-sm leading-relaxed text-ink/90">{product.description}</p> : null}
+          {product.description ? <p className="break-words text-sm font-normal leading-relaxed text-muted">{product.description}</p> : null}
         </div>
       </div>
 

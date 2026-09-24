@@ -4,6 +4,7 @@ import { useLocale } from '../../i18n/LocaleContext';
 import type { AyrovixCandidate } from '../types';
 import { MerchantRating } from './MerchantRating';
 import { QuietPromoPrice } from './quiet-card';
+import { withIsolation } from '../services/mediaIsolation';
 import './lens-product-card.css';
 
 export function lensCardCopy(candidate: AyrovixCandidate) {
@@ -18,7 +19,7 @@ export function lensCardCopy(candidate: AyrovixCandidate) {
   return { heading: brand || title, description };
 }
 function CardImage({ candidate }: { candidate: AyrovixCandidate }) {
-  const urls = useMemo(() => [...new Set([candidate.image, ...(candidate.images || [])].filter(Boolean))], [candidate.image, candidate.images]);
+  const urls = useMemo(() => withIsolation([...new Set([candidate.image, ...(candidate.images || [])].filter(Boolean))]), [candidate.image, candidate.images]);
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [candidate.id, candidate.image, candidate.images]);
   return urls[index]

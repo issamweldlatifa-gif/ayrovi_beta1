@@ -1,0 +1,129 @@
+// ISOLATION D'ARRIÈRE-PLAN (décision client 24/09/2026) :
+//  • fond studio UNIFORME (gris, couleur) → PNG transparent (chroma-key) ;
+//  • fond BLANC → redirection (le multiply de la carte suffit) ;
+//  • fond COMPLEXE → redirection (l'AI payant reste une décision à part) ;
+//  • cache disque par URL (un URL = un travail), garde SSRF, jamais d'image cassée.
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import sharp from 'sharp';
+import request from 'supertest';
+import { analyzeEdges, chromaKey, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
+import { app } from '../src/server';
+
+const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-isolated-'));
+process.env.AYROVI_ISOLATED_CACHE_DIR = cacheDir;
+afterAll(() => { fs.rmSync(cacheDir, { recursive: true, force: true }); });
+
+function rawImage(width: number, height: number, paint: (x: number, y: number) => [number, number, number]): RawImage {
+  const data = Buffer.alloc(width * height * 4);
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const offset = (y * width + x) * 4;
+      const [r, g, b] = paint(x, y);
+      data[offset] = r; data[offset + 1] = g; data[offset + 2] = b; data[offset + 3] = 255;
+    }
+  }
+  return { data, width, height, channels: 4 };
+}
+
+describe('isolation — analyse des bords (pure)', () => {
+  it('détecte un fond studio gris uniforme', () => {
+    const analysis = analyzeEdges(rawImage(64, 64, () => [238, 238, 238]));
+    expect(analysis.kind).toBe('uniform');
+    expect(analysis.color).toEqual({ r: 238, g: 238, b: 238 });
+  });
+  it('détecte un fond blanc (multiply suffit — pas de traitement)', () => {
+    expect(analyzeEdges(rawImage(64, 64, () => [255, 255, 255])).kind).toBe('white');
+  });
+  it('détecte un fond complexe (dégradé photo) et n\'invente rien', () => {
+    expect(analyzeEdges(rawImage(64, 64, (x) => [x * 4, 40, 200 - x * 3])).kind).toBe('complex');
+  });
+});
+
+describe('isolation — chroma-key (pure)', () => {
+  it('retire le fond uniforme, garde le produit opaque', () => {
+    const image = rawImage(40, 40, (x, y) => (x > 10 && x < 30 && y > 10 && y < 30 ? [200, 30, 30] : [221, 221, 221]));
+    const keyed = chromaKey(image, { r: 221, g: 221, b: 221 });
+    const alpha = (x: number, y: number) => keyed[(y * 40 + x) * 4 + 3];
+    expect(alpha(5, 5)).toBe(0); // fond → transparent
+    expect(alpha(20, 20)).toBe(255); // produit → opaque
+  });
+});
+
+describe('isolation — pipeline sharp', () => {
+  it('produit un PNG transparent pour un produit sur fond gris', async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#ededed"/><rect x="60" y="60" width="80" height="80" fill="#c0392b"/></svg>`;
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    const result = await isolateBuffer(png);
+    expect(result.kind).toBe('uniform');
+    expect(result.png).not.toBeNull();
+    const meta = await sharp(result.png!).metadata();
+    expect(meta.hasAlpha).toBe(true);
+  });
+  it('redirige (aucun traitement) pour un fond blanc', async () => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="#ffffff"/><rect x="30" y="30" width="60" height="60" fill="#333"/></svg>`;
+    const result = await isolateBuffer(await sharp(Buffer.from(svg)).png().toBuffer());
+    expect(result.kind).toBe('white');
+    expect(result.png).toBeNull();
+  });
+});
+
+describe('isolation — garde SSRF', () => {
+  it.each([
+    'http://127.0.0.1/x.jpg',
+    'http://localhost/x.jpg',
+    'http://192.168.1.5/x.jpg',
+    'http://172.16.0.1/x.jpg',
+    'http://10.0.0.2/x.jpg',
+    'file:///etc/passwd',
+    'javascript:alert(1)',
+    'not-a-url',
+  ])('bloque %s', (url) => expect(isPublicHttpUrl(url)).toBe(false));
+  it('accepte une URL marchand publique', () => {
+    expect(isPublicHttpUrl('https://cdn.shop.example/product.jpg')).toBe(true);
+  });
+});
+
+describe('isolation — endpoint public', () => {
+  const grayProduct = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#ededed"/><rect x="60" y="60" width="80" height="80" fill="#c0392b"/></svg>`;
+  const remote = 'https://cdn.shop.example/gray-studio.jpg';
+  let fetchCalls = 0;
+
+  beforeEach(() => { fetchCalls = 0; });
+
+  it('sert un PNG transparent pour un fond studio, puis sert depuis le cache', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      fetchCalls += 1;
+      return new Response(await sharp(Buffer.from(grayProduct)).png().toBuffer(), { status: 200, headers: { 'content-type': 'image/png' } });
+    }));
+    const first = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent(remote)}`);
+    expect(first.status).toBe(200);
+    expect(first.headers['content-type']).toContain('image/png');
+    const meta = await sharp(first.body).metadata();
+    expect(meta.hasAlpha).toBe(true);
+    const second = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent(remote)}`);
+    expect(second.status).toBe(200);
+    expect(fetchCalls).toBe(1); // le cache disque évite le second téléchargement
+    vi.unstubAllGlobals();
+  });
+
+  it('redirige vers l\'original pour un fond blanc ou complexe', async () => {
+    const white = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#ffffff"/></svg>`;
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(await sharp(Buffer.from(white)).png().toBuffer(), { status: 200 })));
+    const response = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent('https://cdn.shop.example/white.jpg')}`);
+    expect(response.status).toBe(302);
+    expect(response.headers.location).toBe('https://cdn.shop.example/white.jpg');
+    vi.unstubAllGlobals();
+  });
+
+  it('rejette les URLs privées (SSRF) sans aucun appel réseau', async () => {
+    const spy = vi.fn();
+    vi.stubGlobal('fetch', spy);
+    const response = await request(app).get('/api/public/media/isolated?url=http%3A%2F%2F127.0.0.1%2Fsecret.jpg');
+    expect(response.status).toBe(400);
+    expect(spy).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+});
