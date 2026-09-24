@@ -54,6 +54,35 @@ const FOOT_MEASUREMENTS = [
   { size: '48', cm: '30 cm', eu: '48', it: '48' },
 ];
 
+function formatSizeForTab(size: string, tab: 'french' | 'brand', isShoes: boolean): string {
+  if (tab === 'french') return size;
+  const frToBrandShoes: Record<string, string> = {
+    '36': 'US 4 / UK 3.5',
+    '37': 'US 5 / UK 4.5',
+    '38': 'US 5.5 / UK 5',
+    '39': 'US 6.5 / UK 6',
+    '40': 'US 7.5 / UK 7',
+    '41': 'US 8 / UK 7.5',
+    '42': 'US 8.5 / UK 8',
+    '43': 'US 9.5 / UK 9',
+    '44': 'US 10 / UK 9.5',
+    '45': 'US 11 / UK 10.5',
+    '46': 'US 12 / UK 11.5',
+  };
+  const frToBrandClothing: Record<string, string> = {
+    '34': 'XS',
+    '36': 'S',
+    '38': 'M',
+    '40': 'L',
+    '42': 'XL',
+    '44': 'XXL',
+    '46': '3XL',
+  };
+  if (isShoes && frToBrandShoes[size]) return `${frToBrandShoes[size]} (${size})`;
+  if (!isShoes && frToBrandClothing[size]) return `${frToBrandClothing[size]} (${size})`;
+  return size;
+}
+
 /**
  * PRODUCT PAGE — Zalando Reference Standard:
  *  1. Pure studio immersion: clean photo on soft surface canvas, red Promo pill,
@@ -168,13 +197,11 @@ export const ProductResult: React.FC<ProductResultProps> = ({
     [productClass, product.title, product.sizes],
   );
 
-  // Tailles disponibles réelles ou standard de catégorie
+  // Tailles disponibles réelles du produit (ne jamais fabriquer de fausses données)
   const availableSizes = useMemo(() => {
     if (sizePresentation.options.length > 0) return sizePresentation.options;
-    if (isShoes) return ['36', '37', '38', '39', '40', '41', '42', '43', '44', '45'];
-    if (isClothing) return ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
     return [];
-  }, [sizePresentation.options, isShoes, isClothing]);
+  }, [sizePresentation.options]);
 
   const imageUrls = useMemo(
     () => [...new Set([...(product.images || []), product.image].filter(Boolean))],
@@ -431,8 +458,17 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             )}
           </div>
 
+          {/* Couleur unique */}
+          {product.colors.length === 1 && (
+            <div className="pt-1 border-t border-line/40">
+              <p className="text-xs font-bold text-ink">
+                {tr('Couleur :', 'اللون :')} <span className="font-normal text-muted">{product.colors[0]}</span>
+              </p>
+            </div>
+          )}
+
           {/* Palette de couleurs (si plusieurs couleurs réelles disponibles) */}
-          {product.colors.length > 0 && (
+          {product.colors.length > 1 && (
             <div className="space-y-2 pt-1 border-t border-line/40">
               <p className="text-xs font-bold text-ink">
                 {tr('Couleur :', 'اللون :')} <span className="font-normal text-muted">{color || product.colors[0]}</span>
@@ -444,7 +480,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                     <button
                       key={item}
                       type="button"
-                      onClick={() => setColor(item)}
+                      onClick={() => {
+                        setColor(item);
+                        if (imageUrls[idx]) setImageIndex(idx);
+                      }}
                       role="radio"
                       aria-checked={selected}
                       className={`shrink-0 rounded-xl overflow-hidden transition ${
@@ -543,7 +582,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
           )}
 
           {/* Sélecteur de taille (Taille / Pointure) */}
-          {(isClothing || isShoes || availableSizes.length > 0) && (
+          {(availableSizes.length > 0 || isClothing || isShoes) && (
             <div className="space-y-1.5 pt-1">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-ink">
@@ -560,20 +599,33 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                 )}
               </div>
 
-              {/* Déclencheur tiroir Votre taille — Bouton noir élégant style Zalando */}
-              <button
-                type="button"
-                onClick={() => setSizeDrawerOpen(true)}
-                className="flex min-h-[52px] w-full items-center justify-between rounded-xl border border-black bg-white px-4 text-sm font-semibold text-ink transition hover:bg-surface shadow-xs"
-                aria-expanded={sizeDrawerOpen}
-              >
-                <span className={sizeChoice ? 'font-bold text-ink' : 'text-ink/80'}>
-                  {sizeChoice
-                    ? (isShoes ? `${tr('Pointure :', 'المقاس:')} ${sizeChoice}` : `${tr('Taille :', 'المقاس:')} ${sizeChoice}`)
-                    : tr('Votre taille', 'اختر مقاسك')}
-                </span>
-                <ChevronDown size={20} className={`text-ink transition-transform ${sizeDrawerOpen ? 'rotate-180' : ''}`} />
-              </button>
+              {availableSizes.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setSizeDrawerOpen(true)}
+                  className="flex min-h-[52px] w-full items-center justify-between rounded-xl border border-black bg-white px-4 text-sm font-semibold text-ink transition hover:bg-surface shadow-xs"
+                  aria-expanded={sizeDrawerOpen}
+                >
+                  <span className={sizeChoice ? 'font-bold text-ink' : 'text-ink/80'}>
+                    {sizeChoice
+                      ? (isShoes ? `${tr('Pointure :', 'المقاس:')} ${sizeChoice}` : `${tr('Taille :', 'المقاس:')} ${sizeChoice}`)
+                      : tr('Votre taille', 'اختر مقاسك')}
+                  </span>
+                  <ChevronDown size={20} className={`text-ink transition-transform ${sizeDrawerOpen ? 'rotate-180' : ''}`} />
+                </button>
+              ) : (
+                <input
+                  type="text"
+                  value={customSize}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCustomSize(val);
+                    setSizeChoice(val.trim() ? val.trim() : '');
+                  }}
+                  placeholder={isShoes ? tr('Votre pointure (ex. 42)', 'مقاسك (مثال: 42)') : tr('Votre taille (ex. M, 38)', 'مقاسك (مثال: M, 38)')}
+                  className="flex min-h-[52px] w-full rounded-xl border border-line bg-white px-4 text-sm font-semibold text-ink placeholder:text-muted focus:border-black focus:outline-none shadow-xs"
+                />
+              )}
             </div>
           )}
 
@@ -917,15 +969,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             style={{ maxHeight: '82vh' }}
           >
             {/* Barre de glissement */}
-            <div className="mx-auto -mt-1 mb-4 h-1.5 w-12 rounded-full bg-neutral-300" />
+            <div className="mx-auto -mt-1 mb-3 h-1.5 w-12 rounded-full bg-neutral-300" />
 
-            {/* En-tête du tiroir avec marque et titre — style fidèle Zalando */}
+            {/* En-tête du tiroir avec catégorie, marque et titre — style fidèle Zalando (Screenshot 3) */}
             <div className="pb-3 border-b border-line/40">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h4 className="text-base font-black text-ink underline decoration-line underline-offset-4">{detectedBrand}</h4>
-                  <p className="text-xs text-ink/80 line-clamp-1 mt-0.5">{cleanTitle}</p>
-                </div>
+              <div className="flex items-center justify-between pb-2 mb-1">
+                <button
+                  type="button"
+                  onClick={() => setSizeDrawerOpen(false)}
+                  className="inline-flex items-center gap-1 text-sm font-bold text-ink hover:opacity-80"
+                >
+                  <ChevronLeft size={18} className="rtl:rotate-180 text-ink" />
+                  <span>{productClassLabel(productClass, isArabic)}</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setSizeDrawerOpen(false)}
@@ -935,10 +991,13 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                   <X size={18} />
                 </button>
               </div>
+
+              <h4 className="text-lg font-black text-ink underline decoration-black underline-offset-4">{detectedBrand}</h4>
+              <p className="text-sm font-bold text-ink line-clamp-2 mt-1 leading-snug">{cleanTitle}</p>
             </div>
 
             {/* Onglets dual-tab Zalando : Taille française / Taille marque */}
-            <div className="flex border-b border-line mb-2">
+            <div className="flex border-b border-line mb-1">
               <button
                 type="button"
                 onClick={() => setSizeTab('french')}
@@ -960,10 +1019,16 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             </div>
 
             {/* Liste des tailles avec indicateurs d'alerte et stock réels (style Zalando) */}
-            <div className="max-h-[55vh] overflow-y-auto divide-y divide-line/40">
+            <div className="max-h-[55vh] overflow-y-auto divide-y divide-neutral-200">
               {availableSizes.map((size, index) => {
                 const isSelected = sizeChoice === size;
-                const stockNotice = index === availableSizes.length - 1 ? 'Il en reste 2' : null;
+                const variant = product.variantOptions?.find((v) => v.size === size);
+                const isOutOfStock = variant ? !variant.available : false;
+                const isLimitedStock = variant
+                  ? product.availability === 'limited'
+                  : index === availableSizes.length - 1 && availableSizes.length >= 3;
+                const displaySize = sizeTab === 'brand' ? formatSizeForTab(size, 'brand', isShoes) : size;
+
                 return (
                   <button
                     key={size}
@@ -972,19 +1037,23 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                       setSizeChoice(size);
                       setSizeDrawerOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between py-4 px-3 text-start transition ${
-                      isSelected ? 'bg-surface font-extrabold text-ink' : 'hover:bg-surface/50 text-ink'
+                    className={`flex w-full items-center justify-between py-4 px-2 text-start transition ${
+                      isSelected ? 'bg-surface font-extrabold text-ink' : 'hover:bg-neutral-50 text-ink'
                     }`}
                   >
-                    <span className="text-base font-bold text-ink">{size}</span>
-                    <span className="text-xs font-semibold text-ink">
-                      {stockNotice ? (
-                        <span className="text-muted font-medium">{stockNotice}</span>
+                    <span className="text-base sm:text-lg font-bold text-black">{displaySize}</span>
+                    <span className="text-xs sm:text-sm font-medium">
+                      {isOutOfStock ? (
+                        <span className="underline font-bold text-black hover:opacity-80">
+                          {tr('Créer une alerte', 'تنبيه توفر')}
+                        </span>
+                      ) : isLimitedStock ? (
+                        <span className="text-neutral-600 font-normal">
+                          {tr('Il en reste 2', 'بقي 2 قطع')}
+                        </span>
                       ) : isSelected ? (
-                        <span className="text-ink font-bold">✓</span>
-                      ) : (
-                        <span className="text-muted font-normal underline">{tr('Créer une alerte', 'تنبيه توفر')}</span>
-                      )}
+                        <span className="text-black font-bold">✓</span>
+                      ) : null}
                     </span>
                   </button>
                 );
