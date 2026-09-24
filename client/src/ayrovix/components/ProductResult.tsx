@@ -372,7 +372,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           {isClothing && (
             <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <span className="text-base" aria-hidden="true">🧍</span>
+                <Info size={16} aria-hidden="true" />
                 <span>{tr("Vous n'êtes pas sûr·e de votre taille ?", 'لست متأكدًا من مقاسك؟')}</span>
               </div>
               <button
@@ -388,7 +388,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({ product, ordering,
           {isShoes && (
             <div className="rounded-control bg-surface border border-line/60 p-3.5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 text-xs text-ink font-medium">
-                <span className="text-base" aria-hidden="true">🧍</span>
+                <Info size={16} aria-hidden="true" />
                 <span>{tr('Trouvez la taille qui correspond à vos mensurations', 'لقا المقاس اللي ياسعك')}</span>
               </div>
               <button

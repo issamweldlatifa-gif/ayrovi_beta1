@@ -36,19 +36,22 @@ export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }
   const hasPrice = typeof candidate.priceTnd === 'number' && Number.isFinite(candidate.priceTnd) && candidate.priceTnd > 0;
   return <article className="lens-product-card" data-candidate-id={candidate.id}>
     <button type="button" className="lens-card-open" onClick={() => onChoose(candidate)} aria-describedby={priceId} aria-label={tr(`Voir le produit : ${candidate.title}`, `عرض المنتج: ${candidate.title}`)}>
-      <div className="lens-card-media"><CardImage candidate={candidate} /></div>
+      <div className="lens-card-media">
+        <CardImage candidate={candidate} />
+        {candidate.promo ? <span className="lens-card-promo-badge">Promo</span> : null}
+      </div>
       <h4 className="lens-card-title" dir="auto">{heading}</h4>
-      {description && <p className="lens-card-description" dir="auto">{description}</p>}
+      {description ? <p className="lens-card-description" dir="auto">{description}</p> : null}
       <MerchantRating value={candidate} stars />
       {/* Quiet Card v2 : promo rouge (barré + remisé + badge) quand elle existe. */}
-      <p id={priceId} className="lens-card-price">
+      <div id={priceId} className="lens-card-price">
         {hasPrice
           ? <QuietPromoPrice priceTnd={candidate.priceTnd} promo={candidate.promo ?? null} format={(value) => `${value.toFixed(2)} DT`} variant="grid" />
           : tr('Prix à confirmer', 'السعر قيد التأكيد')}
-      </p>
+      </div>
     </button>
     <button type="button" className="lens-card-favorite" aria-pressed={saved} disabled={busy} aria-busy={busy}
       aria-label={saved ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`) : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}
-      onClick={() => onFavorite(candidate)}>{saved ? <HeartFilled size={25} /> : <Heart size={25} />}</button>
+      onClick={() => onFavorite(candidate)}>{saved ? <HeartFilled size={20} /> : <Heart size={20} />}</button>
   </article>;
 }

@@ -191,7 +191,7 @@ export const InteractiveLensResults: React.FC<Props> = ({ view, previewUrl, fall
               ) : (
                 <>
                   {favorites.message && <p className="lens-favorite-notice" role="status">{favorites.message === 'auth' ? tr('Connectez-vous à votre compte pour enregistrer vos favoris.', 'سجّل الدخول إلى حسابك لحفظ المفضلة.') : tr('Impossible de mettre à jour les favoris. Réessayez avec le cœur.', 'تعذر تحديث المفضلة. أعد المحاولة من زر القلب.')}</p>}
-                  <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="lens-result-grid grid grid-cols-2 md:grid-cols-3 gap-x-3 gap-y-6">
                     {visible.slice(0, 12).map(candidate => <LensProductCard key={candidate.id} candidate={candidate} onChoose={onChoose} saved={favorites.isSaved(candidate)} busy={favorites.busy} onFavorite={favorites.toggle} />)}
                   </div>
                 </>

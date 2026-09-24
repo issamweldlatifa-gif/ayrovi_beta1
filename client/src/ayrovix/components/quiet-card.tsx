@@ -15,6 +15,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Image as ImageIcon, Loader2 } from '../../components/QatafoIcons';
 import type { AyrovixPromo } from '../types';
 import { withIsolation } from '../services/mediaIsolation';
+import { useLocale } from '../../i18n/LocaleContext';
 import './quiet-card.css';
 
 /* ────────────────────────────────────────────────────────────────────
@@ -93,10 +94,27 @@ export interface QuietPromoPriceProps {
 }
 
 export const QuietPromoPrice: React.FC<QuietPromoPriceProps> = ({ priceTnd, promo, originalTnd, format, variant = 'grid', note }) => {
+  const { tr } = useLocale();
   const hasPrice = typeof priceTnd === 'number' && Number.isFinite(priceTnd) && priceTnd > 0;
   const original = promo?.originalPriceTnd ?? originalTnd ?? null;
   const showOriginal = Boolean(promo) && typeof original === 'number' && Number.isFinite(original)
     && typeof priceTnd === 'number' && Number.isFinite(priceTnd) && original > priceTnd;
+
+  if (variant === 'grid' && showOriginal && promo) {
+    return (
+      <span className="ay-quiet-price ay-quiet-price--grid">
+        <bdi dir="ltr" className="ay-quiet-price__current ay-quiet-price__current--promo">
+          {hasPrice ? format(priceTnd as number) : '—'}
+        </bdi>
+        <span className="ay-quiet-price__ref-row">
+          <span className="ay-quiet-price__ref-label">{tr('Prix de référence :', 'السعر المرجعي:')} </span>
+          <bdi dir="ltr" className="ay-quiet-price__original"><del className="line-through">{format(original as number)}</del></bdi>
+          <span className="ay-quiet-price__badge" dir="ltr">{` -${promo.percent}%`}</span>
+        </span>
+      </span>
+    );
+  }
+
   return (
     <span className={`ay-quiet-price ay-quiet-price--${variant}`}>
       {showOriginal && (

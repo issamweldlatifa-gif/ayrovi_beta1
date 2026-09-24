@@ -61,6 +61,13 @@
   gap: 0 0.5rem;
 }
 
+.ay-quiet-price--grid {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
 /* Règle client 24/09 : l'original barré est FIN et gris — le remisé (rouge,
    noir le plus fort) porte seul le poids de l'offre. */
 .ay-quiet-price__original {
@@ -72,10 +79,10 @@
 
 .ay-quiet-price__current {
   color: var(--ayrovi-text-primary, #000);
-  font-weight: 900;
+  font-weight: 700;
 }
 
-.ay-quiet-price--grid .ay-quiet-price__current { font-size: 1rem; line-height: 1.5; }
+.ay-quiet-price--grid .ay-quiet-price__current { font-size: 0.9375rem; line-height: 1.3; }
 .ay-quiet-price--list .ay-quiet-price__current { font-size: 1.0625rem; line-height: 1.4; }
 
 /* Promo : prix remisé rouge — l'élément le plus fort de la carte. */
@@ -90,8 +97,41 @@
   background: var(--ayrovi-promo, #dc2626);
   color: #fff;
   font-size: 0.75rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1.4;
+}
+
+.ay-quiet-price--grid .ay-quiet-price__ref-row {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--ayrovi-neutral-500, #595959);
+  line-height: 1.3;
+}
+
+.ay-quiet-price--grid .ay-quiet-price__ref-label {
+  color: var(--ayrovi-neutral-500, #595959);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.ay-quiet-price--grid .ay-quiet-price__original {
+  color: var(--ayrovi-neutral-500, #595959);
+  font-size: 0.75rem;
+  font-weight: 400;
+  text-decoration: line-through;
+}
+
+.ay-quiet-price--grid .ay-quiet-price__badge {
+  color: var(--ayrovi-promo, #dc2626);
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .ay-quiet-price__note {
