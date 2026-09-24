@@ -63,6 +63,7 @@ export const ProductCandidates: React.FC<ProductCandidatesProps> = ({ candidates
               <div className="min-w-0 flex-1">
                 <h4 className="ay-readable text-sm font-bold leading-snug text-ink" title={candidate.title}>{candidate.title}</h4>
                 <p className="ay-readable mt-0.5 text-xs font-semibold text-muted">{candidate.source}{candidate.colors.length ? ` · ${candidate.colors.join(' / ')}` : ''}</p>
+                {candidate.description && <p className="ay-readable mt-1 line-clamp-2 text-xs leading-relaxed text-muted">{candidate.description}</p>}
                 <div className="mt-1.5">
                   <QuietPromoPrice
                     priceTnd={candidate.priceTnd}

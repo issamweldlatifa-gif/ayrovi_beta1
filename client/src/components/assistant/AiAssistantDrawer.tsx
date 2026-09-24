@@ -62,7 +62,8 @@ const candidateToProduct = (candidate: AyrovixCandidate): AyrovixProduct => ({
   title: candidate.title,
   brand: candidate.brand,
   model: candidate.model,
-  description: '',
+  // P1 : la description produite par nos moteurs (AI/SerpAPI) arrive enfin à la carte.
+  description: candidate.description || candidate.model || '',
   image: candidate.image,
   images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
   source: candidate.source,
