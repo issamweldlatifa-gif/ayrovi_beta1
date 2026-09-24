@@ -11,10 +11,24 @@ export function isolatedMediaUrl(url: string | null | undefined): string | null 
   return `/api/public/media/isolated?url=${encodeURIComponent(url)}`;
 }
 
-/** [isolé(u0), u0, …rest] — la tentative isolée d'abord, la brute en repli. */
+/**
+ * [iso(u0), u0, iso(u1), u1, …] — CHAQUE image tente d'abord sa version isolée,
+ * puis retombe sur son original si le PNG isolé échoue (cycle onError du cadre).
+ * Avant (bug 24/09/2026) : seule urls[0] était isolée, le reste de la galerie
+ * restait brut — les angles 2..N gardaient leur fond marchand.
+ */
 export function withIsolation(urls: string[]): string[] {
-  if (!urls.length) return urls;
-  const isolated = isolatedMediaUrl(urls[0]);
-  if (!isolated || isolated === urls[0]) return urls;
-  return [isolated, ...urls];
+  const output: string[] = [];
+  for (const url of urls) {
+    const isolated = isolatedMediaUrl(url);
+    if (isolated) output.push(isolated);
+    output.push(url);
+  }
+  return output;
+}
+
+/** URL à afficher pour UNE image : version isolée sauf si elle a déjà échoué (repli brut). */
+export function isolatedSrc(url: string, failures: Record<string, boolean> = {}): string {
+  const isolated = isolatedMediaUrl(url);
+  return !isolated || failures[url] ? url : isolated;
 }

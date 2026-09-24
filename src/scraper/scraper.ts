@@ -93,6 +93,7 @@ export class SmartLinkScraper {
           ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
           : `Article extrait depuis ${storeName}. Prix en attente de vérification manuelle.`),
       images,
+      colorImages: liveData?.colorImages || {},
       mainImage: images.length > 0 ? images[0] : '',
       sourcePrice: Math.round(price * 100) / 100,
       sourceCurrency: currency,

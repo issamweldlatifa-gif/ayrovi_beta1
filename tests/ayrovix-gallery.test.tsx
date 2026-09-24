@@ -65,7 +65,7 @@ describe('AYROVIX product gallery rendering', () => {
 
   it('reserves responsive space, centers contain media and hides the touch scrollbar', () => {
     const css = readFileSync('client/src/index.css', 'utf8');
-    expect(css).toMatch(/\.ayrovix-product-gallery-stage\s*\{[\s\S]*?aspect-ratio:\s*1\s*\/\s*1/);
+    expect(css).toMatch(/\.ayrovix-product-gallery-stage\s*\{[\s\S]*?aspect-ratio:\s*9\s*\/\s*13/);
     expect(css).toMatch(/\.ayrovix-product-gallery-image,[\s\S]*?object-fit:\s*contain/);
     expect(css).toMatch(/\.ayrovix-thumbnail-image[\s\S]*?object-position:\s*center/);
     expect(css).toMatch(/\.ayrovix-thumbnail-strip\s*\{[\s\S]*?scroll-snap-type:\s*x proximity/);

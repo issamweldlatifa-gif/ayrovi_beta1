@@ -34,6 +34,8 @@ export interface ScrapedProduct {
   title: string;
   description: string | null;
   images: string[];
+  /** Images par couleur (clé = couleur minuscule) — référence Zalando 24/09/2026. */
+  colorImages?: Record<string, string[]>;
   mainImage: string;
   sourcePrice: number;
   sourceCurrency: string;

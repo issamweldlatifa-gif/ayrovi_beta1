@@ -220,6 +220,32 @@ describe('AYROVIX Lens', () => {
     ]);
   });
 
+  test('images PAR COULEUR : le scraper regroupe les photos de chaque couleur (référence Zalando)', () => {
+    const html = `<!doctype html><html><head><title>Tee multi</title>
+      <script type="application/json">{"product":{"id":7,"title":"Tee multi","options":["Couleur","Taille"],"variants":[
+        {"id":1,"options":["Noir","M"],"featured_image":"https://cdn.shop.example.org/black-front.jpg?imwidth=1000"},
+        {"id":2,"options":["Noir","L"],"featured_image":"https://cdn.shop.example.org/black-back.jpg?imwidth=1000"},
+        {"id":3,"options":["Rouge","M"],"featured_image":"https://cdn.shop.example.org/red-front.jpg?imwidth=1000"}
+      ],"images":[
+        {"src":"https://cdn.shop.example.org/black-model.jpg?imwidth=1000","variant_ids":[1]},
+        {"src":"https://cdn.shop.example.org/red-model.jpg?imwidth=1000","variant_ids":[3]}
+      ]}}</script>
+    </head><body><h1>Tee multi</h1></body></html>`;
+    const parsed = parseProductPageHtml(html, 'https://shop.example.org/tee', 'generic');
+    // Chaque couleur possède SON jeu de photos réel — aucune supposition d'index.
+    expect(parsed.colorImages['noir']).toEqual(expect.arrayContaining([
+      'https://cdn.shop.example.org/black-front.jpg?imwidth=1000',
+      'https://cdn.shop.example.org/black-back.jpg?imwidth=1000',
+      'https://cdn.shop.example.org/black-model.jpg?imwidth=1000',
+    ]));
+    expect(parsed.colorImages['rouge']).toEqual(expect.arrayContaining([
+      'https://cdn.shop.example.org/red-front.jpg?imwidth=1000',
+      'https://cdn.shop.example.org/red-model.jpg?imwidth=1000',
+    ]));
+    // Une couleur sans aucune photo connue ne crée PAS de seau inventé.
+    expect(Object.keys(parsed.colorImages).sort()).toEqual(['noir', 'rouge']);
+  });
+
   test('parser prix : JSON-LD précède meta, puis regex prix contextuel en dernier recours', () => {
     const prioritized = parseProductPageHtml(`<!doctype html><html><head>
       <meta property="og:title" content="Produit prioritaire"><meta property="product:price:amount" content="49.90"><meta property="product:price:currency" content="USD">

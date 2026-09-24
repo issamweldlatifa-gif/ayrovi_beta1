@@ -10,7 +10,7 @@ import {
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 import { classifyProduct, productClassLabel, extractCapacity, pricePer100, presentSizes, usesCapacity } from '../services/productAttributes';
-import { isolatedMediaUrl } from '../services/mediaIsolation';
+import { isolatedMediaUrl, isolatedSrc } from '../services/mediaIsolation';
 
 export interface AyrovixOrderSelection {
   size: string;
@@ -114,8 +114,13 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   const [manualUrl, setManualUrl] = useState(product.sourceUrl || '');
   const [submitted, setSubmitted] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
-  const [rawFallback, setRawFallback] = useState(false);
-  useEffect(() => setRawFallback(false), [imageIndex]);
+  // ISOLATION PAR IMAGE (fix 24/09/2026) : chaque image de la galerie tente sa
+  // version isolée (fond marchand → PNG transparent) ; si le PNG isolé échoue
+  // on note l'URL et on rend l'original — jamais d'image cassée, et la galerie
+  // ENTIÈRE est isolée (avant : seule la 1re image l'était).
+  const [isolatedMiss, setIsolatedMiss] = useState<Record<string, boolean>>({});
+  const markIsolatedMiss = (url: string) => setIsolatedMiss((prev) => (prev[url] ? prev : { ...prev, [url]: true }));
+  const withIsolated = (url: string) => isolatedSrc(url, isolatedMiss);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
   const [recommendOpen, setRecommendOpen] = useState(false);
@@ -215,8 +220,25 @@ export const ProductResult: React.FC<ProductResultProps> = ({
     }
     return out;
   }, [product.image, product.images]);
-  const activeImage = imageUrls[imageIndex] || '';
-  const sizeOptions = [...new Set(product.sizes)];
+
+  // GALERIE PAR COULEUR (référence Zalando 24/09/2026) : chaque couleur possède
+  // son propre jeu de photos extrait par le scraper (colorImages). Sélectionner
+  // une couleur bascule TOUTE la galerie (grande image, vignettes, lightbox) vers
+  // le jeu de cette couleur ; sans données réelles pour une couleur, la galerie
+  // complète reste affichée — on n'invente jamais d'image.
+  const colorImageSets = product.colorImages && typeof product.colorImages === 'object' ? product.colorImages : null;
+  const [activeColor, setActiveColor] = useState<string | null>(null);
+  const galleryImages = useMemo(() => {
+    const set = activeColor ? colorImageSets?.[activeColor.toLocaleLowerCase()] : null;
+    return set && set.length ? set : imageUrls;
+  }, [activeColor, colorImageSets, imageUrls]);
+
+  const activeImage = galleryImages[imageIndex] || '';
+  // FIX 24/09/2026 : le sélecteur de commande hérite du TRI de presentSizes
+  // (numérique pour les pointures, ordre vestimentaire sinon) — avant, il
+  // affichait l'ordre brut du marchand (43, 40.5, 42…).
+  const sizeOptions = sizePresentation.options.length ? sizePresentation.options : [...new Set(product.sizes)];
+
 
   useEffect(() => {
     let cancelled = false;
@@ -262,7 +284,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
     });
   }, [imageUrls]);
 
-  const showNext = () => setImageIndex((current) => Math.min(current + 1, imageUrls.length - 1));
+  const showNext = () => setImageIndex((current) => Math.min(current + 1, galleryImages.length - 1));
   const showPrev = () => setImageIndex((current) => Math.max(current - 1, 0));
 
   const handleAddToCart = () => {
@@ -318,19 +340,19 @@ export const ProductResult: React.FC<ProductResultProps> = ({
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-8 lg:items-start">
         {/* Media — canvas studio unifié, image spacieuse, pure et confortable sans assombrissement */}
         <div className="flow-media min-w-0">
-          <div className="relative overflow-hidden rounded-2xl bg-[#f0f2f2]">
+          <div className="relative overflow-hidden rounded-2xl bg-[#f6f6f6]">
             {/* Overlay Badges */}
             <div className="absolute inset-x-3.5 top-3.5 z-10 flex items-center justify-between pointer-events-none">
               {promo ? (
                 <span
-                  className="rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto"
+                  className="rounded-[5px] px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto"
                   style={{ background: 'var(--ayrovi-promo, #dc2626)' }}
                 >
                   {promo.label || 'Promo'}
                 </span>
               ) : (
                 <span
-                  className="rounded-sm px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto bg-[#dc2626]"
+                  className="rounded-[5px] px-2.5 py-1 text-xs font-black uppercase tracking-wider text-white shadow-sm pointer-events-auto bg-[#dc2626]"
                 >
                   Promo
                 </span>
@@ -345,8 +367,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               </button>
             </div>
 
-            {/* Stage de l'image — 2/3 portrait, plein format sans marge, fond studio identique aux petites cartes */}
-            <div className="ayrovix-product-gallery-stage bg-[#f0f2f2] relative flex aspect-[2/3] w-full items-center justify-center p-0 overflow-hidden">
+            {/* Stage de l'image — ratio ZALANDO RÉEL 9/13 (packshot mesuré 1000×1444),
+                canvas studio #f6f6f6 (couleur mesurée au pixel près sur la page marchand),
+                image entière en object-fit contain — jamais de rognage du produit. */}
+            <div className="ayrovix-product-gallery-stage bg-[#f6f6f6] relative flex aspect-[9/13] w-full items-center justify-center p-0 overflow-hidden">
               {activeImage ? (
                 <button
                   type="button"
@@ -355,21 +379,18 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                   className="flex h-full w-full items-center justify-center cursor-zoom-in"
                 >
                   <img
-                    src={rawFallback ? activeImage : (isolatedMediaUrl(activeImage) ?? activeImage)}
+                    src={withIsolated(activeImage)}
                     alt={cleanTitle}
                     referrerPolicy="no-referrer"
                     decoding="async"
                     fetchPriority="high"
                     draggable={false}
-                    data-isolated={!rawFallback && Boolean(isolatedMediaUrl(activeImage))}
+                    data-isolated={withIsolated(activeImage) !== activeImage}
                     onError={() => {
-                      if (!rawFallback && isolatedMediaUrl(activeImage)) setRawFallback(true);
-                      else setImageIndex((current) => Math.min(current + 1, imageUrls.length - 1));
+                      if (withIsolated(activeImage) !== activeImage) markIsolatedMiss(activeImage);
+                      else setImageIndex((current) => Math.min(current + 1, galleryImages.length - 1));
                     }}
-                    className="h-full w-full object-cover transition-transform duration-300"
-                    style={{
-                      mixBlendMode: !rawFallback && Boolean(isolatedMediaUrl(activeImage)) ? 'normal' : 'multiply',
-                    }}
+                    className="ayrovix-product-gallery-image h-full w-full transition-transform duration-300"
                   />
                 </button>
               ) : (
@@ -393,22 +414,22 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               </div>
 
               {/* Indicateur de pagination photo 1 / N (en bas à gauche, identique Zalando Screenshot 2) */}
-              {imageUrls.length > 1 && (
+              {galleryImages.length > 1 && (
                 <div className="absolute bottom-3.5 left-3.5 z-10 pointer-events-none">
                   <span className="rounded-md bg-white/90 backdrop-blur-xs px-2.5 py-1 text-xs font-bold text-ink shadow-xs">
-                    {imageIndex + 1} / {imageUrls.length}
+                    {imageIndex + 1} / {galleryImages.length}
                   </span>
                 </div>
               )}
 
               {/* Flèches de navigation carrousel */}
-              {imageUrls.length > 1 && (
+              {galleryImages.length > 1 && (
                 <>
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setImageIndex((c) => (c > 0 ? c - 1 : imageUrls.length - 1));
+                      setImageIndex((c) => (c > 0 ? c - 1 : galleryImages.length - 1));
                     }}
                     aria-label={tr('Photo précédente', 'الصورة السابقة')}
                     className="absolute left-2.5 top-1/2 -translate-y-1/2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-ink shadow-md hover:bg-white transition"
@@ -419,7 +440,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setImageIndex((c) => (c < imageUrls.length - 1 ? c + 1 : 0));
+                      setImageIndex((c) => (c < galleryImages.length - 1 ? c + 1 : 0));
                     }}
                     aria-label={tr('Photo suivante', 'الصورة التالية')}
                     className="absolute right-2.5 top-1/2 -translate-y-1/2 z-10 grid h-8 w-8 place-items-center rounded-full bg-white/80 text-ink shadow-md hover:bg-white transition"
@@ -435,29 +456,31 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               {tr('Article populaire', 'منتج شائع ورائج')}
             </div>
 
-            {/* Vignettes d'angles complémentaires — affichées seulement si plus de 2 images distinctes */}
-            {imageUrls.length > 2 && (
-              <div className="ayrovix-thumbnail-strip flex gap-2.5 overflow-x-auto bg-[#f0f2f2] px-3.5 pb-3.5 pt-2" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
-                {imageUrls.map((url, index) => {
+            {/* Vignettes d'angles complémentaires — TOUTES les images du marchand (pas seulement la première),
+                chacune isolée en premier avec repli brut, ratio Zalando 9/13, sans rognage. */}
+            {galleryImages.length > 2 && (
+              <div className="ayrovix-thumbnail-strip flex gap-2.5 overflow-x-auto bg-[#f6f6f6] px-3.5 pb-3.5 pt-2" aria-label={tr('Autres photos du produit', 'صور أخرى للمنتج')}>
+                {galleryImages.map((url, index) => {
                   const selected = imageIndex === index;
                   return (
                     <button
                       key={`${url}-${index}`}
                       type="button"
                       onClick={() => setImageIndex(index)}
-                      className={`ayrovix-thumbnail shrink-0 h-16 w-12 overflow-hidden rounded-xl bg-white p-0.5 transition ${selected ? 'border-2 border-black ring-1 ring-black/10' : 'border border-line/60'}`}
+                      className={`ayrovix-thumbnail shrink-0 aspect-[9/13] w-12 overflow-hidden rounded-xl bg-white p-0.5 transition ${selected ? 'border-2 border-black ring-1 ring-black/10' : 'border border-line/60'}`}
                       aria-label={tr(`Afficher la photo ${index + 1}`, `عرض الصورة ${index + 1}`)}
                       aria-current={selected ? 'true' : undefined}
                     >
                       <img
-                        src={url}
+                        src={withIsolated(url)}
                         alt=""
                         loading="lazy"
                         decoding="async"
                         draggable={false}
                         referrerPolicy="no-referrer"
-                        className="ayrovix-thumbnail-image h-full w-full object-cover"
-                        style={{ mixBlendMode: 'multiply' }}
+                        data-isolated={withIsolated(url) !== url}
+                        onError={() => markIsolatedMiss(url)}
+                        className="ayrovix-thumbnail-image h-full w-full"
                       />
                     </button>
                   );
@@ -557,23 +580,30 @@ export const ProductResult: React.FC<ProductResultProps> = ({
               <div className="flex items-center gap-2.5 overflow-x-auto py-1" role="radiogroup" aria-label={tr('Choisir une couleur', 'اختيار اللون')}>
                 {product.colors.map((item, idx) => {
                   const selected = (color || product.colors[0]) === item;
+                  // Photo PROPRE à cette couleur (jeu colorImages du scraper) —
+                  // jamais une supposition d'index : sans donnée réelle on garde
+                  // l'image d'angle existante, sinon l'étiquette texte.
+                  const colorSet = colorImageSets?.[item.toLocaleLowerCase()];
+                  const swatchImage = colorSet?.[0] || galleryImages[idx] || imageUrls[idx];
                   return (
                     <button
                       key={item}
                       type="button"
                       onClick={() => {
                         setColor(item);
-                        if (imageUrls[idx]) setImageIndex(idx);
+                        setActiveColor(colorSet?.length ? item : null);
+                        setImageIndex(0);
                       }}
                       role="radio"
                       aria-checked={selected}
+                      aria-label={tr(`Couleur ${item}`, `اللون ${item}`)}
                       className={`shrink-0 rounded-xl overflow-hidden transition ${
                         selected ? 'border-2 border-black p-0.5' : 'border border-line/60 p-0.5 hover:border-black/50'
                       }`}
                     >
-                      <div className="h-14 w-11 rounded-lg bg-[#f0f2f2] flex items-center justify-center overflow-hidden">
-                        {imageUrls[idx] ? (
-                          <img src={imageUrls[idx]} alt={item} className="h-full w-full object-contain" />
+                      <div className="h-14 w-11 rounded-lg bg-[#f6f6f6] flex items-center justify-center overflow-hidden">
+                        {swatchImage ? (
+                          <img src={swatchImage} alt={item} loading="lazy" decoding="async" referrerPolicy="no-referrer" className="h-full w-full object-contain" />
                         ) : (
                           <span className="text-[10px] font-bold text-muted uppercase">{item.slice(0, 3)}</span>
                         )}
@@ -860,7 +890,7 @@ export const ProductResult: React.FC<ProductResultProps> = ({
           }}
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <span className="px-2 text-xs font-extrabold text-ink" dir="ltr">{`${imageIndex + 1} / ${imageUrls.length}`}</span>
+            <span className="px-2 text-xs font-extrabold text-ink" dir="ltr">{`${imageIndex + 1} / ${galleryImages.length}`}</span>
             <button
               type="button"
               onClick={() => setLightboxOpen(false)}
@@ -872,10 +902,10 @@ export const ProductResult: React.FC<ProductResultProps> = ({
           </div>
           <div className="relative flex flex-1 items-center justify-center overflow-hidden p-4">
             <img src={activeImage} alt={product.title} referrerPolicy="no-referrer" decoding="async" draggable={false} className="max-h-full max-w-full object-contain" />
-            {imageUrls.length > 1 && (
+            {galleryImages.length > 1 && (
               <>
                 <button type="button" onClick={showPrev} disabled={imageIndex === 0} aria-label={tr('Photo précédente', 'الصورة السابقة')} className="absolute start-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30"><ChevronLeft size={20} /></button>
-                <button type="button" onClick={showNext} disabled={imageIndex >= imageUrls.length - 1} aria-label={tr('Photo suivante', 'الصورة التالية')} className="absolute end-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30"><ChevronRight size={20} /></button>
+                <button type="button" onClick={showNext} disabled={imageIndex >= galleryImages.length - 1} aria-label={tr('Photo suivante', 'الصورة التالية')} className="absolute end-3 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full border border-line bg-white text-ink disabled:opacity-30"><ChevronRight size={20} /></button>
               </>
             )}
           </div>

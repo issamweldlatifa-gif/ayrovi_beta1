@@ -476,7 +476,8 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  aspect-ratio: 1 / 1;
+  /* Ratio ZALANDO RÉEL (mesuré 24/09/2026 sur zalando.fr) : packshot 1000×1444 = 9/13. */
+  aspect-ratio: 9 / 13;
   box-sizing: border-box;
   place-items: center;
   overflow: hidden;
@@ -552,7 +553,7 @@
 
 @media (min-width: 640px) {
   .ayrovix-product-gallery-stage {
-    aspect-ratio: 4 / 3;
+    aspect-ratio: 9 / 13;
     padding: clamp(1rem, 3vw, 2rem);
   }
 }

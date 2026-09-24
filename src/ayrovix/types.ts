@@ -118,6 +118,8 @@ export interface AyrovixProduct {
   description: string;
   image: string;
   images: string[];
+  /** Images par couleur (clé = couleur minuscule) — 24/09/2026. */
+  colorImages?: Record<string, string[]> | null;
   source: string;
   sourceUrl: string;
   price: number | null;

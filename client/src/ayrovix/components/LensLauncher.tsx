@@ -67,6 +67,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     description: candidate.description || candidate.model || '',
     image: candidate.image,
     images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
+    colorImages: candidate.colorImages || null,
     source: candidate.source,
     sourceUrl: candidate.sourceUrl,
     price: candidate.price,

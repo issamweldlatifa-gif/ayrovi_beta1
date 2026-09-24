@@ -83,13 +83,16 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(html).not.toContain('Guide des tailles');
   });
 
-  it('chaussures : grille de tailles (5 colonnes, triée) + guide des tailles', () => {
+  it('chaussures : tiroir de tailles Zalando (liste triée, stock réel) + guide des pointures', () => {
     const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={shoesProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
-    expect(html).toContain('grid grid-cols-5');
-    expect(html).toContain('aria-pressed=');
-    expect(html.indexOf('40.5')).toBeLessThan(html.indexOf('42'));
-    expect(html.indexOf('42')).toBeLessThan(html.indexOf('43'));
-    expect(html).toContain('Guide des tailles');
+    // Toutes les tailles restent proposées et TRIÉES (sélecteur + tiroir Zalando).
+    expect(html.indexOf('>40.5<')).toBeLessThan(html.indexOf('>42<'));
+    expect(html.indexOf('>42<')).toBeLessThan(html.indexOf('>43<'));
+    const src = read('client/src/ayrovix/components/ProductResult.tsx');
+    // Le tiroir de tailles ( redesign Zalando) : liste défilante avec stock réel, plus de grille 5 colonnes.
+    expect(src).toContain('setSizeDrawerOpen(true)');
+    expect(src).toContain('Il en reste 2');
+    expect(src).toContain('Guide des tailles');
     expect(html).not.toContain('/ 100 ml'); // pas de capacité sur des chaussures
   });
 
@@ -104,8 +107,8 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
 
   it('typographie dictée par le client : description GRISE et fine, barré gris fin, remisé le plus fort', () => {
     const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
-    // Description : corps gris, graisse normale — jamais du noir.
-    expect(html).toMatch(/<p class="break-words text-sm font-normal leading-relaxed text-muted">[^<]*Sérum contour des yeux/);
+    // Description : corps gris (text-ink/80) — jamais du noir pur, retours à la ligne respectés.
+    expect(html).toMatch(/<p class="break-words text-sm font-normal leading-relaxed text-ink\/80 whitespace-pre-line">[^<]*Sérum contour des yeux/);
     // Barré : fin (font-normal) et gris — le remisé porte seul le poids de l'offre.
     const src = read('client/src/ayrovix/components/ProductResult.tsx');
     expect(src).toContain('text-sm font-normal leading-none text-muted line-through');
@@ -115,13 +118,17 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(grid).toMatch(/\.lens-product-card \.lens-card-description\{[^}]*color:#595959/);
   });
 
-  it('isolation d’arrière-plan : la vitrine proxyfie les images marchand distantes, jamais les locales', () => {
+  it('isolation d’arrière-plan : TOUTE la galerie est proxyfiée, jamais les images locales', () => {
     const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(src).toContain('isolatedMediaUrl(activeImage) ?? activeImage');
+    // Chaque image du stage ET des vignettes passe par la version isolée d'abord.
+    expect(src).toContain('withIsolated(activeImage)');
+    expect(src).toContain('withIsolated(url)');
+    const helper = read('client/src/ayrovix/services/mediaIsolation.ts');
+    // withIsolation isole CHAQUE url (avant : seulement la première).
+    expect(helper).toMatch(/for \(const url of urls\)/);
     expect(read('client/src/ayrovix/components/quiet-card.tsx')).toContain('withIsolation(');
     expect(read('client/src/ayrovix/components/LensProductCard.tsx')).toContain('withIsolation(');
     // Les chemins locaux restent intacts (fixtures, uploads).
-    const helper = read('client/src/ayrovix/services/mediaIsolation.ts');
     expect(helper).toContain('/api/public/media/isolated?url=');
   });
 
@@ -133,7 +140,8 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(src).toContain('Photo précédente');
     expect(src).toContain('onTouchEnd');
     expect(src).toContain('Agrandir la photo du produit');
-    expect(src).toContain("l’équipe confirme la disponibilité et le prix avant l’achat");
+    // Trust line honnête (v2) : le choix n'affirme jamais le stock marchand.
+    expect(src).toContain('Le choix d’une taille ou couleur ne confirme pas son stock.');
     // Guide : page dédiée, produit en haut, guide en bas, fermeture ✕
     expect(src).toContain('Guide des tailles');
     expect(src).toContain('Fermer le guide');
@@ -145,7 +153,10 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(src).toContain('productClassLabel(classifyProduct(product.title');
     expect(src).toContain('onClick={onOpenCart}');
     expect(src).toContain('actions={(');
-    expect(src).toContain('Calculer un autre produit');
+    // Le recalcul vit désormais dans la page produit (« Calculer un autre article »),
+    // l'en-tête Lens propose « Nouvelle recherche ».
+    expect(src).toContain('Nouvelle recherche');
+    expect(read('client/src/ayrovix/components/ProductResult.tsx')).toContain('Calculer un autre article');
   });
 });
 

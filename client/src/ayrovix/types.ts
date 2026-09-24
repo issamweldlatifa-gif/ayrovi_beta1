@@ -69,6 +69,8 @@ export interface AyrovixCandidate {
   sourceUrl: string;
   image: string;
   images?: string[];
+  /** Jeu d'images PAR COULEUR (24/09/2026) — le swatch change toute la galerie. */
+  colorImages?: Record<string, string[]> | null;
   price: number | null;
   currency: string | null;
   priceTnd: number | null;
@@ -111,6 +113,8 @@ export interface AyrovixProduct {
   description: string;
   image: string;
   images: string[];
+  /** Jeu d'images PAR COULEUR (24/09/2026) — le swatch change toute la galerie. */
+  colorImages?: Record<string, string[]> | null;
   source: string;
   sourceUrl: string;
   price: number | null;

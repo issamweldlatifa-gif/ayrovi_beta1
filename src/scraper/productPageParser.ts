@@ -9,6 +9,9 @@ export interface ParsedProductPage {
   price: number;
   currency: string;
   images: string[];
+  /** Images PAR COULEUR (24/09/2026) : chaque variante de couleur possède son propre
+   *  jeu de photos (référence Zalando). Clé = nom de couleur en minuscules. */
+  colorImages: Record<string, string[]>;
   externalId: string;
   variants: ProductVariants;
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
@@ -250,8 +253,12 @@ function collectNamedStrings(root: any, matcher: RegExp, output: string[], depth
 }
 
 function absoluteImages(values: unknown[], baseUrl: string): string[] {
+  // UN FICHIER = UNE IMAGE (fix 24/09/2026) : les marchands (Zalando, Shopify…)
+  // servent le MÊME fichier sous plusieurs largeurs (?imwidth=156/762/1000…).
+  // On dédoublonne par chemin en gardant la plus grande déclinaison — la galerie
+  // contient alors TOUTES les photos du produit, jamais N fois la même.
   const output: string[] = [];
-  const seen = new Set<string>();
+  const seenPath = new Map<string, { index: number; width: number }>();
   let base: URL | null = null;
   try { base = new URL(baseUrl); } catch { base = null; }
   for (const raw of values.flatMap((value: any) => Array.isArray(value) ? value : [value])) {
@@ -261,16 +268,21 @@ function absoluteImages(values: unknown[], baseUrl: string): string[] {
     if (!value) continue;
     try {
       const url = new URL(value, baseUrl);
-      const normalized = url.toString();
-      if (!['http:', 'https:'].includes(url.protocol) || seen.has(normalized)) continue;
+      if (!['http:', 'https:'].includes(url.protocol)) continue;
       // The product page (or any HTML document) is not a product image.
       if (base && url.hostname === base.hostname && url.pathname === base.pathname) continue;
       if (/\.(html?|xhtml|php|aspx?|jsp|cfm)$/i.test(url.pathname)) continue;
       if (/\.(svg|ico|gif)$/i.test(url.pathname)) continue;
       if (/(?:favicon|sprite|loader|spinner|placeholder|1x1|tracking|pixel)/i.test(url.href)) continue;
-      seen.add(normalized);
-      output.push(normalized);
-      if (output.length >= 24) break;
+      const width = Number(url.searchParams.get('imwidth') || url.searchParams.get('width') || 0) || 0;
+      const existing = seenPath.get(url.pathname);
+      if (existing) {
+        if (width > existing.width) output[existing.index] = url.toString();
+        continue;
+      }
+      seenPath.set(url.pathname, { index: output.length, width });
+      output.push(url.toString());
+      if (output.length >= 48) break;
     } catch { /* invalid merchant image */ }
   }
   return output;
@@ -472,6 +484,55 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     ];
     const images = absoluteImages(imageCandidates, baseUrl);
 
+    // IMAGES PAR COULEUR (fix 24/09/2026 — référence Zalando) : on regroupe les
+    // photos par variante de couleur à partir des données embarquées du marchand
+    // (Shopify & co : variant.featured_image, images[].variant_ids). On ne devine
+    // JAMAIS une image de couleur à partir de son index — sans donnée réelle, le
+    // seau reste vide et l'interface retombe sur la galerie complète.
+    const colorBuckets: Record<string, string[]> = {};
+    const bucket = (colorRaw: unknown, urlRaw: unknown) => {
+      const color = cleanLabel(colorRaw).toLocaleLowerCase();
+      const value = String(typeof urlRaw === 'object' && urlRaw ? (urlRaw as any).src ?? (urlRaw as any).url : urlRaw ?? '').trim();
+      if (!color || !value) return;
+      (colorBuckets[color] ??= []).push(value);
+    };
+    if (embeddedProduct) {
+      const optionNamesEmbedded = optionNames(embeddedProduct);
+      const colorOfVariant = (variant: any): string => {
+        const values = rawVariantValues(variant);
+        let color = '';
+        values.forEach((value, index) => {
+          if (COLOR_NAME.test(optionNamesEmbedded[index] || '')) color = value;
+          else if (!color && values.length > 1 && !looksLikeSize(value)) color = value;
+        });
+        return color;
+      };
+      for (const variant of Array.isArray(embeddedProduct.variants) ? embeddedProduct.variants.slice(0, 300) : []) {
+        bucket(colorOfVariant(variant), variant?.featured_image ?? variant?.featuredImage);
+      }
+      if (Array.isArray(embeddedProduct.images)) {
+        const variantById = new Map<string, any>(
+          (Array.isArray(embeddedProduct.variants) ? embeddedProduct.variants : []).map((variant: any) => [String(variant?.id), variant]),
+        );
+        for (const image of embeddedProduct.images.slice(0, 120)) {
+          if (!image || typeof image === 'string') continue;
+          for (const variantId of Array.isArray(image.variant_ids) ? image.variant_ids.slice(0, 20) : []) {
+            bucket(colorOfVariant(variantById.get(String(variantId))), image.src ?? image.url ?? image.source);
+          }
+        }
+      }
+    }
+    const colorImages: Record<string, string[]> = {};
+    for (const [color, urls] of Object.entries(colorBuckets)) {
+      const absolute = absoluteImages(urls, baseUrl);
+      if (absolute.length) colorImages[color] = absolute;
+    }
+    // Une seule couleur réelle → TOUTES les photos appartiennent à cette couleur.
+    if (colors.length === 1 && images.length) {
+      const only = colors[0].toLocaleLowerCase();
+      colorImages[only] = [...new Set([...(colorImages[only] || []), ...images])].slice(0, 48);
+    }
+
     return {
       title,
       brand: brand || undefined,
@@ -479,6 +540,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       price,
       currency,
       images,
+      colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
       variants: { sizes, colors, details },
       availability: availabilityFrom(productLd, embeddedProduct),

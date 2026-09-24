@@ -54,6 +54,7 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     description: scraped.description || '',
     image: scraped.mainImage || gallery[0] || '',
     images: gallery,
+    colorImages: scraped.colorImages && Object.keys(scraped.colorImages).length ? scraped.colorImages : null,
     source: scraped.storeName,
     sourceUrl: scraped.url,
     price: scraped.sourcePrice > 0 ? scraped.sourcePrice : null,
