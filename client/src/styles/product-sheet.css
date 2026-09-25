@@ -1,0 +1,81 @@
+/* ============================================================================
+   AYROVI — FICHE PRODUIT « feuille montante » (mobile), 25/09/2026.
+
+   Modèle validé par le client sur maquette : au repos le produit est ENTIER,
+   plein cadre, sur notre fond studio ; on fait défiler les photos latéralement.
+   Dès que l'utilisateur remonte la page, le panneau d'information glisse
+   PAR-DESSUS l'image, et l'image s'éteint progressivement derrière lui —
+   elle ne disparaît pas d'un coup, elle passe en arrière-plan.
+
+   Tout est piloté par une seule variable, `--ay-pdp-reveal` (0 → 1), écrite par
+   ProductResult au défilement. Aucune valeur n'est codée par produit ; aucune
+   couleur n'est introduite ici : le voile est de l'encre pure à opacité variable.
+   Desktop (≥ 768 px) : rien ne change, la mise en page en deux colonnes reste.
+   ========================================================================== */
+
+@media (max-width: 767px) {
+  /* Le média reste collé en haut : c'est le panneau qui bouge, pas la photo. */
+  [data-ay-product-sheet] .flow-media {
+    position: sticky;
+    top: 0;
+    z-index: 0;
+  }
+
+  /* Léger recul de l'image pendant que la feuille monte : la profondeur se lit
+     sans flou ni déformation (une seule échelle, X et Y identiques). */
+  [data-ay-product-sheet] .flow-media > div {
+    transform: scale(calc(1 - var(--ay-pdp-reveal, 0) * 0.04));
+    transform-origin: 50% 40%;
+    transition: transform 60ms linear;
+    will-change: transform;
+  }
+
+  /* Le voile : encre pure, jamais plus de 58 % — le produit reste reconnaissable. */
+  [data-ay-product-sheet] .ay-pdp-scrim {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    background: #000;
+    opacity: calc(var(--ay-pdp-reveal, 0) * 0.58);
+    pointer-events: none;
+    transition: opacity 60ms linear;
+  }
+
+  /* Les commandes flottantes de la photo s'effacent quand la feuille les couvre :
+     un bouton à moitié sous un panneau n'est pas cliquable, donc il ne s'affiche pas. */
+  [data-ay-product-sheet] .ay-pdp-media-controls {
+    opacity: calc(1 - var(--ay-pdp-reveal, 0) * 1.6);
+    transition: opacity 60ms linear;
+  }
+  [data-ay-product-sheet][data-ay-pdp-covered="true"] .ay-pdp-media-controls {
+    pointer-events: none;
+  }
+
+  /* La feuille d'information : fond opaque + ombre portée vers le haut, c'est
+     ce qui donne la sensation qu'elle passe DEVANT la photo. */
+  [data-ay-product-sheet] .flow-info {
+    position: relative;
+    z-index: 10;
+    background: var(--ayrovi-bg-main, #ffffff);
+    box-shadow: 0 -18px 40px -30px rgb(0 0 0 / 60%);
+    padding-top: 12px;
+  }
+
+  /* Poignée discrète : elle annonce que le panneau se soulève. */
+  [data-ay-product-sheet] .flow-info::before {
+    content: "";
+    display: block;
+    width: 44px;
+    height: 3px;
+    margin: 0 auto 10px;
+    background: var(--ayrovi-border-soft, #eaeaea);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ay-product-sheet] .flow-media > div,
+  [data-ay-product-sheet] .ay-pdp-scrim,
+  [data-ay-product-sheet] .ay-pdp-media-controls {
+    transition: none;
+  }
+}

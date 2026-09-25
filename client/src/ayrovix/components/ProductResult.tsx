@@ -248,6 +248,41 @@ function variantStockState(options: { available: boolean; availability?: 'availa
     return () => document.removeEventListener('keydown', closeOnEscape);
   }, [sizeDrawerOpen]);
 
+  /* FICHE « feuille montante » (mobile, 25/09/2026) — au repos le produit est
+     ENTIER ; dès qu'on remonte la page, le panneau d'information passe devant
+     et l'image s'éteint derrière lui. Une seule variable pilote tout le rendu,
+     écrite ici et lue par client/src/styles/product-sheet.css. */
+  const sheetRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const host = sheetRef.current;
+    if (!host || typeof window === 'undefined') return;
+    const media = host.querySelector<HTMLElement>('.flow-media');
+    if (!media) return;
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
+      const info = host.querySelector<HTMLElement>('.flow-info');
+      const mediaBox = media.getBoundingClientRect();
+      // Recouvrement réel : de combien la feuille d'information mord sur l'image.
+      // La course utile s'arrête aux 4/5 de la hauteur du média — au-delà, la
+      // feuille a fini de le couvrir et continuer à assombrir ne dit plus rien.
+      const overlap = info ? mediaBox.bottom - info.getBoundingClientRect().top : 0;
+      const travel = Math.max(1, mediaBox.height * 0.8);
+      const reveal = Math.min(1, Math.max(0, overlap / travel));
+      host.style.setProperty('--ay-pdp-reveal', reveal.toFixed(3));
+      host.dataset.ayPdpCovered = String(reveal > 0.6);
+    };
+    const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(measure); };
+    measure();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [galleryImages.length]);
+
   const showNext = () => setImageIndex((current) => Math.min(current + 1, galleryImages.length - 1));
   const showPrev = () => setImageIndex((current) => Math.max(current - 1, 0));
 
@@ -276,7 +311,7 @@ function variantStockState(options: { available: boolean; availability?: 'availa
   };
 
   return (
-    <div className="flow-product pb-10" dir={direction}>
+    <div className="flow-product pb-10" dir={direction} ref={sheetRef} data-ay-product-sheet>
       {/* ── En-tête mobile épuré Zalando : < [Catégorie] à gauche, Panier à droite ── */}
       <div className="flex min-h-14 items-center justify-between gap-3 py-2 mb-3 border-b border-line/40">
         <button
@@ -305,6 +340,10 @@ function variantStockState(options: { available: boolean; availability?: 'availa
         {/* Media — canvas studio unifié, image spacieuse, pure et confortable sans assombrissement */}
         <div className="flow-media min-w-0">
           <div className="relative overflow-hidden rounded-2xl bg-[#f6f6f6]">
+            {/* Voile de mise en retrait : il ne s'active QUE lorsque la feuille
+                d'information monte par-dessus l'image (variable --ay-pdp-reveal). */}
+            <div className="ay-pdp-scrim" aria-hidden="true" />
+
             {/* Overlay Badges */}
             <div className="absolute inset-x-3.5 top-3.5 z-10 flex items-center justify-between pointer-events-none">
               {currentQuote?.promo && <span className="rounded-md bg-[#c82332] px-2.5 py-1 text-xs font-bold text-white">
@@ -358,14 +397,14 @@ function variantStockState(options: { available: boolean; availability?: 'availa
 
               {/* Indicateur de pagination photo 1 / N (en bas à gauche, identique Zalando Screenshot 2) */}
               {galleryImages.length > 1 && (
-                <div className="absolute bottom-3.5 left-3.5 z-10 pointer-events-none">
+                <div className="ay-pdp-media-controls absolute bottom-3.5 left-3.5 z-10 pointer-events-none">
                   <span className="rounded-md bg-white/90 backdrop-blur-xs px-2.5 py-1 text-xs font-bold text-ink shadow-xs">
                     {imageIndex + 1} / {galleryImages.length}
                   </span>
                 </div>
               )}
 
-              {galleryImages.length > 1 && <div className="absolute inset-x-3 bottom-3 z-10 flex items-center justify-end gap-2">
+              {galleryImages.length > 1 && <div className="ay-pdp-media-controls absolute inset-x-3 bottom-3 z-10 flex items-center justify-end gap-2">
                 <button type="button" onClick={showPrev} disabled={imageIndex === 0}
                   aria-label={tr('Photo précédente', 'الصورة السابقة')}
                   className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink disabled:opacity-40"><ChevronLeft size={18} /></button>
