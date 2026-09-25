@@ -1,13 +1,13 @@
 import type { CustomerSession } from '../../types';
 import { LensAccess, readLensConsent, rememberLensConsent } from './LensHelp';
-import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../services/productSelection';
+import { prepareProductOrder } from '../services/orderProduct';
 import { AppHeader } from '../../design/AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import type {
   AyrovixCandidate, AyrovixDetectedPrice, AyrovixHistoryItem, AyrovixOrderPayload, AyrovixProduct, AyrovixUrlResult,
 } from '../types';
-import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, markChosen, AyrovixApiError } from '../services/lensApi';
+import { analyzeBarcode, analyzeCode, analyzeImage, analyzeText, analyzeUrl, enrichCandidate, markChosen, AyrovixApiError } from '../services/lensApi';
 import { prepareImage } from '../services/imagePrep';
 import { readLocalAyrovixHistory, rememberAyrovixHistory } from '../services/history';
 import { getCommerceConfig } from '../../services/publicApi';
@@ -25,7 +25,6 @@ import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
 import { InteractiveLensResults } from './InteractiveLensResults';
 import { Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles, ShoppingBag } from '../../components/QatafoIcons';
-import { classifyProduct, productClassLabel } from '../services/productAttributes';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -49,7 +48,7 @@ interface CandidatesView {
   detectedPrice?: AyrovixDetectedPrice | null;
 }
 
-function toStoreKey(sourceUrl: string): AyrovixOrderPayload['store'] {
+function toStoreKey(sourceUrl: string): 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic' {
   const host = sourceUrl.toLowerCase();
   if (host.includes('shein')) return 'shein';
   if (host.includes('amazon')) return 'amazon';
@@ -63,8 +62,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     title: candidate.title,
     brand: candidate.brand,
     model: candidate.model,
-    // P1 : la description produite par nos moteurs (AI/SerpAPI) arrive enfin à la carte.
-    description: candidate.description || candidate.model || '',
+    description: candidate.description || '',
     image: candidate.image,
     images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
     colorImages: candidate.colorImages || null,
@@ -83,7 +81,8 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     exchangeRate: null,
     colors: candidate.colors,
     sizes: candidate.sizes,
-    availability: candidate.kind === 'catalog' ? 'in_stock' : 'unknown',
+    availability: candidate.availability || 'unknown',
+    canonical: candidate.canonical,
   };
 }
 
@@ -171,6 +170,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   stageRef.current = stage;
   const abortRef = useRef(0);
   const requestAbortRef = useRef<AbortController | null>(null);
+  const enrichAbortRef = useRef<AbortController | null>(null);
+  const imagePrepEpochRef = useRef(0);
   const previousStageRef = useRef<Stage>(stage);
 
   useBodyScrollLock(isOpen);
@@ -188,6 +189,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
   useEffect(() => () => {
     requestAbortRef.current?.abort();
+    enrichAbortRef.current?.abort(); imagePrepEpochRef.current++;
     if (previewRef.current) URL.revokeObjectURL(previewRef.current);
   }, []);
 
@@ -220,6 +222,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   if (!lensAccepted) return <LensAccess onClose={onClose} onAccept={() => { rememberLensConsent(); setLensAccepted(true); }} />;
 
   const startRequest = () => {
+    imagePrepEpochRef.current++;
+    enrichAbortRef.current?.abort();
     requestAbortRef.current?.abort();
     const controller = new AbortController();
     requestAbortRef.current = controller;
@@ -240,6 +244,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   const clearRuntime = () => {
+    enrichAbortRef.current?.abort(); imagePrepEpochRef.current++;
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
     abortRef.current += 1;
@@ -259,6 +264,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   const reset = () => {
+    enrichAbortRef.current?.abort(); imagePrepEpochRef.current++;
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
     abortRef.current += 1;
@@ -270,6 +276,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
 
   const goBack = () => {
+    enrichAbortRef.current?.abort(); imagePrepEpochRef.current++;
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
     abortRef.current += 1;
@@ -283,6 +290,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
   // Sortie du mode photo : on reste DANS la coque, retour au direct — aucune page intermédiaire.
   const closeImage = () => {
+    imagePrepEpochRef.current++;
     requestAbortRef.current?.abort();
     requestAbortRef.current = null;
     abortRef.current += 1;
@@ -304,14 +312,21 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   };
   // Voie unique (Amazon Lens) : chaque image importée/papillonnée reste DANS la coque caméra et part directement en analyse.
   const handleImage = async (file: File) => {
+    const epoch = ++imagePrepEpochRef.current;
+    requestAbortRef.current?.abort(); abortRef.current++;
     setError(null);
-    const prepared = await prepareImage(file);
-    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
-    previewRef.current = prepared.previewUrl;
-    setPreviewUrl(prepared.previewUrl);
-    setDetectedProducts([]);
-    setImageFile(prepared.file);
-    void runImageAnalysis(prepared.file);
+    try {
+      const prepared = await prepareImage(file);
+      if (epoch !== imagePrepEpochRef.current) { URL.revokeObjectURL(prepared.previewUrl); return; }
+      if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+      previewRef.current = prepared.previewUrl;
+      setPreviewUrl(prepared.previewUrl);
+      setDetectedProducts([]);
+      setImageFile(prepared.file);
+      void runImageAnalysis(prepared.file);
+    } catch (error: any) {
+      if (epoch === imagePrepEpochRef.current) fail('INVALID_IMAGE', error?.message || tr('Image illisible.', 'الصورة غير قابلة للقراءة.'));
+    }
   };
 
   const runImageAnalysis = async (fileOverride?: File, cropMs?: number, roi?: { x:number; y:number; w:number; h:number }) => {
@@ -528,105 +543,52 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     }
   };
 
-  // DIRECT: Voir le produit → product page instantly, no re-analyze (user requested)
+  // A discovery click opens the signed SerpAPI candidate immediately. Optional
+  // merchant enrichment is source-checked server-side; a late response cannot
+  // replace the next product's title, images, price or selections.
   const handleChooseCandidate = (candidate: AyrovixCandidate) => {
     if (candidatesView?.eventId) markChosen(candidatesView.eventId);
+    enrichAbortRef.current?.abort();
     setProduct(candidateToProduct(candidate));
     setVerifiedPriceUrl(candidate.priceVerificationStatus === 'VERIFIED');
     enterStage('product');
-    // ENRICHISSEMENT PROGRESSIF (fix 24/09/2026 — «الوصف منقوص وصور ناقصة») :
-    // la grille de recherche ne donne qu'un extrait (snippet SerpAPI). Dès que
-    // la page produit est ouverte, on relit la VRAIE fiche marchand : description
-    // complète, TOUTES les photos, images par couleur, tailles, disponibilité.
-    // L'affichage n'attend jamais ce rappel — les données arrivent en surcouche.
-    const enrichUrl = candidate.sourceUrl;
-    if (!enrichUrl || !/^https?:\/\//i.test(enrichUrl)) return;
+    const original = candidate.canonical;
+    if (!original || original.identity.source !== 'serpapi' || !original.quoteToken) return;
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12_000);
-    fetch('/api/ayrovix/analyze-url', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ url: enrichUrl, recordHistory: false, channel: 'url' }),
-      signal: controller.signal,
-    })
-      .then((response) => (response.ok ? response.json() : Promise.reject(new Error('ENRICH_UNAVAILABLE'))))
-      .then((payload) => {
-        const full = payload?.data?.product;
-        if (!full) return;
-        setProduct((current) => {
-          if (!current || current.sourceUrl !== enrichUrl) return current; // l'utilisateur a changé de produit
-          const images = [...new Set([...(current.images || []), ...(full.images || [])].filter(Boolean))];
-          const colorImages = { ...(full.colorImages || {}) };
-          if (current.colorImages) for (const [key, set] of Object.entries(current.colorImages)) colorImages[key] = [...new Set([...(colorImages[key] || []), ...set])];
-          const description = (full.description || '').trim().length > (current.description || '').trim().length ? full.description : current.description;
-          return {
-            ...current,
-            description,
-            images,
-            colorImages: Object.keys(colorImages).length ? colorImages : current.colorImages ?? null,
-            image: current.image || full.image || '',
-            sizes: current.sizes.length ? current.sizes : full.sizes || [],
-            colors: current.colors.length ? current.colors : full.colors || [],
-            brand: current.brand || full.brand || null,
-            availability: full.availability && full.availability !== 'unknown' ? full.availability : current.availability,
-          };
-        });
+    enrichAbortRef.current = controller;
+    void enrichCandidate(original, controller.signal)
+      .then((result) => {
+        if (controller.signal.aborted || !result.enriched || !result.product.canonical) return;
+        setProduct(current => current?.canonical?.id === original.id
+          && current.canonical.quoteToken === original.quoteToken ? result.product : current);
       })
-      .catch(() => { /* l'extrait reste affiché — jamais de page cassée */ })
-      .finally(() => clearTimeout(timeout));
+      .catch(() => { /* Keep the exact signed discovery quote if merchant extraction fails. */ })
+      .finally(() => { if (enrichAbortRef.current === controller) enrichAbortRef.current = null; });
   };
 
-  const handleOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
+  const handleOrder = async (selection: AyrovixOrderSelection) => {
     if (!product) return;
-    const { option, offer } = resolveProductSelection(product, size, color);
-    if (!completeProductOffer(offer)) {
-      setError({ code: 'QUOTE_UNAVAILABLE', message: tr(...productSelectionLabels.unavailable) });
-      enterStage('error');
-      return;
-    }
-    if (urlResult?.eventId) markChosen(urlResult.eventId);
-    const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
-    const priceVerificationStatus = product.priceVerificationStatus || (verifiedPriceUrl ? 'VERIFIED' : 'PENDING_MANUAL');
-    setOrdering(true);
-    setError(null);
+    setOrdering(true); setError(null);
     try {
-      await onOrder({
-        store: toStoreKey(product.sourceUrl || product.source || manualUrl),
-        externalId: option?.id || null,
-        url: manualUrl,
-        referenceUrl: product.sourceUrl || '',
-        title: product.title,
-        imageUrl: product.image || '',
-        sourcePrice: offer.price,
-        sourceCurrency: offer.currency,
-        priceTND: offer.priceTnd ?? 0,
-        variant: option?.label || variant || undefined,
-        requestedSize: size,
-        requestedColor: color,
-        customerNote,
-        priceVerificationStatus,
-        priceToken: offer.priceToken,
-        quantity,
-      });
-      // Le panier s'ouvre, mais le résultat Lens reste monté pour un retour sans perte d'état.
+      const order = prepareProductOrder(product, selection);
+      if (urlResult?.eventId) markChosen(urlResult.eventId);
+      await onOrder(order);
       setOrdering(false);
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
-      enterStage('error');
-      setOrdering(false);
+      enterStage('error'); setOrdering(false);
     }
   };
-
 
   const commandDetectedPrice = (detected: AyrovixDetectedPrice) => {
     setProduct({
       title: detected.title || 'Produit détecté par AYROVIX',
       brand: detected.brand,
       model: null,
-      description: detected.isCartScreenshot ? `Panier: ${detected.sourcePrice} ${detected.sourceCurrency} - ${detected.title}` : `${detected.title} — Prix repéré ${detected.sourcePrice} ${detected.sourceCurrency}`,
-      image: detected.imageUrl || previewUrl || '',
-      images: detected.imageUrl ? [detected.imageUrl] : previewUrl ? [previewUrl] : [],
-      source: 'Collection AYROVI',
+      description: '', // A detected screenshot price is not a merchant description.
+      image: detected.imageUrl || '',
+      images: detected.imageUrl ? [detected.imageUrl] : [],
+      source: '', // Screenshot seller was not provided by the source.
       sourceUrl: '',
       price: detected.sourcePrice,
       currency: detected.sourceCurrency,
@@ -736,7 +698,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
         {['home', 'error', 'barcode'].includes(stage) && (
           <AppHeader
-            title={stage === 'product' && product ? productClassLabel(classifyProduct(product.title, product.description), isArabic) : 'LENS'}
+            title={stage === 'product' && product ? product.canonical?.basic.category || tr('Produit', 'منتج') : 'LENS'}
             onBack={stage === 'home' ? handleClose : stage === 'product' ? goBack : reset}
             showLogo={stage !== 'product'}
             className={stage === 'product' ? 'border-b-0 bg-transparent' : ''}
@@ -930,7 +892,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   priceVerified={verifiedPriceUrl}
                   onOrder={(v) => void handleOrder(v)}
                   onBack={goBack}
-                  onCalculateAnother={reset}
+                  customerSession={customerSession}
+                  onOpenFavorites={onOpenFavorites}
                 />
                 {urlResult && urlResult.alternates.length > 0 && (
                   <section className="mt-8 pt-6 border-t border-line/60">

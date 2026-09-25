@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { AyrovixCandidate } from '../types';
+import { normalizeSerpApiMatch, projectCandidate } from './commerceProduct';
 import { parsePublicHttpUrl } from '../../services/safeUrl';
 
 /**
@@ -30,18 +31,6 @@ function timeoutMs(): number {
 
 function remainingMs(deadline: number, cap: number): number {
   return Math.max(100, Math.min(cap, deadline - Date.now()));
-}
-
-function normalizeCurrency(raw: unknown): string | null {
-  const value = String(raw || '').trim().toUpperCase();
-  const known: Record<string, string> = {
-    '$': 'USD', 'US$': 'USD', USD: 'USD',
-    '€': 'EUR', EUR: 'EUR',
-    '£': 'GBP', GBP: 'GBP',
-    'د.ت': 'TND', DT: 'TND', TND: 'TND',
-    'CA$': 'CAD', CAD: 'CAD',
-  };
-  return known[value] || (/^[A-Z]{3}$/.test(value) ? value : null);
 }
 
 async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
@@ -76,55 +65,19 @@ function toCandidates(payload: any, limit: number): AyrovixCandidate[] {
   return lenient;
 }
 
-function collectCandidates(rows: any[], limit: number, strict: boolean): AyrovixCandidate[] {
+function collectCandidates(rows: unknown[], limit: number, strict: boolean): AyrovixCandidate[] {
   const seen = new Set<string>();
   const results: AyrovixCandidate[] = [];
-  for (const row of rows) {
-    const sourceUrl = String(row?.link || '').trim();
-    const title = String(row?.title || '').replace(/\s+/g, ' ').trim();
-    if (!/^https?:\/\//i.test(sourceUrl) || title.length < 4 || seen.has(sourceUrl)) continue;
-    seen.add(sourceUrl);
-    const extractedPrice = Number(row?.price?.extracted_value ?? row?.extracted_price);
-    const currency = normalizeCurrency(row?.price?.currency ?? row?.currency);
-    if (strict) {
-      if (!Number.isFinite(extractedPrice) || extractedPrice <= 0 || !currency) continue;
-    }
-    const merchantRating = Number(row?.rating ?? row?.product_rating);
-    const ratingCount = Number(row?.reviews ?? row?.reviews_count);
-    const rawImages = [
-      row?.thumbnail,
-      row?.original_image,
-      row?.image,
-      ...(Array.isArray(row?.images) ? row.images : []),
-      ...(Array.isArray(row?.thumbnails) ? row.thumbnails : []),
-    ];
-    const images = [...new Set(rawImages
-      .map((value) => String(value || '').trim())
-      .filter((value) => /^https?:\/\//i.test(value)))];
-    const index = results.length;
-    const hasPrice = Number.isFinite(extractedPrice) && extractedPrice > 0 && !!currency;
-    results.push({
-      id: `lens_${index}_${createHash('sha1').update(sourceUrl).digest('hex').slice(0, 10)}`,
-      kind: 'external',
-      title: title.slice(0, 180),
-      brand: typeof row?.brand === 'string' ? row.brand.trim().slice(0, 100) || null : null,
-      description: typeof (row?.description ?? row?.snippet) === 'string' ? String(row.description ?? row.snippet).trim().slice(0, 500) || null : null,
-      model: null,
-      colors: [],
-      sizes: [],
-      source: String(row?.source || 'Google Lens').trim().slice(0, 80) || 'Google Lens',
-      sourceUrl,
-      image: images[0] || '',
-      images,
-      price: hasPrice ? extractedPrice : null,
-      currency: hasPrice ? currency! : null,
-      priceTnd: null,
-      priceVerificationStatus: hasPrice ? undefined : 'PENDING_MANUAL' as const,
-      rating: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? merchantRating : null,
-      ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
-      ratingKind: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? 'merchant' : 'match',
-      match: row?.exact_matches === true ? 99 : Math.max(72, 94 - index * 3),
-    });
+  for (const raw of rows) {
+    const product = normalizeSerpApiMatch(raw);
+    if (!product.identity.sourceUrl || product.basic.title.length < 4 || seen.has(product.id)) continue;
+    const hasPrice = product.pricing.sourcePrice !== null && product.pricing.sourceCurrency !== null;
+    if (strict && !hasPrice) continue;
+    seen.add(product.id);
+    const exact = Boolean(raw && typeof raw === 'object' && 'exact_matches' in raw && raw.exact_matches === true);
+    const result = projectCandidate(product, exact ? 99 : Math.max(72, 94 - results.length * 3));
+    if (!hasPrice) result.priceVerificationStatus = 'PENDING_MANUAL';
+    results.push(result);
     if (results.length >= limit) break;
   }
   return results;
@@ -227,15 +180,15 @@ export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promi
   try { normalized = parsePublicHttpUrl(imageUrl).toString(); } catch { return []; }
   const cacheKey = `url:${createHash('sha256').update(normalized).digest('hex')}|${limit}`;
   const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => structuredClone(item));
   const existing = inFlight.get(cacheKey);
-  if (existing) return (await existing).map((item) => ({ ...item }));
+  if (existing) return (await existing).map((item) => structuredClone(item));
   const task = runSerpApiVisualSearchUrl(normalized, limit);
   inFlight.set(cacheKey, task);
   try {
     const results = await task;
     if (results.length) cache.set(cacheKey, { at: Date.now(), results });
-    return results.map((item) => ({ ...item }));
+    return results.map((item) => structuredClone(item));
   } finally {
     inFlight.delete(cacheKey);
   }
@@ -246,10 +199,10 @@ export async function serpApiVisualSearch(image: Buffer, limit = 8): Promise<Ayr
   const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${limit}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-    return cached.results.map((item) => ({ ...item }));
+    return cached.results.map((item) => structuredClone(item));
   }
   const existing = inFlight.get(cacheKey);
-  if (existing) return (await existing).map((item) => ({ ...item }));
+  if (existing) return (await existing).map((item) => structuredClone(item));
 
   const task = runSerpApiVisualSearch(image, limit);
   inFlight.set(cacheKey, task);
@@ -259,7 +212,7 @@ export async function serpApiVisualSearch(image: Buffer, limit = 8): Promise<Ayr
       cache.set(cacheKey, { at: Date.now(), results });
       if (cache.size > 100) cache.delete(cache.keys().next().value as string);
     }
-    return results.map((item) => ({ ...item }));
+    return results.map((item) => structuredClone(item));
   } finally {
     inFlight.delete(cacheKey);
   }

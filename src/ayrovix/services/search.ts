@@ -1,6 +1,7 @@
+import { listingIdentityUrl } from '../../../shared/listingIdentity';
 import type { QatafoDatabase } from '../../db/database';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
-import { estimateWithDb } from './currency';
+import { normalizeProduct, normalizeCatalogRow, priceCommerceProduct, projectCandidate } from './commerceProduct';
 import { filterDisplayableCandidates, filterWithFallback } from './candidatePolicy';
 import { getAyroviAiCore } from '../../ai-core/core';
 import { isAiFeatureEnabled } from '../../ai-core/config';
@@ -78,36 +79,17 @@ export function catalogSearch(
   query: string,
   limit = 6,
 ): AyrovixCandidate[] {
-  const rules = db.getPricingRules();
-  const rows = db.all<any>(
-    `SELECT id, name, brand_name, image, source_url, source_platform, stock_status,
-            original_price, currency, final_price
-     FROM products WHERE status='ACTIVE' ORDER BY updated_at DESC LIMIT 400`,
-  );
-  const candidates = rows.map((row) => {
-    const title = `${row.brand_name ? `${row.brand_name} ` : ''}${row.name}`;
+  const rows = db.all<{
+    id: string; name: string; brand_name: string | null; image: string | null;
+    source_url: string | null; source_platform: string | null; stock_status: string | null;
+    original_price: number | null; currency: string | null; description?: string | null;
+  }>(`SELECT id, name, description, brand_name, image, source_url, source_platform, stock_status,
+            original_price, currency FROM products WHERE status='ACTIVE' ORDER BY updated_at DESC LIMIT 400`);
+  const candidates = rows.map(row => {
+    const product = priceCommerceProduct(db, normalizeCatalogRow(row));
     const match = scoreCandidate(identification, query, { title: row.name, brand: row.brand_name });
-    const estimated = estimateWithDb(db, Number(row.original_price) || null, String(row.currency || 'EUR'));
-    return {
-      id: `cat_${row.id}`,
-      kind: 'catalog' as const,
-      title,
-      brand: row.brand_name || null,
-      model: null,
-      colors: [],
-      sizes: [],
-      source: 'Collection AYROVI',
-      sourceUrl: row.source_url || '',
-      image: row.image || '',
-      price: Number(row.original_price) || null,
-      currency: row.currency || null,
-      priceTnd: estimated?.promo
-        ? estimated.priceTnd // promo active : le prix remisé du moteur fait foi
-        : (Number(row.final_price) > 0 ? Number(row.final_price) : (estimated?.priceTnd ?? null)),
-      promo: estimated?.promo ?? null,
-      match,
-    } satisfies AyrovixCandidate;
-  }).filter((candidate) => candidate.match >= 35);
+    return projectCandidate(product, match, 'catalog');
+  }).filter(candidate => candidate.match >= 35);
   return filterDisplayableCandidates(candidates, limit);
 }
 
@@ -156,23 +138,8 @@ export async function providerWebSearch(
       const sourceUrl = String(item.url || '').trim();
       const title = String(item.title || '').replace(/\s+/g, ' ').trim();
       if (!/^https?:\/\//i.test(sourceUrl) || title.length < 5) continue;
-      const index = candidates.length;
-      candidates.push({
-        id: `web_${index}_${Buffer.from(sourceUrl).toString('base64url').slice(0, 10)}`,
-        kind: 'external',
-        title: title.slice(0, 160),
-        brand: null,
-        model: null,
-        colors: [],
-        sizes: [],
-        source: merchantLabel(sourceUrl),
-        sourceUrl,
-        image: '',
-        price: null,
-        currency: null,
-        priceTnd: null,
-        match: clampMatch(86 - index * 3),
-      });
+      const product = normalizeProduct({ source: 'web', title, sourceUrl, merchant: merchantLabel(sourceUrl) });
+      candidates.push(projectCandidate(product, clampMatch(86 - candidates.length * 3)));
       if (candidates.length >= limit) break;
     }
     console.log(`[AYROVIX provider-search] ${candidates.length} candidates, searches=${result.usage?.webSearchCalls || 0}`);
@@ -193,10 +160,10 @@ export async function externalProductSearch(
   const cacheKey = `${query.trim().toLowerCase()}|${limit}`;
   const cached = externalSearchCache.get(cacheKey);
   if (cached && Date.now() - cached.at < EXTERNAL_CACHE_TTL_MS) {
-    return cached.results.map((item) => ({ ...item }));
+    return cached.results.map((item) => structuredClone(item));
   }
   const existing = externalSearchInFlight.get(cacheKey);
-  if (existing) return (await existing).map((item) => ({ ...item }));
+  if (existing) return (await existing).map((item) => structuredClone(item));
 
   const task = externalWebSearchEnabled()
     ? providerWebSearch(query, limit, deadline)
@@ -208,7 +175,7 @@ export async function externalProductSearch(
       externalSearchCache.set(cacheKey, { at: Date.now(), results });
       if (externalSearchCache.size > 200) externalSearchCache.delete(externalSearchCache.keys().next().value as string);
     }
-    return results.map((item) => ({ ...item }));
+    return results.map((item) => structuredClone(item));
   } finally {
     externalSearchInFlight.delete(cacheKey);
   }
@@ -227,16 +194,18 @@ export async function searchCandidates(
   const external = visualCandidates.length
     ? visualCandidates
     : await externalProductSearch(query, 6, deadline);
-  const rules = db.getPricingRules();
-  const rescored = external.map((candidate) => {
-    const estimated = candidate.price != null ? estimateWithDb(db, candidate.price, candidate.currency || 'EUR') : null;
-    return {
-      ...candidate,
-      priceTnd: estimated?.promo ? estimated.priceTnd : (candidate.priceTnd ?? estimated?.priceTnd ?? null),
-      promo: estimated?.promo ?? null,
-      priceVerificationStatus: candidate.price != null ? candidate.priceVerificationStatus : ('PENDING_MANUAL' as const),
-      match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)),
-    };
+  const rescored = external.map(candidate => {
+    const canonical = candidate.canonical || normalizeProduct({
+      source: 'web', title: candidate.title, description: candidate.description, brand: candidate.brand,
+      merchant: candidate.source, sourceUrl: candidate.sourceUrl, imageUrls: [candidate.image, candidate.images],
+      sourcePrice: candidate.price, sourceCurrency: candidate.currency,
+      rating: candidate.ratingKind === 'merchant' ? candidate.rating : null,
+      reviews: candidate.ratingCount, availability: candidate.availability,
+    });
+    const priced = priceCommerceProduct(db, canonical);
+    return { ...projectCandidate(priced, Math.max(candidate.match, scoreCandidate(identification, query, candidate)), candidate.kind),
+      // Preserve visual-search confidence independently from commercial data.
+      match: Math.max(candidate.match, scoreCandidate(identification, query, candidate)) };
   });
   // D2-10: strict first, lenient PENDING fallback — never return 0 when lens/web has matches
   return filterWithFallback(
@@ -245,49 +214,18 @@ export async function searchCandidates(
   );
 }
 
-/**
- * GLOBAL DISCOVERY — un même produit proposé par plusieurs sources du web mondial
- * devient UN candidat avec plusieurs offres, jamais quatre doublons à la suite.
- *
- * Identité produit par signaux disponibles : marque + recouvrement des tokens du
- * titre (Jaccard ≥ 0.6 ; le modèle/GTIN, quand il est dans le titre, participe
- * naturellement aux tokens). Le catalogue AYROVI reste à part : c'est l'offre
- * propre d'AYROVI, pas une offre externe à regrouper.
- */
+/** Identity-only deduplication: never combine offers using title similarity. */
 export function groupOffers(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
-  const passthrough = candidates.filter((candidate) => candidate.kind !== 'external');
-  const groups: Array<{ rep: AyrovixCandidate; tokens: Set<string>; brand: string; members: AyrovixCandidate[] }> = [];
-  for (const candidate of candidates) {
-    if (candidate.kind !== 'external') continue;
-    const tokens = new Set(tokenize(`${candidate.brand || ''} ${candidate.title}`));
-    const brand = String(candidate.brand || '').toLowerCase().trim();
-    const group = tokens.size >= 2
-      ? groups.find((entry) => {
-          if (entry.brand !== brand) return false;
-          const inter = [...tokens].filter((token) => entry.tokens.has(token)).length;
-          const union = new Set([...tokens, ...entry.tokens]).size;
-          return union > 0 && inter / union >= 0.6;
-        })
-      : undefined;
-    if (group) {
-      group.members.push(candidate);
-      const repHasPrice = group.rep.priceTnd != null;
-      const candHasPrice = candidate.priceTnd != null;
-      if (candidate.match > group.rep.match || (!repHasPrice && candHasPrice && candidate.match >= group.rep.match)) group.rep = candidate;
-    } else {
-      groups.push({ rep: candidate, tokens, brand, members: [candidate] });
-    }
-  }
-  return [
-    ...passthrough,
-    ...groups.map(({ rep, members }) => {
-      if (members.length === 1) return rep;
-      const offers = members
-        .map((member) => ({ source: member.source, sourceUrl: member.sourceUrl, price: member.price, currency: member.currency, priceTnd: member.priceTnd, promo: member.promo ?? null }))
-        .sort((a, b) => (a.priceTnd ?? Number.POSITIVE_INFINITY) - (b.priceTnd ?? Number.POSITIVE_INFINITY));
-      return { ...rep, offerCount: members.length, offers };
-    }),
-  ];
+  // Identical titles/images are NOT proof of identity. Deduplicate only the same
+  // source + source product ID (or exact source URL), without combining prices.
+  const seen = new Set<string>();
+  return candidates.filter(candidate => {
+    const product = candidate.canonical;
+    const key = product?.id || `${candidate.kind}|${listingIdentityUrl(candidate.sourceUrl)}`;
+    if (!candidate.sourceUrl || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export interface ProviderSearchHealth {

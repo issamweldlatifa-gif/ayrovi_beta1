@@ -1,20 +1,8 @@
-/*
- * QUIET CARD v2 (plan UI/Promo — décision client 2026-09-23) :
- * pièces partagées de la carte produit, héritées par les résultats de recherche
- * (listes + grille), la fiche produit et le panier.
- *
- * Règles verrouillées (tests/quiet-card.test.tsx + design contracts) :
- *  • image produit TOUJOURS dans le cadre studio : canvas blanc unifié + padding
- *    + hairline + mix-blend-mode: multiply → le fond blanc des boutiques
- *    disparaît dans le canvas (plus de fond marchand « brut ») ;
- *  • le prix remisé est l'élément le plus fort de la carte et il est ROUGE
- *    (var(--ayrovi-promo), référence Zalando) ; l'original reste gris barré ;
- *  • le badge −X% est rouge — l'orange reste réservé aux CTA.
- */
-import React, { useEffect, useMemo, useState } from 'react';
+/* Shared responsive product frame and promotion price. Source photos are never blended or cropped. */
+import React, { useMemo, useState } from 'react';
 import { Image as ImageIcon, Loader2 } from '../../components/QatafoIcons';
 import type { AyrovixPromo } from '../types';
-import { withIsolation } from '../services/mediaIsolation';
+import { safeMediaSrc, withIsolation } from '../services/mediaIsolation';
 import { useLocale } from '../../i18n/LocaleContext';
 import './quiet-card.css';
 
@@ -45,24 +33,28 @@ export const StudioImageFrame: React.FC<StudioImageFrameProps> = ({
   src, alt, fallbackSources, ratio = '1 / 1', className = '', children, placeholderLabel, loading = 'lazy', isolate = true,
 }) => {
   const urls = useMemo(
-    () => withIsolation([...new Set([src, ...(fallbackSources || [])].filter((value): value is string => Boolean(value)))]),
-    [src, fallbackSources],
+    () => {
+      const originals = [...new Set([src, ...(fallbackSources || [])].filter((value): value is string => Boolean(value && safeMediaSrc(value))))];
+      return isolate ? withIsolation(originals) : originals;
+    },
+    [src, fallbackSources, isolate],
   );
-  const [index, setIndex] = useState(0);
+  const [attempt, setAttempt] = useState<{ key: string; index: number }>({ key: '', index: 0 });
   const urlsKey = urls.join('|');
-  useEffect(() => { setIndex(0); }, [urlsKey]);
+  const index = attempt.key === urlsKey ? attempt.index : 0;
   const current = urls[index];
   return (
     <figure className={`ay-studio-frame ${className}`.trim()} style={{ aspectRatio: ratio }}>
       {current
         ? <img
             src={current}
+            key={`${urlsKey}:${index}`}
             alt={alt}
             loading={loading}
             decoding="async"
             draggable={false}
             referrerPolicy="no-referrer"
-            onError={() => setIndex((value) => Math.min(value + 1, urls.length))}
+            onError={() => setAttempt(state => ({ key: urlsKey, index: Math.min((state.key === urlsKey ? state.index : 0) + 1, urls.length) }))}
             className="ay-studio-frame__image"
           />
         : <span className="ay-studio-frame__placeholder" aria-hidden="true">

@@ -1,3 +1,4 @@
+import { roundTnd } from '../../shared/commerceProduct';
 export type CustomsCategoryStatus = 'ALLOWED' | 'WARNING' | 'RESTRICTED';
 
 export interface CustomsCategory {
@@ -208,8 +209,7 @@ export const DEFAULT_CUSTOMS_CATEGORIES: CustomsCategory[] = [
 ];
 
 export function millimes(value: number): number {
-  if (!Number.isFinite(value)) return 0;
-  return Math.round(value * 1000 + Number.EPSILON) / 1000;
+  return roundTnd(value);
 }
 
 export function getExchangeRate(rules: PricingRules, currency: string): number | null {

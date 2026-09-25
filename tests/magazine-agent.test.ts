@@ -14,6 +14,12 @@ import {
 } from '../src/magazine/service';
 
 const db = new QatafoDatabase(':memory:');
+// Only the test owns this record; production no longer seeds an unsourced demo article.
+db.run(`INSERT INTO products (id,name,description,brand_name,source_url,source_platform,original_price,
+  currency,status,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+  'test_catalogue_coat', 'Source-listed coat', 'Fixture product', 'Merchant Shop',
+  'https://merchant-shop.com/products/coat', 'Merchant Shop', 39.95, 'EUR', 'ACTIVE',
+  new Date().toISOString(), new Date().toISOString());
 
 const output: MagazineAgentOutput = {
   topic: 'أناقة الكراميل في الخريف',
@@ -83,10 +89,10 @@ describe('Magazine Agent persistence and product policy', () => {
   });
 
   test('only links explicit product requests to real read-only catalogue matches', () => {
-    const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج SHEIN Ensemble tendance AYROVI');
+    const real = findMagazineProductContext(db, 'ولّد ريلز لمنتج Merchant Shop Source-listed coat');
     expect(real.requested).toBe(true);
     expect(real.matched).toBe(true);
-    expect(real.products[0]?.id).toBe('product_demo_01');
+    expect(real.products[0]?.id).toBe('test_catalogue_coat');
 
     const absent = findMagazineProductContext(db, 'ولّد ريلز لحذاء Nike الجديد');
     expect(absent.requested).toBe(true);

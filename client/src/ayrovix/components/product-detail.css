@@ -1,0 +1,53 @@
+/* One responsive detail surface for every sourced product category. */
+.ay-product { color:#182018; background:#fff; width:100%; min-height:100%; padding:clamp(1rem,3vw,2.5rem); box-sizing:border-box; }
+.ay-product * { box-sizing:border-box; }
+.ay-product__top { display:flex; align-items:center; gap:.75rem; max-width:1200px; margin:0 auto 1.5rem; color:#525b55; font-size:.86rem; }
+.ay-product__source { font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ay-product__source-link { display:inline-flex; align-items:center; gap:.25rem; color:inherit; text-decoration:underline; text-underline-offset:3px; white-space:nowrap; }
+.ay-product__icon { display:grid; place-items:center; width:38px; height:38px; flex:none; background:transparent; border:1px solid #e4e8e4; border-radius:50%; cursor:pointer; color:inherit; }
+.ay-product__save { margin-inline-start:auto; }
+.ay-product__layout { display:grid; grid-template-columns:minmax(0, 1.08fr) minmax(0, .92fr); gap:clamp(1.5rem,5vw,4.75rem); max-width:1200px; margin:auto; align-items:start; }
+.ay-product__gallery { min-width:0; position:sticky; top:1rem; }
+.ay-product__stage { width:100%; border:0; padding:0; background:transparent; cursor:zoom-in; display:block; text-align:inherit; }
+.ay-product__stage .ay-studio-frame { aspect-ratio:1/1; background:#f6f6f6; }
+.ay-product__thumbnails { display:flex; gap:.6rem; overflow-x:auto; scroll-snap-type:x proximity; margin-top:.8rem; padding-bottom:.3rem; }
+.ay-product__thumbnail { width:clamp(58px,14%,82px); flex:none; padding:0; border:2px solid transparent; border-radius:10px; background:transparent; cursor:pointer; scroll-snap-align:start; }
+.ay-product__thumbnail[aria-current="true"] { border-color:#1d633c; }
+.ay-product__thumbnail .ay-studio-frame { border:0; background:#f6f6f6; border-radius:7px; }
+.ay-product__count { display:block; margin-top:.5rem; text-align:center; color:#5e675e; font-size:.78rem; }
+.ay-product__information { min-width:0; }
+.ay-product__information h1 { font-size:clamp(1.35rem,2.5vw,2.15rem); font-weight:680; line-height:1.26; overflow-wrap:anywhere; margin:.25rem 0 .65rem; }
+.ay-product__brand { color:#47554a; font-size:.86rem; font-weight:650; margin:0; }
+.ay-product__price { display:flex; flex-direction:column; align-items:flex-start; gap:.4rem; border-block:1px solid #e5e8e5; padding:1.35rem 0; margin:1.4rem 0 0; }
+.ay-product__price > strong { font-size:1.4rem; }
+.ay-product__help { font-size:.82rem; color:#657166; line-height:1.5; margin:0; }
+.ay-product__breakdown { font-size:.8rem; color:#687068; line-height:1.55; margin:.4rem 0 0; }
+.ay-product__section { padding:1.15rem 0; border-bottom:1px solid #e5e8e5; }
+.ay-product__section h2 { font-size:.98rem; font-weight:650; margin:0 0 .6rem; }
+.ay-product__description { white-space:pre-line; overflow-wrap:anywhere; line-height:1.65; font-size:.91rem; color:#4d5a50; margin:0; }
+.ay-product__attributes { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:.55rem 1rem; font-size:.85rem; margin:0; overflow-wrap:anywhere; }
+.ay-product__attributes dt { color:#667067; }.ay-product__attributes dd { margin:0; }
+.ay-product__selection { display:flex; flex-direction:column; gap:1.25rem; padding:1.4rem 0 3rem; }
+.ay-product__group { display:flex; flex-direction:column; gap:.6rem; }
+.ay-product__group > label, .ay-product__note { font-weight:620; font-size:.88rem; }
+.ay-product__choices { display:flex; flex-wrap:wrap; gap:.55rem; }
+.ay-product__choices button { min-width:46px; min-height:44px; padding:.5rem .8rem; border:1px solid #cdd7cf; background:#fff; border-radius:8px; color:#17231b; cursor:pointer; font-size:.9rem; }
+.ay-product__choices button[aria-pressed="true"] { border:2px solid #205e3e; background:#eef7f0; }
+.ay-product__choices button:disabled { color:#888; background:#f6f6f6; text-decoration:line-through; cursor:not-allowed; }
+.ay-product__guide-link { display:inline-flex; align-items:center; gap:.3rem; font-size:.81rem; color:#2a5c3e; text-decoration:underline; text-underline-offset:3px; }
+.ay-product__group select, .ay-product__group input, .ay-product__note textarea { max-width:100%; width:100%; padding:.7rem .8rem; border:1px solid #cdd7cf; border-radius:8px; background:#fff; color:#182018; font:inherit; }
+.ay-product__note { display:flex; flex-direction:column; gap:.6rem; }
+.ay-product__note textarea { resize:vertical; font-weight:400; }
+.ay-product__counter { display:flex; align-items:center; width:max-content; border:1px solid #cdd7cf; border-radius:8px; overflow:hidden; }
+.ay-product__counter button { display:grid; place-items:center; width:44px; height:44px; background:#fff; color:#182018; border:0; cursor:pointer; }
+.ay-product__counter button:disabled { opacity:.4; cursor:not-allowed; }
+.ay-product__counter output { width:42px; text-align:center; font-variant-numeric:tabular-nums; }
+.ay-product__buy { display:block; width:100%; min-height:52px; border:0; border-radius:9px; background:#1c613f; color:#fff; font:inherit; font-weight:670; cursor:pointer; padding:.7rem 1rem; }
+.ay-product__buy:disabled { background:#c5d0c7; color:#3d4a40; cursor:not-allowed; }
+.ay-product__validation { color:#9b3c26; font-size:.84rem; margin:-.5rem 0 0; }
+.ay-product__lightbox { position:fixed; z-index:10000; inset:0; display:flex; align-items:center; justify-content:center; gap:1rem; background:rgba(13,18,14,.95); padding:4rem 1rem 2rem; }
+.ay-product__lightbox .ay-studio-frame { width:min(78vw,780px); max-height:75vh; background:#f6f6f6; }
+.ay-product__lightbox button { display:grid; place-items:center; flex:none; border:0; border-radius:50%; width:42px; height:42px; background:rgba(255,255,255,.95); cursor:pointer; }
+.ay-product__lightbox-close { position:absolute; top:1rem; inset-inline-end:1rem; }
+@media (max-width:760px) { .ay-product { padding:1rem 1rem 2rem; } .ay-product__top { margin-bottom:.8rem; } .ay-product__layout { display:flex; flex-direction:column; gap:1.15rem; } .ay-product__gallery { position:static; width:100%; } .ay-product__lightbox { gap:.3rem; } .ay-product__lightbox .ay-studio-frame { width:min(68vw,580px); } }
+@media (prefers-reduced-motion:reduce) { .ay-product *, .ay-product *::before, .ay-product *::after { animation:none !important; transition:none !important; } }

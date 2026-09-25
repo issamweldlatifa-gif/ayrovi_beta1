@@ -32,14 +32,15 @@ const product: AyrovixProduct = {
 };
 
 describe('Quiet Card v2 — cadre studio unifié', () => {
-  it('toute image produit passe par le cadre : blanc + hairline + multiply', () => {
+  it('toute image produit passe par le cadre : fond neutre, hairline et object-fit contain', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><StudioImageFrame src="/a.jpg" fallbackSources={['/a.jpg', '/b.jpg']} alt="produit" ratio="3 / 4" /></LocaleProvider>,
     );
     expect(html).toContain('ay-studio-frame__image');
     const css = read('client/src/ayrovix/components/quiet-card.css');
-    expect(css).toMatch(/\.ay-studio-frame\s*\{[^}]*background:\s*#fff/);
-    expect(css).toMatch(/\.ay-studio-frame__image\s*\{[^}]*mix-blend-mode:\s*multiply/);
+    expect(css).toMatch(/\.ay-studio-frame\s*\{[^}]*background:\s*#f6f6f6/);
+    expect(css).toMatch(/\.ay-studio-frame__image\s*\{[^}]*mix-blend-mode:\s*normal/);
+    expect(css).toMatch(/\.ay-studio-frame__image\s*\{[^}]*object-fit:\s*contain/);
     expect(css).toMatch(/\.ay-studio-frame\s*\{[^}]*border:\s*1px solid/);
   });
 
@@ -51,18 +52,18 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
     expect(html).not.toContain('<img');
   });
 
-  it('la fiche produit et la vignette panier utilisent le canvas blanc (plus de fond surface/cover)', () => {
+  it('la fiche produit et la vignette panier partagent le cadre source-accurate sans crop cover', () => {
     const result = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(result).toContain('ayrovix-product-gallery-stage bg-[#f6f6f6]');
+    expect(result).toContain('StudioImageFrame');
     expect(result).not.toContain('object-cover');
-    const galleryCss = read('client/src/index.css');
-    expect(galleryCss).toMatch(/\.ayrovix-product-gallery-image,[\s\S]*?mix-blend-mode:\s*multiply/);
+    const galleryCss = read('client/src/ayrovix/components/product-detail.css');
+    expect(galleryCss).toContain('.ay-product__stage .ay-studio-frame');
     const cart = read('client/src/components/CartDrawer.tsx');
     expect(cart).toContain('StudioImageFrame');
     expect(cart).not.toContain('object-cover');
     const gridCss = read('client/src/ayrovix/components/lens-product-card.css');
-    expect(gridCss).toMatch(/\.lens-card-media\s*\{[^}]*background:#fff/);
-    expect(gridCss).toMatch(/\.lens-card-media>img\s*\{[^}]*mix-blend-mode:multiply/);
+    expect(gridCss).toMatch(/\.lens-card-media\s*\{[^}]*background:#f6f6f6/);
+    expect(gridCss).toContain('.lens-card-media .ay-studio-frame__image{object-fit:contain;mix-blend-mode:normal}');
   });
 });
 
@@ -109,13 +110,13 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
       <LocaleProvider><LensProductCard candidate={candidate} onChoose={() => {}} saved={false} busy={false} onFavorite={() => {}} /></LocaleProvider>,
     );
     expect(withPromo).toContain('ay-quiet-price__current--promo');
-    expect(withPromo).toContain('604.50 DT');
-    expect(withPromo).toContain('650.00 DT');
+    expect(withPromo).toContain('604,500 DT');
+    expect(withPromo).toContain('650,000 DT');
     expect(withPromo).toContain('ay-quiet-price__badge');
     const without = renderToStaticMarkup(
       <LocaleProvider><LensProductCard candidate={{ ...candidate, priceTnd: 650, promo: undefined }} onChoose={() => {}} saved={false} busy={false} onFavorite={() => {}} /></LocaleProvider>,
     );
-    expect(without).toContain('650.00 DT');
+    expect(without).toContain('650,000 DT');
     expect(without).not.toContain('ay-quiet-price__badge');
   });
 
@@ -123,11 +124,10 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><ProductResult product={product} ordering={false} priceVerified onOrder={vi.fn()} /></LocaleProvider>,
     );
-    expect(html).toContain("color:var(--ayrovi-promo, #dc2626)");
-    expect(html).toContain('line-through');
-    expect(html).toContain('650.00');
-    expect(html).toContain('604.50');
-    expect(html).toContain('background:var(--ayrovi-promo, #dc2626)');
-    expect(html).not.toContain('background:var(--ayrovi-primary)');
+    expect(html).toContain('ay-quiet-price__current--promo');
+    expect(html).toContain('ay-quiet-price__original');
+    expect(html).toContain('ay-quiet-price__badge');
+    expect(html).toContain('650,000 DT');
+    expect(html).toContain('604,500 DT');
   });
 });

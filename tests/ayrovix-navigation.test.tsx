@@ -57,7 +57,7 @@ describe('AYROVIX contextual navigation', () => {
     expect(app).toContain('{lensSessionActive && (');
     expect(app).toContain('isOpen={isLensOpen}');
     expect(app).toContain('cartCount={totalCartCount}');
-    expect(launcher).toContain("Le panier s'ouvre, mais le résultat Lens reste monté");
+    expect(launcher).toContain('await onOrder(order)');
     expect(launcher).not.toMatch(/await onOrder\([\s\S]*?\);\s*clearRuntime\(\)/);
   });
 

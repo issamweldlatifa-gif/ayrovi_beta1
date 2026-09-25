@@ -1,3 +1,5 @@
+import type { CommerceProduct } from '../../../../shared/commerceProduct';
+import type { AyrovixProduct } from '../types';
 import type { AyrovixImageResult, AyrovixReviewRequest, AyrovixUrlResult } from '../types';
 import { getSessionId } from '../../utils/session';
 
@@ -110,6 +112,15 @@ export async function analyzeText(query: string, signal?: AbortSignal): Promise<
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
     signal,
+  });
+  return parseResponse(response);
+}
+
+/** Same-source merchant evidence, never a client-side overwrite of SerpAPI facts. */
+export async function enrichCandidate(product: CommerceProduct, signal?: AbortSignal): Promise<{ product: AyrovixProduct; enriched: boolean }> {
+  const response = await fetch('/api/ayrovix/enrich-candidate', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ product }), signal,
   });
   return parseResponse(response);
 }

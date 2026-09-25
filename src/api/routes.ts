@@ -12,6 +12,11 @@ import { customerFromRequest, requireCustomer, resolveCustomer } from '../custom
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
 import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { verifyCommerceProduct } from '../ayrovix/commerceQuote';
+import { snapshotLinePrice } from '../ayrovix/cartPricing';
+import { normalizeMerchantProduct, priceCommerceProduct } from '../ayrovix/services/commerceProduct';
+import { validateProductForCart, selectedVariantLabels, isSafeProductMediaUrl } from '../../shared/commerceProduct';
+import type { CommerceProduct, SelectedVariants } from '../../shared/commerceProduct';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -30,15 +35,19 @@ export function createApiRouter(
     const rules = db.getPricingRules();
     return (items: ReturnType<AyroviDatabase['getItems']>) => {
       const pricedItems = items.map((item) => {
-        let breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
+        const snapshot = snapshotLinePrice(item);
+        let breakdown = snapshot || calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
           quantity: item.quantity, includeLocalDelivery: false, title: item.title,
         });
         if (!breakdown || breakdown.restricted) throw new Error('CART_PRICING_FAILED');
         // Promo (management 23/09/2026) : remise sur le prix produit converti,
         // recalculée par LE moteur pour garder un seul chemin de prix.
-        const originalLineTotalTND = breakdown.totalTND;
-        const promo = resolvePromoForQuote(db, { categoryId: breakdown.categoryId });
-        let promoInfo: { percent: number; label: string; discountTND: number } | null = null;
+        const originalLineTotalTND = snapshot && item.priceSnapshot?.promotion
+          ? millimes(item.priceSnapshot.promotion.originalPriceTnd * item.quantity) : breakdown.totalTND;
+        const promotion = item.priceSnapshot?.promotion;
+        const promo = snapshot ? null : resolvePromoForQuote(db, { categoryId: breakdown.categoryId });
+        let promoInfo: { percent: number; label: string; discountTND: number } | null = promotion
+          ? { percent: promotion.percent, label: promotion.label, discountTND: breakdown.discountTND } : null;
         if (promo) {
           const promoDiscount = millimes(breakdown.convertedPriceTND * promo.percent / 100);
           if (promoDiscount > 0) {
@@ -180,14 +189,16 @@ export function createApiRouter(
 
     try {
       const product = await scraper.scrapeProduct(cleanUrl);
-      const priced = calculatePrice(db.getPricingRules(), product.sourcePrice, product.sourceCurrency);
-      const normalizedProduct = priced ? {
+      const canonical = priceCommerceProduct(db, normalizeMerchantProduct(product));
+      const priced = canonical.pricing.unitBreakdown;
+      const normalizedProduct = {
         ...product,
-        convertedPriceTND: priced.convertedPriceTND,
-        serviceFeeTND: priced.serviceFeeTND,
-        estimatedShippingTND: priced.shippingFeeTND,
-        totalPriceTND: priced.totalTND,
-      } : product;
+        canonical,
+        convertedPriceTND: priced?.convertedPriceTND ?? 0,
+        serviceFeeTND: priced?.serviceFeeTND ?? 0,
+        estimatedShippingTND: priced?.shippingFeeTND ?? 0,
+        totalPriceTND: canonical.pricing.ayroviPriceTnd ?? 0,
+      };
       return res.json({
         success: true,
         product: normalizedProduct
@@ -214,6 +225,70 @@ export function createApiRouter(
     const item = req.body as Partial<AddToCartRequest> | null;
     if (!item || typeof item !== 'object') {
       return res.status(400).json({ success: false, error: 'Données produit incomplètes ou invalides.' });
+    }
+
+    // Canonical Lens orders are signed server-side. Untrusted client price, name,
+    // image and option labels are ignored; only the signed product and a validated
+    // selection become a cart snapshot. Legacy manual-quote orders remain below.
+    if (Object.hasOwn(item, 'product') || Object.hasOwn(item, 'selectedVariants')) {
+      const product = item.product as CommerceProduct | undefined;
+      const selected = item.selectedVariants as SelectedVariants | undefined;
+      if (!product || !verifyCommerceProduct(product)) return res.status(409).json({ success: false, code: 'INVALID_PRODUCT_QUOTE', error: 'Devis expiré ou modifié. Actualisez le produit.' });
+      // An HMAC authenticates the old quote; it does not freeze the FX table or
+      // a promotion. Reject changed totals/rules rather than silently accepting
+      // stale prices or repricing behind the visitor's back.
+      const current = priceCommerceProduct(db, product);
+      if (JSON.stringify(current.pricing) !== JSON.stringify(product.pricing)
+        || JSON.stringify(current.variants.offers) !== JSON.stringify(product.variants.offers)) {
+        return res.status(409).json({ success: false, code: 'STALE_PRODUCT_QUOTE', error: 'Le tarif a changé. Actualisez le produit avant de commander.' });
+      }
+      const checked = validateProductForCart(product, selected || {}, item.quantity as number);
+      if (checked.ok === false) return res.status(422).json({ success: false, code: checked.reason, error: 'Sélection ou prix indisponible. Choisissez les options requises.' });
+      const sourceUrl = product.identity.sourceUrl || '';
+      try { parsePublicHttpUrl(sourceUrl); } catch { return res.status(422).json({ success: false, code: 'INVALID_PRODUCT_URL' }); }
+      const offer = product.variants.offers.find(option => option.id && option.id === checked.price.offerId);
+      const selectedPrice = offer?.sourcePrice != null ? offer : null;
+      const unit = selectedPrice ? selectedPrice.unitBreakdown : product.pricing.unitBreakdown;
+      const promotion = selectedPrice ? selectedPrice.promotion : product.pricing.promotion;
+      if (!unit || unit.totalTND !== checked.price.unitPriceTnd || unit.originalPrice !== checked.price.sourcePrice ||
+        unit.currency !== checked.price.sourceCurrency || unit.restricted) {
+        return res.status(409).json({ success: false, code: 'INVALID_PRODUCT_QUOTE', error: 'Devis incohérent. Actualisez le produit.' });
+      }
+      const labels = selectedVariantLabels(product, selected || {});
+      const size = product.variants.groups.find(group => group.type === 'size');
+      const color = product.variants.groups.find(group => group.type === 'color');
+      const hostname = new URL(sourceUrl).hostname.toLowerCase().replace(/^www\./, '');
+      const store = hostname.includes('shein.') ? 'shein' : hostname.includes('amazon.') ? 'amazon'
+        : hostname.includes('temu.') ? 'temu' : hostname.includes('aliexpress.') ? 'aliexpress' : 'generic';
+      const imageUrl = product.media.primaryImage;
+      const normalized: AddToCartRequest = {
+        store, merchantName: product.identity.merchant, externalId: product.identity.sourceProductId, url: sourceUrl,
+        referenceUrl: sourceUrl, title: product.basic.title,
+        imageUrl: isSafeProductMediaUrl(imageUrl) ? imageUrl : '',
+        sourcePrice: checked.price.sourcePrice, sourceCurrency: checked.price.sourceCurrency,
+        priceTND: checked.price.unitPriceTnd,
+        productId: product.id, sourceProductId: product.identity.sourceProductId,
+        selectedVariants: Object.fromEntries(Object.entries(selected || {}).sort(([a], [b]) => a.localeCompare(b))),
+        priceSnapshot: { unit, promotion: promotion || null,
+          referencePrice: selectedPrice ? null : product.pricing.referencePrice },
+        variant: Object.entries(labels).map(([name, value]) => `${name}: ${value}`).join(' · ') || null,
+        requestedSize: size ? size.options.find(option => option.id === selected?.[size.id])?.label || '' : '',
+        requestedColor: color ? color.options.find(option => option.id === selected?.[color.id])?.label || '' : '',
+        customerNote: typeof item.customerNote === 'string' ? item.customerNote.slice(0, 1000) : '',
+        priceVerificationStatus: product.verificationStatus,
+        quantity: item.quantity as number,
+      };
+      try {
+        const accountId = cartAccountId(req, sessionId);
+        const cartItem = db.addItem(sessionId, normalized, accountId);
+        const summary = cartSummary()(db.getItems(sessionId, accountId));
+        return res.status(201).json({ success: true, cartItem,
+          totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0), totalTND: summary.totalTND });
+      } catch (error) {
+        if (error instanceof RangeError && error.message === 'CART_QUANTITY_LIMIT') return res.status(400).json({ success: false, code: 'CART_QUANTITY_LIMIT' });
+        console.error('[Cart snapshot]', error);
+        return res.status(500).json({ success: false, error: 'Enregistrement du panier indisponible.' });
+      }
     }
 
     const quantity = Number(item.quantity ?? 1);

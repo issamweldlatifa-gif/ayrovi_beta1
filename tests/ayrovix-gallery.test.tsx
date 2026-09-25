@@ -3,78 +3,73 @@ import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
-import type { AyrovixProduct } from '../client/src/ayrovix/types';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
+import type { AyrovixProduct } from '../client/src/ayrovix/types';
+import { withIsolation } from '../client/src/ayrovix/services/mediaIsolation';
 
 const images = [
-  '/fixtures/square-1x1.jpg',
-  '/fixtures/landscape-16x9.jpg',
-  '/fixtures/portrait-4x5.jpg',
-  '/fixtures/very-tall.jpg',
-  '/fixtures/small-resolution.jpg',
-  '/fixtures/transparent-product.png',
+  '/fixtures/square-1x1.jpg', '/fixtures/landscape-16x9.jpg', '/fixtures/portrait-4x5.jpg',
+  '/fixtures/very-tall.jpg', '/fixtures/small-resolution.jpg', '/fixtures/transparent-product.png',
 ];
-
 const product: AyrovixProduct = {
-  title: 'Chaussure AYROVI — galerie responsive',
-  brand: 'AYROVI',
-  model: 'Gallery Test',
-  description: '',
-  image: images[0],
-  images,
-  source: 'Merchant',
-  sourceUrl: 'https://merchant.example/product',
-  price: 100,
-  currency: 'EUR',
-  priceTnd: 360,
-  exchangeRate: 3.6,
-  colors: [],
-  sizes: [],
-  variantOptions: [],
-  availability: 'in_stock',
-  rating: 4.8,
-  ratingKind: 'merchant',
+  title: 'Merchant gallery', brand: 'Merchant', model: null, description: '',
+  image: images[0], images, source: 'Merchant', sourceUrl: 'https://merchant-shop.com/product',
+  price: 100, currency: 'EUR', priceTnd: 360, exchangeRate: 3.6,
+  colors: [], sizes: [], availability: 'unknown',
 };
+const render = (item = product) => renderToStaticMarkup(<LocaleProvider>
+  <ProductResult product={item} ordering={false} priceVerified onOrder={vi.fn()} />
+</LocaleProvider>);
 
-function renderGallery() {
-  return renderToStaticMarkup(
-    <LocaleProvider>
-      <ProductResult product={product} ordering={false} priceVerified onOrder={vi.fn()} />
-    </LocaleProvider>,
-  );
-}
-
-describe('AYROVIX product gallery rendering', () => {
-  it('uses the unchanged original source for both the main image and selected thumbnail', () => {
-    const markup = renderGallery();
+describe('source-accurate responsive product gallery', () => {
+  it('preserves every documented source photo and does not arbitrarily truncate a gallery', () => {
+    const markup = render();
     expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(2);
-    // سقف العرض 4 صور (طلب العميل 24/09 18:35 «أربعة فقط تكفي») — أول 4 تُعرض،
-    // البقية تبقى في الprofiles/الملف لكنها لا تُصيَّر.
-    const firstFour = images.slice(0, 4);
-    for (const src of firstFour) expect(markup).toContain(`src="${src}"`);
-    expect(markup).not.toContain(`src="${images[4]}"`);
-    expect(markup).toContain('1 / 4');
-    expect(markup).toContain('ayrovix-product-gallery-image');
-    expect(markup).toContain('ayrovix-thumbnail-image');
+    for (const src of images) expect(markup).toContain(`src="${src}"`);
+    expect(markup).toContain('1 / 6');
+    expect(markup).toContain('ay-product__thumbnails');
     expect(markup).toContain('aria-current="true"');
+    expect(markup).toContain('href="https://merchant-shop.com/product"');
   });
 
-  it('never applies a cover crop to the main image or thumbnails', () => {
-    const component = readFileSync('client/src/ayrovix/components/ProductResult.tsx', 'utf8');
-    const candidates = readFileSync('client/src/ayrovix/components/ProductCandidates.tsx', 'utf8');
-    const history = readFileSync('client/src/ayrovix/components/LensHistory.tsx', 'utf8');
-    expect(component).not.toContain('object-cover');
-    expect(candidates).not.toContain('object-cover');
-    expect(history).not.toContain('object-cover');
+  it('uses the same contain-frame for the stage and thumbnails and never cover-crops a product', () => {
+    const html = render();
+    expect(html).toContain('ay-product__stage');
+    expect(html.match(/class="ay-studio-frame"/g)?.length).toBe(7);
+    const css = readFileSync('client/src/ayrovix/components/quiet-card.css', 'utf8');
+    const detailCss = readFileSync('client/src/ayrovix/components/product-detail.css', 'utf8');
+    expect(css).toMatch(/\.ay-studio-frame__image\s*\{[^}]*object-fit:\s*contain/);
+    expect(detailCss).toMatch(/\.ay-product__thumbnails\s*\{[^}]*overflow-x:\s*auto/);
+    expect(detailCss).toContain('@media (max-width:760px)');
+    expect(detailCss).toContain('.ay-product__gallery { position:static; width:100%; }');
+    expect(readFileSync('client/src/ayrovix/components/ProductResult.tsx', 'utf8')).not.toContain('object-cover');
   });
 
-  it('reserves responsive space, centers contain media and hides the touch scrollbar', () => {
-    const css = readFileSync('client/src/index.css', 'utf8');
-    expect(css).toMatch(/\.ayrovix-product-gallery-stage\s*\{[\s\S]*?aspect-ratio:\s*9\s*\/\s*13/);
-    expect(css).toMatch(/\.ayrovix-product-gallery-image,[\s\S]*?object-fit:\s*contain/);
-    expect(css).toMatch(/\.ayrovix-thumbnail-image[\s\S]*?object-position:\s*center/);
-    expect(css).toMatch(/\.ayrovix-thumbnail-strip\s*\{[\s\S]*?scroll-snap-type:\s*x proximity/);
-    expect(css).toMatch(/\.ayrovix-thumbnail-strip::-webkit-scrollbar\s*\{[\s\S]*?display:\s*none/);
-    expect(css).toContain('max-width: 100%');
+  it('retains local images unchanged and tries isolation plus original for every remote source', () => {
+    expect(withIsolation(images)).toEqual(images);
+    const source = 'https://cdn.merchant-shop.com/photo.jpg';
+    expect(withIsolation([source, `${source}?angle=side`])).toEqual([
+      `/api/public/media/isolated?url=${encodeURIComponent(source)}`,
+      `/api/public/media/img?u=${encodeURIComponent(source)}&w=760`, source,
+      `/api/public/media/isolated?url=${encodeURIComponent(`${source}?angle=side`)}`,
+      `/api/public/media/img?u=${encodeURIComponent(`${source}?angle=side`)}&w=760`, `${source}?angle=side`,
+    ]);
+  });
+
+  it('has a real placeholder rather than using the uploaded photograph or another product image', () => {
+    const html = render({ ...product, image: '', images: [] });
+    expect(html).toContain('ay-studio-frame__placeholder');
+    expect(html).not.toContain('<img');
+    expect(html).not.toContain('aria-label="Photo 1"');
+  });
+
+  it('keeps the full-screen viewer scoped to this gallery, with close and arrow navigation', () => {
+    const src = readFileSync('client/src/ayrovix/components/ProductResult.tsx', 'utf8');
+    expect(src).toContain('setLightbox(true)');
+    expect(src).toContain('aria-modal="true"');
+    expect(src).toContain('ArrowRight');
+    expect(src).toContain('ArrowLeft');
+    expect(src).toContain('photos.length');
+    expect(src).not.toContain('fallbackImage={previewUrl}');
   });
 });

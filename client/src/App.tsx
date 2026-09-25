@@ -278,7 +278,8 @@ export const App: React.FC = () => {
   };
 
   const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
-    const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
+    const summary = await handleAddToCart('product' in payload
+      ? payload : { ...payload, priceTND: payload.priceTND ?? 0 });
     if (!summary) throw new Error('AYROVIX_ADD_TO_CART_FAILED');
     openAppView('app:cart');
   };
@@ -309,6 +310,7 @@ export const App: React.FC = () => {
       await fetchCart();
       return { totalTND: data.totalTND, itemCount: data.totalItemsCount };
     } catch (err) {
+      if ('product' in itemData) throw err;
       console.error('[Add to Cart Error]', err);
       return null;
     }
@@ -521,6 +523,8 @@ export const App: React.FC = () => {
             onExtracted={handleExtracted}
             onNewClientOrder={handleNewClientOrder}
             onCheckoutRequested={handleProceedToCheckout}
+            customerSession={customerSession}
+            onOpenFavorites={() => { setAccountInitialSection('favorites'); setAccountMessage(''); openAppView('app:account'); }}
           />
         </Suspense>
       )}

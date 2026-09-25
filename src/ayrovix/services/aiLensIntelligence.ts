@@ -1,3 +1,4 @@
+import { listingIdentityUrl } from '../../../shared/listingIdentity';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import { getAyroviAiCore } from '../../ai-core/core';
 
@@ -383,40 +384,14 @@ function normalizeUrl(url: string): string {
 }
 
 export function deduplicateCandidates(candidates: AyrovixCandidate[]): AyrovixCandidate[] {
-  const seenUrl = new Set<string>();
-  const seenId = new Set<string>();
-  const seenNorm = new Set<string>();
-  const result: AyrovixCandidate[] = [];
-  for (const c of candidates) {
-    const normUrl = normalizeUrl(c.sourceUrl);
-    const normTitle = normalizeTitle(c.title);
-    const brandModelKey = `${(c.brand||'').toLowerCase().trim()}|${normalizeTitle(c.title).slice(0,40)}|${c.source.toLowerCase()}`;
-    const skuLike = `${(c.brand||'').toLowerCase()}|${normTitle.slice(0,30)}|${c.source.toLowerCase()}`;
-    if (c.id && seenId.has(c.id)) continue;
-    if (normUrl && seenUrl.has(normUrl)) continue;
-    if (seenNorm.has(skuLike) || seenNorm.has(brandModelKey)) continue;
-    // AI semantic check is merged here heuristically: normalized title + brand+source must be unique
-    // Do NOT merge if price differs >40% and brand differs — avoid incorrect merge
-    let isDup = false;
-    for (const existing of result) {
-      const existingNorm = normalizeTitle(existing.title);
-      if (existingNorm === normTitle && (c.brand||'').toLowerCase() === (existing.brand||'').toLowerCase() && c.source === existing.source) { isDup = true; break; }
-      // semantic near-duplicate: same normalized title 90% overlap + same brand
-      const tokensA = new Set(normTitle.split(' '));
-      const tokensB = new Set(existingNorm.split(' '));
-      const inter = [...tokensA].filter(t=> tokensB.has(t)).length;
-      const union = new Set([...tokensA, ...tokensB]).size;
-      const jaccard = union? inter/union : 0;
-      if (jaccard > 0.88 && (c.brand||'').toLowerCase() === (existing.brand||'').toLowerCase() && c.source === existing.source) { isDup = true; break; }
-    }
-    if (isDup) continue;
-    seenId.add(c.id);
-    if (normUrl) seenUrl.add(normUrl);
-    seenNorm.add(skuLike);
-    seenNorm.add(brandModelKey);
-    result.push(c);
-  }
-  return result;
+  const seen = new Set<string>();
+  return candidates.filter(candidate => {
+    // Never collapse two listings because their titles, merchant or image are similar.
+    const key = candidate.canonical?.id || `${candidate.kind}|${listingIdentityUrl(candidate.sourceUrl)}`;
+    if (!candidate.sourceUrl || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 // Optional AI semantic dedup layer (only if AI available, cached, non-blocking)

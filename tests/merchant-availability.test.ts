@@ -12,7 +12,7 @@ describe('merchant stock evidence is independent from selectable variants',()=>{
     expect(product.variants.details).toHaveLength(1); // Preserve a manual choice, not a stock assertion.
   });
   it.each([{available:true},{inStock:true},{isInStock:true}])('recognizes explicit positive evidence %j',flag=>expect(parse([flag]).availability).toBe('in_stock'));
-  it('keeps known-negative options excluded from selection',()=>{expect(parse([{available:false}]).variants.details).toHaveLength(0);});
+  it('keeps documented negative options visible but disabled',()=>{expect(parse([{available:false}]).variants.details).toEqual([expect.objectContaining({available:false})]);});
   it.each([
     [{},'https://schema.org/OutOfStock','out_of_stock'],
     [{},'https://schema.org/LimitedAvailability','limited'],

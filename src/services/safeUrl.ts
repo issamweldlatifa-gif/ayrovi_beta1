@@ -1,5 +1,6 @@
 import { promises as dns } from 'node:dns';
 import { BlockList, isIP } from 'node:net';
+import { Agent } from 'undici';
 
 const blockedIpv4 = new BlockList();
 const blockedIpv6 = new BlockList();
@@ -90,7 +91,50 @@ export async function resolveSafeHttpUrl(raw: unknown, resolver: HostResolver = 
 
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
-/** Validate DNS again on every redirect before issuing the next request. */
+/** Pin the connection to an address that passed validation. Validating DNS and
+ * then letting fetch resolve the host again is vulnerable to DNS rebinding.
+ * Return a streaming response that closes its private dispatcher when consumed
+ * or cancelled, rather than leaving open sockets after an image/page fetch.
+ */
+function closeWithResponse(response: Response, agent: Agent): Response {
+  if (!response.body) { void agent.close().catch(() => agent.destroy()); return response; }
+  const reader = response.body.getReader();
+  let finished = false;
+  const release = (destroy = false) => {
+    if (finished) return;
+    finished = true;
+    reader.releaseLock();
+    if (destroy) agent.destroy();
+    else void agent.close().catch(() => agent.destroy());
+  };
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { done, value } = await reader.read();
+        if (done) { controller.close(); release(); }
+        else controller.enqueue(value);
+      } catch (error) { controller.error(error); release(true); }
+    },
+    async cancel(reason) {
+      try { await reader.cancel(reason); } finally { release(true); }
+    },
+  });
+  return new Response(stream, { status: response.status, statusText: response.statusText, headers: response.headers });
+}
+
+/** Called by the HTTP dispatcher at connection time, NOT by the system DNS.
+ * Repeated DNS queries by an attacker cannot replace this validated address.
+ */
+export function createPinnedLookup(address: string) {
+  if (isUnsafeIpAddress(address)) throw new UnsafeUrlError();
+  return (_hostname: string, _options: unknown, callback: (error: NodeJS.ErrnoException | null, address: string, family: 4 | 6) => void) => {
+    callback(null, address, isIP(address) as 4 | 6);
+  };
+}
+
+/** Validate DNS on every redirect, and use ONLY the validated address for that
+ * hop's TCP connection. The URL (Host header and TLS SNI) remains the source URL.
+ */
 export async function fetchSafeRemote(
   raw: string,
   init: RequestInit = {},
@@ -99,10 +143,19 @@ export async function fetchSafeRemote(
   let current = raw;
   for (let redirect = 0; redirect <= maxRedirects; redirect += 1) {
     const safe = await resolveSafeHttpUrl(current);
-    const response = await fetch(safe.url, { ...init, redirect: 'manual' });
-    if (!REDIRECT_STATUSES.has(response.status)) return response;
+    const pinnedAddress = safe.addresses[0];
+    const agent = new Agent({ connect: { lookup: createPinnedLookup(pinnedAddress) } });
+    let response: Response;
+    try {
+      response = await fetch(safe.url, { ...init, redirect: 'manual', dispatcher: agent } as RequestInit);
+    } catch (error) {
+      agent.destroy();
+      throw error;
+    }
+    if (!REDIRECT_STATUSES.has(response.status)) return closeWithResponse(response, agent);
     const location = response.headers.get('location');
     await response.body?.cancel().catch(() => undefined);
+    agent.destroy();
     if (!location || redirect === maxRedirects) throw new UnsafeUrlError('Trop de redirections externes.');
     current = new URL(location, safe.url).toString();
   }

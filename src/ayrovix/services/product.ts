@@ -1,10 +1,9 @@
-import { isSelectableVariant } from '../../../shared/variantPolicy';
 import type { QatafoDatabase } from '../../db/database';
 import { createHash } from 'node:crypto';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
 import type { AyrovixCandidate, AyrovixProduct } from '../types';
-import { estimateWithDb } from './currency';
+import { normalizeMerchantProduct, normalizeProduct, priceCommerceProduct, projectProduct } from './commerceProduct';
 import { catalogSearch, scoreCandidate, externalProductSearch } from './search';
 import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
@@ -33,101 +32,27 @@ export function sanitizeProductUrl(raw: unknown): string | null {
 }
 
 function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixProduct {
-  const tnd = estimateWithDb(db, scraped.sourcePrice, scraped.sourceCurrency);
-  const variantOptions = (scraped.variants?.details || []).filter(isSelectableVariant).map((detail) => {
-    const variantTnd = estimateWithDb(db, detail.price || null, scraped.sourceCurrency);
-    return {
-      id: detail.id || null,
-      label: detail.label,
-      size: detail.size || null,
-      color: detail.color || null,
-      available: true,
-      price: detail.price || null,
-      currency: detail.price ? scraped.sourceCurrency : null,
-      priceTnd: variantTnd?.priceTnd ?? null,
-    };
+  const canonical = priceCommerceProduct(db, normalizeMerchantProduct(scraped));
+  const product = projectProduct(canonical);
+  product.variantOptions = canonical.variants.offers.map(offer => {
+    const sizeGroup = canonical.variants.groups.find(group => group.type === 'size');
+    const colorGroup = canonical.variants.groups.find(group => group.type === 'color');
+    const size = sizeGroup?.options.find(option => option.id === offer.selection[sizeGroup.id])?.label || null;
+    const color = colorGroup?.options.find(option => option.id === offer.selection[colorGroup.id])?.label || null;
+    return { id: offer.id, label: [size, color].filter(Boolean).join(' · ') || Object.values(offer.selection).join(' · '),
+      size, color, available: offer.available !== false,
+      price: offer.sourcePrice, currency: offer.sourceCurrency, priceTnd: offer.ayroviPriceTnd };
   });
-  const gallery = [...new Set([scraped.mainImage, ...(scraped.images || [])].filter(Boolean))];
-  return {
-    title: scraped.title,
-    brand: scraped.brand || null,
-    model: null,
-    description: scraped.description || '',
-    image: scraped.mainImage || gallery[0] || '',
-    images: gallery,
-    colorImages: scraped.colorImages && Object.keys(scraped.colorImages).length ? scraped.colorImages : null,
-    source: scraped.storeName,
-    sourceUrl: scraped.url,
-    price: scraped.sourcePrice > 0 ? scraped.sourcePrice : null,
-    currency: scraped.sourcePrice > 0 ? scraped.sourceCurrency : null,
-    priceTnd: tnd?.priceTnd ?? (Number.isFinite(scraped.totalPriceTND) && scraped.totalPriceTND > 0 ? scraped.totalPriceTND : null),
-    exchangeRate: tnd?.exchangeRate ?? null,
-    promo: tnd?.promo ?? null,
-    colors: scraped.variants?.colors || [],
-    sizes: scraped.variants?.sizes || [],
-    variantOptions,
-    availability: scraped.availability || 'unknown',
-    priceVerified: Boolean(scraped.priceVerified),
-    priceVerificationStatus: scraped.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL',
-    verificationProvider: scraped.verificationProvider || 'none',
-    verificationMethod: scraped.verificationMethod || 'none',
-    verificationFailureCode: scraped.verificationFailureCode || null,
-    rating: Number.isFinite(Number((scraped as any).rating)) && Number((scraped as any).rating) > 0 && Number((scraped as any).rating) <= 5 ? Number((scraped as any).rating) : null,
-    ratingCount: Number.isFinite(Number((scraped as any).ratingCount)) ? Number((scraped as any).ratingCount) : null,
-    ratingKind: Number.isFinite(Number((scraped as any).rating)) ? 'merchant' : 'listing-quality',
-  };
+  product.verificationProvider = scraped.verificationProvider || 'none';
+  product.verificationMethod = scraped.verificationMethod || 'none';
+  product.verificationFailureCode = scraped.verificationFailureCode || null;
+  return product;
 }
 
 function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
-  try {
-    const parsed = new URL(rawUrl);
-    const host = parsed.hostname.replace('www.', '');
-    const pathParts = parsed.pathname.split('/').filter(Boolean);
-    const lastPart = pathParts[pathParts.length - 1] || host;
-    const decoded = decodeURIComponent(lastPart).replace(/[-_]+/g, ' ').slice(0, 120);
-    const title = decoded.length > 5 ? decoded : `Produit ${host}`;
-    return {
-      title: title.charAt(0).toUpperCase() + title.slice(1),
-      brand: null,
-      model: null,
-      description: `Lien partagé depuis ${host} — AYROVI cherchera des alternatives similaires.`,
-      image: '',
-      images: [],
-      source: host,
-      sourceUrl: rawUrl,
-      price: null,
-      currency: null,
-      priceTnd: null,
-      exchangeRate: null,
-      colors: [],
-      sizes: [],
-      availability: 'unknown',
-      priceVerified: false,
-      priceVerificationStatus: 'PENDING_MANUAL',
-      verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
-    };
-  } catch {
-    return {
-      title: `Produit ${rawUrl.slice(0, 50)}`,
-      brand: null,
-      model: null,
-      description: 'Lien partagé — AYROVI cherchera des alternatives.',
-      image: '',
-      images: [],
-      source: 'Web',
-      sourceUrl: rawUrl,
-      price: null,
-      currency: null,
-      priceTnd: null,
-      exchangeRate: null,
-      colors: [],
-      sizes: [],
-      availability: 'unknown',
-      priceVerified: false,
-      priceVerificationStatus: 'PENDING_MANUAL',
-      verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
-    };
-  }
+  // A URL slug is not a merchant-supplied title or description. No false listing.
+  const product = normalizeProduct({ source: 'web', sourceUrl: rawUrl, title: 'Produit indisponible' });
+  return { ...projectProduct(product), verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED' };
 }
 
 export interface UrlExtractionResult {
@@ -152,13 +77,15 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     );
     if (cached && Date.now() - Date.parse(cached.fetched_at) < profileTtlMs) {
       const product = JSON.parse(cached.payload) as AyrovixProduct;
-      if (product?.title) {
+      if (product?.canonical?.id) {
+        // Cache retains source fields; quotes/FX/promotions always use today's server rules.
+        const refreshed = projectProduct(priceCommerceProduct(db, product.canonical));
         const catalog = catalogSearch(db, null, product.title, 4);
         const alternates = filterDisplayableCandidates(
           catalog.map((candidate) => ({ ...candidate, match: scoreCandidate(null, product.title, candidate) })),
           8,
         );
-        return { product, alternates };
+        return { product: refreshed, alternates };
       }
     }
   } catch { /* profil illisible → recrawl normal */ }

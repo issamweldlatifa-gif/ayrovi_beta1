@@ -15,6 +15,9 @@ import type { AyrovixCandidate, AyrovixChannel, AyrovixDetectedPrice, AyrovixPro
 import { calculatePrice } from '../services/pricing';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { createAyrovixPriceToken, type AyrovixQuoteStatus } from './priceQuote';
+import { verifyCommerceProduct, signCommerceProduct } from './commerceQuote';
+import { normalizeProduct, priceCommerceProduct, projectCandidate, projectProduct } from './services/commerceProduct';
+import type { CommerceProduct } from '../../shared/commerceProduct';
 import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } from './history';
 import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
@@ -35,22 +38,15 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX
 // GOOGLE LENS LEVEL: pipeline cache for 1000+ users — instant repeat
 const pipelineCache = new Map<string, { at: number; data: any }>();
 const PIPELINE_TTL_MS = 6 * 60_000;
-function pipelineKey(buf: Buffer, intent: string | null): string {
-  // lightweight hash: first/last 2k + intent + len
-  const head = buf.subarray(0, 2048).toString('base64url').slice(0, 48);
-  const tail = buf.subarray(Math.max(0, buf.length - 2048)).toString('base64url').slice(0, 48);
-  return `${head}|${tail}|${buf.length}|${intent||''}`;
+export function pipelineKey(buf: Buffer, intent: string | null): string {
+  // Full contents, not matching headers/tails: two different photos must never
+  // share a result (or someone's merchant product/price).
+  return createHash('sha256').update(buf).update('\0').update(intent || '').digest('hex');
 }
-// D1-9: pricing rules cache 5min — avoids 7× DB read per Lens request (disabled in tests: VITEST uses fresh DB per test)
-let pricingCache: { at: number; rules: ReturnType<QatafoDatabase['getPricingRules']> | null } = { at: 0, rules: null };
-const PRICING_CACHE_TTL_MS = 5 * 60_000;
 function getCachedPricingRules(db: QatafoDatabase) {
-  const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
-  if (isTest) return db.getPricingRules();
-  if (pricingCache.rules && Date.now() - pricingCache.at < PRICING_CACHE_TTL_MS) return pricingCache.rules;
-  const rules = db.getPricingRules();
-  pricingCache = { at: Date.now(), rules };
-  return rules;
+  // Pricing rules can change between requests. A 5-minute cached FX table made
+  // screenshot estimates disagree with fresh unit quotes and cart totals.
+  return db.getPricingRules();
 }
 const ALLOWED_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const CHANNELS = new Set<AyrovixChannel>(['image', 'url', 'qr']);
@@ -103,31 +99,42 @@ function quoteToken(price: number | null, currency: string | null, title: string
   return createAyrovixPriceToken({ price, currency, title, referenceUrl, status });
 }
 
-function tokenizedCandidate(candidate: AyrovixCandidate): AyrovixCandidate {
-  const normalized = withDisplayRating(candidate);
-  const status: AyrovixQuoteStatus = normalized.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL';
+function currentProduct(db: QatafoDatabase, product: CommerceProduct): CommerceProduct {
+  return product.quoteToken && verifyCommerceProduct(product) && product.pricing.pricingVersion === db.getPricingRules().version
+    ? product : priceCommerceProduct(db, product);
+}
+
+function tokenizedCandidate(db: QatafoDatabase, candidate: AyrovixCandidate): AyrovixCandidate {
+  const input = candidate.canonical || normalizeProduct({
+    source: candidate.kind === 'catalog' ? 'catalog' : 'web', sourceUrl: candidate.sourceUrl,
+    merchant: candidate.source, title: candidate.title, description: candidate.description,
+    brand: candidate.brand, imageUrls: [candidate.image, candidate.images],
+    sourcePrice: candidate.price, sourceCurrency: candidate.currency,
+    rating: candidate.ratingKind === 'merchant' ? candidate.rating : null, reviews: candidate.ratingCount,
+    availability: candidate.availability, verificationStatus: candidate.kind === 'catalog' ? 'VERIFIED' : 'PENDING_MANUAL',
+  });
+  const product = currentProduct(db, input);
+  const normalized = withDisplayRating({ ...candidate, ...projectCandidate(product, candidate.match, candidate.kind),
+    offerCount: candidate.offerCount, offers: candidate.offers });
+  return { ...normalized, priceToken: quoteToken(product.pricing.sourcePrice, product.pricing.sourceCurrency,
+    product.basic.title, product.identity.sourceUrl || '', product.verificationStatus) };
+}
+
+function tokenizedCandidates(db: QatafoDatabase, items: AyrovixCandidate[]): AyrovixCandidate[] {
+  return filterWithFallback(items, 8).map(candidate => tokenizedCandidate(db, candidate));
+}
+
+function tokenizedProduct(db: QatafoDatabase, product: AyrovixProduct): AyrovixProduct {
+  const canonical = product.canonical ? currentProduct(db, product.canonical) : null;
+  const normalized = canonical ? { ...product, ...projectProduct(canonical) } : product;
+  const status: AyrovixQuoteStatus = normalized.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
   return {
     ...normalized,
     priceVerificationStatus: status,
-    priceToken: quoteToken(candidate.price, candidate.currency, candidate.title, candidate.sourceUrl, status),
-  };
-}
-
-function tokenizedCandidates(items: AyrovixCandidate[]): AyrovixCandidate[] {
-  // D2-10: strict first, lenient PENDING fallback — never 0 when lens has matches without price
-  const filtered = filterWithFallback(items, 8);
-  return filtered.map(tokenizedCandidate);
-}
-
-function tokenizedProduct(product: AyrovixProduct): AyrovixProduct {
-  const status: AyrovixQuoteStatus = product.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL';
-  return {
-    ...product,
-    priceVerificationStatus: status,
-    priceToken: quoteToken(product.price, product.currency, product.title, product.sourceUrl, status),
-    variantOptions: product.variantOptions?.map((option) => ({
+    priceToken: quoteToken(normalized.price, normalized.currency, normalized.title, normalized.sourceUrl, status),
+    variantOptions: normalized.variantOptions?.map(option => ({
       ...option,
-      priceToken: quoteToken(option.price, option.currency, product.title, product.sourceUrl, status),
+      priceToken: quoteToken(option.price, option.currency, normalized.title, normalized.sourceUrl, status),
     })),
   };
 }
@@ -152,6 +159,48 @@ function rememberAuthenticatedHistory(
     console.warn('[AYROVIX history]', error?.message || 'write failed');
   }
 }
+
+/** Cached discovery contains source evidence, not a frozen quote or converted screenshot total. */
+export function refreshCachedImagePricing(db: QatafoDatabase, data: {
+  candidates: AyrovixCandidate[]; detectedPrice?: AyrovixDetectedPrice | null;
+}): { candidates: AyrovixCandidate[]; detectedPrice: AyrovixDetectedPrice | null } {
+  const candidates = data.candidates.map(candidate => {
+    if (!candidate.canonical) return tokenizedCandidate(db, candidate);
+    return tokenizedCandidate(db, { ...candidate, canonical: priceCommerceProduct(db, candidate.canonical) });
+  });
+  const oldPrice = data.detectedPrice ?? null;
+  const detectedPrice = oldPrice ? (() => {
+    const calculated = calculatePrice(db.getPricingRules(), oldPrice.sourcePrice, oldPrice.sourceCurrency);
+    return tokenizedDetectedPrice({ ...oldPrice, convertedPriceTND: calculated?.convertedPriceTND ?? null,
+      serviceFeeTND: calculated?.serviceFeeTND ?? null,
+      estimatedShippingTND: calculated?.shippingFeeTND ?? null,
+      totalPriceTND: calculated?.totalTND ?? null });
+  })() : null;
+  return { candidates, detectedPrice };
+}
+
+/** A cached discovery is reusable evidence, never the previous visitor's event. */
+function recordImageSearchEvent(db: QatafoDatabase, req: Request, details: {
+  brand: string | null; query: string; title: string; candidates: AyrovixCandidate[];
+  price: AyrovixDetectedPrice | null;
+}): string {
+  const eventId = recordAyrovixEvent(db, {
+    channel: 'image', brand: details.brand, query: details.query, candidatesCount: details.candidates.length,
+  });
+  const first = details.candidates[0];
+  rememberAuthenticatedHistory(db, req, {
+    eventId, kind: 'image', queryLabel: details.query,
+    title: first?.title || details.price?.title || details.title,
+    imageUrl: first?.image || details.price?.imageUrl || '',
+    sourceUrl: first?.sourceUrl || '', source: first?.source || 'AYROVIX Vision',
+    price: first?.price ?? details.price?.sourcePrice ?? null,
+    currency: first?.currency ?? details.price?.sourceCurrency ?? null,
+    verificationStatus: first?.priceVerificationStatus || 'PENDING_MANUAL',
+    resultsCount: details.candidates.length,
+  });
+  return eventId;
+}
+
 
 /** GLOBAL DISCOVERY — les doublons multi-sources deviennent un produit avec
  *  plusieurs offres AVANT la coupe finale, pour que la limite serve des produits
@@ -316,68 +365,58 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const customerIntentText: string | null = String((req.body as any)?.customerIntent || (req.body as any)?.intent || req.query?.intent || '').trim().slice(0,200) || null;
       const pKey = pipelineKey(effectiveBuffer, customerIntentText);
       const isTest = !!(process.env.VITEST || process.env.NODE_ENV === 'test');
-      // D3-13: ETag for 304 Not Modified — same image hash → no re-download
-      const etag = `W/"${createHash('sha1').update(pKey).digest('hex').slice(0, 16)}"`;
-      res.setHeader('ETag', etag);
-      res.setHeader('Cache-Control', 'private, max-age=0, must-revalidate');
-      if (!isTest && req.headers['if-none-match'] === etag) {
-        mark(trace, 'pipelineCacheHit', true as any);
-        endTrace(trace);
-        return res.status(304).end();
-      }
+      // Results include visitor-specific history events and time-sensitive FX.
+      // Do not emit an unconditional 304 for the same photo; a different account
+      // must never inherit another visitor's event or an outdated signed quote.
+      res.setHeader('Cache-Control', 'private, no-store');
       const pCached = isTest ? null : pipelineCache.get(pKey);
       if (pCached && Date.now() - pCached.at < PIPELINE_TTL_MS) {
-        // instant repeat for 1000+ users — same image hash
         mark(trace, 'pipelineCacheHit', true as any);
-        mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0) as any);
+        const { candidates: refreshedCandidates, detectedPrice: refreshedPrice } = refreshCachedImagePricing(db, pCached.data);
+        const freshEventId = recordImageSearchEvent(db, req, { brand: identification.brand,
+          query: pCached.data.query || identification.description || '', title, candidates: refreshedCandidates,
+          price: refreshedPrice });
+        mark(trace, 'candidatesCount', refreshedCandidates.length as any);
         endTrace(trace);
-        // ETag already set — client cache hit
-        return res.json({ success: true, data: pCached.data });
+        return res.json({ success: true, data: { ...pCached.data, identification,
+          candidates: refreshedCandidates, detectedPrice: refreshedPrice, eventId: freshEventId } });
       }
       mark(trace, 'pipelineCacheHit', false as any);
       const baseQuery = buildSearchQuery(identification);
-      // ULTRA-FAST: baseQuery instantly — no 2.2s block. AI warms cache in background for next time.
+      // Search uses the source evidence immediately. Optional AI query refinement
+      // warms its own cache asynchronously; provider cancellation is owned by the
+      // provider, not an extra timer with a competing outcome.
       let effectiveQuery = baseQuery;
       if (!isTest && visualCandidates.length < 6) {
-        // Fire-and-forget AI optimize (650ms race) — do NOT block search, just warm cache
         const tOpt = Date.now();
-        Promise.race([
-          generateOptimizedSearch(identification, customerIntentText ? understandCustomerIntent(identification, customerIntentText) : null, customerIntentText),
-          new Promise<null>((_, rej) => setTimeout(() => rej(new Error('ai-timeout')), 650)),
-        ]).then((opt:any)=> {
-          if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0,40));
-          mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any);
-        }).catch(()=>{ mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any); });
+        void generateOptimizedSearch(identification,
+          customerIntentText ? understandCustomerIntent(identification, customerIntentText) : null,
+          customerIntentText)
+          .then((opt) => {
+            if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0, 40));
+            mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any);
+          })
+          .catch(() => { mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any); });
       }
       const tSearch = Date.now();
       const rawCandidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && effectiveQuery
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
       mark(trace, 'searchCandidatesMs', Date.now() - tSearch as any);
-      // Relevance: D2-7 streaming — في الإنتاج لا ننتظر، نعيد فوراً ونُدفّئ Cache في الخلفية (يوفر 750ms إدراكياً)
-      // في الاختبارات ننتظر 750ms للتأكد من صحة heuristic/AI
+      // A configured provider has its own AbortSignal deadline. No additional
+      // arbitrary race may silently replace an actual relevance result.
       let relevanceMap: Map<string, any> | null = null;
       if (rawCandidates.length) {
         if (isTest) {
           const tRel = Date.now();
-          try {
-            relevanceMap = await Promise.race([
-              analyzeResultRelevance(identification, rawCandidates, effectiveQuery),
-              new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
-            ]) as any;
-          } catch { relevanceMap = null; }
+          try { relevanceMap = await analyzeResultRelevance(identification, rawCandidates, effectiveQuery); }
+          catch { relevanceMap = null; }
           mark(trace, 'anthropicRelevanceMs', Date.now() - tRel as any);
         } else {
-          // fire-and-forget warm: لا يوقف الاستجابة، يُحسب في الخلفية للـ Cache التالي
           const tRelBg = Date.now();
-          analyzeResultRelevance(identification, rawCandidates, effectiveQuery)
-            .then((map:any) => {
-              mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any);
-              // optional: could update pipelineCache entry with rescored version for next hit
-            })
-            .catch(() => mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any));
-          // نبقي relevanceMap null → نعرض raw match (scoreCandidate) فوراً، لا فلترة irrelevant في أول ضربة
-          relevanceMap = null;
+          void analyzeResultRelevance(identification, rawCandidates, effectiveQuery)
+            .then(() => { mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any); })
+            .catch(() => { mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any); });
         }
       }
       let rescoredCandidates = rawCandidates.map((c) => {
@@ -400,30 +439,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'dedupMs', Date.now() - tDedup as any);
       const candidates = deduped;
       const query = effectiveQuery;
-      const securedCandidates = tokenizedCandidates(candidates);
+      const securedCandidates = tokenizedCandidates(db, candidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       warmIsolation([...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])], 8);
       const securedPrice = tokenizedDetectedPrice(priceResult);
-      const eventId = recordAyrovixEvent(db, {
-        channel: 'image',
-        brand: identification.brand,
-        query: query || identification.description,
-        candidatesCount: candidates.length,
-      });
-      const historyMatch = securedCandidates[0];
-      rememberAuthenticatedHistory(db, req, {
-        eventId,
-        kind: 'image',
-        queryLabel: query || identification.description,
-        title: historyMatch?.title || securedPrice?.title || title,
-        imageUrl: historyMatch?.image || securedPrice?.imageUrl || '',
-        sourceUrl: historyMatch?.sourceUrl || '',
-        source: historyMatch?.source || 'AYROVIX Vision',
-        price: historyMatch?.price ?? securedPrice?.sourcePrice ?? null,
-        currency: historyMatch?.currency ?? securedPrice?.sourceCurrency ?? null,
-        verificationStatus: historyMatch?.priceVerificationStatus || 'PENDING_MANUAL',
-        resultsCount: candidates.length,
-      });
+      const eventId = recordImageSearchEvent(db, req, { brand: identification.brand,
+        query: query || identification.description || '', title, candidates: securedCandidates, price: securedPrice });
 
       const responseData = {
         identification,
@@ -468,8 +489,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         query: result.product.title,
         candidatesCount: 1 + result.alternates.length,
       });
-      const securedProduct = tokenizedProduct(result.product);
-      const securedAlternates = tokenizedCandidates(result.alternates);
+      const securedProduct = tokenizedProduct(db, result.product);
+      const securedAlternates = tokenizedCandidates(db, result.alternates);
       // La galerie complète du produit est préparée en arrière-plan (isolation + WebP).
       warmIsolation([...securedProduct.images, securedProduct.image, ...securedAlternates.map((item) => item.image)], 10);
       const historyMatch = securedProduct.price != null ? null : securedAlternates[0];
@@ -500,12 +521,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           const fallbackQuery = String(url || '').slice(0, 160);
           const candidates = await externalProductSearch(fallbackQuery, 6);
           const eventId = recordAyrovixEvent(db, { channel, query: fallbackQuery, candidatesCount: candidates.length });
-          const securedAlternates = tokenizedCandidates(candidates);
+          const securedAlternates = tokenizedCandidates(db, candidates);
           const fallbackProduct: AyrovixProduct = {
-            title: `Produit ${fallbackQuery.slice(0, 60)}`,
+            title: 'Produit indisponible',
             brand: null,
             model: null,
-            description: 'Lien partagé — résultats de recherche web à confirmer.',
+            description: '',
             image: '', images: [], source: 'Web', sourceUrl: String(url || ''),
             price: null, currency: null, priceTnd: null, exchangeRate: null,
             colors: [], sizes: [], availability: 'unknown', priceVerified: false,
@@ -537,6 +558,51 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
   });
 
+  // Optional merchant-page enrichment for a SerpAPI hit. The incoming signed
+  // canonical quote remains the monetary/rating/identity source of truth; a
+  // source-matched merchant page may contribute only documented real media,
+  // description or options. The server re-signs the WHOLE updated product.
+  router.post('/enrich-candidate', async (req: Request, res: Response) => {
+    const original = req.body?.product as CommerceProduct | undefined;
+    if (!original || !verifyCommerceProduct(original) || original.identity.source !== 'serpapi' || !original.identity.sourceUrl) {
+      return res.status(409).json({ success: false, code: 'INVALID_PRODUCT_QUOTE' });
+    }
+    try {
+      const result = await extractProductFromUrl(db, scraper, original.identity.sourceUrl);
+      const merchant = result.product.canonical;
+      if (!merchant || merchant.identity.sourceUrl !== original.identity.sourceUrl || !merchant.basic.title) {
+        return res.json({ success: true, data: { product: projectProduct(original), enriched: false } });
+      }
+      // A redirected or mismatched merchant page must never attach another item's image/options.
+      const words = (title: string) => new Set(title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z0-9]+/).filter(word => word.length > 2));
+      const one = words(original.basic.title), two = words(merchant.basic.title);
+      const overlap = [...one].filter(word => two.has(word)).length;
+      if (one.size && two.size && overlap < Math.min(2, one.size, two.size)) {
+        return res.json({ success: true, data: { product: projectProduct(original), enriched: false } });
+      }
+      const urls = [...new Set([...original.media.originalImages, ...merchant.media.originalImages])];
+      const merged: CommerceProduct = {
+        ...original,
+        basic: { ...original.basic,
+          description: original.basic.description || merchant.basic.description,
+          brand: original.basic.brand || merchant.basic.brand,
+          category: original.basic.category || merchant.basic.category },
+        media: { ...original.media, originalImages: urls,
+          primaryImage: original.media.primaryImage || urls[0] || null,
+          colorImages: { ...merchant.media.colorImages, ...original.media.colorImages } },
+        availability: original.availability === 'unknown' ? merchant.availability : original.availability,
+        variants: original.variants.groups.length ? original.variants : merchant.variants,
+        sourceMetadata: { ...original.sourceMetadata, mediaProvider: 'merchant',
+          ...(original.variants.groups.length ? {} : { variantProvider: 'merchant' }),
+          ...(original.basic.description ? {} : { descriptionProvider: 'merchant' }) },
+        quoteToken: null,
+      };
+      return res.json({ success: true, data: { product: projectProduct({ ...merged, quoteToken: signCommerceProduct(merged) }), enriched: true } });
+    } catch {
+      return res.json({ success: true, data: { product: projectProduct(original), enriched: false } });
+    }
+  });
+
   router.post('/analyze-code', async (req: Request, res: Response) => {
     const value = String(req.body?.value || '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
     if (value.length < 2) {
@@ -544,7 +610,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const candidates = await searchByCodeOrText(db, value);
-      const securedCandidates = tokenizedCandidates(candidates);
+      const securedCandidates = tokenizedCandidates(db, candidates);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `qr:${value}`, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
@@ -568,7 +634,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     }
     try {
       const candidates = await searchByCodeOrText(db, code);
-      const securedCandidates = tokenizedCandidates(candidates);
+      const securedCandidates = tokenizedCandidates(db, candidates);
       const eventId = recordAyrovixEvent(db, { channel: 'qr', query: `barcode:${code}`, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {
@@ -593,7 +659,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     // Guard: if the query looks like a URL, suggest URL flow but still handle as text
     try {
       const candidates = await searchByCodeOrText(db, raw);
-      const securedCandidates = tokenizedCandidates(candidates);
+      const securedCandidates = tokenizedCandidates(db, candidates);
       const eventId = recordAyrovixEvent(db, { channel: 'text', query: raw, candidatesCount: candidates.length });
       const historyMatch = securedCandidates[0];
       rememberAuthenticatedHistory(db, req, {

@@ -1,3 +1,4 @@
+import type { CommerceProduct } from '../../../shared/commerceProduct';
 import type { ScrapedProduct, StoreType } from '../types';
 
 /**
@@ -23,6 +24,7 @@ const STORE_BY_PLATFORM: Record<string, StoreType> = {
 };
 
 export interface CatalogProduct {
+  canonical?: CommerceProduct;
   id: string;
   name: string;
   description?: string | null;
@@ -47,27 +49,28 @@ export function catalogProductToScraped(product: CatalogProduct): ScrapedProduct
   const platform = String(product.sourcePlatform || '').trim().toUpperCase();
   const images = [product.image, ...(Array.isArray(product.additionalImages) ? product.additionalImages : [])]
     .filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
-  const outOfStock = String(product.stockStatus || '').toUpperCase() === 'OUT_OF_STOCK';
+  const stock = String(product.stockStatus || '').toUpperCase();
   return {
     // L'identité garde la trace du catalogue : un produit du catalogue n'est pas une extraction.
     id: `catalog:${product.id}`,
+    canonical: product.canonical,
     store: STORE_BY_PLATFORM[platform] ?? 'generic',
-    storeName: product.sourcePlatform || product.brandName || 'AYROVI',
+    storeName: product.sourcePlatform || '',
     url: product.sourceUrl || '',
     externalId: product.id,
     title: product.name,
     description: product.description ?? null,
-    images: images.length ? images : [''],
+    images,
     mainImage: images[0] ?? '',
     sourcePrice: numberOrZero(product.originalPrice),
-    sourceCurrency: product.currency || 'EUR',
+    sourceCurrency: product.currency || '',
     convertedPriceTND: numberOrZero(product.convertedPrice),
     estimatedShippingTND: numberOrZero(product.shippingFee),
     serviceFeeTND: numberOrZero(product.serviceFee),
-    totalPriceTND: numberOrZero(product.finalPrice),
+    totalPriceTND: product.canonical?.pricing.ayroviPriceTnd ?? numberOrZero(product.finalPrice),
     variants: {},
     selectedVariant: null,
-    availability: outOfStock ? 'out_of_stock' : 'in_stock',
+    availability: stock === 'OUT_OF_STOCK' ? 'out_of_stock' : stock === 'AVAILABLE' || stock === 'IN_STOCK' ? 'in_stock' : 'unknown',
     brand: product.brandName ?? null,
     scrapedAt: new Date().toISOString(),
   };

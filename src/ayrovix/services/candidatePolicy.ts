@@ -1,3 +1,4 @@
+import { listingIdentityUrl } from '../../../shared/listingIdentity';
 import type { AyrovixCandidate } from '../types';
 import { isUnsafeHostname } from '../../services/safeUrl';
 import { isUsedListing } from './productCondition';
@@ -103,7 +104,7 @@ export function withDisplayRating(candidate: AyrovixCandidate): AyrovixCandidate
   }
   return {
     ...candidate,
-    rating: Math.round(Math.max(1, Math.min(5, candidate.match / 20)) * 10) / 10,
+    rating: null, // Search relevance is not a merchant review.
     ratingCount: null,
     ratingKind: 'match',
   };
@@ -116,7 +117,7 @@ export function filterDisplayableCandidates(items: AyrovixCandidate[], limit = 8
     .filter(notUsed)
     .map(withDisplayRating)
     .filter((item) => {
-      const key = `${item.sourceUrl}|${item.title.toLowerCase()}`;
+      const key = item.canonical?.id || `${item.kind}|${listingIdentityUrl(item.sourceUrl)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -132,7 +133,7 @@ export function filterLenientCandidates(items: AyrovixCandidate[], limit = 8): A
     .filter(notUsed)
     .map(withDisplayRating)
     .filter((item) => {
-      const key = `${item.sourceUrl}|${item.title.toLowerCase()}`;
+      const key = item.canonical?.id || `${item.kind}|${listingIdentityUrl(item.sourceUrl)}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
