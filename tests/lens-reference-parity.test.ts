@@ -35,3 +35,28 @@ describe('Lens results — approved September 21 reference', () => {
   expect(workflow).not.toMatch(/^  push:/m); expect(workflow).toContain('workflow_dispatch:');
  });
 });
+
+/*
+ * Carte de résultat — le descriptif se lit comme la ligne de prix barrée
+ * (demande client du 25/09/2026) : même taille, même gris, même poids, une ligne.
+ */
+describe('carte Lens — descriptif sous le titre', () => {
+  const cardCss = readFileSync('client/src/ayrovix/components/lens-product-card.css', 'utf8');
+  const quietCss = readFileSync('client/src/ayrovix/components/quiet-card.css', 'utf8');
+  const rule = (css: string, selector: string) => css.split(selector)[1]?.split('}')[0] ?? '';
+
+  it('reprend la taille, le gris et le poids du prix barré de la grille', () => {
+    const desc = rule(cardCss, '.lens-product-card .lens-card-description');
+    const struck = rule(quietCss, '.ay-quiet-price--grid .ay-quiet-price__original');
+    expect(desc).toContain('font-size:.75rem');
+    expect(struck).toContain('font-size: 0.75rem');
+    expect(desc).toContain('#595959');
+    expect(struck).toContain('#595959');
+    expect(desc).toContain('font-weight:400');
+    expect(struck).toContain('font-weight: 400');
+  });
+
+  it('tient sur une seule ligne pour ne pas pousser le prix hors de la carte', () => {
+    expect(rule(cardCss, '.lens-product-card .lens-card-description')).toContain('-webkit-line-clamp:1');
+  });
+});
