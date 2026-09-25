@@ -160,6 +160,18 @@ jobs:
             .cache/purchase-parents-check/
             .cache/lens-enrichment-check/
 
+      - name: Verify product image composition (ratio, no crop, safe area)
+        run: |
+          rm -rf screenshots/image-composition/
+          npm run verify:image-composition
+
+      - name: Upload composed product card evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-composition-evidence
+          path: screenshots/image-composition/
+
       - name: Verify authenticated account and icon geometry
         run: npm run verify:editorial-account
 

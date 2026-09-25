@@ -32,6 +32,7 @@
     "verify:variant-availability": "node verify/sonim-actions-runner.mjs verify/variant-availability.mjs verify/variant-availability-fixture.tsx",
     "verify:product-selection": "node verify/sonim-actions-runner.mjs verify/product-selection.mjs verify/product-selection-fixture.tsx",
     "verify:purchase-flow": "esbuild verify/purchase-flow-runner.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/purchase-flow-runner.cjs && node .cache/purchase-flow-runner.cjs",
+    "verify:image-composition": "esbuild verify/image-composition.ts --bundle --platform=node --format=cjs --packages=external --outfile=.cache/image-composition.cjs --log-level=error && node .cache/image-composition.cjs",
     "identity:check": "node scripts/build-editorial-design.mjs --check && node scripts/check-brand-identity.mjs",
     "identity:test": "vitest run tests/brand-identity.test.ts",
     "prebuild:client": "npm run identity:check",

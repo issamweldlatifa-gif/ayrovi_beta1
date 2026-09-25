@@ -19,6 +19,7 @@ import { listAyrovixHistory, recordAyrovixHistory, type AyrovixHistoryInput } fr
 import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } from './services/candidatePolicy';
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { warmIsolation } from '../services/imageIsolation';
+import { warmComposition } from '../services/imageComposition';
 import { addPriceWatcher, listPriceWatchers, removePriceWatcher } from './services/priceWatch';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
@@ -402,7 +403,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(candidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
-      warmIsolation([...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])], 8);
+      const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
+      warmIsolation(candidateMedia, 8);
+      warmComposition(candidateMedia, 8);
       const securedPrice = tokenizedDetectedPrice(priceResult);
       const eventId = recordAyrovixEvent(db, {
         channel: 'image',
@@ -471,7 +474,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const securedProduct = tokenizedProduct(result.product);
       const securedAlternates = tokenizedCandidates(result.alternates);
       // La galerie complète du produit est préparée en arrière-plan (isolation + WebP).
-      warmIsolation([...securedProduct.images, securedProduct.image, ...securedAlternates.map((item) => item.image)], 10);
+      const productMedia = [...securedProduct.images, securedProduct.image, ...securedAlternates.map((item) => item.image)];
+      warmIsolation(productMedia, 10);
+      warmComposition(productMedia, 10);
       const historyMatch = securedProduct.price != null ? null : securedAlternates[0];
       if (req.body?.recordHistory !== false) rememberAuthenticatedHistory(db, req, {
         eventId,

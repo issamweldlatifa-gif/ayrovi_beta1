@@ -4,7 +4,7 @@ import { useLocale } from '../../i18n/LocaleContext';
 import type { AyrovixCandidate } from '../types';
 import { MerchantRating } from './MerchantRating';
 import { QuietPromoPrice } from './quiet-card';
-import { withIsolation } from '../services/mediaIsolation';
+import { isComposedUrl, withIsolation } from '../services/mediaIsolation';
 import './lens-product-card.css';
 
 export function lensCardCopy(candidate: AyrovixCandidate) {
@@ -23,7 +23,11 @@ function CardImage({ candidate }: { candidate: AyrovixCandidate }) {
   const [index, setIndex] = useState(0);
   useEffect(() => setIndex(0), [candidate.id, candidate.image, candidate.images]);
   return urls[index]
-    ? <img src={urls[index]} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer" onError={() => setIndex(value => value + 1)} />
+    ? <img src={urls[index]} alt="" loading="lazy" decoding="async" draggable={false} referrerPolicy="no-referrer"
+        /* composé côté serveur : le cadrage est déjà fait, donc « contain » sans blend ;
+           une image de repli (brute) garde l'ancien rendu multiply. */
+        data-composed={isComposedUrl(urls[index]) ? 'true' : undefined}
+        onError={() => setIndex(value => value + 1)} />
     : <span className="lens-card-placeholder"><ImageIcon size={32} /><span>{candidate.source}</span></span>;
 }
 export function LensProductCard({ candidate, onChoose, saved, busy, onFavorite }: {

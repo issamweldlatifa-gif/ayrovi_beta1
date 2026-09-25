@@ -162,6 +162,93 @@ export function cleanMask(mask: Float32Array, width: number, height: number, opt
   return alpha;
 }
 
+
+/**
+ * BOÎTE DE CONTENU dans le carré d'entrée du modèle (correctif 25/09/2026).
+ *
+ * L'image est envoyée au modèle en « contain » : elle est donc ENTOURÉE d'un
+ * padding noir dans le carré 320×320. Le masque rendu par le modèle vit dans ce
+ * même carré padé. Le remettre à la taille native avec un simple « fill »
+ * ÉTIRAIT le masque du padding compris → le masque ne coïncidait plus avec le
+ * produit (bords rognés d'un côté, fond gardé de l'autre). On calcule donc la
+ * zone utile du carré pour n'en remettre à l'échelle QUE le contenu.
+ */
+export function containBox(width: number, height: number, side: number): { left: number; top: number; width: number; height: number } {
+  const scale = Math.min(side / width, side / height);
+  const innerWidth = Math.max(1, Math.min(side, Math.round(width * scale)));
+  const innerHeight = Math.max(1, Math.min(side, Math.round(height * scale)));
+  return {
+    left: Math.floor((side - innerWidth) / 2),
+    top: Math.floor((side - innerHeight) / 2),
+    width: innerWidth,
+    height: innerHeight,
+  };
+}
+
+/**
+ * BOUCHAGE DES TROUS — mais UNIQUEMENT les petits (règle R5 du prototype).
+ *
+ * Les trous minuscules sont du bruit de saliency et doivent disparaître. Les
+ * GRANDES ouvertures, elles, sont RÉELLES : l'anse d'un sac, la poignée d'une
+ * valise, l'espace entre deux pièces d'un lot. Les boucher collerait un disque
+ * de fond marchand au milieu du produit. Seuil : part de l'aire du sujet.
+ */
+export function fillMaskHoles(alpha: Uint8ClampedArray, width: number, height: number, maxHoleRatio = 0.008): Uint8ClampedArray {
+  const total = width * height;
+  let subject = 0;
+  for (let i = 0; i < total; i++) if (alpha[i] > 127) subject += 1;
+  if (!subject) return alpha;
+  const limit = subject * maxHoleRatio;
+  const seen = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  for (let start = 0; start < total; start++) {
+    if (seen[start] || alpha[start] > 127) continue;
+    let head = 0;
+    let tail = 0;
+    let touchesBorder = false;
+    seen[start] = 1;
+    queue[tail++] = start;
+    while (head < tail) {
+      const pixel = queue[head++];
+      const x = pixel % width;
+      const y = (pixel - x) / width;
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) touchesBorder = true;
+      const neighbours = [
+        x > 0 ? pixel - 1 : -1,
+        x < width - 1 ? pixel + 1 : -1,
+        pixel >= width ? pixel - width : -1,
+        pixel + width < total ? pixel + width : -1,
+      ];
+      for (const neighbour of neighbours) {
+        if (neighbour >= 0 && !seen[neighbour] && alpha[neighbour] <= 127) {
+          seen[neighbour] = 1;
+          queue[tail++] = neighbour;
+        }
+      }
+    }
+    // tail = taille de la composante ; queue[0..tail) = ses pixels.
+    if (touchesBorder || tail > limit) continue;        // fond réel, ou VRAIE ouverture
+    for (let i = 0; i < tail; i++) alpha[queue[i]] = 255;
+  }
+  return alpha;
+}
+
+
+/**
+ * DÉ-ENTRELACEMENT DU MASQUE (correctif 25/09/2026 — « الصورة تتشوه »).
+ *
+ * sharp promeut une entrée RAW 1 canal en sortie sRGB 3 canaux : le tampon rendu
+ * fait 3× la taille attendue. L'ancien code l'indexait comme du 1 canal (pixel i
+ * au lieu de 3i) → le masque était lu au tiers de sa largeur : produit strié,
+ * décalé, « déformé ». On ramène donc explicitement le masque à UN canal.
+ */
+export function firstChannel(data: Uint8Array | Buffer, channels: number, pixels: number): Uint8ClampedArray {
+  if (channels === 1) return new Uint8ClampedArray(data.buffer, data.byteOffset, pixels);
+  const output = new Uint8ClampedArray(pixels);
+  for (let i = 0; i < pixels; i++) output[i] = data[i * channels];
+  return output;
+}
+
 /** Part du premier plan (0..1) — garde anti-âneries du modèle. */
 export function foregroundShare(alpha: Uint8ClampedArray): number {
   let count = 0;
@@ -215,14 +302,26 @@ export async function segmentBuffer(buffer: Buffer): Promise<Buffer | null> {
   }
   const normalized = normalizeMask(rawMask);
   const maskSmall = cleanMask(normalized, SIDE, SIDE);
-  // Le masque 320×320 est remis à la taille de l'image (lissage bilinéaire de sharp).
+  // ALIGNEMENT (correctif 25/09/2026) : l'entrée était « contain » (donc padée) mais
+  // la sortie était étirée en « fill » — le masque ne coïncidait plus avec le produit.
+  // On extrait d'abord la boîte de contenu du carré, PUIS on la remet à l'échelle.
+  const box = containBox(meta.width, meta.height, SIDE);
   const maskFull = await sharp(Buffer.from(maskSmall.buffer, maskSmall.byteOffset, maskSmall.byteLength), {
     raw: { width: SIDE, height: SIDE, channels: 1 },
-  }).resize({ width: meta.width, height: meta.height, fit: 'fill' }).raw().toBuffer();
+  })
+    .extract({ left: box.left, top: box.top, width: box.width, height: box.height })
+    .resize({ width: meta.width, height: meta.height, fit: 'fill' })
+    .toColourspace('b-w')
+    .raw()
+    .toBuffer({ resolveWithObject: true });
   const image = { data: await base.ensureAlpha().raw().toBuffer(), width: meta.width, height: meta.height };
-  const share = foregroundShare(new Uint8ClampedArray(maskFull.buffer, maskFull.byteOffset, maskFull.byteLength));
+  const alphaMask = firstChannel(maskFull.data, maskFull.info.channels, meta.width * meta.height);
+  // R5 : les petits trous de bruit sont rebouchés, les VRAIES ouvertures (anse de
+  // sac, poignée) restent transparentes.
+  fillMaskHoles(alphaMask, meta.width, meta.height);
+  const share = foregroundShare(alphaMask);
   if (share < 0.03 || share > 0.97) return null;
-  applyMask(image, new Uint8ClampedArray(maskFull.buffer, maskFull.byteOffset, maskFull.byteLength));
+  applyMask(image, alphaMask);
   return sharp(image.data, { raw: { width: image.width, height: image.height, channels: 4 } })
     .png({ compressionLevel: 9 })
     .toBuffer();

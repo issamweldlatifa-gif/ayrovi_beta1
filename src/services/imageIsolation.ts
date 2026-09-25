@@ -162,6 +162,29 @@ export function chromaKeyConnected(
   }
 }
 
+/**
+ * DÉCONTAMINATION DE LA FRANGE (règle R8 du prototype, 25/09/2026).
+ *
+ * Un pixel de bord est un MÉLANGE produit/fond : C = a·P + (1−a)·F. Le laisser
+ * tel quel colle un liseré de la couleur du studio marchand autour du produit —
+ * très visible dès qu'on le pose sur notre canvas #F0F2F2. On retrouve donc la
+ * couleur pure du produit : P = (C − (1−a)·F) / a, appliqué UNIQUEMENT aux
+ * pixels semi-transparents (les pixels pleins ne sont jamais touchés).
+ */
+export function decontaminateFringe(image: RawImage, background: { r: number; g: number; b: number }, minAlpha = 16, maxAlpha = 244): void {
+  const { data } = image;
+  const channels = [background.r, background.g, background.b];
+  for (let offset = 0; offset < data.length; offset += 4) {
+    const alpha = data[offset + 3];
+    if (alpha <= minAlpha || alpha >= maxAlpha) continue;
+    const a = Math.max(alpha / 255, 0.12);
+    for (let channel = 0; channel < 3; channel++) {
+      const value = (data[offset + channel] - (1 - a) * channels[channel]) / a;
+      data[offset + channel] = Math.round(Math.max(0, Math.min(255, value)));
+    }
+  }
+}
+
 /** Part (0..1) de pixels quasi identiques au fond — détecte les produits clairs sur fond clair. */
 export function backgroundLikeShare(image: RawImage, background: { r: number; g: number; b: number }, tolerance = FEATHER_TOLERANCE): number {
   const { data } = image;
@@ -259,13 +282,24 @@ export function chromaKey(image: RawImage, background: { r: number; g: number; b
 }
 
 /* ── 3. Pipeline complet sur un buffer ──────────────────────────── */
-export async function isolateBuffer(buffer: Buffer): Promise<{ kind: IsolationKind; png: Buffer | null }> {
+export interface IsolationOptions {
+  /**
+   * Pour la COMPOSITION (phase 2) : un fond BLANC doit lui aussi devenir un
+   * asset transparent. En affichage historique, le blanc était laissé tel quel
+   * car le `mix-blend-mode: multiply` de la carte le masquait ; le moteur de
+   * composition, lui, pose le produit sur #F0F2F2 et a donc besoin du détourage.
+   */
+  treatWhiteAsUniform?: boolean;
+}
+
+export async function isolateBuffer(buffer: Buffer, options: IsolationOptions = {}): Promise<{ kind: IsolationKind; png: Buffer | null }> {
   const base = sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 }).rotate();
   const resized = base.resize({ width: MAX_DIMENSION, height: MAX_DIMENSION, fit: 'inside', withoutEnlargement: true });
   const { data, info } = await resized.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const image: RawImage = { data, width: info.width, height: info.height, channels: 4 };
   const analysis = analyzeEdges(image);
-  if (analysis.kind !== 'uniform') return { kind: analysis.kind, png: null };
+  const keyable = analysis.kind === 'uniform' || (options.treatWhiteAsUniform && analysis.kind === 'white');
+  if (!keyable) return { kind: analysis.kind, png: null };
   // Adaptatif : produit CLAIR sur fond CLAIR (part élevée à seuil large) → seuils
   // resserrés ; le chroma-key CONNECTÉ ne retire de toute façon que le fond relié
   // au bord, jamais le produit au centre.
@@ -286,6 +320,8 @@ export async function isolateBuffer(buffer: Buffer): Promise<{ kind: IsolationKi
     } catch { /* repli chroma-key ci-dessous */ }
   }
   chromaKeyConnected(image, analysis.color, coreUsed, light ? 26 : FEATHER_TOLERANCE);
+  // R8 — la frange garde sinon la teinte du studio marchand (liseré visible sur #F0F2F2).
+  decontaminateFringe(image, analysis.color);
   // Dernier filet : des trous transparents ENFERMÉS = fuite confirmée → on tente
   // la segmentation, et sans filet disponible on ne livre RIEN (l'original
   // intact vaut mieux qu'un produit griffé de taches transparentes).

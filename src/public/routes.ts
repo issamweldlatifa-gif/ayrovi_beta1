@@ -8,6 +8,7 @@ import { calculatePrice } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { getIsolatedImage, isPublicHttpUrl, readCachedPng, fetchRemoteImage, warmIsolation } from '../services/imageIsolation';
+import { getComposedCard, readComposedPng, IDEAL_FRAME_WIDTH } from '../services/imageComposition';
 import path from 'node:path';
 import fs from 'node:fs';
 import sharp from 'sharp';
@@ -148,6 +149,33 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.redirect(302, url);
   });
 
+
+
+  // COMPOSITION D'IMAGE PRODUIT (phase 2, 25/09/2026) : le produit est détouré puis
+  // POSÉ sur le mockup AYROVI (9/13, #F0F2F2) avec une échelle UNIFORME et un
+  // centrage sur son barycentre — ratio conservé, aucun rognage, aucune règle
+  // spécifique à une image. Contrat d'acceptation vérifié AVANT mise en cache :
+  // si une seule garantie n'est pas tenue, on redirige vers l'original.
+  const COMPOSED_WIDTHS = new Set([600, 760, 900, 1080]);
+  router.get('/media/card', async (req, res) => {
+    const url = String(req.query.u || req.query.url || '');
+    const width = Number(req.query.w || IDEAL_FRAME_WIDTH);
+    if (!isPublicHttpUrl(url)) { res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' }); return; }
+    if (!COMPOSED_WIDTHS.has(width)) { res.status(400).json({ success: false, error: 'INVALID_WIDTH' }); return; }
+    try {
+      const meta = await getComposedCard(url, width);
+      if (meta.file) {
+        res.setHeader('Content-Type', 'image/png');
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+        res.send(readComposedPng(meta.file));
+        return;
+      }
+    } catch {
+      // réseau, format exotique, produit non détourable → repli naturel.
+    }
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+    res.redirect(302, url);
+  });
 
   // PROXY IMAGES PROPRE AU SITE (24/09/2026) : l'image marchand est redimensionnée
   // (WebP) et servie depuis notre domaine — pas de hotlink fragile, des octets

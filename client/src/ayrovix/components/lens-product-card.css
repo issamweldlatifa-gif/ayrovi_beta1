@@ -2,6 +2,10 @@
 .lens-product-card .lens-card-open{display:block;width:100%;padding:0;border:0;background:transparent;color:inherit;text-align:start;cursor:pointer;font-family:var(--ay-font-stack);font-weight:400}
 .lens-card-media{position:relative;display:grid;place-items:center;aspect-ratio:9/13;width:100%;overflow:hidden;box-sizing:border-box;padding:0;border:0;border-radius:16px;background:#fff;background:var(--ayrovi-card-canvas,#f6f6f6)}
 .lens-card-media>img{display:block;width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;user-select:none}
+/* COMPOSITION SERVEUR (phase 2) : le produit est déjà détouré, mis à l'échelle et
+   centré sur le canvas officiel — « contain » (aucun rognage) et AUCUN blend
+   (le multiply salissait les pixels du produit). Le repli brut garde l'ancien rendu. */
+.lens-card-media>img[data-composed="true"]{object-fit:contain;mix-blend-mode:normal}
 .lens-card-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px;text-align:center;font-size:.8125rem;color:#595959}
 .lens-product-card .lens-card-title{margin:10px 0 0;font-size:.9375rem;line-height:1.35;font-weight:700;letter-spacing:-.01em;color:#000;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--ay-font-stack)}
 .lens-product-card .lens-card-description{margin:2px 0 0;font-size:.84375rem;line-height:1.38;font-weight:400;letter-spacing:0;color:#595959;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-family:var(--ay-font-stack)}
