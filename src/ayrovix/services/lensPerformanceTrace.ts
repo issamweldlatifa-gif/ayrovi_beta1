@@ -27,6 +27,8 @@ export interface LensTrace {
   serpApiUploadMs?: number;
   serpApiSearchMs?: number;
   serpApiTotalMs?: number;
+  /** Lecture locale de l'image : OCR et code-barres (aucun appel payant). */
+  imageSignalsMs?: number;
   anthropicOptimizeMs?: number;
   searchCandidatesMs?: number;
   anthropicRelevanceMs?: number;

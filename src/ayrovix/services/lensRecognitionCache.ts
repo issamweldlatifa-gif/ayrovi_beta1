@@ -36,17 +36,23 @@ const FORMAT = 'v1';
 const DEFAULT_RECOGNITION_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_MATCHES_TTL_MS = 30 * 60 * 1000;
 
-export interface LensCacheEntry<I, M> {
+export interface LensCacheEntry<I, M, S = unknown> {
   identification: I | null;
   matches: M[] | null;
-  /** Horodatages séparés : les deux moitiés n'ont pas la même durée de vie. */
+  /**
+   * Signaux lus SUR la photo (texte OCR, code-barres). Ils décrivent l'image,
+   * pas le marché : ils vivent donc aussi longtemps que la reconnaissance.
+   */
+  signals: S | null;
+  /** Horodatages séparés : les moitiés n'ont pas la même durée de vie. */
   identificationAt: number;
   matchesAt: number;
 }
 
-export interface LensCacheRead<I, M> {
+export interface LensCacheRead<I, M, S = unknown> {
   identification: I | null;
   matches: M[] | null;
+  signals: S | null;
   /** Ce qui a réellement été servi par le cache, pour la télémétrie et l'en-tête. */
   hit: 'none' | 'identification' | 'matches' | 'both';
 }
@@ -70,20 +76,20 @@ function entryFile(key: string): string {
   return path.join(cacheDir(), `${FORMAT}-${key}.json`);
 }
 
-export function readLensCache<I, M>(key: string, now = Date.now()): LensCacheRead<I, M> {
-  const empty: LensCacheRead<I, M> = { identification: null, matches: null, hit: 'none' };
+export function readLensCache<I, M, S = unknown>(key: string, now = Date.now()): LensCacheRead<I, M, S> {
+  const empty: LensCacheRead<I, M, S> = { identification: null, matches: null, signals: null, hit: 'none' };
   if (process.env.AYROVI_LENS_CACHE === 'false') return empty;
   try {
     const raw = fs.readFileSync(entryFile(key), 'utf8');
-    const entry = JSON.parse(raw) as LensCacheEntry<I, M>;
-    const identification = entry.identification && now - entry.identificationAt <= ttl('RECOGNITION')
-      ? entry.identification
-      : null;
+    const entry = JSON.parse(raw) as LensCacheEntry<I, M, S>;
+    const fresh = now - entry.identificationAt <= ttl('RECOGNITION');
+    const identification = entry.identification && fresh ? entry.identification : null;
+    const signals = entry.signals && fresh ? entry.signals : null;
     const matches = entry.matches && now - entry.matchesAt <= ttl('MATCHES')
       ? entry.matches
       : null;
     const hit = identification && matches ? 'both' : identification ? 'identification' : matches ? 'matches' : 'none';
-    return { identification, matches, hit };
+    return { identification, matches, signals, hit };
   } catch {
     // Absente, illisible ou corrompue : on recalcule, on n'échoue pas.
     return empty;
@@ -95,22 +101,23 @@ export function readLensCache<I, M>(key: string, now = Date.now()): LensCacheRea
  * une reconnaissance encore valable n'est pas effacée parce que les
  * correspondances marchandes ont été rafraîchies.
  */
-export function writeLensCache<I, M>(
+export function writeLensCache<I, M, S = unknown>(
   key: string,
-  value: { identification?: I | null; matches?: M[] | null },
+  value: { identification?: I | null; matches?: M[] | null; signals?: S | null },
   now = Date.now(),
 ): void {
   if (process.env.AYROVI_LENS_CACHE === 'false') return;
   try {
     const file = entryFile(key);
-    let current: LensCacheEntry<I, M> = { identification: null, matches: null, identificationAt: 0, matchesAt: 0 };
-    try { current = JSON.parse(fs.readFileSync(file, 'utf8')) as LensCacheEntry<I, M>; } catch { /* première écriture */ }
+    let current: LensCacheEntry<I, M, S> = { identification: null, matches: null, signals: null, identificationAt: 0, matchesAt: 0 };
+    try { current = JSON.parse(fs.readFileSync(file, 'utf8')) as LensCacheEntry<I, M, S>; } catch { /* première écriture */ }
 
-    const next: LensCacheEntry<I, M> = {
+    const next: LensCacheEntry<I, M, S> = {
       identification: value.identification !== undefined && value.identification !== null
         ? value.identification
         : current.identification,
       identificationAt: value.identification !== undefined && value.identification !== null ? now : current.identificationAt,
+      signals: value.signals !== undefined && value.signals !== null ? value.signals : current.signals,
       // Une liste VIDE n'est pas un résultat : on ne la mémorise pas, sinon on
       // sert du vide pendant une demi-heure à cause d'un incident passager.
       matches: value.matches && value.matches.length ? value.matches : current.matches,
