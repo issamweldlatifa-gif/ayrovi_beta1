@@ -7,54 +7,35 @@
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { EMPTY_SIGNALS, reconcileDetectedPrice, type LensSignals } from '../src/ayrovix/services/lensSignals';
-import type { OcrPriceReport } from '../src/ayrovix/services/ocrPrices';
+describe('l’OCR ne touche jamais au prix (règle client du 25/09/2026)', () => {
+  const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
+  const signals = readFileSync('src/ayrovix/services/lensSignals.ts', 'utf8');
 
-const report = (over: Partial<OcrPriceReport>): OcrPriceReport => ({
-  findings: [], salePrice: null, originalPrice: null, shippingPrice: null, totalPrice: null,
-  discountPercent: null, currency: null, confidence: 0, text: '', ...over,
-});
-
-const signals = (over: Partial<LensSignals> = {}): LensSignals => ({ ...EMPTY_SIGNALS, ...over });
-
-describe('prix lu sur l’image — arbitrage vision / OCR', () => {
-  it('une lecture sûre de la vision n’est JAMAIS remplacée', () => {
-    const vision = { amount: 35.95, currency: 'EUR', label: 'product_price' as const, confidence: 0.9 };
-    const out = reconcileDetectedPrice(vision, signals({ report: report({ salePrice: 999, currency: 'EUR', confidence: 0.99 }) }));
-    expect(out).toEqual(vision);
+  it('aucune fonction d’arbitrage de prix ne subsiste dans le module de signaux', () => {
+    expect(signals).not.toContain('reconcileDetectedPrice');
+    expect(signals).not.toContain('export interface DetectedPrice');
+    // La raison est écrite dans le code, pour que personne ne la réintroduise.
+    expect(signals).toContain('À NE PAS RÉINTRODUIRE');
   });
 
-  it('quand la vision doute, un OCR sûr prend le relais', () => {
-    const vision = { amount: 0, currency: '', label: 'none' as const, confidence: 0 };
-    const out = reconcileDetectedPrice(vision, signals({ report: report({ salePrice: 35.95, currency: 'EUR', confidence: 0.82 }) }));
-    expect(out.amount).toBe(35.95);
-    expect(out.currency).toBe('EUR');
-    expect(out.label).toBe('product_price');
+  it('la route n’injecte aucun montant issu de la lecture de l’image', () => {
+    const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
+    expect(block).not.toContain('reconcileDetectedPrice');
+    expect(block).not.toMatch(/detected_price:\s*[a-zA-Z]+\(/);
+    expect(block).not.toMatch(/signals[^;]*(salePrice|totalPrice)/);
   });
 
-  it('quand les DEUX doutent, le prix reste non lu — on ne devine pas un montant', () => {
-    const vision = { amount: 0, currency: '', label: 'none' as const, confidence: 0.2 };
-    const out = reconcileDetectedPrice(vision, signals({ report: report({ salePrice: 35.95, currency: 'EUR', confidence: 0.4 }) }));
-    expect(out).toEqual(vision);
+  it('le module de signaux ne rend que de l’identification : texte et code', () => {
+    const contract = signals.split('export interface LensSignals {')[1].split('}')[0];
+    expect(contract).toContain('report');
+    expect(contract).toContain('code');
+    expect(contract).not.toContain('price');
   });
 
-  it('un OCR sans devise n’est pas exploitable : un nombre seul n’est pas un prix', () => {
-    const vision = { amount: 0, currency: '', label: 'none' as const, confidence: 0 };
-    const out = reconcileDetectedPrice(vision, signals({ report: report({ salePrice: 35.95, currency: null, confidence: 0.9 }) }));
-    expect(out).toEqual(vision);
-  });
-
-  it('un total de panier est étiqueté comme tel, pas comme un prix produit', () => {
-    const vision = { amount: 0, currency: '', label: 'none' as const, confidence: 0 };
-    const out = reconcileDetectedPrice(vision, signals({ report: report({ totalPrice: 120, currency: 'TND', confidence: 0.8 }) }));
-    expect(out.label).toBe('cart_total');
-    expect(out.amount).toBe(120);
-  });
-
-  it('les segments d’une capture longue sont lus aussi', () => {
-    const vision = { amount: 0, currency: '', label: 'none' as const, confidence: 0 };
-    const out = reconcileDetectedPrice(vision, signals({ segments: [report({ salePrice: 42, currency: 'EUR', confidence: 0.7 })] }));
-    expect(out.amount).toBe(42);
+  it('le prix garde son origine unique : l’offre marchande, puis notre formule', () => {
+    const block = routes.split("router.post('/analyze-image'")[1].split("router.post('/analyze-url'")[0];
+    expect(block).toContain('calculatePrice(');
+    expect(block).toContain('getCachedPricingRules(db)');
   });
 });
 

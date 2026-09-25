@@ -84,38 +84,15 @@ export async function readLensSignals(image: Buffer): Promise<LensSignals> {
   return withBudget(work, EMPTY_SIGNALS, ms);
 }
 
-export interface DetectedPrice {
-  amount: number;
-  currency: string;
-  label: 'none' | 'product_price' | 'old_price' | 'cart_total';
-  confidence: number;
-}
-
-/**
- * Améliore le prix LU sur l'image, sans jamais dégrader une lecture déjà sûre.
+/*
+ * NOTE DE CONCEPTION (règle client du 25/09/2026) — À NE PAS RÉINTRODUIRE.
  *
- * Règle : la vision garde la main dès qu'elle est exploitable (≥ 0,65). Ce n'est
- * QUE lorsqu'elle ne l'est pas que l'OCR peut proposer sa lecture, et seulement
- * si celle-ci est elle-même sûre. En cas de doute des deux côtés, on ne choisit
- * pas — on laisse le prix « non lu », et l'écran demandera confirmation. Deviner
- * ici reviendrait à faire payer au client une erreur de lecture.
+ * Une fonction d'arbitrage « prix lu par la vision contre prix lu par l'OCR » a
+ * existé ici quelques heures. Elle est supprimée : le texte d'une photo sert à
+ * RECONNAÎTRE un produit, jamais à en fixer le montant. Le prix a une seule
+ * origine — l'offre marchande rapportée par SerpApi — et notre formule s'y
+ * applique ensuite. Un chiffre mal lu sur une image serait un prix que personne
+ * n'a jamais proposé, et c'est le client qui le paierait.
+ *
+ * Ce module ne rend donc que des signaux d'IDENTIFICATION : texte et code.
  */
-export function reconcileDetectedPrice(vision: DetectedPrice, signals: LensSignals): DetectedPrice {
-  const visionUsable = vision.confidence >= 0.65 && vision.amount > 0 && Boolean(vision.currency)
-    && (vision.label === 'product_price' || vision.label === 'cart_total');
-  if (visionUsable) return vision;
-
-  const reports = [signals.report, ...signals.segments].filter((report): report is OcrPriceReport => Boolean(report));
-  for (const report of reports) {
-    if (report.confidence < 0.65 || !report.currency) continue;
-    const amount = report.salePrice ?? report.totalPrice;
-    if (!Number.isFinite(amount as number) || (amount as number) <= 0) continue;
-    return {
-      amount: amount as number,
-      currency: report.currency,
-      label: report.salePrice != null ? 'product_price' : 'cart_total',
-      confidence: report.confidence,
-    };
-  }
-  return vision;
-}

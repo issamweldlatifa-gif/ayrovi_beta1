@@ -7,7 +7,6 @@ import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiRe
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
-import { reconcileDetectedPrice } from './services/lensSignals';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -278,6 +277,16 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
       mark(trace, 'imageSignalsMs', recognition.timings.signalsMs);
 
+      /*
+       * L'OCR NE TOUCHE PAS AU PRIX (règle client du 25/09/2026).
+       *
+       * Le texte lu sur une photo sert à RECONNAÎTRE le produit — marque,
+       * modèle, code-barres — jamais à en fixer le montant. Le prix a une seule
+       * origine : l'offre marchande rapportée par SerpApi, à laquelle notre
+       * formule (conversion, droits, TVA, frais) est appliquée ensuite. Un
+       * chiffre mal lu sur une image serait un prix que personne n'a jamais
+       * proposé, et c'est le client qui le paierait.
+       */
       const visualCandidates = recognition.matches;
       const signals = recognition.signals;
       let identification = recognition.identification;
