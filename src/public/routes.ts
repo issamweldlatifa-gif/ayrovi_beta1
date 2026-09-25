@@ -8,7 +8,7 @@ import { calculatePrice } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { getIsolatedImage, isPublicHttpUrl, readCachedPng, fetchRemoteImage, warmIsolation } from '../services/imageIsolation';
-import { getComposedCard, readComposedPng, IDEAL_FRAME_WIDTH } from '../services/imageComposition';
+import { getComposedCard, readComposedPng, IDEAL_FRAME_WIDTH, frameSizeFor, CARD_CANVAS } from '../services/imageComposition';
 import path from 'node:path';
 import fs from 'node:fs';
 import sharp from 'sharp';
@@ -171,8 +171,45 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         return;
       }
     } catch {
-      // réseau, format exotique, produit non détourable → repli naturel.
+      // réseau, format exotique, produit non détourable → repli ci-dessous.
     }
+
+    /*
+     * REPLI SUR NOTRE CANVAS (25/09/2026) — défaut constaté en production par le
+     * client : quand la composition décline (produit non détourable), on
+     * redirigeait vers l'image marchand telle quelle. Résultat dans une grille :
+     * trois cartes sur notre gris studio et une quatrième avec un rectangle
+     * BLANC au milieu — la photo du marchand avec son propre fond. L'œil ne voit
+     * que celle-là.
+     *
+     * Décliner le détourage ne dispense pas de tenir le cadre : l'image est donc
+     * posée ENTIÈRE (contain, ratio conservé, aucun rognage) sur le canvas
+     * AYROVI 9/13 #F0F2F2. Ce n'est pas une composition et on ne le prétend pas
+     * — l'en-tête le dit — mais la grille redevient homogène.
+     */
+    try {
+      const frame = frameSizeFor(width);
+      const buffer = await fetchRemoteImage(url);
+      const letterboxed = await sharp(buffer, { failOn: 'none', limitInputPixels: 40_000_000 })
+        .rotate()
+        .resize({
+          width: frame.width,
+          height: frame.height,
+          fit: 'contain',
+          background: { ...CARD_CANVAS, alpha: 1 },
+        })
+        .flatten({ background: { ...CARD_CANVAS, alpha: 1 } })
+        .png()
+        .toBuffer();
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('X-Ayrovi-Card', 'letterbox');
+      res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      res.send(letterboxed);
+      return;
+    } catch {
+      // même le cadrage a échoué : l'original reste le dernier repli.
+    }
+
     res.setHeader('Cache-Control', 'public, max-age=3600');
     res.redirect(302, url);
   });

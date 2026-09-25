@@ -84,10 +84,14 @@
    Sur téléphone, le panier quitte l'en-tête : il se pose sur l'image, en
    pastille pleine, exactement là où le pouce l'atteint. L'achat, lui, ne doit
    jamais demander de remonter la page — il reste collé en bas. */
+/* Le rail se pose AU-DESSUS des flèches de galerie : en production, le panier
+   recouvrait la flèche « photo suivante » — deux cibles tactiles superposées,
+   donc une action perdue. La hauteur réservée est celle d'une flèche (40 px)
+   plus l'espace qui les sépare. */
 .ay-pdp-rail {
   position: absolute;
   inset-inline-end: 12px;
-  bottom: 12px;
+  bottom: 64px;
   z-index: 8;
   display: flex;
   flex-direction: column;

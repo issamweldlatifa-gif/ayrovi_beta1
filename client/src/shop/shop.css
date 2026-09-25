@@ -1,0 +1,394 @@
+/* ============================================================================
+   BOUTIQUE v2 — feuille AUTONOME (25/09/2026).
+
+   Elle ne dépend d'aucune des onze feuilles existantes : tout vient des jetons
+   officiels (`design/editorial/tokens.generated.css`, issus de identity.json).
+   Rayon 0, action noire, cible 44 px, trait d'icône 1,5, mouvement 120/180/240.
+   AUCUN ORANGE : la seule couleur admise est le rouge de remise, le vert de
+   confirmation, et les marques de paiement.
+
+   Convention : toutes les classes commencent par `s-`. Aucune classe d'ici ne
+   doit apparaître ailleurs, et aucune classe d'ailleurs ne doit apparaître ici —
+   c'est ce qui rend l'ancien écran supprimable sans effet de bord.
+   ========================================================================== */
+
+.s-root {
+  --s-canvas: var(--ay-e-canvas, #fff);
+  --s-surface: var(--ay-e-surface, #f5f5f5);
+  --s-ink: var(--ay-e-ink, #000);
+  --s-muted: var(--ay-e-muted, #595959);
+  --s-line: var(--ay-e-line, #d9d9d9);
+  --s-action: var(--ay-e-action, #000);
+  --s-on-action: var(--ay-e-on-action, #fff);
+  --s-danger: var(--ay-e-danger, #a52d2d);
+  --s-success: var(--ay-e-success, #236044);
+  --s-target: 44px;
+  --s-control: 48px;
+  --s-fast: 120ms;
+  --s-standard: 180ms;
+  --s-sheet: 240ms;
+  --s-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  font-family: var(--ay-font-stack);
+  color: var(--s-ink);
+  background: var(--s-canvas);
+  line-height: 1.5;
+}
+
+[dir="rtl"] .s-root { line-height: 1.8; }
+
+.s-root *,
+.s-root *::before,
+.s-root *::after { box-sizing: border-box; }
+
+.s-root button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+/* ── Grille et carte ─────────────────────────────────────────────────────── */
+.s-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 12px;
+  padding: 12px;
+}
+
+@media (min-width: 768px) {
+  .s-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+}
+
+.s-card { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+
+.s-card__media {
+  position: relative;
+  aspect-ratio: 9 / 13;
+  background: var(--s-surface);
+  overflow: hidden;
+}
+
+.s-card__media img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+.s-card__flags {
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.s-flag { padding: 3px 8px; font-size: 0.6875rem; font-weight: 700; }
+.s-flag--deal { background: var(--s-ink); color: var(--s-on-action); }
+.s-flag--info { background: var(--s-canvas); color: var(--s-ink); border: 1px solid var(--s-line); }
+
+.s-card__brand,
+.s-card__title {
+  font-size: 0.875rem;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.s-card__brand { font-weight: 700; }
+
+/* Le descriptif se lit EXACTEMENT comme la ligne de prix barrée. */
+.s-card__desc,
+.s-card__was {
+  font-size: 0.75rem;
+  line-height: 1rem;
+  font-weight: 400;
+  color: var(--s-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.s-card__price { margin-top: 3px; font-size: 1rem; font-weight: 700; }
+.s-card__price[data-deal="true"] { color: var(--s-danger); }
+.s-card__off { font-size: 0.75rem; line-height: 1rem; font-weight: 700; color: var(--s-danger); }
+
+/* ── Fiche produit ───────────────────────────────────────────────────────── */
+.s-page { position: relative; display: flex; flex-direction: column; min-height: 100%; }
+
+.s-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--s-canvas);
+  border-bottom: 1px solid var(--s-line);
+}
+
+.s-iconbtn {
+  display: grid;
+  place-items: center;
+  width: var(--s-target);
+  height: var(--s-target);
+  transition: background var(--s-fast) var(--s-ease);
+}
+
+.s-iconbtn:active { background: var(--s-surface); }
+
+.s-appbar__title { flex: 1; min-width: 0; text-align: center; font-size: 0.8125rem; font-weight: 700; }
+.s-appbar__title small {
+  display: block;
+  font-weight: 400;
+  color: var(--s-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.s-stage { position: relative; flex: 1; min-height: 0; }
+
+.s-media { position: sticky; top: 60px; z-index: 0; background: var(--s-surface); }
+.s-media__viewport { overflow: hidden; }
+.s-media__track { display: flex; transition: transform var(--s-sheet) var(--s-ease); }
+.s-media__slide { flex: 0 0 100%; aspect-ratio: 9 / 13; }
+.s-media__slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
+
+/* Le voile : le produit passe en arrière-plan quand la feuille monte. */
+.s-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: #000;
+  opacity: calc(var(--s-reveal, 0) * 0.58);
+  pointer-events: none;
+  transition: opacity 60ms linear;
+}
+
+.s-media__zoom {
+  transform: scale(calc(1 - var(--s-reveal, 0) * 0.04));
+  transform-origin: 50% 40%;
+  transition: transform 60ms linear;
+}
+
+.s-counter {
+  position: absolute;
+  inset-inline-start: 12px;
+  bottom: 12px;
+  z-index: 6;
+  padding: 3px 8px;
+  background: var(--s-canvas);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* Les actions flottantes : au-dessus des contrôles, jamais par-dessus eux. */
+.s-rail {
+  position: absolute;
+  inset-inline-end: 12px;
+  bottom: 12px;
+  z-index: 8;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: calc(1 - var(--s-reveal, 0) * 1.6);
+  transition: opacity 60ms linear;
+}
+
+.s-rail[data-hidden="true"] { pointer-events: none; }
+
+.s-rail__btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background: var(--s-canvas);
+  box-shadow: 0 8px 20px -14px rgb(0 0 0 / 50%);
+  transition: transform var(--s-fast) var(--s-ease);
+}
+
+.s-rail__btn[data-solid="true"] { background: var(--s-action); color: var(--s-on-action); }
+.s-rail__btn:active { transform: scale(0.9); }
+
+/* La feuille d'information passe DEVANT le média. */
+.s-sheet {
+  position: relative;
+  z-index: 10;
+  background: var(--s-canvas);
+  border-top: 1px solid var(--s-line);
+  box-shadow: 0 -18px 40px -30px rgb(0 0 0 / 60%);
+  padding: 0 16px 120px;
+}
+
+.s-sheet__grab { width: 44px; height: 3px; background: var(--s-line); margin: 10px auto 6px; }
+
+.s-swatches { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
+.s-swatches::-webkit-scrollbar { display: none; }
+
+.s-swatch {
+  flex: 0 0 62px;
+  height: 82px;
+  border: 1px solid transparent;
+  background: var(--s-surface);
+  overflow: hidden;
+  transition: border-color var(--s-standard) var(--s-ease);
+}
+
+.s-swatch[aria-pressed="true"] { border-color: var(--s-ink); }
+.s-swatch img { width: 100%; height: 100%; object-fit: contain; }
+
+.s-brand { margin-top: 14px; font-size: 1.125rem; font-weight: 700; }
+.s-title { margin: 2px 0 0; font-size: 1.125rem; font-weight: 400; line-height: 1.45; }
+.s-desc { margin: 8px 0 0; font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }
+
+.s-price { margin-top: 14px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.s-price strong { font-size: 1.375rem; font-weight: 700; }
+.s-price[data-deal="true"] strong { color: var(--s-danger); }
+.s-price__note { font-size: 0.75rem; color: var(--s-muted); }
+.s-was { margin-top: 3px; font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }
+.s-was b { color: var(--s-danger); }
+
+.s-stock { margin-top: 16px; border: 1px solid var(--s-line); border-inline-start: 3px solid var(--s-ink); padding: 12px 14px; }
+.s-stock h3 { margin: 0 0 8px; font-size: 0.8125rem; font-weight: 700; }
+.s-stock li { display: flex; align-items: center; gap: 8px; font-size: 0.78125rem; color: var(--s-muted); margin-bottom: 6px; list-style: none; }
+.s-stock ul { margin: 0; padding: 0; }
+
+/* Barre d'achat : l'action principale ne demande jamais de remonter la page. */
+.s-buybar {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  background: var(--s-canvas);
+  border-top: 1px solid var(--s-line);
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
+}
+
+.s-select {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--s-control);
+  padding: 0 14px;
+  border: 1px solid var(--s-ink);
+  background: var(--s-canvas);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.s-select[data-error="true"] { border-color: var(--s-danger); animation: s-shake 280ms var(--s-ease); }
+
+@keyframes s-shake {
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.s-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: var(--s-control);
+  margin-top: 10px;
+  background: var(--s-action);
+  color: var(--s-on-action);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  transition: opacity var(--s-standard) var(--s-ease), transform var(--s-fast) var(--s-ease);
+}
+
+.s-cta:active { transform: scale(0.99); }
+.s-cta:disabled { opacity: 0.35; cursor: not-allowed; }
+.s-cta[data-done="true"] { background: var(--s-success); }
+
+.s-refusal {
+  margin-top: 10px;
+  padding: 12px 14px;
+  background: var(--s-surface);
+  border-inline-start: 3px solid var(--s-danger);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--s-ink);
+}
+
+/* ── Drap (tailles) : il MONTE, il n'apparaît pas ────────────────────────── */
+.s-drape { position: fixed; inset: 0; z-index: 60; }
+.s-drape__backdrop { position: absolute; inset: 0; background: rgb(0 0 0 / 45%); animation: s-fade var(--s-sheet) var(--s-ease); }
+
+.s-drape__panel {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  max-height: 76%;
+  display: flex;
+  flex-direction: column;
+  background: var(--s-canvas);
+  animation: s-rise var(--s-sheet) var(--s-ease);
+}
+
+@keyframes s-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes s-rise { from { transform: translateY(100%); } to { transform: none; } }
+
+.s-drape__head { flex: none; padding: 8px 16px 0; }
+.s-drape__head h2 { margin: 0; font-size: 1.125rem; font-weight: 700; }
+
+.s-scales { display: flex; border-bottom: 1px solid var(--s-line); margin-top: 12px; }
+.s-scales button { position: relative; flex: 1; min-height: var(--s-target); font-size: 0.875rem; font-weight: 700; color: var(--s-muted); }
+.s-scales button[aria-selected="true"] { color: var(--s-ink); }
+.s-scales button[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--s-ink);
+}
+
+.s-sizes { flex: 1; overflow-y: auto; padding: 0 16px 20px; }
+
+.s-size {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--s-line);
+  text-align: start;
+  transition: background var(--s-fast) var(--s-ease);
+}
+
+.s-size:active { background: var(--s-surface); }
+.s-size b { font-size: 1rem; font-weight: 700; }
+.s-size small { display: block; font-size: 0.75rem; font-weight: 400; color: var(--s-muted); }
+.s-size__meta { font-size: 0.78125rem; color: var(--s-muted); }
+.s-size__meta[data-low="true"] { color: var(--s-danger); font-weight: 700; }
+.s-size[data-state="unavailable"] { color: #a6a6a6; }
+.s-size[data-state="unavailable"] b,
+.s-size[data-state="unknown"] b { font-weight: 400; }
+.s-size[aria-pressed="true"] { outline: 1px solid var(--s-ink); outline-offset: -1px; }
+
+/* ── Chargement ──────────────────────────────────────────────────────────── */
+.s-loading { display: grid; place-items: center; gap: 12px; padding: 64px 16px; text-align: center; }
+.s-loading__spin { animation: s-spin 900ms linear infinite; }
+.s-loading p { margin: 0; font-size: 0.8125rem; color: var(--s-muted); }
+
+@keyframes s-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .s-root *,
+  .s-root *::before,
+  .s-root *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
