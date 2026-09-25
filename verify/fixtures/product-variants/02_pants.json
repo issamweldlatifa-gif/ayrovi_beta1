@@ -1,0 +1,31 @@
+{
+  "search_metadata": { "id": "fixture-pants", "status": "Success" },
+  "search_parameters": { "engine": "google_immersive_product" },
+  "product_results": {
+    "title": "Levi's 511 Slim Fit Men's Jeans - Dark Indigo",
+    "brand": "Levi's",
+    "price_range": "$59 - $79",
+    "prices": ["$69.50"],
+    "description": "Slim fit jeans in stretch denim, mid rise, tapered leg.",
+    "extensions": ["Men's jeans", "Stretch denim"],
+    "variants": [
+      {
+        "title": "Size",
+        "items": [
+          { "name": "S", "available": true, "serpapi_link": "https://serpapi.com/search?x=s" },
+          { "name": "M", "available": true, "serpapi_link": "https://serpapi.com/search?x=m" },
+          { "name": "L", "available": false, "serpapi_link": "https://serpapi.com/search?x=l" },
+          { "name": "XL", "selected": true, "available": true, "serpapi_link": "https://serpapi.com/search?x=xl" }
+        ]
+      },
+      {
+        "title": "Color",
+        "items": [
+          { "name": "Dark Indigo", "selected": true, "available": true },
+          { "name": "Black", "available": true }
+        ]
+      }
+    ]
+  },
+  "sellers_results": { "online_sellers": [{ "name": "Levi's", "base_price": "$69.50", "buying_options": ["Free shipping", "In stock"] }] }
+}

@@ -1,0 +1,22 @@
+{
+  "search_metadata": { "id": "fixture-trap", "status": "Success" },
+  "search_parameters": { "engine": "google_product" },
+  "product_results": {
+    "title": "Chanel Bleu de Chanel Eau de Parfum",
+    "prices": ["$135.00"],
+    "description": "Woody aromatic eau de parfum for men.",
+    "extensions": ["Perfume", "Eau de parfum"],
+    "sizes": {
+      "39": { "link": "https://google.com/x?s=39", "product_id": "901" },
+      "40": { "link": "https://google.com/x?s=40", "product_id": "902" },
+      "41": { "link": "https://google.com/x?s=41", "product_id": "903" }
+    },
+    "variations": {
+      "Volume": [
+        { "name": "50 ml", "available": true, "price": "$135.00" },
+        { "name": "100 ml", "available": true, "price": "$185.00" }
+      ]
+    }
+  },
+  "sellers_results": { "online_sellers": [{ "name": "Chanel", "base_price": "$135.00", "details_and_offers": [{ "text": "In stock" }] }] }
+}

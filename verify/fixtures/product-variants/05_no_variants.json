@@ -1,0 +1,12 @@
+{
+  "search_metadata": { "id": "fixture-no-variants", "status": "Success" },
+  "search_parameters": { "engine": "google_product" },
+  "product_results": {
+    "title": "Anker PowerCore 10000 Portable Charger",
+    "prices": ["$25.99"],
+    "description": "Ultra-compact 10000mAh power bank with PowerIQ fast charging.",
+    "extensions": ["Power bank", "10000 mAh"],
+    "features": [{ "name": "Capacity", "text": "10000 mAh" }, { "name": "Ports", "text": "1 USB-A" }]
+  },
+  "sellers_results": { "online_sellers": [{ "name": "Anker", "base_price": "$25.99", "details_and_offers": [{ "text": "In stock" }] }] }
+}

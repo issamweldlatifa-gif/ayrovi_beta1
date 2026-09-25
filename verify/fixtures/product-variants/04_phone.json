@@ -1,0 +1,23 @@
+{
+  "search_metadata": { "id": "fixture-phone", "status": "Success" },
+  "search_parameters": { "engine": "google_product" },
+  "product_results": {
+    "title": "Apple iPhone 16 (Green)",
+    "prices": ["$799.00"],
+    "description": "6.1-inch Super Retina XDR display, A18 chip, 48MP Fusion camera. Smartphone.",
+    "extensions": ["Smartphone", "5G", "Unlocked"],
+    "variations": {
+      "Capacity": [
+        { "name": "128 GB", "available": true, "selected": true, "price": "$799.00" },
+        { "name": "256 GB", "available": true, "price": "$899.00" },
+        { "name": "512 GB", "price": "$1,099.00" }
+      ],
+      "Color": [
+        { "name": "Green", "available": true, "selected": true },
+        { "name": "Black", "available": false }
+      ]
+    },
+    "features": [{ "name": "Display", "text": "6.1 in" }, { "name": "Battery", "text": "3561 mAh" }]
+  },
+  "sellers_results": { "online_sellers": [{ "name": "Apple", "base_price": "$799.00", "details_and_offers": [{ "text": "In stock" }] }] }
+}

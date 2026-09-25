@@ -98,6 +98,13 @@ export interface AyrovixVariantOption {
   color: string | null;
   /** Eligible for a variant-specific choice; not a live stock guarantee. */
   available: boolean;
+  /**
+   * Stock RÉELLEMENT établi pour cette variante (25/09/2026).
+   * Trois états honnêtes : `available` = offre marchande constatée,
+   * `unavailable` = rupture constatée, `unknown` = la source ne dit rien.
+   * `unknown` n'est JAMAIS promu en `available`, ni par le client ni par le serveur.
+   */
+  availability?: 'available' | 'unavailable' | 'unknown';
   price: number | null;
   currency: string | null;
   priceTnd: number | null;

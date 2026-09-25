@@ -1,0 +1,19 @@
+{
+  "search_metadata": { "id": "fixture-oos", "status": "Success" },
+  "search_parameters": { "engine": "google_product" },
+  "product_results": {
+    "title": "Adidas Samba OG Shoes",
+    "prices": ["$100.00"],
+    "description": "Classic leather sneaker with gum outsole.",
+    "extensions": ["Sneakers", "Leather"],
+    "variations": {
+      "Size": [
+        { "name": "EU 40", "availability": "In stock" },
+        { "name": "EU 41", "availability": "Out of stock" },
+        { "name": "EU 42", "badge": "غير متوفر" },
+        { "name": "EU 43" }
+      ]
+    }
+  },
+  "sellers_results": { "online_sellers": [{ "name": "Adidas", "base_price": "$100.00", "details_and_offers": [{ "text": "In stock" }] }] }
+}

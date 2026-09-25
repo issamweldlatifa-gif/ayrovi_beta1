@@ -106,6 +106,21 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   const isClothing = productClass === 'clothing';
   const isBeauty = usesCapacity(productClass);
 
+/**
+ * État de stock d'un groupe de variantes correspondant au choix du client.
+ * Une seule variante réellement disponible suffit ; une rupture constatée
+ * l'emporte sur l'inconnu ; l'inconnu n'est jamais promu en disponible.
+ */
+function variantStockState(options: { available: boolean; availability?: 'available' | 'unavailable' | 'unknown' }[]):
+  'available' | 'unavailable' | 'unknown' | null {
+  const stated = options.filter(option => option.availability);
+  if (stated.length === 0) return null;
+  if (stated.some(option => option.availability === 'available')) return 'available';
+  if (stated.every(option => option.availability === 'unavailable')) return 'unavailable';
+  return 'unknown';
+}
+
+
   // Show only a brand supplied by the source. Never parse a title into a brand.
   const detectedBrand = product.brand?.trim() || '';
   const cleanTitle = detectedBrand && product.title.toLocaleLowerCase().startsWith(detectedBrand.toLocaleLowerCase() + ' ')
@@ -130,8 +145,14 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   const shownCapacity = isBeauty && sizeChoice ? extractCapacity(sizeChoice) : capacity;
   const matchingVariants = (product.variantOptions || []).filter(option =>
     (!requestedSize || option.size === requestedSize) && (!resolvedColor || option.color === resolvedColor));
+  // Stock de la variante choisie, en trois états honnêtes (25/09/2026).
+  // `availability` absent = fiche héritée : on retombe sur l'ancien booléen.
+  // Un stock non confirmé n'autorise pas la commande, mais ne ment pas non plus.
   const unavailableChoice = matchingVariants.length > 0 && matchingVariants.every(option => option.available === false);
-  const canOrder = validPrice && isUrlValid && validQuantity && !incompleteVariantQuote && !unavailableChoice
+  const variantStock = variantStockState(matchingVariants);
+  const unconfirmedChoice = variantStock === 'unknown';
+  const refusedChoice = unavailableChoice || variantStock === 'unavailable';
+  const canOrder = validPrice && isUrlValid && validQuantity && !incompleteVariantQuote && !refusedChoice && !unconfirmedChoice
     && product.availability !== 'out_of_stock' && Boolean(currentQuote)
     && (availableSizes.length === 0 || Boolean(sizeChoice))
     && (product.colors.length <= 1 || Boolean(color));
@@ -534,6 +555,17 @@ export const ProductResult: React.FC<ProductResultProps> = ({
           {currentQuoteError && <p role="alert" className="text-sm text-danger">{currentQuoteError} <button type="button" className="underline" onClick={() => setQuoteAttempt(value => value + 1)}>{tr('Réessayer', 'أعد المحاولة')}</button></p>}
           {submitError && <p role="alert" className="text-sm text-danger">{submitError}</p>}
 
+          {/* Raison honnête du refus : le client doit savoir POURQUOI il ne peut
+              pas commander cette variante — rupture constatée, ou stock que la
+              source n'a pas confirmé (on ne devine jamais à sa place). */}
+          {(refusedChoice || unconfirmedChoice) && (
+            <p role="status" className="rounded-2xl bg-surface px-4 py-3 text-sm text-muted">
+              {refusedChoice
+                ? tr('Cette variante est en rupture chez la source.', 'هذا الخيار مفقود من المخزون عند المصدر.')
+                : tr("La source ne confirme pas le stock de cette variante. Choisissez-en une autre.", 'المصدر ما أكدش توفر هذا الخيار. اختار خيار آخر.')}
+            </p>
+          )}
+
           {/* ── 2. CTA — "Ajouter au panier" + "Calculer un autre article" ── */}
           <div className="pt-3 space-y-2.5">
             <button
@@ -686,7 +718,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({
             <div className="max-h-[55dvh] overflow-y-auto divide-y divide-line">
               {availableSizes.map(size => {
                 const options = (product.variantOptions || []).filter(option => option.size === size);
-                const notSelectable = options.length > 0 && options.every(option => option.available === false);
+                const stock = variantStockState(options);
+                const notSelectable = (options.length > 0 && options.every(option => option.available === false))
+                  || stock === 'unavailable' || stock === 'unknown';
                 const labels = [...new Set(options.map(option => option.label.trim()).filter(label => label && label !== size))];
                 return <button key={size} type="button" disabled={notSelectable}
                   onClick={() => { setSizeChoice(size); setSizeDrawerOpen(false); }}
@@ -695,7 +729,9 @@ export const ProductResult: React.FC<ProductResultProps> = ({
                   <span><strong className="text-base">{size}</strong>
                     {labels.length === 1 && <span className="ms-2 text-xs text-muted" dir="auto">{labels[0]}</span>}
                   </span>
-                  {notSelectable ? <span className="text-xs text-muted">{tr('Indisponible', 'غير متاح')}</span> : sizeChoice === size ? <Check size={18} /> : null}
+                  {stock === 'unknown' ? <span className="text-xs text-muted">{tr('Stock non confirmé', 'المخزون غير مؤكد')}</span>
+                    : notSelectable ? <span className="text-xs text-muted">{tr('Indisponible', 'غير متاح')}</span>
+                      : sizeChoice === size ? <Check size={18} /> : null}
                 </button>;
               })}
             </div>

@@ -8,6 +8,7 @@ import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
 import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
+import { guardVariantOrder } from '../ayrovix/services/variantAvailability';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
@@ -255,6 +256,17 @@ export function createApiRouter(
             ? 'Le lien produit fourni par le client est obligatoire et doit être public.'
             : 'Données produit incomplètes ou invalides.'
       });
+    }
+
+    // PORTE DE COMMANDE — VARIANTE (25/09/2026, prototype 2 approuvé).
+    // La vérité n'est pas ce que le navigateur envoie : le serveur relit le contrat
+    // qu'il a lui-même établi pour ce produit (variantes réellement publiées et
+    // stock RÉSOLU chez la source). Sans contrat, le parcours historique (demande
+    // manuelle au prix général) continue inchangé. Avec contrat, une variante
+    // indisponible — ou dont le stock n'est pas confirmé — ne peut pas être commandée.
+    const variantGuard = guardVariantOrder(item.url, requestedSize || item.variant);
+    if (!variantGuard.allowed) {
+      return res.status(409).json({ success: false, code: variantGuard.code, error: variantGuard.message });
     }
 
     const normalizedItem: AddToCartRequest = {

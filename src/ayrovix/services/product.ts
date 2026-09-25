@@ -1,4 +1,4 @@
-import { isSelectableVariant } from '../../../shared/variantPolicy';
+import { isSelectableVariant, reportedVariantStock } from '../../../shared/variantPolicy';
 import type { QatafoDatabase } from '../../db/database';
 import { createHash } from 'node:crypto';
 import type { SmartLinkScraper } from '../../scraper/scraper';
@@ -41,7 +41,14 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
       label: detail.label,
       size: detail.size || null,
       color: detail.color || null,
+      // `available` = éligible à un choix (contrat historique, inchangé).
       available: true,
+      // `availability` = stock réellement rapporté par la source. Un drapeau
+      // absent ou contradictoire reste `unknown` : on ne l'invente pas.
+      availability: (() => {
+        const reported = reportedVariantStock(detail);
+        return reported === true ? 'available' as const : reported === false ? 'unavailable' as const : 'unknown' as const;
+      })(),
       price: detail.price || null,
       currency: detail.price ? scraped.sourceCurrency : null,
       priceTnd: variantTnd?.priceTnd ?? null,

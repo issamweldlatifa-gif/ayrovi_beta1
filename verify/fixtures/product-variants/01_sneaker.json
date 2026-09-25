@@ -1,0 +1,34 @@
+{
+  "search_metadata": { "id": "fixture-sneaker", "status": "Success" },
+  "search_parameters": { "engine": "google_product", "product_id": "14019378181107046593" },
+  "product_results": {
+    "product_id": "14019378181107046593",
+    "title": "Nike Air Max Torch 4 Men's Running Shoes - White/Silver",
+    "prices": ["$109.99"],
+    "conditions": ["New"],
+    "typical_prices": { "low": "$99.00", "high": "$129.99", "shown_price": "$109.99" },
+    "rating": 4.6,
+    "reviews": 1284,
+    "extensions": ["Running shoes", "Men's", "Mesh upper"],
+    "description": "Lightweight running shoe with Max Air heel unit and breathable mesh upper.",
+    "media": [{ "type": "image", "link": "https://example.com/nike.jpg" }],
+    "sizes": {
+      "39": { "link": "https://google.com/shopping/product/1?size=39", "product_id": "111", "serpapi_link": "https://serpapi.com/search?product_id=111" },
+      "40": { "link": "https://google.com/shopping/product/1?size=40", "product_id": "112", "serpapi_link": "https://serpapi.com/search?product_id=112", "selected": true },
+      "41": { "link": "https://google.com/shopping/product/1?size=41", "product_id": "113", "serpapi_link": "https://serpapi.com/search?product_id=113" },
+      "42": { "link": "https://google.com/shopping/product/1?size=42", "product_id": "114", "serpapi_link": "https://serpapi.com/search?product_id=114" }
+    },
+    "variations": {
+      "Color": [
+        { "name": "White", "selected": true, "available": true, "product_id": "112", "thumbnail": "https://example.com/w.jpg" },
+        { "name": "Black", "available": false, "product_id": "115", "thumbnail": "https://example.com/b.jpg" }
+      ]
+    },
+    "features": [{ "name": "Upper material", "text": "Mesh" }, { "name": "Closure", "text": "Lace-up" }]
+  },
+  "sellers_results": {
+    "online_sellers": [
+      { "position": 1, "name": "Nike Store", "base_price": "$109.99", "total_price": "$114.99", "details_and_offers": [{ "text": "In stock" }] }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "search_metadata": { "id": "fixture-perfume", "status": "Success" },
+  "search_parameters": { "engine": "google_product" },
+  "product_results": {
+    "title": "Dior Sauvage Eau de Toilette Spray for Men",
+    "prices": ["$105.00"],
+    "description": "A radically fresh composition, Eau de Toilette with bergamot and ambroxan.",
+    "extensions": ["Fragrance", "Men's cologne"],
+    "variations": {
+      "Size": [
+        { "name": "30 ml", "available": false, "price": "$78.00" },
+        { "name": "60 ml", "available": true, "price": "$105.00", "selected": true },
+        { "name": "100 ml", "available": true, "price": "$145.00" },
+        { "name": "200 ml", "price": "$185.00" }
+      ]
+    },
+    "features": [{ "name": "Concentration", "text": "Eau de Toilette" }]
+  },
+  "sellers_results": { "online_sellers": [{ "name": "Sephora", "base_price": "$105.00", "details_and_offers": [{ "text": "In stock" }] }] }
+}
