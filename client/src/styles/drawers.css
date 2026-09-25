@@ -1,0 +1,74 @@
+/* ============================================================================
+   AYROVI — MOUVEMENT DES TIROIRS ET DES DRAPS (25/09/2026).
+
+   Règle client : « applique l'animation de montée/descente à tous les draps ».
+   Un panneau qui APPARAÎT se lit comme un changement de page ; un panneau qui
+   GLISSE se lit comme un tiroir — le client sait d'où il vient et qu'il peut le
+   refermer. Durées de l'identité : 180 ms pour un contenu, 240 ms pour un drap.
+   ========================================================================== */
+
+.ay-drawer-backdrop {
+  animation: ay-drawer-fade 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes ay-drawer-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Le panneau entre par le bord dont il dépend : à droite en LTR, à gauche en
+   RTL. Sans cela, en arabe, le tiroir arriverait du côté opposé à son bouton. */
+.ay-drawer-panel {
+  animation: ay-drawer-in-end 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ay-drawer-panel[data-side="start"] {
+  animation-name: ay-drawer-in-start;
+}
+
+@keyframes ay-drawer-in-end {
+  from { transform: translateX(100%); }
+  to { transform: none; }
+}
+
+@keyframes ay-drawer-in-start {
+  from { transform: translateX(-100%); }
+  to { transform: none; }
+}
+
+/* Bandeau des moyens de paiement du panier : marques réelles, taille sobre. */
+.ay-cart-pays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+.ay-cart-pays__mark {
+  display: grid;
+  place-items: center;
+  min-width: 46px;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid var(--ayrovi-border-soft, #eaeaea);
+  background: #fff;
+}
+
+.ay-cart-pays__mark img {
+  display: block;
+  max-height: 16px;
+  max-width: 42px;
+  object-fit: contain;
+}
+
+.ay-cart-pays__word {
+  font-size: 0.625rem;
+  font-weight: 700;
+  white-space: nowrap;
+  color: #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-drawer-backdrop,
+  .ay-drawer-panel { animation: none; }
+}

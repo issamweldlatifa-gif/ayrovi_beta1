@@ -6,6 +6,7 @@ import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
 import { validProductUrl } from '../ayrovix/services/resultPolicy';
 import { StudioImageFrame, QuietPromoPrice } from '../ayrovix/components/quiet-card';
+import { availablePaymentMethods } from '../commerce/paymentMethods';
 
 interface CartDrawerProps {
   isOpen: boolean;
@@ -68,12 +69,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
       <button
         type="button"
         onClick={onClose}
-        className="absolute inset-0 h-full w-full cursor-default bg-ink/40 backdrop-blur-xs transition-opacity"
+        className="ay-drawer-backdrop absolute inset-0 h-full w-full cursor-default bg-ink/40 backdrop-blur-xs"
         aria-label={tr('Fermer le panier', 'إغلاق السلة')}
       />
 
       <div className={`fixed inset-y-0 max-w-full flex ${direction === 'rtl' ? 'left-0' : 'right-0'}`}>
-        <div className={`ayrovix-theme-scope w-screen max-w-lg bg-white shadow-2xl flex flex-col min-h-0 ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`}>
+        <div className={`ay-drawer-panel ayrovix-theme-scope w-screen max-w-lg bg-white shadow-2xl flex flex-col min-h-0 ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`} data-side={direction === 'rtl' ? 'start' : 'end'}>
           
           <header className="flex min-h-16 items-center gap-3 border-b border-line bg-white px-4">
             <button type="button" onClick={onClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-surface" aria-label={tr('Retour au produit', 'العودة للمنتج')}>
@@ -111,8 +112,11 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   className="border-b border-line pb-5 flex gap-4 items-start"
                 >
                   {/* Vignette — cadre studio unifié : blanc + hairline + multiply */}
-                  <div className="w-20 h-24 flex-shrink-0 overflow-hidden rounded-lg">
-                    <StudioImageFrame src={item.imageUrl} alt={item.title} ratio="4 / 5" />
+                  {/* Format de la maquette : 88 × 116 (3/4). Le cadre studio sert
+                      déjà la composition AYROVI, donc le panier montre EXACTEMENT
+                      la même image que la carte et la fiche. */}
+                  <div className="w-[88px] h-[116px] flex-shrink-0 overflow-hidden rounded-lg">
+                    <StudioImageFrame src={item.imageUrl} alt={item.title} ratio="3 / 4" />
                   </div>
 
                   {/* Info */}
@@ -238,6 +242,21 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                 <span>{tr('Commander', 'إتمام الطلب')}</span>
                 <ArrowRight className={`w-4 h-4 ${direction === 'rtl' ? 'rotate-180' : ''}`} />
               </button>
+
+              {/* Moyens de paiement : on n'affiche ici QUE ceux qui encaissent
+                  réellement aujourd'hui. Annoncer une marque que la caisse
+                  refusera ensuite, c'est faire revenir le client pour rien. */}
+              {commerce.policy && availablePaymentMethods(commerce.policy).length > 0 && (
+                <div className="ay-cart-pays" aria-label={tr('Moyens de paiement acceptés', 'وسائل الدفع المقبولة')}>
+                  {availablePaymentMethods(commerce.policy).map((method) => (
+                    <span key={method.id} className="ay-cart-pays__mark" title={tr(method.label, method.labelAr)}>
+                      {method.mark.kind === 'image'
+                        ? <img src={method.mark.src} alt={tr(method.label, method.labelAr)} />
+                        : <span className="ay-cart-pays__word">{tr(method.label, method.labelAr)}</span>}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
