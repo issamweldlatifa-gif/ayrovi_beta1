@@ -57,6 +57,23 @@ export interface LensCacheRead<I, M, S = unknown> {
   hit: 'none' | 'identification' | 'matches' | 'both';
 }
 
+/**
+ * Le cache est-il actif ?
+ *
+ * Défaut constaté pendant l'intégration : sous test, un cache sur DISQUE rend
+ * les exécutions dépendantes les unes des autres — un scénario passait parce
+ * qu'une entrée écrite par un test précédent servait la réponse, et les moteurs
+ * n'étaient jamais appelés. Un test doit décrire le système, pas l'historique de
+ * la machine. Sous test, le cache est donc INACTIF sauf si le test fournit
+ * lui-même un répertoire isolé (ou l'active explicitement).
+ */
+function cacheEnabled(): boolean {
+  if (process.env.AYROVI_LENS_CACHE === 'false') return false;
+  if (process.env.AYROVI_LENS_CACHE === 'true') return true;
+  if (process.env.VITEST || process.env.NODE_ENV === 'test') return Boolean(process.env.AYROVI_LENS_CACHE_DIR);
+  return true;
+}
+
 function cacheDir(): string {
   return process.env.AYROVI_LENS_CACHE_DIR || path.resolve(process.cwd(), 'data', 'lens-recognition');
 }
@@ -78,7 +95,7 @@ function entryFile(key: string): string {
 
 export function readLensCache<I, M, S = unknown>(key: string, now = Date.now()): LensCacheRead<I, M, S> {
   const empty: LensCacheRead<I, M, S> = { identification: null, matches: null, signals: null, hit: 'none' };
-  if (process.env.AYROVI_LENS_CACHE === 'false') return empty;
+  if (!cacheEnabled()) return empty;
   try {
     const raw = fs.readFileSync(entryFile(key), 'utf8');
     const entry = JSON.parse(raw) as LensCacheEntry<I, M, S>;
@@ -106,7 +123,7 @@ export function writeLensCache<I, M, S = unknown>(
   value: { identification?: I | null; matches?: M[] | null; signals?: S | null },
   now = Date.now(),
 ): void {
-  if (process.env.AYROVI_LENS_CACHE === 'false') return;
+  if (!cacheEnabled()) return;
   try {
     const file = entryFile(key);
     let current: LensCacheEntry<I, M, S> = { identification: null, matches: null, signals: null, identificationAt: 0, matchesAt: 0 };

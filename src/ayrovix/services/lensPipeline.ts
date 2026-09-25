@@ -1,11 +1,8 @@
 import { createHash } from 'node:crypto';
 import type { QatafoDatabase } from '../../db/database';
-import { identifyProduct } from './ai';
-import { analyzeOcrText, type OcrPriceReport } from './ocrPrices';
-import { prepareImageForAnalysis } from './imagePrep';
-import { scanCodeFromImage, type AyrovixScannedCode } from './codeScanner';
-import { serpApiVisualSearch } from './visualSearch';
-import { ocrRecognize } from '../../services/vision';
+import type { OcrPriceReport } from './ocrPrices';
+import type { AyrovixScannedCode } from './codeScanner';
+import { recognizeImage } from './lensEngine';
 import type { AyrovixCandidate, AyrovixIdentification } from '../types';
 import type { AiExecutionLane } from '../../ai-core/contracts';
 import { AiLaneBoundResult } from '../../ai-core/execution';
@@ -154,23 +151,22 @@ export async function runLensPipeline(
   }
 
   const started = Date.now();
-  const prepared = await prepareImageForAnalysis(image);
 
-  const [vision, code, visualCandidates] = await Promise.all([
-    identifyProduct(image, mime).catch(() => null),
-    scanCodeFromImage(image).catch(() => null),
-    serpApiVisualSearch(image, 8).catch(() => [] as AyrovixCandidate[]),
-  ]);
-
-  // OCR : image entière + copie améliorée (petit texte) + segments (captures longues).
-  const ocrTasks: Array<Promise<string>> = [ocrRecognize(image).catch(() => '')];
-  if (prepared.enhanced.length) ocrTasks.push(ocrRecognize(prepared.enhanced).catch(() => ''));
-  for (const segment of prepared.segments.slice(0, 3)) ocrTasks.push(ocrRecognize(segment).catch(() => ''));
-  const ocrTexts = await Promise.all(ocrTasks);
-  const wholeText = [ocrTexts[0], ocrTexts[1]].filter(Boolean).join('\n');
-  const segmentTexts = ocrTexts.slice(2).filter(Boolean);
-  const ocrReport = wholeText ? analyzeOcrText(wholeText) : null;
-  const segmentReports = segmentTexts.map((text) => analyzeOcrText(text));
+  /*
+   * UNE SEULE ORCHESTRATION (25/09/2026). Ce pipeline avait sa propre séquence
+   * « vision + code + recherche visuelle + OCR », et la route publique en avait
+   * une seconde, écrite à la main — qui avait déjà divergé. La séquence vit
+   * désormais dans `lensEngine`, ici comme là-bas. Ce pipeline garde ce qui lui
+   * appartient : son cache en base, sa fusion et son format standard.
+   */
+  const recognition = await recognizeImage(image, mime);
+  const vision = recognition.identification;
+  const code = recognition.signals.code;
+  const visualCandidates = recognition.matches;
+  const ocrReport = recognition.signals.report;
+  const segmentReports = recognition.signals.segments;
+  const wholeText = ocrReport?.text ?? '';
+  const segmentTexts = segmentReports.map((report) => report.text);
 
   const merged = mergeVisionOcr(vision, ocrReport, segmentReports);
 

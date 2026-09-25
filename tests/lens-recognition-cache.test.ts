@@ -71,6 +71,18 @@ describe('cache de reconnaissance Lens', () => {
     expect(readLensCache(key).hit).toBe('none');
   });
 
+  it('sous test, le cache est INACTIF sans répertoire isolé — un test ne doit pas dépendre de l’exécution précédente', () => {
+    const key = lensImageKey(Buffer.from('photo'));
+    writeLensCache(key, { identification: ident, matches });
+    const isolated = process.env.AYROVI_LENS_CACHE_DIR;
+    delete process.env.AYROVI_LENS_CACHE_DIR;
+    try {
+      expect(readLensCache(key).hit).toBe('none');
+    } finally {
+      process.env.AYROVI_LENS_CACHE_DIR = isolated;
+    }
+  });
+
   it('le cache est désactivable en production sans redéploiement', () => {
     const key = lensImageKey(Buffer.from('photo'));
     writeLensCache(key, { identification: ident, matches });
@@ -81,16 +93,17 @@ describe('cache de reconnaissance Lens', () => {
 
 describe('route Lens — usage du cache et mesure', () => {
   const routes = fs.readFileSync('src/ayrovix/routes.ts', 'utf8');
+  const engine = fs.readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
 
   it('chaque moteur est mesuré séparément — plus deux fois la même durée', () => {
-    expect(routes).not.toContain("mark(trace, 'serpApiTotalMs', Date.now() - tParallel as any)");
-    expect(routes).toContain("mark(trace, 'anthropicVisionMs', visionMs as any)");
-    expect(routes).toContain("mark(trace, 'serpApiTotalMs', serpMs as any)");
+    expect(routes).not.toContain("Date.now() - tParallel");
+    expect(routes).toContain("mark(trace, 'anthropicVisionMs', recognition.timings.visionMs)");
+    expect(routes).toContain("mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs)");
   });
 
   it('un résultat en cache évite réellement l’appel payant', () => {
-    expect(routes).toContain('cached.identification\n          ? Promise.resolve(cached.identification)');
-    expect(routes).toContain('cached.matches\n          ? Promise.resolve(cached.matches)');
+    expect(engine).toContain('cached.identification\n      ? Promise.resolve(cached.identification)');
+    expect(engine).toContain('cached.matches\n      ? Promise.resolve(cached.matches)');
   });
 
   it('le prix reste recalculé à chaque requête : il ne sort jamais du cache', () => {

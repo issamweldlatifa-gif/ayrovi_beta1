@@ -6,8 +6,8 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
-import { lensImageKey, readLensCache, writeLensCache } from './services/lensRecognitionCache';
-import { readLensSignals, reconcileDetectedPrice, EMPTY_SIGNALS, type LensSignals } from './services/lensSignals';
+import { recognizeImage } from './services/lensEngine';
+import { reconcileDetectedPrice } from './services/lensSignals';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -258,77 +258,23 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       // timeout/schema error used to abort the whole Lens request even when
       // Google Lens had already found priced matches.
       /*
-       * CACHE DE RECONNAISSANCE (25/09/2026). Le chemin client n'en avait aucun :
-       * la même photo renvoyée deux fois payait deux fois la vision ET deux fois
-       * SerpApi. On mémorise donc ce qui décrit la PHOTO (24 h) et ce qui décrit
-       * le MARCHÉ (30 min) — jamais le calcul de prix, refait ci-dessous à chaque
-       * requête à partir des règles en base.
+       * UNE SEULE ORCHESTRATION (25/09/2026) : `recognizeImage` sait dans quel
+       * ordre interroger la vision, la recherche visuelle et les signaux de
+       * l'image — et c'est le seul endroit qui le sait. La route ne garde que ce
+       * qui lui appartient : le format de la réponse et le calcul du prix.
        */
-      const cacheKey = lensImageKey(effectiveBuffer);
-      const cached = readLensCache<Awaited<ReturnType<typeof identifyProduct>>, AyrovixCandidate, LensSignals>(cacheKey);
-      res.setHeader('X-Ayrovix-Cache', cached.hit);
+      const recognition = await recognizeImage(effectiveBuffer, effectiveMime);
+      res.setHeader('X-Ayrovix-Cache', recognition.cacheHit);
+      mark(trace, 'anthropicVisionMs', recognition.timings.visionMs);
+      mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
+      mark(trace, 'imageSignalsMs', recognition.timings.signalsMs);
 
-      /*
-       * TÉLÉMÉTRIE HONNÊTE : les deux moteurs tournent en parallèle, donc chacun
-       * se mesure SÉPARÉMENT. L'ancienne version partait du même instant pour les
-       * deux et mesurait donc deux fois la même durée — impossible de savoir
-       * lequel ralentissait réellement la recherche.
-       */
-      let visionMs = 0;
-      let serpMs = 0;
-      let signalsMs = 0;
-      const timed = async <T>(work: Promise<T>, onDone: (ms: number) => void): Promise<T> => {
-        const started = Date.now();
-        try { return await work; } finally { onDone(Date.now() - started); }
-      };
+      const visualCandidates = recognition.matches;
+      const signals = recognition.signals;
+      let identification = recognition.identification;
 
-      /*
-       * SIGNAUX DE LA PHOTO (OCR + code-barres) — ils manquaient au chemin
-       * client alors que le chemin interne les avait : sur la même image, le
-       * client obtenait une lecture plus pauvre que l'administrateur. Ils
-       * tournent en parallèle des deux moteurs (calcul local, aucun appel
-       * payant), sous budget de temps, et n'empêchent jamais une réponse.
-       */
-      const [visionResult, visualResult, signalsResult] = await Promise.allSettled([
-        cached.identification
-          ? Promise.resolve(cached.identification)
-          : timed(identifyProduct(effectiveBuffer, effectiveMime), (ms) => { visionMs = ms; }),
-        cached.matches
-          ? Promise.resolve(cached.matches)
-          : timed(serpApiVisualSearch(effectiveBuffer, 8), (ms) => { serpMs = ms; }),
-        cached.signals
-          ? Promise.resolve(cached.signals)
-          : timed(readLensSignals(effectiveBuffer), (ms) => { signalsMs = ms; }),
-      ]);
-      mark(trace, 'anthropicVisionMs', visionMs as any);
-      mark(trace, 'serpApiTotalMs', serpMs as any);
-      mark(trace, 'imageSignalsMs', signalsMs);
-      const signals: LensSignals = signalsResult.status === 'fulfilled' ? signalsResult.value : EMPTY_SIGNALS;
-
-      const visualCandidates = visualResult.status === 'fulfilled' ? visualResult.value : [];
-      let identification = visionResult.status === 'fulfilled' ? visionResult.value : null;
-
-      // On ne mémorise QUE ce qui vient d'être calculé, et jamais un résultat vide.
-      writeLensCache<typeof identification, AyrovixCandidate, LensSignals>(cacheKey, {
-        identification: cached.identification ? undefined : identification,
-        matches: cached.matches ? undefined : visualCandidates,
-        signals: cached.signals ? undefined : (signals === EMPTY_SIGNALS ? undefined : signals),
-      });
-
-      /*
-       * Le prix LU sur l'image : la vision garde la main tant qu'elle est sûre ;
-       * l'OCR ne parle que lorsqu'elle ne l'est pas, et seulement s'il est sûr
-       * lui-même. Si les deux doutent, le prix reste « non lu » — on ne devine
-       * pas un montant que le client finirait par payer.
-       */
-      if (identification?.detected_price) {
-        identification = {
-          ...identification,
-          detected_price: reconcileDetectedPrice(identification.detected_price, signals),
-        };
-      }
       if (!identification) {
-        const visionError = visionResult.status === 'rejected' ? visionResult.reason : null;
+        const visionError = recognition.identificationError;
         if (visionError instanceof AyrovixUnavailableError && visualCandidates.length === 0) throw visionError;
         if (visualCandidates.length === 0) throw visionError || new Error('IDENTIFICATION_FAILED');
         identification = fallbackIdentification(visualCandidates[0]?.title);

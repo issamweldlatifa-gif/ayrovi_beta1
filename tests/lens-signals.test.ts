@@ -62,16 +62,18 @@ describe('câblage sur la route client', () => {
   const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
   const source = readFileSync('src/ayrovix/services/lensSignals.ts', 'utf8');
 
+  const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
+
   it('les signaux tournent en parallèle des moteurs, pas après eux', () => {
-    const block = routes.split('Promise.allSettled([')[1].split(']);')[0];
-    expect(block).toContain('readLensSignals(effectiveBuffer)');
-    expect(block).toContain('identifyProduct(effectiveBuffer');
-    expect(block).toContain('serpApiVisualSearch(effectiveBuffer');
+    const block = engine.split('Promise.allSettled([')[1].split(']);')[0];
+    expect(block).toContain('readLensSignals(image)');
+    expect(block).toContain('identifyProduct(image, mime)');
+    expect(block).toContain('serpApiVisualSearch(image, matchLimit)');
   });
 
   it('ils sont mesurés et mis en cache avec la photo, jamais avec le marché', () => {
-    expect(routes).toContain("mark(trace, 'imageSignalsMs', signalsMs)");
-    expect(routes).toContain('signals: cached.signals ? undefined');
+    expect(routes).toContain("mark(trace, 'imageSignalsMs', recognition.timings.signalsMs)");
+    expect(engine).toContain('signals: cached.signals || signals === EMPTY_SIGNALS ? undefined : signals');
   });
 
   it('aucune logique n’est réécrite : le module réutilise les fonctions existantes', () => {
