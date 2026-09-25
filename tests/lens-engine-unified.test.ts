@@ -116,3 +116,32 @@ describe('moteur — comportement réel', () => {
     expect(matches).toHaveBeenCalledTimes(2);
   });
 });
+
+/*
+ * TÉLÉMÉTRIE — un contrat typé qui se contourne n'est pas un contrat.
+ * Les mesures du chemin Lens étaient posées avec `as any` : rien ne garantissait
+ * qu'une mesure porte le bon nom ni le bon type, alors que `LensTrace` les
+ * déclare toutes. Le retrait des 16 `as any` n'a demandé aucune autre
+ * modification — ils ne masquaient rien, ils empêchaient seulement de vérifier.
+ */
+describe('télémétrie Lens', () => {
+  const routes = readFileSync('src/ayrovix/routes.ts', 'utf8');
+  const contract = readFileSync('src/ayrovix/services/lensPerformanceTrace.ts', 'utf8');
+
+  it('aucune mesure n’est posée en contournant le type', () => {
+    const marks = routes.match(/mark\(trace,[^;]*?\)/g) || [];
+    expect(marks.length).toBeGreaterThan(10);
+    expect(marks.filter((call) => call.includes('as any'))).toEqual([]);
+  });
+
+  it('chaque nom de mesure existe dans le contrat', () => {
+    const names = [...routes.matchAll(/mark\(trace, '([A-Za-z]+)'/g)].map((match) => match[1]);
+    expect(names.length).toBeGreaterThan(10);
+    for (const name of new Set(names)) expect(contract).toContain(`${name}?:`);
+  });
+
+  it('le rapport d’exploitation sait enfin si l’appel payant a été évité', () => {
+    expect(routes).toContain("mark(trace, 'cacheHit', {");
+    expect(routes).toContain("vision: recognition.cacheHit === 'identification'");
+  });
+});

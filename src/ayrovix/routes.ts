@@ -244,12 +244,12 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
               const tCrop = Date.now();
               effectiveBuffer = await sharp(effectiveBuffer).extract({ left: padX, top: padY, width: padW, height: padH }).jpeg({ quality: 85, mozjpeg: true }).toBuffer();
               effectiveMime = 'image/jpeg';
-              mark(trace, 'cropMs', Date.now() - tCrop as any);
+              mark(trace, 'cropMs', Date.now() - tCrop);
             }
           }
         } catch { /* ignore malformed roi — fallback to full image */ }
       }
-      mark(trace, 'imageBytesIn', effectiveBuffer.length as any);
+      mark(trace, 'imageBytesIn', effectiveBuffer.length);
       if (!ayrovixAiReady() && !serpApiVisualReady()) {
         return res.status(503).json({ success: false, code: 'AYROVIX_UNAVAILABLE', error: "AYROVIX n'est pas encore activé. Réessayez bientôt." });
       }
@@ -265,6 +265,15 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        */
       const recognition = await recognizeImage(effectiveBuffer, effectiveMime);
       res.setHeader('X-Ayrovix-Cache', recognition.cacheHit);
+      /* Le rapport d'exploitation (p50/p95) doit pouvoir répondre à « combien de
+         requêtes ont évité un appel payant ? ». Le champ existait dans le contrat
+         de trace et n'était jamais renseigné sur ce chemin. */
+      mark(trace, 'cacheHit', {
+        vision: recognition.cacheHit === 'identification' || recognition.cacheHit === 'both',
+        serpApi: recognition.cacheHit === 'matches' || recognition.cacheHit === 'both',
+        query: false,
+        relevance: false,
+      });
       mark(trace, 'anthropicVisionMs', recognition.timings.visionMs);
       mark(trace, 'serpApiTotalMs', recognition.timings.matchesMs);
       mark(trace, 'imageSignalsMs', recognition.timings.signalsMs);
@@ -293,7 +302,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           }
           return p;
         });
-        mark(trace, 'pricingMs', Date.now() - tPricing as any);
+        mark(trace, 'pricingMs', Date.now() - tPricing);
       }
 
       const visiblePrice = identification.detected_price;
@@ -331,20 +340,20 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       res.setHeader('ETag', etag);
       res.setHeader('Cache-Control', 'private, max-age=0, must-revalidate');
       if (!isTest && req.headers['if-none-match'] === etag) {
-        mark(trace, 'pipelineCacheHit', true as any);
+        mark(trace, 'pipelineCacheHit', true);
         endTrace(trace);
         return res.status(304).end();
       }
       const pCached = isTest ? null : pipelineCache.get(pKey);
       if (pCached && Date.now() - pCached.at < PIPELINE_TTL_MS) {
         // instant repeat for 1000+ users — same image hash
-        mark(trace, 'pipelineCacheHit', true as any);
-        mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0) as any);
+        mark(trace, 'pipelineCacheHit', true);
+        mark(trace, 'candidatesCount', (pCached.data?.candidates?.length ?? 0));
         endTrace(trace);
         // ETag already set — client cache hit
         return res.json({ success: true, data: pCached.data });
       }
-      mark(trace, 'pipelineCacheHit', false as any);
+      mark(trace, 'pipelineCacheHit', false);
       const baseQuery = buildSearchQuery(identification);
       // ULTRA-FAST: baseQuery instantly — no 2.2s block. AI warms cache in background for next time.
       let effectiveQuery = baseQuery;
@@ -356,14 +365,14 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
           new Promise<null>((_, rej) => setTimeout(() => rej(new Error('ai-timeout')), 650)),
         ]).then((opt:any)=> {
           if (opt?.primaryQuery) console.log('[AYROVIX] AI query warmed:', opt.primaryQuery.slice(0,40));
-          mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any);
-        }).catch(()=>{ mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt as any); });
+          mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt);
+        }).catch(()=>{ mark(trace, 'anthropicOptimizeMs', Date.now() - tOpt); });
       }
       const tSearch = Date.now();
       const rawCandidates = (identification.confidence >= 0.35 || visualCandidates.length > 0) && effectiveQuery
         ? await searchCandidates(db, identification, effectiveQuery, visualCandidates)
         : [];
-      mark(trace, 'searchCandidatesMs', Date.now() - tSearch as any);
+      mark(trace, 'searchCandidatesMs', Date.now() - tSearch);
       // Relevance: D2-7 streaming — في الإنتاج لا ننتظر، نعيد فوراً ونُدفّئ Cache في الخلفية (يوفر 750ms إدراكياً)
       // في الاختبارات ننتظر 750ms للتأكد من صحة heuristic/AI
       let relevanceMap: Map<string, any> | null = null;
@@ -376,16 +385,16 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
               new Promise<null>((_, rej) => setTimeout(() => rej(new Error('rel-timeout')), 750)),
             ]) as any;
           } catch { relevanceMap = null; }
-          mark(trace, 'anthropicRelevanceMs', Date.now() - tRel as any);
+          mark(trace, 'anthropicRelevanceMs', Date.now() - tRel);
         } else {
           // fire-and-forget warm: لا يوقف الاستجابة، يُحسب في الخلفية للـ Cache التالي
           const tRelBg = Date.now();
           analyzeResultRelevance(identification, rawCandidates, effectiveQuery)
             .then((map:any) => {
-              mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any);
+              mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg);
               // optional: could update pipelineCache entry with rescored version for next hit
             })
-            .catch(() => mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg as any));
+            .catch(() => mark(trace, 'anthropicRelevanceMs', Date.now() - tRelBg));
           // نبقي relevanceMap null → نعرض raw match (scoreCandidate) فوراً، لا فلترة irrelevant في أول ضربة
           relevanceMap = null;
         }
@@ -407,7 +416,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       }
       const tDedup = Date.now();
       const deduped = deduplicateCandidates(rescoredCandidates);
-      mark(trace, 'dedupMs', Date.now() - tDedup as any);
+      mark(trace, 'dedupMs', Date.now() - tDedup);
       const candidates = deduped;
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(candidates);
@@ -453,8 +462,8 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
         if (pipelineCache.size > 300) pipelineCache.delete(pipelineCache.keys().next().value as string);
         pipelineCache.set(pKey, { at: Date.now(), data: responseData });
       }
-      mark(trace, 'candidatesCount', candidates.length as any);
-      mark(trace, 'totalBackendMs', Date.now() - tStart as any);
+      mark(trace, 'candidatesCount', candidates.length);
+      mark(trace, 'totalBackendMs', Date.now() - tStart);
       endTrace(trace);
       return res.json({ success: true, data: responseData });
     } catch (error: any) {
