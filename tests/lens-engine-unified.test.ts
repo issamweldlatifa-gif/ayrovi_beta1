@@ -145,3 +145,70 @@ describe('télémétrie Lens', () => {
     expect(routes).toContain("vision: recognition.cacheHit === 'identification'");
   });
 });
+
+/*
+ * ÉCHÉANCE DE RECONNAISSANCE — le cumul des tentatives ne doit plus être
+ * illimité. Chaque moteur avait sa coupure réseau, mais la vision réessaie une
+ * fois : deux tentatives plus la latence pouvaient dépasser vingt secondes
+ * pendant lesquelles le client regardait un écran muet.
+ */
+describe('échéance de reconnaissance', () => {
+  let dir = '';
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lens-deadline-'));
+    process.env.AYROVI_LENS_CACHE_DIR = dir;
+    vi.resetModules();
+  });
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+    delete process.env.AYROVI_LENS_VISION_DEADLINE_MS;
+    delete process.env.AYROVI_LENS_MATCHES_DEADLINE_MS;
+    vi.restoreAllMocks();
+    vi.resetModules();
+  });
+
+  async function loadEngine(vision: any, matches: any) {
+    vi.doMock('../src/ayrovix/services/ai', () => ({ identifyProduct: vision }));
+    vi.doMock('../src/ayrovix/services/visualSearch', () => ({ serpApiVisualSearch: matches }));
+    vi.doMock('../src/ayrovix/services/lensSignals', async () => {
+      const actual = await vi.importActual<any>('../src/ayrovix/services/lensSignals');
+      return { ...actual, readLensSignals: async () => actual.EMPTY_SIGNALS };
+    });
+    return import('../src/ayrovix/services/lensEngine');
+  }
+
+  it('un moteur qui ne répond jamais n’immobilise plus la requête', async () => {
+    process.env.AYROVI_LENS_VISION_DEADLINE_MS = '2000';
+    const { recognizeImage } = await loadEngine(
+      vi.fn(() => new Promise(() => {})),            // ne se résout jamais
+      vi.fn().mockResolvedValue([{ id: 'offre' }]),
+    );
+    const started = Date.now();
+    const out = await recognizeImage(Buffer.from('lent'), 'image/jpeg');
+    expect(Date.now() - started).toBeLessThan(6000);
+    expect(out.timedOut).toContain('vision');
+    // On rend ce qui est prêt : les offres suffisent à afficher un résultat.
+    expect(out.matches).toHaveLength(1);
+  });
+
+  it('un résultat arrivé trop tard n’est ni rendu ni mémorisé', async () => {
+    process.env.AYROVI_LENS_VISION_DEADLINE_MS = '2000';
+    const late = vi.fn(() => new Promise((resolve) => setTimeout(() => resolve({ brand: 'Tardif' }), 4000)));
+    const { recognizeImage } = await loadEngine(late, vi.fn().mockResolvedValue([{ id: 'offre' }]));
+    const image = Buffer.from('tardif');
+    const first = await recognizeImage(image, 'image/jpeg');
+    expect(first.identification).toBeNull();
+    await new Promise((resolve) => setTimeout(resolve, 2500));
+    const second = await recognizeImage(image, 'image/jpeg');
+    // La reconnaissance tardive n'a pas été mise en cache : on redemande vraiment.
+    expect(second.cacheHit).not.toContain('identification');
+    expect(late).toHaveBeenCalledTimes(2);
+  }, 15000);
+
+  it('l’échéance est bornée : ni trop courte, ni sans effet', async () => {
+    const engine = readFileSync('src/ayrovix/services/lensEngine.ts', 'utf8');
+    expect(engine).toContain('Math.min(30_000, Math.max(2_000, raw))');
+    expect(engine).toContain("deadlineMs('VISION', 18_000)");
+    expect(engine).toContain("deadlineMs('MATCHES', 14_000)");
+  });
+});

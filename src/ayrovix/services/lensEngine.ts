@@ -32,6 +32,8 @@ export interface LensRecognition {
   matches: AyrovixCandidate[];
   signals: LensSignals;
   timings: { visionMs: number; matchesMs: number; signalsMs: number };
+  /** Étapes abandonnées sur échéance — visibles dans le journal, jamais silencieuses. */
+  timedOut: Array<'vision' | 'matches'>;
   /** Ce que le cache a réellement servi : 'none' | 'identification' | 'matches' | 'both'. */
   cacheHit: string;
 }
@@ -49,6 +51,48 @@ export interface RecognizeOptions {
 async function timed<T>(work: Promise<T>, onDone: (ms: number) => void): Promise<T> {
   const started = Date.now();
   try { return await work; } finally { onDone(Date.now() - started); }
+}
+
+/*
+ * ÉCHÉANCE DE RECONNAISSANCE (25/09/2026).
+ *
+ * Chaque moteur a déjà sa propre coupure réseau : la vision s'arrête à
+ * AYROVIX_PROVIDER_TIMEOUT_MS (8 s par défaut) et la recherche visuelle à
+ * AYROVIX_VISUAL_SEARCH_TIMEOUT_MS (10 s). Mais la vision RÉESSAIE une fois en
+ * cas de réponse malformée : deux tentatives plus la latence réseau peuvent
+ * donc dépasser vingt secondes, pendant lesquelles le client regarde un écran
+ * qui ne dit rien. Aucun plafond ne couvrait ce cumul.
+ *
+ * Cette échéance le couvre. À son expiration, on rend ce qui est prêt — souvent
+ * les correspondances marchandes, qui suffisent à afficher des offres — plutôt
+ * que d'attendre un moteur qui ne répondra peut-être jamais. Le travail en
+ * retard n'est pas « annulé » (nous ne contrôlons pas la socket du fournisseur),
+ * il est simplement ABANDONNÉ : son résultat tardif n'est ni affiché, ni mis en
+ * cache, car il correspondrait à une requête que le client a déjà quittée.
+ */
+export class LensDeadlineError extends Error {
+  constructor(public readonly stage: 'vision' | 'matches' | 'signals') {
+    super(`LENS_DEADLINE_${stage.toUpperCase()}`);
+    this.name = 'LensDeadlineError';
+  }
+}
+
+function deadlineMs(name: 'VISION' | 'MATCHES', fallback: number): number {
+  const raw = Number(process.env[`AYROVI_LENS_${name}_DEADLINE_MS`]);
+  if (!Number.isFinite(raw) || raw <= 0) return fallback;
+  // Bornes de sûreté : une échéance trop courte transformerait chaque requête en
+  // échec, une échéance trop longue ne protégerait plus personne.
+  return Math.min(30_000, Math.max(2_000, raw));
+}
+
+function withDeadline<T>(work: Promise<T>, ms: number, stage: 'vision' | 'matches' | 'signals'): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new LensDeadlineError(stage)), ms);
+    work.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (error) => { clearTimeout(timer); reject(error); },
+    );
+  });
 }
 
 export async function recognizeImage(
@@ -70,10 +114,16 @@ export async function recognizeImage(
   const [visionResult, matchesResult, signalsResult] = await Promise.allSettled([
     cached.identification
       ? Promise.resolve(cached.identification)
-      : timed(identifyProduct(image, mime), (ms) => { visionMs = ms; }),
+      : timed(
+          withDeadline(identifyProduct(image, mime), deadlineMs('VISION', 18_000), 'vision'),
+          (ms) => { visionMs = ms; },
+        ),
     cached.matches
       ? Promise.resolve(cached.matches)
-      : timed(serpApiVisualSearch(image, matchLimit), (ms) => { matchesMs = ms; }),
+      : timed(
+          withDeadline(serpApiVisualSearch(image, matchLimit), deadlineMs('MATCHES', 14_000), 'matches'),
+          (ms) => { matchesMs = ms; },
+        ),
     !withSignals
       ? Promise.resolve(EMPTY_SIGNALS)
       : cached.signals
@@ -93,12 +143,18 @@ export async function recognizeImage(
     });
   }
 
+  const timedOut: Array<'vision' | 'matches'> = [];
+  if (visionResult.status === 'rejected' && visionResult.reason instanceof LensDeadlineError) timedOut.push('vision');
+  if (matchesResult.status === 'rejected' && matchesResult.reason instanceof LensDeadlineError) timedOut.push('matches');
+  if (timedOut.length) console.warn(`[AYROVIX lens-engine] échéance dépassée : ${timedOut.join(', ')}`);
+
   return {
     identification,
     identificationError: visionResult.status === 'rejected' ? visionResult.reason : null,
     matches,
     signals,
     timings: { visionMs, matchesMs, signalsMs },
+    timedOut,
     cacheHit: cached.hit,
   };
 }
