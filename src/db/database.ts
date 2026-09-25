@@ -6,8 +6,8 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { registerLensTracePersistence } from '../ayrovix/services/lensPerformanceTrace';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, MAX_ORDER_TOTAL_TND, orderLocalDelivery, PricingRules } from '../services/pricing';
-import { millimes } from '../services/pricing';
-import { DEFAULT_DAY_LADDER, dayLabelFr, resolvePromoForQuote, type PromoRule, type PromoScope } from '../services/promotions';
+import { quoteCartLine } from '../services/cartQuote';
+import { DEFAULT_DAY_LADDER, dayLabelFr, type PromoRule, type PromoScope } from '../services/promotions';
 import { seedArrivalStores } from '../arrival-ingestion/storeProfiles';
 import { PUBLIC_NAV_DESTINATIONS } from '../../shared/publicNavigation';
 import { ensureErpCoreSchema } from '../erp-core/bootstrap';
@@ -3169,28 +3169,13 @@ export class QatafoDatabase {
 
       const promoApplied: Array<{ itemId: string; title: string; categoryId: string; percent: number; label: string; source: string; ruleId: string; discountTND: number }> = [];
       const breakdowns = items.map((item) => {
-        let price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
-          quantity: item.quantity, includeLocalDelivery: false, title: item.title,
+        const quote = quoteCartLine(this, item);
+        const { price, promo } = quote;
+        if (promo) promoApplied.push({
+          itemId: item.id, title: item.title, categoryId: price.categoryId,
+          percent: promo.percent, label: promo.label, source: promo.source, ruleId: promo.ruleId,
+          discountTND: promo.discountTND,
         });
-        if (!price || price.restricted) throw new Error('INVALID_CART_PRICE');
-        // Moteur de promotions : remise sur le prix produit converti (base de la
-        // commission, jamais sur le total CIF) — recomputée via discountTND pour
-        // rester sur LE seul chemin de calcul. Gelée dans promo_json ci-dessous.
-        const promo = resolvePromoForQuote(this, { categoryId: price.categoryId });
-        if (promo) {
-          const promoDiscount = millimes(price.convertedPriceTND * promo.percent / 100);
-          if (promoDiscount > 0) {
-            price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
-              quantity: item.quantity, includeLocalDelivery: false, title: item.title, discountTND: promoDiscount,
-            })!;
-            if (price.restricted) throw new Error('INVALID_CART_PRICE');
-            promoApplied.push({
-              itemId: item.id, title: item.title, categoryId: price.categoryId,
-              percent: promo.percent, label: promo.label, source: promo.source, ruleId: promo.ruleId,
-              discountTND: promoDiscount,
-            });
-          }
-        }
         return { item, price };
       });
       const localDelivery = orderLocalDelivery(rules);

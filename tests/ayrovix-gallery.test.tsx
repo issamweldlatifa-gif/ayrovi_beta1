@@ -45,36 +45,34 @@ function renderGallery() {
 }
 
 describe('AYROVIX product gallery rendering', () => {
-  it('uses the unchanged original source for both the main image and selected thumbnail', () => {
+  it('renders one unchanged source image in the integrated stage, not small boxes underneath', () => {
     const markup = renderGallery();
-    expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(2);
-    // سقف العرض 4 صور (طلب العميل 24/09 18:35 «أربعة فقط تكفي») — أول 4 تُعرض،
-    // البقية تبقى في الprofiles/الملف لكنها لا تُصيَّر.
-    const firstFour = images.slice(0, 4);
-    for (const src of firstFour) expect(markup).toContain(`src="${src}"`);
+    expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(1);
+    // The first four source images are navigable in the stage; later images are
+    // retained in the product record, but not offered in this four-photo view.
+    expect(markup).not.toContain(`src="${images[1]}"`);
     expect(markup).not.toContain(`src="${images[4]}"`);
     expect(markup).toContain('1 / 4');
     expect(markup).toContain('ayrovix-product-gallery-image');
-    expect(markup).toContain('ayrovix-thumbnail-image');
-    expect(markup).toContain('aria-current="true"');
+    expect(markup).not.toContain('ayrovix-thumbnail-image');
+    expect(markup).toContain('Photo suivante');
   });
 
-  it('never applies a cover crop to the main image or thumbnails', () => {
+  it('does not introduce a second cropped thumbnail stage in other product surfaces', () => {
     const component = readFileSync('client/src/ayrovix/components/ProductResult.tsx', 'utf8');
     const candidates = readFileSync('client/src/ayrovix/components/ProductCandidates.tsx', 'utf8');
     const history = readFileSync('client/src/ayrovix/components/LensHistory.tsx', 'utf8');
-    expect(component).not.toContain('object-cover');
+    expect(component).not.toContain('ayrovix-thumbnail-strip');
     expect(candidates).not.toContain('object-cover');
     expect(history).not.toContain('object-cover');
   });
 
-  it('reserves responsive space, centers contain media and hides the touch scrollbar', () => {
+  it('reserves a responsive integrated stage and keeps both source and isolated photos uncut', () => {
     const css = readFileSync('client/src/index.css', 'utf8');
     expect(css).toMatch(/\.ayrovix-product-gallery-stage\s*\{[\s\S]*?aspect-ratio:\s*9\s*\/\s*13/);
-    expect(css).toMatch(/\.ayrovix-product-gallery-image,[\s\S]*?object-fit:\s*contain/);
-    expect(css).toMatch(/\.ayrovix-thumbnail-image[\s\S]*?object-position:\s*center/);
-    expect(css).toMatch(/\.ayrovix-thumbnail-strip\s*\{[\s\S]*?scroll-snap-type:\s*x proximity/);
-    expect(css).toMatch(/\.ayrovix-thumbnail-strip::-webkit-scrollbar\s*\{[\s\S]*?display:\s*none/);
+    expect(css).toMatch(/\.ayrovix-product-gallery-image\s*\{[\s\S]*?object-fit:\s*contain/);
+    expect(css).toMatch(/\.ayrovix-product-gallery-image\[data-isolated="true"\],[\s\S]*?object-fit:\s*contain/);
+    expect(css).not.toContain('.ayrovix-thumbnail-strip');
     expect(css).toContain('max-width: 100%');
   });
 });

@@ -54,6 +54,15 @@ try {
       return route.fulfill({ contentType: 'text/event-stream', body: `data: ${JSON.stringify({ type: 'delta', text: 'LIVE_REPLY_'+replyNumber })}\n\ndata: ${JSON.stringify({ type: 'done', model: 'fixture' })}\n\n` });
     });
     let resolutionMode = 'success', heldRoute = null;
+    // Browser fixture quotes the refreshed record only; the production detail
+    // never trusts historical priceTnd as a new cart-line calculation.
+    await page.route('**/api/public/pricing/cart-line', route => {
+      const request = route.request().postDataJSON();
+      return route.fulfill({ status: request.title === freshProduct.title && request.sourcePrice === freshProduct.price ? 200 : 400,
+        json: request.title === freshProduct.title && request.sourcePrice === freshProduct.price
+          ? { success: true, data: { lineTotalTND: 140, originalLineTotalTND: null, promo: null, pricingVersion: 1 } }
+          : { success: false, error: 'Stale historical quote rejected' } });
+    });
     await page.route('**/api/ayrovix/analyze-url', route => {
       if (resolutionMode === 'pending') { heldRoute = route; return; }
       return resolutionMode === 'error' ? route.fulfill({ status: 503, json: { success: false, error: 'Test failure' } }) : route.fulfill({ json: { success: true, data: { product: freshProduct, alternates: [], eventId: '' } } });
@@ -92,7 +101,10 @@ try {
     await page.getByRole('status').filter({ hasText: ar ? 'تعذّر التحديث' : 'Actualisation impossible' }).waitFor();
     check(`${key}: failed refresh preserves full stored product and allows retry`, await refresh.isEnabled() && JSON.parse(await persisted())[0].selectedProduct.product.priceToken === 'OLD_TEST_QUOTE');
     resolutionMode = 'success'; await refresh.click(); await page.locator('.flow-product').waitFor();
-    check(`${key}: refresh adopts authoritative current title and price together`, (await page.locator('.flow-product').innerText()).includes(freshProduct.title) && (await page.locator('.flow-product').innerText()).includes('140.00'));
+    await page.locator('[data-product-price-tnd]').waitFor();
+    check(`${key}: refresh adopts authoritative current title and price together`,
+      (await page.locator('.flow-product').innerText()).includes(freshProduct.title)
+      && Number(await page.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')) === 140);
     await page.waitForFunction(key => JSON.parse(localStorage.getItem(key))[0].selectedProduct.product.priceToken === 'FRESH_TEST_QUOTE', storageKey);
     await page.reload(); await open();
     check(`${key}: reload with a product navigation layer still requires fresh verification`, await page.locator('.flow-product').count() === 0 && await refresh.isVisible());
@@ -103,7 +115,10 @@ try {
     await page.keyboard.press('Escape'); await page.locator('.flow-product').waitFor({ state: 'hidden' });
     // Normal candidate selection must obey the same fresh-quote contract.
     await page.getByRole('button', { name: ar ? 'اختيار' : 'Choisir', exact: true }).click(); await page.locator('.flow-product').waitFor();
-    check(`${key}: candidate resolution does not restore its stale price/title`, (await page.locator('.flow-product').innerText()).includes(freshProduct.title) && (await page.locator('.flow-product').innerText()).includes('140.00'));
+    await page.locator('[data-product-price-tnd]').waitFor();
+    check(`${key}: candidate resolution does not restore its stale price/title`,
+      (await page.locator('.flow-product').innerText()).includes(freshProduct.title)
+      && Number(await page.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')) === 140);
     await page.keyboard.press('Escape'); await page.locator('.flow-product').waitFor({ state: 'hidden' });
 
     await page.evaluate(() => window.historyWriteFailure = true);

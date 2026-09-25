@@ -99,6 +99,10 @@ export function catalogSearch(
       source: 'Collection AYROVI',
       sourceUrl: row.source_url || '',
       image: row.image || '',
+      // An ACTIVE catalog listing is not proof of stock: use its recorded status.
+      availability: row.stock_status === 'AVAILABLE' ? 'in_stock'
+        : row.stock_status === 'LIMITED' ? 'limited'
+          : row.stock_status === 'OUT_OF_STOCK' ? 'out_of_stock' : 'unknown',
       price: Number(row.original_price) || null,
       currency: row.currency || null,
       priceTnd: estimated?.promo

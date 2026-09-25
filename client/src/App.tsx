@@ -88,6 +88,9 @@ export const App: React.FC = () => {
 
   // Cart & Checkout State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [cartTotalTND, setCartTotalTND] = useState(0);
+  const [cartDeliveryTND, setCartDeliveryTND] = useState(0);
+  const [cartLoadError, setCartLoadError] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
   // Keep the Lens component mounted while Panier/Checkout is in front so its current result survives Back.
   const [lensSessionActive, setLensSessionActive] = useState(false);
@@ -116,9 +119,14 @@ export const App: React.FC = () => {
       if (!res.ok || !data.success || !Array.isArray(data.items)) {
         throw new Error(data.error || 'Impossible de charger le panier.');
       }
+      if (!Number.isFinite(data.totalTND) || !Number.isFinite(data.deliveryTND)) throw new Error('TOTAL_UNAVAILABLE');
       setCartItems(data.items);
+      setCartTotalTND(data.totalTND);
+      setCartDeliveryTND(data.deliveryTND);
+      setCartLoadError(false);
     } catch (err) {
       console.warn('[Cart Fetch Error]', err);
+      setCartLoadError(true);
     }
   };
 
@@ -224,7 +232,7 @@ export const App: React.FC = () => {
   // Jeton CSRF pour les interactions sociales authentifiées (likes/comments/vues).
   useEffect(() => { configureSocial({ csrfToken: customerSession?.csrfToken || '' }); }, [customerSession?.csrfToken]);
 
-  const totalCartTND = cartItems.reduce((sum, item) => sum + (item.lineTotalTND ?? item.priceTND * item.quantity), 0);
+  const totalCartTND = cartTotalTND;
   const totalCartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   const cartBreakdown = cartItems.reduce((totals, item) => ({
     subtotal: totals.subtotal + Number(item.convertedPriceTND || 0),
@@ -233,17 +241,12 @@ export const App: React.FC = () => {
     service: totals.service + Number(item.serviceFeeTND || 0),
     express: totals.express + Number(item.expressFeeTND || 0),
     discount: totals.discount + Number(item.discountTND || 0),
-  }), { subtotal: 0, customs: 0, shipping: 0, service: 0, express: 0, discount: 0 });
+  }), { subtotal: 0, customs: 0, shipping: cartDeliveryTND, service: 0, express: 0, discount: 0 });
 
   const handleExtracted = (product: ScrapedProduct) => {
     setExtractedProduct(product);
     if (isProductDrawerOpen) navigation.pushLayer({ id: 'product:details' });
     else navigation.navigate([{ id: 'app:product' }, { id: 'product:details' }]);
-  };
-
-  const handleToggleProductDrawer = () => {
-    if (isProductDrawerOpen) closeAppView();
-    else navigation.navigate([{ id: 'app:product' }, { id: extractedProduct ? 'product:details' : 'product:input' }]);
   };
 
   // AYROVIX Lens — nouvelle expérience (caméra / galerie / lien / QR) branchée sur le flux panier existant.
@@ -280,7 +283,6 @@ export const App: React.FC = () => {
   const handleAyrovixOrder = async (payload: AyrovixOrderPayload) => {
     const summary = await handleAddToCart({ ...payload, priceTND: payload.priceTND ?? 0 });
     if (!summary) throw new Error('AYROVIX_ADD_TO_CART_FAILED');
-    openAppView('app:cart');
   };
 
   const handleToggleAiDrawer = () => {
@@ -387,6 +389,8 @@ export const App: React.FC = () => {
   const handleOrderSuccess = (result: OrderResult) => {
     setOrderResult(result);
     setCartItems([]);
+    setCartTotalTND(0);
+    setCartDeliveryTND(0);
     // Le formulaire soumis ne doit jamais redevenir actif via Back.
     openAppView('app:order-success', true);
   };
@@ -520,7 +524,7 @@ export const App: React.FC = () => {
             onAddToCart={handleAddToCart}
             onExtracted={handleExtracted}
             onNewClientOrder={handleNewClientOrder}
-            onCheckoutRequested={handleProceedToCheckout}
+            onOpenCart={() => openAppView('app:cart')}
           />
         </Suspense>
       )}
@@ -537,6 +541,7 @@ export const App: React.FC = () => {
             onClose={closeAppView}
             onOpenLens={handleOpenLens}
             onOrder={handleAyrovixOrder}
+            onOpenCart={() => openAppView('app:cart')}
             onOpenOrders={() => {
               setAccountInitialSection('orders');
               setAccountMessage(customerSession ? '' : tr('Connectez-vous pour consulter vos commandes.', 'سجّل الدخول للاطلاع على طلباتك.'));
@@ -576,6 +581,9 @@ export const App: React.FC = () => {
             onClose={closeAppView}
             items={cartItems}
             totalTND={totalCartTND}
+            deliveryTND={cartDeliveryTND}
+            loadError={cartLoadError}
+            onRetry={() => void fetchCart()}
             onUpdateQuantity={handleUpdateQuantity}
             onRemoveItem={handleRemoveItem}
             onProceedToCheckout={handleProceedToCheckout}

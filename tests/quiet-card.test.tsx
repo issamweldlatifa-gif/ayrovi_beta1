@@ -56,7 +56,7 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
     expect(result).toContain('ayrovix-product-gallery-stage bg-[#f6f6f6]');
     expect(result).not.toContain('object-cover');
     const galleryCss = read('client/src/index.css');
-    expect(galleryCss).toMatch(/\.ayrovix-product-gallery-image,[\s\S]*?mix-blend-mode:\s*multiply/);
+    expect(galleryCss).toMatch(/\.ayrovix-product-gallery-image\s*\{[^}]*mix-blend-mode:\s*multiply/);
     const cart = read('client/src/components/CartDrawer.tsx');
     expect(cart).toContain('StudioImageFrame');
     expect(cart).not.toContain('object-cover');
@@ -119,15 +119,15 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
     expect(without).not.toContain('ay-quiet-price__badge');
   });
 
-  it('la fiche produit : prix remisé rouge + badge rouge + original barré', () => {
+  it('the product detail waits for the current cart quote, not an unrelated stale promotion object', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><ProductResult product={product} ordering={false} priceVerified onOrder={vi.fn()} /></LocaleProvider>,
     );
-    expect(html).toContain("color:var(--ayrovi-promo, #dc2626)");
-    expect(html).toContain('line-through');
-    expect(html).toContain('650.00');
-    expect(html).toContain('604.50');
-    expect(html).toContain('background:var(--ayrovi-promo, #dc2626)');
-    expect(html).not.toContain('background:var(--ayrovi-primary)');
+    expect(html).toContain('Prix à confirmer');
+    expect(html).not.toContain('604.50');
+    expect(html).not.toContain('−7%');
+    const source = read('client/src/ayrovix/components/ProductResult.tsx');
+    expect(source).toContain('/api/public/pricing/cart-line');
+    expect(source).toContain('currentQuote?.promo');
   });
 });

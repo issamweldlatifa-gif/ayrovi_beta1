@@ -31,7 +31,9 @@ interface AssistantMessagesProps {
   onOpenComment: (message: AssistantMessage) => void;
   onOpenLens: () => void;
   onSelectProduct: (messageId: string, candidate: AyrovixCandidate) => void;
-  onProductOrder: (selection: AyrovixOrderSelection) => void;
+  onProductOrder: (selection: AyrovixOrderSelection) => Promise<void>;
+  onOpenCart: () => void;
+  onProductBack: () => void;
   customerFirstName?: string;
   analyzingImage?: boolean;
   assistantReady?: boolean | null;
@@ -56,7 +58,7 @@ const CandidateImage = ({ product }: { product: AyrovixCandidate }) => {
   return <img src={images[index]} alt="" referrerPolicy="no-referrer" onError={() => setIndex((value) => value + 1)} className="ayrovix-product-media-contain" loading="lazy" decoding="async" draggable={false}/>;
 };
 
-const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, isOrdering, onSelectProduct, onProductOrder }: Pick<AssistantMessagesProps, 'selectedProduct' | 'productBusyId' | 'isOrdering' | 'onSelectProduct' | 'onProductOrder'> & { message: AssistantMessage; isDark: boolean }) => {
+const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, isOrdering, onSelectProduct, onProductOrder, onOpenCart, onProductBack }: Pick<AssistantMessagesProps, 'selectedProduct' | 'productBusyId' | 'isOrdering' | 'onSelectProduct' | 'onProductOrder' | 'onOpenCart' | 'onProductBack'> & { message: AssistantMessage; isDark: boolean }) => {
   const { locale, tr } = useLocale();
   return <div className="ay-readable-label mt-3 space-y-3">
     {message.orderStatuses?.map((order) => (
@@ -79,14 +81,14 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
         </div>
       </article>)}
     </div> : message.products?.length ? <p role="status" className="ay-readable border border-line p-3 text-sm text-muted">{tr('Aucun produit avec un prix et un lien exploitables dans cette réponse. Relancez la recherche.', 'لم يصل منتج بسعر ورابط صالحين في هذا الرد. أعد البحث.')}</p> : null}
-    {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder}/></div>}
+    {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder} onOpenCart={onOpenCart} onBack={onProductBack} onCalculateAnother={onProductBack}/></div>}
     {message.supportTicket && <article className={`flex items-start gap-3 rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support AYROVI', 'دعم AYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
   </div>;
 };
 
 export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
   messages, historyNotice, isGenerating, motionState, isDark, copiedId, feedbackPending = {}, feedback, selectedProduct, productBusyId, isOrdering,
-  onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder,
+  onPrompt, onCopy, onRegenerate, onFeedback, onOpenComment, onOpenLens, onSelectProduct, onProductOrder, onOpenCart, onProductBack,
   customerFirstName, assistantReady,
 }) => {
   const { locale, direction, isArabic, tr } = useLocale();
@@ -190,7 +192,7 @@ export const AssistantMessages: React.FC<AssistantMessagesProps> = ({
                     {message.role === 'assistant' && message.incomplete && !isLastAssistantStreaming && <p data-incomplete-response role="status" className="ay-readable mb-2 text-xs text-muted">{tr('Réponse interrompue avant sa fin. Vous pouvez la régénérer.', 'توقف الرد قبل اكتماله. يمكنك إعادة توليده.')}</p>}
                     {assistantText && <p className="ay-readable whitespace-pre-wrap">{assistantText}</p>}
                     {message.attachments?.length ? <div className="mt-2 space-y-2">{message.attachments.map((attachment) => <div key={attachment.id} className="overflow-hidden rounded-card border border-white/15 bg-ink/10">{attachment.preview ? <img src={attachment.preview} alt={attachment.name} className="max-h-48 w-full object-cover"/> : <p className="ay-readable px-3 py-2 text-xs">{attachment.name}</p>}</div>)}</div> : null}
-                    {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder}/>}
+                    {message.role === 'assistant' && <ToolPresentations message={message} isDark={isDark} selectedProduct={selectedProduct} productBusyId={productBusyId} isOrdering={isOrdering} onSelectProduct={onSelectProduct} onProductOrder={onProductOrder} onOpenCart={onOpenCart} onProductBack={onProductBack}/>}
                     {message.role === 'assistant' && message.lensSummary && <div className="mt-2 ay-readable text-xs text-muted">
                       {Number.isFinite(message.lensSummary.confidence) && <p>{tr('Confiance estimée de lecture', 'الثقة التقديرية في القراءة')}: {Math.round(Math.max(0, Math.min(1, message.lensSummary.confidence)) * 100)}%</p>}
                       {message.lensSummary.verified && <p>{tr('Lecture vérifiée', 'قراءة متحقّق منها')}</p>}

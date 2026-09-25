@@ -6,8 +6,8 @@ import type { PaymentMethodCode } from '../db/database';
 import { VisualProductExtractor } from '../services/vision';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
-import { calculatePrice, millimes, orderLocalDelivery } from '../services/pricing';
-import { resolvePromoForQuote } from '../services/promotions';
+import { calculatePrice, orderLocalDelivery } from '../services/pricing';
+import { quoteCartLine } from '../services/cartQuote';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
@@ -30,47 +30,28 @@ export function createApiRouter(
     const rules = db.getPricingRules();
     return (items: ReturnType<AyroviDatabase['getItems']>) => {
       const pricedItems = items.map((item) => {
-        let breakdown = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
-          quantity: item.quantity, includeLocalDelivery: false, title: item.title,
-        });
-        if (!breakdown || breakdown.restricted) throw new Error('CART_PRICING_FAILED');
-        // Promo (management 23/09/2026) : remise sur le prix produit converti,
-        // recalculée par LE moteur pour garder un seul chemin de prix.
-        const originalLineTotalTND = breakdown.totalTND;
-        const promo = resolvePromoForQuote(db, { categoryId: breakdown.categoryId });
-        let promoInfo: { percent: number; label: string; discountTND: number } | null = null;
-        if (promo) {
-          const promoDiscount = millimes(breakdown.convertedPriceTND * promo.percent / 100);
-          if (promoDiscount > 0) {
-            const repriced = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
-              quantity: item.quantity, includeLocalDelivery: false, title: item.title, discountTND: promoDiscount,
-            });
-            if (repriced && !repriced.restricted) {
-              promoInfo = { percent: promo.percent, label: promo.label, discountTND: promoDiscount };
-              breakdown = repriced;
-            }
-          }
-        }
+        const { price, promo, originalLineTotalTND } = quoteCartLine(db, item);
         return {
           ...item,
-          originalLineTotalTND: promoInfo ? originalLineTotalTND : undefined,
-          promo: promoInfo,
-          lineTotalTND: breakdown.totalTND,
-          pricingVersion: breakdown.pricingVersion,
-          requiresWeightValidation: breakdown.requiresWeightValidation,
-          convertedPriceTND: breakdown.convertedPriceTND,
-          customsFeeTND: breakdown.customsFeeTND,
-          shippingFeeTND: breakdown.shippingFeeTND,
-          serviceFeeTND: breakdown.serviceFeeTND,
-          expressFeeTND: breakdown.expressFeeTND,
-          discountTND: breakdown.discountTND,
-          freightTND: breakdown.freightTND,
-          categoryId: breakdown.categoryId,
+          originalLineTotalTND: originalLineTotalTND ?? undefined,
+          promo: promo && { percent: promo.percent, label: promo.label, discountTND: promo.discountTND },
+          lineTotalTND: price.totalTND,
+          pricingVersion: price.pricingVersion,
+          requiresWeightValidation: price.requiresWeightValidation,
+          convertedPriceTND: price.convertedPriceTND,
+          customsFeeTND: price.customsFeeTND,
+          shippingFeeTND: price.shippingFeeTND,
+          serviceFeeTND: price.serviceFeeTND,
+          expressFeeTND: price.expressFeeTND,
+          discountTND: price.discountTND,
+          freightTND: price.freightTND,
+          categoryId: price.categoryId,
         };
       });
       const goods = pricedItems.reduce((sum, item) => sum + item.lineTotalTND, 0);
-      const totalTND = Math.round((goods + orderLocalDelivery(rules)) * 1000) / 1000;
-      return { items: pricedItems, totalTND };
+      const deliveryTND = items.length ? orderLocalDelivery(rules) : 0;
+      const totalTND = Math.round((goods + deliveryTND) * 1000) / 1000;
+      return { items: pricedItems, totalTND, deliveryTND };
     };
   }
 
@@ -303,6 +284,7 @@ export function createApiRouter(
         cartItem,
         totalItemsCount: summary.items.reduce((sum, current) => sum + current.quantity, 0),
         totalTND: summary.totalTND,
+        deliveryTND: summary.deliveryTND,
       });
     } catch (err: any) {
       if (err instanceof RangeError && err.message === 'CART_QUANTITY_LIMIT') {
@@ -333,6 +315,7 @@ export function createApiRouter(
         itemCount: summary.items.length,
         totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0),
         totalTND: summary.totalTND,
+        deliveryTND: summary.deliveryTND,
         items: summary.items,
       });
     } catch (err: any) {

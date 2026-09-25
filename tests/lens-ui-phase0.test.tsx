@@ -118,10 +118,10 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(src).toContain('Voir tout');
   });
 
-  it('ProductResult shows amber warning when variants unavailable and links to merchant page', () => {
+  it('ProductResult limits size options to sourced values and links to the merchant without a redundant variants warning', () => {
     const src = readFileSync('client/src/ayrovix/components/ProductResult.tsx','utf8');
-    expect(src).toContain('Tailles/couleurs non listées');
-    expect(src).toContain('Ouvrir la fiche marchand');
-    expect(src).toContain('bg-amber-50');
+    expect(src).toContain('Seules les tailles indiquées par la source sont proposées.');
+    expect(src).toContain('Voir chez le marchand');
+    expect(src).not.toContain('Tailles/couleurs non listées');
   });
 });

@@ -17,6 +17,7 @@ interface AppHeaderProps {
   logoUrl?: string;
   onLogoClick?: () => void;
   showLogo?: boolean;
+  backPlacement?: 'leading' | 'trailing';
 }
 
 /** Shared AYROVI header: stable logo/title placement and one accessible action area. */
@@ -34,15 +35,22 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   logoUrl = '/media/logo-ayrovi.png',
   onLogoClick,
   showLogo = true,
+  backPlacement = 'trailing',
 }) => {
   const { tr, direction } = useLocale();
   const action = onBack || onClose;
   const label = actionLabel || (onBack ? tr('Retour', 'رجوع') : tr('Fermer', 'إغلاق'));
+  const actionButton = action && (
+    <Button variant="ghost" size="icon" onClick={action} disabled={actionDisabled} aria-label={label} title={label} className={tone === 'dark' ? 'text-white hover:bg-white/10' : ''}>
+      {onBack ? <ArrowLeft className={`h-5 w-5 ${direction === 'rtl' ? 'rotate-180' : ''}`} /> : <X className="h-5 w-5" />}
+    </Button>
+  );
 
   return (
     <header data-tone={tone} className={`interface-app-header ${sticky ? 'sticky top-0' : ''} z-40 border-b ${tone === 'dark' ? 'border-white/10 bg-ink' : 'border-line bg-white'} ${className}`}>
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:h-20 sm:px-6">
-        <div className="flex min-w-0 items-center gap-3" dir="ltr">
+        <div className="flex min-w-0 items-center gap-3" dir={backPlacement === 'leading' ? direction : 'ltr'}>
+          {backPlacement === 'leading' && actionButton}
           {showLogo && (onLogoClick ? (
             <button type="button" onClick={onLogoClick} className="shrink-0 bg-transparent" aria-label="AYROVI">
               <img src={logoUrl} alt="" className="h-10 w-10 bg-transparent object-contain sm:h-11 sm:w-11" />
@@ -55,14 +63,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
             {subtitle && <span className={`block truncate text-xs font-bold sm:text-xs ${tone === 'dark' ? 'text-white/60' : 'text-muted'}`}>{subtitle}</span>}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1.5" dir={direction}>
-          {actions}
-          {action && (
-            <Button variant="ghost" size="icon" onClick={action} disabled={actionDisabled} aria-label={label} title={label} className={tone === 'dark' ? 'text-white hover:bg-white/10' : ''}>
-              {onBack ? <ArrowLeft className={`h-5 w-5 ${direction === 'rtl' ? 'rotate-180' : ''}`} /> : <X className="h-5 w-5" />}
-            </Button>
-          )}
-        </div>
+        {((actions != null) || (backPlacement === 'trailing' && actionButton)) && (
+          <div className="flex shrink-0 items-center gap-1.5" dir={direction}>
+            {actions}
+            {backPlacement === 'trailing' && actionButton}
+          </div>
+        )}
       </div>
     </header>
   );

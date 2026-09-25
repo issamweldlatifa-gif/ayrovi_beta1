@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { buildSearchQuery } from '../src/ayrovix/services/ai';
-import { providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
+import { catalogSearch, providerWebSearch, scoreCandidate, searchCandidates } from '../src/ayrovix/services/search';
 import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePolicy';
 import { extractProductFromUrl } from '../src/ayrovix/services/product';
@@ -133,6 +133,21 @@ describe('AYROVIX Lens', () => {
     expect(withCode).toBeGreaterThan(85);
     expect(weak).toBeLessThan(withCode);
     expect(weak).toBeGreaterThanOrEqual(0);
+  });
+
+  test('le catalogue transmet le vrai statut de stock au produit, sans déduire « disponible » de ACTIVE', () => {
+    const id = seedCatalogProduct();
+    try {
+      for (const [status, expected] of [
+        ['AVAILABLE', 'in_stock'], ['LIMITED', 'limited'], ['OUT_OF_STOCK', 'out_of_stock'],
+      ] as const) {
+        db.run('UPDATE products SET stock_status=? WHERE id=?', status, id);
+        const item = catalogSearch(db, null, 'Nike Air Max 95 Ultra').find(candidate => candidate.id === `cat_${id}`);
+        expect(item?.availability).toBe(expected);
+      }
+    } finally {
+      db.run('DELETE FROM products WHERE id=?', id);
+    }
   });
 
   test('SerpApi Google Lens renvoie produits, images et prix puis évite la recherche texte Claude', async () => {

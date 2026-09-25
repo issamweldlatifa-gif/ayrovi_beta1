@@ -10,7 +10,7 @@ let root:Root,host:HTMLDivElement;
 beforeEach(()=>{host=document.createElement('div');document.body.append(host);root=createRoot(host);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();});
 const noop=()=>{};
-async function render(messages:AssistantMessage[]){await act(async()=>root.render(<LocaleProvider><AssistantMessages messages={messages} isGenerating motionState="thinking" isDark={false} copiedId={null} feedback={{}} selectedProduct={null} productBusyId="" isOrdering={false} onPrompt={noop} onCopy={noop} onRegenerate={noop} onFeedback={noop} onOpenComment={noop} onOpenLens={noop} onSelectProduct={noop} onProductOrder={noop}/></LocaleProvider>));}
+async function render(messages:AssistantMessage[]){await act(async()=>root.render(<LocaleProvider><AssistantMessages messages={messages} isGenerating motionState="thinking" isDark={false} copiedId={null} feedback={{}} selectedProduct={null} productBusyId="" isOrdering={false} onPrompt={noop} onCopy={noop} onRegenerate={noop} onFeedback={noop} onOpenComment={noop} onOpenLens={noop} onSelectProduct={noop} onProductOrder={async () => {}} onOpenCart={noop} onProductBack={noop}/></LocaleProvider>));}
 describe('SONIM preserves the reader position while responses stream',()=>{
  it('does not pull the reader down until they return near the end, but follows a new user message',async()=>{
   const first:AssistantMessage={id:'reply-1',role:'assistant',text:'First paragraph\n\nSecond paragraph'};

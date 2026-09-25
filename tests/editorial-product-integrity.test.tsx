@@ -21,8 +21,8 @@ describe('product presentation does not invent trust signals or commercial terms
   const html=renderToStaticMarkup(<LocaleProvider><ProductResult product={{...product,sourceUrl}} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
   expect(html).not.toContain('href=');expect(html).not.toContain('4.5/5');expect(html).not.toContain('5.0/5');
  });
- it('waits for server-provided payment conditions instead of silently inventing 20%',()=>{
+ it('waits for the authoritative cart quote without inventing a price or a deposit',()=>{
   const html=renderToStaticMarkup(<LocaleProvider><ProductResult product={product} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
-  expect(html).not.toContain('20%');expect(html).not.toContain('null%');expect(html).toContain('Conditions en cours de chargement');expect(html).toContain('disabled=');expect(html).toContain('Prix total estimé');
+  expect(html).not.toContain('20%');expect(html).not.toContain('null%');expect(html).toContain('Prix à confirmer');expect(html).toContain('disabled=');expect(html).not.toContain('Produit ajouté');
  });
 });

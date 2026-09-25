@@ -1,10 +1,20 @@
 export type StoreType = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
 
+export interface ProductVariantDetail {
+  id?: string | null;
+  label: string;
+  size?: string | null;
+  color?: string | null;
+  available: boolean;
+  price?: number | null;
+}
+
 export interface ProductVariants {
   sizes?: string[];
   colors?: string[];
   styles?: string[];
   options?: string[];
+  details?: ProductVariantDetail[];
 }
 
 export interface ScrapedProduct {
@@ -17,6 +27,7 @@ export interface ScrapedProduct {
   description: string | null;
   images: string[];
   mainImage: string;
+  colorImages?: Record<string, string[]>;
   sourcePrice: number;
   sourceCurrency: string;
   convertedPriceTND: number;
@@ -27,6 +38,9 @@ export interface ScrapedProduct {
   selectedVariant?: string | null;
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   brand: string | null;
+  rating?: number | null;
+  reviewsCount?: number | null;
+  priceVerified?: boolean;
   scrapedAt: string;
 }
 

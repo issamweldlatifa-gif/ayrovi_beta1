@@ -41,18 +41,18 @@ try{
   if(width===390&&height===844)await page.screenshot({path:`${output}/voice-settings-${locale}-${dark?'dark':'light'}.png`});
   await page.keyboard.press('Escape');await settings.waitFor({state:'hidden'});check(`${key}: Escape did not exit voice`,await page.evaluate(()=>!window.editorialFixtureEvents.some(e=>e.action==='exit')));
   if(!dark){
-   await page.evaluate(()=>window.setEditorialFixture({kind:'product'}));await page.getByRole('button',{name:/Commander|اطلب/}).waitFor();
-   // Product card v2 : le formulaire vit dans l'accordéon « Modifier la commande » — on l'ouvre avant de le piloter.
+   await page.evaluate(()=>window.setEditorialFixture({kind:'product'}));
+   const add=page.getByRole('button',{name:locale==='ar'?'زيد للسلة':'Ajouter au panier'});await add.waitFor();
+   // The source quote powers the detail and cart line; delivery and deposit
+   // terms belong in checkout, not in a duplicate product-page flow.
    await page.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));
-   // المسرح ملء-حافة-إلى-حافة بهوامش سالبة متعمدة (توازن زالاندو) — يخرج من
-   // صندوق البطاقة عمداً. العقد المُحسّوس فعلياً: حاوية التمرير لا تتمرر
-   // جانبياً (نفس مقياس عدّاء Lens: documentElement/scroll container).
    const card=page.locator('[data-fixture="product"]');const size=await card.evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: product has no horizontal overflow`,size.scroll<=size.width+1,size);
    check(`${key}: missing review is not synthesized`,await page.locator('[data-merchant-rating]').count()===0);
    const icons=await inspectEditorialIcons(page,'.flow-product');check(`${key}: product geometry`,icons.count>0&&!icons.errors.length,icons);
-   const quantity=page.getByRole('spinbutton',{name:locale==='ar'?'الكمية':'Quantité',exact:true});await quantity.fill('1.5');await page.getByRole('button',{name:/Commander|اطلب/}).click();
-   check(`${key}: fractional quantity cannot be submitted`,await page.evaluate(()=>!window.editorialFixtureEvents.some(e=>e.action==='order')));
-   await quantity.fill('3');await page.getByRole('button',{name:/Commander|اطلب/}).click();check(`${key}: exact integer quantity is sent`,await page.evaluate(()=>window.editorialFixtureEvents.some(e=>e.action==='order'&&e.selection.quantity===3)));
+   const quantity=page.getByRole('spinbutton',{name:locale==='ar'?'الكمية':'Quantité',exact:true});await quantity.fill('1.5');
+   check(`${key}: fractional quantity cannot be submitted`,await add.isDisabled()&&await page.evaluate(()=>!window.editorialFixtureEvents.some(e=>e.action==='order')));
+   await quantity.fill('3');await add.waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector('.flow-product button[aria-label="Ajouter au panier"],.flow-product button[aria-label="زيد للسلة"]')?.disabled);
+   await add.click();check(`${key}: exact integer quantity is sent`,await page.evaluate(()=>window.editorialFixtureEvents.some(e=>e.action==='order'&&e.selection.quantity===3)));
    if(width===390&&height===844){await page.locator('[data-fixture]').evaluate(el=>el.scrollTop=0);await page.screenshot({path:`${output}/product-${locale}.png`});}
   }
   await ctx.close();
@@ -89,7 +89,7 @@ try{
   check(`${key}: cart config failure blocks progression`,await p.locator('.ay-btn-cta').isDisabled());
   check(`${key}: cart does not expose unsafe product links`,await p.locator('a').count()===0);
   configError=false;await p.getByRole('button',{name:locale==='ar'?'أعد المحاولة':'Réessayer',exact:true}).click();await p.locator('.ay-btn-cta:not(:disabled)').waitFor();
-  check(`${key}: cart shows server 40%, not a default`,(await p.locator('[role=dialog]').innerText()).includes('(40%)'));
+  check(`${key}: cart shows server 40%, not a default`,(await p.locator('[role=dialog]').innerText()).includes('40%'));
   const cart=await p.locator('[role=dialog]').evaluate(el=>({w:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: cart no horizontal overflow`,cart.scroll<=cart.w+1,cart);
   await p.screenshot({path:`${output}/cart-${locale}-${width}.png`});
   // Reload clears the commerce cache; test a payment screen opened before config succeeds.
@@ -122,10 +122,10 @@ try{
  // All imports also work in the ordinary document, not only the selected screens.
  const ctx=await browser.newContext({viewport:{width:1000,height:900}}),p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'icons'}));await p.locator('[data-icon-gallery]').waitFor();
  const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('101 public icon imports match reference drawings',gallery.count===101&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
- await p.route('**/api/public/commerce-config',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product'}));await p.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));await p.getByRole('alert').waitFor();
- check('failed config never invents a payment percentage',!(await p.locator('.flow-product').innerText()).includes('20%'));
- check('failed config disables ordering',await p.locator('.ay-btn-cta').isDisabled());
- await p.unroute('**/api/public/commerce-config');await p.getByRole('button',{name:'Réessayer',exact:true}).click();await p.getByRole('button',{name:/Commander/}).waitFor();check('retry loads actual server conditions',await p.locator('.ay-btn-cta').isEnabled());
+ await p.route('**/api/public/pricing/cart-line',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product'}));await p.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));await p.getByRole('alert').waitFor();
+ check('failed quote never invents a payment percentage',!(await p.locator('.flow-product').innerText()).includes('20%'));
+ check('failed quote disables addition',await p.locator('.flow-product .ay-btn-cta').isDisabled());
+ await p.unroute('**/api/public/pricing/cart-line');await p.getByRole('button',{name:'Réessayer',exact:true}).click();await p.locator('[data-product-price-tnd]').waitFor();check('retry loads authoritative product quote',await p.locator('.flow-product .ay-btn-cta').isEnabled());
  await p.evaluate(()=>window.setEditorialFixture({product:{sourceUrl:'javascript:alert(1)'}}));await p.waitForFunction(()=>document.querySelector('.flow-product input[type=url]').value==='javascript:alert(1)');check('unsafe URL produces no clickable merchant link',await p.locator('.flow-product a').count()===0);
  await ctx.close();check('no browser errors',errors.length===0,errors);
 }catch(error){errors.push(String(error));process.exitCode=1;}finally{await browser.close();fs.writeFileSync(output+'/results.json',JSON.stringify({scope:'Test-only real components in isolated browser/Express/SQLite; voice inputs/callbacks and commerce/social failure responses are explicit test fixtures, NOT real device/provider/payment certification.',checks,orange,errors},null,2)+'\n');}

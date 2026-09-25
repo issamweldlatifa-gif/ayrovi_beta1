@@ -15,7 +15,7 @@ const props={isOpen:true,onClose:vi.fn(),items:[{id:'1',title:'Product',quantity
 beforeEach(()=>{vi.clearAllMocks();host=document.createElement('div');document.body.append(host);root=createRoot(host);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();});
 const render=()=>act(async()=>root.render(<LocaleProvider><CartDrawer {...props}/></LocaleProvider>));
-const proceed=()=>[...host.querySelectorAll('button')].find(b=>b.textContent?.includes('Continuer vers'))!;
+const proceed=()=>[...host.querySelectorAll('button')].find(b=>b.textContent?.includes('Commander'))!;
 describe('server-owned commerce terms',()=>{
  it.each([undefined,null,'',true,-1,0,101,Infinity,NaN])('rejects missing/invalid deposit %s',percent=>expect(()=>parseCommercePolicy({deposit:{percent,cardDiscountPercent:5}})).toThrow('COMMERCE_TERMS_INVALID'));
  it.each([undefined,null,'',-1,101,Infinity])('does not guess a card discount %s',cardDiscountPercent=>expect(()=>parseCommercePolicy({deposit:{percent:30,cardDiscountPercent}})).toThrow());
@@ -29,7 +29,7 @@ describe('server-owned commerce terms',()=>{
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('indisponibles');expect(proceed().disabled).toBe(true);
   const retry=[...host.querySelectorAll('button')].find(b=>b.textContent==='Réessayer')!;
   await act(async()=>retry.click());expect(api.getCommerceConfig).toHaveBeenLastCalledWith({refresh:true});
-  expect(host.textContent).toContain('30.000 DT (30%)');expect(host.textContent).not.toContain('Remboursement de l’acompte');expect(proceed().disabled).toBe(false);
+  expect(host.textContent).toContain('acompte de 30%');expect(host.textContent).not.toContain('Remboursement de l’acompte');expect(proceed().disabled).toBe(false);
   await act(async()=>proceed().click());expect(props.onProceedToCheckout).toHaveBeenCalledOnce();
  });
  it('reports network failures rather than retaining the old default',async()=>{

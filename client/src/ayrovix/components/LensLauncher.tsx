@@ -1,6 +1,7 @@
 import type { CustomerSession } from '../../types';
 import { LensAccess, readLensConsent, rememberLensConsent } from './LensHelp';
 import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../services/productSelection';
+import { mergeProductEnrichment } from '../services/productEnrichment';
 import { AppHeader } from '../../design/AppHeader';
 import React, { useEffect, useRef, useState } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
@@ -83,7 +84,7 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
     exchangeRate: null,
     colors: candidate.colors,
     sizes: candidate.sizes,
-    availability: candidate.kind === 'catalog' ? 'in_stock' : 'unknown',
+    availability: candidate.availability || 'unknown',
   };
 }
 
@@ -541,8 +542,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     // L'affichage n'attend jamais ce rappel — les données arrivent en surcouche.
     const enrichUrl = candidate.sourceUrl;
     if (!enrichUrl || !/^https?:\/\//i.test(enrichUrl)) return;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 12_000);
+    // The same request lifecycle cancels stale enrichment on Back, another
+    // selection or unmount. No fixed deadline discards a slower merchant reply.
+    const { controller } = startRequest();
     fetch('/api/ayrovix/analyze-url', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -553,36 +555,19 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
       .then((payload) => {
         const full = payload?.data?.product;
         if (!full) return;
-        setProduct((current) => {
-          if (!current || current.sourceUrl !== enrichUrl) return current; // l'utilisateur a changé de produit
-          const images = [...new Set([...(current.images || []), ...(full.images || [])].filter(Boolean))];
-          const colorImages = { ...(full.colorImages || {}) };
-          if (current.colorImages) for (const [key, set] of Object.entries(current.colorImages)) colorImages[key] = [...new Set([...(colorImages[key] || []), ...set])];
-          const description = (full.description || '').trim().length > (current.description || '').trim().length ? full.description : current.description;
-          return {
-            ...current,
-            description,
-            images,
-            colorImages: Object.keys(colorImages).length ? colorImages : current.colorImages ?? null,
-            image: current.image || full.image || '',
-            sizes: current.sizes.length ? current.sizes : full.sizes || [],
-            colors: current.colors.length ? current.colors : full.colors || [],
-            brand: current.brand || full.brand || null,
-            availability: full.availability && full.availability !== 'unknown' ? full.availability : current.availability,
-          };
-        });
+        setProduct((current) => mergeProductEnrichment(current, full, enrichUrl));
       })
       .catch(() => { /* l'extrait reste affiché — jamais de page cassée */ })
-      .finally(() => clearTimeout(timeout));
+      .finally(() => finishRequest(controller));
   };
 
   const handleOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
-    if (!product) return;
+    if (!product) throw new Error(tr(...productSelectionLabels.unavailable));
     const { option, offer } = resolveProductSelection(product, size, color);
     if (!completeProductOffer(offer)) {
-      setError({ code: 'QUOTE_UNAVAILABLE', message: tr(...productSelectionLabels.unavailable) });
-      enterStage('error');
-      return;
+      // ProductResult acknowledges only fulfilled cart writes; keep its error on
+      // the product page rather than navigating away or treating this as success.
+      throw new Error(tr(...productSelectionLabels.unavailable));
     }
     if (urlResult?.eventId) markChosen(urlResult.eventId);
     const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
@@ -608,12 +593,11 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
         priceToken: offer.priceToken,
         quantity,
       });
-      // Le panier s'ouvre, mais le résultat Lens reste monté pour un retour sans perte d'état.
       setOrdering(false);
     } catch (cause: any) {
       setError({ code: 'ORDER_FAILED', message: cause?.message || "L'article n'a pas pu être ajouté au panier. Réessayez." });
-      enterStage('error');
       setOrdering(false);
+      throw cause;
     }
   };
 
@@ -928,7 +912,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   product={product}
                   ordering={ordering}
                   priceVerified={verifiedPriceUrl}
-                  onOrder={(v) => void handleOrder(v)}
+                  onOrder={handleOrder}
+                  onOpenCart={onOpenCart}
                   onBack={goBack}
                   onCalculateAnother={reset}
                 />

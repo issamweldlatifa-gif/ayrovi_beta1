@@ -45,6 +45,7 @@ interface AiAssistantDrawerProps {
   onOpenOrders: () => void;
   onOpenAccount: () => void;
   onOrder: (payload: AyrovixOrderPayload) => Promise<void>;
+  onOpenCart: () => void;
 }
 
 const createConversationId = () => `conversation_${Date.now()}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
@@ -80,7 +81,7 @@ const candidateToProduct = (candidate: AyrovixCandidate): AyrovixProduct => ({
   exchangeRate: null,
   colors: candidate.colors,
   sizes: candidate.sizes,
-  availability: candidate.kind === 'catalog' ? 'in_stock' : 'unknown',
+  availability: candidate.availability || 'unknown',
 });
 
 export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
@@ -94,6 +95,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
   onOpenOrders,
   onOpenAccount,
   onOrder,
+  onOpenCart,
 }) => {
   const { direction, tr } = useLocale();
   const navigation = useNavigationHistory();
@@ -758,13 +760,10 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
 
   const handleProductOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
     const product = selectedProduct?.product;
-    if (!product) return;
-    if (isStoredProduct) { showToast(tr('Actualisez d’abord le produit conservé.', 'حدّث المنتج المحفوظ أولًا.')); return; }
+    if (!product) throw new Error(tr(...productSelectionLabels.unavailable));
+    if (isStoredProduct) throw new Error(tr('Actualisez d’abord le produit conservé.', 'حدّث المنتج المحفوظ أولًا.'));
     const { option, offer } = resolveProductSelection(product, size, color);
-    if (!completeProductOffer(offer)) {
-      showToast(tr(...productSelectionLabels.unavailable));
-      return;
-    }
+    if (!completeProductOffer(offer)) throw new Error(tr(...productSelectionLabels.unavailable));
     const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
     setIsOrdering(true);
     try {
@@ -786,10 +785,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         priceToken: offer.priceToken,
         quantity,
       });
-      setSelectedProduct(null);
-      showToast('Produit ajouté au panier.');
-    } catch (error: any) { showToast(error?.message || "L’article n’a pas pu être ajouté au panier."); }
-    finally { setIsOrdering(false); }
+      // Remain on the product: ProductResult displays the acknowledgement and
+      // the customer opens the cart only with the cart icon.
+    } finally { setIsOrdering(false); }
   };
 
   const persistFeedback = async (message: AssistantMessage, rating: FeedbackValue, comment: string) => {
@@ -945,7 +943,9 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
                 onOpenComment={(message) => { setFeedbackMessage(message); navigation.pushLayer({ id: 'assistant:feedback', payload: { messageId: message.id } }); }}
                 onOpenLens={onOpenLens}
                 onSelectProduct={(messageId, candidate) => void handleSelectProduct(messageId, candidate)}
-                onProductOrder={(selection) => void handleProductOrder(selection)}
+                onProductOrder={handleProductOrder}
+                onOpenCart={onOpenCart}
+                onProductBack={closeAssistantLayer}
                 customerFirstName={customerFirstName}
               />
             )}

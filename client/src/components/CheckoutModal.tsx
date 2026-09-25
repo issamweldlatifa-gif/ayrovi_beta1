@@ -398,11 +398,13 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     <CheckoutFlowShell
       direction={direction}
       size="form"
-      ariaLabel={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
+      ariaLabel={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Adresse de livraison', 'عنوان التوصيل')}
     >
         <AppHeader
-          title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}
-          subtitle={isPaymentStage ? tr('Choisissez comment régler l’acompte', 'اختر طريقة دفع العربون') : tr('Livraison dans toute la Tunisie', 'توصيل إلى كامل تونس')}
+          showLogo={false}
+          backPlacement="leading"
+          title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Adresse de livraison', 'عنوان التوصيل')}
+          subtitle={isPaymentStage ? tr('Choisissez comment régler l’acompte', 'اختر طريقة دفع العربون') : tr('Livraison à domicile en Tunisie', 'التوصيل إلى المنزل في تونس')}
           onBack={isPaymentStage ? () => navigation.back() : onClose}
           actionDisabled={isLoading}
           actionLabel={isPaymentStage ? tr('Revenir à la livraison', 'العودة إلى بيانات التوصيل') : tr('Revenir au panier', 'العودة إلى السلة')}
@@ -424,6 +426,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           )}
 
           {!isPaymentStage && <>
+          <div data-checkout-address-step className="space-y-1 py-1">
+            <h3 className="text-lg font-black text-ink">{tr('Renseignez votre adresse', 'أدخل عنوانك')}</h3>
+            <p className="text-sm text-muted">{tr('Livraison à domicile. Choisissez une adresse enregistrée ou saisissez-en une nouvelle.', 'التوصيل للمنزل. اختر عنوانًا محفوظًا أو أدخل عنوانًا جديدًا.')}</p>
+          </div>
           <div className={`flex items-center gap-2 rounded-card border p-3 text-xs font-bold ${customerSession?.account.emailVerified || customerSession?.account.phoneVerified ? 'border-line bg-surface text-ink' : 'border-line bg-surface text-ink'}`}>
             {customerSession?.account.emailVerified || customerSession?.account.phoneVerified ? <CheckCircle2 className="h-4 w-4 shrink-0" /> : <AlertCircle className="h-4 w-4 shrink-0" />}
             {customerSession?.account.emailVerified || customerSession?.account.phoneVerified

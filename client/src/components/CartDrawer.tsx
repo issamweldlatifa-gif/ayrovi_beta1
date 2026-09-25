@@ -1,9 +1,7 @@
 import React, { useEffect } from 'react';
-import { Trash2, ArrowRight, Plus, Minus, ChevronDown } from './QatafoIcons';
-import { AppHeader } from '../design/AppHeader';
+import { Trash2, ArrowRight, Plus, Minus, ChevronDown, ChevronLeft, ShoppingBag } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { CartItem } from '../types';
-import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
 import { validProductUrl } from '../ayrovix/services/resultPolicy';
@@ -14,6 +12,9 @@ interface CartDrawerProps {
   onClose: () => void;
   items: CartItem[];
   totalTND: number;
+  deliveryTND?: number;
+  loadError?: boolean;
+  onRetry?: () => void;
   onUpdateQuantity: (id: string, newQty: number) => void;
   onRemoveItem: (id: string) => void;
   onProceedToCheckout: () => void;
@@ -33,6 +34,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onClose,
   items,
   totalTND,
+  deliveryTND = 0,
+  loadError = false,
+  onRetry,
   onUpdateQuantity,
   onRemoveItem,
   onProceedToCheckout,
@@ -68,40 +72,47 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
         aria-label={tr('Fermer le panier', 'إغلاق السلة')}
       />
 
-      <div className={`fixed inset-y-0 max-w-full flex ${direction === 'rtl' ? 'left-0 pl-0 sm:pl-10' : 'right-0 pr-0 sm:pr-10'}`}>
-        <div className={`ayrovix-theme-scope w-screen max-w-md bg-white shadow-2xl flex flex-col ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`}>
+      <div className={`fixed inset-y-0 max-w-full flex ${direction === 'rtl' ? 'left-0' : 'right-0'}`}>
+        <div className={`ayrovix-theme-scope w-screen max-w-lg bg-white shadow-2xl flex flex-col min-h-0 ${direction === 'rtl' ? 'border-r' : 'border-l'} border-line`}>
           
-          <AppHeader
-            title={tr('Mon panier', 'سلّتي')}
-            subtitle={tr(`${items.length} article${items.length > 1 ? 's' : ''}`, `${items.length} منتج`)}
-            onBack={onClose}
-            actionLabel={tr('Retour à la page précédente', 'العودة إلى الصفحة السابقة')}
-          />
+          <header className="flex min-h-16 items-center gap-3 border-b border-line bg-white px-4">
+            <button type="button" onClick={onClose} className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-surface" aria-label={tr('Retour au produit', 'العودة للمنتج')}>
+              <ChevronLeft className={direction === 'rtl' ? 'rotate-180' : ''} size={22} />
+            </button>
+            <h2 className="text-lg font-black text-ink">{tr('Mon panier', 'سلّتي')}
+              {items.length > 0 && <span className="ms-2 text-sm font-medium text-muted">({items.reduce((sum, item) => sum + item.quantity, 0)} {tr('article(s)', 'منتج')})</span>}
+            </h2>
+          </header>
 
-          <JourneyProgress active={1} />
-
+          {loadError && items.length > 0 && <div role="alert" className="flex items-center justify-between gap-2 border-b border-line px-4 py-2 text-sm text-danger">
+            {tr('Panier non actualisé.', 'لم تُحدّث السلة.')}
+            <button type="button" onClick={onRetry} className="underline">{tr('Réessayer', 'أعد المحاولة')}</button>
+          </div>}
           {/* Cart Items List */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 bg-white">
-            {items.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center p-6 space-y-3">
-                                <h3 className="text-base font-bold text-ink">{tr('Votre panier est vide', 'سلّتك فارغة')}</h3>
-                <p className="text-xs text-muted max-w-xs leading-relaxed">
-                  {tr("Importez une capture d'écran ou collez un lien pour ajouter des articles.", 'ارفع لقطة شاشة أو ألصق رابطًا لإضافة المنتجات.')}
-                </p>
-                <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-primary mt-2 min-h-12 text-sm">
-                  <Plus className="h-5 w-5" />
-                  {tr('Calculer un produit avec Lens', 'حساب منتج باستخدام Lens')}
+          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-5 sm:p-6 space-y-4 bg-white">
+            {loadError && items.length === 0 ? (
+              <div role="alert" className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <p className="text-sm text-ink">{tr('Impossible de charger le panier.', 'تعذّر تحميل السلة.')}</p>
+                <button type="button" onClick={onRetry} className="ay-btn-secondary min-h-12 px-6">{tr('Réessayer', 'أعد المحاولة')}</button>
+              </div>
+            ) : items.length === 0 ? (
+              <div className="flex h-full min-h-96 flex-col items-center justify-center gap-4 text-center">
+                <div className="relative grid h-28 w-28 place-items-center rounded-full bg-surface text-ink" aria-hidden="true"><ShoppingBag size={52} /></div>
+                <h3 className="text-xl font-black text-ink">{tr('Votre panier est vide', 'سلّتك فارغة')}</h3>
+                <p className="max-w-xs text-sm leading-relaxed text-muted">{tr('Explorez les produits pour commencer votre commande.', 'اكتشف المنتجات لتبدأ طلبك.')}</p>
+                <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-cta mt-1 min-h-12 rounded-full px-8 text-sm">
+                  {tr('Découvrir les produits', 'تصفّح المنتجات')}
                 </button>
               </div>
             ) : (
               items.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-surface border border-line rounded-card p-3.5 flex gap-3.5 items-start group hover:border-line/40 transition-all"
+                  className="border-b border-line pb-5 flex gap-4 items-start"
                 >
                   {/* Vignette — cadre studio unifié : blanc + hairline + multiply */}
-                  <div className="w-16 h-16 flex-shrink-0">
-                    <StudioImageFrame src={item.imageUrl} alt={item.title} ratio="1 / 1" />
+                  <div className="w-20 h-24 flex-shrink-0 overflow-hidden rounded-lg">
+                    <StudioImageFrame src={item.imageUrl} alt={item.title} ratio="4 / 5" />
                   </div>
 
                   {/* Info */}
@@ -125,9 +136,9 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       {item.title}
                     </h4>
 
-                    {item.variant && (
+                    {item.variant && !item.requestedSize && !item.requestedColor && (
                       <p className="ay-readable text-xs text-muted mt-0.5">
-                        {item.variant}
+                        {!item.requestedSize && !item.requestedColor ? item.variant : null}
                       </p>
                     )}
                     {(item.requestedSize || item.requestedColor) && (
@@ -147,7 +158,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     )}
 
                     <div className="flex items-center justify-between mt-2.5">
-                      <div className="text-xs font-black text-ink">
+                      <div className="text-xs font-black text-ink" data-cart-line-tnd={item.lineTotalTND ?? item.priceTND * item.quantity}>
                         <QuietPromoPrice
                           priceTnd={item.lineTotalTND ?? item.priceTND * item.quantity}
                           promo={item.promo ?? null}
@@ -190,37 +201,41 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
 
           {/* Footer & Checkout */}
           {items.length > 0 && (
-            <div className="ay-safe-bottom p-4 sm:p-6 border-t border-line bg-surface space-y-3">
-              {depositPolicy ? <details className="group rounded-card border border-line bg-surface text-xs leading-5 text-ink">
-                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 font-black [&::-webkit-details-marker]:hidden"><span>{tr(`Acompte estimé : ${estimatedDeposit.toFixed(3)} DT (${depositPolicy.percent}%)`, `العربون التقديري: ${estimatedDeposit.toFixed(3)} د.ت (${depositPolicy.percent}%)`)}</span><ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" /></summary>
-                <div className="space-y-1 border-t border-line px-3 py-2">
-                {pendingManual && <p className="font-bold">{tr('Le prix du produit sera vérifié par l’équipe avant l’achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}
-                {depositPolicy.reviewDelay && <p dir="auto">{depositPolicy.reviewDelay}</p>}
-                {depositPolicy.unavailableRefundPolicy && <p dir="auto">{depositPolicy.unavailableRefundPolicy}</p>}
-                <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline">{tr('Consulter les conditions publiées', 'راجع الشروط المنشورة')}</a>
-                </div>
-              </details>
-              : <div role={commerce.status === 'error' ? 'alert' : 'status'} className="border border-line p-3 text-xs leading-5">
-                {commerce.status === 'error' ? tr('Conditions de paiement indisponibles. Réessayez avant de continuer.', 'تعذر تحميل شروط الدفع. أعد المحاولة قبل المتابعة.') : tr('Chargement des conditions de paiement…', 'جارٍ تحميل شروط الدفع…')}
-                {commerce.status === 'error' && <button type="button" onClick={commerce.retry} className="ay-btn-secondary mt-2 w-full">{tr('Réessayer', 'أعد المحاولة')}</button>}
-              </div>}
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted font-semibold">{tr('Total de la commande :', 'إجمالي الطلب:')}</span>
-                <span className="text-xl font-extrabold text-ink">{formatMoney(totalTND)}</span>
+            <div className="ay-safe-bottom border-t border-line bg-white p-4 sm:p-6 space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted">{tr('Sous-total', 'المجموع الفرعي')}</span>
+                <strong className="text-ink">{formatMoney(totalTND - deliveryTND)}</strong>
               </div>
-
-              <button type="button" onClick={onCalculateAnotherProduct} className="ay-btn-secondary min-h-12 w-full text-sm">
-                <Plus className="h-5 w-5" />
-                {tr('Calculer un autre produit', 'حساب منتج آخر')}
-              </button>
-
+              {deliveryTND > 0 && <div className="flex items-center justify-between text-sm">
+                <span className="text-muted">{tr('Livraison locale (une fois)', 'التوصيل المحلي (مرة واحدة)')}</span>
+                <span className="text-ink">{formatMoney(deliveryTND)}</span>
+              </div>}
+              <div className="flex justify-between items-center text-sm border-t border-line pt-3">
+                <span className="text-muted font-semibold">{tr('Total de la commande', 'إجمالي الطلب')}</span>
+                <strong className="text-xl font-extrabold text-ink">{formatMoney(totalTND)}</strong>
+              </div>
+              {depositPolicy ? <details className="group text-xs leading-5 text-ink">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-2 py-2 font-semibold [&::-webkit-details-marker]:hidden">
+                  <span>{tr(`À la commande, acompte de ${depositPolicy.percent}% : ${formatMoney(estimatedDeposit)}.`, `عند الطلب، عربون ${depositPolicy.percent}%: ${formatMoney(estimatedDeposit)}.`)}</span>
+                  <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-open:rotate-180" />
+                </summary>
+                <div className="space-y-1 border-t border-line py-2 text-muted">
+                  {pendingManual && <p>{tr('Prix marchand à vérifier avant achat.', 'سيتحقق الفريق من سعر المنتج قبل الشراء.')}</p>}
+                  {depositPolicy.reviewDelay && <p dir="auto">{depositPolicy.reviewDelay}</p>}
+                  {depositPolicy.unavailableRefundPolicy && <p dir="auto">{depositPolicy.unavailableRefundPolicy}</p>}
+                  <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center underline">{tr('Conditions publiées', 'شروط الخدمة')}</a>
+                </div>
+              </details> : <div role={commerce.status === 'error' ? 'alert' : 'status'} className="text-xs text-muted">
+                {commerce.status === 'error' ? tr('Conditions indisponibles.', 'تعذّر تحميل شروط الدفع.') : tr('Chargement des conditions…', 'جارٍ تحميل الشروط…')}
+                {commerce.status === 'error' && <button type="button" onClick={commerce.retry} className="ms-2 underline">{tr('Réessayer', 'أعد المحاولة')}</button>}
+              </div>}
               <button
                 type="button"
-                onClick={() => { if (commerce.status === 'ready') onProceedToCheckout(); }}
-                disabled={commerce.status !== 'ready'}
+                onClick={() => { if (commerce.status === 'ready' && !loadError) onProceedToCheckout(); }}
+                disabled={commerce.status !== 'ready' || loadError}
                 className="ay-btn-cta w-full text-sm"
               >
-                <span>{tr('Continuer vers la livraison', 'المتابعة إلى التوصيل')}</span>
+                <span>{tr('Commander', 'إتمام الطلب')}</span>
                 <ArrowRight className={`w-4 h-4 ${direction === 'rtl' ? 'rotate-180' : ''}`} />
               </button>
             </div>

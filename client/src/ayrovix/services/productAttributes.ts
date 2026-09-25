@@ -23,17 +23,17 @@ export type ProductClass =
 const CLASS_RULES: Array<{ cls: ProductClass; patterns: RegExp[] }> = [
   // — beauté & parfums : le plus tôt possible (mots les plus discriminants d'abord) —
   { cls: 'perfume', patterns: [/\bparfum\b/i, /\beau de (?:parfum|toilette)\b/i, /\bedt\b/i, /\bedp\b/i, /\bcologne\b/i, /\bعطر\b/] },
-  { cls: 'beauty', patterns: [/\bsoin\b/i, /\bs[ée]rum\b/i, /\bcr[èe]me\b/i, /\bgel\b/i, /\bmasque\b/i, /\bnettoyant\b/i, /\bshampooing\b/i, /\brouge [àa] l[èe]vres\b/i, /\bmaquillage\b/i, /\bfond de teint\b/i, /\bmascara\b/i, /\beye (?:serum|gel|cream)\b/i, /\bskincare\b/i, /\bcollagen\b/i, /\bhyaluron\b/i, /\bتجميل\b/, /\bعناية\b/] },
   // — chaussures —
-  { cls: 'shoes', patterns: [/\bchaussures?\b/i, /\bsneakers?\b/i, /\bbaskets?\b/i, /\btrainers?\b/i, /\bsandales?\b/i, /\bmocassins?\b/i, /\bbottines?\b/i, /\bcuissardes?\b/i, /\bespadrilles?\b/i, /\bmules?\b/i, /\bderbies?\b/i, /\brunning\b/i, /\bpointure\b/i, /\bحذاء\b/, /\bصباط\b/] },
+  { cls: 'shoes', patterns: [/\bchaussures?\b/i, /\bsneakers?\b/i, /\bbaskets?\b/i, /\bfootwear\b/i, /\bboots?\b/i, /\btrainers?\b/i, /\bsandales?\b/i, /\bmocassins?\b/i, /\bbottines?\b/i, /\bcuissardes?\b/i, /\bespadrilles?\b/i, /\bmules?\b/i, /\bderbies?\b/i, /\brunning\b/i, /\bpointure\b/i, /\bحذاء\b/, /\bصباط\b/] },
+  { cls: 'beauty', patterns: [/\bsoin\b/i, /\bs[ée]rum\b/i, /\bcr[èe]me\b/i, /\bgel\b/i, /\bmasque\b/i, /\bnettoyant\b/i, /\bshampooing\b/i, /\brouge [àa] l[èe]vres\b/i, /\bmaquillage\b/i, /\bmakeup\b/i, /\bcosmetics?\b/i, /\blipstick\b/i, /\beyeshadow\b/i, /\bfoundation\b/i, /\bfond de teint\b/i, /\bmascara\b/i, /\beye (?:serum|gel|cream)\b/i, /\bskincare\b/i, /\bcollagen\b/i, /\bhyaluron\b/i, /\bتجميل\b/, /\bعناية\b/] },
   // — sacs —
   { cls: 'bag', patterns: [/\bsac [àa] dos\b/i, /\bsacs? (?:àa]? main|bandouli[èe]re|seau|voyage|cabas)\b/i, /\bbackpacks?\b/i, /\bsatchel\b/i, /\btote\b/i, /\bclutch\b/i, /\bvalise\b/i, /\bساك\b/, /\bمحفظة يد\b/] },
   // — vêtements —
   { cls: 'clothing', patterns: [/\bt-?shirts?\b/i, /\bpulls?\b/i, /\bsweats?\b/i, /\bhoodie\b/i, /\bveste\b/i, /\bmanteau\b/i, /\bpantalon\b/i, /\bjean\b/i, /\bchemise\b/i, /\brobe\b/i, /\bjuppe\b/i, /\bshort\b/i, /\bcombinaison\b/i, /\bleggings?\b/i, /\bpyjama\b/i, /\bmaillot\b/i, /\bchemisier\b/i, /\bgilet\b/i, /\bبلوزة\b/, /\bقميص\b/, /\bسروال\b/, /\bفستان\b/] },
   // — électronique —
-  { cls: 'electronics', patterns: [/\b(?:casque|[ée]couteurs?)\b/i, /\bheadphones?\b/i, /\bmontre (?:connect[ée]e|intelligente)\b/i, /\bsmartwatch\b/i, /\benceinte\b/i, /\bchargeur\b/i, /\bc[âa]ble\b/i, /\bpower ?bank\b/i, /\bt[ée]l[ée]phone\b/i, /\blaptop\b/i, /\b[ée]cran\b/i, /\bconsole\b/i, /\bسماعة\b/, /\bهاتف\b/] },
+  { cls: 'electronics', patterns: [/\b(?:casque|[ée]couteurs?)\b/i, /\bheadphones?\b/i, /\bmontre (?:connect[ée]e|intelligente)\b/i, /\bsmartwatch\b/i, /\benceinte\b/i, /\bchargeur\b/i, /\bc[âa]ble\b/i, /\bpower ?bank\b/i, /\bt[ée]l[ée]phone\b/i, /\b(?:smart)?phones?\b/i, /\biphone\b/i, /\bmacbook\b/i, /\bordinateurs?\b/i, /\bnotebook\b/i, /\blaptop\b/i, /\b[ée]cran\b/i, /\bconsole\b/i, /\bسماعة\b/, /\bهاتف\b/] },
   // — maison —
-  { cls: 'home', patterns: [/\bcoussin\b/i, /\bplaid\b/i, /\btapis\b/i, /\bvase\b/i, /\bbougie\b/i, /\blampe\b/i, /\bpanier\b/i, /\borganisation\b/i, /\bcuisine\b/i, /\bd[ée]coration\b/i, /\bمفروشات\b/, /\bديكور\b/] },
+  { cls: 'home', patterns: [/\bcanap[ée](?=$|[^a-zà-ÿ])/i, /\bsofa\b/i, /\bmeuble\b/i, /\bchaises?\b/i, /\btable(?:s)?\b/i, /\barmoire\b/i, /\bfurniture\b/i, /\bcoussin\b/i, /\bplaid\b/i, /\btapis\b/i, /\bvase\b/i, /\bbougie\b/i, /\blampe\b/i, /\bpanier\b/i, /\borganisation\b/i, /\bcuisine\b/i, /\bd[ée]coration\b/i, /\bمفروشات\b/, /\bديكور\b/] },
   // — accessoires —
   { cls: 'accessory', patterns: [/\bcasquette\b/i, /\bbob\b/i, /\bchapeau\b/i, /\b[ée]charpe\b/i, /\bgants\b/i, /\bceinture\b/i, /\blunettes\b/i, /\bb[ée]ret\b/i, /\bportefeuille\b/i, /\bcasque protecteur\b/i, /\bكاسكيطة\b/, /\bقبعة\b/] },
 ];
@@ -52,9 +52,12 @@ const CLASS_LABELS: Record<ProductClass, { fr: string; ar: string }> = {
 
 /** Classe déduite du titre (+ description). Jamais devinée : sans indice → 'other'. */
 export function classifyProduct(title: string, description?: string | null): ProductClass {
-  const text = `${title} ${description || ''}`;
-  for (const { cls, patterns } of CLASS_RULES) {
-    if (patterns.some((pattern) => pattern.test(text))) return cls;
+  // Product title is stronger evidence than the description: a running shoe
+  // mentioning "gel" or a table mentioning "soin" is not a skincare product.
+  for (const text of [title, description || '']) {
+    for (const { cls, patterns } of CLASS_RULES) {
+      if (patterns.some(pattern => pattern.test(text))) return cls;
+    }
   }
   return 'other';
 }

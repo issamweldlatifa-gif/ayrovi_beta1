@@ -7,7 +7,7 @@ import { AssistantMessages } from '../client/src/components/assistant/AssistantM
 import { AssistantHistoryNotice } from '../client/src/components/assistant/AssistantHistoryNotice';
 import type { AssistantMessage } from '../client/src/components/assistant/types';
 const noop = () => {};
-const render = (messages: AssistantMessage[]) => renderToStaticMarkup(<LocaleProvider><AssistantMessages messages={messages} isGenerating={false} motionState="idle" isDark={false} copiedId={null} feedback={{}} selectedProduct={null} productBusyId="" isOrdering={false} onPrompt={noop} onCopy={noop} onRegenerate={noop} onFeedback={noop} onOpenComment={noop} onOpenLens={noop} onSelectProduct={noop} onProductOrder={noop}/></LocaleProvider>);
+const render = (messages: AssistantMessage[]) => renderToStaticMarkup(<LocaleProvider><AssistantMessages messages={messages} isGenerating={false} motionState="idle" isDark={false} copiedId={null} feedback={{}} selectedProduct={null} productBusyId="" isOrdering={false} onPrompt={noop} onCopy={noop} onRegenerate={noop} onFeedback={noop} onOpenComment={noop} onOpenLens={noop} onSelectProduct={noop} onProductOrder={async () => {}} onOpenCart={noop} onProductBack={noop}/></LocaleProvider>);
 beforeEach(() => localStorage.clear());
 describe('historical content remains visible and accurately labelled', () => {
   it('renders Lens-only warnings and action-only responses without needing prose', () => {

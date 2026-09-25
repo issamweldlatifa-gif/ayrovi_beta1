@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { cardGatewayAvailable } from '../services/paymentGateway';
 import { QatafoDatabase } from '../db/database';
 import { calculatePrice } from '../services/pricing';
+import { quoteCartLine } from '../services/cartQuote';
 import { resolvePromoForQuote, tunisIsoDay } from '../services/promotions';
 import { getIsolatedImage, isPublicHttpUrl, readCachedPng, fetchRemoteImage, warmIsolation } from '../services/imageIsolation';
 import path from 'node:path';
@@ -181,6 +182,29 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       // réseau/format — l'original reste le repli naturel du client.
       res.setHeader('Cache-Control', 'public, max-age=600');
       res.redirect(302, url);
+    }
+  });
+
+  // Same calculation as GET /api/cart/items and createOrderFromCart. A preview
+  // does not reserve a price; the cart is always re-quoted by the server.
+  router.post('/pricing/cart-line', (req, res) => {
+    const { title, sourcePrice, sourceCurrency, quantity = 1 } = req.body || {};
+    if (typeof title !== 'string' || !title.trim() || title.length > 500
+      || typeof sourcePrice !== 'number' || !Number.isFinite(sourcePrice) || sourcePrice <= 0 || sourcePrice > 1_000_000
+      || typeof sourceCurrency !== 'string' || !/^[A-Z]{3}$/.test(sourceCurrency)
+      || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+      return res.status(400).json({ success: false, error: 'Devis produit invalide.' });
+    }
+    try {
+      const { price, promo, originalLineTotalTND } = quoteCartLine(db, { title, sourcePrice, sourceCurrency, quantity });
+      return res.json({ success: true, data: {
+        lineTotalTND: price.totalTND,
+        originalLineTotalTND,
+        promo: promo ? { percent: promo.percent, label: promo.label, discountTND: promo.discountTND } : null,
+        pricingVersion: price.pricingVersion,
+      } });
+    } catch {
+      return res.status(400).json({ success: false, error: 'Devis indisponible pour ce produit.' });
     }
   });
 

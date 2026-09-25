@@ -476,9 +476,7 @@
   display: grid;
   width: 100%;
   min-width: 0;
-  /* Ratio ZALANDO RÉEL (mesuré 24/09/2026 sur zalando.fr) : packshot 1000×1444 = 9/13.
-     Carte PLEIN bord : zéro padding interne — la photo occupe toute la carte
-     (largeur ET hauteur), le canvas studio #f6f6f6 la remplit. */
+  /* Portrait product stage with no nested thumbnail boxes or internal gutters. */
   aspect-ratio: 9 / 13;
   box-sizing: border-box;
   place-items: center;
@@ -487,22 +485,16 @@
   contain: layout paint;
 }
 
-.ayrovix-product-gallery-image,
-.ayrovix-thumbnail-image {
+.ayrovix-product-gallery-image {
   display: block;
   width: 100%;
   height: 100%;
   max-width: 100%;
   max-height: 100%;
   margin: auto;
-  /* CARTE COMPLÈTE (demande client 24/09 11:06 — capture Kiabi) : la photo
-     remplit TOUTE la carte (largeur ET hauteur) comme chez Zalando — plus
-     aucune bande blanche au-dessus/en-dessous. cover rogne marginalement,
-     exactement le comportement du marchand de référence. */
-  object-fit: cover;
-  /* center 20% : الغلاف يقصّ من فراغ الرأس الفارغ (صور الاستوديو تترك هامشاً
-     فوق المنتج) بدل حذف القدمين — المنتج يملأ البطاقة كزالاندو. */
-  object-position: center 20%;
+  /* Preserve the original product photo without cropping its subject. */
+  object-fit: contain;
+  object-position: center;
   /* Quiet Card v2 : le blanc des photos marchand se fond dans le canvas blanc. */
   mix-blend-mode: multiply;
   transform: none;
@@ -512,9 +504,7 @@
 /* المنتج المعزول مُقصّ لهوامشه الشفافة (trimTransparentMargins): حشو مركزي
    على كانفاس الاستوديو — أقصى حجم ممكن للمنتج مع منع أي قصّ لقدموطه. */
 .ayrovix-product-gallery-image[data-isolated="true"],
-.ayrovix-thumbnail-image[data-isolated="true"],
-.ayrovix-product-gallery-image.is-isolated,
-.ayrovix-thumbnail-image.is-isolated {
+.ayrovix-product-gallery-image.is-isolated {
   mix-blend-mode: normal;
   object-fit: contain;
 }
@@ -526,40 +516,6 @@
   object-fit: contain;
   object-position: center;
   transform: none;
-}
-
-.ayrovix-thumbnail-strip {
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-}
-
-.ayrovix-thumbnail-strip::-webkit-scrollbar {
-  display: none;
-}
-
-.ayrovix-thumbnail {
-  display: grid;
-  flex: 0 0 auto;
-  width: 3.75rem;
-  height: 3.75rem;
-  box-sizing: border-box;
-  place-items: center;
-  overflow: hidden;
-  padding: 0.25rem;
-  scroll-snap-align: start;
-  touch-action: manipulation;
-}
-
-.ayrovix-thumbnail:focus-visible {
-  outline: 2px solid var(--ayrovi-primary);
-  outline-offset: 2px;
 }
 
 @media (min-width: 640px) {
@@ -1240,4 +1196,31 @@
 /* Nested SONIM panels respect the same reduced-motion policy as the voice view. */
 @media (prefers-reduced-motion: reduce) {
   .assistant-sheet, .assistant-side-menu { animation: none; }
+}
+
+/* Product-detail selection sheet and cart-request loading state. */
+.ay-product-size-sheet {
+  max-height: min(82dvh, 780px);
+  display: flex;
+  flex-direction: column;
+}
+/* A disabled button still prevents duplicate writes while a pending request
+   retains the full-contrast black/white loading treatment. */
+.flow-product .ay-btn-cta[aria-busy="true"]:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+.ay-cart-loading {
+  display: inline-block;
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: none;
+  border: 2px dashed currentColor;
+  border-radius: 50%;
+  border-inline-end-color: transparent;
+  animation: ay-cart-loading-spin .75s linear infinite;
+}
+@keyframes ay-cart-loading-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ay-cart-loading { animation-duration: 1.5s; }
 }

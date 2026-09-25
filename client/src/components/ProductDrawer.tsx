@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { X, Camera, Link2, ArrowUpRight, ArrowRight, Loader2, Clipboard, PackageCheck } from './QatafoIcons';
+import { X, Camera, Link2, ArrowUpRight, ArrowRight, Loader2, Clipboard, ShoppingBag } from './QatafoIcons';
 import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { ProductResult } from '../ayrovix/components/ProductResult';
+import { resolveProductSelection } from '../ayrovix/services/productSelection';
 import type { AyrovixProduct } from '../ayrovix/types';
 
 interface ProductDrawerProps {
@@ -13,18 +14,7 @@ interface ProductDrawerProps {
   onAddToCart: (item: AddToCartPayload) => Promise<AddToCartResult | null>;
   onExtracted: (product: ScrapedProduct) => void;
   onNewClientOrder: () => void;
-  onCheckoutRequested: () => void;
-}
-
-interface PricingPreview {
-  convertedPriceTND: number;
-  customsFeeTND: number;
-  shippingFeeTND: number;
-  serviceFeeTND: number;
-  expressFeeTND: number;
-  totalTND: number;
-  exchangeRate: number;
-  pricingVersion: number;
+  onOpenCart: () => void;
 }
 
 export const ProductDrawer: React.FC<ProductDrawerProps> = ({
@@ -34,7 +24,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   onAddToCart,
   onExtracted,
   onNewClientOrder,
-  onCheckoutRequested,
+  onOpenCart,
 }) => {
   const navigation = useNavigationHistory();
   const productLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('product:'));
@@ -57,28 +47,20 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setUploadPreview(url);
   };
 
-  const [title, setTitle] = useState(product?.title || 'Article International');
-  const [sourcePrice, setSourcePrice] = useState<number>(product?.sourcePrice || 0);
-  const [currency, setCurrency] = useState<string>(product?.sourceCurrency || 'EUR');
-  const [variantNote, setVariantNote] = useState<string>('');
-  const [quantity, setQuantity] = useState<number>(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  const [checkoutSummary, setCheckoutSummary] = useState<AddToCartResult | null>(null);
-  const [pricingPreview, setPricingPreview] = useState<PricingPreview | null>(null);
-  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const activeRequestRef = useRef<AbortController | null>(null);
-  const isOpenRef = useRef(isOpen);
 
   const ayrovixProduct: AyrovixProduct | null = React.useMemo(() => {
     if (!product) return null;
     return {
       title: product.title,
-      brand: product.brand || product.storeName || null,
+      brand: product.brand || null,
       model: null,
       description: product.description || '',
       image: product.mainImage || uploadPreview || '',
       images: product.images && product.images.length ? product.images : [product.mainImage || uploadPreview || ''].filter(Boolean),
+      colorImages: product.colorImages || null,
       source: product.storeName || product.store,
       sourceUrl: product.url,
       price: product.sourcePrice,
@@ -87,16 +69,19 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       exchangeRate: null,
       colors: product.variants?.colors || [],
       sizes: product.variants?.sizes || [],
-      variantOptions: [],
+      variantOptions: (product.variants?.details || []).map(detail => ({
+        id: detail.id || null, label: detail.label, size: detail.size || null, color: detail.color || null,
+        available: detail.available === true, price: detail.price ?? null,
+        currency: detail.price != null ? product.sourceCurrency : null, priceTnd: null,
+      })),
       availability: product.availability || 'unknown',
+      rating: product.rating ?? null,
+      ratingCount: product.reviewsCount ?? null,
+      ratingKind: product.rating != null ? 'merchant' : undefined,
     };
   }, [product, uploadPreview]);
 
   useBodyScrollLock(isOpen);
-
-  useEffect(() => {
-    isOpenRef.current = isOpen;
-  }, [isOpen]);
 
   useEffect(() => {
     if (!isUploading && !isScraping) { setAnalysisProgress(0); return undefined; }
@@ -105,15 +90,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     return () => window.clearInterval(timer);
   }, [isUploading, isScraping]);
 
-  useEffect(() => {
-    setTitle(product?.title || 'Article International');
-    setSourcePrice(product?.sourcePrice || 0);
-    setCurrency(product?.sourceCurrency || 'EUR');
-    setVariantNote('');
-    setQuantity(1);
-    setErrorMsg(null);
-    setCheckoutSummary(null);
-  }, [product]);
+  useEffect(() => { setErrorMsg(null); }, [product]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -123,7 +100,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       setIsScraping(false);
       setIsAddingToCart(false);
       setErrorMsg(null);
-        setCheckoutSummary(null);
       setPreview(null);
       return;
     }
@@ -143,50 +119,9 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     };
   }, [isOpen, onClose, product]);
 
-  useEffect(() => {
-    if (!isOpen || sourcePrice <= 0 || quantity < 1) {
-      setPricingPreview(null);
-      setIsCalculatingPrice(false);
-      return;
-    }
-    setPricingPreview(null);
-    setIsCalculatingPrice(true);
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      try {
-        const response = await fetch('/api/public/pricing/preview', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ originalPrice: sourcePrice, currency, quantity }),
-          signal: controller.signal,
-        });
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.error || 'Calcul indisponible.');
-        setPricingPreview(payload.data);
-        setErrorMsg((current) => current === 'Le calcul tarifaire central est momentanément indisponible. Réessayez.' ? null : current);
-      } catch (error: any) {
-        if (error?.name !== 'AbortError') {
-          setPricingPreview(null);
-          setErrorMsg('Le calcul tarifaire central est momentanément indisponible. Réessayez.');
-        }
-      } finally {
-        if (!controller.signal.aborted) setIsCalculatingPrice(false);
-      }
-    }, 220);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [isOpen, sourcePrice, currency, quantity]);
-
   if (!isOpen) return null;
 
   const progressMessage = ['Recherche en cours…', 'Vérification du produit…', 'Récupération du prix…'][analysisProgress];
-  const convertedTND = pricingPreview?.convertedPriceTND ?? 0;
-  const customsTND = pricingPreview?.customsFeeTND ?? 0;
-  const serviceFeeTND = pricingPreview?.serviceFeeTND ?? 0;
-  const shippingTND = pricingPreview?.shippingFeeTND ?? 0;
-  const orderTotalTND = pricingPreview?.totalTND ?? 0;
 
   const handleFileUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -278,52 +213,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     } catch {}
   };
 
-  const handleProceedToCheckoutForm = async () => {
-    if (checkoutSummary) {
-      onCheckoutRequested();
-      return;
-    }
-
-    if (sourcePrice <= 0) {
-      setErrorMsg("Veuillez renseigner le prix de l'article.");
-      return;
-    }
-
-    setIsAddingToCart(true);
-    setErrorMsg(null);
-    const cartSummary = await onAddToCart({
-      store: product?.store || 'generic',
-      externalId: product?.externalId || null,
-      url: product?.url || '',
-      title: title.trim(),
-      imageUrl: product?.mainImage || '',
-      sourcePrice: Number(sourcePrice),
-      sourceCurrency: currency,
-      priceTND: orderTotalTND,
-      variant: variantNote.trim() || undefined,
-      quantity,
-    });
-    if (!isOpenRef.current) return;
-
-    setIsAddingToCart(false);
-    if (cartSummary) {
-      setCheckoutSummary(cartSummary);
-      onCheckoutRequested();
-    } else {
-      setErrorMsg("L'article n'a pas pu être ajouté. Vérifiez votre connexion puis réessayez.");
-    }
-  };
-
-  const handleResetForNewClient = () => {
-    navigation.navigate([{ id: 'app:product' }, { id: 'product:input' }], { replace: true });
-    setUrlInput('');
-    setVariantNote('');
-    setQuantity(1);
-    setErrorMsg(null);
-    setCheckoutSummary(null);
-    onNewClientOrder();
-  };
-
   const handleCloseDrawer = () => {
     activeRequestRef.current?.abort();
     setErrorMsg(null);
@@ -364,6 +253,8 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
               </div>
             </div>
 
+            <div className="flex items-center gap-1">
+            <button type="button" onClick={onOpenCart} aria-label="Ouvrir le panier" className="grid h-11 w-11 place-items-center rounded-full hover:bg-white"><ShoppingBag className="h-5 w-5" /></button>
             <button
               ref={closeButtonRef}
               type="button"
@@ -373,6 +264,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             >
               <X className="w-5 h-5" />
             </button>
+            </div>
           </div>
         )}
 
@@ -509,213 +401,52 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             </div>
           )}
 
-          {step === 'details' && ayrovixProduct ? (
+          {step === 'details' && ayrovixProduct && (
             <div className="py-1">
               <ProductResult
                 product={ayrovixProduct}
                 ordering={isAddingToCart}
-                priceVerified={true}
+                priceVerified={product?.priceVerified === true}
+                onOpenCart={onOpenCart}
                 onBack={handleCloseDrawer}
                 onCalculateAnother={() => {
                   navigation.replaceTop({ id: 'product:input' });
                   onNewClientOrder();
                 }}
-                onOrder={(selection) => {
+                onOrder={async (selection) => {
+                  // Use the same coherent selected offer as the displayed quote.
+                  // Never combine a variant's price with the general currency.
+                  const { offer } = resolveProductSelection(ayrovixProduct, selection.size, selection.color);
+                  if (offer.price == null || !offer.currency) throw new Error('Le devis de cette sélection est incomplet.');
                   setIsAddingToCart(true);
                   setErrorMsg(null);
-                  void onAddToCart({
-                    store: product?.store || 'generic',
-                    externalId: product?.externalId || null,
-                    url: selection.manualUrl || product?.url || '',
-                    title: (product?.title || title).trim(),
-                    imageUrl: product?.mainImage || uploadPreview || '',
-                    sourcePrice: Number(product?.sourcePrice || sourcePrice),
-                    sourceCurrency: product?.sourceCurrency || currency,
-                    priceTND: product?.totalPriceTND || orderTotalTND,
-                    variant: [selection.size && `Taille: ${selection.size}`, selection.color && `Couleur: ${selection.color}`].filter(Boolean).join(' · ') || undefined,
-                    quantity: selection.quantity,
-                  }).then((cartSummary) => {
-                    if (!isOpenRef.current) return;
+                  try {
+                    const result = await onAddToCart({
+                      store: product?.store || 'generic',
+                      externalId: selection.option?.id || product?.externalId || null,
+                      url: selection.manualUrl || product?.url || '',
+                      title: ayrovixProduct.title.trim(),
+                      imageUrl: product?.mainImage || uploadPreview || '',
+                      sourcePrice: offer.price,
+                      sourceCurrency: offer.currency,
+                      priceTND: 0, // The cart server computes the price; the client total is ignored.
+                      variant: selection.option?.label || [selection.size && `Taille: ${selection.size}`, selection.color && `Couleur: ${selection.color}`].filter(Boolean).join(' · ') || undefined,
+                      requestedSize: selection.size,
+                      requestedColor: selection.color,
+                      customerNote: selection.customerNote,
+                      quantity: selection.quantity,
+                    });
+                    if (!result) throw new Error("L'article n'a pas pu être ajouté. Réessayez.");
+                  } finally {
                     setIsAddingToCart(false);
-                    if (cartSummary) {
-                      setCheckoutSummary(cartSummary);
-                      onCheckoutRequested();
-                    } else {
-                      setErrorMsg("L'article n'a pas pu être ajouté. Vérifiez votre connexion puis réessayez.");
-                    }
-                  });
+                  }
                 }}
               />
             </div>
-          ) : step === 'details' && (
-            <div className="space-y-5">
-              <div className="bg-surface border border-line rounded-2xl p-4 flex gap-4 items-center">
-                <div className="w-20 h-20 rounded-xl bg-white border border-line flex-shrink-0 overflow-hidden flex items-center justify-center p-1">
-                  {(uploadPreview || product?.mainImage) ? (
-                    <img src={uploadPreview || product?.mainImage || ''} alt={title} className="w-full h-full object-contain" />
-                  ) : (
-                    <PackageCheck className="h-8 w-8 text-ink" aria-hidden="true" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 space-y-1">
-                  <label className="block text-xs font-bold text-muted uppercase tracking-wider">
-                    Titre de l'article :
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full rounded-control border border-line bg-surface px-2.5 py-1.5 text-xs font-bold text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15"
-                  />
-                </div>
-              </div>
-
-              <div className="bg-surface border border-line rounded-2xl p-4 sm:p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-ink flex items-center gap-1.5">
-                    <span>Prix original sur le site :</span>
-                  </span>
-                  <span className="text-xs font-extrabold text-ink">
-                    Conversion AYROVI
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-muted font-semibold mb-1">
-                      Montant devise :
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      min="0"
-                      value={sourcePrice || ''}
-                      onChange={(e) => setSourcePrice(parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
-                      className="w-full rounded-control border border-line bg-surface px-3 py-2 text-sm font-black text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 shadow-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs text-muted font-semibold mb-1">
-                      Devise :
-                    </label>
-                    <select
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                      className="w-full rounded-control border border-line bg-surface px-3 py-2 text-xs font-bold text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 shadow-xs"
-                    >
-                      <option value="EUR">Euro (€ EUR)</option>
-                      <option value="USD">Dollar ($ USD)</option>
-                      <option value="JPY">Yen (¥ JPY)</option>
-                      <option value="GBP">Livre (£ GBP)</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-line space-y-1.5 text-xs">
-                  <div className="flex justify-between text-muted">
-                    <span>Prix converti :</span>
-                    <span className="font-semibold text-ink">{convertedTND.toFixed(2)} DT</span>
-                  </div>
-                  <div className="flex justify-between text-muted">
-                    <span>Dédouanement :</span>
-                    <span className="font-semibold text-ink">+{customsTND.toFixed(2)} DT</span>
-                  </div>
-                  <div className="flex justify-between text-muted">
-                    <span>Livraison :</span>
-                    <span className="font-semibold text-ink">+{shippingTND.toFixed(2)} DT</span>
-                  </div>
-                  <div className="flex justify-between text-muted">
-                    <span>Frais de service & garantie :</span>
-                    <span className="font-semibold text-ink">+{serviceFeeTND.toFixed(2)} DT</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t border-line font-extrabold text-sm sm:text-base">
-                    <span className="text-ink">Total à régler :</span>
-                    <span className="text-ink text-lg font-black">
-                      {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
-                    </span>
-                  </div>
-                  {pricingPreview && <p className="text-right text-xs text-muted">Tarification serveur v{pricingPreview.pricingVersion}</p>}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-muted mb-1">
-                    Taille / Couleur :
-                  </label>
-                  <input
-                    type="text"
-                    value={variantNote}
-                    onChange={(e) => setVariantNote(e.target.value)}
-                    placeholder="Ex : M, Noir..."
-                    className="w-full rounded-control border border-line bg-surface px-3 py-2 text-xs text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-muted mb-1">
-                    Quantité :
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-9 h-9 rounded-xl bg-surface hover:bg-line text-ink font-black flex items-center justify-center cursor-pointer"
-                    >
-                      -
-                    </button>
-                    <span className="font-bold text-ink min-w-[2rem] text-center">
-                      {quantity}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-9 h-9 rounded-xl bg-surface hover:bg-line text-ink font-black flex items-center justify-center cursor-pointer"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
           )}
 
         </div>
 
-        {/* Full-page footer actions */}
-        <div className="space-y-2.5 border-t border-line bg-white px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-5 sm:pt-5">
-          {step === 'details' && !ayrovixProduct && (
-            <button
-              type="button"
-              onClick={() => void handleProceedToCheckoutForm()}
-              disabled={sourcePrice <= 0 || !pricingPreview || isCalculatingPrice || isAddingToCart}
-              className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-ink hover:bg-ink-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isAddingToCart ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Ajout sécurisé en cours...</span>
-                </>
-              ) : (
-                <>
-                  <span>Continuer vers la livraison ({orderTotalTND.toFixed(2)} DT)</span>
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          )}
-
-
-          <button
-            type="button"
-            onClick={handleResetForNewClient}
-            className="w-full py-3 px-4 rounded-2xl border-2 border-dashed border-line/40 bg-surface hover:bg-surface text-ink font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-colors active:scale-98 cursor-pointer"
-          >
-            <span>Nouvelle commande pour un autre client</span>
-          </button>
-        </div>
       </section>
     </div>
   );

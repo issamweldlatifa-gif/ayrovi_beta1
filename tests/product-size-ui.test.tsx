@@ -1,71 +1,76 @@
-// GARDE-FOU UI (demande client 24/09/2026 — «أين المقاسات ودليل المقاسات؟») :
-// la refonte produit ne doit JAMAIS casser l'univers taille : sélecteur (tiroir),
-// libellé Pointure/Taille, guide des tailles (pointures + tableau), recommandation
-// de taille (vêtements) — et le CTA commande reste dépendant du choix si requis.
-import { describe, expect, it, vi } from 'vitest';
-import { renderToStaticMarkup } from 'react-dom/server';
+// @vitest-environment jsdom
+import React, { act } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
 import type { AyrovixProduct } from '../client/src/ayrovix/types';
 
-const shoes: AyrovixProduct = {
-  title: 'AIR ZOOM — Chaussures de running', brand: 'Nike Performance', model: null,
-  description: 'Chaussure de compétition.', image: '/shoe.jpg', images: ['/shoe.jpg'],
-  source: 'Example', sourceUrl: 'https://shop.example/shoe',
-  price: 309.95, currency: 'EUR', priceTnd: 1068.75, exchangeRate: 3.37,
+(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+const source: AyrovixProduct = {
+  title: 'Chaussures de running', brand: 'Marque publiée', model: null, description: '',
+  image: '/shoe.jpg', images: ['/shoe.jpg'], source: 'Boutique', sourceUrl: 'https://shop.example/shoe',
+  price: 30, currency: 'EUR', priceTnd: 100, exchangeRate: 3.37,
   colors: [], sizes: ['43', '40.5', '42'], variantOptions: [], availability: 'unknown',
 };
-const clothing: AyrovixProduct = {
-  ...shoes,
-  title: 'Survêtement — Pantalon de jogging', brand: 'Denim Factory',
-  description: 'Pantalon de survêtement coupe droite.',
-  sizes: ['S', 'M', 'L', 'XL'],
-};
-const beauty: AyrovixProduct = {
-  ...shoes,
-  title: 'Glow Serum — Soin des yeux', brand: 'AXIS-Y',
-  description: 'Sérum contour des yeux au collagène. 10 ml',
-  sizes: [],
-};
+let root: Root, host: HTMLDivElement;
+const originalFetch = globalThis.fetch;
 
-function render(product: AyrovixProduct): string {
-  return renderToStaticMarkup(<LocaleProvider><ProductResult product={product} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
+beforeEach(() => {
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ success: true, data: { lineTotalTND: 117.32, originalLineTotalTND: null, promo: null, pricingVersion: 2 } }) })) as unknown as typeof fetch;
+});
+afterEach(async () => { await act(async () => root.unmount()); host.remove(); globalThis.fetch = originalFetch; });
+const render = async (product: AyrovixProduct) => act(async () => root.render(<LocaleProvider><ProductResult product={product} onOrder={vi.fn()} /></LocaleProvider>));
+
+function button(text: string) {
+  const match = [...host.querySelectorAll('button')].find(item => item.textContent?.includes(text));
+  if (!match) throw new Error(`Missing button: ${text}`);
+  return match;
 }
 
-describe('l’univers TAILLE survit à toute refonte de la fiche produit', () => {
-  it('chaussures : libellé Pointure + sélecteur (tiroir) + guide des pointures', () => {
-    const html = render(shoes);
-    // Libellé adapté + sélecteur qui OUVRE le tiroir (placeholder « Votre taille »)
-    expect(html).toContain('Pointure');
-    expect(html).toContain('Votre taille');
-    // Guide des pointures (bloc dédié chaussures)
-    expect(html).toContain('Consulter le guide des pointures');
-    // Les tailles du marchand sont dans le DOM (sélecteur) et TRIÉES
-    expect(html.indexOf('>40.5<')).toBeLessThan(html.indexOf('>42<'));
-    expect(html.indexOf('>42<')).toBeLessThan(html.indexOf('>43<'));
-    // Le code du tiroir et du guide reste câblé (ouvertures + contenus)
-    const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(src).toContain('setSizeDrawerOpen(true)');
-    expect(src).toContain('Choisir votre taille');
-    expect(src).toContain('Il en reste 2');
-    expect(src).toContain('Guide des tailles');
-    expect(src).toContain('Fermer le guide');
+describe('source-backed product options on the mobile detail page', () => {
+  it('shoes open one bottom sheet and sort only sourced pointures, without invented stock or conversions', async () => {
+    await render(source);
+    expect(host.textContent).toContain('Pointure');
+    expect(button('Ajouter au panier').disabled).toBe(true); // size not yet chosen
+    await act(async () => button('Votre taille').click());
+    const dialog = host.querySelector('[role="dialog"]')!;
+    expect(dialog.textContent).toContain('Pointures disponibles');
+    expect(dialog.textContent!.indexOf('40.5')).toBeLessThan(dialog.textContent!.indexOf('42'));
+    expect(dialog.textContent!.indexOf('42')).toBeLessThan(dialog.textContent!.indexOf('43'));
+    expect(dialog.textContent).not.toContain('Il en reste 2');
+    expect(dialog.textContent).not.toContain('Taille marque');
+    await act(async () => button('42').click());
+    expect(button('Ajouter au panier').disabled).toBe(false);
   });
 
-  it('vêtements : libellé Taille + « Guide des tailles » + recommandation de taille', () => {
-    const html = render(clothing);
-    expect(html).toContain('Guide des tailles');
-    expect(html).toContain('recommandation de taille');
+  it('clothing shows sourced sizes, no fake recommendation or merchant-specific chart', async () => {
+    await render({ ...source, title: 'Pantalon jogging', sizes: ['XL', 'S', 'M'] });
+    expect(host.textContent).toContain('Taille');
+    expect(host.textContent).not.toContain('recommandation de taille');
+    await act(async () => button('Votre taille').click());
+    const rows = [...host.querySelectorAll('[role="dialog"] button strong')].map(row => row.textContent);
+    expect(rows).toEqual(['S', 'M', 'XL']);
   });
 
-  it('beauté : AUCUN guide de pointures, et le prix/100ml du bloc beauté reste affiché', () => {
-    const html = render(beauty);
-    expect(html).not.toContain('Consulter le guide des pointures');
-    expect(html).toContain('/ 100 ml'); // bloc beauté (prix au litre) — voulu, testé ailleurs
+  it('beauty shows capacity variants only if the merchant listed them; otherwise shows the title capacity alone', async () => {
+    const serum = { ...source, title: 'Sérum contour des yeux 10 ml', sizes: [] };
+    await render(serum);
+    expect(host.textContent).toContain('10 ml');
+    expect(host.textContent).not.toContain('Contenance non communiquée');
+    expect(host.textContent).not.toContain('Votre taille');
+    await render({ ...serum, sizes: ['10 ml', '20 ml'] });
+    expect(host.textContent).toContain('Contenance');
+    await act(async () => button('Choisir une contenance').click());
+    expect(host.querySelector('[role="dialog"]')?.textContent).toContain('20 ml');
+    expect(host.querySelector('[role="dialog"]')?.textContent).not.toContain('30 ml');
+  });
+
+  it('a laptop without variants has no apparel size selector or fake capacity', async () => {
+    await render({ ...source, title: 'Laptop 14 pouces', sizes: [], colors: [] });
+    expect(host.textContent).not.toContain('Votre taille');
+    expect(host.textContent).not.toContain('Contenance');
+    expect(host.textContent).not.toContain('Pointures disponibles');
   });
 });
-
-function read(rel: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require('node:fs').readFileSync(rel, 'utf8');
-}

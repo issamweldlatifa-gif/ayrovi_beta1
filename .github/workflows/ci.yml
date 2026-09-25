@@ -147,6 +147,19 @@ jobs:
       - name: Verify product selection and quote coherence
         run: npm run verify:product-selection
 
+      - name: Verify signed mobile purchase flow against real pricing and cart endpoints
+        run: npm run verify:purchase-flow
+
+      - name: Upload mobile purchase evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-purchase-evidence
+          path: |
+            .cache/mobile-purchase-check/
+            .cache/purchase-parents-check/
+            .cache/lens-enrichment-check/
+
       - name: Verify authenticated account and icon geometry
         run: npm run verify:editorial-account
 

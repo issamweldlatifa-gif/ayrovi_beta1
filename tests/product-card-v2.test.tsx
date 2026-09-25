@@ -1,10 +1,8 @@
 // PRODUCT CARD v2 + couche « compréhension produit » (P1/P2, décision 23-09-2026) :
-//  • la page COMPREND le produit : beauté → capacité + prix/100 (pas de sélecteur
-//    de taille), chaussures → grille 5 colonnes, vêtements → pastilles ;
+//  • la page montre seulement les variantes publiées par la source ;
 //  • la description de nos moteurs arrive jusqu'à la carte (elle était perdue) ;
 //  • photo cliquable = plein écran (fermeture ✕, flèches, swipe) ;
-//  • guide des tailles = page dédiée : produit en haut, guide en bas, ✕ ;
-//  • le formulaire vit dans l'accordéon « Modifier la commande ».
+//  • pas de guide, stock ou équivalence attribués sans preuve marchand ;
 import React from 'react';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -26,6 +24,11 @@ describe('P1 — compréhension produit (pure)', () => {
     expect(classifyProduct('Tommy Sweats à capuche light grey')).toBe('clothing');
     expect(classifyProduct('Casquette MLB dark green')).toBe('accessory');
     expect(classifyProduct('Objet quelconque sans indice')).toBe('other');
+    expect(classifyProduct('Chaussures Asics GEL', 'Crème protectrice')).toBe('shoes');
+    expect(classifyProduct('Smartphone Android')).toBe('electronics');
+    expect(classifyProduct('Ordinateur portable laptop')).toBe('electronics');
+    expect(classifyProduct('Canapé trois places')).toBe('home');
+    expect(classifyProduct('Makeup lipstick')).toBe('beauty');
   });
 
   it('extrait la capacité nette sans jamais sommer les mentions prix/100', () => {
@@ -73,36 +76,35 @@ const shoesProduct: AyrovixProduct = {
 };
 
 describe('P2 — la page produit comprend ce qu’elle vend', () => {
-  it('beauté : capacité + prix/100 affichés, AUCUN sélecteur de taille, description au même corps de texte', () => {
+  it('beauty shows documented capacity but no computed unit price based on an unrelated estimate', () => {
     const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
     expect(html).toContain('10 ml');
-    expect(html).toContain('/ 100 ml');
-    expect(html).toContain('1410.30');
-    expect(html).toContain('Sérum contour des yeux au collagène');
-    expect(html).not.toContain('role="group"');
+    expect(html).not.toContain('/ 100 ml');
     expect(html).not.toContain('Guide des tailles');
+    expect(html).toContain('Sérum contour des yeux au collagène');
+    expect(html).toContain('Prix à confirmer');
   });
 
-  it('chaussures : tiroir de tailles Zalando (liste triée, stock réel) + guide des pointures', () => {
+  it('shoes offer one source-backed pointure sheet with no fabricated stock', () => {
     const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={shoesProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
-    // Toutes les tailles restent proposées et TRIÉES (sélecteur + tiroir Zalando).
-    expect(html.indexOf('>40.5<')).toBeLessThan(html.indexOf('>42<'));
-    expect(html.indexOf('>42<')).toBeLessThan(html.indexOf('>43<'));
+    expect(html).toContain('Pointure');
+    expect(html).toContain('Votre taille');
+    expect(html).not.toContain('Il en reste 2');
     const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    // Le tiroir de tailles ( redesign Zalando) : liste défilante avec stock réel, plus de grille 5 colonnes.
     expect(src).toContain('setSizeDrawerOpen(true)');
-    expect(src).toContain('Il en reste 2');
-    expect(src).toContain('Guide des tailles');
-    expect(html).not.toContain('/ 100 ml'); // pas de capacité sur des chaussures
+    expect(src).toContain('Pointures disponibles');
+    expect(src).not.toContain('FOOT_MEASUREMENTS');
+    expect(src).not.toContain('frToBrandShoes');
   });
 
-  it('le formulaire vit replié dans l’accordéon « Modifier la commande », champs intacts', () => {
+  it('link, quantity and note live in one details section, no duplicate variant controls', () => {
     const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
     expect(html).toContain('<details');
-    expect(html).toContain('Modifier la commande');
+    expect(html).toContain('Lien, quantité et note');
     expect(html).toContain('Lien exact du produit');
     expect(html).toContain('aria-invalid=');
-    expect(html).toContain('Tailles/couleurs non listées par le marchand');
+    expect(html).not.toContain('Tailles/couleurs non listées par le marchand');
+    expect(html).not.toContain('recommandation de taille');
   });
 
   it('typographie dictée par le client : description GRISE et fine, barré gris fin, remisé le plus fort', () => {
@@ -120,9 +122,9 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
 
   it('isolation d’arrière-plan : TOUTE la galerie est proxyfiée, jamais les images locales', () => {
     const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    // Chaque image du stage ET des vignettes passe par la version isolée d'abord.
+    // One large media stage; all source photos are reached through arrows/swipe, not thumbnail boxes.
     expect(src).toContain('withIsolated(activeImage)');
-    expect(src).toContain('withIsolated(url)');
+    expect(src).not.toContain('ayrovix-thumbnail-strip');
     const helper = read('client/src/ayrovix/services/mediaIsolation.ts');
     // withIsolation isole CHAQUE url (avant : seulement la première).
     expect(helper).toMatch(/for \(const url of urls\)/);
@@ -142,10 +144,8 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     expect(src).toContain('Agrandir la photo du produit');
     // Trust line honnête (v2) : le choix n'affirme jamais le stock marchand.
     expect(src).toContain('Le choix d’une taille ou couleur ne confirme pas son stock.');
-    // Guide : page dédiée, produit en haut, guide en bas, fermeture ✕
-    expect(src).toContain('Guide des tailles');
-    expect(src).toContain('Fermer le guide');
-    expect(src).toContain('Vérifier le guide officiel chez le marchand');
+    expect(src).not.toContain('FOOT_MEASUREMENTS');
+    expect(src).not.toContain('Il en reste 2');
   });
 
   it('l’en-tête Lens : retour ‹ + catégorie du produit + panier (2ᵉ calcul conservé)', () => {

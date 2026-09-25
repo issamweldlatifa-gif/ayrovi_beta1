@@ -57,17 +57,21 @@ describe('AYROVIX contextual navigation', () => {
     expect(app).toContain('{lensSessionActive && (');
     expect(app).toContain('isOpen={isLensOpen}');
     expect(app).toContain('cartCount={totalCartCount}');
-    expect(launcher).toContain("Le panier s'ouvre, mais le résultat Lens reste monté");
+    expect(launcher).toContain('onOpenCart={onOpenCart}');
     expect(launcher).not.toMatch(/await onOrder\([\s\S]*?\);\s*clearRuntime\(\)/);
+    // Cart navigation is exclusive to an icon click, not the cart-write callback.
+    const addHandler = app.slice(app.indexOf('const handleAddToCart ='), app.indexOf('/** Espace 01 ACHETER'));
+    expect(addHandler).not.toContain("openAppView('app:cart')");
   });
 
   it('keeps each commerce Back target contextual and adds a direct new-scan CTA', () => {
     const cart = readFileSync('client/src/components/CartDrawer.tsx', 'utf8');
     const checkout = readFileSync('client/src/components/CheckoutModal.tsx', 'utf8');
     const confirmation = readFileSync('client/src/components/OrderSuccessModal.tsx', 'utf8');
-    expect(cart).toContain('onBack={onClose}');
-    expect(cart).toContain("Calculer un autre produit");
-    expect(checkout).toContain("title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Livraison', 'التوصيل')}");
+    expect(cart).toContain("aria-label={tr('Retour au produit', 'العودة للمنتج')}");
+    expect(cart).toContain("Découvrir les produits");
+    expect(checkout).toContain('backPlacement="leading"');
+    expect(checkout).toContain("title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Adresse de livraison', 'عنوان التوصيل')}");
     expect(checkout).toContain("navigation.pushLayer({ id: 'checkout:payment' })");
     expect(confirmation).toContain('onCalculateAnotherProduct');
     expect(confirmation).toContain("Calculer un autre produit");
