@@ -8,9 +8,6 @@ export interface ParsedProductPage {
   description?: string;
   price: number;
   currency: string;
-  referencePrice?: number | null;
-  rating?: number | null;
-  reviewsCount?: number | null;
   images: string[];
   /** Images PAR COULEUR (24/09/2026) : chaque variante de couleur possède son propre
    *  jeu de photos (référence Zalando). Clé = nom de couleur en minuscules. */
@@ -221,6 +218,12 @@ function optionNames(product: any): string[] {
   return product.options.map((option: any) => cleanLabel(typeof option === 'string' ? option : option?.name)).filter(Boolean);
 }
 
+function looksLikeSize(value: string): boolean {
+  return /^(?:XXS|XS|S|M|L|XL|XXL|XXXL|[2-5]?XL|ONE SIZE|TU)$/i.test(value)
+    || /^(?:[0-9]{1,3}(?:[.,][0-9])?)(?:\s*(?:EU|US|UK|FR|IT|CM))?$/i.test(value)
+    || /^(?:EU|US|UK)\s*[0-9]{1,3}(?:[.,][0-9])?$/i.test(value);
+}
+
 function rawVariantValues(variant: any): string[] {
   if (Array.isArray(variant?.options)) return variant.options.map(cleanLabel).filter(Boolean);
   const explicit = [variant?.option1, variant?.option2, variant?.option3].map(cleanLabel).filter(Boolean);
@@ -240,33 +243,36 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
   const names = optionNames(product);
   const details: ProductVariantDetail[] = [];
   for (const variant of product.variants.slice(0, 300)) {
+    if (!allowsMerchantVariantChoice(variant)) continue;
     const values = rawVariantValues(variant);
     if (!values.length) continue;
-    const attributes: Record<string, string> = {};
     let size: string | null = null;
     let color: string | null = null;
     values.forEach((value, index) => {
-      const name = names[index];
-      if (name) {
-        attributes[name] = value; // source label, never assume storage/RAM means color
-        if (SIZE_NAME.test(name)) size = value;
-        if (COLOR_NAME.test(name)) color = value;
-      } else { attributes[`Option ${index + 1}`] = value; } // No merchant group name = unknown meaning, not a guessed shoe/clothing size.
+      const name = names[index] || '';
+      if (SIZE_NAME.test(name)) size = value;
+      else if (COLOR_NAME.test(name)) color = value;
+      else if (!size && looksLikeSize(value)) size = value;
+      else if (!color && values.length > 1) color = value;
     });
-    if (!Object.keys(attributes).length) continue;
+    if (!size && !color && values.length === 1 && !PLACEHOLDER.test(values[0])) {
+      if (looksLikeSize(values[0])) size = values[0];
+      else color = values[0];
+    }
+    if (!size && !color) continue;
     const price = variantPrice(variant);
     details.push({
       id: String(variant.id ?? variant.sku ?? '').trim() || null,
-      label: Object.values(attributes).join(' · '),
-      size, color, attributes,
-      available: allowsMerchantVariantChoice(variant),
-      stockStatus: reportedVariantStock(variant),
+      label: unique([size, color], 2).join(' · ') || values.join(' · '),
+      size,
+      color,
+      available: true,
       price: price || null,
     });
   }
   const seen = new Set<string>();
-  return details.filter(detail => {
-    const key = JSON.stringify([detail.id, detail.attributes, detail.price]);
+  return details.filter((detail) => {
+    const key = `${detail.size || ''}|${detail.color || ''}|${detail.price || ''}`.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -417,6 +423,15 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const ldBrand = productLd?.brand?.name || (typeof productLd?.brand === 'string' ? productLd.brand : '') || embeddedProduct?.vendor || embeddedProduct?.brand || '';
     const metaBrand = meta('meta[property="product:brand"]') || meta('meta[name="brand"]') || meta('meta[property="og:brand"]');
     let brand = cleanLabel(ldBrand || metaBrand);
+    if (!brand && title.includes(' - ')) {
+      const parts = title.split(' - ');
+      if (parts.length >= 2) {
+        const candidate = parts[parts.length - 1].trim();
+        if (candidate.length >= 2 && candidate.length <= 40 && !looksLikeSize(candidate)) {
+          brand = candidate;
+        }
+      }
+    }
 
     const offers = Array.isArray(productLd?.offers) ? productLd.offers[0] : productLd?.offers;
     const selectorPrice = storeType === 'amazon'
@@ -434,17 +449,6 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
     const variantFloor = detailPrices.length ? Math.min(...detailPrices) : 0;
     const regexPrice = contextualPrice(document.body?.textContent || '');
     const price = jsonLdPrice || metaPrice || domPrice || variantFloor || regexPrice?.price || 0;
-    const compareAt = embeddedProduct?.compare_at_price ?? embeddedProduct?.compareAtPrice;
-    const compareCents = typeof compareAt === 'number' && compareAt >= 1000
-      && Array.isArray(embeddedProduct?.variants) && embeddedProduct.variants.some((variant: any) => variant?.requires_shipping === true);
-    const referenceCandidate = parsePrice(offers?.priceSpecification?.price ?? meta('meta[property="product:original_price:amount"]'))
-      || (compareCents ? Number(compareAt) / 100 : parsePrice(compareAt));
-    const referencePrice = referenceCandidate > price && price > 0 ? referenceCandidate : null;
-    const merchantRating = parsePrice(productLd?.aggregateRating?.ratingValue ?? meta('meta[itemprop="ratingValue"]'));
-    const rating = merchantRating > 0 && merchantRating <= 5 ? merchantRating : null;
-    const rawCount = productLd?.aggregateRating?.reviewCount ?? productLd?.aggregateRating?.ratingCount ?? meta('meta[itemprop="reviewCount"]');
-    const reviewsCount = typeof rawCount === 'number' || typeof rawCount === 'string'
-      ? Number(String(rawCount).replace(/[\s,]/g, '')) : NaN;
     const priceSource: ParsedProductPage['priceSource'] = jsonLdPrice ? 'json_ld'
       : metaPrice ? 'meta'
         : domPrice ? 'dom'
@@ -480,14 +484,11 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       collectNamedStrings(productState, /^(?:color|colour|couleur|couleurs)$/i, namedColors);
     }
 
-    // A merchant-labelled size can be 'long', 'one size', or another non-numeric
-    // value; never silently drop documented options based on title-like heuristics.
-    const sizes = unique([...details.map(detail => detail.size), ...namedSizes, ...domSizes], 40);
-    const colors = unique([...details.map(detail => detail.color), ...namedColors, ...domColors], 20);
-    const names = optionNames(embeddedProduct);
-    const groups = names.map((name, index) => ({ name, options: unique(
-      (Array.isArray(embeddedProduct?.variants) ? embeddedProduct.variants : []).map((variant: any) => rawVariantValues(variant)[index]), 80,
-    ) })).filter(group => group.options.length);
+    const sizes = unique([...details.map((detail) => detail.size), ...namedSizes, ...domSizes].filter((value) => !value || looksLikeSize(value)), 40);
+    const colors = unique([...details.map((detail) => detail.color), ...namedColors, ...domColors], 20);
+    if (colors.length === 1) {
+      for (const detail of details) if (!detail.color) detail.color = colors[0];
+    }
 
     const ldDescription = typeof productLd?.description === 'string' ? productLd.description.trim() : '';
     const domDescription = text(
@@ -573,8 +574,7 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
         let color = '';
         values.forEach((value, index) => {
           if (COLOR_NAME.test(optionNamesEmbedded[index] || '')) color = value;
-          // Unnamed options might be storage, finish, material or another dimension.
-          // They are not evidence of a color/image association.
+          else if (!color && values.length > 1 && !looksLikeSize(value)) color = value;
         });
         return color;
       };
@@ -610,13 +610,10 @@ export function parseProductPageHtml(html: string, baseUrl: string, storeType: S
       description: description || undefined,
       price,
       currency,
-      referencePrice,
-      rating,
-      reviewsCount: Number.isSafeInteger(reviewsCount) && reviewsCount >= 0 ? reviewsCount : null,
       images,
       colorImages,
       externalId: String(productLd?.sku || productLd?.productID || embeddedProduct?.id || embeddedProduct?.sku || ''),
-      variants: { sizes, colors, details, groups },
+      variants: { sizes, colors, details },
       availability: availabilityFrom(productLd, embeddedProduct),
       priceSource,
     };

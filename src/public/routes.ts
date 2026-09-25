@@ -1,4 +1,3 @@
-import { normalizeCatalogRow, priceCommerceProduct } from '../ayrovix/services/commerceProduct';
 import { enforceBrandIdentity, enforceLegacyTheme } from '../../shared/identityPolicy';
 import { publicNavDestination } from '../../shared/publicNavigation';
 import { createHash, randomUUID } from 'node:crypto';
@@ -35,12 +34,9 @@ function mapArrival(row: any) {
   };
 }
 
-function mapProduct(row: any, db: QatafoDatabase) {
-  const canonical = priceCommerceProduct(db, normalizeCatalogRow(row));
-  const unit = canonical.pricing.unitBreakdown;
+function mapProduct(row: any) {
   return {
     id: row.id,
-    canonical,
     name: row.name,
     description: row.description,
     image: row.image,
@@ -50,13 +46,13 @@ function mapProduct(row: any, db: QatafoDatabase) {
     category: row.category,
     sourceUrl: row.source_url,
     sourcePlatform: row.source_platform,
-    originalPrice: canonical.pricing.sourcePrice,
-    currency: canonical.pricing.sourceCurrency,
-    convertedPrice: unit?.convertedPriceTND ?? null,
-    customsFee: unit?.customsFeeTND ?? null,
-    shippingFee: unit?.shippingFeeTND ?? null,
-    serviceFee: unit?.serviceFeeTND ?? null,
-    finalPrice: canonical.pricing.ayroviPriceTnd,
+    originalPrice: Number(row.original_price),
+    currency: row.currency,
+    convertedPrice: Number(row.converted_price),
+    customsFee: Number(row.customs_fee),
+    shippingFee: Number(row.shipping_fee),
+    serviceFee: Number(row.service_fee),
+    finalPrice: Number(row.final_price),
     expressAvailable: Boolean(row.express_available),
     stockStatus: row.stock_status,
     arrivalIds: row.arrival_ids ? String(row.arrival_ids).split(',').filter(Boolean) : [],
@@ -314,7 +310,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     const rows = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p
       LEFT JOIN product_arrivals pa ON pa.product_id=p.id WHERE p.status='ACTIVE' ${filter}
       GROUP BY p.id ORDER BY p.updated_at DESC LIMIT ?`, ...params, limit);
-    res.json({ success: true, data: rows.map(row => mapProduct(row, db)) });
+    res.json({ success: true, data: rows.map(mapProduct) });
   });
 
   router.get('/promotions', (_req, res) => {
@@ -365,7 +361,7 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       FROM brands WHERE active=1 ORDER BY display_order,name`);
     const arrivals = db.all<any>(`SELECT * FROM arrivals WHERE status IN ('ACTIVE','SCHEDULED') ORDER BY expected_arrival_at`).map(mapArrival);
     const products = db.all<any>(`SELECT p.*,GROUP_CONCAT(pa.arrival_id) arrival_ids FROM products p LEFT JOIN product_arrivals pa ON pa.product_id=p.id
-      WHERE p.status='ACTIVE' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 12`).map(row => mapProduct(row, db));
+      WHERE p.status='ACTIVE' GROUP BY p.id ORDER BY p.updated_at DESC LIMIT 12`).map(mapProduct);
     const promotions = db.all<any>(`SELECT * FROM promotions WHERE status='ACTIVE' AND starts_at<=? AND ends_at>? ORDER BY starts_at DESC LIMIT 8`, now, now);
     const stories = db.all<any>(`SELECT * FROM stories WHERE status='PUBLISHED' AND publish_at<=? AND (expires_at IS NULL OR expires_at>?) ORDER BY priority DESC,publish_at DESC LIMIT 12`, now, now);
     const news = db.all<any>(`SELECT * FROM news_items WHERE status IN ('PUBLISHED','SCHEDULED') AND published_at<=? ORDER BY published_at DESC LIMIT 8`, now);

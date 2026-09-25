@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X, Camera, Link2, ArrowUpRight, ArrowRight, Loader2, Clipboard, PackageCheck } from './QatafoIcons';
-import { AddToCartPayload, AddToCartResult, ScrapedProduct, type CustomerSession } from '../types';
-import { useLocale } from '../i18n/LocaleContext';
+import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { ProductResult } from '../ayrovix/components/ProductResult';
@@ -15,8 +14,6 @@ interface ProductDrawerProps {
   onExtracted: (product: ScrapedProduct) => void;
   onNewClientOrder: () => void;
   onCheckoutRequested: () => void;
-  customerSession?: CustomerSession | null;
-  onOpenFavorites?: () => void;
 }
 
 interface PricingPreview {
@@ -38,10 +35,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   onExtracted,
   onNewClientOrder,
   onCheckoutRequested,
-  customerSession,
-  onOpenFavorites,
 }) => {
-  const { formatMoney } = useLocale();
   const navigation = useNavigationHistory();
   const productLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('product:'));
   const layerStep = productLayer?.id.slice('product:'.length);
@@ -63,9 +57,9 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setUploadPreview(url);
   };
 
-  const [title, setTitle] = useState(product?.title || '');
+  const [title, setTitle] = useState(product?.title || 'Article International');
   const [sourcePrice, setSourcePrice] = useState<number>(product?.sourcePrice || 0);
-  const [currency, setCurrency] = useState<string>(product?.sourceCurrency || '');
+  const [currency, setCurrency] = useState<string>(product?.sourceCurrency || 'EUR');
   const [variantNote, setVariantNote] = useState<string>('');
   const [quantity, setQuantity] = useState<number>(1);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
@@ -79,7 +73,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   const ayrovixProduct: AyrovixProduct | null = React.useMemo(() => {
     if (!product) return null;
     return {
-      canonical: product.canonical,
       title: product.title,
       brand: product.brand || product.storeName || null,
       model: null,
@@ -113,9 +106,9 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   }, [isUploading, isScraping]);
 
   useEffect(() => {
-    setTitle(product?.title || '');
+    setTitle(product?.title || 'Article International');
     setSourcePrice(product?.sourcePrice || 0);
-    setCurrency(product?.sourceCurrency || '');
+    setCurrency(product?.sourceCurrency || 'EUR');
     setVariantNote('');
     setQuantity(1);
     setErrorMsg(null);
@@ -151,7 +144,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
   }, [isOpen, onClose, product]);
 
   useEffect(() => {
-    if (!isOpen || product?.canonical || sourcePrice <= 0 || !currency || quantity < 1) {
+    if (!isOpen || sourcePrice <= 0 || quantity < 1) {
       setPricingPreview(null);
       setIsCalculatingPrice(false);
       return;
@@ -159,7 +152,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
     setPricingPreview(null);
     setIsCalculatingPrice(true);
     const controller = new AbortController();
-    void (async () => {
+    const timer = window.setTimeout(async () => {
       try {
         const response = await fetch('/api/public/pricing/preview', {
           method: 'POST',
@@ -179,11 +172,12 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       } finally {
         if (!controller.signal.aborted) setIsCalculatingPrice(false);
       }
-    })();
+    }, 220);
     return () => {
+      window.clearTimeout(timer);
       controller.abort();
     };
-  }, [isOpen, product?.canonical, sourcePrice, currency, quantity]);
+  }, [isOpen, sourcePrice, currency, quantity]);
 
   if (!isOpen) return null;
 
@@ -290,10 +284,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
       return;
     }
 
-    if (!title.trim() || !currency) {
-      setErrorMsg('Renseignez le titre et la devise du produit avant de continuer.');
-      return;
-    }
     if (sourcePrice <= 0) {
       setErrorMsg("Veuillez renseigner le prix de l'article.");
       return;
@@ -519,27 +509,41 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             </div>
           )}
 
-          {step === 'details' && ayrovixProduct && product?.canonical ? (
+          {step === 'details' && ayrovixProduct ? (
             <div className="py-1">
               <ProductResult
                 product={ayrovixProduct}
                 ordering={isAddingToCart}
                 priceVerified={true}
-                customerSession={customerSession}
-                onOpenFavorites={onOpenFavorites}
                 onBack={handleCloseDrawer}
-                onOrder={async (selection) => {
-                  if (!product?.canonical) return;
-                  setIsAddingToCart(true); setErrorMsg(null);
-                  try {
-                    const summary = await onAddToCart({ product: product.canonical,
-                      selectedVariants: selection.selectedOptions, quantity: selection.quantity, customerNote: selection.note });
+                onCalculateAnother={() => {
+                  navigation.replaceTop({ id: 'product:input' });
+                  onNewClientOrder();
+                }}
+                onOrder={(selection) => {
+                  setIsAddingToCart(true);
+                  setErrorMsg(null);
+                  void onAddToCart({
+                    store: product?.store || 'generic',
+                    externalId: product?.externalId || null,
+                    url: selection.manualUrl || product?.url || '',
+                    title: (product?.title || title).trim(),
+                    imageUrl: product?.mainImage || uploadPreview || '',
+                    sourcePrice: Number(product?.sourcePrice || sourcePrice),
+                    sourceCurrency: product?.sourceCurrency || currency,
+                    priceTND: product?.totalPriceTND || orderTotalTND,
+                    variant: [selection.size && `Taille: ${selection.size}`, selection.color && `Couleur: ${selection.color}`].filter(Boolean).join(' · ') || undefined,
+                    quantity: selection.quantity,
+                  }).then((cartSummary) => {
                     if (!isOpenRef.current) return;
-                    if (!summary) throw new Error("L'article n'a pas pu être ajouté au panier.");
-                    setCheckoutSummary(summary); onCheckoutRequested();
-                  } catch (error: any) {
-                    if (isOpenRef.current) setErrorMsg(error?.message || 'Ajout au panier indisponible.');
-                  } finally { if (isOpenRef.current) setIsAddingToCart(false); }
+                    setIsAddingToCart(false);
+                    if (cartSummary) {
+                      setCheckoutSummary(cartSummary);
+                      onCheckoutRequested();
+                    } else {
+                      setErrorMsg("L'article n'a pas pu être ajouté. Vérifiez votre connexion puis réessayez.");
+                    }
+                  });
                 }}
               />
             </div>
@@ -601,7 +605,6 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                       onChange={(e) => setCurrency(e.target.value)}
                       className="w-full rounded-control border border-line bg-surface px-3 py-2 text-xs font-bold text-ink outline-none transition focus:border-ink focus:ring-2 focus:ring-ink/15 shadow-xs"
                     >
-                      <option value="" disabled>Choisir la devise</option>
                       <option value="EUR">Euro (€ EUR)</option>
                       <option value="USD">Dollar ($ USD)</option>
                       <option value="JPY">Yen (¥ JPY)</option>
@@ -613,24 +616,24 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 <div className="pt-3 border-t border-line space-y-1.5 text-xs">
                   <div className="flex justify-between text-muted">
                     <span>Prix converti :</span>
-                    <span className="font-semibold text-ink">{pricingPreview ? formatMoney(convertedTND) : '—'}</span>
+                    <span className="font-semibold text-ink">{convertedTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between text-muted">
                     <span>Dédouanement :</span>
-                    <span className="font-semibold text-ink">{pricingPreview ? '+ ' + formatMoney(customsTND) : '—'}</span>
+                    <span className="font-semibold text-ink">+{customsTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between text-muted">
                     <span>Livraison :</span>
-                    <span className="font-semibold text-ink">{pricingPreview ? '+ ' + formatMoney(shippingTND) : '—'}</span>
+                    <span className="font-semibold text-ink">+{shippingTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between text-muted">
                     <span>Frais de service & garantie :</span>
-                    <span className="font-semibold text-ink">{pricingPreview ? '+ ' + formatMoney(serviceFeeTND) : '—'}</span>
+                    <span className="font-semibold text-ink">+{serviceFeeTND.toFixed(2)} DT</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-line font-extrabold text-sm sm:text-base">
                     <span className="text-ink">Total à régler :</span>
                     <span className="text-ink text-lg font-black">
-                      {isCalculatingPrice ? 'Calcul…' : pricingPreview ? formatMoney(orderTotalTND) : '—'}
+                      {isCalculatingPrice ? 'Calcul…' : `${orderTotalTND.toFixed(2)} DT`}
                     </span>
                   </div>
                   {pricingPreview && <p className="text-right text-xs text-muted">Tarification serveur v{pricingPreview.pricingVersion}</p>}
@@ -668,7 +671,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setQuantity(Math.min(99, quantity + 1))}
+                      onClick={() => setQuantity(quantity + 1)}
                       className="w-9 h-9 rounded-xl bg-surface hover:bg-line text-ink font-black flex items-center justify-center cursor-pointer"
                     >
                       +
@@ -687,7 +690,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
             <button
               type="button"
               onClick={() => void handleProceedToCheckoutForm()}
-              disabled={!title.trim() || !currency || sourcePrice <= 0 || quantity > 99 || !pricingPreview || isCalculatingPrice || isAddingToCart}
+              disabled={sourcePrice <= 0 || !pricingPreview || isCalculatingPrice || isAddingToCart}
               className="w-full py-3.5 px-6 rounded-2xl font-extrabold text-sm flex items-center justify-center gap-2 shadow-md bg-ink hover:bg-ink-dark text-white transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isAddingToCart ? (
@@ -697,7 +700,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
                 </>
               ) : (
                 <>
-                  <span>Continuer vers la livraison ({formatMoney(orderTotalTND)})</span>
+                  <span>Continuer vers la livraison ({orderTotalTND.toFixed(2)} DT)</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

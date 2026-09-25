@@ -1,5 +1,3 @@
-import type { CommerceProduct, SelectedVariants, UnitPriceBreakdown, ProductPromotion } from '../../shared/commerceProduct';
-
 export type StoreType = 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
 
 export interface ProductVariants {
@@ -10,7 +8,6 @@ export interface ProductVariants {
 }
 
 export interface ScrapedProduct {
-  canonical?: CommerceProduct;
   id: string;
   store: StoreType;
   storeName: string;
@@ -38,7 +35,7 @@ export interface AddToCartResult {
   itemCount: number;
 }
 
-export interface LegacyAddToCartPayload {
+export interface AddToCartPayload {
   store: StoreType;
   externalId: string | null;
   url: string;
@@ -57,22 +54,10 @@ export interface LegacyAddToCartPayload {
   quantity: number;
 }
 
-export type AddToCartPayload = LegacyAddToCartPayload | {
-  product: CommerceProduct;
-  selectedVariants: SelectedVariants;
-  quantity: number;
-  customerNote?: string;
-};
-
 export interface CartItem {
   id: string;
-  productId?: string | null;
-  sourceProductId?: string | null;
-  selectedVariants?: SelectedVariants;
-  priceSnapshot?: { unit: UnitPriceBreakdown; promotion: ProductPromotion | null; referencePrice: number | null } | null;
   sessionId: string;
   store: string;
-  merchantName?: string | null;
   externalId: string | null;
   sourceUrl: string;
   title: string;

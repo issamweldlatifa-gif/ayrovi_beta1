@@ -1,5 +1,3 @@
-import type { CommerceProduct } from '../../shared/commerceProduct';
-
 /**
  * AYROVIX — contrats partagés côté serveur.
  * AI Core fournit l'analyse visuelle et découvre des pages; AYROVIX reste
@@ -54,8 +52,6 @@ export type AyrovixChannel = 'image' | 'url' | 'qr' | 'text';
 
 /** Un candidat produit proposé à l'utilisateur pour confirmation humaine. */
 export interface AyrovixCandidate {
-  /** Authoritative product; the flat fields below are an older wire projection. */
-  canonical?: CommerceProduct;
   id: string;
   kind: 'catalog' | 'external';
   title: string;
@@ -118,8 +114,6 @@ export interface AyrovixPromo {
 
 /** Fiche produit confirmée, prête pour le Calculator puis le panier. */
 export interface AyrovixProduct {
-  /** Authoritative product; the flat fields below are an older wire projection. */
-  canonical?: CommerceProduct;
   title: string;
   brand: string | null;
   model: string | null;

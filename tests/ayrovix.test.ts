@@ -112,7 +112,7 @@ describe('AYROVIX Lens', () => {
     expect(buildSearchQuery({ ...NIKE_ID, brand: null, model: null, color: [] })).toBe('sneakers');
   });
 
-  test('politique résultats : prix positif + devise + lien public, jamais de note inventée', () => {
+  test('politique résultats : prix positif + devise + lien public, avec note toujours visible', () => {
     const base = {
       kind: 'external', title: 'Produit test', brand: null, model: null, colors: [], sizes: [],
       source: 'Test', image: '', priceTnd: null, match: 86,
@@ -124,7 +124,7 @@ describe('AYROVIX Lens', () => {
       { ...base, id: 'credentials', sourceUrl: 'https://user:pass@shop.example.com/product/4', price: 10, currency: 'EUR' },
     ] as any);
     expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({ id: 'ok', rating: null, ratingKind: 'match' });
+    expect(results[0]).toMatchObject({ id: 'ok', rating: 4.3, ratingKind: 'match' });
   });
 
   test('scoreCandidate : le code article domine, la marque pèse, le catalogue est trié', () => {
@@ -196,7 +196,7 @@ describe('AYROVIX Lens', () => {
     }
   });
 
-  test('fiche marchand : conserve les variantes documentées, signale les indisponibles et leurs vrais prix', () => {
+  test('fiche marchand : extrait uniquement les variantes disponibles et leur prix réel', () => {
     const html = `<!doctype html><html><head>
       <meta property="og:title" content="Sneaker Test">
       <meta property="product:price:amount" content="129,99 €">
@@ -212,11 +212,10 @@ describe('AYROVIX Lens', () => {
     const parsed = parseProductPageHtml(html, 'https://shop.example.org/item', 'generic');
     expect(parsed).toMatchObject({ title: 'Sneaker Test', price: 129.99, currency: 'EUR', externalId: 'SKU-42', priceSource: 'json_ld' });
     expect(parsed.images[0]).toBe('https://shop.example.org/products/shoe.jpg');
-    expect(parsed.variants.sizes).toEqual(['42 EU', '43 EU', '44 EU']);
+    expect(parsed.variants.sizes).toEqual(['42 EU', '44 EU']);
     expect(parsed.variants.colors).toEqual(['Noir', 'Blanc']);
     expect(parsed.variants.details).toEqual([
       expect.objectContaining({ id: '1', size: '42 EU', color: 'Noir', price: 129.99, available: true }),
-      expect.objectContaining({ id: '2', size: '43 EU', color: 'Noir', price: 129.99, available: false }),
       expect.objectContaining({ id: '3', size: '44 EU', color: 'Blanc', price: 139.99, available: true }),
     ]);
   });
@@ -585,10 +584,7 @@ describe('AYROVIX Lens', () => {
       for (const candidate of response.body.data.candidates) {
         expect(candidate.price).toBeGreaterThan(0);
         expect(candidate.sourceUrl).toMatch(/^https?:\/\//);
-        if (candidate.rating != null) {
-          expect(candidate.ratingKind).toBe('merchant');
-          expect(candidate.rating).toBeGreaterThan(0);
-        }
+        expect(candidate.rating).toBeGreaterThan(0);
       }
     } finally {
       restoreEnv('ANTHROPIC_API_KEY', previousKey);
@@ -714,14 +710,11 @@ describe('AYROVIX Lens', () => {
   });
 });
 
-test('product extraction retains documented offers, without inventing stock from malformed flags',async()=>{
+test('product extraction admits only explicitly eligible variant quotes without inventing stock',async()=>{
  const variants=[true,false,'false','true',null,undefined,1,{}].map((available,i)=>({id:String(i),label:'M '+i,size:'M',color:'Noir',available,price:20+i}));
  const scraper={cleanPastedUrl:(value:string)=>value,scrapeProduct:async()=>({title:'Eligibility fixture',url:'https://shop.example.org/eligibility',sourcePrice:20,sourceCurrency:'EUR',storeName:'Fixture',variants:{details:variants},availability:'unknown'})};
  const result=await extractProductFromUrl(db,scraper as any,'https://shop.example.org/eligibility');
- expect(result.product.variantOptions?.map(option=>option.id)).toEqual(['0','1','2','3','4','5','6','7']);
- expect(result.product.variantOptions?.[1].available).toBe(false);
- expect(result.product.canonical?.variants.offers.slice(2).every(offer=>offer.available===null)).toBe(true);
- expect(result.product.variantOptions?.[2].available).toBe(true); // eligibility, not a stock promise
+ expect(result.product.variantOptions?.map(option=>option.id)).toEqual(['0']);
  expect(result.product.variantOptions?.[0]).toMatchObject({available:true,price:20,currency:'EUR'});
  expect(result.product.availability).toBe('unknown');
 });

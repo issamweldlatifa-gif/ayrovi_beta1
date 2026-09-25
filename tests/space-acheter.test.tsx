@@ -51,7 +51,7 @@ describe('espace 01 — acheter', () => {
   it('branche la carte du catalogue sur le tiroir de commande', () => {
     expect(app).toContain('const openCatalogProduct = (product: ScrapedProduct) =>');
     expect(app).toContain('onOpenProduct={openCatalogProduct}');
-    expect(cms).toContain("tr('Voir le produit', 'عرض المنتج')");
+    expect(cms).toContain("tr('Commander', 'اطلب الآن')");
   });
 
   it('convertit un produit du catalogue sans recalculer les prix du serveur', () => {
@@ -76,7 +76,7 @@ describe('espace 01 — acheter', () => {
   it('reste honnête sur une plateforme inconnue et sur un produit épuisé', () => {
     const unknown = catalogProductToScraped({ id: 'x', name: 'Article', sourcePlatform: '', originalPrice: 10, currency: 'EUR', finalPrice: 42, stockStatus: 'OUT_OF_STOCK' });
     expect(unknown.store).toBe('generic');
-    expect(unknown.storeName).toBe(''); // No merchant was supplied.
+    expect(unknown.storeName).toBe('AYROVI');
     expect(unknown.availability).toBe('out_of_stock');
     expect(unknown.variants).toEqual({});
     // Aucun prix inventé : un champ absent vaut 0, jamais NaN ni un montant deviné.

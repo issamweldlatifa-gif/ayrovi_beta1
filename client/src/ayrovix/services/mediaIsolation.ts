@@ -5,28 +5,16 @@
  * brute reste toujours en repli (cycle onError du cadre) — jamais d'image cassée.
  * Les chemins locaux (uploads, fixtures) ne sont jamais proxyfiés.
  */
-import { validProductUrl } from './resultPolicy';
-
-/** Only source media for THIS product. Never request an image from a local,
- * credential-bearing or script URL supplied by an external listing.
- */
-export function safeMediaSrc(url: string | null | undefined): boolean {
-  if (!url || url.length > 4096) return false;
-  if (url.startsWith('/')) return !url.startsWith('//') && !url.includes('..') && !url.includes('\\');
-  if (url.startsWith('blob:')) return true; // locally generated Lens preview
-  return validProductUrl(url);
-}
-
 export function isolatedMediaUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  if (!validProductUrl(url)) return null;
+  if (!/^https?:\/\//i.test(url)) return null;
   return `/api/public/media/isolated?url=${encodeURIComponent(url)}`;
 }
 
 /** REDIMENSIONNEMENT par NOTRE serveur (WebP) — plus léger et sans hotlink fragile. */
 export function proxiedMediaUrl(url: string | null | undefined, width = 760): string | null {
   if (!url) return null;
-  if (!validProductUrl(url)) return null;
+  if (!/^https?:\/\//i.test(url)) return null;
   return `/api/public/media/img?u=${encodeURIComponent(url)}&w=${width}`;
 }
 
@@ -39,7 +27,6 @@ export function proxiedMediaUrl(url: string | null | undefined, width = 760): st
 export function withIsolation(urls: string[]): string[] {
   const output: string[] = [];
   for (const url of urls) {
-    if (!safeMediaSrc(url)) continue;
     const isolated = isolatedMediaUrl(url);
     if (isolated) output.push(isolated);
     const proxied = proxiedMediaUrl(url);

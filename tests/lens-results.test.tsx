@@ -67,7 +67,7 @@ describe('AYROVIX LENS results screen (post-analysis, real-data shape)', () => {
   });
   it('shows the unchanged TND price, without extra price labels/currencies', () => {
     const html = render();
-    expect(html).toContain('598,000 DT');
+    expect(html).toContain('598.00 DT');
     expect(html).not.toContain('Prix boutique');
     expect(html).not.toContain('EUR');
     expect(html).toContain('Voir le produit');

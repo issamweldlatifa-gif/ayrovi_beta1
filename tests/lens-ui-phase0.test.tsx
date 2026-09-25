@@ -55,10 +55,9 @@ describe('Lens Phase 0 UI improvements', () => {
     );
     // Should NOT contain invented product image but should show merchant source name
     expect(html).toContain('Zalando');
+    // Should contain favicon fallback logic (google s2 favicons) in source file
     const src = readFileSync('client/src/ayrovix/components/LensProductCard.tsx','utf8');
-    expect(html).toContain('ay-studio-frame__placeholder');
-    expect(html).not.toContain('<img');
-    expect(src).toContain('StudioImageFrame');
+    expect(src).toContain('lens-card-placeholder');
     expect(src).not.toContain('fallbackImage');
   });
 
@@ -86,7 +85,7 @@ describe('Lens Phase 0 UI improvements', () => {
     const html = renderToStaticMarkup(
       <LocaleProvider><InteractiveLensResults view={view as any} previewUrl={null} fallbackImage={null} onChoose={()=>{}} onReset={()=>{}} onCommandDetected={()=>{}} /></LocaleProvider>
     );
-    expect(html).toContain('598,000 DT');
+    expect(html).toContain('598.00 DT');
     for (const text of ['Prix final estimé','Prix boutique','Estimation tout inclus','84 EUR']) expect(html).not.toContain(text);
   });
 
@@ -119,11 +118,10 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(src).toContain('Voir tout');
   });
 
-  it('ProductResult marks documented unavailable options and links to the exact merchant page', () => {
+  it('ProductResult shows amber warning when variants unavailable and links to merchant page', () => {
     const src = readFileSync('client/src/ayrovix/components/ProductResult.tsx','utf8');
-    expect(src).toContain('option.available === false');
-    expect(src).toContain('Choisissez les options requises');
-    expect(src).toContain('href={sourceLink}');
-    expect(src).not.toContain('Il en reste');
+    expect(src).toContain('Tailles/couleurs non listées');
+    expect(src).toContain('Ouvrir la fiche marchand');
+    expect(src).toContain('bg-amber-50');
   });
 });

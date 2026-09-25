@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import { randomInt, randomUUID } from 'node:crypto';
 import { registerLensTracePersistence } from '../ayrovix/services/lensPerformanceTrace';
-import { snapshotLinePrice } from '../ayrovix/cartPricing';
 import { CartItem, AddToCartRequest } from '../types';
 import { calculatePrice, DEFAULT_CUSTOMS_CATEGORIES, MAX_ORDER_TOTAL_TND, orderLocalDelivery, PricingRules } from '../services/pricing';
 import { millimes } from '../services/pricing';
@@ -1830,11 +1829,6 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
-    this.ensureColumn('cart_items', 'merchant_name', 'TEXT');
-    this.ensureColumn('cart_items', 'product_id', 'TEXT');
-    this.ensureColumn('cart_items', 'source_product_id', 'TEXT');
-    this.ensureColumn('cart_items', 'selected_variants_json', "TEXT NOT NULL DEFAULT '{}'");
-    this.ensureColumn('cart_items', 'price_snapshot_json', 'TEXT');
     // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
     this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
@@ -1859,7 +1853,6 @@ export class QatafoDatabase {
         .run('reel_demo_01', 'La sélection AYROVI en mouvement', 'pub_ayrovi', 'Découvrez la sélection en vidéo.', 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4', 8, nowR, 'publie', nowR, nowR);
     }
 
-    this.ensureColumn('order_items', 'merchant_name', 'TEXT');
     this.ensureColumn('order_items', 'requested_size', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'requested_color', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
@@ -2789,15 +2782,21 @@ export class QatafoDatabase {
         'Arrivage prioritaire pour les commandes éligibles Express.','/media/hero-femme.jpg','[]','Express','ACTIVE',now,now,now);
     }
 
-    // A merchant home page and an editorial photograph are not a sourced
-    // product listing. Never seed a purchasable demo article into production.
-    // Existing installations are cleaned up once, without touching edited rows.
-    this.runOnceDataMigration('remove_unsourced_demo_product_v1', () => {
-      this.run(`DELETE FROM products WHERE id='product_demo_01'
-        AND name='Ensemble tendance AYROVI'
-        AND description='Produit de démonstration relié à l’arrivage actif.'
-        AND source_url='https://www.shein.com/'`);
-    });
+    if ((this.db.prepare('SELECT COUNT(*) AS count FROM products').get() as any).count === 0) {
+      const rules = this.getPricingRules();
+      const breakdown = calculatePrice(rules, 21.99, 'EUR')!;
+      this.db.prepare(`INSERT INTO products
+        (id,name,description,image,additional_images,brand_id,brand_name,category,source_url,source_platform,
+         original_price,currency,converted_price,customs_fee,shipping_fee,service_fee,final_price,express_available,stock_status,status,created_at,updated_at)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+          'product_demo_01','Ensemble tendance AYROVI','Produit de démonstration relié à l’arrivage actif.',
+          '/media/hero-femme.jpg','[]','brand_shein','SHEIN','Mode','https://www.shein.com/','SHEIN',21.99,'EUR',
+          breakdown.convertedPriceTND,breakdown.customsFeeTND,breakdown.shippingFeeTND,breakdown.serviceFeeTND,breakdown.totalTND,
+          1,'AVAILABLE','ACTIVE',now,now,
+        );
+      this.db.prepare('INSERT OR IGNORE INTO product_arrivals (product_id,arrival_id) VALUES (?,?)').run('product_demo_01','arrival_08');
+      this.db.prepare('INSERT OR IGNORE INTO product_arrivals (product_id,arrival_id) VALUES (?,?)').run('product_demo_01','arrival_express_04');
+    }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM promotions').get() as any).count === 0) {
       this.db.prepare(`INSERT INTO promotions
@@ -2807,6 +2806,7 @@ export class QatafoDatabase {
           '/media/hero-enfants.jpg','PERCENTAGE',20,'2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z','ARRIVAGE20',500,0,'ACTIVE',now,now,
         );
       this.db.prepare('INSERT OR IGNORE INTO promotion_arrivals (promotion_id,arrival_id) VALUES (?,?)').run('promo_arrival_08','arrival_08');
+      this.db.prepare('INSERT OR IGNORE INTO promotion_products (promotion_id,product_id) VALUES (?,?)').run('promo_arrival_08','product_demo_01');
     }
 
     if ((this.db.prepare('SELECT COUNT(*) AS count FROM stories').get() as any).count === 0) {
@@ -2814,7 +2814,7 @@ export class QatafoDatabase {
         (id,media_type,media_url,title,description,cta,target_url,product_id,arrival_id,promotion_id,publish_at,expires_at,priority,status,created_at,updated_at)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
           'story_arrival_08','IMAGE','/media/hero-femme.jpg','Arrivage #08 ouvert','Découvrez la sélection et préparez votre commande.','Découvrir','#arrivages',
-          null,'arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
+          'product_demo_01','arrival_08','promo_arrival_08','2026-08-12T00:00:00.000Z','2026-08-21T23:59:59.000Z',100,'PUBLISHED',now,now,
         );
     }
 
@@ -2824,7 +2824,7 @@ export class QatafoDatabase {
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
           'news_arrival_08','Le nouvel arrivage AYROVI est ouvert','Les commandes pour l’arrivage #08 sont maintenant disponibles.',
           'Préparez vos liens et captures avec Lens. AYROVI centralise le calcul, l’achat et la livraison en Tunisie.',
-          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08',null,'Équipe AYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
+          '/media/hero-homme.jpg','NEW_ARRIVAL','arrival_08','product_demo_01','Équipe AYROVI','2026-08-12T00:00:00.000Z','PUBLISHED',now,now,
         );
     }
 
@@ -3018,13 +3018,8 @@ export class QatafoDatabase {
   private mapRow(row: any): CartItem {
     return {
       id: row.id,
-      productId: row.product_id || null,
-      sourceProductId: row.source_product_id || null,
-      selectedVariants: row.selected_variants_json ? JSON.parse(row.selected_variants_json) : {},
-      priceSnapshot: row.price_snapshot_json ? JSON.parse(row.price_snapshot_json) : null,
       sessionId: row.session_id,
       store: row.store,
-      merchantName: row.merchant_name || null,
       externalId: row.external_id,
       sourceUrl: row.source_url,
       title: row.title,
@@ -3054,21 +3049,10 @@ export class QatafoDatabase {
     const now = new Date().toISOString();
     const owner = this.cartOwner(accountId);
     owner.value = accountId || sessionId;
-    if (item.productId && item.priceSnapshot) {
-      const existing = this.get<any>(`SELECT * FROM cart_items WHERE ${owner.clause} AND product_id=?
-        AND selected_variants_json=? AND source_price=? AND source_currency=? AND price_tnd=?
-        AND price_snapshot_json=? AND customer_note=?`, owner.value, item.productId, JSON.stringify(item.selectedVariants || {}),
-        item.sourcePrice, item.sourceCurrency, item.priceTND, JSON.stringify(item.priceSnapshot), item.customerNote || '');
-      if (existing) {
-        const newQty = Number(existing.quantity) + (item.quantity || 1);
-        if (newQty > 99) throw new RangeError('CART_QUANTITY_LIMIT');
-        this.run(`UPDATE cart_items SET quantity=?,updated_at=? WHERE id=? AND ${owner.clause}`, newQty, now, existing.id, owner.value);
-        return this.getItemById(existing.id, sessionId, accountId)!;
-      }
-    } else if (item.externalId) {
+    if (item.externalId) {
       const existing = this.get<any>(`
         SELECT * FROM cart_items WHERE ${owner.clause} AND store = ? AND external_id = ? AND source_url = ?
-          AND product_id IS NULL AND IFNULL(variant, '') = IFNULL(?, '') AND requested_size = ? AND requested_color = ? AND customer_note = ?
+          AND IFNULL(variant, '') = IFNULL(?, '') AND requested_size = ? AND requested_color = ? AND customer_note = ?
       `, owner.value, item.store, item.externalId, item.url, item.variant || '', item.requestedSize || '', item.requestedColor || '', item.customerNote || '');
       if (existing) {
         const newQty = Number(existing.quantity) + (item.quantity || 1);
@@ -3081,16 +3065,13 @@ export class QatafoDatabase {
 
     const id = `ayr_${randomUUID().substring(0, 8)}`;
     this.run(`INSERT INTO cart_items (
-      id, session_id, account_id, store, merchant_name, external_id, source_url, title, image_url,
+      id, session_id, account_id, store, external_id, source_url, title, image_url,
       source_price, source_currency, price_tnd, variant, requested_size, requested_color, customer_note,
-      reference_url, price_verification_status, quantity, created_at, updated_at,
-      product_id, source_product_id, selected_variants_json, price_snapshot_json
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    id, sessionId, accountId || null, item.store, item.merchantName || null, item.externalId || null, item.url, item.title, item.imageUrl,
+      reference_url, price_verification_status, quantity, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    id, sessionId, accountId || null, item.store, item.externalId || null, item.url, item.title, item.imageUrl,
     item.sourcePrice, item.sourceCurrency, item.priceTND, item.variant || null, item.requestedSize || '', item.requestedColor || '',
-    item.customerNote || '', item.referenceUrl || '', item.priceVerificationStatus || 'VERIFIED', item.quantity || 1, now, now,
-    item.productId || null, item.sourceProductId || null, JSON.stringify(item.selectedVariants || {}),
-    item.priceSnapshot ? JSON.stringify(item.priceSnapshot) : null);
+    item.customerNote || '', item.referenceUrl || '', item.priceVerificationStatus || 'VERIFIED', item.quantity || 1, now, now);
     return this.getItemById(id, sessionId, accountId)!;
   }
 
@@ -3133,11 +3114,7 @@ export class QatafoDatabase {
       const guestItems = this.all<any>('SELECT * FROM cart_items WHERE session_id=? AND account_id IS NULL ORDER BY created_at', sessionId);
       let attached = 0;
       for (const item of guestItems) {
-        const existing = item.product_id
-          ? this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND product_id=? AND selected_variants_json=?
-              AND source_price=? AND source_currency=? AND price_tnd=? AND customer_note=?`,
-            accountId, item.product_id, item.selected_variants_json, item.source_price, item.source_currency, item.price_tnd, item.customer_note || '')
-          : item.external_id
+        const existing = item.external_id
           ? this.get<any>(`SELECT * FROM cart_items WHERE account_id=? AND store=? AND external_id=? AND source_url=?
               AND IFNULL(variant,'')=IFNULL(?,'') AND requested_size=? AND requested_color=? AND customer_note=?`,
             accountId, item.store, item.external_id, item.source_url, item.variant || '', item.requested_size || '', item.requested_color || '', item.customer_note || '')
@@ -3192,13 +3169,6 @@ export class QatafoDatabase {
 
       const promoApplied: Array<{ itemId: string; title: string; categoryId: string; percent: number; label: string; source: string; ruleId: string; discountTND: number }> = [];
       const breakdowns = items.map((item) => {
-        const snapshot = snapshotLinePrice(item);
-        if (snapshot) {
-          const promotion = item.priceSnapshot?.promotion;
-          if (promotion) promoApplied.push({ itemId: item.id, title: item.title, categoryId: snapshot.categoryId,
-            percent: promotion.percent, label: promotion.label, source: 'signed_quote', ruleId: '', discountTND: snapshot.discountTND });
-          return { item, price: snapshot };
-        }
         let price = calculatePrice(rules, item.sourcePrice, item.sourceCurrency, {
           quantity: item.quantity, includeLocalDelivery: false, title: item.title,
         });
@@ -3268,12 +3238,12 @@ export class QatafoDatabase {
 
       for (const { item, price } of breakdowns) {
         this.run(`INSERT INTO order_items (
-          id,order_id,product_id,arrival_id,product_name,source_platform,merchant_name,source_url,image_url,variant,
+          id,order_id,product_id,arrival_id,product_name,source_platform,source_url,image_url,variant,
           requested_size,requested_color,customer_note,reference_url,price_verification_status,quantity,
           original_price,currency,exchange_rate,converted_price_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,
           discount_tnd,total_tnd,pricing_snapshot,created_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        `order_item_${randomUUID()}`, orderId, item.productId || null, null, item.title, item.store.toUpperCase(), item.merchantName || null, item.sourceUrl,
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        `order_item_${randomUUID()}`, orderId, null, null, item.title, item.store.toUpperCase(), item.sourceUrl,
         item.imageUrl, item.variant, item.requestedSize, item.requestedColor, item.customerNote, item.referenceUrl,
         item.priceVerificationStatus, item.quantity, item.sourcePrice, item.sourceCurrency, price.exchangeRate,
         price.convertedPriceTND, price.customsFeeTND, price.shippingFeeTND, price.serviceFeeTND, price.expressFeeTND,

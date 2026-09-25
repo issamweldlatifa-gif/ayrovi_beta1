@@ -1,4 +1,4 @@
-import { prepareProductOrder } from '../../ayrovix/services/orderProduct';
+import { resolveProductSelection, completeProductOffer, productSelectionLabels } from '../../ayrovix/services/productSelection';
 import { useAssistantAttachments } from './media/useAssistantAttachments';
 import { VoiceNoteCapture, type VoiceNoteState } from './media/VoiceNoteCapture';
 import { imageErrorLabels, voiceNoteErrorLabels } from './media/mediaLabels';
@@ -20,7 +20,7 @@ import type { VoiceChatState } from './voice/types';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { getSessionId } from '../../utils/session';
 import { AyroviMotionState } from '../AyroviMotion';
-import { analyzeUrl, enrichCandidate, markChosen } from '../../ayrovix/services/lensApi';
+import { analyzeUrl, markChosen } from '../../ayrovix/services/lensApi';
 import type { AyrovixCandidate, AyrovixOrderPayload, AyrovixProduct } from '../../ayrovix/types';
 import type { AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
 import { streamAssistantChat, transcribeAssistantAudio } from './assistantApi';
@@ -49,11 +49,21 @@ interface AiAssistantDrawerProps {
 
 const createConversationId = () => `conversation_${Date.now()}_${globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)}`;
 
+const toStoreKey = (source: string): AyrovixOrderPayload['store'] => {
+  const value = source.toLowerCase();
+  if (value.includes('shein')) return 'shein';
+  if (value.includes('amazon')) return 'amazon';
+  if (value.includes('temu')) return 'temu';
+  if (value.includes('aliexpress')) return 'aliexpress';
+  return 'generic';
+};
+
 const candidateToProduct = (candidate: AyrovixCandidate): AyrovixProduct => ({
   title: candidate.title,
   brand: candidate.brand,
   model: candidate.model,
-  description: candidate.description || '',
+  // P1 : la description produite par nos moteurs (AI/SerpAPI) arrive enfin à la carte.
+  description: candidate.description || candidate.model || '',
   image: candidate.image,
   images: candidate.images?.length ? candidate.images : candidate.image ? [candidate.image] : [],
   source: candidate.source,
@@ -70,8 +80,7 @@ const candidateToProduct = (candidate: AyrovixCandidate): AyrovixProduct => ({
   exchangeRate: null,
   colors: candidate.colors,
   sizes: candidate.sizes,
-  availability: candidate.availability || 'unknown',
-  canonical: candidate.canonical,
+  availability: candidate.kind === 'catalog' ? 'in_stock' : 'unknown',
 });
 
 export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
@@ -729,16 +738,12 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     setProductBusyId(candidate.id);
     try {
       let product = candidateToProduct(candidate);
-      if (candidate.canonical?.identity.source === 'serpapi' && candidate.canonical.quoteToken && !refreshRequired) {
-        // Never replace SerpAPI price or rating with unrelated scraped-page claims.
-        const result = await enrichCandidate(candidate.canonical, controller.signal);
-        if (!current()) return;
-        product = result.product;
-      } else if (refreshRequired || !candidate.canonical) {
-        // Restored history has no live signed quote: re-read its real URL.
+      if (refreshRequired || candidate.kind === 'external') {
         const result = await analyzeUrl(candidate.sourceUrl, 'url', controller.signal, false);
         if (!current()) return;
         if (result.eventId) void markChosen(result.eventId);
+        // Quote-bound fields (title, URL, price, currency, status, token) must all
+        // come from the same new response. Never overwrite them with history.
         product = result.product;
       }
       if (current()) openAssistantProduct({ messageId, product, priceVerified: product.priceVerificationStatus === 'VERIFIED' });
@@ -751,16 +756,39 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
     }
   };
 
-  const handleProductOrder = async (selection: AyrovixOrderSelection) => {
+  const handleProductOrder = async ({ size, color, quantity, customerNote, manualUrl }: AyrovixOrderSelection) => {
     const product = selectedProduct?.product;
     if (!product) return;
     if (isStoredProduct) { showToast(tr('Actualisez d’abord le produit conservé.', 'حدّث المنتج المحفوظ أولًا.')); return; }
+    const { option, offer } = resolveProductSelection(product, size, color);
+    if (!completeProductOffer(offer)) {
+      showToast(tr(...productSelectionLabels.unavailable));
+      return;
+    }
+    const variant = [size && `Taille: ${size}`, color && `Couleur: ${color}`].filter(Boolean).join(' · ');
     setIsOrdering(true);
     try {
-      await onOrder(prepareProductOrder(product, selection));
+      await onOrder({
+        store: toStoreKey(product.sourceUrl || product.source || manualUrl),
+        externalId: option?.id || null,
+        url: manualUrl,
+        referenceUrl: product.sourceUrl || '',
+        title: product.title,
+        imageUrl: product.image || '',
+        sourcePrice: offer.price,
+        sourceCurrency: offer.currency,
+        priceTND: offer.priceTnd ?? 0,
+        variant: option?.label || variant || undefined,
+        requestedSize: size,
+        requestedColor: color,
+        customerNote,
+        priceVerificationStatus: product.priceVerificationStatus || 'PENDING_MANUAL',
+        priceToken: offer.priceToken,
+        quantity,
+      });
       setSelectedProduct(null);
-      showToast(tr('Produit ajouté au panier.', 'أضيف المنتج إلى السلة.'));
-    } catch (error: any) { showToast(error?.message || tr('Ajout au panier indisponible.', 'الإضافة إلى السلة غير متاحة.')); }
+      showToast('Produit ajouté au panier.');
+    } catch (error: any) { showToast(error?.message || "L’article n’a pas pu être ajouté au panier."); }
     finally { setIsOrdering(false); }
   };
 

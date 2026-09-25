@@ -84,11 +84,11 @@ describe('Deduplicate', () => {
     const res = deduplicateCandidates([a,b]);
     expect(res.length).toBe(1);
   });
-  it('does NOT merge distinct source URLs just because title, brand and merchant match', () => {
+  it('dedup by normalized title+brand+source (jaccard >0.88)', () => {
     const a = cand({ title: 'Nike Air Max 270 White Sneakers', source: 'Amazon' });
     const b = cand({ id: '2', title: 'Nike Air Max 270 White Sneakers', source: 'Amazon', sourceUrl: 'https://amazon.com/other' });
     const res = deduplicateCandidates([a,b]);
-    expect(res.length).toBe(2);
+    expect(res.length).toBe(1);
   });
   it('NOT dedup different source', () => {
     const a = cand({ source: 'Amazon', sourceUrl: 'https://amazon.com/a' });

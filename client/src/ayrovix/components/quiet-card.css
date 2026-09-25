@@ -1,10 +1,10 @@
 /* QUIET CARD v2 — pièces partagées (cadre studio, prix, actions).
- * Fond neutre unifié, filet hairline unique, aucune boîte interne.
+ * Blanc unifié, filet hairline unique, aucune boîte interne.
  * Référence Zalando (décision client 2026-09-23) : promo ROUGE. */
 
-/* 1. Cadre studio : toile neutre + padding + hairline + coins arrondis.
- *    Pas de multiply global : préserver les couleurs réelles du marchand,
- *    notamment les objets clairs, les transparences et les photos de mode. */
+/* 1. Cadre studio : canvas blanc unifié + padding + hairline + coins arrondis.
+ *    mix-blend-mode: multiply → le blanc des photos marchand se fond dans le
+ *    canvas blanc ; les photos sombres restent nettes et cadrées. */
 .ay-studio-frame {
   position: relative;
   display: grid;
@@ -17,7 +17,7 @@
   padding: 0.5rem;
   border: 1px solid var(--ayrovi-neutral-200, #e5e5e5);
   border-radius: var(--ayrovi-radius-card, 14px);
-  background: #f6f6f6;
+  background: #fff;
   contain: layout paint;
 }
 
@@ -29,7 +29,7 @@
   max-height: 100%;
   object-fit: contain;
   object-position: center;
-  mix-blend-mode: normal;
+  mix-blend-mode: multiply;
   user-select: none;
 }
 

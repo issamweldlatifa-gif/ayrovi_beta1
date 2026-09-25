@@ -6,7 +6,6 @@ import { CartItem } from '../types';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
-import { formatSourceMoney } from '../commerce/formatSourceMoney';
 import { validProductUrl } from '../ayrovix/services/resultPolicy';
 import { StudioImageFrame, QuietPromoPrice } from '../ayrovix/components/quiet-card';
 
@@ -22,7 +21,6 @@ interface CartDrawerProps {
 }
 
 function merchantLabel(item: CartItem, fallback: string): string {
-  if (item.merchantName) return item.merchantName;
   if (item.store && item.store.toLowerCase() !== 'generic') return item.store.toUpperCase();
   try {
     const host = new URL(item.sourceUrl).hostname.replace(/^www\./, '');
@@ -40,7 +38,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
   onProceedToCheckout,
   onCalculateAnotherProduct,
 }) => {
-  const { tr, direction, locale, formatMoney } = useLocale();
+  const { tr, direction, formatMoney } = useLocale();
   const commerce = useCommercePolicy(isOpen);
   const depositPolicy = commerce.policy?.deposit;
   useBodyScrollLock(isOpen);
@@ -101,7 +99,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                   key={item.id}
                   className="bg-surface border border-line rounded-card p-3.5 flex gap-3.5 items-start group hover:border-line/40 transition-all"
                 >
-                  {/* Vignette — cadre studio unifié, sans altération des couleurs source */}
+                  {/* Vignette — cadre studio unifié : blanc + hairline + multiply */}
                   <div className="w-16 h-16 flex-shrink-0">
                     <StudioImageFrame src={item.imageUrl} alt={item.title} ratio="1 / 1" />
                   </div>
@@ -127,15 +125,12 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       {item.title}
                     </h4>
 
-                    {formatSourceMoney(item.sourcePrice, item.sourceCurrency, locale) && <p className="ay-readable text-xs text-muted mt-0.5">{tr('Prix boutique par article', 'سعر المتجر للقطعة')} : {formatSourceMoney(item.sourcePrice, item.sourceCurrency, locale)}</p>}
-                    {item.priceSnapshot?.referencePrice != null && formatSourceMoney(item.priceSnapshot.referencePrice, item.sourceCurrency, locale) &&
-                      <p className="ay-readable text-xs text-muted mt-0.5">{tr('Prix de référence boutique', 'السعر المرجعي للمتجر')} : <s>{formatSourceMoney(item.priceSnapshot.referencePrice, item.sourceCurrency, locale)}</s></p>}
                     {item.variant && (
                       <p className="ay-readable text-xs text-muted mt-0.5">
                         {item.variant}
                       </p>
                     )}
-                    {!item.productId && (item.requestedSize || item.requestedColor) && (
+                    {(item.requestedSize || item.requestedColor) && (
                       <p className="mt-0.5 text-xs font-semibold text-muted">
                         {[item.requestedSize && `${tr('Taille', 'المقاس')} ${item.requestedSize}`, item.requestedColor && `${tr('Couleur', 'اللون')} ${item.requestedColor}`].filter(Boolean).join(' · ')}
                       </p>
@@ -145,7 +140,7 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                       <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-xs font-bold text-ink underline">{tr('Ouvrir le lien produit fourni', 'فتح رابط المنتج المرفق')}</a>
                     )}
                     {item.priceVerificationStatus === 'PENDING_MANUAL' && (
-                      <p className="mt-1 flex items-center gap-1 text-xs font-bold text-muted">{tr('Prix à vérifier par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
+                      <p className="mt-1 flex items-center gap-1 text-xs font-bold text-muted">{tr('Prix vérifié par l’équipe avant achat', 'يتحقق الفريق من السعر قبل الشراء')}</p>
                     )}
                     {item.requiresWeightValidation && (
                       <p className="mt-1 flex items-center gap-1 text-xs font-bold text-muted">{tr('Colis lourd : le fret international sera confirmé par notre équipe avant paiement', 'منتج ثقيل: يتم تأكيد الشحن الدولي من قبل فريقنا قبل الدفع')}</p>

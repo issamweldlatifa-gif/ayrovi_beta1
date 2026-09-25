@@ -23,6 +23,6 @@ describe('product presentation does not invent trust signals or commercial terms
  });
  it('waits for server-provided payment conditions instead of silently inventing 20%',()=>{
   const html=renderToStaticMarkup(<LocaleProvider><ProductResult product={product} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
-  expect(html).not.toContain('20%');expect(html).not.toContain('null%');expect(html).toContain('Conditions de paiement en cours de chargement');expect(html).toContain('disabled=');expect(html).toContain('Prix AYROVI par article');
+  expect(html).not.toContain('20%');expect(html).not.toContain('null%');expect(html).toContain('Conditions en cours de chargement');expect(html).toContain('disabled=');expect(html).toContain('Prix total estimé');
  });
 });

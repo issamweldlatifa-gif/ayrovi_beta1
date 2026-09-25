@@ -1,5 +1,3 @@
-import type { CommerceProduct, SelectedVariants } from '../../../shared/commerceProduct';
-
 /** AYROVIX — contrats client (miroir 1:1 de src/ayrovix/types.ts). */
 
 export interface AyrovixDetectedProductItem {
@@ -56,8 +54,6 @@ export interface AyrovixPromo {
 }
 
 export interface AyrovixCandidate {
-  /** The canonical product is authoritative; legacy flat fields are read-only projections. */
-  canonical?: CommerceProduct;
   id: string;
   kind: 'catalog' | 'external';
   title: string;
@@ -113,7 +109,6 @@ export interface AyrovixVariantOption {
 }
 
 export interface AyrovixProduct {
-  canonical?: CommerceProduct;
   title: string;
   brand: string | null;
   model: string | null;
@@ -212,7 +207,7 @@ export interface AyrovixHistoryItem {
   createdAt: string;
 }
 
-export interface LegacyAyrovixOrderPayload {
+export interface AyrovixOrderPayload {
   store: 'amazon' | 'shein' | 'temu' | 'aliexpress' | 'generic';
   externalId: string | null;
   url: string;
@@ -231,11 +226,3 @@ export interface LegacyAyrovixOrderPayload {
   priceToken: string;
   quantity: number;
 }
-
-export type AyrovixOrderPayload = LegacyAyrovixOrderPayload | {
-  /** Complete server-signed product; all identity and money fields are derived on the server. */
-  product: CommerceProduct;
-  selectedVariants: SelectedVariants;
-  quantity: number;
-  customerNote?: string;
-};

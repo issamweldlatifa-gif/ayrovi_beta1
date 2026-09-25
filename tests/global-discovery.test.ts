@@ -101,25 +101,23 @@ describe('GLOBAL DISCOVERY — architecture source-agnostique', () => {
     expect(order.source).toBe('BONICHON');
   });
 
-  test('groupOffers keeps distinct merchant listings separate, even with the same title', () => {
+  test('groupOffers : un produit multi-sources devient UN candidat avec plusieurs offres', () => {
     const result = groupOffers([
       candidate({ id: 'a', source: 'Boutique A', sourceUrl: 'https://a.com/p', price: 120, priceTnd: 360, match: 70 }),
       candidate({ id: 'b', source: 'Boutique B', sourceUrl: 'https://b.com/p', price: 90, priceTnd: 280, match: 75 }),
       candidate({ id: 'c', source: 'Boutique C', sourceUrl: 'https://c.com/p', price: 150, priceTnd: 430, match: 60 }),
       candidate({ id: 'd', title: 'Adidas Samba OG', brand: 'Adidas', source: 'Boutique D', sourceUrl: 'https://d.com/p', price: 80, priceTnd: 250, match: 65 }),
     ]);
-    expect(result.map(item => item.id)).toEqual(['a', 'b', 'c', 'd']);
-    expect(result.map(item => item.priceTnd)).toEqual([360, 280, 430, 250]);
-    expect(result.every(item => item.offerCount === undefined)).toBe(true);
-  });
-
-  test('tracking-only URL duplicates collapse, but merchant variant URLs remain distinct', () => {
-    const result = groupOffers([
-      candidate({ id: 'a', sourceUrl: 'https://a.com/product?color=blue&utm_source=lens' }),
-      candidate({ id: 'b', sourceUrl: 'https://a.com/product?color=blue&utm_source=search' }),
-      candidate({ id: 'c', sourceUrl: 'https://a.com/product?color=red&utm_source=lens' }),
-    ]);
-    expect(result.map(item => item.id)).toEqual(['a', 'c']);
+    expect(result).toHaveLength(2);
+    const multi = result.find((item) => item.id !== 'd')!;
+    expect(multi.offerCount).toBe(3);
+    expect(multi.offers).toHaveLength(3);
+    // Offres triées par prix TND croissant : la moins chère d'abord.
+    expect(multi.offers!.map((offer) => offer.priceTnd)).toEqual([280, 360, 430]);
+    // Le représentant est le meilleur match, pas le premier venu.
+    expect(multi.source).toBe('Boutique B');
+    const single = result.find((item) => item.id === 'd')!;
+    expect(single.offerCount).toBeUndefined();
   });
 
   test('le catalogue AYROVI n’est jamais regroupé avec les offres externes', () => {

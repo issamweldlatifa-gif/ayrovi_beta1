@@ -1,5 +1,3 @@
-import type { CommerceProduct, SelectedVariants, UnitPriceBreakdown, ProductPromotion } from '../../shared/commerceProduct';
-
 /**
  * GLOBAL DISCOVERY — le type d'une source est OUVERT : les valeurs historiques
  * restent proposées en complétion, mais toute nouvelle boutique mondiale est
@@ -16,14 +14,10 @@ export interface ProductVariantDetail {
   color?: string | null;
   /** Eligible for a variant-specific choice; not a live stock guarantee. */
   available: boolean;
-  /** Reported merchant stock, separate from the legacy manual-choice eligibility flag. */
-  stockStatus?: boolean | null;
   price?: number | null;
-  attributes?: Record<string, string>;
 }
 
 export interface ProductVariants {
-  groups?: Array<{ name: string; required?: boolean; options: Array<string | { id?: string; label: string; available?: boolean | null }> }>;
   sizes?: string[];
   colors?: string[];
   styles?: string[];
@@ -32,7 +26,6 @@ export interface ProductVariants {
 }
 
 export interface ScrapedProduct {
-  canonical?: CommerceProduct;
   id: string;
   store: StoreType;
   storeName: string;
@@ -46,7 +39,6 @@ export interface ScrapedProduct {
   mainImage: string;
   sourcePrice: number;
   sourceCurrency: string;
-  referencePrice?: number | null;
   convertedPriceTND: number;
   estimatedShippingTND: number;
   serviceFeeTND: number;
@@ -66,13 +58,8 @@ export interface ScrapedProduct {
 
 export interface CartItem {
   id: string;
-  productId?: string | null;
-  sourceProductId?: string | null;
-  selectedVariants?: SelectedVariants;
-  priceSnapshot?: { unit: UnitPriceBreakdown; promotion: ProductPromotion | null; referencePrice: number | null } | null;
   sessionId: string;
   store: string;
-  merchantName?: string | null;
   externalId: string | null;
   sourceUrl: string;
   title: string;
@@ -92,13 +79,7 @@ export interface CartItem {
 }
 
 export interface AddToCartRequest {
-  product?: CommerceProduct;
-  productId?: string | null;
-  sourceProductId?: string | null;
-  selectedVariants?: SelectedVariants;
-  priceSnapshot?: CartItem['priceSnapshot'];
   store: string;
-  merchantName?: string | null;
   externalId?: string | null;
   url: string;
   title: string;

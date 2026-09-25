@@ -11,9 +11,8 @@ import { getPublicHome } from '../services/publicApi';
 import { StoryTab, HomeStoryStrip } from '../social/StoryTab';
 import type { StoryCta } from '../social/types';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
-import { ShoppingBag } from './QatafoIcons';
+import { ShoppingBag, Heart } from './QatafoIcons';
 import { catalogProductToScraped, type CatalogProduct } from '../commerce/catalogProduct';
-import { StudioImageFrame } from '../ayrovix/components/quiet-card';
 import type { ScrapedProduct } from '../types';
 
 interface HomeData { arrivals: any[]; products: any[]; promotions: any[]; stories: any[]; news: any[]; }
@@ -207,8 +206,7 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
     if (page === 'products') return home.products.length ? (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-3 gap-y-6 sm:gap-x-4 sm:gap-y-8">
         {(home.products as CatalogProduct[]).map((product) => {
-          const soldOut = product.canonical ? product.canonical.availability === 'out_of_stock' : String(product.stockStatus || '').toUpperCase() === 'OUT_OF_STOCK';
-          const price = product.canonical?.pricing.ayroviPriceTnd ?? null;
+          const soldOut = String(product.stockStatus || '').toUpperCase() === 'OUT_OF_STOCK';
           const open = () => onOpenProduct?.(catalogProductToScraped(product));
           return (
             <article key={product.id} className="lens-product-card group relative flex flex-col text-start">
@@ -219,19 +217,27 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
                 className="lens-card-open w-full text-start cursor-pointer disabled:cursor-not-allowed"
                 aria-label={tr(`Voir le produit : ${product.name}`, `عرض المنتج: ${product.name}`)}
               >
-                <div className="lens-card-media relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-white">
-                  <StudioImageFrame
-                    src={product.canonical?.media.primaryImage || product.image || undefined}
-                    fallbackSources={[product.image, ...(product.additionalImages || [])]}
+                {/* Media stage Zalando standard: 2/3 portrait, rounded-2xl, soft grey canvas */}
+                <div className="lens-card-media relative aspect-[2/3] w-full overflow-hidden rounded-2xl bg-[#f0f2f2] flex items-center justify-center">
+                  <img
+                    src={mediaSource(product.image, heroFemme)}
                     alt={product.name}
-                    ratio="2 / 3"
-                    placeholderLabel={product.sourcePlatform || product.name}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover mix-blend-multiply transition duration-500 group-hover:scale-105"
                   />
+                  {product.originalPrice && product.convertedPrice && product.originalPrice > product.convertedPrice && (
+                    <span className="lens-card-promo-badge">Promo</span>
+                  )}
+                  {/* Floating circular white heart button */}
+                  <div className="lens-card-favorite pointer-events-none">
+                    <Heart size={20} />
+                  </div>
                 </div>
 
                 {/* Typography Zalando standard: Bold Brand (700) + Regular title (400) */}
                 <h4 className="lens-card-title mt-2.5 text-sm font-bold text-ink truncate">
-                  {product.brandName || product.sourcePlatform || tr('Source non renseignée', 'المصدر غير محدد')}
+                  {product.brandName || product.sourcePlatform || 'AYROVI'}
                 </h4>
                 <p className="lens-card-description mt-0.5 text-xs text-[#595959] line-clamp-2">
                   {product.name}
@@ -240,10 +246,10 @@ export const PublicCmsSections: React.FC<PublicCmsSectionsProps> = ({ isAuthenti
                 {/* Price display & action */}
                 <div className="lens-card-price mt-1.5 flex items-baseline justify-between gap-2">
                   <strong className="text-sm font-black text-ink">
-                    {price != null ? formatMoney(price) : tr('Prix indisponible', 'السعر غير متوفر')}
+                    {formatMoney(product.finalPrice)}
                   </strong>
                   <span className={`text-xs font-bold ${soldOut ? 'text-danger' : 'text-success'}`}>
-                    {soldOut ? tr('Indisponible', 'غير متوفر') : tr('Voir le produit', 'عرض المنتج')}
+                    {soldOut ? tr('Indisponible', 'غير متوفر') : tr('Commander', 'اطلب الآن')}
                   </span>
                 </div>
               </button>

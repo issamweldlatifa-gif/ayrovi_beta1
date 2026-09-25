@@ -9,8 +9,6 @@ dist/
 .env
 data/uploads/
 data/backups/
-data/media-isolated/
-data/media-proxy/
 data/*.sqlite*
 # documents privés (P0) : factures, justificatifs, fichiers employés —
 # ne doivent jamais atterrir dans l’historique git, même en résidu de tests.

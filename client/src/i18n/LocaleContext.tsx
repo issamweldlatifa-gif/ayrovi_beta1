@@ -48,7 +48,7 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     formatDate: (raw, detailed = false) => raw ? new Intl.DateTimeFormat(locale === 'ar' ? 'ar-TN' : 'fr-TN', detailed
       ? { dateStyle: 'medium', timeStyle: 'short', hourCycle: 'h23' }
       : { dateStyle: 'medium' }).format(new Date(String(raw))) : '—',
-    formatMoney: (raw) => `${Number(raw || 0).toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })} ${locale === 'ar' ? 'د.ت' : 'DT'}`,
+    formatMoney: (raw) => `${Number(raw || 0).toLocaleString(locale === 'ar' ? 'ar-TN' : 'fr-TN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${locale === 'ar' ? 'د.ت' : 'DT'}`,
   }), [locale]);
 
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;

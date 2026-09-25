@@ -102,7 +102,8 @@ export function usesCapacity(cls: ProductClass): boolean {
 }
 
 /* ────────────────────────────────────────────────────────────────────
- * Tailles — uniquement les valeurs d'options explicitement fournies par le marchand.
+ * Tailles — on n'invente rien : variantes marchand, jetons du titre
+ * (« Taille unique », « 42 », « XS-XXL ») et rien sinon.
  * ──────────────────────────────────────────────────────────────────── */
 const CLOTHING_SIZES = ['XXXS', 'XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL'];
 const SHOE_RE = /^(\d{2}(?:\.[05])?)$/; // 35 → 53, y compris les demis
@@ -114,8 +115,8 @@ export interface SizePresentation {
   layout: 'chips' | 'grid' | 'none';
 }
 
-/** Title words are not selectable merchant variants. */
-export function presentSizes(cls: ProductClass, _title: string, merchantSizes: string[]): SizePresentation {
+/** Tailles affichables : variantes connues d'abord, puis jetons honnêtes du titre. */
+export function presentSizes(cls: ProductClass, title: string, merchantSizes: string[]): SizePresentation {
   const fromMerchant = [...new Set((merchantSizes || []).map((size) => size.trim()).filter(Boolean))];
   if (fromMerchant.length) {
     const allNumeric = fromMerchant.every((size) => SHOE_RE.test(size));
@@ -128,6 +129,14 @@ export function presentSizes(cls: ProductClass, _title: string, merchantSizes: s
           : fromMerchant,
       layout: allNumeric || cls === 'shoes' ? 'grid' : 'chips',
     };
+  }
+  // Jetons honnêtes : « taille unique », plage « 35-53 » n'invente PAS de valeurs intermédiaires.
+  if (/\btaille unique\b/i.test(title) || /\bone size\b/i.test(title) || /\bمقاس واحد\b/.test(title)) {
+    return { options: ['Taille unique'], layout: 'chips' };
+  }
+  const clothingToken = title.toUpperCase().match(new RegExp(`\\b(${CLOTHING_SIZES.join('|')})\\b`));
+  if ((cls === 'clothing' || cls === 'accessory') && clothingToken) {
+    return { options: [clothingToken[1]], layout: 'chips' };
   }
   return { options: [], layout: 'none' };
 }

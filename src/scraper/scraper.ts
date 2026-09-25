@@ -12,6 +12,16 @@ interface MerchantScrapeResult {
 }
 
 export class SmartLinkScraper {
+  public static readonly RATES_TO_TND: Record<string, number> = {
+    EUR: 4.00,
+    USD: 4.00,
+    JPY: 0.0265, // 100 JPY = 2.65 TND
+    GBP: 4.80,
+    CAD: 2.95,
+    CHF: 4.20,
+    TND: 1.0
+  };
+
   public cleanPastedUrl(input: string): string {
     if (!input || typeof input !== 'string') return '';
     const match = input.match(/https?:\/\/[^\s]+/i);
@@ -33,45 +43,68 @@ export class SmartLinkScraper {
 
     const store = this.detectStore(cleanUrl);
     const storeName = this.getStoreDisplayName(store, cleanUrl);
-    const externalIdFromUrl = this.extractSourceId(cleanUrl, store);
+    let currency = this.detectCurrencyFromUrl(cleanUrl);
+
+    const urlInfo = this.extractDeepUrlInfo(cleanUrl, store);
 
     const merchantResult = await this.scrapeWithHttp(cleanUrl, store);
     const liveData = merchantResult.data;
-    const currency = /^[A-Z]{3}$/.test(String(liveData?.currency || '').toUpperCase())
-      ? String(liveData!.currency).toUpperCase() : '';
-    const title = liveData?.title && !this.isBotBlocked(liveData.title) ? liveData.title : '';
-    const price = liveData?.price && liveData.price > 0 ? liveData.price : 0;
-    const externalId = liveData?.externalId || externalIdFromUrl;
-    const images = liveData?.images || [];
-    const variants: ProductVariants = liveData?.variants || { sizes: [], colors: [], details: [] };
-    // This adapter extracts merchant facts. AYROVI amounts are produced only by
-    // calculateUnitQuote (server) — never guessed from URL country or static FX.
-    const convertedPriceTND = 0, serviceFeeTND = 0, estimatedShippingTND = 0, totalPriceTND = 0;
+    const detectedLiveCurrency = String(liveData?.currency || '').toUpperCase();
+    if (detectedLiveCurrency && Object.hasOwn(SmartLinkScraper.RATES_TO_TND, detectedLiveCurrency)) {
+      currency = detectedLiveCurrency;
+    }
+
+    const title = (liveData && liveData.title && !this.isBotBlocked(liveData.title))
+      ? liveData.title
+      : urlInfo.title;
+
+    const price = (liveData && liveData.price && liveData.price > 0)
+      ? liveData.price
+      : urlInfo.price;
+
+    const externalId = (liveData && liveData.externalId) ? liveData.externalId : urlInfo.externalId;
+
+    const images = (liveData && liveData.images && liveData.images.length > 0)
+      ? liveData.images
+      : [];
+
+    const liveVariants: ProductVariants | null = liveData?.variants || null;
+    const hasLiveVariants = Boolean(
+      liveVariants?.sizes?.length || liveVariants?.colors?.length || liveVariants?.details?.length,
+    );
+    const variants: ProductVariants = hasLiveVariants ? liveVariants! : urlInfo.variants;
+
+    const rate = SmartLinkScraper.RATES_TO_TND[currency] || 4.00;
+    const convertedPriceTND = price > 0 ? Math.round(price * rate * 100) / 100 : 0;
+    const serviceFeeTND = price > 0 ? Math.round((Math.max(10, convertedPriceTND * 0.08)) * 100) / 100 : 0;
+    const estimatedShippingTND = price > 0 ? 25.00 : 0;
+    const totalPriceTND = price > 0 ? Math.round((convertedPriceTND + serviceFeeTND + estimatedShippingTND) * 100) / 100 : 0;
 
     return {
-      id: `scraped_${externalId || cleanUrl}`,
+      id: 'scraped_' + Date.now(),
       store,
       storeName,
       url: cleanUrl,
       externalId,
       title: title.trim(),
-      description: liveData?.description || null,
+      description: (merchantResult.data?.description && merchantResult.data.description.length > 5)
+        ? merchantResult.data.description
+        : (merchantResult.verified
+          ? `Article extrait depuis ${storeName}. Prix confirmé automatiquement par AYROVI.`
+          : `Article extrait depuis ${storeName}. Prix en attente de vérification manuelle.`),
       images,
       colorImages: liveData?.colorImages || {},
       mainImage: images.length > 0 ? images[0] : '',
-      sourcePrice: price,
+      sourcePrice: Math.round(price * 100) / 100,
       sourceCurrency: currency,
-      referencePrice: liveData?.referencePrice ?? null,
-      rating: liveData?.rating ?? null,
-      reviewsCount: liveData?.reviewsCount ?? null,
       convertedPriceTND,
       serviceFeeTND,
       estimatedShippingTND,
       totalPriceTND,
       variants,
       availability: liveData?.availability || 'unknown',
-      brand: liveData?.brand || null,
-      priceVerified: merchantResult.verified && price > 0 && Boolean(currency),
+      brand: merchantResult.data?.brand || urlInfo.brand || storeName.split(' ')[0],
+      priceVerified: merchantResult.verified && price > 0,
       verificationProvider: merchantResult.provider,
       verificationMethod: merchantResult.method,
       verificationFailureCode: merchantResult.failureCode,
@@ -98,16 +131,111 @@ export class SmartLinkScraper {
     );
   }
 
-  /** Source ID only if the URL actually carries one; never generate random IDs. */
-  private extractSourceId(rawUrl: string, store: StoreType): string | null {
+  private extractDeepUrlInfo(rawUrl: string, store: StoreType): { title: string; brand: string; price: number; externalId: string; variants: ProductVariants } {
     try {
-      const target = new URL(rawUrl);
-      const path = target.pathname;
-      if (store === 'amazon') return path.match(/(?:dp|gp\/product|product)\/([A-Z0-9]{10})/i)?.[1] ?? null;
-      if (store === 'shein') return path.match(/-p-(\d+)\.html/i)?.[1] ?? target.searchParams.get('goods_id');
-      if (store === 'temu') return path.match(/-([0-9]{6,})\.html/i)?.[1] ?? null;
-      return null;
-    } catch { return null; }
+      const url = new URL(rawUrl);
+      const path = url.pathname;
+      const parts = path.split('/').filter(Boolean);
+
+      if (store === 'shein') {
+        const match = path.match(/-p-(\d+)\.html/i) || path.match(/\/(\d+)\.html/i) || url.search.match(/[?&]goods_id=(\d+)/i);
+        const goodsId = match ? match[1] : ('SH-' + Math.floor(Math.random() * 899999 + 100000));
+
+        let slug = parts[parts.length - 1]
+          .replace(/-p-\d+\.html.*/i, '')
+          .replace(/\.html.*/i, '')
+          .replace(/-/g, ' ');
+
+        if ((slug === 'goods' || slug.length < 3) && parts.length >= 2) {
+          slug = parts[parts.length - 2].replace(/-/g, ' ');
+        }
+
+        let formatted = slug
+          .replace(/\bwomen\s+s\b/gi, "Women's")
+          .replace(/\bmen\s+s\b/gi, "Men's")
+          .replace(/\b2\s+piece\b/gi, "2-Piece")
+          .replace(/\bshort\s+sleeve\b/gi, "Short-Sleeve");
+
+        formatted = formatted.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+        const words = formatted.split(' ');
+        let brand = 'SHEIN';
+        let title = formatted;
+        if (words.length > 2) {
+          brand = words[0];
+          title = `${brand} — ${words.slice(1).join(' ')}`;
+        }
+
+        return {
+          title,
+          brand,
+          price: 0,
+          externalId: `SH-${goodsId}`,
+          // Never infer variants from a URL slug. Only merchant-page values are shown.
+          variants: { sizes: [], colors: [], details: [] },
+        };
+      }
+
+      if (store === 'amazon') {
+        const asinMatch = path.match(/(?:dp|gp\/product|product)\/([A-Z0-9]{10})/i);
+        const asin = asinMatch ? asinMatch[1] : ('B0' + Math.floor(Math.random() * 89999999 + 10000000));
+
+        let titleSlug = '';
+        if (parts.length >= 2 && parts[0] !== 'dp') {
+          titleSlug = decodeURIComponent(parts[0]).replace(/-/g, ' ');
+        }
+
+        const title = titleSlug.length > 3 ? titleSlug : 'Produit Amazon';
+
+        return {
+          title,
+          brand: 'Amazon',
+          price: 0,
+          externalId: asin,
+          variants: {
+            sizes: [],
+            colors: []
+          }
+        };
+      }
+
+      if (store === 'temu') {
+        const match = path.match(/goods-([a-z0-9-]+)-([0-9]+)\.html/i) || path.match(/-([0-9]{6,})\.html/i);
+        const id = match ? match[2] || match[1] : ('TM-' + Math.floor(Math.random() * 899999 + 100000));
+
+        let slug = parts[parts.length - 1]
+          .replace(/goods-/i, '')
+          .replace(/-\d+\.html.*/i, '')
+          .replace(/\.html.*/i, '')
+          .replace(/-/g, ' ');
+
+        const title = slug.length > 3
+          ? slug.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+          : 'Offre TEMU';
+
+        return {
+          title: `TEMU — ${title}`,
+          brand: 'TEMU',
+          price: 0,
+          externalId: `TEMU-${id}`,
+          variants: {
+            sizes: [],
+            colors: []
+          }
+        };
+      }
+    } catch {}
+
+    return {
+      title: 'Article Boutique Internationale',
+      brand: 'Boutique',
+      price: 0,
+      externalId: 'ITEM-' + Math.floor(Math.random() * 899999 + 100000),
+      variants: {
+        sizes: [],
+        colors: []
+      }
+    };
   }
 
   private async scrapeWithHttp(url: string, storeType: StoreType): Promise<MerchantScrapeResult> {
@@ -189,4 +317,12 @@ export class SmartLinkScraper {
     return 'Boutique Internationale';
   }
 
+  private detectCurrencyFromUrl(url: string): string {
+    if (url.includes('.co.jp') || url.includes('japan')) return 'JPY';
+    if (url.includes('.co.uk')) return 'GBP';
+    if (url.includes('/fr/') || url.includes('.fr') || url.includes('shein.com/fr')) return 'EUR';
+    if (url.includes('.de') || url.includes('.es') || url.includes('.it')) return 'EUR';
+    if (url.includes('.com')) return 'USD';
+    return 'EUR';
+  }
 }
