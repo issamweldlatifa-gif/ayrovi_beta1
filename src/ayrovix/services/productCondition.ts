@@ -42,11 +42,29 @@ function hostIsUsedMarketplace(rawUrl: string): boolean {
   }
 }
 
+/** Formulations d'état renvoyées par les fournisseurs (Google Lens, marchands). */
+const SOURCE_USED = /^(?:used|pre-?owned|second[-\s]?hand|refurbished|reconditionn|occasion|d'occasion|open[-\s]?box|for\s+parts)/i;
+const SOURCE_NEW = /^(?:new|neuf|brand[-\s]?new|nuevo|جديد)/i;
+
 export function detectProductCondition(input: {
   title?: string | null;
   description?: string | null;
   sourceUrl?: string | null;
+  /** État déclaré PAR LA SOURCE — il tranche avant toute lecture de mots-clés. */
+  sourceCondition?: string | null;
 }): ProductCondition {
+  /*
+   * La source parle en premier. Nous devinions l'état à partir de mots trouvés
+   * dans le titre alors que Google Lens nous donnait un champ `condition` que
+   * nous jetions : un titre mal rédigé faisait alors disparaître un produit
+   * neuf, ou laissait passer une occasion. Ce que le marchand AFFIRME prime.
+   */
+  const declared = (input.sourceCondition || '').trim();
+  if (declared) {
+    if (SOURCE_USED.test(declared)) return 'used';
+    if (SOURCE_NEW.test(declared)) return 'new';
+  }
+
   const haystack = `${input.title || ''} ${input.description || ''}`;
   const hostUsed = input.sourceUrl ? hostIsUsedMarketplace(input.sourceUrl) : false;
   const usedWords = USED_PATTERNS.some((pattern) => pattern.test(haystack));
@@ -65,7 +83,12 @@ export function detectProductCondition(input: {
  * Une fiche marchand standard (Zalando, marque, boutique…) sans signal d'occasion
  * reste affichée — on ne perd jamais un produit neuf faute de mention « new ».
  */
-export function isUsedListing(input: { title?: string | null; description?: string | null; sourceUrl?: string | null }): boolean {
+export function isUsedListing(input: {
+  title?: string | null;
+  description?: string | null;
+  sourceUrl?: string | null;
+  sourceCondition?: string | null;
+}): boolean {
   return detectProductCondition(input) === 'used';
 }
 
@@ -74,5 +97,6 @@ export function filterOutUsedCandidates(candidates: AyrovixCandidate[]): Ayrovix
     title: candidate.title,
     description: candidate.description,
     sourceUrl: candidate.sourceUrl,
+    sourceCondition: candidate.sourceCondition,
   }));
 }

@@ -78,6 +78,12 @@ export interface AyrovixCandidate {
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
   /** Preuve de disponibilité marchand (niveaux de confiance 24/09/2026). */
   availability?: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /**
+   * État du produit TEL QUE LA SOURCE L'ÉCRIT (ex. « New », « Refurbished »).
+   * Il prime sur toute détection par mots-clés : ce que le marchand affirme
+   * vaut mieux que ce que nous devinons dans son titre.
+   */
+  sourceCondition?: string | null;
   rating?: number | null;
   ratingCount?: number | null;
   ratingKind?: 'merchant' | 'match';

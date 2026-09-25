@@ -123,6 +123,23 @@ function collectCandidates(rows: any[], limit: number, strict: boolean): Ayrovix
       rating: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? merchantRating : null,
       ratingCount: Number.isFinite(ratingCount) && ratingCount >= 0 ? ratingCount : null,
       ratingKind: Number.isFinite(merchantRating) && merchantRating > 0 && merchantRating <= 5 ? 'merchant' : 'match',
+      /*
+       * FAITS DE LA SOURCE QUE NOUS JETIONS (25/09/2026).
+       *
+       * Google Lens renvoie `in_stock` (booléen) et `condition` sur ses
+       * correspondances ; nous les ignorions, pour ensuite DEVINER l'état du
+       * produit à partir de mots trouvés dans le titre. Deviner ce que la source
+       * affirme est une faute : on prend ce qu'elle dit.
+       *
+       * `in_stock` absent reste `unknown` — un silence n'est pas une
+       * disponibilité, exactement comme pour les variantes.
+       */
+      availability: row?.in_stock === true ? 'in_stock' as const
+        : row?.in_stock === false ? 'out_of_stock' as const
+          : 'unknown' as const,
+      sourceCondition: typeof row?.condition === 'string' && row.condition.trim()
+        ? row.condition.trim().slice(0, 60)
+        : null,
       match: row?.exact_matches === true ? 99 : Math.max(72, 94 - index * 3),
     });
     if (results.length >= limit) break;

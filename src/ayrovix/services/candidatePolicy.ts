@@ -6,7 +6,12 @@ import { isUsedListing } from './productCondition';
 // d'occasion est écartée — une seule photo, pas de fiche complète, isolation
 // cassée. Appliqué aux deux niveaux (strict et lenient) ci-dessous.
 function notUsed(candidate: AyrovixCandidate): boolean {
-  return !isUsedListing({ title: candidate.title, description: candidate.description, sourceUrl: candidate.sourceUrl });
+  return !isUsedListing({
+    title: candidate.title,
+    description: candidate.description,
+    sourceUrl: candidate.sourceUrl,
+    sourceCondition: candidate.sourceCondition,
+  });
 }
 
 /**
