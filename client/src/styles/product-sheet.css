@@ -127,3 +127,85 @@
 [data-ay-compact] {
   padding-bottom: 96px;
 }
+
+/* ── Draps : ils MONTENT, ils n'apparaissent pas ──────────────────────────
+   Durée 240 ms, même courbe que le reste de l'interface. Un panneau qui
+   apparaît d'un coup se lit comme un changement de page ; un panneau qui
+   monte se lit comme un tiroir — et le client sait qu'il peut le refermer. */
+.ay-sheet-rise {
+  animation: ay-sheet-rise 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes ay-sheet-rise {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+/* Deux échelles de taille, affichées seulement quand la source en donne deux. */
+.ay-size-scale {
+  display: flex;
+  border-bottom: 1px solid var(--ayrovi-border-soft, #eaeaea);
+}
+
+.ay-size-scale button {
+  position: relative;
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--ayrovi-neutral-500, #595959);
+  cursor: pointer;
+}
+
+.ay-size-scale button[aria-selected="true"] {
+  color: #000;
+}
+
+.ay-size-scale button[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  background: #000;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-sheet-rise { animation: none; }
+}
+
+/* ── « On vérifie » ≠ « à confirmer » ─────────────────────────────────────
+   Pendant l'appel à la source, la fiche annonçait « Prix à confirmer » : un
+   échec, alors que rien n'a échoué. L'attente a désormais sa propre forme —
+   un rotor sobre et une phrase qui dit ce qui se passe réellement. */
+.ay-price-checking {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ay-price-checking__spinner {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--ayrovi-border-soft, #eaeaea);
+  border-top-color: #000;
+  border-radius: 999px;
+  animation: ay-price-spin 900ms linear infinite;
+}
+
+.ay-price-checking__label {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ayrovi-neutral-500, #595959);
+}
+
+@keyframes ay-price-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ay-price-checking__spinner { animation-duration: 3s; }
+}

@@ -98,3 +98,49 @@ describe('fiche produit — format téléphone', () => {
     expect(sheetCss).toContain('padding-bottom: 96px');
   });
 });
+
+/*
+ * Drap des tailles : deux échelles, mais seulement quand la source en donne deux.
+ */
+describe('drap des tailles', () => {
+  it('n’invente aucune table de conversion : l’échelle marque vient des libellés reçus', () => {
+    expect(component).toContain('const brandScale = useMemo');
+    expect(component).toContain("option.label.trim()");
+    expect(component).toContain('const hasBrandScale = brandScale.size >= 2');
+  });
+
+  it('les onglets n’apparaissent pas quand il n’y a qu’une échelle', () => {
+    expect(component).toContain('{hasBrandScale && (');
+    expect(component).toContain('role="tablist"');
+  });
+
+  it('le drap MONTE au lieu d’apparaître', () => {
+    expect(component).toContain('ay-sheet-rise');
+    expect(sheetCss).toContain('@keyframes ay-sheet-rise');
+    expect(sheetCss).toContain('translateY(100%)');
+  });
+
+  it('les trois états du moteur de disponibilité restent distincts', () => {
+    expect(component).toContain("stock === 'unknown'");
+    expect(component).toContain('Stock non confirmé');
+  });
+});
+
+/*
+ * Attente ≠ échec : pendant la vérification du prix, la fiche le DIT.
+ */
+describe('vérification du prix à la source', () => {
+  it('distingue « on vérifie » de « prix à confirmer »', () => {
+    expect(component).toContain('quoteLoading');
+    expect(component).toContain('Vérification du prix à la source');
+    expect(component).toContain('ay-price-checking');
+  });
+
+  it('le drapeau retombe quoi qu’il arrive — jamais de rotor éternel', () => {
+    expect(component).toContain('.finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); })');
+  });
+
+  it('l’échec garde son message : on ne le remplace pas par une attente', () => {
+    expect(component).toContain('quoteLoading && !currentQuoteError');
+  });
+});

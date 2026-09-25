@@ -92,6 +92,16 @@ export const ProductResult: React.FC<ProductResultProps> = ({
      dans la chaîne (composition → isolation → image marchand) au lieu de
      laisser un trou. */
   const compact = useCompactLayout();
+  /* Échelle affichée dans le drap des tailles. « brand » n'apparaît QUE si la
+     source donne réellement un second libellé par taille (ex. 44/46 en face de
+     M) : on n'invente aucune table de correspondance. */
+  const [sizeScale, setSizeScale] = useState<'source' | 'brand'>('source');
+  /* ÉTAT DE CHARGEMENT du devis (25/09/2026). Tant que la source n'a pas
+     répondu, la fiche affichait « Prix à confirmer » — c'est-à-dire un ÉCHEC,
+     alors que rien n'a échoué : la vérification est simplement en cours.
+     Un client qui lit « à confirmer » pendant deux secondes croit que le prix
+     est incertain. On dit donc la vérité : on vérifie. */
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const [mediaStep, setMediaStep] = useState<Record<string, number>>({});
   const stepDownMedia = (url: string) => setMediaStep((prev) => ({ ...prev, [url]: (prev[url] ?? 0) + 1 }));
   const withIsolated = (url: string) => productMediaSrc(url, mediaStep);
@@ -224,6 +234,7 @@ function variantStockState(options: { available: boolean; availability?: 'availa
     const controller = new AbortController();
     setQuote(null);
     setQuoteError(null);
+    setQuoteLoading(true);
     fetch('/api/public/pricing/cart-line', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title: product.title, sourcePrice: selectedPrice, sourceCurrency: selectedCurrency, quantity }),
@@ -237,7 +248,8 @@ function variantStockState(options: { available: boolean; availability?: 'availa
         return payload.data as CartLineQuote;
       })
       .then(data => { if (!controller.signal.aborted) setQuote({ key: quoteKey, data }); })
-      .catch(() => { if (!controller.signal.aborted) setQuoteError({ key: quoteKey, message: tr('Devis indisponible. Réessayez.', 'تعذّر حساب السعر. أعد المحاولة.') }); });
+      .catch(() => { if (!controller.signal.aborted) setQuoteError({ key: quoteKey, message: tr('Devis indisponible. Réessayez.', 'تعذّر حساب السعر. أعد المحاولة.') }); })
+      .finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); });
     return () => controller.abort();
   }, [quoteKey, quoteAttempt, validPrice, validQuantity, incompleteVariantQuote]);
 
@@ -307,6 +319,23 @@ function variantStockState(options: { available: boolean; availability?: 'availa
       window.removeEventListener('resize', onScroll);
     };
   }, [galleryImages.length]);
+
+  /* Correspondance taille → libellé marque, telle que la source la donne.
+     Une taille n'entre dans l'échelle marque que si son libellé est unique et
+     différent de la taille elle-même ; sinon la colonne serait un doublon. */
+  const brandScale = useMemo(() => {
+    const table = new Map<string, string>();
+    for (const size of availableSizes) {
+      const labels = [...new Set((product.variantOptions || [])
+        .filter((option) => option.size === size)
+        .map((option) => option.label.trim())
+        .filter((label) => label && label !== size))];
+      if (labels.length === 1) table.set(size, labels[0]);
+    }
+    return table;
+  }, [availableSizes, product.variantOptions]);
+  const hasBrandScale = brandScale.size >= 2;
+  const activeScale: 'source' | 'brand' = hasBrandScale ? sizeScale : 'source';
 
   const showNext = () => setImageIndex((current) => Math.min(current + 1, galleryImages.length - 1));
   const showPrev = () => setImageIndex((current) => Math.max(current - 1, 0));
@@ -479,7 +508,14 @@ function variantStockState(options: { available: boolean; availability?: 'availa
                 data-product-price-tnd={currentQuote?.lineTotalTND}
                 style={{ color: currentQuote?.promo ? 'var(--ayrovi-promo, #dc2626)' : 'var(--ayrovi-text-primary, #000)' }}
               >
-                <bdi dir="ltr">{currentQuote ? formatMoney(currentQuote.lineTotalTND) : tr('Prix à confirmer', 'السعر قيد التأكيد')}</bdi>
+                <bdi dir="ltr">{currentQuote
+                  ? formatMoney(currentQuote.lineTotalTND)
+                  : quoteLoading && !currentQuoteError
+                    ? <span className="ay-price-checking" role="status">
+                        <span className="ay-price-checking__spinner" aria-hidden="true" />
+                        <span className="ay-price-checking__label">{tr('Vérification du prix à la source…', 'نتثبّتو في السعر عند المصدر…')}</span>
+                      </span>
+                    : tr('Prix à confirmer', 'السعر قيد التأكيد')}</bdi>
               </span>
               <span className="text-xs font-medium text-muted">
                 {priceVerified ? tr('Prix source vérifié · article estimé', 'سعر المصدر موثّق · المنتج تقديري') : tr('Prix estimé de l’article', 'السعر التقديري للمنتج')}
@@ -782,7 +818,7 @@ function variantStockState(options: { available: boolean; availability?: 'availa
         <div className="fixed inset-0 z-[95] flex items-end justify-center bg-black/40" role="dialog" aria-modal="true"
           aria-label={isShoes ? tr('Choisir votre pointure', 'اختر مقاس الحذاء') : isBeauty ? tr('Choisir une contenance', 'اختر السعة') : tr('Choisir votre taille', 'اختر المقاس')}
           onClick={() => setSizeDrawerOpen(false)}>
-          <div className="ay-product-size-sheet w-full max-w-lg rounded-t-3xl bg-white px-5 pt-3 shadow-2xl" onClick={event => event.stopPropagation()}>
+          <div className="ay-product-size-sheet ay-sheet-rise w-full max-w-lg rounded-t-3xl bg-white px-5 pt-3 shadow-2xl" onClick={event => event.stopPropagation()}>
             <div className="mx-auto mb-4 h-1 w-12 rounded-full bg-neutral-300" />
             <div className="flex items-start justify-between gap-3 border-b border-line pb-4">
               <div className="min-w-0">
@@ -794,6 +830,20 @@ function variantStockState(options: { available: boolean; availability?: 'availa
                 className="grid h-11 w-11 shrink-0 place-items-center rounded-full hover:bg-surface"><X size={20} /></button>
             </div>
             <p className="py-3 text-sm font-bold text-ink">{isShoes ? tr('Pointures disponibles', 'المقاسات المتوفرة') : isBeauty ? tr('Contenances disponibles', 'السعات المتوفرة') : tr('Tailles disponibles', 'المقاسات المتوفرة')}</p>
+
+            {/* Deux échelles — et seulement quand la source en donne vraiment deux.
+                Aucune table de conversion maison : ce serait deviner la pointure
+                du client à sa place. */}
+            {hasBrandScale && (
+              <div className="ay-size-scale" role="tablist" aria-label={tr('Échelle de taille', 'مقياس المقاسات')}>
+                <button type="button" role="tab" aria-selected={activeScale === 'source'} onClick={() => setSizeScale('source')}>
+                  {isShoes ? tr('Pointure EU', 'المقاس EU') : tr('Taille EU', 'المقاس EU')}
+                </button>
+                <button type="button" role="tab" aria-selected={activeScale === 'brand'} onClick={() => setSizeScale('brand')}>
+                  {tr('Taille marque', 'مقاس الماركة')}
+                </button>
+              </div>
+            )}
             <div className="max-h-[55dvh] overflow-y-auto divide-y divide-line">
               {availableSizes.map(size => {
                 const options = (product.variantOptions || []).filter(option => option.size === size);
@@ -805,8 +855,10 @@ function variantStockState(options: { available: boolean; availability?: 'availa
                   onClick={() => { setSizeChoice(size); setSizeDrawerOpen(false); }}
                   className="flex min-h-14 w-full items-center justify-between gap-3 px-1 py-3 text-start text-sm text-ink disabled:opacity-50"
                   aria-pressed={sizeChoice === size}>
-                  <span><strong className="text-base">{size}</strong>
-                    {labels.length === 1 && <span className="ms-2 text-xs text-muted" dir="auto">{labels[0]}</span>}
+                  <span><strong className="text-base">{activeScale === 'brand' ? (brandScale.get(size) ?? size) : size}</strong>
+                    {activeScale === 'brand'
+                      ? <span className="ms-2 text-xs text-muted" dir="auto">{size}</span>
+                      : labels.length === 1 && <span className="ms-2 text-xs text-muted" dir="auto">{labels[0]}</span>}
                   </span>
                   {stock === 'unknown' ? <span className="text-xs text-muted">{tr('Stock non confirmé', 'المخزون غير مؤكد')}</span>
                     : notSelectable ? <span className="text-xs text-muted">{tr('Indisponible', 'غير متاح')}</span>
