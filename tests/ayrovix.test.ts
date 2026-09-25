@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, describe, expect, test, vi, beforeAll, afterAll } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
@@ -66,6 +66,17 @@ function restoreEnv(name: string, value: string | undefined) {
 }
 
 describe('AYROVIX Lens', () => {
+  /*
+   * Ces scénarios rejouent la MÊME image pour éprouver des comportements
+   * différents (vision qui tombe, prix lu, etc.). Le cache de reconnaissance
+   * servirait alors la réponse précédente et masquerait le cas testé : on le
+   * coupe explicitement ici. Le cache a ses propres tests
+   * (tests/lens-recognition-cache.test.ts) — aucune garantie n'est perdue.
+   */
+  const cacheBefore = process.env.AYROVI_LENS_CACHE;
+  beforeAll(() => { process.env.AYROVI_LENS_CACHE = 'false'; });
+  afterAll(() => { restoreEnv('AYROVI_LENS_CACHE', cacheBefore); });
+
   afterEach(() => { vi.unstubAllGlobals(); });
 
   test('analyze-image exige une image et refuse les formats non image', async () => {

@@ -6,6 +6,7 @@ import type { SmartLinkScraper } from '../scraper/scraper';
 import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiReady, fallbackIdentification } from './services/ai';
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
+import { lensImageKey, readLensCache, writeLensCache } from './services/lensRecognitionCache';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -255,15 +256,49 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       // Vision and reverse-image must not take each other down. A provider
       // timeout/schema error used to abort the whole Lens request even when
       // Google Lens had already found priced matches.
-      const tParallel = Date.now();
+      /*
+       * CACHE DE RECONNAISSANCE (25/09/2026). Le chemin client n'en avait aucun :
+       * la même photo renvoyée deux fois payait deux fois la vision ET deux fois
+       * SerpApi. On mémorise donc ce qui décrit la PHOTO (24 h) et ce qui décrit
+       * le MARCHÉ (30 min) — jamais le calcul de prix, refait ci-dessous à chaque
+       * requête à partir des règles en base.
+       */
+      const cacheKey = lensImageKey(effectiveBuffer);
+      const cached = readLensCache<Awaited<ReturnType<typeof identifyProduct>>, AyrovixCandidate>(cacheKey);
+      res.setHeader('X-Ayrovix-Cache', cached.hit);
+
+      /*
+       * TÉLÉMÉTRIE HONNÊTE : les deux moteurs tournent en parallèle, donc chacun
+       * se mesure SÉPARÉMENT. L'ancienne version partait du même instant pour les
+       * deux et mesurait donc deux fois la même durée — impossible de savoir
+       * lequel ralentissait réellement la recherche.
+       */
+      let visionMs = 0;
+      let serpMs = 0;
+      const timed = async <T>(work: Promise<T>, onDone: (ms: number) => void): Promise<T> => {
+        const started = Date.now();
+        try { return await work; } finally { onDone(Date.now() - started); }
+      };
+
       const [visionResult, visualResult] = await Promise.allSettled([
-        identifyProduct(effectiveBuffer, effectiveMime),
-        serpApiVisualSearch(effectiveBuffer, 8),
+        cached.identification
+          ? Promise.resolve(cached.identification)
+          : timed(identifyProduct(effectiveBuffer, effectiveMime), (ms) => { visionMs = ms; }),
+        cached.matches
+          ? Promise.resolve(cached.matches)
+          : timed(serpApiVisualSearch(effectiveBuffer, 8), (ms) => { serpMs = ms; }),
       ]);
-      mark(trace, 'anthropicVisionMs', Date.now() - tParallel as any); // approx parallel total, serpApiTotalMs overlaps
-      mark(trace, 'serpApiTotalMs', Date.now() - tParallel as any);
+      mark(trace, 'anthropicVisionMs', visionMs as any);
+      mark(trace, 'serpApiTotalMs', serpMs as any);
+
       const visualCandidates = visualResult.status === 'fulfilled' ? visualResult.value : [];
       let identification = visionResult.status === 'fulfilled' ? visionResult.value : null;
+
+      // On ne mémorise QUE ce qui vient d'être calculé, et jamais un résultat vide.
+      writeLensCache<typeof identification, AyrovixCandidate>(cacheKey, {
+        identification: cached.identification ? undefined : identification,
+        matches: cached.matches ? undefined : visualCandidates,
+      });
       if (!identification) {
         const visionError = visionResult.status === 'rejected' ? visionResult.reason : null;
         if (visionError instanceof AyrovixUnavailableError && visualCandidates.length === 0) throw visionError;
