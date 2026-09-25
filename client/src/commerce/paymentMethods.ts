@@ -22,7 +22,9 @@
  */
 import type { CommercePolicy } from './policy';
 
-export type PaymentMethodId = 'CARD' | 'FLOUCI' | 'BANK_TRANSFER' | 'POSTE';
+export type PaymentMethodId =
+  | 'CARD' | 'FLOUCI' | 'D17' | 'BANK_TRANSFER' | 'POSTE'
+  | 'OOREDOO' | 'ORANGE' | 'SODEXO';
 
 /**
  * Marque NEUTRE, la nôtre : un nom du registre de glyphes central (`design/editorial/glyphs.json`),
@@ -109,6 +111,65 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     mark: { kind: 'image', src: '/media/payments/poste.png' },
     available: (policy) => Boolean(policy.deposit.posteAccount.trim()),
   },
+  {
+    id: 'D17',
+    glyph: 'Phone',
+    label: 'D17 — La Poste Tunisienne',
+    labelAr: 'D17 — البريد التونسي',
+    hint: 'Paiement mobile DigiPost',
+    hintAr: 'دفع عبر تطبيق DigiPost',
+    blocked: 'En attente d’une passerelle réelle',
+    blockedAr: 'في انتظار بوابة دفع حقيقية',
+    // Pas de logo officiel en notre possession : on n'en fabrique pas un.
+    mark: { kind: 'glyph', glyph: 'transfer' },
+    available: () => false,
+  },
+  {
+    id: 'OOREDOO',
+    glyph: 'Phone',
+    label: 'Ooredoo Money',
+    labelAr: 'Ooredoo Money',
+    hint: 'Paiement depuis le solde mobile',
+    hintAr: 'دفع من رصيد الهاتف',
+    blocked: 'En attente d’une passerelle réelle',
+    blockedAr: 'في انتظار بوابة دفع حقيقية',
+    mark: { kind: 'image', src: '/media/payments/ooredoo.png' },
+    available: () => false,
+  },
+  {
+    id: 'ORANGE',
+    glyph: 'Phone',
+    label: 'Orange Money',
+    labelAr: 'Orange Money',
+    hint: 'Paiement depuis le solde mobile',
+    hintAr: 'دفع من رصيد الهاتف',
+    blocked: 'En attente d’une passerelle réelle',
+    blockedAr: 'في انتظار بوابة دفع حقيقية',
+    mark: { kind: 'image', src: '/media/payments/orange.svg' },
+    available: () => false,
+  },
+  {
+    id: 'SODEXO',
+    glyph: 'Card',
+    label: 'Cartes Sodexo',
+    labelAr: 'بطاقات Sodexo',
+    hint: 'Titres et cartes cadeaux acceptés',
+    hintAr: 'بطاقات وقسائم مقبولة',
+    blocked: 'Acceptation marchande non configurée',
+    blockedAr: 'قبول التاجر غير مضبوط',
+    mark: { kind: 'image', src: '/media/payments/sodexo.png' },
+    available: () => false,
+  },
+];
+
+/**
+ * Réseaux acceptés DERRIÈRE la carte bancaire. Ce ne sont pas des moyens de
+ * paiement séparés : on ne « choisit » pas Visa, on paie par carte et le réseau
+ * suit la carte. Ils ne sont donc affichés qu'en marques, jamais en options.
+ */
+export const CARD_NETWORK_MARKS: { id: string; src: string; label: string }[] = [
+  { id: 'visa', src: '/media/payments/visa.svg', label: 'Visa' },
+  { id: 'mastercard', src: '/media/payments/mastercard.svg', label: 'Mastercard' },
 ];
 
 /** Ordre d'affichage de la caisse : il ne change pas selon la disponibilité. */

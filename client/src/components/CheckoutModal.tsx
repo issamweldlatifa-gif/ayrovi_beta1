@@ -8,7 +8,7 @@ import { customerApi } from '../customer/api';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
 // La disponibilité des moyens de paiement n'est plus décidée ici : elle vient du module partagé,
 // le même que celui du pied de page. Une règle, un endroit (voir client/src/commerce/paymentMethods.ts).
-import { isPaymentMethodAvailable as paymentMethodAvailable } from '../commerce/paymentMethods';
+import { CARD_NETWORK_MARKS, isPaymentMethodAvailable as paymentMethodAvailable } from '../commerce/paymentMethods';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -25,14 +25,25 @@ interface CheckoutModalProps {
   onOrderSuccess: (result: OrderResult) => void;
 }
 
-type CheckoutPaymentMethod = 'CARD' | 'FLOUCI' | 'BANK_TRANSFER' | 'POSTE';
+type CheckoutPaymentMethod =
+  | 'CARD' | 'FLOUCI' | 'D17' | 'BANK_TRANSFER' | 'POSTE'
+  | 'OOREDOO' | 'ORANGE' | 'SODEXO';
 
-const PAYMENT_METHODS: CheckoutPaymentMethod[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
+// Ordre d'affichage : d'abord ce qui encaisse vraiment aujourd'hui, ensuite le
+// reste du paysage tunisien — visible, mais honnêtement marqué indisponible.
+const PAYMENT_METHODS: CheckoutPaymentMethod[] = [
+  'CARD', 'BANK_TRANSFER', 'POSTE', 'FLOUCI', 'D17', 'OOREDOO', 'ORANGE', 'SODEXO',
+];
 const PAYMENT_METHOD_IMAGES: Partial<Record<CheckoutPaymentMethod, string>> = {
   CARD: '/media/payments/card.png',
   FLOUCI: '/media/payments/flouci.png',
   POSTE: '/media/payments/poste.png',
+  OOREDOO: '/media/payments/ooredoo.png',
+  ORANGE: '/media/payments/orange.svg',
+  SODEXO: '/media/payments/sodexo.png',
 };
+/** D17 : aucun logo officiel en notre possession — on écrit le nom, on n'invente pas la marque. */
+const PAYMENT_METHOD_WORDMARKS: Partial<Record<CheckoutPaymentMethod, string>> = { D17: 'D17' };
 
 const GOVERNORATES_AR: Record<string, string> = {
   Tunis: 'تونس',
@@ -578,6 +589,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     label: tr('Transfert postal', 'تحويل بريدي'),
                     hint: available ? tr('Justificatif depuis le profil', 'الإثبات من الحساب') : tr('Compte postal non publié', 'الحساب البريدي غير منشور'),
                   },
+                  D17: { label: 'D17', hint: tr('En attente d’une passerelle réelle', 'في انتظار بوابة دفع حقيقية') },
+                  OOREDOO: { label: 'Ooredoo Money', hint: tr('En attente d’une passerelle réelle', 'في انتظار بوابة دفع حقيقية') },
+                  ORANGE: { label: 'Orange Money', hint: tr('En attente d’une passerelle réelle', 'في انتظار بوابة دفع حقيقية') },
+                  SODEXO: { label: tr('Cartes Sodexo', 'بطاقات Sodexo'), hint: tr('Acceptation marchande non configurée', 'قبول التاجر غير مضبوط') },
                 };
                 return <button key={method} type="button" aria-disabled={!available} aria-pressed={selected} onClick={() => {
                   if (!available) {
@@ -589,7 +604,11 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   setPaymentAvailabilityNotice(''); setError(null);
                   setFormData({ ...formData, paymentMethod: method.toLowerCase() });
                 }} className={`checkout-payment-option rounded-card border transition-all ${selected ? 'border-line bg-surface text-ink' : available ? 'border-line bg-surface text-muted hover:border-line/50' : 'border-line bg-surface text-muted'}`}>
-                  <span className="checkout-payment-logo-frame">{method === 'BANK_TRANSFER' ? <ArrowRightLeft size={32} /> : <img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" />}</span>
+                  <span className="checkout-payment-logo-frame">{PAYMENT_METHOD_IMAGES[method]
+                    ? <img src={PAYMENT_METHOD_IMAGES[method]} alt="" className="checkout-payment-logo" />
+                    : PAYMENT_METHOD_WORDMARKS[method]
+                      ? <span className="text-sm font-black tracking-tight">{PAYMENT_METHOD_WORDMARKS[method]}</span>
+                      : <ArrowRightLeft size={32} />}</span>
                   <span className="block text-xs font-black leading-tight">{meta[method].label}</span>
                   {!available&&<span className="checkout-payment-badge">{tr('Indisponible', 'غير متاح')}</span>}
                   <span className="block text-xs font-semibold leading-tight opacity-80">{meta[method].hint}</span>
@@ -598,6 +617,14 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             {!hasAvailablePaymentMethod&&<p className="mt-2 rounded-card border border-line bg-surface p-3 text-xs font-bold leading-5 text-muted">{tr('Aucun moyen réel n’est configuré. Vous pouvez quand même créer la commande; le paiement restera en attente dans votre profil.', 'لا توجد وسيلة دفع حقيقية مضبوطة. يمكنك إنشاء الطلب وسيبقى الدفع في الانتظار داخل حسابك.')}</p>}
             {paymentAvailabilityNotice&&<p className="mt-2 flex items-start gap-2 rounded-card border border-line bg-surface p-3 text-xs font-bold leading-5 text-ink" role="status"><AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-muted"/><span>{paymentAvailabilityNotice}</span></p>}
+            {/* Réseaux acceptés : ils ne se choisissent pas, ils suivent la carte. */}
+            <div className="mt-2 flex items-center gap-2" aria-label={tr('Réseaux acceptés', 'الشبكات المقبولة')}>
+              {CARD_NETWORK_MARKS.map((network) => (
+                <span key={network.id} className="grid h-7 min-w-[46px] place-items-center rounded-control border border-line bg-white px-2">
+                  <img src={network.src} alt={network.label} className="max-h-4 max-w-[38px] object-contain" />
+                </span>
+              ))}
+            </div>
             {formData.paymentMethod.toUpperCase()==='CARD'&&<p className="mt-2 rounded-card border border-line bg-surface p-3 text-xs leading-5 text-ink">{tr('La commande est créée puis la page sécurisée Visa/Mastercard s’ouvre. AYROVI confirme le paiement uniquement après vérification serveur de Konnect.', 'يُنشأ الطلب ثم تُفتح صفحة Visa/Mastercard الآمنة. لا تؤكد AYROVI الدفع إلا بعد تحقق الخادم من Konnect.')}</p>}
             {formData.paymentMethod.toUpperCase()==='BANK_TRANSFER'&&<p className="mt-2 rounded-card border border-line bg-surface p-3 text-xs leading-5 text-ink"><strong>{depositInfo?.companyName}</strong><span className="mt-1 block break-all">RIB : {depositInfo?.bankRib}</span><span className="mt-1 block">{tr('Après le virement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد التحويل ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
             {formData.paymentMethod.toUpperCase()==='POSTE'&&<p className="mt-2 rounded-card border border-line bg-surface p-3 text-xs leading-5 text-ink"><strong>{depositInfo?.companyName}</strong><span className="mt-1 block break-all">{tr('Compte postal', 'الحساب البريدي')} : {depositInfo?.posteAccount}</span><span className="mt-1 block">{tr('Après le versement, téléversez le justificatif depuis Mon compte → Mes commandes. Le téléversement ne confirme pas le paiement.', 'بعد الإيداع ارفع الإثبات من حسابي ← طلباتي. رفع الإثبات لا يعني تأكيد الدفع.')}</span></p>}
