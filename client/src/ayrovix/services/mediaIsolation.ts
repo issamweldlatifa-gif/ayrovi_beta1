@@ -64,3 +64,35 @@ export function isolatedSrc(url: string, failures: Record<string, boolean> = {})
   const isolated = isolatedMediaUrl(url);
   return !isolated || failures[url] ? url : isolated;
 }
+
+/**
+ * CHAÎNE D'AFFICHAGE D'UNE IMAGE PRODUIT (25/09/2026) — du meilleur rendu au plus sûr.
+ *
+ * Pourquoi : la petite carte passait déjà par la COMPOSITION (phase 2 : produit
+ * détouré, posé sur notre mockup), pendant que la grande fiche s'arrêtait à
+ * l'ISOLATION seule (phase 1). Même produit, deux rendus — le client l'a vu
+ * immédiatement. Une seule chaîne sert désormais les deux surfaces :
+ *
+ *   1. composition AYROVI   → produit détouré sur notre fond studio ;
+ *   2. isolation seule      → si la composition n'est pas servie ;
+ *   3. image marchand brute → dernier recours, jamais d'image cassée.
+ *
+ * Le pas courant est porté par l'appelant (un compteur par URL, avancé sur
+ * `onError`) : aucune image ne disparaît, elle recule d'un cran dans la chaîne.
+ */
+export function productMediaChain(url: string, width = 900): string[] {
+  const chain = [composedMediaUrl(url, width), isolatedMediaUrl(url), url]
+    .filter((candidate): candidate is string => Boolean(candidate));
+  return Array.from(new Set(chain));
+}
+
+export function productMediaSrc(url: string, steps: Record<string, number> = {}, width = 900): string {
+  const chain = productMediaChain(url, width);
+  const step = Math.min(Math.max(steps[url] ?? 0, 0), chain.length - 1);
+  return chain[step];
+}
+
+/** Reste-t-il un repli après le pas courant ? (sinon, c'est l'image brute) */
+export function hasMediaFallback(url: string, steps: Record<string, number> = {}, width = 900): boolean {
+  return (steps[url] ?? 0) < productMediaChain(url, width).length - 1;
+}

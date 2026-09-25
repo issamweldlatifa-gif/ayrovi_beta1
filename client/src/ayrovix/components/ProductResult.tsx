@@ -9,7 +9,7 @@ import {
 import { validProductUrl } from '../services/resultPolicy';
 import { useLocale } from '../../i18n/LocaleContext';
 import { classifyProduct, productClassLabel, extractCapacity, presentSizes, usesCapacity } from '../services/productAttributes';
-import { isolatedSrc } from '../services/mediaIsolation';
+import { hasMediaFallback, isComposedUrl, productMediaSrc } from '../services/mediaIsolation';
 
 export interface AyrovixOrderSelection {
   size: string;
@@ -46,6 +46,26 @@ const AVAILABILITY: Record<string, { fr: string; ar: string; cls: string }> = {
   unknown: { fr: 'Disponibilité à confirmer', ar: 'التوفر يحتاج إلى تأكيد', cls: 'border border-line bg-surface text-muted' },
 };
 
+/**
+ * Format téléphone : la fiche prend alors la forme validée en maquette —
+ * image plein cadre, actions flottantes POSÉES sur la photo, barre d'achat fixe.
+ * On interroge le navigateur (matchMedia) plutôt que de dupliquer le balisage :
+ * un seul exemplaire de chaque bouton existe dans la page, donc un seul nom
+ * accessible, donc aucune ambiguite pour un lecteur d'ecran.
+ */
+function useCompactLayout(): boolean {
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+    const query = window.matchMedia('(max-width: 767px)');
+    const apply = () => setCompact(query.matches);
+    apply();
+    query.addEventListener('change', apply);
+    return () => query.removeEventListener('change', apply);
+  }, []);
+  return compact;
+}
+
 export const ProductResult: React.FC<ProductResultProps> = ({
   product,
   ordering,
@@ -67,9 +87,14 @@ export const ProductResult: React.FC<ProductResultProps> = ({
   // version isolée (fond marchand → PNG transparent) ; si le PNG isolé échoue
   // on note l'URL et on rend l'original — jamais d'image cassée, et la galerie
   // ENTIÈRE est isolée (avant : seule la 1re image l'était).
-  const [isolatedMiss, setIsolatedMiss] = useState<Record<string, boolean>>({});
-  const markIsolatedMiss = (url: string) => setIsolatedMiss((prev) => (prev[url] ? prev : { ...prev, [url]: true }));
-  const withIsolated = (url: string) => isolatedSrc(url, isolatedMiss);
+  /* La grande fiche affiche la MÊME composition que la petite carte (phase 2) :
+     produit détouré sur notre fond studio. En cas d'échec, on recule d'un cran
+     dans la chaîne (composition → isolation → image marchand) au lieu de
+     laisser un trou. */
+  const compact = useCompactLayout();
+  const [mediaStep, setMediaStep] = useState<Record<string, number>>({});
+  const stepDownMedia = (url: string) => setMediaStep((prev) => ({ ...prev, [url]: (prev[url] ?? 0) + 1 }));
+  const withIsolated = (url: string) => productMediaSrc(url, mediaStep);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   // SWIPE sur la grande photo (remplace les flèches supprimées — référence Zalando).
   const stageTouchStart = useRef<number | null>(null);
@@ -311,7 +336,7 @@ function variantStockState(options: { available: boolean; availability?: 'availa
   };
 
   return (
-    <div className="flow-product pb-10" dir={direction} ref={sheetRef} data-ay-product-sheet>
+    <div className="flow-product pb-10" dir={direction} ref={sheetRef} data-ay-product-sheet data-ay-compact={compact || undefined}>
       {/* ── En-tête mobile épuré Zalando : < [Catégorie] à gauche, Panier à droite ── */}
       <div className="flex min-h-14 items-center justify-between gap-3 py-2 mb-3 border-b border-line/40">
         <button
@@ -328,7 +353,7 @@ function variantStockState(options: { available: boolean; availability?: 'availa
           <ChevronLeft size={20} className="rtl:rotate-180 text-ink" />
           <span className="text-base font-bold text-ink">{productClassLabel(productClass, isArabic)}</span>
         </button>
-        {onOpenCart && <button type="button" onClick={onOpenCart}
+        {onOpenCart && !compact && <button type="button" onClick={onOpenCart}
           className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-ink hover:bg-surface"
           aria-label={tr('Ouvrir le panier', 'فتح السلة')}>
           <ShoppingBag size={22} />
@@ -381,8 +406,9 @@ function variantStockState(options: { available: boolean; availability?: 'availa
                     fetchPriority="high"
                     draggable={false}
                     data-isolated={withIsolated(activeImage) !== activeImage}
+                    data-composed={isComposedUrl(withIsolated(activeImage)) ? 'true' : undefined}
                     onError={() => {
-                      if (withIsolated(activeImage) !== activeImage) markIsolatedMiss(activeImage);
+                      if (hasMediaFallback(activeImage, mediaStep)) stepDownMedia(activeImage);
                       else setImageIndex((current) => Math.min(current + 1, galleryImages.length - 1));
                     }}
                     className="ayrovix-product-gallery-image h-full w-full transition-transform duration-300"
@@ -401,6 +427,16 @@ function variantStockState(options: { available: boolean; availability?: 'availa
                   <span className="rounded-md bg-white/90 backdrop-blur-xs px-2.5 py-1 text-xs font-bold text-ink shadow-xs">
                     {imageIndex + 1} / {galleryImages.length}
                   </span>
+                </div>
+              )}
+
+              {/* Actions flottantes POSÉES sur la photo (maquette validée) : sur
+                  téléphone le panier quitte l'en-tête et vient ici, en pastille. */}
+              {compact && onOpenCart && (
+                <div className="ay-pdp-rail ay-pdp-media-controls">
+                  <button type="button" onClick={onOpenCart} className="ay-pdp-rail__action" aria-label={tr('Ouvrir le panier', 'فتح السلة')}>
+                    <ShoppingBag size={22} />
+                  </button>
                 </div>
               )}
 
@@ -606,7 +642,7 @@ function variantStockState(options: { available: boolean; availability?: 'availa
           )}
 
           {/* ── 2. CTA — "Ajouter au panier" + "Calculer un autre article" ── */}
-          <div className="pt-3 space-y-2.5">
+          <div className={compact ? 'ay-pdp-buybar' : 'pt-3 space-y-2.5'}>
             <button
               type="button"
               onClick={addedRecently ? undefined : handleAddToCart}
@@ -631,7 +667,11 @@ function variantStockState(options: { available: boolean; availability?: 'availa
               )}
             </button>
 
-            {/* Bouton secondaire : Calculer un autre article */}
+          </div>
+
+          {/* Bouton secondaire : il reste DANS la page — une barre fixe à deux
+              boutons mange l'écran du téléphone et brouille l'action principale. */}
+          <div className="pt-3">
             <button
               type="button"
               onClick={() => {
