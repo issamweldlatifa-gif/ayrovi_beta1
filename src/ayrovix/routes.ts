@@ -7,6 +7,7 @@ import { identifyProduct, buildSearchQuery, AyrovixUnavailableError, ayrovixAiRe
 import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, searchCandidates } from './services/search';
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
+import { enrichCandidateDescriptions } from './services/lensEnrichment';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -426,7 +427,13 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
       const tDedup = Date.now();
       const deduped = deduplicateCandidates(rescoredCandidates);
       mark(trace, 'dedupMs', Date.now() - tDedup);
-      const candidates = deduped;
+      /*
+       * LIGNE DESCRIPTIVE (25/09/2026) — Google Lens ne rend aucune description.
+       * Nous la DEMANDONS donc, pour les premiers résultats seulement, avec cache
+       * de sept jours et échéance stricte : l'enrichissement ne retarde jamais la
+       * réponse, et un texte n'est retenu que s'il décrit BIEN ce produit-là.
+       */
+      const candidates = await enrichCandidateDescriptions(deduped);
       const query = effectiveQuery;
       const securedCandidates = tokenizedCandidates(candidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
