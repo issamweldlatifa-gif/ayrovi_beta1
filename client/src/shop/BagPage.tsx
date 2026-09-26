@@ -23,6 +23,16 @@ export interface BagLine {
   stock: StockState;
 }
 
+/**
+ * État des CONDITIONS COMMERCIALES (acompte, remboursement…). Elles viennent du
+ * serveur : tant qu'elles ne sont pas confirmées, la commande reste fermée. Un
+ * acompte deviné serait une somme que le client n'a jamais acceptée.
+ */
+export type PolicyState =
+  | { status: 'loading' }
+  | { status: 'error'; onRetry?: () => void }
+  | { status: 'ready'; depositNote: string; details: string[] };
+
 export interface BagPageProps {
   lines: BagLine[];
   subtotalTnd: number;
@@ -30,6 +40,10 @@ export interface BagPageProps {
   totalTnd: number;
   /** Marques de paiement RÉELLEMENT disponibles, décidées par l'hôte. */
   paymentMarks?: { id: string; src?: string; label: string }[];
+  /** Conditions serveur — sans elles, « Commander » reste inactif. */
+  policy?: PolicyState;
+  loadError?: boolean;
+  onRetryCart?: () => void;
   tr: (fr: string, ar: string) => string;
   formatMoney: (tnd: number) => string;
   direction?: 'ltr' | 'rtl';
@@ -41,9 +55,12 @@ export interface BagPageProps {
 
 export const BagPage: React.FC<BagPageProps> = ({
   lines, subtotalTnd, deliveryTnd, totalTnd, paymentMarks = [],
+  policy = { status: 'ready', depositNote: '', details: [] },
+  loadError = false, onRetryCart,
   tr, formatMoney, direction = 'ltr', onBack, onChangeQuantity, onRemove, onCheckout,
 }) => {
-  const blocked = lines.some((line) => line.stock !== 'available');
+  const stockBlocked = lines.some((line) => line.stock === 'unavailable');
+  const blocked = stockBlocked || policy.status !== 'ready' || loadError;
   return (
     <div className="s-root s-page" dir={direction} data-ay-design="editorial">
       <header className="s-appbar">
@@ -55,7 +72,18 @@ export const BagPage: React.FC<BagPageProps> = ({
       </header>
 
       <div style={{ flex: 1 }}>
-        {lines.length === 0 && (
+        {loadError && (
+          <p className="s-refusal" role="alert" style={{ margin: 16 }}>
+            {tr('Panier non actualisé.', 'السلة ما تحدّثتش.')}
+            {onRetryCart && (
+              <button type="button" className="s-cta s-cta--ghost" style={{ marginTop: 8 }} onClick={onRetryCart}>
+                {tr('Réessayer', 'أعد المحاولة')}
+              </button>
+            )}
+          </p>
+        )}
+
+        {lines.length === 0 && !loadError && (
           <div className="s-loading">
             <EditorialIcon name="Bag" size={40} />
             <p>{tr('Votre panier est vide.', 'سلّتك فارغة.')}</p>
@@ -118,10 +146,36 @@ export const BagPage: React.FC<BagPageProps> = ({
             <span>{tr('Total', 'المجموع')}</span><span>{formatMoney(totalTnd)}</span>
           </div>
 
+          {/* Conditions du serveur : ce qui n'est pas confirmé n'est pas affiché,
+              et tant que rien n'est confirmé, la commande ne part pas. */}
+          {policy.status === 'loading' && (
+            <p className="s-card__desc" role="status" style={{ whiteSpace: 'normal' }}>
+              {tr('Chargement des conditions…', 'جارٍ تحميل الشروط…')}
+            </p>
+          )}
+          {policy.status === 'error' && (
+            <p className="s-refusal" role="alert">
+              {tr('Conditions indisponibles.', 'الشروط غير متوفرة.')}
+              {policy.onRetry && (
+                <button type="button" className="s-cta s-cta--ghost" style={{ marginTop: 8 }} onClick={policy.onRetry}>
+                  {tr('Réessayer', 'أعد المحاولة')}
+                </button>
+              )}
+            </p>
+          )}
+          {policy.status === 'ready' && policy.depositNote && (
+            <details className="s-details">
+              <summary>{policy.depositNote}</summary>
+              {policy.details.map((line) => (
+                <p key={line} className="s-card__desc" style={{ whiteSpace: 'normal' }}>{line}</p>
+              ))}
+            </details>
+          )}
+
           <button type="button" className="s-cta" onClick={onCheckout} disabled={blocked || !onCheckout}>
-            {tr('Passer la commande', 'أتمّ الطلب')}
+            {tr('Commander', 'أتمّ الطلب')}
           </button>
-          {blocked && (
+          {stockBlocked && (
             <p className="s-refusal">{tr('Retirez la ligne bloquée pour continuer.', 'احذف السطر المسدود باش تكمّل.')}</p>
           )}
 

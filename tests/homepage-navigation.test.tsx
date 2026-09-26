@@ -7,7 +7,7 @@ const bottomNavSource = readFileSync('client/src/components/BottomNavBar.tsx', '
 const footerSource = readFileSync('client/src/components/Footer.tsx', 'utf8');
 const aboutSource = readFileSync('client/src/components/AboutSection.tsx', 'utf8');
 const announcementSource = readFileSync('client/src/components/TopAnnouncementBar.tsx', 'utf8');
-const cartSource = readFileSync('client/src/components/CartDrawer.tsx', 'utf8');
+const cartSource = readFileSync('client/src/shop/ShopBagScreen.tsx', 'utf8');
 const checkoutCss = readFileSync('client/src/styles/checkout-flow.css', 'utf8');
 const runtimeCss = readFileSync('client/src/styles/interface-runtime.css', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
@@ -30,7 +30,9 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
   it('keeps every public chrome layer below cart and checkout overlays', () => {
     expect(announcementSource).toContain('relative z-10');
     expect(bottomNavSource).toContain('bottom-0 z-30');
-    expect(cartSource).toContain('fixed inset-0 z-50 overflow-hidden');
+    // Le panier occupe la même bande d'avant-plan, désormais via sa propre classe.
+    expect(cartSource).toContain('className="s-drape"');
+    expect(readFileSync('client/src/shop/shop.css', 'utf8')).toMatch(/\.s-drape\s*\{[^}]*z-index: 60/);
     expect(checkoutCss).toMatch(/\.checkout-flow-page\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*50;/);
     expect(runtimeCss).toMatch(/\.ayrovi-app-shell\{[^}]*isolation:isolate/);
   });

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { ProductGrid, ProductPage, SizeDrape, BagPage, PaymentPage, LoadingView } from '../client/src/shop';
+import type { BagLine } from '../client/src/shop/BagPage';
 import { productToView, candidateToView } from '../client/src/shop/adapter';
 import { hasBrandScale, isOrderable, refusalReason, type ProductView, type SizeOption } from '../client/src/shop/types';
 import type { AyrovixProduct, AyrovixCandidate } from '../client/src/ayrovix/types';
@@ -240,5 +241,53 @@ describe('boutique v2 — rien perdu de l’ancienne fiche', () => {
   it('un lien vidé ne produit jamais une ligne de panier sans adresse', () => {
     const container = read('client/src/shop/ShopProductScreen.tsx');
     expect(container).toContain('details.link.trim() || product.sourceUrl');
+  });
+});
+
+/*
+ * PANIER v2 — ce que l'ancien tiroir garantissait, l'écran neuf le garantit.
+ */
+describe('boutique v2 — panier', () => {
+  const read = (path: string) => readFileSync(path, 'utf8');
+  const line = (over: Partial<BagLine> = {}): BagLine => ({
+    id: 'l1', title: 'Pantalon', brand: 'Champion', variant: 'Taille L', quantity: 1,
+    media: { src: '/a.png', alt: 'a' }, lineTotalTnd: 118.9, referenceTotalTnd: null,
+    stock: 'available', ...over,
+  });
+
+  it('l’application affiche le panier v2, plus l’ancien tiroir', () => {
+    const app = read('client/src/App.tsx');
+    expect(app).toContain("import('./shop')");
+    expect(app).toContain('ShopBagScreen');
+    expect(app).not.toContain("import('./components/CartDrawer')");
+  });
+
+  it('une rupture constatée bloque la commande, un stock inconnu ne la bloque pas', () => {
+    const blocked = renderToStaticMarkup(
+      <BagPage lines={[line({ stock: 'unavailable' })]} subtotalTnd={118.9} deliveryTnd={0} totalTnd={118.9}
+        tr={tr} formatMoney={money} onCheckout={() => {}} />,
+    );
+    expect(blocked).toContain('Retirez la ligne bloquée');
+    const unknown = renderToStaticMarkup(
+      <BagPage lines={[line({ stock: 'unknown' })]} subtotalTnd={118.9} deliveryTnd={0} totalTnd={118.9}
+        tr={tr} formatMoney={money} onCheckout={() => {}} />,
+    );
+    expect(unknown).not.toContain('Retirez la ligne bloquée');
+    expect(unknown).toContain('Stock non confirmé par la source.');
+  });
+
+  it('sans conditions serveur confirmées, la commande ne part pas', () => {
+    const html = renderToStaticMarkup(
+      <BagPage lines={[line()]} subtotalTnd={118.9} deliveryTnd={0} totalTnd={118.9}
+        policy={{ status: 'loading' }} tr={tr} formatMoney={money} onCheckout={() => {}} />,
+    );
+    expect(html).toContain('Chargement des conditions');
+    expect(html).toContain('disabled');
+  });
+
+  it('le panier n’écrit aucune règle de paiement : il lit la source unique', () => {
+    const container = read('client/src/shop/ShopBagScreen.tsx');
+    expect(container).toContain('availablePaymentMethods(commerce.policy)');
+    expect(container).not.toMatch(/cardGatewayAvailable|bankRib|posteAccount/);
   });
 });

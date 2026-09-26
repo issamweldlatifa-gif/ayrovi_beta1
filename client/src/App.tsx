@@ -29,7 +29,7 @@ const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) =>
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
 const LensLauncher = lazy(() => import('./ayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
 const AiAssistantDrawer = lazy(() => import('./components/assistant/AiAssistantDrawer').then((module) => ({ default: module.AiAssistantDrawer })));
-const CartDrawer = lazy(() => import('./components/CartDrawer').then((module) => ({ default: module.CartDrawer })));
+const ShopBagScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopBagScreen })));
 const CheckoutModal = lazy(() => import('./components/CheckoutModal').then((module) => ({ default: module.CheckoutModal })));
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
@@ -576,7 +576,7 @@ export const App: React.FC = () => {
 
       {isCartOpen && (
         <Suspense fallback={null}>
-          <CartDrawer
+          <ShopBagScreen
             isOpen
             onClose={closeAppView}
             items={cartItems}

@@ -5,6 +5,7 @@ export { ShopProductScreen } from './ShopProductScreen';
 export { SizeDrape } from './SizeDrape';
 export { LoadingView } from './LoadingView';
 export { BagPage } from './BagPage';
+export { ShopBagScreen } from './ShopBagScreen';
 export { AddressPage } from './AddressPage';
 export { PaymentPage } from './PaymentPage';
 export * from './types';

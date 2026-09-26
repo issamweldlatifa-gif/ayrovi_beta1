@@ -65,11 +65,14 @@ describe('AYROVIX contextual navigation', () => {
   });
 
   it('keeps each commerce Back target contextual and adds a direct new-scan CTA', () => {
-    const cart = readFileSync('client/src/components/CartDrawer.tsx', 'utf8');
+    const cart = readFileSync('client/src/shop/ShopBagScreen.tsx', 'utf8');
+    const bag = readFileSync('client/src/shop/BagPage.tsx', 'utf8');
     const checkout = readFileSync('client/src/components/CheckoutModal.tsx', 'utf8');
     const confirmation = readFileSync('client/src/components/OrderSuccessModal.tsx', 'utf8');
-    expect(cart).toContain("aria-label={tr('Retour au produit', 'العودة للمنتج')}");
-    expect(cart).toContain("Découvrir les produits");
+    // Le retour du panier ramène là d'où l'on vient, et le panier vide propose
+    // explicitement de repartir chercher un produit.
+    expect(cart).toContain('onBack={onClose}');
+    expect(bag).toContain('Votre panier est vide');
     expect(checkout).toContain('backPlacement="leading"');
     expect(checkout).toContain("title={isPaymentStage ? tr('Paiement', 'الدفع') : tr('Adresse de livraison', 'عنوان التوصيل')}");
     expect(checkout).toContain("navigation.pushLayer({ id: 'checkout:payment' })");

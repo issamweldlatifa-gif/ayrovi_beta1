@@ -464,3 +464,25 @@
 .s-select__label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; }
 
 .s-drape__trust { margin: 10px 16px 0; font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }
+
+/* Le panier garde sa forme de tiroir latéral : il ouvre PAR-DESSUS la page
+   qu'on quittait, et y revient en se refermant. */
+.s-bag-panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 100%;
+  max-width: 512px;
+  display: flex;
+  flex-direction: column;
+  background: var(--s-canvas);
+  animation: s-slide-end var(--s-sheet) var(--s-ease);
+}
+
+.s-bag-panel[data-side="start"] {
+  inset-inline: 0 auto;
+  animation-name: s-slide-start;
+}
+
+@keyframes s-slide-end { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes s-slide-start { from { transform: translateX(-100%); } to { transform: none; } }

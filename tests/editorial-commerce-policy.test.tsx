@@ -3,7 +3,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { parseCommercePolicy } from '../client/src/commerce/policy';
-import { CartDrawer } from '../client/src/components/CartDrawer';
+import { ShopBagScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import type { CartItem } from '../client/src/types';
 const api=vi.hoisted(()=>({getCommerceConfig:vi.fn()}));
@@ -14,7 +14,7 @@ const valid={deposit:{percent:30,cardDiscountPercent:5}};
 const props={isOpen:true,onClose:vi.fn(),items:[{id:'1',title:'Product',quantity:1,priceTND:100,sourceUrl:'javascript:alert(1)',priceVerificationStatus:'PENDING_MANUAL'} as unknown as CartItem],totalTND:100,onUpdateQuantity:vi.fn(),onRemoveItem:vi.fn(),onProceedToCheckout:vi.fn(),onCalculateAnotherProduct:vi.fn()};
 beforeEach(()=>{vi.clearAllMocks();host=document.createElement('div');document.body.append(host);root=createRoot(host);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();});
-const render=()=>act(async()=>root.render(<LocaleProvider><CartDrawer {...props}/></LocaleProvider>));
+const render=()=>act(async()=>root.render(<LocaleProvider><ShopBagScreen {...props}/></LocaleProvider>));
 const proceed=()=>[...host.querySelectorAll('button')].find(b=>b.textContent?.includes('Commander'))!;
 describe('server-owned commerce terms',()=>{
  it.each([undefined,null,'',true,-1,0,101,Infinity,NaN])('rejects missing/invalid deposit %s',percent=>expect(()=>parseCommercePolicy({deposit:{percent,cardDiscountPercent:5}})).toThrow('COMMERCE_TERMS_INVALID'));
