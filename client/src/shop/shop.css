@@ -443,3 +443,20 @@
   border-radius: 0;
   background: var(--s-canvas);
 }
+
+.s-price--pending { font-size: 0.9375rem; color: var(--s-muted); font-weight: 400; }
+
+/* Commandes de galerie : placées à gauche pour ne jamais recouvrir le rail
+   d'actions, qui occupe le côté opposé. */
+.s-gallery-nav {
+  position: absolute;
+  inset-inline-start: 12px;
+  bottom: 56px;
+  z-index: 7;
+  display: flex;
+  gap: 8px;
+}
+
+.s-gallery-nav .s-rail__btn { width: 40px; height: 40px; }
+
+.s-media__placeholder { display: block; width: 100%; height: 100%; background: var(--s-surface); }

@@ -34,10 +34,16 @@ export interface ProductPageProps {
    * la ligne de panier, et un champ vide produirait une ligne sans adresse.
    */
   defaultLink?: string;
+  /**
+   * Faux tant qu'aucun prix faisant autorité n'est arrivé. On n'ajoute pas au
+   * panier un article dont le montant n'est pas encore établi : le client
+   * découvrirait le prix APRÈS avoir cliqué.
+   */
+  canAdd?: boolean;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
-  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false, onCalculateAnother, defaultLink = '',
+  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false, onCalculateAnother, defaultLink = '', canAdd = true,
 }) => {
   const [slide, setSlide] = useState(0);
   /* La quantité existait dans l'ancienne fiche : la perdre en passant à v2
@@ -159,18 +165,29 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 className="s-media__track"
                 style={{ transform: `translateX(${(direction === 'rtl' ? 1 : -1) * slide * 100}%)` }}
               >
-                {media.map((item, index) => (
-                  <div className="s-media__slide" key={`${item.src}-${index}`}>
-                    <button
-                      type="button"
-                      className="s-media__open"
-                      onClick={() => setZoomed(true)}
-                      aria-label={tr('Agrandir la photo', 'تكبير الصورة')}
-                    >
-                      <img src={item.src} alt={item.alt} decoding="async" referrerPolicy="no-referrer" draggable={false} />
-                    </button>
-                  </div>
-                ))}
+                {media.map((item, index) => {
+                  /*
+                   * On ne télécharge que la photo visible et sa voisine immédiate.
+                   * Un carrousel qui charge ses quatre images d'un coup fait payer
+                   * au client, sur son forfait, trois photos qu'il ne regardera
+                   * peut-être jamais — et retarde celle qu'il regarde.
+                   */
+                  const near = Math.abs(index - slide) <= 1;
+                  return (
+                    <div className="s-media__slide" key={`${item.src}-${index}`}>
+                      <button
+                        type="button"
+                        className="s-media__open"
+                        onClick={() => setZoomed(true)}
+                        aria-label={tr('Agrandir la photo', 'تكبير الصورة')}
+                      >
+                        {near
+                          ? <img src={item.src} alt={item.alt} decoding="async" referrerPolicy="no-referrer" draggable={false} />
+                          : <span className="s-media__placeholder" aria-hidden="true" />}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -186,6 +203,19 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           )}
 
           {slides > 1 && <span className="s-counter">{slide + 1} / {slides}</span>}
+
+          {/* Le glissement ne suffit pas : sur un écran sans tactile, la galerie
+              serait inaccessible. Les deux commandes existent donc aussi. */}
+          {slides > 1 && (
+            <div className="s-gallery-nav">
+              <button type="button" className="s-rail__btn" onClick={() => go(slide - 1)} aria-label={tr('Photo précédente', 'الصورة السابقة')}>
+                <EditorialIcon name="ChevronLeft" size={18} direction={direction} />
+              </button>
+              <button type="button" className="s-rail__btn" onClick={() => go(slide + 1)} aria-label={tr('Photo suivante', 'الصورة التالية')}>
+                <EditorialIcon name="ChevronRight" size={18} direction={direction} />
+              </button>
+            </div>
+          )}
 
           {actions?.onOpenBag && (
             <div className="s-rail" data-hidden={stageRef.current?.dataset.covered === 'true'}>
@@ -219,6 +249,17 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {product.brand && <div className="s-brand">{product.brand}</div>}
           <h1 className="s-title">{product.title}</h1>
           {product.description && <p className="s-desc">{product.description}</p>}
+
+          {/* Sans prix établi, l'écran le DIT. Une fiche muette sur le montant
+              laisse croire à un oubli d'affichage ; le client doit savoir que
+              le chiffre est en cours d'établissement, pas introuvable. */}
+          {!price && (
+            <p className="s-price s-price--pending" role="status">
+              {priceChecking
+                ? tr('Vérification du prix à la source…', 'نتثبّتو في السعر عند المصدر…')
+                : tr('Prix à confirmer', 'السعر قيد التأكيد')}
+            </p>
+          )}
 
           {price && (
             <>
@@ -318,7 +359,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           </button>
         </div>
 
-        <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || !actions?.onAddToBag}>
+        <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || !canAdd || !actions?.onAddToBag}>
           {added
             ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</>
             : adding

@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { MerchantRating } from '../client/src/ayrovix/components/MerchantRating';
-import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
+import { ShopProductScreen } from '../client/src/shop';
 import { displayRating } from '../client/src/ayrovix/services/resultPolicy';
 import type { AyrovixProduct } from '../client/src/ayrovix/types';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
@@ -18,11 +18,11 @@ describe('product presentation does not invent trust signals or commercial terms
   expect(html).toContain('4.3/5');expect(html).toContain('marchand');expect(html).toContain('(27)');
  });
  it.each(['javascript:alert(1)','data:text/html,unsafe','https://user:password@example.com/x','http://127.0.0.1/private'])('never exposes an unsafe secondary merchant link: %s',sourceUrl=>{
-  const html=renderToStaticMarkup(<LocaleProvider><ProductResult product={{...product,sourceUrl}} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
+  const html=renderToStaticMarkup(<LocaleProvider><ShopProductScreen product={{...product,sourceUrl}} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
   expect(html).not.toContain('href=');expect(html).not.toContain('4.5/5');expect(html).not.toContain('5.0/5');
  });
  it('waits for the authoritative cart quote without inventing a price or a deposit',()=>{
-  const html=renderToStaticMarkup(<LocaleProvider><ProductResult product={product} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
+  const html=renderToStaticMarkup(<LocaleProvider><ShopProductScreen product={product} priceVerified={false} ordering={false} onOrder={()=>{}}/></LocaleProvider>);
   expect(html).not.toContain('20%');expect(html).not.toContain('null%');expect(html).toContain('Prix à confirmer');expect(html).toContain('disabled=');expect(html).not.toContain('Produit ajouté');
  });
 });

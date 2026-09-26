@@ -101,7 +101,9 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
     brand: product.brand?.trim() || null,
     title: product.title.trim(),
     description: product.description?.trim() || null,
-    media: toMedia(gallery, product.title),
+    /* Quatre photos au plus dans le carrousel : au-delà, le client fait défiler
+       sans rien apprendre de neuf. Les autres restent dans la fiche produit. */
+    media: toMedia(gallery, product.title).slice(0, 4),
     price: priceOf(
       product.priceTnd,
       product.promo ?? null,

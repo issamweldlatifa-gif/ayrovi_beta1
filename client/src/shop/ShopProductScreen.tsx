@@ -82,9 +82,16 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     return () => controller.abort();
   }, [quoteKey, product.title, product.price, product.currency]);
 
+  /* Un prix marchand brut n'est pas un prix de vente : il ignore droits, TVA et
+     frais. Tant que le devis serveur n'est pas là, l'écran n'affiche AUCUN
+     montant — « prix à confirmer » — et l'ajout au panier reste fermé. Afficher
+     un chiffre puis le corriger après le clic serait une promesse trahie. */
+  const quotable = Number.isFinite(product.price as number) && (product.price as number) > 0 && Boolean(product.currency);
+  const awaitingQuote = quotable && !quote;
+
   const view = useMemo(() => {
     const base = productToView(product, activeColor);
-    if (!quote) return base;
+    if (!quote) return { ...base, price: quotable ? null : base.price };
     // Le devis serveur remplace le prix brut : un seul montant fait autorité.
     return {
       ...base,
@@ -100,7 +107,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
         verifiedAtSource: priceVerified || product.priceVerificationStatus === 'VERIFIED',
       },
     };
-  }, [product, activeColor, quote, priceVerified]);
+  }, [product, activeColor, quote, priceVerified, quotable]);
 
   const addToBag = async (size: SizeOption | null, quantity: number, details: { note: string; link: string }) => {
     if (ordering) return;
@@ -125,6 +132,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       formatMoney={formatMoney}
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
       priceChecking={quoteLoading}
+      canAdd={!awaitingQuote}
       onCalculateAnother={onCalculateAnother}
       defaultLink={product.sourceUrl || ''}
       actions={{ onBack, onOpenBag: onOpenCart, onAddToBag: addToBag, onSelectColor: setActiveColor }}
