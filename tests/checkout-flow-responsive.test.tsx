@@ -31,7 +31,10 @@ describe('order-backed mobile checkout and customer account', () => {
   });
 
   it('restores the full payment choice after delivery while keeping the order authoritative', () => {
-    expect(checkoutSource).toContain("paymentMethod: 'PENDING_SELECTION'");
+    // La garantie « la commande est créée AVANT le paiement » vit désormais dans
+    // les règles extraites (shop/checkoutOrder), testées sans rendre d'interface.
+    expect(checkoutSource).toContain('buildCheckoutBody(formData');
+    expect(readFileSync('client/src/shop/checkoutOrder.ts', 'utf8')).toContain("paymentMethod: 'PENDING_SELECTION'");
     expect(checkoutSource).toContain('Mode de paiement de l’acompte');
     expect(checkoutSource).toContain('Visa / Mastercard');
     expect(checkoutSource).toContain('Flouci / D17');

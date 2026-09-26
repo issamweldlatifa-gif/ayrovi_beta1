@@ -9,6 +9,7 @@ import { useCommercePolicy } from '../commerce/useCommercePolicy';
 // La disponibilité des moyens de paiement n'est plus décidée ici : elle vient du module partagé,
 // le même que celui du pied de page. Une règle, un endroit (voir client/src/commerce/paymentMethods.ts).
 import { CARD_NETWORK_MARKS, isPaymentMethodAvailable as paymentMethodAvailable } from '../commerce/paymentMethods';
+import { buildCheckoutBody, refuseCheckout } from '../shop/checkoutOrder';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
@@ -256,35 +257,44 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     : 0;
   const selectedDepositAmount = Math.max(0, Math.round((depositBase - depositDiscount) * 1000) / 1000);
 
+  /*
+   * La décision vit dans `shop/checkoutOrder` (fonctions pures, testées) ; ici
+   * on ne fait que la TRADUIRE pour le client. Séparer les deux permet enfin de
+   * vérifier ces règles — qui engagent l'entreprise — sans rendre d'interface.
+   */
   const validateDelivery = () => {
     setError(null);
-    if (!customerSession) {
+    const refusal = refuseCheckout(
+      {
+        authenticated: Boolean(customerSession),
+        emailVerified: Boolean(customerSession?.account.emailVerified),
+        phoneVerified: Boolean(customerSession?.account.phoneVerified),
+      },
+      {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        termsAccepted: formData.termsAccepted,
+      },
+    );
+    if (!refusal) return true;
+    if (refusal === 'AUTH_REQUIRED') {
       onRequireAuthentication();
       return false;
     }
-    if (!customerSession.account.emailVerified && !customerSession.account.phoneVerified) {
-      setError(tr('Vérifiez votre e-mail ou votre téléphone depuis votre compte avant de commander.', 'وثّق بريدك الإلكتروني أو هاتفك من الحساب قبل تأكيد الطلب.'));
-      return false;
-    }
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.address.trim()) {
-      setError(tr('Veuillez remplir tous les champs obligatoires pour assurer une livraison rapide.', 'يرجى ملء جميع الحقول المطلوبة لضمان التوصيل.'));
-      return false;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      setError(tr('Adresse e-mail invalide.', 'عنوان البريد الإلكتروني غير صالح.'));
-      return false;
-    }
-    let phoneDigits = formData.phone.replace(/\D/g, '');
-    if (phoneDigits.startsWith('00216')) phoneDigits = phoneDigits.slice(5);
-    else if (phoneDigits.startsWith('216') && phoneDigits.length === 11) phoneDigits = phoneDigits.slice(3);
-    if (!/^[24579]\d{7}$/.test(phoneDigits)) {
-      setError(tr('Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5, 7 ou 9 (ex. 98 123 456).', 'رقم الهاتف التونسي غير صالح: 8 أرقام تبدأ بـ2 أو 4 أو 5 أو 7 أو 9 (مثال: 98 123 456).'));
-      return false;
-    }
-    return true;
+    const messages: Record<Exclude<typeof refusal, 'AUTH_REQUIRED'>, string> = {
+      CONTACT_NOT_VERIFIED: tr('Vérifiez votre e-mail ou votre téléphone depuis votre compte avant de commander.', 'وثّق بريدك الإلكتروني أو هاتفك من الحساب قبل تأكيد الطلب.'),
+      FIELDS_MISSING: tr('Veuillez remplir tous les champs obligatoires pour assurer une livraison rapide.', 'يرجى ملء جميع الحقول المطلوبة لضمان التوصيل.'),
+      EMAIL_INVALID: tr('Adresse e-mail invalide.', 'عنوان البريد الإلكتروني غير صالح.'),
+      PHONE_INVALID: tr('Numéro tunisien invalide : 8 chiffres commençant par 2, 4, 5, 7 ou 9 (ex. 98 123 456).', 'رقم الهاتف التونسي غير صالح: 8 أرقام تبدأ بـ2 أو 4 أو 5 أو 7 أو 9 (مثال: 98 123 456).'),
+      TERMS_REQUIRED: tr('Acceptez les conditions de vente et la politique de retour avant de commander.', 'وافق على شروط البيع وسياسة الإرجاع قبل تأكيد الطلب.'),
+    };
+    setError(messages[refusal]);
+    return false;
   };
 
-  const handleDeliveryContinue = () => {
+  const handleDeliveryNext = () => {
     if (validateDelivery()) navigation.pushLayer({ id: 'checkout:payment' });
   };
 
@@ -320,7 +330,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
           'x-session-id': getSessionId(),
           'x-csrf-token': customerSession.csrfToken,
         },
-        body: JSON.stringify({ ...formData, paymentMethod: 'PENDING_SELECTION', locale: locale === 'ar' ? 'ar-TN' : 'fr-TN' }),
+        body: JSON.stringify(buildCheckoutBody(formData, locale === 'ar' ? 'ar' : 'fr')),
       });
 
       const data = await response.json();
