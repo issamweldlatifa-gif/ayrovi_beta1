@@ -9,6 +9,7 @@ import { AddToCartRequest } from '../types';
 import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
 import { guardVariantOrder } from '../ayrovix/services/variantAvailability';
+import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
@@ -503,6 +504,21 @@ export function createApiRouter(
       } catch (learningError) {
         console.warn('[Checkout Learning Event]', learningError);
       }
+
+      /*
+       * L'équipe est PRÉVENUE. Jusqu'ici une commande entrait en base, sa
+       * facture était produite, et personne ne le savait : il fallait ouvrir
+       * l'Admin et rafraîchir pour découvrir qu'un client attendait son appel
+       * de confirmation. Le canal existait déjà ; il est enfin appelé.
+       */
+      notifyNewOrder(db, {
+        orderId: String(result.orderId),
+        orderNumber: String(result.orderNumber),
+        totalTnd: Number(result.totalTND ?? 0),
+        paymentMethod: normalizedPaymentMethod,
+        governorate: city.trim(),
+        itemCount: Number((result as { itemCount?: number }).itemCount ?? 0) || undefined,
+      });
       return res.json({
         success: true,
         ...result,
