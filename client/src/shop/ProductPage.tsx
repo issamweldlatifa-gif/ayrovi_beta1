@@ -27,12 +27,17 @@ export interface ProductPageProps {
   direction?: 'ltr' | 'rtl';
   /** Vrai tant que le prix est en cours de vérification à la source. */
   priceChecking?: boolean;
+  /** Repartir sur une autre recherche — action de l'ancienne fiche, conservée. */
+  onCalculateAnother?: () => void;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
-  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false,
+  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false, onCalculateAnother,
 }) => {
   const [slide, setSlide] = useState(0);
+  /* La quantité existait dans l'ancienne fiche : la perdre en passant à v2
+     aurait obligé le client à commander une pièce à la fois. */
+  const [quantity, setQuantity] = useState(1);
   const [drapeOpen, setDrapeOpen] = useState(false);
   const [chosen, setChosen] = useState<SizeOption | null>(null);
   const [refusal, setRefusal] = useState<'unavailable' | 'unknown' | null>(null);
@@ -99,7 +104,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     if (product.sizes.length > 0 && !chosen) { setDrapeOpen(true); return; }
     setAdding(true);
     try {
-      await actions.onAddToBag(chosen);
+      await actions.onAddToBag(chosen, quantity);
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1800);
     } finally {
@@ -269,6 +274,18 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           </p>
         )}
 
+        <div className="s-qty" role="group" aria-label={tr('Quantité', 'الكمية')}>
+          <button type="button" className="s-iconbtn" aria-label={tr('Diminuer la quantité', 'إنقاص الكمية')}
+            disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}>
+            <EditorialIcon name="Minus" size={18} />
+          </button>
+          <span aria-live="polite">{quantity}</span>
+          <button type="button" className="s-iconbtn" aria-label={tr('Augmenter la quantité', 'زيادة الكمية')}
+            onClick={() => setQuantity((value) => Math.min(99, value + 1))}>
+            <EditorialIcon name="Plus" size={18} />
+          </button>
+        </div>
+
         <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || !actions?.onAddToBag}>
           {added
             ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</>
@@ -276,6 +293,11 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               ? tr('Ajout…', 'جارٍ الإضافة…')
               : tr('Ajouter au panier', 'زيد للسلة')}
         </button>
+        {onCalculateAnother && (
+          <button type="button" className="s-cta s-cta--ghost" onClick={onCalculateAnother}>
+            {tr('Calculer un autre article', 'احسب منتج آخر')}
+          </button>
+        )}
       </div>
 
       <SizeDrape

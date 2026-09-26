@@ -78,7 +78,7 @@ export interface ProductView {
 export interface ProductActions {
   onBack?: () => void;
   onOpenBag?: () => void;
-  onAddToBag?: (size: SizeOption | null) => Promise<void> | void;
+  onAddToBag?: (size: SizeOption | null, quantity: number) => Promise<void> | void;
   onSelectColor?: (name: string) => void;
 }
 

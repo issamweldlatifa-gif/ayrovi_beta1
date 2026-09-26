@@ -3,7 +3,7 @@ import { X, Camera, Link2, ArrowUpRight, ArrowRight, Loader2, Clipboard, Shoppin
 import { AddToCartPayload, AddToCartResult, ScrapedProduct } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
-import { ProductResult } from '../ayrovix/components/ProductResult';
+import { ShopProductScreen } from '../shop';
 import { resolveProductSelection } from '../ayrovix/services/productSelection';
 import type { AyrovixProduct } from '../ayrovix/types';
 
@@ -403,7 +403,7 @@ export const ProductDrawer: React.FC<ProductDrawerProps> = ({
 
           {step === 'details' && ayrovixProduct && (
             <div className="py-1">
-              <ProductResult
+              <ShopProductScreen
                 product={ayrovixProduct}
                 ordering={isAddingToCart}
                 priceVerified={product?.priceVerified === true}

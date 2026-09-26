@@ -20,7 +20,8 @@ import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
 import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
-import { ProductResult, type AyrovixOrderSelection } from './ProductResult';
+import { type AyrovixOrderSelection } from './ProductResult';
+import { ShopProductScreen } from '../../shop';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
 import { LensContextHeader, LensMoreMenu } from './LensNavigation';
@@ -908,7 +909,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
           {stage === 'product' && product && (
             <div className="flex flex-1 flex-col min-h-0 overflow-y-auto bg-white">
               <div className="mx-auto w-full max-w-5xl px-3 sm:px-4 py-3 pb-8">
-                <ProductResult
+                <ShopProductScreen
                   product={product}
                   ordering={ordering}
                   priceVerified={verifiedPriceUrl}

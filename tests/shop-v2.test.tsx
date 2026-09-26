@@ -161,3 +161,52 @@ describe('boutique v2 — indépendance', () => {
     expect(selectors.every((selector) => selector.startsWith('.s-'))).toBe(true);
   });
 });
+
+/*
+ * INSTALLATION (25/09/2026) — l'écran v2 est branché aux trois endroits qui
+ * affichaient l'ancienne fiche, via un conteneur qui expose la MÊME interface.
+ * Ces tests vérifient qu'on n'a rien perdu au passage.
+ */
+describe('boutique v2 — installée dans l’application', () => {
+  const read = (path: string) => readFileSync(path, 'utf8');
+
+  it('les trois surfaces affichent désormais l’écran v2', () => {
+    for (const path of [
+      'client/src/ayrovix/components/LensLauncher.tsx',
+      'client/src/components/ProductDrawer.tsx',
+      'client/src/components/assistant/AssistantMessages.tsx',
+    ]) {
+      const source = read(path);
+      expect(source, path).toContain('<ShopProductScreen');
+      expect(source, path).not.toContain('<ProductResult');
+    }
+  });
+
+  it('le conteneur garde l’interface de l’ancienne fiche — retour arrière possible', () => {
+    const container = read('client/src/shop/ShopProductScreen.tsx');
+    for (const prop of ['product', 'ordering', 'priceVerified', 'onOrder', 'onBack', 'onCalculateAnother', 'onOpenCart']) {
+      expect(container, prop).toContain(prop);
+    }
+  });
+
+  it('la quantité n’a pas été perdue dans la bascule', () => {
+    const html = renderToStaticMarkup(
+      <ProductPage product={view()} tr={tr} formatMoney={money} actions={{ onAddToBag: () => {} }} />,
+    );
+    expect(html).toContain('s-qty');
+    expect(html).toContain('Augmenter la quantité');
+  });
+
+  it('« Calculer un autre article » n’a pas été perdu non plus', () => {
+    const html = renderToStaticMarkup(
+      <ProductPage product={view()} tr={tr} formatMoney={money} onCalculateAnother={() => {}} />,
+    );
+    expect(html).toContain('Calculer un autre article');
+  });
+
+  it('le prix affiché vient du serveur, jamais d’un calcul dans l’écran', () => {
+    const container = read('client/src/shop/ShopProductScreen.tsx');
+    expect(container).toContain('/api/public/pricing/cart-line');
+    expect(container).not.toMatch(/\*\s*(1\.\d|rate|taux)/i);
+  });
+});

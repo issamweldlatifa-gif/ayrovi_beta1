@@ -392,3 +392,19 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Quantité : conservée de l'ancienne fiche — sans elle, le client devrait
+   commander une pièce à la fois. */
+.s-qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.s-cta--ghost {
+  background: var(--s-canvas);
+  color: var(--s-ink);
+  border: 1px solid var(--s-ink);
+}

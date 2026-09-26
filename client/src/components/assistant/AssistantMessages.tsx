@@ -6,7 +6,8 @@ import { cleanAssistantText } from './composerPolicy';
 import { Mic, ArrowUpRight, MessageSquare, PackageCheck, ShoppingBag, LensBox } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
-import { ProductResult, type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
+import { type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
+import { ShopProductScreen } from '../../shop';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
 import { AssistantMessage, FeedbackValue } from './types';
 import { isDisplayableCandidate } from '../../ayrovix/services/resultPolicy';
@@ -81,7 +82,7 @@ const ToolPresentations = ({ message, isDark, selectedProduct, productBusyId, is
         </div>
       </article>)}
     </div> : message.products?.length ? <p role="status" className="ay-readable border border-line p-3 text-sm text-muted">{tr('Aucun produit avec un prix et un lien exploitables dans cette réponse. Relancez la recherche.', 'لم يصل منتج بسعر ورابط صالحين في هذا الرد. أعد البحث.')}</p> : null}
-    {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ProductResult product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder} onOpenCart={onOpenCart} onBack={onProductBack} onCalculateAnother={onProductBack}/></div>}
+    {selectedProduct?.messageId === message.id && <div className={`overflow-hidden rounded-card border p-2 ${isDark ? 'border-white/10 bg-white' : 'border-line bg-white'}`}><ShopProductScreen product={selectedProduct.product} priceVerified={selectedProduct.priceVerified} ordering={isOrdering} onOrder={onProductOrder} onOpenCart={onOpenCart} onBack={onProductBack} onCalculateAnother={onProductBack}/></div>}
     {message.supportTicket && <article className={`flex items-start gap-3 rounded-card border p-4 ${isDark ? 'border-white/10 bg-white/[0.04]' : 'border-line bg-surface'}`}><span className="grid h-11 w-11 shrink-0 place-items-center rounded-card bg-surface text-ink"><MessageSquare size={30}/></span><div><p className="text-xs font-bold uppercase tracking-[.12em] text-muted">{tr('Support AYROVI', 'دعم AYROVI')}</p><h3 className="mt-0.5 text-sm font-extrabold">{tr('Ticket enregistré', 'تم تسجيل التذكرة')}</h3><p className="mt-1 break-all text-xs text-muted">{tr('Référence', 'المرجع')} : {message.supportTicket.id}</p></div></article>}
   </div>;
 };
