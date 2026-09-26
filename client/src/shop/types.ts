@@ -103,6 +103,8 @@ export interface ProductActions {
   /** Mettre de côté — absent = pas de bouton, jamais un cœur qui ne fait rien. */
   onFavorite?: () => void;
   favorite?: boolean;
+  /** Partager la fiche — absent = pas de bouton. */
+  onShare?: () => void;
 }
 
 /** Vrai si la taille peut être commandée. `unknown` n'est JAMAIS commandable. */

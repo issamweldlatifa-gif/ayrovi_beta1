@@ -293,3 +293,43 @@ describe('boutique v2 — panier', () => {
     expect(container).not.toMatch(/cardGatewayAvailable|bankRib|posteAccount/);
   });
 });
+
+/*
+ * DÉFAUTS VUS EN PRODUCTION LE 26/09/2026 (captures du client).
+ */
+describe('boutique v2 — corrections du 26/09', () => {
+  const css = readFileSync('client/src/shop/shop.css', 'utf8');
+
+  it('les actions flottantes passent AU-DESSUS de la feuille, pas dessous', () => {
+    const rail = css.split('.s-rail {')[1].split('}')[0];
+    const sheet = css.split('.s-sheet {')[1].split('}')[0];
+    const railZ = Number(/z-index:\s*(\d+)/.exec(rail)?.[1]);
+    const sheetZ = Number(/z-index:\s*(\d+)/.exec(sheet)?.[1]);
+    expect(railZ).toBeGreaterThan(sheetZ);
+    // Et le média ne doit plus créer de contexte d'empilement qui les enferme.
+    expect(css.split('.s-media {')[1].split('}')[0]).not.toContain('z-index');
+  });
+
+  it('le produit est ENTIER au repos : la feuille ne mord pas sur la photo', () => {
+    expect(css.split('.s-media__slide {')[1].split('}')[0]).toContain('min-height: 62dvh');
+  });
+
+  it('le partage existe et n’apparaît que s’il mène quelque part', () => {
+    const page = readFileSync('client/src/shop/ProductPage.tsx', 'utf8');
+    const container = readFileSync('client/src/shop/ShopProductScreen.tsx', 'utf8');
+    expect(page).toContain('Partager ce produit');
+    expect(page).toContain('{actions?.onShare && (');
+    expect(container).toContain('navigator.clipboard');
+    expect(container).toContain('product.sourceUrl');
+  });
+
+  it('les trois actions de la maquette sont rendues quand l’hôte les fournit', () => {
+    const html = renderToStaticMarkup(
+      <ProductPage product={view()} tr={tr} formatMoney={money}
+        actions={{ onOpenBag: () => {}, onNotify: () => {}, onFavorite: () => {}, favorite: false }} />,
+    );
+    expect(html).toContain('data-editorial-icon="Bell"');
+    expect(html).toContain('data-editorial-icon="Heart"');
+    expect(html).toContain('data-editorial-icon="Bag"');
+  });
+});

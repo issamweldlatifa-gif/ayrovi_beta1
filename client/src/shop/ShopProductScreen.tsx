@@ -18,6 +18,11 @@ import type { SizeOption } from './types';
  * d'autre — et pour qu'un retour arrière reste possible en une ligne.
  */
 export interface ShopProductScreenProps {
+  /** Suivi du produit (alerte). Fourni par l'hôte quand le service existe. */
+  onNotify?: () => void;
+  /** Mise de côté. Fourni par l'hôte quand la liste d'envies existe. */
+  onFavorite?: () => void;
+  favorite?: boolean;
   product: AyrovixProduct;
   ordering?: boolean;
   priceVerified?: boolean;
@@ -43,6 +48,7 @@ interface CartLineQuote {
 
 export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   product, ordering = false, priceVerified = false, onOrder, onBack, onOpenCart, onCalculateAnother,
+  onNotify, onFavorite, favorite = false,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
   const [activeColor, setActiveColor] = useState<string | null>(null);
@@ -135,7 +141,28 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       canAdd={!awaitingQuote}
       onCalculateAnother={onCalculateAnother}
       defaultLink={product.sourceUrl || ''}
-      actions={{ onBack, onOpenBag: onOpenCart, onAddToBag: addToBag, onSelectColor: setActiveColor }}
+      actions={{
+        onBack,
+        onOpenBag: onOpenCart,
+        onAddToBag: addToBag,
+        onSelectColor: setActiveColor,
+        onNotify,
+        onFavorite,
+        favorite,
+        /*
+         * Partage : le lien marchand est déjà public, aucune donnée du client
+         * ne circule. On passe par le partage natif du téléphone quand il
+         * existe, sinon par le presse-papiers — jamais un bouton qui ne fait rien.
+         */
+        onShare: product.sourceUrl
+          ? () => {
+              const payload = { title: product.title, url: product.sourceUrl };
+              const share = (navigator as Navigator & { share?: (data: ShareData) => Promise<void> }).share;
+              if (share) void share.call(navigator, payload).catch(() => undefined);
+              else void navigator.clipboard?.writeText(product.sourceUrl).catch(() => undefined);
+            }
+          : undefined,
+      }}
     />
   );
 };

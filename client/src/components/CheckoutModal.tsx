@@ -295,7 +295,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return false;
   };
 
-  const handleDeliveryNext = () => {
+  const handleDeliveryContinue = () => {
     if (validateDelivery()) navigation.pushLayer({ id: 'checkout:payment' });
   };
 

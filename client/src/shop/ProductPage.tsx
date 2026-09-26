@@ -172,7 +172,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <span>{product.brand ?? product.merchant?.name ?? ''}</span>
           <small>{product.title}</small>
         </div>
-        <span style={{ width: 44 }} />
+        {actions?.onShare && (
+          <button type="button" className="s-iconbtn" onClick={actions.onShare} aria-label={tr('Partager ce produit', 'شارك هذا المنتج')}>
+            <EditorialIcon name="Share" />
+          </button>
+        )}
+        {!actions?.onShare && <span style={{ width: 44 }} />}
       </header>
 
       <div className="s-stage" ref={stageRef}>
