@@ -21,7 +21,15 @@ export interface ShopProductScreenProps {
   product: AyrovixProduct;
   ordering?: boolean;
   priceVerified?: boolean;
-  onOrder: (selection: { size: string; color: string; option: unknown; quantity: number; customerNote: string }) => void | Promise<void>;
+  onOrder: (selection: {
+    size: string;
+    color: string;
+    option: unknown;
+    quantity: number;
+    customerNote: string;
+    /** Nom exact du contrat de commande existant : `manualUrl`, pas autre chose. */
+    manualUrl: string;
+  }) => void | Promise<void>;
   onBack?: () => void;
   onCalculateAnother?: () => void;
   onOpenCart?: () => void;
@@ -94,14 +102,19 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     };
   }, [product, activeColor, quote, priceVerified]);
 
-  const addToBag = async (size: SizeOption | null, quantity: number) => {
+  const addToBag = async (size: SizeOption | null, quantity: number, details: { note: string; link: string }) => {
     if (ordering) return;
     await onOrder({
       size: size?.value ?? '',
       color: activeColor ?? '',
       option: null,
       quantity: Math.max(1, Math.round(quantity)),
-      customerNote: '',
+      customerNote: details.note,
+      // Lien fourni par le client : transmis tel quel sous le nom que le contrat
+      // de commande attend. Sous un autre nom, il serait silencieusement perdu.
+      // Un champ vidé par le client ne doit pas produire une ligne de panier sans
+      // adresse : on retombe sur le lien marchand connu, comme l'ancienne fiche.
+      manualUrl: details.link.trim() || product.sourceUrl || '',
     });
   };
 
@@ -113,6 +126,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
       priceChecking={quoteLoading}
       onCalculateAnother={onCalculateAnother}
+      defaultLink={product.sourceUrl || ''}
       actions={{ onBack, onOpenBag: onOpenCart, onAddToBag: addToBag, onSelectColor: setActiveColor }}
     />
   );

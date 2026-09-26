@@ -210,3 +210,34 @@ describe('boutique v2 — installée dans l’application', () => {
     expect(container).not.toMatch(/\*\s*(1\.\d|rate|taux)/i);
   });
 });
+
+/*
+ * PORTAGE DES DERNIÈRES COMMANDES DE L'ANCIENNE FICHE (25/09/2026).
+ */
+describe('boutique v2 — rien perdu de l’ancienne fiche', () => {
+  const read = (path: string) => readFileSync(path, 'utf8');
+
+  it('la photo s’agrandit à nouveau', () => {
+    const html = renderToStaticMarkup(<ProductPage product={view()} tr={tr} formatMoney={money} />);
+    expect(html).toContain('s-media__open');
+    expect(html).toContain('Agrandir la photo');
+  });
+
+  it('le lien et la note de l’équipe d’achat sont de retour', () => {
+    const html = renderToStaticMarkup(<ProductPage product={view()} tr={tr} formatMoney={money} defaultLink="https://m.tn/p" />);
+    expect(html).toContain('Lien du produit chez le marchand');
+    expect(html).toContain('Note pour notre équipe');
+    expect(html).toContain('https://m.tn/p');
+  });
+
+  it('le lien part sous le nom EXACT du contrat de commande', () => {
+    const container = read('client/src/shop/ShopProductScreen.tsx');
+    expect(container).toContain('manualUrl:');
+    expect(container).not.toContain('sourceUrl: details.link');
+  });
+
+  it('un lien vidé ne produit jamais une ligne de panier sans adresse', () => {
+    const container = read('client/src/shop/ShopProductScreen.tsx');
+    expect(container).toContain('details.link.trim() || product.sourceUrl');
+  });
+});

@@ -29,15 +29,28 @@ export interface ProductPageProps {
   priceChecking?: boolean;
   /** Repartir sur une autre recherche — action de l'ancienne fiche, conservée. */
   onCalculateAnother?: () => void;
+  /**
+   * Lien marchand déjà connu. Il pré-remplit le champ : ce lien devient l'URL de
+   * la ligne de panier, et un champ vide produirait une ligne sans adresse.
+   */
+  defaultLink?: string;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
-  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false, onCalculateAnother,
+  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false, onCalculateAnother, defaultLink = '',
 }) => {
   const [slide, setSlide] = useState(0);
   /* La quantité existait dans l'ancienne fiche : la perdre en passant à v2
      aurait obligé le client à commander une pièce à la fois. */
   const [quantity, setQuantity] = useState(1);
+  /* Agrandissement : la photo produit se lit mal sur 390 px de large, et
+     l'ancienne fiche permettait de l'ouvrir en grand. On ne perd pas ça. */
+  const [zoomed, setZoomed] = useState(false);
+  /* Détails de commande : note au vendeur et lien fourni par le client. Ce sont
+     les champs dont l'équipe d'achat se sert ; ils étaient repliés dans
+     l'ancienne fiche, ils le restent ici. */
+  const [note, setNote] = useState('');
+  const [link, setLink] = useState(defaultLink);
   const [drapeOpen, setDrapeOpen] = useState(false);
   const [chosen, setChosen] = useState<SizeOption | null>(null);
   const [refusal, setRefusal] = useState<'unavailable' | 'unknown' | null>(null);
@@ -104,7 +117,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     if (product.sizes.length > 0 && !chosen) { setDrapeOpen(true); return; }
     setAdding(true);
     try {
-      await actions.onAddToBag(chosen, quantity);
+      await actions.onAddToBag(chosen, quantity, { note: note.trim(), link: link.trim() });
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1800);
     } finally {
@@ -148,7 +161,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               >
                 {media.map((item, index) => (
                   <div className="s-media__slide" key={`${item.src}-${index}`}>
-                    <img src={item.src} alt={item.alt} decoding="async" referrerPolicy="no-referrer" draggable={false} />
+                    <button
+                      type="button"
+                      className="s-media__open"
+                      onClick={() => setZoomed(true)}
+                      aria-label={tr('Agrandir la photo', 'تكبير الصورة')}
+                    >
+                      <img src={item.src} alt={item.alt} decoding="async" referrerPolicy="no-referrer" draggable={false} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -226,6 +246,18 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             </>
           )}
 
+          <details className="s-details">
+            <summary>{tr('Lien et note (facultatif)', 'الرابط والملاحظة (اختياري)')}</summary>
+            <label>
+              <span>{tr('Lien du produit chez le marchand', 'رابط المنتج عند التاجر')}</span>
+              <input value={link} onChange={(event) => setLink(event.target.value)} inputMode="url" placeholder="https://" />
+            </label>
+            <label>
+              <span>{tr('Note pour notre équipe', 'ملاحظة لفريقنا')}</span>
+              <input value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />
+            </label>
+          </details>
+
           {product.sizes.length > 0 && (
             <div className="s-stock">
               <h3>{tr('Disponibilité constatée', 'التوفّر المثبّت')}</h3>
@@ -299,6 +331,15 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           </button>
         )}
       </div>
+
+      {zoomed && media[slide] && (
+        <div className="s-zoom" role="dialog" aria-modal="true" aria-label={tr('Photo agrandie', 'الصورة مكبّرة')}>
+          <button type="button" className="s-zoom__close s-iconbtn" onClick={() => setZoomed(false)} aria-label={tr('Fermer', 'إغلاق')}>
+            <EditorialIcon name="Close" />
+          </button>
+          <img src={media[slide].src} alt={media[slide].alt} />
+        </div>
+      )}
 
       <SizeDrape
         open={drapeOpen}
