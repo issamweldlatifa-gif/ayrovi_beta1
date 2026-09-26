@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
-import { availablePaymentMethods } from '../commerce/paymentMethods';
+import { availableAtCheckout } from '../commerce/paymentMethods';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { withIsolation } from '../ayrovix/services/mediaIsolation';
 import type { CartItem } from '../types';
@@ -98,7 +98,7 @@ export const ShopBagScreen: React.FC<ShopBagScreenProps> = ({
   });
 
   const marks = commerce.policy
-    ? availablePaymentMethods(commerce.policy).map((method) => ({
+    ? availableAtCheckout(commerce.policy).map((method) => ({
         id: method.id,
         src: method.mark.kind === 'image' ? method.mark.src : undefined,
         label: tr(method.label, method.labelAr),

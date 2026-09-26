@@ -23,6 +23,7 @@
 import type { CommercePolicy } from './policy';
 
 export type PaymentMethodId =
+  | 'COD'
   | 'CARD' | 'FLOUCI' | 'D17' | 'BANK_TRANSFER' | 'POSTE'
   | 'OOREDOO' | 'ORANGE' | 'SODEXO';
 
@@ -56,10 +57,37 @@ export interface PaymentMethodDefinition {
   mark: PaymentMethodMark;
   /** Marque propriétaire utilisée par le pied de page (fond noir) — jamais une image tierce. */
   glyph: PaymentMethodGlyph;
+  /**
+   * Encaissement EN LIGNE ? Le paiement à la livraison n'en est pas un : l'argent
+   * change de main chez le client. La distinction compte, parce que le pied de
+   * page annonce ce que le site sait encaisser **en ligne** — y glisser le
+   * paiement à la livraison laisserait croire qu'une passerelle est ouverte.
+   */
+  online: boolean;
   available: (policy: CommercePolicy) => boolean;
 }
 
 export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
+  {
+    /*
+     * PAIEMENT À LA LIVRAISON — le seul moyen qui n'a besoin d'AUCUNE passerelle :
+     * l'argent change de main devant le client. Il est donc réellement
+     * encaissable dès aujourd'hui, et c'est lui qui permet d'éprouver la chaîne
+     * complète — commande, facture, suivi — sans attendre une intégration.
+     */
+    id: 'COD',
+    glyph: 'Bank',
+    label: 'Paiement à la livraison',
+    labelAr: 'الدفع عند الاستلام',
+    hint: 'Vous payez le livreur à la remise du colis',
+    hintAr: 'تخلّص الموزّع وقت ما يوصلك الطرد',
+    blocked: 'Désactivé par la boutique',
+    blockedAr: 'معطّل من المتجر',
+    mark: { kind: 'glyph', glyph: 'transfer' },
+    online: false,
+    // Aucune configuration technique à vérifier : seule la boutique peut le retirer.
+    available: () => true,
+  },
   {
     id: 'CARD',
     glyph: 'Card',
@@ -70,6 +98,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blocked: 'Passerelle non configurée',
     blockedAr: 'بوابة الدفع غير مضبوطة',
     mark: { kind: 'image', src: '/media/payments/card.png' },
+    online: true,
     available: (policy) => policy.deposit.cardGatewayAvailable,
   },
   {
@@ -85,6 +114,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     // Un numéro de téléphone n'est pas une passerelle : sans intégration officielle, aucun
     // paiement ne peut être encaissé ni confirmé. Ce moyen reste donc définitivement indisponible
     // tant que le serveur ne l'expose pas — c'est la même décision que dans la caisse.
+    online: true,
     available: () => false,
   },
   {
@@ -97,6 +127,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blocked: 'RIB non publié',
     blockedAr: 'لم يُنشر RIB',
     mark: { kind: 'glyph', glyph: 'transfer' },
+    online: true,
     available: (policy) => Boolean(policy.deposit.bankRib.trim()),
   },
   {
@@ -109,6 +140,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blocked: 'Compte postal non publié',
     blockedAr: 'الحساب البريدي غير منشور',
     mark: { kind: 'image', src: '/media/payments/poste.png' },
+    online: true,
     available: (policy) => Boolean(policy.deposit.posteAccount.trim()),
   },
   {
@@ -122,6 +154,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blockedAr: 'في انتظار بوابة دفع حقيقية',
     // Pas de logo officiel en notre possession : on n'en fabrique pas un.
     mark: { kind: 'glyph', glyph: 'transfer' },
+    online: true,
     available: () => false,
   },
   {
@@ -134,6 +167,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blocked: 'En attente d’une passerelle réelle',
     blockedAr: 'في انتظار بوابة دفع حقيقية',
     mark: { kind: 'image', src: '/media/payments/ooredoo.png' },
+    online: true,
     available: () => false,
   },
   {
@@ -146,6 +180,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blocked: 'En attente d’une passerelle réelle',
     blockedAr: 'في انتظار بوابة دفع حقيقية',
     mark: { kind: 'image', src: '/media/payments/orange.svg' },
+    online: true,
     available: () => false,
   },
   {
@@ -158,6 +193,7 @@ export const PAYMENT_METHODS: PaymentMethodDefinition[] = [
     blocked: 'Acceptation marchande non configurée',
     blockedAr: 'قبول التاجر غير مضبوط',
     mark: { kind: 'image', src: '/media/payments/sodexo.png' },
+    online: true,
     available: () => false,
   },
 ];
@@ -185,5 +221,18 @@ export const paymentMethodById = (id: PaymentMethodId): PaymentMethodDefinition 
 export const isPaymentMethodAvailable = (policy: CommercePolicy, id: PaymentMethodId): boolean =>
   paymentMethodById(id).available(policy);
 
+/**
+ * Ce que le site sait encaisser EN LIGNE aujourd'hui. C'est ce que le pied de
+ * page annonce : promettre un encaissement en ligne qui n'existe pas fait
+ * revenir le client pour rien.
+ */
 export const availablePaymentMethods = (policy: CommercePolicy): PaymentMethodDefinition[] =>
+  PAYMENT_METHODS.filter((method) => method.online && method.available(policy));
+
+/**
+ * Ce avec quoi le client peut RÉELLEMENT payer sa commande, en ligne ou non.
+ * C'est la liste de la caisse et du panier — le paiement à la livraison en fait
+ * partie, et il permet d'éprouver la chaîne complète sans aucune passerelle.
+ */
+export const availableAtCheckout = (policy: CommercePolicy): PaymentMethodDefinition[] =>
   PAYMENT_METHODS.filter((method) => method.available(policy));

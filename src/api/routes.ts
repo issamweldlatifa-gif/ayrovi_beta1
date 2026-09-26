@@ -17,7 +17,13 @@ import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
 const PAYMENT_METHODS = new Set<PaymentMethodCode>(['PENDING_SELECTION', 'COD', 'D17', 'FLOUCI', 'CARD', 'BANK_TRANSFER', 'POSTE']);
-const DEFAULT_PAYMENT_METHODS: PaymentMethodCode[] = ['CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
+/*
+ * Le paiement à la livraison fait partie des moyens par défaut : il n'exige
+ * aucune passerelle, l'argent change de main devant le client. L'omettre
+ * signifiait qu'une boutique fraîchement installée ne pouvait encaisser
+ * ABSOLUMENT RIEN tant qu'une intégration n'était pas configurée.
+ */
+const DEFAULT_PAYMENT_METHODS: PaymentMethodCode[] = ['COD', 'CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE'];
 
 
 export function createApiRouter(

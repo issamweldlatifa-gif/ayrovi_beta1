@@ -259,11 +259,31 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             </div>
           )}
 
-          {actions?.onOpenBag && (
+          {/* Les trois actions de la maquette, dans son ordre : alerte, favori,
+              panier. Elles étaient tombées à la bascule — la fiche n'offrait
+              plus que le panier, et le client ne pouvait ni suivre un produit
+              ni le mettre de côté. */}
+          {(actions?.onOpenBag || actions?.onNotify || actions?.onFavorite) && (
             <div className="s-rail" data-hidden={stageRef.current?.dataset.covered === 'true'}>
-              <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag} aria-label={tr('Ouvrir le panier', 'فتح السلة')}>
-                <EditorialIcon name="Bag" size={22} />
-              </button>
+              {actions?.onNotify && (
+                <button type="button" className="s-rail__btn" onClick={actions.onNotify}
+                  aria-label={tr('Me prévenir sur ce produit', 'نبّهني على هذا المنتج')}>
+                  <EditorialIcon name="Bell" size={22} />
+                </button>
+              )}
+              {actions?.onFavorite && (
+                <button type="button" className="s-rail__btn" aria-pressed={Boolean(actions.favorite)}
+                  onClick={actions.onFavorite} aria-label={tr('Ajouter aux favoris', 'أضف للمفضّلة')}>
+                  <EditorialIcon name={actions.favorite ? 'HeartFilled' : 'Heart'} size={22}
+                    fill={actions.favorite ? 'currentColor' : undefined} />
+                </button>
+              )}
+              {actions?.onOpenBag && (
+                <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag}
+                  aria-label={tr('Ouvrir le panier', 'فتح السلة')}>
+                  <EditorialIcon name="Bag" size={22} />
+                </button>
+              )}
             </div>
           )}
         </div>

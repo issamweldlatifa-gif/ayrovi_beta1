@@ -98,6 +98,11 @@ export interface ProductActions {
     details: { note: string; link: string },
   ) => Promise<void> | void;
   onSelectColor?: (name: string) => void;
+  /** Suivre ce produit (retour en stock, baisse de prix) — absent = pas de bouton. */
+  onNotify?: () => void;
+  /** Mettre de côté — absent = pas de bouton, jamais un cœur qui ne fait rien. */
+  onFavorite?: () => void;
+  favorite?: boolean;
 }
 
 /** Vrai si la taille peut être commandée. `unknown` n'est JAMAIS commandable. */

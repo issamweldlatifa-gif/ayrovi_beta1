@@ -27,13 +27,14 @@ interface CheckoutModalProps {
 }
 
 type CheckoutPaymentMethod =
+  | 'COD'
   | 'CARD' | 'FLOUCI' | 'D17' | 'BANK_TRANSFER' | 'POSTE'
   | 'OOREDOO' | 'ORANGE' | 'SODEXO';
 
 // Ordre d'affichage : d'abord ce qui encaisse vraiment aujourd'hui, ensuite le
 // reste du paysage tunisien — visible, mais honnêtement marqué indisponible.
 const PAYMENT_METHODS: CheckoutPaymentMethod[] = [
-  'CARD', 'BANK_TRANSFER', 'POSTE', 'FLOUCI', 'D17', 'OOREDOO', 'ORANGE', 'SODEXO',
+  'COD', 'CARD', 'BANK_TRANSFER', 'POSTE', 'FLOUCI', 'D17', 'OOREDOO', 'ORANGE', 'SODEXO',
 ];
 const PAYMENT_METHOD_IMAGES: Partial<Record<CheckoutPaymentMethod, string>> = {
   CARD: '/media/payments/card.png',
@@ -598,6 +599,10 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   POSTE: {
                     label: tr('Transfert postal', 'تحويل بريدي'),
                     hint: available ? tr('Justificatif depuis le profil', 'الإثبات من الحساب') : tr('Compte postal non publié', 'الحساب البريدي غير منشور'),
+                  },
+                  COD: {
+                    label: tr('Paiement à la livraison', 'الدفع عند الاستلام'),
+                    hint: tr('Vous payez le livreur à la remise du colis', 'تخلّص الموزّع وقت ما يوصلك الطرد'),
                   },
                   D17: { label: 'D17', hint: tr('En attente d’une passerelle réelle', 'في انتظار بوابة دفع حقيقية') },
                   OOREDOO: { label: 'Ooredoo Money', hint: tr('En attente d’une passerelle réelle', 'في انتظار بوابة دفع حقيقية') },

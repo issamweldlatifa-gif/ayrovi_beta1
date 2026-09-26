@@ -287,7 +287,9 @@ describe('boutique v2 — panier', () => {
 
   it('le panier n’écrit aucune règle de paiement : il lit la source unique', () => {
     const container = read('client/src/shop/ShopBagScreen.tsx');
-    expect(container).toContain('availablePaymentMethods(commerce.policy)');
+    // Le panier montre ce avec quoi on peut RÉELLEMENT payer, paiement à la
+    // livraison compris — et il le lit, il ne le décide pas.
+    expect(container).toContain('availableAtCheckout(commerce.policy)');
     expect(container).not.toMatch(/cardGatewayAvailable|bankRib|posteAccount/);
   });
 });

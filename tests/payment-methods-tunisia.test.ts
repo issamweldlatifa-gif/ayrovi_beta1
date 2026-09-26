@@ -12,6 +12,7 @@ import path from 'node:path';
 import {
   CARD_NETWORK_MARKS,
   PAYMENT_METHODS,
+  availableAtCheckout,
   availablePaymentMethods,
   isPaymentMethodAvailable,
 } from '../client/src/commerce/paymentMethods';
@@ -25,9 +26,19 @@ const generous = {
 const publicFile = (src: string) => path.join(process.cwd(), 'client/public', src.replace(/^\//, ''));
 
 describe('registre des moyens de paiement', () => {
+  it('le paiement à la livraison n’attend AUCUNE passerelle : il encaisse dès aujourd’hui', () => {
+    const bare = { deposit: { cardGatewayAvailable: false, bankRib: '', posteAccount: '' } } as unknown as CommercePolicy;
+    expect(isPaymentMethodAvailable(bare, 'COD')).toBe(true);
+    // À la caisse, c'est le SEUL dans ce cas : tous les autres exigent une configuration.
+    expect(availableAtCheckout(bare).map((method) => method.id)).toEqual(['COD']);
+    // Mais il n'apparaît PAS parmi les encaissements en ligne : l'argent change
+    // de main chez le client, aucune passerelle n'est ouverte pour autant.
+    expect(availablePaymentMethods(bare)).toEqual([]);
+  });
+
   it('couvre le paysage tunisien annoncé au client', () => {
     expect(PAYMENT_METHODS.map((method) => method.id)).toEqual([
-      'CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE', 'D17', 'OOREDOO', 'ORANGE', 'SODEXO',
+      'COD', 'CARD', 'FLOUCI', 'BANK_TRANSFER', 'POSTE', 'D17', 'OOREDOO', 'ORANGE', 'SODEXO',
     ]);
   });
 
@@ -36,6 +47,7 @@ describe('registre des moyens de paiement', () => {
       expect(isPaymentMethodAvailable(generous, id), id).toBe(false);
     }
     expect(availablePaymentMethods(generous).map((method) => method.id)).toEqual(['CARD', 'BANK_TRANSFER', 'POSTE']);
+    expect(availableAtCheckout(generous).map((method) => method.id)).toEqual(['COD', 'CARD', 'BANK_TRANSFER', 'POSTE']);
   });
 
   it('chaque moyen explique FACTUELLEMENT pourquoi il est bloqué', () => {

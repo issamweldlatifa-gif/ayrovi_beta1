@@ -154,7 +154,13 @@
 .s-media { position: sticky; top: 60px; z-index: 0; background: var(--s-surface); }
 .s-media__viewport { overflow: hidden; }
 .s-media__track { display: flex; transition: transform var(--s-sheet) var(--s-ease); }
-.s-media__slide { flex: 0 0 100%; aspect-ratio: 9 / 13; }
+.s-media__slide {
+  flex: 0 0 100%;
+  aspect-ratio: 9 / 13;
+  /* Plein cadre comme la maquette : l'image occupe la hauteur disponible sous
+     l'en-tête, sans jamais dépasser son ratio. */
+  max-height: calc(100dvh - 60px);
+}
 .s-media__slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 /* Le voile : le produit passe en arrière-plan quand la feuille monte. */
