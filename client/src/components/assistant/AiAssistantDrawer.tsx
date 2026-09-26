@@ -22,7 +22,7 @@ import { getSessionId } from '../../utils/session';
 import { AyroviMotionState } from '../AyroviMotion';
 import { analyzeUrl, markChosen } from '../../ayrovix/services/lensApi';
 import type { AyrovixCandidate, AyrovixOrderPayload, AyrovixProduct } from '../../ayrovix/types';
-import type { AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
+import type { AyrovixOrderSelection } from '../../shop';
 import { streamAssistantChat, transcribeAssistantAudio } from './assistantApi';
 import {
   AssistantConversation,
@@ -785,7 +785,7 @@ export const AiAssistantDrawer: React.FC<AiAssistantDrawerProps> = ({
         priceToken: offer.priceToken,
         quantity,
       });
-      // Remain on the product: ProductResult displays the acknowledgement and
+      // Rester sur le produit : la fiche v2 affiche l'acquittement et
       // the customer opens the cart only with the cart icon.
     } finally { setIsOrdering(false); }
   };

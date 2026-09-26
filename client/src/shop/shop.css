@@ -462,3 +462,5 @@
 .s-media__placeholder { display: block; width: 100%; height: 100%; background: var(--s-surface); }
 
 .s-select__label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 6px; }
+
+.s-drape__trust { margin: 10px 16px 0; font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }

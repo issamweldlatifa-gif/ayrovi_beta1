@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { StudioImageFrame, QuietPromoPrice } from '../client/src/ayrovix/components/quiet-card';
 import { ProductCandidates } from '../client/src/ayrovix/components/ProductCandidates';
 import { LensProductCard } from '../client/src/ayrovix/components/LensProductCard';
-import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
+import { ShopProductScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import type { AyrovixCandidate, AyrovixProduct } from '../client/src/ayrovix/types';
 
@@ -52,11 +52,12 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
   });
 
   it('la fiche produit et la vignette panier utilisent le canvas blanc (plus de fond surface/cover)', () => {
-    const result = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(result).toContain('ayrovix-product-gallery-stage bg-[#f6f6f6]');
-    expect(result).not.toContain('object-cover');
-    const galleryCss = read('client/src/index.css');
-    expect(galleryCss).toMatch(/\.ayrovix-product-gallery-image\s*\{[^}]*mix-blend-mode:\s*multiply/);
+    const page = read('client/src/shop/ProductPage.tsx');
+    const shopCss = read('client/src/shop/shop.css');
+    // La scène produit reste sur notre canvas et ne rogne jamais l'image.
+    expect(page).not.toContain('object-cover');
+    expect(shopCss).toMatch(/\.s-media\s*\{[^}]*background: var\(--s-surface/);
+    expect(shopCss).toMatch(/\.s-media__slide img\s*\{[^}]*object-fit: contain/);
     const cart = read('client/src/components/CartDrawer.tsx');
     expect(cart).toContain('StudioImageFrame');
     expect(cart).not.toContain('object-cover');
@@ -121,13 +122,15 @@ describe('Quiet Card v2 — promo rouge, référence Zalando', () => {
 
   it('the product detail waits for the current cart quote, not an unrelated stale promotion object', () => {
     const html = renderToStaticMarkup(
-      <LocaleProvider><ProductResult product={product} ordering={false} priceVerified onOrder={vi.fn()} /></LocaleProvider>,
+      <LocaleProvider><ShopProductScreen product={product} ordering={false} priceVerified onOrder={vi.fn()} /></LocaleProvider>,
     );
     expect(html).toContain('Prix à confirmer');
     expect(html).not.toContain('604.50');
     expect(html).not.toContain('−7%');
-    const source = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(source).toContain('/api/public/pricing/cart-line');
-    expect(source).toContain('currentQuote?.promo');
+    const container = read('client/src/shop/ShopProductScreen.tsx');
+    // Le devis courant fait autorité : la promotion affichée sort de LUI, jamais
+    // d'un objet promo resté attaché au produit.
+    expect(container).toContain('/api/public/pricing/cart-line');
+    expect(container).toContain('quote.promo?.percent');
   });
 });

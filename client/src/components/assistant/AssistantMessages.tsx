@@ -6,7 +6,7 @@ import { cleanAssistantText } from './composerPolicy';
 import { Mic, ArrowUpRight, MessageSquare, PackageCheck, ShoppingBag, LensBox } from '../QatafoIcons';
 import { AyroviMotionState } from '../AyroviMotion';
 import { AssistantBrandMark } from './AssistantBrandMark';
-import { type AyrovixOrderSelection } from '../../ayrovix/components/ProductResult';
+import type { AyrovixOrderSelection } from '../../shop';
 import { ShopProductScreen } from '../../shop';
 import type { AyrovixCandidate, AyrovixProduct } from '../../ayrovix/types';
 import { AssistantMessage, FeedbackValue } from './types';

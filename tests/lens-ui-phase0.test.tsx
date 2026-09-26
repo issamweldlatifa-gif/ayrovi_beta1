@@ -118,10 +118,15 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(src).toContain('Voir tout');
   });
 
-  it('ProductResult limits size options to sourced values and links to the merchant without a redundant variants warning', () => {
-    const src = readFileSync('client/src/ayrovix/components/ProductResult.tsx','utf8');
-    expect(src).toContain('Seules les tailles indiquées par la source sont proposées.');
-    expect(src).toContain('Voir chez le marchand');
-    expect(src).not.toContain('Tailles/couleurs non listées');
+  it('la fiche v2 ne propose que les tailles de la source et n’ajoute aucun avertissement redondant', () => {
+    const page = readFileSync('client/src/shop/ProductPage.tsx', 'utf8');
+    const drape = readFileSync('client/src/shop/SizeDrape.tsx', 'utf8');
+    const adapter = readFileSync('client/src/shop/adapter.ts', 'utf8');
+    // Les tailles affichées viennent du produit reçu : aucune n'est ajoutée ici.
+    expect(drape).toContain('sizes.map');
+    expect(adapter).toContain('presentSizes(productClass, product.title, product.sizes');
+    expect(page).not.toContain('Tailles/couleurs non listées');
+    // Et la disponibilité affichée reste celle du moteur, jamais une supposition.
+    expect(page).toContain('Disponibilité constatée');
   });
 });

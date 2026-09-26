@@ -69,6 +69,11 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
           )}
         </div>
 
+        <p className="s-drape__trust">
+          {tr('Le choix d’une taille ou couleur ne confirme pas son stock.',
+              'اختيار مقاس أو لون ما يأكّدش توفّره.')}
+        </p>
+
         <div className="s-sizes">
           {sizes.map((size) => {
             const primary = activeScale === 'brand' && size.brandValue ? size.brandValue : size.value;

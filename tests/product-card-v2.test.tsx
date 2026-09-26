@@ -9,7 +9,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 import { classifyProduct, extractCapacity, pricePer100, presentSizes, usesCapacity } from '../client/src/ayrovix/services/productAttributes';
 import { ProductCandidates } from '../client/src/ayrovix/components/ProductCandidates';
-import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
+import { ShopProductScreen } from '../client/src/shop';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import type { AyrovixCandidate, AyrovixProduct } from '../client/src/ayrovix/types';
 
@@ -77,7 +77,7 @@ const shoesProduct: AyrovixProduct = {
 
 describe('P2 — la page produit comprend ce qu’elle vend', () => {
   it('beauty shows documented capacity but no computed unit price based on an unrelated estimate', () => {
-    const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
+    const html = renderToStaticMarkup(<LocaleProvider><ShopProductScreen product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
     expect(html).toContain('10 ml');
     expect(html).not.toContain('/ 100 ml');
     expect(html).not.toContain('Guide des tailles');
@@ -86,34 +86,37 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
   });
 
   it('shoes offer one source-backed pointure sheet with no fabricated stock', () => {
-    const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={shoesProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
+    const html = renderToStaticMarkup(<LocaleProvider><ShopProductScreen product={shoesProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
     expect(html).toContain('Pointure');
-    expect(html).toContain('Votre taille');
+    expect(html).toContain('Votre pointure');
     expect(html).not.toContain('Il en reste 2');
-    const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(src).toContain('setSizeDrawerOpen(true)');
-    expect(src).toContain('Pointures disponibles');
-    expect(src).not.toContain('FOOT_MEASUREMENTS');
-    expect(src).not.toContain('frToBrandShoes');
+    const page = read('client/src/shop/ProductPage.tsx');
+    const adapter = read('client/src/shop/adapter.ts');
+    expect(page).toContain('Pointures disponibles');
+    // Aucune table de conversion maison : les pointures viennent de la source.
+    expect(adapter).not.toContain('FOOT_MEASUREMENTS');
+    expect(adapter).not.toContain('frToBrandShoes');
+    expect(adapter).toContain('presentSizes(');
   });
 
   it('link, quantity and note live in one details section, no duplicate variant controls', () => {
-    const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
+    const html = renderToStaticMarkup(<LocaleProvider><ShopProductScreen product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
     expect(html).toContain('<details');
-    expect(html).toContain('Lien, quantité et note');
-    expect(html).toContain('Lien exact du produit');
+    expect(html).toContain('Lien et note');
+    expect(html).toContain('Lien du produit chez le marchand');
     expect(html).toContain('aria-invalid=');
     expect(html).not.toContain('Tailles/couleurs non listées par le marchand');
     expect(html).not.toContain('recommandation de taille');
   });
 
   it('typographie dictée par le client : description GRISE et fine, barré gris fin, remisé le plus fort', () => {
-    const html = renderToStaticMarkup(<LocaleProvider><ProductResult product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
+    const html = renderToStaticMarkup(<LocaleProvider><ShopProductScreen product={beautyProduct} ordering={false} priceVerified={false} onOrder={vi.fn()} /></LocaleProvider>);
     // Description : corps gris (text-ink/80) — jamais du noir pur, retours à la ligne respectés.
-    expect(html).toMatch(/<p class="break-words text-sm font-normal leading-relaxed text-ink\/80 whitespace-pre-line">[^<]*Sérum contour des yeux/);
-    // Barré : fin (font-normal) et gris — le remisé porte seul le poids de l'offre.
-    const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(src).toContain('text-sm font-normal leading-none text-muted line-through');
+    expect(html).toMatch(/<p class="s-desc">[^<]*Sérum contour des yeux/);
+    // Barré : fin et gris — le remisé porte seul le poids de l'offre.
+    const shopCss = read('client/src/shop/shop.css');
+    expect(shopCss).toMatch(/\.s-desc\s*\{[^}]*color: var\(--s-muted\)/);
+    expect(shopCss).toMatch(/\.s-was\s*\{[^}]*color: var\(--s-muted\)/);
     const shared = read('client/src/ayrovix/components/quiet-card.css');
     expect(shared).toMatch(/\.ay-quiet-price__original\s*\{[^}]*font-weight:\s*500/);
     const grid = read('client/src/ayrovix/components/lens-product-card.css');
@@ -121,10 +124,10 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
   });
 
   it('isolation d’arrière-plan : TOUTE la galerie est proxyfiée, jamais les images locales', () => {
-    const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    // One large media stage; all source photos are reached through arrows/swipe, not thumbnail boxes.
-    expect(src).toContain('withIsolated(activeImage)');
-    expect(src).not.toContain('ayrovix-thumbnail-strip');
+    const adapter = read('client/src/shop/adapter.ts');
+    // Une seule scène : les photos se parcourent par flèches ou glissement.
+    expect(adapter).toContain('withIsolation([url])');
+    expect(read('client/src/shop/ProductPage.tsx')).not.toContain('ayrovix-thumbnail-strip');
     const helper = read('client/src/ayrovix/services/mediaIsolation.ts');
     // withIsolation isole CHAQUE url (avant : seulement la première).
     expect(helper).toMatch(/for \(const url of urls\)/);
@@ -135,17 +138,17 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
   });
 
   it('photo cliquable plein écran : ✕, flèches, swipe — et trust line honnête', () => {
-    const src = read('client/src/ayrovix/components/ProductResult.tsx');
-    expect(src).toContain('setLightboxOpen(true)');
-    expect(src).toContain('aria-modal="true"');
-    expect(src).toContain('Fermer la photo');
-    expect(src).toContain('Photo précédente');
-    expect(src).toContain('onTouchEnd');
-    expect(src).toContain('Agrandir la photo du produit');
-    // Trust line honnête (v2) : le choix n'affirme jamais le stock marchand.
-    expect(src).toContain('Le choix d’une taille ou couleur ne confirme pas son stock.');
-    expect(src).not.toContain('FOOT_MEASUREMENTS');
-    expect(src).not.toContain('Il en reste 2');
+    const page = read('client/src/shop/ProductPage.tsx');
+    const drape = read('client/src/shop/SizeDrape.tsx');
+    expect(page).toContain('setZoomed(true)');
+    expect(page).toContain('aria-modal="true"');
+    expect(page).toContain('Agrandir la photo');
+    expect(page).toContain('Photo précédente');
+    expect(page).toContain('onTouchEnd');
+    // Trust line honnête : le choix n'affirme jamais le stock marchand.
+    expect(drape).toContain('Le choix d’une taille ou couleur ne confirme pas son stock.');
+    expect(page).not.toContain('FOOT_MEASUREMENTS');
+    expect(page).not.toContain('Il en reste 2');
   });
 
   it('l’en-tête Lens : retour ‹ + catégorie du produit + panier (2ᵉ calcul conservé)', () => {
@@ -156,7 +159,7 @@ describe('P2 — la page produit comprend ce qu’elle vend', () => {
     // Le recalcul vit désormais dans la page produit (« Calculer un autre article »),
     // l'en-tête Lens propose « Nouvelle recherche ».
     expect(src).toContain('Nouvelle recherche');
-    expect(read('client/src/ayrovix/components/ProductResult.tsx')).toContain('Calculer un autre article');
+    expect(read('client/src/shop/ProductPage.tsx')).toContain('Calculer un autre article');
   });
 });
 

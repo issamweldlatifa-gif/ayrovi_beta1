@@ -130,3 +130,17 @@ export function refusalReason(
 export function hasBrandScale(sizes: SizeOption[]): boolean {
   return sizes.filter((size) => Boolean(size.brandValue && size.brandValue !== size.value)).length >= 2;
 }
+
+/**
+ * Sélection d'achat transmise à l'hôte. Ce contrat décrit une COMMANDE, pas un
+ * écran : il a survécu à la fiche qui l'hébergeait et vit désormais avec la
+ * boutique, seule responsable de la saisie.
+ */
+export interface AyrovixOrderSelection {
+  size: string;
+  color: string;
+  option: unknown;
+  quantity: number;
+  customerNote: string;
+  manualUrl: string;
+}

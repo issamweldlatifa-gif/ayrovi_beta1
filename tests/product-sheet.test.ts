@@ -11,33 +11,33 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const read = (file: string) => fs.readFileSync(path.join(process.cwd(), file), 'utf8');
-const sheetCss = read('client/src/styles/product-sheet.css');
-const component = read('client/src/ayrovix/components/ProductResult.tsx');
+const sheetCss = read('client/src/shop/shop.css');
+const component = read('client/src/shop/ProductPage.tsx');
 
 describe('fiche produit — feuille montante', () => {
-  it('la feuille de style est chargée par l’application', () => {
-    expect(read('client/src/index.css')).toContain('./styles/product-sheet.css');
+  it('la feuille de style vit avec l’écran qu’elle habille', () => {
+    expect(read('client/src/shop/ProductPage.tsx')).toContain("import './shop.css'");
   });
 
-  it('le comportement est réservé au mobile — le bureau garde ses deux colonnes', () => {
-    expect(sheetCss).toContain('@media (max-width: 767px)');
-    expect(sheetCss.split('@media (max-width: 767px)')[1]).toContain('.flow-media');
+  it('le média reste collé pendant que la feuille monte par-dessus', () => {
+    expect(sheetCss).toMatch(/\.s-media\s*\{[^}]*position: sticky/);
+    expect(sheetCss).toMatch(/\.s-sheet\s*\{[^}]*z-index: 10/);
   });
 
   it('une seule variable pilote le rendu, écrite par le composant et lue par le CSS', () => {
-    expect(component).toContain("style.setProperty('--ay-pdp-reveal'");
-    expect(sheetCss).toContain('var(--ay-pdp-reveal, 0)');
+    expect(component).toContain("setProperty('--s-reveal'");
+    expect(sheetCss).toContain('var(--s-reveal, 0)');
   });
 
   it('le voile est de l’encre pure et ne dépasse jamais 58 % : le produit reste lisible', () => {
     expect(sheetCss).toContain('background: #000');
-    expect(sheetCss).toContain('calc(var(--ay-pdp-reveal, 0) * 0.58)');
-    expect(component).toContain('ay-pdp-scrim');
+    expect(sheetCss).toContain('calc(var(--s-reveal, 0) * 0.58)');
+    expect(component).toContain('s-scrim');
   });
 
   it('les commandes flottantes de la photo s’effacent quand la feuille les recouvre', () => {
-    expect(component).toContain('ay-pdp-media-controls');
-    expect(sheetCss).toContain('[data-ay-pdp-covered="true"] .ay-pdp-media-controls');
+    expect(component).toContain('s-rail');
+    expect(sheetCss).toContain('.s-rail[data-hidden="true"] { pointer-events: none; }');
   });
 
   it('le mouvement est désactivable (accessibilité)', () => {
@@ -45,7 +45,7 @@ describe('fiche produit — feuille montante', () => {
   });
 
   it('l’échelle de recul est unique en X et en Y — aucune déformation du produit', () => {
-    const scales = sheetCss.match(/scale\(calc\(1 - var\(--ay-pdp-reveal, 0\) \* 0\.04\)\)/g);
+    const scales = sheetCss.match(/scale\(calc\(1 - var\(--s-reveal, 0\) \* 0\.04\)\)/g);
     expect(scales).toHaveLength(1);
   });
 });
@@ -60,19 +60,21 @@ describe('image produit — une seule chaîne pour la carte et la fiche', () => 
   const service = read('client/src/ayrovix/services/mediaIsolation.ts');
 
   it('la chaîne va de la composition à l’image brute, dans cet ordre', () => {
-    const body = service.split('export function productMediaChain')[1].split('}')[0];
+    const body = service.split('export function withIsolation')[1].split('\n}')[0];
     expect(body.indexOf('composedMediaUrl')).toBeLessThan(body.indexOf('isolatedMediaUrl'));
-    expect(body).toContain('url');
+    expect(body.indexOf('isolatedMediaUrl')).toBeLessThan(body.indexOf('output.push(url)'));
   });
 
   it('la fiche consomme la composition, plus l’isolation seule', () => {
-    expect(component).toContain('productMediaSrc');
-    expect(component).not.toContain('isolatedSrc(');
+    const adapter = read('client/src/shop/adapter.ts');
+    expect(adapter).toContain('withIsolation([url])');
+    expect(adapter).not.toContain('isolatedSrc(');
   });
 
   it('un échec recule d’un cran au lieu de laisser un trou', () => {
-    expect(component).toContain('hasMediaFallback');
-    expect(component).toContain('stepDownMedia');
+    expect(component).toContain('onError');
+    expect(component).toContain('mediaStep');
+    expect(component).toContain('chain.length - 1');
   });
 });
 
@@ -81,21 +83,19 @@ describe('image produit — une seule chaîne pour la carte et la fiche', () => 
  */
 describe('fiche produit — format téléphone', () => {
   it('interroge le navigateur au lieu de dupliquer le balisage', () => {
-    expect(component).toContain("window.matchMedia('(max-width: 767px)')");
-    expect(component).toContain('useCompactLayout');
+    // L'écran v2 n'a plus besoin d'interroger le navigateur : sa mise en page est
+    // la même partout, et la feuille monte par-dessus le média dans tous les cas.
+    expect(component).not.toContain('matchMedia');
   });
 
   it('le panier quitte l’en-tête pour se poser sur la photo', () => {
-    expect(component).toContain('onOpenCart && !compact');
-    expect(component).toContain('ay-pdp-rail__action');
-    expect(sheetCss).toContain('.ay-pdp-rail__action');
+    expect(component).toContain('s-rail__btn');
+    expect(sheetCss).toContain('.s-rail__btn');
   });
 
   it('la barre d’achat est fixe et rend son espace au contenu', () => {
-    expect(sheetCss).toContain('.ay-pdp-buybar');
-    expect(sheetCss).toContain('position: fixed');
-    expect(sheetCss).toContain('[data-ay-compact]');
-    expect(sheetCss).toContain('padding-bottom: 96px');
+    expect(sheetCss).toMatch(/\.s-buybar\s*\{[^}]*position: sticky/);
+    expect(sheetCss).toMatch(/\.s-buybar\s*\{[^}]*bottom: 0/);
   });
 });
 
@@ -104,25 +104,29 @@ describe('fiche produit — format téléphone', () => {
  */
 describe('drap des tailles', () => {
   it('n’invente aucune table de conversion : l’échelle marque vient des libellés reçus', () => {
-    expect(component).toContain('const brandScale = useMemo');
-    expect(component).toContain("option.label.trim()");
-    expect(component).toContain('const hasBrandScale = brandScale.size >= 2');
+    const adapter = read('client/src/shop/adapter.ts');
+    const types = read('client/src/shop/types.ts');
+    expect(adapter).toContain('option.label.trim()');
+    expect(types).toContain('hasBrandScale');
+    expect(types).toContain('length >= 2');
   });
 
   it('les onglets n’apparaissent pas quand il n’y a qu’une échelle', () => {
-    expect(component).toContain('{hasBrandScale && (');
-    expect(component).toContain('role="tablist"');
+    const drape = read('client/src/shop/SizeDrape.tsx');
+    expect(drape).toContain('{brandAvailable && (');
+    expect(drape).toContain('role="tablist"');
   });
 
   it('le drap MONTE au lieu d’apparaître', () => {
-    expect(component).toContain('ay-sheet-rise');
-    expect(sheetCss).toContain('@keyframes ay-sheet-rise');
+    expect(sheetCss).toContain('@keyframes s-rise');
     expect(sheetCss).toContain('translateY(100%)');
   });
 
   it('les trois états du moteur de disponibilité restent distincts', () => {
-    expect(component).toContain("stock === 'unknown'");
-    expect(component).toContain('Stock non confirmé');
+    const drape = read('client/src/shop/SizeDrape.tsx');
+    expect(drape).toContain("size.state === 'unknown'");
+    expect(drape).toContain('Stock non confirmé');
+    expect(drape).toContain("size.state === 'unavailable'");
   });
 });
 
@@ -130,17 +134,43 @@ describe('drap des tailles', () => {
  * Attente ≠ échec : pendant la vérification du prix, la fiche le DIT.
  */
 describe('vérification du prix à la source', () => {
+  const container = read('client/src/shop/ShopProductScreen.tsx');
+
   it('distingue « on vérifie » de « prix à confirmer »', () => {
-    expect(component).toContain('quoteLoading');
+    expect(container).toContain('setQuoteLoading');
     expect(component).toContain('Vérification du prix à la source');
-    expect(component).toContain('ay-price-checking');
+    expect(component).toContain('priceChecking');
   });
 
   it('le drapeau retombe quoi qu’il arrive — jamais de rotor éternel', () => {
-    expect(component).toContain('.finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); })');
+    expect(container).toContain('.finally(');
+    expect(container).toContain('setQuoteLoading(false)');
   });
 
-  it('l’échec garde son message : on ne le remplace pas par une attente', () => {
-    expect(component).toContain('quoteLoading && !currentQuoteError');
+  it('aucun montant n’est affiché avant le devis serveur', () => {
+    expect(container).toContain('awaitingQuote');
+    expect(container).toContain('canAdd={!awaitingQuote}');
+  });
+});
+
+/*
+ * Défauts constatés EN PRODUCTION le 25/09/2026, sur capture du client.
+ */
+describe('corrections de production', () => {
+  it('le rail d’actions et les flèches de galerie ne se recouvrent pas', () => {
+    const rail = sheetCss.split('.s-rail {')[1].split('}')[0];
+    const nav = sheetCss.split('.s-gallery-nav {')[1].split('}')[0];
+    expect(rail).toContain('inset-inline-end');
+    expect(nav).toContain('inset-inline-start');
+  });
+
+  it('quand la composition décline, l’image est posée sur NOTRE canvas, pas renvoyée telle quelle', () => {
+    const routes = read('src/public/routes.ts');
+    const card = routes.split("router.get('/media/card'")[1].split("router.get('/media/img'")[0];
+    expect(card).toContain("fit: 'contain'");
+    expect(card).toContain('CARD_CANVAS');
+    expect(card).toContain("X-Ayrovi-Card', 'letterbox'");
+    // La redirection brute reste le tout dernier recours, après le cadrage.
+    expect(card.indexOf('letterbox')).toBeLessThan(card.lastIndexOf('res.redirect(302, url)'));
   });
 });

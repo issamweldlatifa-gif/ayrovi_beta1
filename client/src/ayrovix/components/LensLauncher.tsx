@@ -20,7 +20,7 @@ import { LensHistory } from './LensHistory';
 import { LensCamera } from './LensCamera';
 import { LensUpload } from './LensUpload';
 import { ProductCandidates } from './ProductCandidates';
-import { type AyrovixOrderSelection } from './ProductResult';
+import type { AyrovixOrderSelection } from '../../shop';
 import { ShopProductScreen } from '../../shop';
 import { useNavigationHistory } from '../../navigation/NavigationHistory';
 import { isDisplayableProduct } from '../services/resultPolicy';
@@ -566,7 +566,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     if (!product) throw new Error(tr(...productSelectionLabels.unavailable));
     const { option, offer } = resolveProductSelection(product, size, color);
     if (!completeProductOffer(offer)) {
-      // ProductResult acknowledges only fulfilled cart writes; keep its error on
+      // La fiche v2 n'acquitte que les écritures panier abouties ; son erreur reste
       // the product page rather than navigating away or treating this as success.
       throw new Error(tr(...productSelectionLabels.unavailable));
     }

@@ -55,6 +55,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   /* Détails de commande : note au vendeur et lien fourni par le client. Ce sont
      les champs dont l'équipe d'achat se sert ; ils étaient repliés dans
      l'ancienne fiche, ils le restent ici. */
+  /*
+   * Repli d'image : chaque photo porte sa chaîne (composition → isolation →
+   * image marchand). Si le rendu échoue, on recule d'un cran au lieu de laisser
+   * un cadre vide. Sans cela, une composition momentanément indisponible
+   * effacerait le produit de l'écran.
+   */
+  const [mediaStep, setMediaStep] = useState<Record<number, number>>({});
   const [note, setNote] = useState('');
   const [link, setLink] = useState(defaultLink);
   const [drapeOpen, setDrapeOpen] = useState(false);
@@ -195,6 +202,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                    * peut-être jamais — et retarde celle qu'il regarde.
                    */
                   const near = Math.abs(index - slide) <= 1;
+                  const chain = [item.src, ...item.fallbacks];
+                  const step = Math.min(mediaStep[index] ?? 0, chain.length - 1);
                   return (
                     <div className="s-media__slide" key={`${item.src}-${index}`}>
                       <button
@@ -204,7 +213,18 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                         aria-label={tr('Agrandir la photo', 'تكبير الصورة')}
                       >
                         {near
-                          ? <img src={item.src} alt={item.alt} decoding="async" referrerPolicy="no-referrer" draggable={false} />
+                          ? <img
+                              src={chain[step]}
+                              alt={item.alt}
+                              decoding="async"
+                              referrerPolicy="no-referrer"
+                              draggable={false}
+                              data-media-step={step}
+                              onError={() => setMediaStep((current) => ({
+                                ...current,
+                                [index]: Math.min((current[index] ?? 0) + 1, chain.length - 1),
+                              }))}
+                            />
                           : <span className="s-media__placeholder" aria-hidden="true" />}
                       </button>
                     </div>
@@ -314,7 +334,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <summary>{tr('Lien et note (facultatif)', 'الرابط والملاحظة (اختياري)')}</summary>
             <label>
               <span>{tr('Lien du produit chez le marchand', 'رابط المنتج عند التاجر')}</span>
-              <input value={link} onChange={(event) => setLink(event.target.value)} inputMode="url" placeholder="https://" />
+              <input
+                value={link}
+                onChange={(event) => setLink(event.target.value)}
+                inputMode="url"
+                placeholder="https://"
+                aria-invalid={link.trim().length > 0 && !/^https?:\/\/\S+$/i.test(link.trim())}
+              />
             </label>
             <label>
               <span>{tr('Note pour notre équipe', 'ملاحظة لفريقنا')}</span>
