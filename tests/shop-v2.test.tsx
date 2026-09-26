@@ -18,7 +18,8 @@ const view = (over: Partial<ProductView> = {}): ProductView => ({
   media: [{ src: '/a.png', fallbacks: [], alt: 'a' }],
   price: { current: { tnd: 118.9, source: { amount: 35.95, currency: 'EUR' } }, reference: { tnd: 132.1 }, discountPercent: 10, verifiedAtSource: true },
   sizes: [size({ value: 'S', state: 'unknown' }), size({ value: 'M', remaining: 2 }), size({ value: 'XL', state: 'unavailable' })],
-  sizeScaleLabel: 'EU', colors: [], flags: [{ kind: 'deal', label: 'Promo' }],
+  sizeScaleLabel: 'EU', sizeKind: 'clothing', capacity: null, availabilityKnown: true,
+  colors: [], flags: [{ kind: 'deal', label: 'Promo' }],
   merchant: { name: 'Champion', url: 'https://x.tn/p' }, ...over,
 });
 
@@ -45,7 +46,7 @@ describe('boutique v2 — contrat', () => {
 
 describe('boutique v2 — adaptateur', () => {
   const product: AyrovixProduct = {
-    title: 'Open Hem Pants', brand: 'Champion', model: null, description: 'Molleton',
+    title: 'Pantalon de jogging Open Hem', brand: 'Champion', model: null, description: 'Molleton',
     image: 'https://m.tn/a.jpg', images: [], source: 'Champion', sourceUrl: 'https://m.tn/p',
     price: 35.95, currency: 'EUR', priceTnd: 118.9, exchangeRate: 3.31,
     colors: [], sizes: ['S', 'M'], availability: 'in_stock',

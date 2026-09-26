@@ -3,7 +3,7 @@ import React, { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import { ProductResult } from '../client/src/ayrovix/components/ProductResult';
+import { ShopProductScreen } from '../client/src/shop';
 import type { AyrovixProduct } from '../client/src/ayrovix/types';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -21,7 +21,7 @@ beforeEach(() => {
   globalThis.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ success: true, data: { lineTotalTND: 117.32, originalLineTotalTND: null, promo: null, pricingVersion: 2 } }) })) as unknown as typeof fetch;
 });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); globalThis.fetch = originalFetch; });
-const render = async (product: AyrovixProduct) => act(async () => root.render(<LocaleProvider><ProductResult product={product} onOrder={vi.fn()} /></LocaleProvider>));
+const render = async (product: AyrovixProduct) => act(async () => root.render(<LocaleProvider><ShopProductScreen product={product} onOrder={vi.fn()} /></LocaleProvider>));
 
 function button(text: string) {
   const match = [...host.querySelectorAll('button')].find(item => item.textContent?.includes(text));
@@ -32,9 +32,9 @@ function button(text: string) {
 describe('source-backed product options on the mobile detail page', () => {
   it('shoes open one bottom sheet and sort only sourced pointures, without invented stock or conversions', async () => {
     await render(source);
-    expect(host.textContent).toContain('Pointure');
+    expect(host.textContent).toContain('pointure');
     expect(button('Ajouter au panier').disabled).toBe(true); // size not yet chosen
-    await act(async () => button('Votre taille').click());
+    await act(async () => button('Votre pointure').click());
     const dialog = host.querySelector('[role="dialog"]')!;
     expect(dialog.textContent).toContain('Pointures disponibles');
     expect(dialog.textContent!.indexOf('40.5')).toBeLessThan(dialog.textContent!.indexOf('42'));

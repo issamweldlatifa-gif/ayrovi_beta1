@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
-import { hasBrandScale, type SizeOption, type StockState } from './types';
+import { hasBrandScale, type SizeOption } from './types';
 
 /**
  * DRAP DES TAILLES (boutique v2).
@@ -18,6 +18,10 @@ import { hasBrandScale, type SizeOption, type StockState } from './types';
 export interface SizeDrapeProps {
   open: boolean;
   sizes: SizeOption[];
+  /** Intitulé de la liste : « Pointures disponibles », « Contenances… ». */
+  title?: string;
+  /** Faux quand la source ne publie aucune disponibilité : rien n'est grisé. */
+  availabilityKnown?: boolean;
   selected: string | null;
   scaleLabel: string | null;
   /** Traducteur fourni par l'hôte : la boutique ne porte pas son propre i18n. */
@@ -28,10 +32,8 @@ export interface SizeDrapeProps {
   onNotifyRestock?: (size: SizeOption) => void;
 }
 
-const STATE_ORDER: Record<StockState, number> = { available: 0, unknown: 1, unavailable: 2 };
-
 export const SizeDrape: React.FC<SizeDrapeProps> = ({
-  open, sizes, selected, scaleLabel, tr, onClose, onSelect, onNotifyRestock,
+  open, sizes, title, availabilityKnown = true, selected, scaleLabel, tr, onClose, onSelect, onNotifyRestock,
 }) => {
   const [scale, setScale] = useState<'source' | 'brand'>('source');
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -54,7 +56,7 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
       <div className="s-drape__panel" ref={panelRef} tabIndex={-1}>
         <div className="s-sheet__grab" aria-hidden="true" />
         <div className="s-drape__head">
-          <h2>{tr('Choisir la taille', 'اختار المقاس')}</h2>
+          <h2>{title ?? tr('Choisir la taille', 'اختار المقاس')}</h2>
           {brandAvailable && (
             <div className="s-scales" role="tablist" aria-label={tr('Échelle de taille', 'مقياس المقاسات')}>
               <button type="button" role="tab" aria-selected={activeScale === 'source'} onClick={() => setScale('source')}>
@@ -68,7 +70,7 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
         </div>
 
         <div className="s-sizes">
-          {[...sizes].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state]).map((size) => {
+          {sizes.map((size) => {
             const primary = activeScale === 'brand' && size.brandValue ? size.brandValue : size.value;
             const secondary = activeScale === 'brand' && size.brandValue ? size.value : size.brandValue;
             return (
@@ -76,13 +78,13 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
                 key={size.value}
                 type="button"
                 className="s-size"
-                data-state={size.state}
+                data-state={availabilityKnown ? size.state : 'available'}
                 aria-pressed={selected === size.value}
-                aria-disabled={size.state !== 'available'}
+                aria-disabled={availabilityKnown && size.state !== 'available'}
                 onClick={() => onSelect(size)}
               >
                 <span>
-                  <b>{primary}</b>
+                  <strong>{primary}</strong>
                   {secondary ? <small>{secondary}</small> : null}
                 </span>
 
@@ -92,11 +94,11 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
                   </span>
                 )}
 
-                {size.state === 'unknown' && (
+                {availabilityKnown && size.state === 'unknown' && (
                   <span className="s-size__meta">{tr('Stock non confirmé', 'المخزون غير مؤكّد')}</span>
                 )}
 
-                {size.state === 'unavailable' && (
+                {availabilityKnown && size.state === 'unavailable' && (
                   onNotifyRestock
                     ? <span
                         className="s-size__meta"

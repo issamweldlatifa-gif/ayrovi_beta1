@@ -104,7 +104,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const go = (next: number) => setSlide(((next % slides) + slides) % slides);
 
   const pickSize = (size: SizeOption) => {
-    const reason = refusalReason(size);
+    const reason = refusalReason(size, availabilityKnown);
     if (reason) {
       setRefusal(reason);
       setChosen(null);
@@ -118,9 +118,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     setDrapeOpen(false);
   };
 
+  /* Tant qu'une taille est proposée et non choisie, l'ajout reste fermé : un
+     bouton actif qui ouvre un tiroir fait croire que la commande est partie. */
+  const sizeMissing = product.sizes.length > 0 && !chosen;
+  const availabilityKnown = product.availabilityKnown;
+
   const add = async () => {
     if (!actions?.onAddToBag || adding) return;
-    if (product.sizes.length > 0 && !chosen) { setDrapeOpen(true); return; }
+    if (sizeMissing) { setDrapeOpen(true); return; }
     setAdding(true);
     try {
       await actions.onAddToBag(chosen, quantity, { note: note.trim(), link: link.trim() });
@@ -132,6 +137,23 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   };
 
   const price = product.price;
+  /* Une chaussure n'a pas de taille M, un sérum n'a pas de pointure. Les mots
+     suivent le produit, sinon la fiche parle d'autre chose que ce qu'on vend. */
+  const sizeWord = product.sizeKind === 'shoes'
+    ? tr('Votre pointure', 'مقاسك')
+    : product.sizeKind === 'capacity'
+      ? tr('Choisir une contenance', 'اختار السعة')
+      : tr('Votre taille', 'اختار مقاسك');
+  const sizeLabel = product.sizeKind === 'shoes'
+    ? tr('Pointure', 'المقاس')
+    : product.sizeKind === 'capacity'
+      ? tr('Contenance', 'السعة')
+      : tr('Taille', 'المقاس');
+  const sizeListTitle = product.sizeKind === 'shoes'
+    ? tr('Pointures disponibles', 'المقاسات المتوفرة')
+    : product.sizeKind === 'capacity'
+      ? tr('Contenances disponibles', 'السعات المتوفرة')
+      : tr('Tailles disponibles', 'المقاسات المتوفرة');
 
   return (
     <div className="s-root s-page" dir={direction} data-ay-design="editorial">
@@ -249,6 +271,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           {product.brand && <div className="s-brand">{product.brand}</div>}
           <h1 className="s-title">{product.title}</h1>
           {product.description && <p className="s-desc">{product.description}</p>}
+          {product.capacity && <p className="s-desc">{product.capacity}</p>}
 
           {/* Sans prix établi, l'écran le DIT. Une fiche muette sur le montant
               laisse croire à un oubli d'affichage ; le client doit savoir que
@@ -327,6 +350,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
       <div className="s-buybar">
         {product.sizes.length > 0 && (
+          <span className="s-select__label">{sizeLabel}</span>
+        )}
+        {product.sizes.length > 0 && (
           <button
             type="button"
             className="s-select"
@@ -334,7 +360,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             onClick={() => setDrapeOpen(true)}
             aria-expanded={drapeOpen}
           >
-            <span>{chosen ? tr(`Taille : ${chosen.value}`, `المقاس: ${chosen.value}`) : tr('Choisir la taille', 'اختار المقاس')}</span>
+            <span>{chosen ? `${sizeWord} : ${chosen.value}` : sizeWord}</span>
             <EditorialIcon name="ChevronDown" size={20} />
           </button>
         )}
@@ -359,7 +385,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           </button>
         </div>
 
-        <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || !canAdd || !actions?.onAddToBag}>
+        <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || !canAdd || !actions?.onAddToBag}>
           {added
             ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</>
             : adding
@@ -385,6 +411,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
       <SizeDrape
         open={drapeOpen}
         sizes={product.sizes}
+        title={sizeListTitle}
+        availabilityKnown={availabilityKnown}
         selected={chosen?.value ?? null}
         scaleLabel={product.sizeScaleLabel}
         tr={tr}

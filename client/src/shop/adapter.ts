@@ -13,6 +13,7 @@
  */
 import type { AyrovixCandidate, AyrovixProduct, AyrovixVariantOption } from '../ayrovix/types';
 import { withIsolation } from '../ayrovix/services/mediaIsolation';
+import { classifyProduct, extractCapacity, presentSizes, usesCapacity } from '../ayrovix/services/productAttributes';
 import type { MediaView, PriceView, ProductView, SizeOption, StockState } from './types';
 
 function toMedia(urls: (string | null | undefined)[], alt: string): MediaView[] {
@@ -68,6 +69,9 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
     ),
     sizes: [],
     sizeScaleLabel: null,
+    sizeKind: 'none',
+    capacity: null,
+    availabilityKnown: false,
     colors: [],
     flags: candidate.promo ? [{ kind: 'deal', label: candidate.promo.label || 'Promo' }] : [],
     merchant: candidate.source ? { name: candidate.source, url: candidate.sourceUrl } : null,
@@ -77,7 +81,20 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
 /** La fiche complète : mêmes règles, plus les tailles et les couleurs. */
 export function productToView(product: AyrovixProduct, activeColor?: string | null): ProductView {
   const options = product.variantOptions || [];
-  const values = [...new Set(product.sizes.map((size) => size.trim()).filter(Boolean))];
+
+  /*
+   * La classe du produit et l'ORDRE des tailles viennent du service partagé :
+   * une pointure se lit 40,5 < 42 < 43 et un vêtement S < M < XL. Les trier ici
+   * à nouveau, autrement, ferait diverger la fiche du reste du site.
+   */
+  const productClass = classifyProduct(product.title, product.description);
+  const capacityBased = usesCapacity(productClass);
+  const presented = presentSizes(productClass, product.title, product.sizes || []);
+  const values = capacityBased
+    ? presented.options.filter((size) => extractCapacity(size) !== null)
+    : productClass === 'shoes' || productClass === 'clothing' || productClass === 'accessory'
+      ? presented.options
+      : [];
 
   const sizes: SizeOption[] = values.map((value) => {
     const forSize = options.filter((option) => option.size === value);
@@ -112,6 +129,11 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
     ),
     sizes,
     sizeScaleLabel: null,
+    sizeKind: capacityBased ? 'capacity' : productClass === 'shoes' ? 'shoes' : values.length ? 'clothing' : 'none',
+    availabilityKnown: options.some((option) => option.availability !== undefined || option.available === false),
+    /* Contenance lue dans le titre quand le marchand n'a listé aucune variante :
+       « 10 ml » est une information du produit, pas une supposition. */
+    capacity: capacityBased ? extractCapacity(`${product.title} ${product.description || ''}`)?.label ?? null : null,
     colors: (product.colors || []).map((name) => ({
       name,
       media: toMedia(colorSets?.[name.toLocaleLowerCase()] || [], name)[0] ?? null,
