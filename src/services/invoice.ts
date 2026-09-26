@@ -1,4 +1,5 @@
 import { FONT_STACK, BRAND, documentIdentityCss, mailIdentityStyle } from './brandDocuments';
+import { invoiceQrSvg } from './invoiceQr';
 /**
  * AYROVI Invoice Service — توليد فاتورة PDF محلية بدون متصفح headless.
  *
@@ -129,6 +130,8 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
   td { padding: 10px 12px; border-bottom: 1px solid ${BRAND.colors.line}; vertical-align: top; }
   td small { display: block; color: ${BRAND.colors.muted}; margin-top: 3px; font-size: 11px; }
   .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .qr { margin-top: 10px; }
+  .qr svg { display: block; margin-left: auto; }
   .totals { width: 320px; margin-left: auto; }
   .totals td { padding: 7px 12px; }
   .totals .grand td { font-size: 15px; font-weight: 900; border-top: 2px solid #000000; }
@@ -148,6 +151,21 @@ export function buildInvoiceHtml(db: QatafoDatabase, orderId: string): string {
       <h1>FACTURE ÉLECTRONIQUE</h1>
       <div class="num">${escapeHtml(order.invoice_number)}</div>
       <p>Émise le ${issuedAt.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</p>
+      <!--
+        Le QR rend la pièce VÉRIFIABLE : émetteur, numéro de facture, commande,
+        date et total. Aucune donnée personnelle n'y figure — un QR se
+        photographie de loin et se partage. Il identifie la facture, il ne
+        décrit pas le client.
+      -->
+      <div class="qr">${invoiceQrSvg({
+        issuer: company.name,
+        taxId: setting('company_tax_id', '') || setting('company_matricule_fiscal', ''),
+        invoiceNumber: String(order.invoice_number),
+        orderNumber: String(order.order_number),
+        issuedOn: issuedAt.toISOString().slice(0, 10),
+        totalTnd: total,
+        verifyUrl: setting('public_base_url', '') ? `${String(setting('public_base_url', '')).replace(/\/$/, '')}/facture/${encodeURIComponent(String(order.invoice_number))}` : '',
+      }, 132)}</div>
     </div>
   </div>
 
