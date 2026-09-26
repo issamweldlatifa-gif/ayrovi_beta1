@@ -7,7 +7,6 @@ import { withIsolation } from '../ayrovix/services/mediaIsolation';
 import type { CartItem } from '../types';
 import { BagPage, type BagLine, type PolicyState } from './BagPage';
 import type { StockState } from './types';
-import './shop.css';
 
 /**
  * CONTENEUR DU PANIER v2 — il relie l'écran aux données et aux conditions.

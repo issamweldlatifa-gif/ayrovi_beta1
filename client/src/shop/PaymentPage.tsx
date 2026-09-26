@@ -1,6 +1,5 @@
 import React from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
-import './shop.css';
 
 /**
  * MOYEN DE PAIEMENT (boutique v2).

@@ -1,7 +1,6 @@
 import React from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
 import type { ProductView } from './types';
-import './shop.css';
 
 /**
  * GRILLE (boutique v2) — la carte de la maquette, à la lettre.

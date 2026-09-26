@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
 import { SizeDrape } from './SizeDrape';
 import { refusalReason, type ProductActions, type ProductView, type SizeOption } from './types';
-import './shop.css';
 
 /**
  * FICHE PRODUIT (boutique v2) — la forme validée en maquette, à la lettre.

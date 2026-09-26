@@ -1,7 +1,6 @@
 import React from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
 import type { StockState } from './types';
-import './shop.css';
 
 /**
  * PANIER (boutique v2).

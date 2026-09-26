@@ -5,6 +5,8 @@ All notable AYROVI changes are recorded in this file.
 ## [Unreleased]
 
 ### Fixed
+- **La feuille de la boutique n'est plus un morceau différé (2026-09-26).** `shop.css` était importée depuis les composants, donc emportée dans un chunk chargé à la demande : en production, les écrans s'affichaient par moments **sans elle** — « Ajouter au panier », « Commander » et « Calculer un autre article » apparaissaient comme du texte nu, sans le fond noir de la CTA. La CSS d'une surface d'achat n'a rien à faire dans un morceau différé : elle est désormais importée par `index.css` et vit dans la feuille principale. Le build ne produit plus aucun `shop-*.css` séparé, et `.s-cta` est bien dans la feuille chargée d'emblée.
+
 - **L'OCR ne touche pas au prix — règle rappelée par le client (2026-09-25).** Une fonction d'arbitrage « prix lu par la vision contre prix lu par l'OCR » avait été introduite plus tôt dans la journée : elle est **supprimée**, ainsi que son import devenu orphelin. Le prix a une seule origine — l'offre marchande rapportée par SerpApi — et notre formule (conversion, droits, TVA, frais) s'y applique ensuite. Le texte lu sur une photo sert à **reconnaître** un produit (marque, modèle, code-barres), jamais à en fixer le montant : un chiffre mal lu serait un prix que personne n'a jamais proposé, et c'est le client qui le paierait. La règle est écrite dans le code (« À NE PAS RÉINTRODUIRE ») et tenue par 4 tests : plus aucune fonction d'arbitrage dans le module de signaux, aucun montant injecté par la route depuis la lecture d'image, le contrat `LensSignals` ne porte plus le mot « price », et le prix passe toujours par `calculatePrice` + les règles en base.
 
 ### Removed

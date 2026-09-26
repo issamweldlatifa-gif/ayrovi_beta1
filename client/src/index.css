@@ -6,6 +6,9 @@
 @import "./styles/zalando-ui.css";
 @import "./styles/ayrovix-theme.css";
 @import "./styles/checkout-flow.css";
+/* Boutique v2 : chargee avec la feuille principale, jamais en morceau differe —
+   un ecran d'achat sans sa CSS est un ecran de texte nu. */
+@import "./shop/shop.css";
 @import "./styles/drawers.css";
 @import "./styles/customer-auth.css";
 @import "./design/editorial/tokens.generated.css";

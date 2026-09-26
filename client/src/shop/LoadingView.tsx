@@ -1,6 +1,5 @@
 import React from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
-import './shop.css';
 
 /**
  * ÉCRAN DE CHARGEMENT (boutique v2).

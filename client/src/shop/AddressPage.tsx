@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
-import './shop.css';
 
 /**
  * ADRESSE DE LIVRAISON (boutique v2).

@@ -16,7 +16,10 @@ const component = read('client/src/shop/ProductPage.tsx');
 
 describe('fiche produit — feuille montante', () => {
   it('la feuille de style vit avec l’écran qu’elle habille', () => {
-    expect(read('client/src/shop/ProductPage.tsx')).toContain("import './shop.css'");
+    // La feuille est chargée avec l'application, pas en morceau différé : en
+    // production, un chunk CSS manquant laissait les boutons sans fond.
+    expect(read('client/src/index.css')).toContain('./shop/shop.css');
+    expect(read('client/src/shop/ProductPage.tsx')).not.toContain("import './shop.css'");
   });
 
   it('le média reste collé pendant que la feuille monte par-dessus', () => {
