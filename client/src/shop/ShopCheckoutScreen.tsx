@@ -3,6 +3,7 @@ import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
 import { availableAtCheckout, isPaymentMethodAvailable, CARD_NETWORK_MARKS, type PaymentMethodId } from '../commerce/paymentMethods';
 import { getSessionId } from '../utils/session';
+import { customerApi } from '../customer/api';
 import type { CustomerSession, OrderResult } from '../types';
 import { AddressPage, type AddressValue, type DeliveryMode } from './AddressPage';
 import { PaymentPage, type PaymentChoice } from './PaymentPage';
@@ -54,6 +55,12 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
   const [step, setStep] = useState<Step>('address');
   const [error, setError] = useState<string | null>(null);
   const [method, setMethod] = useState<string | null>(null);
+  /*
+   * Position de livraison : elle aide le livreur à trouver une adresse que
+   * l'écrit ne suffit pas toujours à situer. Elle est FACULTATIVE et n'est
+   * jamais demandée en silence — le refus du navigateur n'empêche rien.
+   */
+  const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const [address, setAddress] = useState<AddressValue>({
     mode: modes[0] ?? 'home',
@@ -110,6 +117,15 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
       return;
     }
     setAddress(value);
+    // On tente la position APRÈS la saisie, jamais avant : demander la
+    // géolocalisation à l'ouverture d'un écran fait fuir le client.
+    if (!position && typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (found) => setPosition({ latitude: found.coords.latitude, longitude: found.coords.longitude }),
+        () => undefined,
+        { timeout: 4000, maximumAge: 300_000 },
+      );
+    }
     setStep('payment');
   };
 
@@ -145,8 +161,8 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
             : String(address.pointId ?? ''),
           deliveryMode: address.mode,
           termsAccepted: true,
-          latitude: null,
-          longitude: null,
+          latitude: position?.latitude ?? null,
+          longitude: position?.longitude ?? null,
         }, locale === 'ar' ? 'ar' : 'fr')),
       });
       const data = await response.json();
@@ -155,7 +171,7 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
         throw new Error(String(data?.code || data?.error || 'CHECKOUT_FAILED'));
       }
 
-      onOrderSuccess({
+      const result = {
         orderId: data.orderId,
         orderNumber: data.orderNumber,
         totalTND: data.totalTND ?? totalTND,
@@ -164,7 +180,31 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
         deposit: data.deposit ? { ...data.deposit, method: resolved.method } : null,
         customer: { ...address, paymentMethod: resolved.method.toLowerCase() },
         message: data.message,
-      } as unknown as OrderResult);
+      } as unknown as OrderResult;
+
+      /*
+       * PAIEMENT PAR CARTE : la commande existe déjà, on y RATTACHE le paiement
+       * par son identifiant, puis on envoie le client sur la page sécurisée de
+       * la passerelle. Si l'initiation échoue, la commande reste valide et le
+       * client peut régler depuis son espace — on ne perd jamais l'achat.
+       */
+      if (resolved.method === 'CARD') {
+        try {
+          const initiated = await customerApi<{ data: { amountTnd: number; payUrl: string } }>(
+            `/api/customer/account/orders/${encodeURIComponent(String(data.orderId))}/payments/card/initiate`,
+            { method: 'POST', body: '{}' },
+            customerSession.csrfToken,
+          );
+          onOrderSuccess(result);
+          window.location.assign(initiated.data.payUrl);
+          return;
+        } catch {
+          onOrderSuccess(result);
+          return;
+        }
+      }
+
+      onOrderSuccess(result);
     } catch (submitError: any) {
       setError(String(submitError?.message || 'CHECKOUT_FAILED'));
       setStep('payment');

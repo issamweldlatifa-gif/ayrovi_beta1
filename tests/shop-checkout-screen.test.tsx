@@ -75,3 +75,31 @@ describe('caisse v2 — rendu', () => {
     expect(html).toBe('');
   });
 });
+
+describe('caisse v2 — position et paiement par carte', () => {
+  it('la position est FACULTATIVE et demandée après la saisie, jamais à l’ouverture', () => {
+    expect(source).toContain('navigator.geolocation.getCurrentPosition');
+    // Elle est déclenchée dans la validation de l'adresse, pas dans un effet de montage.
+    const inSubmit = source.split('const submitAddress')[1].split('const confirm')[0];
+    expect(inSubmit).toContain('getCurrentPosition');
+    expect(source).toContain('() => undefined,');
+  });
+
+  it('un refus de géolocalisation n’empêche pas la commande', () => {
+    expect(source).toContain('latitude: position?.latitude ?? null');
+    expect(source).toContain('longitude: position?.longitude ?? null');
+  });
+
+  it('le paiement par carte est RATTACHÉ à une commande déjà créée', () => {
+    const order = source.indexOf("fetch('/api/checkout'");
+    const initiate = source.indexOf('payments/card/initiate');
+    expect(initiate).toBeGreaterThan(order);
+    expect(source).toContain('encodeURIComponent(String(data.orderId))');
+  });
+
+  it('si l’initiation échoue, la commande reste valide — l’achat n’est jamais perdu', () => {
+    const block = source.split('payments/card/initiate')[1].split('onOrderSuccess(result);\n    } catch')[0];
+    expect(block).toContain('catch');
+    expect(block).toContain('onOrderSuccess(result)');
+  });
+});
