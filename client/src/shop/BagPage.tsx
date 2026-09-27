@@ -38,7 +38,7 @@ export interface BagPageProps {
   deliveryTnd: number;
   totalTnd: number;
   /** Marques de paiement RÉELLEMENT disponibles, décidées par l'hôte. */
-  paymentMarks?: { id: string; src?: string; label: string }[];
+  paymentMarks?: { id: string; src?: string; glyph?: 'Card' | 'Phone' | 'Bank' | 'Mail'; label: string }[];
   /** Conditions serveur — sans elles, « Commander » reste inactif. */
   policy?: PolicyState;
   loadError?: boolean;
@@ -191,7 +191,9 @@ export const BagPage: React.FC<BagPageProps> = ({
                 >
                   {mark.src
                     ? <img src={mark.src} alt={mark.label} style={{ maxHeight: 20, maxWidth: 46, objectFit: 'contain' }} />
-                    : <span style={{ fontSize: '0.625rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{mark.label}</span>}
+                    : mark.glyph
+                      ? <EditorialIcon name={mark.glyph} size={20} title={mark.label} />
+                      : <span style={{ fontSize: '0.625rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{mark.label}</span>}
                 </span>
               ))}
             </div>

@@ -100,6 +100,10 @@ export const ShopBagScreen: React.FC<ShopBagScreenProps> = ({
     ? availableAtCheckout(commerce.policy).map((method) => ({
         id: method.id,
         src: method.mark.kind === 'image' ? method.mark.src : undefined,
+        /* Sans image de marque (paiement à la livraison), on montre le glyphe
+           officiel plutôt qu'une phrase : une bande de paiement se lit d'un
+           coup d'œil, elle ne se lit pas mot à mot. */
+        glyph: method.mark.kind === 'image' ? undefined : method.glyph,
         label: tr(method.label, method.labelAr),
       }))
     : [];
