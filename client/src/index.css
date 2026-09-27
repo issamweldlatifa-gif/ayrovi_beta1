@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/*
+ * ORDRE DES COUCHES — cause racine trouvée le 27/09/2026.
+ *
+ * Tailwind v4 range tout ce qui suit dans ses propres couches. La feuille de la
+ * boutique se retrouvait donc DANS `@layer utilities`, où n'importe quelle règle
+ * ancienne restée hors couche la battait : les CTA perdaient leur fond noir, le
+ * rail ses pastilles. Le symptôme ressemblait à « la page n'a pas changé », alors
+ * que le code était bien déployé — seules ses règles étaient écrasées.
+ *
+ * On déclare donc une couche `ayrovi-shop` APRÈS les couches de Tailwind : une
+ * couche déclarée plus tard l'emporte, quelle que soit la spécificité.
+ */
+@layer theme, base, components, utilities, ayrovi-shop;
+
 @import "./design/tokens.css";
 @import "./styles/typography.css";
 @import "./styles/interface-runtime.css";
@@ -8,7 +22,7 @@
 @import "./styles/checkout-flow.css";
 /* Boutique v2 : chargee avec la feuille principale, jamais en morceau differe —
    un ecran d'achat sans sa CSS est un ecran de texte nu. */
-@import "./shop/shop.css";
+@import "./shop/shop.css" layer(ayrovi-shop);
 @import "./styles/drawers.css";
 @import "./styles/customer-auth.css";
 @import "./design/editorial/tokens.generated.css";

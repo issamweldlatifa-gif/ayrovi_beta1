@@ -333,3 +333,24 @@ describe('boutique v2 — corrections du 26/09', () => {
     expect(html).toContain('data-editorial-icon="Bag"');
   });
 });
+
+/*
+ * CAUSE RACINE DU 27/09/2026 : les règles de la boutique étaient rangées par
+ * Tailwind dans sa couche `utilities`, où l'ancien CSS resté hors couche les
+ * écrasait. Le client voyait « la page n'a pas changé » alors que le code était
+ * bien déployé : seules ses règles perdaient la cascade.
+ */
+describe('boutique v2 — la cascade ne peut plus l’écraser', () => {
+  const index = readFileSync('client/src/index.css', 'utf8');
+
+  it('la feuille est importée dans SA couche, déclarée après celles de Tailwind', () => {
+    expect(index).toContain('@layer theme, base, components, utilities, ayrovi-shop;');
+    expect(index).toContain('@import "./shop/shop.css" layer(ayrovi-shop);');
+  });
+
+  it('l’ordre déclaré place la boutique en dernier — une couche tardive l’emporte', () => {
+    const order = /@layer ([^;]+);/.exec(index)?.[1].split(',').map((name) => name.trim()) ?? [];
+    expect(order[order.length - 1]).toBe('ayrovi-shop');
+    expect(order).toContain('utilities');
+  });
+});
