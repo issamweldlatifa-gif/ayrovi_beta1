@@ -1,5 +1,6 @@
 import { isSelectableVariant, reportedVariantStock } from '../../../shared/variantPolicy';
 import type { QatafoDatabase } from '../../db/database';
+import { enrichProduct } from './productEnrichment';
 import { createHash } from 'node:crypto';
 import type { SmartLinkScraper } from '../../scraper/scraper';
 import type { ScrapedProduct } from '../../types';
@@ -174,6 +175,43 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     const scraped = await scraper.scrapeProduct(url);
     if (scraped?.title) {
       const product = toAyrovixProduct(db, scraped);
+
+      /*
+       * GALERIE ET TAILLES (27/09/2026). Le marchand ne publie pas toujours ses
+       * photos ni ses tailles là où nous savons les lire : la fiche s'ouvrait
+       * alors avec UNE image et aucun choix, quand le même produit en montre
+       * quatre ailleurs. On les demande — uniquement pour la fiche que le client
+       * OUVRE, jamais pour une grille — et uniquement si elles manquent
+       * réellement. Rien de ce qui a été scrapé n'est écrasé : on COMPLÈTE.
+       */
+      if (product.images.length < 4 || product.sizes.length === 0) {
+        const extra = await enrichProduct(product.title);
+        if (extra.images.length) {
+          product.images = [...new Set([...product.images, ...extra.images])].slice(0, 8);
+          if (!product.image) product.image = product.images[0] || '';
+        }
+        if (!product.sizes.length && extra.sizes.length) {
+          product.sizes = extra.sizes.map((size) => size.value);
+          // La disponibilité vient de la source : un silence reste `unknown`.
+          product.variantOptions = [
+            ...(product.variantOptions || []),
+            ...extra.sizes.map((size) => ({
+              id: null,
+              label: size.label || size.value,
+              size: size.value,
+              color: null,
+              available: size.availability !== 'unavailable',
+              availability: size.availability,
+              price: null,
+              // Aucun prix par variante n'est fourni par cette source : on ne
+              // recopie surtout pas celui du produit, il pourrait différer.
+              currency: null,
+              priceTnd: null,
+            })),
+          ];
+        }
+        if (!product.description && extra.description) product.description = extra.description;
+      }
       try {
         db.run(`INSERT INTO product_profiles (id,url_hash,url,payload,images_count,has_description,fetched_at)
           VALUES (?,?,?,?,?,?,?)
