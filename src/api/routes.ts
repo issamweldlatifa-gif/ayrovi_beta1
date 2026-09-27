@@ -8,7 +8,7 @@ import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
 import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
-import { guardVariantOrder } from '../ayrovix/services/variantAvailability';
+import { guardVariantOrder, inspectVariantOrder } from '../ayrovix/services/variantAvailability';
 import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
@@ -271,8 +271,11 @@ export function createApiRouter(
     // stock RÉSOLU chez la source). Sans contrat, le parcours historique (demande
     // manuelle au prix général) continue inchangé. Avec contrat, une variante
     // indisponible — ou dont le stock n'est pas confirmé — ne peut pas être commandée.
-    const variantGuard = guardVariantOrder(item.url, requestedSize || item.variant);
-    if (!variantGuard.allowed) {
+    const variantGuard = guardVariantOrder(item.url, requestedSize || item.variant, requestedColor);
+    // A manual product may still be saved as an unverified request. It remains
+    // UNKNOWN in the bag and cannot pass the final checkout guard until the
+    // server has a fresh source contract.
+    if (!variantGuard.allowed && variantGuard.code !== 'NO_CONTRACT') {
       return res.status(409).json({ success: false, code: variantGuard.code, error: variantGuard.message });
     }
 
@@ -335,7 +338,10 @@ export function createApiRouter(
         totalItemsCount: summary.items.reduce((sum, item) => sum + item.quantity, 0),
         totalTND: summary.totalTND,
         deliveryTND: summary.deliveryTND,
-        items: summary.items,
+        items: summary.items.map((item) => {
+          const availability = inspectVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
+          return { ...item, availability: availability.availability, availabilityCheckedAt: availability.checkedAt, availabilitySource: availability.source, availabilityReason: availability.message };
+        }),
       });
     } catch (err: any) {
       return res.status(500).json({
@@ -499,6 +505,20 @@ export function createApiRouter(
         success: false,
         error: 'Votre panier est vide.'
       });
+    }
+
+    // Re-lire le contrat source à la confirmation finale : une ancienne ligne
+    // de panier ne peut pas contourner l'expiration ou une rupture constatée.
+    for (const item of items) {
+      const availability = guardVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
+      if (!availability.allowed) {
+        return res.status(409).json({
+          success: false,
+          code: availability.code,
+          error: availability.message,
+          itemId: item.id,
+        });
+      }
     }
 
     const normalizedPaymentMethod = paymentCode as PaymentMethodCode;

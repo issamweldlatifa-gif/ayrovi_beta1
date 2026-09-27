@@ -11,11 +11,11 @@ vi.mock('../client/src/services/publicApi',()=>api);
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT=true;
 let root:Root,host:HTMLDivElement;
 const valid={deposit:{percent:30,cardDiscountPercent:5}};
-const props={isOpen:true,onClose:vi.fn(),items:[{id:'1',title:'Product',quantity:1,priceTND:100,sourceUrl:'javascript:alert(1)',priceVerificationStatus:'PENDING_MANUAL'} as unknown as CartItem],totalTND:100,onUpdateQuantity:vi.fn(),onRemoveItem:vi.fn(),onProceedToCheckout:vi.fn(),onCalculateAnotherProduct:vi.fn()};
+const props={isOpen:true,onClose:vi.fn(),items:[{id:'1',title:'Product',quantity:1,priceTND:100,sourceUrl:'javascript:alert(1)',priceVerificationStatus:'PENDING_MANUAL',availability:'available',availabilitySource:'Merchant',availabilityCheckedAt:new Date().toISOString()} as unknown as CartItem],totalTND:100,onUpdateQuantity:vi.fn(),onRemoveItem:vi.fn(),onProceedToCheckout:vi.fn(),onCalculateAnotherProduct:vi.fn()};
 beforeEach(()=>{vi.clearAllMocks();host=document.createElement('div');document.body.append(host);root=createRoot(host);});
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();});
 const render=()=>act(async()=>root.render(<LocaleProvider><ShopBagScreen {...props}/></LocaleProvider>));
-const proceed=()=>[...host.querySelectorAll('button')].find(b=>b.textContent?.includes('Commander'))!;
+const proceed=()=>host.querySelector<HTMLButtonElement>('.s-bag-checkout')!;
 describe('server-owned commerce terms',()=>{
  it.each([undefined,null,'',true,-1,0,101,Infinity,NaN])('rejects missing/invalid deposit %s',percent=>expect(()=>parseCommercePolicy({deposit:{percent,cardDiscountPercent:5}})).toThrow('COMMERCE_TERMS_INVALID'));
  it.each([undefined,null,'',-1,101,Infinity])('does not guess a card discount %s',cardDiscountPercent=>expect(()=>parseCommercePolicy({deposit:{percent:30,cardDiscountPercent}})).toThrow());

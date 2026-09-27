@@ -150,6 +150,10 @@ export interface AyrovixProduct {
   optionLabel?: string | null;
   variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  /** Timestamp of the exact merchant-page fetch that supplied availability. */
+  availabilityCheckedAt?: string | null;
+  /** Expiration of the server's source-backed stock contract. */
+  availabilityExpiresAt?: string | null;
   priceVerified?: boolean;
   priceVerificationStatus?: 'VERIFIED' | 'PENDING_MANUAL';
   priceToken?: string | null;

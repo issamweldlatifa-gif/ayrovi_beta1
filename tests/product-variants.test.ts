@@ -22,6 +22,7 @@ import {
 
 import {
   guardVariantOrder,
+  inspectVariantOrder,
   prepareVariantCard,
   readLookupPayload,
   recordVariantContract,
@@ -183,6 +184,8 @@ describe('porte de commande côté serveur', () => {
   beforeEach(() => {
     recordVariantContract('https://shop.test/sneaker', {
       attribute: 'Pointure',
+      productAvailability: 'unknown',
+      source: 'Marchand',
       variants: [
         { value: '40', availability: 'available', reason: 'offre constatée' },
         { value: '41', availability: 'unavailable', reason: 'rupture' },
@@ -202,9 +205,20 @@ describe('porte de commande côté serveur', () => {
     expect(guardVariantOrder('https://shop.test/sneaker', '41').allowed).toBe(false);
   });
 
-  it('ne casse pas le parcours historique : sans contrat, la commande passe', () => {
-    expect(guardVariantOrder('https://autre.test/produit-manuel', 'M').allowed).toBe(true);
-    expect(guardVariantOrder('https://autre.test/produit-manuel', 'M').code).toBe('NO_CONTRACT');
+  it('préserve la demande manuelle sans contrat sans transformer son statut en disponibilité', () => {
+    expect(guardVariantOrder('https://autre.test/produit-manuel', 'M')).toMatchObject({ allowed: true, code: 'NO_CONTRACT', availability: 'unknown' });
+    expect(inspectVariantOrder('https://autre.test/produit-manuel', 'M')).toMatchObject({ allowed: false, code: 'NO_CONTRACT', availability: 'unknown' });
+  });
+
+  it('un contrat arrivé à expiration repasse à inconnu et ne reprend pas la voie manuelle', () => {
+    const key = 'https://shop.test/expired';
+    recordVariantContract(key, { attribute: 'Taille', productAvailability: 'available', source: 'Marchand', variants: [] }, Date.now() - 7 * 60 * 60 * 1000);
+    expect(guardVariantOrder(key)).toMatchObject({ allowed: false, code: 'VARIANT_AVAILABILITY_UNKNOWN', availability: 'unknown', source: 'Marchand' });
+    expect(inspectVariantOrder(key).checkedAt).not.toBeNull();
+
+    const legacy = 'https://shop.test/legacy-without-source-time';
+    recordVariantContract(legacy, { attribute: 'Taille', productAvailability: 'available', source: 'Marchand', variants: [] }, 1);
+    expect(guardVariantOrder(legacy)).toMatchObject({ allowed: false, code: 'VARIANT_AVAILABILITY_UNKNOWN', availability: 'unknown', checkedAt: null });
   });
 });
 

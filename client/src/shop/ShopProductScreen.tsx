@@ -51,9 +51,13 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
   onNotify, onFavorite, favorite = false,
 }) => {
   const { tr, direction, formatMoney } = useLocale();
-  const [activeColor, setActiveColor] = useState<string | null>(null);
+  const [activeColor, setActiveColor] = useState<string | null>(() => product.colors.length === 1 ? product.colors[0] : null);
   const [quote, setQuote] = useState<CartLineQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+
+  useEffect(() => {
+    setActiveColor(product.colors.length === 1 ? product.colors[0] : null);
+  }, [product.sourceUrl]);
 
   const quoteKey = `${product.sourceUrl}|${product.price ?? ''}|${product.currency ?? ''}`;
 

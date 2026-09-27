@@ -222,8 +222,22 @@ export async function resolveVariants(variants: ResolvableVariant[], fetcher: Fe
 export interface VariantContract {
   /** Libellé de l'attribut requis (Pointure, Taille, Volume, Stockage…). */
   attribute: string;
-  variants: Array<{ value: string; availability: Availability; reason: string }>;
+  /** État global du produit issu de la même fiche marchande. */
+  productAvailability: Availability;
+  /** Variantes source-backed; an optional color keeps combinations distinct. */
+  variants: Array<{ value: string; color?: string | null; availability: Availability; reason: string }>;
+  source?: string | null;
   at: number;
+}
+
+/** URL key shared by product extraction, cart reads, add-to-cart and checkout. */
+export function variantContractKey(raw: string): string {
+  try {
+    const url = new URL(raw);
+    return `${url.hostname.toLowerCase().replace(/^www\./, '')}${url.pathname.replace(/\/+$/, '')}`.toLowerCase();
+  } catch {
+    return raw.trim().toLowerCase();
+  }
 }
 
 function contractFile(productKey: string): string {
@@ -231,19 +245,36 @@ function contractFile(productKey: string): string {
 }
 
 /** Enregistre ce que le serveur a RÉELLEMENT établi lors de la préparation de la fiche. */
-export function recordVariantContract(productKey: string, contract: Omit<VariantContract, 'at'>): void {
+export function recordVariantContract(productKey: string, contract: Omit<VariantContract, 'at'>, checkedAt?: string | number | null): void {
   try {
+    const parsedAt = typeof checkedAt === 'number' ? checkedAt : typeof checkedAt === 'string' ? Date.parse(checkedAt) : NaN;
+    const at = Number.isFinite(parsedAt) && parsedAt > 0 ? parsedAt : Date.now();
     fs.mkdirSync(cacheDir(), { recursive: true });
-    fs.writeFileSync(contractFile(productKey), JSON.stringify({ ...contract, at: Date.now() } satisfies VariantContract));
+    fs.writeFileSync(contractFile(variantContractKey(productKey)), JSON.stringify({ ...contract, at } satisfies VariantContract));
   } catch { /* best-effort */ }
 }
 
 export function readVariantContract(productKey: string): VariantContract | null {
   try {
-    const contract = JSON.parse(fs.readFileSync(contractFile(productKey), 'utf8')) as VariantContract;
-    if (!contract || !Array.isArray(contract.variants)) return null;
+    const contract = JSON.parse(fs.readFileSync(contractFile(variantContractKey(productKey)), 'utf8')) as VariantContract;
+    if (!contract || !Array.isArray(contract.variants) || !['available', 'unavailable', 'unknown'].includes(contract.productAvailability)) return null;
     if (Date.now() - contract.at > ttlMs()) return null;
     return contract;
+  } catch {
+    return null;
+  }
+}
+
+function expiredContractMeta(productKey: string): { checkedAt: string | null; source: string | null } | null {
+  try {
+    const raw = JSON.parse(fs.readFileSync(contractFile(variantContractKey(productKey)), 'utf8')) as Partial<VariantContract>;
+    if (typeof raw.at !== 'number' || Date.now() - raw.at <= ttlMs()) return null;
+    return {
+      // A legacy profile without a source timestamp must not acquire a fabricated
+      // "checked at" date merely because its contract was written now.
+      checkedAt: raw.at > Date.UTC(2000, 0, 1) ? new Date(raw.at).toISOString() : null,
+      source: typeof raw.source === 'string' ? raw.source : null,
+    };
   } catch {
     return null;
   }
@@ -255,45 +286,63 @@ export interface OrderGuardVerdict {
   allowed: boolean;
   code: OrderGuardCode;
   message: string;
+  availability: Availability;
+  checkedAt: string | null;
+  source: string | null;
 }
 
 const normalize = (value: string): string => value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
 
-/**
- * PORTE DE COMMANDE CÔTÉ SERVEUR.
- *
- * Elle ne s'applique QUE lorsque le serveur a établi un contrat pour ce produit :
- * sans contrat, le parcours historique (demande manuelle au prix général) continue
- * exactement comme avant — aucune régression. Mais dès que le serveur SAIT qu'une
- * variante est indisponible ou non confirmée, la commande est refusée, quoi que
- * le client envoie.
- */
-export function guardVariantOrder(productKey: string, requestedValue: string | null | undefined): OrderGuardVerdict {
+/** One conservative decision shared by product add, cart status and final checkout. */
+export function inspectVariantOrder(productKey: string, requestedValue?: string | null, requestedColor?: string | null): OrderGuardVerdict {
   const contract = readVariantContract(productKey);
-  if (!contract || !contract.variants.length) {
-    return { allowed: true, code: 'NO_CONTRACT', message: 'Aucun contrat de variante établi pour ce produit.' };
+  const expired = contract ? null : expiredContractMeta(productKey);
+  const checkedAt = contract ? new Date(contract.at).toISOString() : expired?.checkedAt || null;
+  const source = contract?.source || expired?.source || null;
+  const result = (allowed: boolean, code: OrderGuardCode, message: string, availability: Availability): OrderGuardVerdict => ({
+    allowed, code, message, availability, checkedAt, source,
+  });
+  if (!contract) return expired
+    ? result(false, 'VARIANT_AVAILABILITY_UNKNOWN', 'La vérification de disponibilité a expiré ; il faut relire la source.', 'unknown')
+    : result(false, 'NO_CONTRACT', 'La disponibilité n’a pas été confirmée à la source.', 'unknown');
+  if (contract.productAvailability === 'unavailable') {
+    return result(false, 'VARIANT_UNAVAILABLE', 'Le produit est signalé indisponible par le marchand.', 'unavailable');
   }
+
   const wanted = normalize(String(requestedValue || ''));
-  if (!wanted) {
-    return { allowed: true, code: 'NO_CONTRACT', message: 'Aucune variante demandée.' };
+  const color = normalize(String(requestedColor || ''));
+  if (contract.variants.length && !wanted && !color) {
+    return result(false, 'VARIANT_NOT_FOUND', `Choisissez une option publiée par le marchand (${contract.attribute}).`, 'unknown');
   }
-  const match = contract.variants.find((variant) => normalize(variant.value) === wanted);
-  if (!match) {
-    return {
-      allowed: false, code: 'VARIANT_NOT_FOUND',
-      message: `« ${requestedValue} » ne fait pas partie des ${contract.attribute.toLowerCase()}s publiées par le marchand.`,
-    };
+  if (wanted || color) {
+    let matches = contract.variants.filter((variant) =>
+      (!wanted || normalize(variant.value) === wanted)
+      && (!color || (variant.color && normalize(variant.color) === color)),
+    );
+    if (!matches.length) return result(false, 'VARIANT_NOT_FOUND', 'Cette option ne fait pas partie des choix publiés par le marchand.', 'unknown');
+    const states = new Set(matches.map((variant) => variant.availability));
+    const state: Availability = states.size === 1 ? matches[0].availability : 'unknown';
+    if (state === 'unavailable') return result(false, 'VARIANT_UNAVAILABLE', 'Cette option est signalée indisponible par le marchand.', state);
+    if (state === 'unknown') return result(false, 'VARIANT_AVAILABILITY_UNKNOWN', 'Le stock de cette option n’est pas confirmé par le marchand.', state);
+    if (contract.productAvailability === 'unknown') {
+      // A positive variant is stronger than a silent product-level field.
+      return result(true, 'ALLOWED', 'Variante confirmée disponible par la source.', 'available');
+    }
+    return result(true, 'ALLOWED', 'Variante confirmée disponible par la source.', 'available');
   }
-  if (match.availability === 'unavailable') {
-    return { allowed: false, code: 'VARIANT_UNAVAILABLE', message: `${contract.attribute} « ${match.value} » est indisponible chez le marchand.` };
+
+  if (contract.productAvailability === 'available') {
+    return result(true, 'ALLOWED', 'Produit signalé disponible par le marchand.', 'available');
   }
-  if (match.availability === 'unknown') {
-    return {
-      allowed: false, code: 'VARIANT_AVAILABILITY_UNKNOWN',
-      message: `Le stock de ${contract.attribute.toLowerCase()} « ${match.value} » n'est pas confirmé par le marchand : la commande est bloquée.`,
-    };
-  }
-  return { allowed: true, code: 'ALLOWED', message: 'Variante confirmée disponible.' };
+  return result(false, 'VARIANT_AVAILABILITY_UNKNOWN', 'La disponibilité n’est pas confirmée par le marchand.', 'unknown');
+}
+
+export function guardVariantOrder(productKey: string, requestedValue?: string | null, requestedColor?: string | null): OrderGuardVerdict {
+  const verdict = inspectVariantOrder(productKey, requestedValue, requestedColor);
+  // Keep the historical manual-review path for products with no source contract.
+  // This is NOT a positive stock assertion: GET /cart reports `unknown`, the
+  // customer UI blocks checkout, and any known unknown/unavailable contract is refused.
+  return verdict.code === 'NO_CONTRACT' ? { ...verdict, allowed: true } : verdict;
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -313,7 +362,7 @@ export async function prepareVariantCard(
   const { card } = buildProductCard(payload);
   const primary = card.attributes.find((attribute) => attribute.role === 'primary');
   if (!primary) {
-    recordVariantContract(productKey, { attribute: '', variants: [] });
+    recordVariantContract(productKey, { attribute: '', productAvailability: 'unknown', source: null, variants: [] });
     return { card, resolved: [] };
   }
 
@@ -339,6 +388,8 @@ export async function prepareVariantCard(
 
   recordVariantContract(productKey, {
     attribute: primary.label,
+    productAvailability: card.availability,
+    source: null,
     variants: primary.variants.map((variant) => ({ value: variant.value, availability: variant.availability, reason: variant.availabilityReason })),
   });
   return { card, resolved };

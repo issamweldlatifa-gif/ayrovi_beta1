@@ -1,4 +1,5 @@
 import { isSelectableVariant, reportedVariantStock } from '../../../shared/variantPolicy';
+import { recordVariantContract } from './variantAvailability';
 import type { QatafoDatabase } from '../../db/database';
 import { enrichProduct } from './productEnrichment';
 import { createHash } from 'node:crypto';
@@ -73,6 +74,8 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
     sizes: scraped.variants?.sizes || [],
     variantOptions,
     availability: scraped.availability || 'unknown',
+    availabilityCheckedAt: scraped.scrapedAt || new Date().toISOString(),
+    availabilityExpiresAt: null,
     priceVerified: Boolean(scraped.priceVerified),
     priceVerificationStatus: scraped.priceVerified ? 'VERIFIED' : 'PENDING_MANUAL',
     verificationProvider: scraped.verificationProvider || 'none',
@@ -112,6 +115,44 @@ async function enrichSparseProduct(product: AyrovixProduct, url: string): Promis
     ];
   }
   if (!product.description && extra.description) product.description = extra.description;
+}
+
+function recordProductAvailability(product: AyrovixProduct, checkedAt?: string | null): void {
+  const rawState = product.availability;
+  const productAvailability = rawState === 'in_stock' || rawState === 'limited' ? 'available'
+    : rawState === 'out_of_stock' ? 'unavailable' : 'unknown';
+  const grouped = new Map<string, { value: string; color: string | null; states: Set<'available' | 'unavailable' | 'unknown'> }>();
+  for (const option of product.variantOptions || []) {
+    if (!isSelectableVariant(option)) continue;
+    const value = String(option.size || option.label || '').trim();
+    if (!value) continue;
+    const color = String(option.color || '').trim() || null;
+    const key = `${value.normalize('NFKC').toLowerCase()}|${(color || '').normalize('NFKC').toLowerCase()}`;
+    const availability = option.availability === 'available' || option.availability === 'unavailable' ? option.availability : 'unknown';
+    const current = grouped.get(key) || { value, color, states: new Set<'available' | 'unavailable' | 'unknown'>() };
+    current.states.add(availability);
+    grouped.set(key, current);
+  }
+  const checkedMs = Date.parse(checkedAt || product.availabilityCheckedAt || '');
+  const configuredTtl = Number(process.env.AYROVI_VARIANT_TTL_MS);
+  const ttl = Number.isFinite(configuredTtl) && configuredTtl > 0 ? configuredTtl : 6 * 60 * 60 * 1000;
+  product.availabilityExpiresAt = Number.isFinite(checkedMs) && checkedMs > 0 ? new Date(checkedMs + ttl).toISOString() : null;
+  recordVariantContract(product.sourceUrl, {
+    attribute: product.optionLabel || 'option',
+    productAvailability,
+    source: product.source || null,
+    variants: [...grouped.values()].map((entry) => {
+      const availability = entry.states.size === 1 ? [...entry.states][0] : 'unknown';
+      return {
+        value: entry.value,
+        color: entry.color,
+        availability,
+        reason: availability === 'available' ? 'Disponibilité positive publiée par la source.'
+          : availability === 'unavailable' ? 'Indisponibilité publiée par la source.'
+            : 'Aucune disponibilité par variante publiée par la source.',
+      };
+    }),
+  }, Number.isFinite(checkedMs) && checkedMs > 0 ? checkedMs : 1);
 }
 
 function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
@@ -160,6 +201,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
       const product = JSON.parse(cached.payload) as AyrovixProduct;
       if (product?.title) {
         await enrichSparseProduct(product, url);
+        recordProductAvailability(product, product.availabilityCheckedAt);
         try {
           db.run('UPDATE product_profiles SET payload=?,images_count=?,has_description=? WHERE url_hash=?', JSON.stringify(product), product.images.length, (product.description || '').trim().length >= 40 ? 1 : 0, urlHash);
         } catch { /* a stale profile remains usable for this response */ }
@@ -177,6 +219,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     if (scraped?.title) {
       const product = toAyrovixProduct(db, scraped);
       await enrichSparseProduct(product, url);
+      recordProductAvailability(product, product.availabilityCheckedAt);
       try {
         db.run(`INSERT INTO product_profiles (id,url_hash,url,payload,images_count,has_description,fetched_at)
           VALUES (?,?,?,?,?,?,?)

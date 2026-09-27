@@ -71,7 +71,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
         </div>
       </nav>
 
-      <div style={{ flex: 1 }} role="radiogroup" aria-label={tr('Moyens de paiement', 'وسائل الدفع')}>
+      <div className="s-payment-options" role="radiogroup" aria-label={tr('Moyens de paiement', 'وسائل الدفع')}>
         {methods.map((method) => (
           <button
             key={method.id}
@@ -80,13 +80,10 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
             aria-checked={selected === method.id}
             aria-disabled={!method.available}
             onClick={() => method.available && onSelect(method.id)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 64,
-              padding: '14px 16px', borderBottom: '1px solid var(--s-line)', textAlign: 'start',
-              opacity: method.available ? 1 : 0.55,
-            }}
+            className="s-payment-option"
+            style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', minHeight: 64, padding: '14px 16px', borderBottom: '1px solid var(--s-line)', textAlign: 'start', opacity: method.available ? 1 : 0.55 }}
           >
-            <span style={{ flex: '0 0 56px', height: 34, display: 'grid', placeItems: 'center', border: '1px solid var(--s-line)' }}>
+            <span className="s-payment-option__mark" style={{ flex: '0 0 56px', height: 34, display: 'grid', placeItems: 'center', border: '1px solid var(--s-line)' }}>
               {method.mark.kind === 'image'
                 ? <img src={method.mark.src} alt="" style={{ maxHeight: 20, maxWidth: 48, objectFit: 'contain' }} />
                 : method.mark.kind === 'word'
@@ -94,36 +91,29 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
                   : <EditorialIcon name="Bank" size={20} />}
             </span>
 
-            <span style={{ flex: 1, minWidth: 0 }}>
+            <span className="s-payment-option__copy" style={{ flex: 1, minWidth: 0 }}>
               <b style={{ display: 'block', fontSize: '0.90625rem' }}>{method.label}</b>
               <small style={{ display: 'block', fontSize: '0.78125rem', color: 'var(--s-muted)' }}>
                 {method.available ? method.hint : method.blocked}
               </small>
             </span>
 
-            <span style={{
-              width: 20, height: 20, borderRadius: 999, flex: 'none', position: 'relative',
-              border: `1.5px solid ${selected === method.id ? 'var(--s-ink)' : 'var(--s-line)'}`,
-            }}>
-              {selected === method.id && (
-                <span style={{ position: 'absolute', inset: 3, borderRadius: 999, background: 'var(--s-ink)' }} />
-              )}
+            <span className="s-payment-option__radio" data-selected={selected === method.id || undefined} style={{ width: 20, height: 20, borderRadius: 999, flex: 'none', position: 'relative', border: `1.5px solid ${selected === method.id ? 'var(--s-ink)' : 'var(--s-line)'}` }}>
+              {selected === method.id && <span style={{ position: 'absolute', inset: 3, borderRadius: 999, background: 'var(--s-ink)' }} />}
             </span>
           </button>
         ))}
 
         {networks.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, padding: 16 }} aria-label={tr('Réseaux acceptés', 'الشبكات المقبولة')}>
+          <div className="s-card-networks" style={{ display: 'flex', gap: 8, padding: 16 }} aria-label={tr('Réseaux de carte affichés; leur acceptation dépend de la passerelle active', 'شبكات البطاقات؛ قبولها مرتبط بتفعيل بوابة الدفع')}>
             {networks.map((network) => (
-              <span key={network.id} style={{ display: 'grid', placeItems: 'center', minWidth: 46, height: 30, padding: '0 8px', border: '1px solid var(--s-line)' }}>
-                <img src={network.src} alt={network.label} style={{ maxHeight: 16, maxWidth: 40, objectFit: 'contain' }} />
-              </span>
+              <span key={network.id} className="s-card-network" style={{ display: 'grid', placeItems: 'center', minWidth: 46, height: 30, padding: '0 8px', border: '1px solid var(--s-line)' }}><img src={network.src} alt={network.label} loading="lazy" style={{ maxHeight: 16, maxWidth: 40, objectFit: 'contain' }} /></span>
             ))}
           </div>
         )}
 
         {!anyAvailable && (
-          <p className="s-refusal" style={{ margin: 16 }}>
+          <p className="s-refusal s-payment-empty" style={{ margin: 16 }}>
             {tr("Aucun moyen n'est encaissable pour l'instant : la commande peut être créée, le paiement restera en attente.",
                 'ما فماش وسيلة تخلّص توّا: الطلب ينجّم يتعمل والخلاص يبقى في الانتظار.')}
           </p>
@@ -131,7 +121,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
       </div>
 
       <div className="s-buybar">
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.0625rem', marginBottom: 8 }}>
+        <div className="s-payment-total" style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.0625rem', marginBottom: 8 }}>
           <span>{tr('Total', 'المجموع')}</span><span>{formatMoney(totalTnd)}</span>
         </div>
         <div className="s-trust-banner">

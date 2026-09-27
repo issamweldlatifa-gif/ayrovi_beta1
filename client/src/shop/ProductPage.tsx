@@ -49,8 +49,21 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   // the full ProductView intact; this screen shows the merchant's primary four.
   const media = product.media.slice(0, 4);
   const slides = media.length;
-  const availabilityKnown = product.availabilityKnown;
   const sizeMissing = product.sizes.length > 0 && !chosen;
+  const colorMissing = product.colors.length > 1 && !product.colors.some((color) => color.selected);
+  const checkedMs = product.availabilityCheckedAt ? Date.parse(product.availabilityCheckedAt) : NaN;
+  const expiryMs = product.availabilityExpiresAt ? Date.parse(product.availabilityExpiresAt) : NaN;
+  const availabilityFresh = Number.isFinite(checkedMs) && Date.now() >= checkedMs - 5 * 60_000
+    && (Number.isFinite(expiryMs) ? Date.now() < expiryMs : Date.now() - checkedMs <= 6 * 60 * 60_000);
+  const currentProductAvailability = availabilityFresh ? product.availability : 'unknown';
+  const currentSizes = product.sizes.map((size) => ({ ...size, state: availabilityFresh || size.state !== 'available' ? size.state : 'unknown' as const }));
+  const purchaseAvailability = colorMissing ? 'unknown' : chosen
+    ? (currentProductAvailability === 'unavailable' ? 'unavailable' : currentSizes.find((size) => size.value === chosen.value)?.state || 'unknown')
+    : product.sizes.length > 0 ? 'unknown' : currentProductAvailability;
+  const availabilityBlocked = purchaseAvailability !== 'available';
+  const checkedAt = product.availabilityCheckedAt && Number.isFinite(Date.parse(product.availabilityCheckedAt))
+    ? new Date(product.availabilityCheckedAt).toLocaleString(direction === 'rtl' ? 'ar-TN' : 'fr-TN', { dateStyle: 'short', timeStyle: 'short' })
+    : null;
   const go = (next: number) => {
     if (!slides) return;
     setSlide(((next % slides) + slides) % slides);
@@ -64,7 +77,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   ) : null;
 
   const pickSize = (size: SizeOption) => {
-    const reason = refusalReason(size, availabilityKnown);
+    const reason = availabilityFresh ? refusalReason(size) : size?.state === 'available' ? 'unknown' : refusalReason(size);
     if (reason) {
       setRefusal(reason);
       setChosen(null);
@@ -242,15 +255,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             </>
           )}
 
-          {product.sizes.length > 0 && (
-            <div className="s-stock" aria-label={tr('Disponibilité des options', 'توفّر الخيارات')}>
-              <span>{optionLabel}</span>
-              <span>{product.sizes.filter((size) => size.state === 'available').length
-                ? tr('Disponibilité signalée par la source', 'المصدر يذكر توفّر خيارات')
-                : tr('Stock non confirmé par la source', 'المصدر ما أكّدش المخزون')}</span>
-            </div>
-          )}
-
           <details className="s-details">
             <summary>{tr('Lien et note (facultatif)', 'الرابط والملاحظة (اختياري)')}</summary>
             <label><span>{tr('Lien du produit chez le marchand', 'رابط المنتج عند التاجر')}</span><input value={link} onChange={(event) => setLink(event.target.value)} inputMode="url" placeholder="https://" aria-invalid={link.trim().length > 0 && !/^https?:\/\/\S+$/i.test(link.trim())} /></label>
@@ -259,6 +263,14 @@ export const ProductPage: React.FC<ProductPageProps> = ({
         </section>
 
         <section className="s-buybar s-buybar--product" aria-label={tr('Choix et achat', 'الاختيار والشراء')}>
+          <div className="s-availability" data-state={purchaseAvailability} role="status" aria-live="polite">
+            <strong>{purchaseAvailability === 'available'
+              ? tr('Disponibilité confirmée par la source', 'المصدر أكّد التوفّر')
+              : purchaseAvailability === 'unavailable'
+                ? tr('Rupture signalée par la source', 'المصدر أفاد بنفاد المخزون')
+                : tr(availabilityFresh ? 'Disponibilité à confirmer — la source ne publie pas ce stock' : 'Vérification source expirée ou absente — réanalysez la fiche', availabilityFresh ? 'التوفّر غير مؤكّد — المصدر ما نشرش حالة المخزون' : 'تثبّت المصدر منتهي أو غير موجود — أعد تحليل الصفحة')}</strong>
+            <small>{[product.availabilitySource ? `${tr('Source', 'المصدر')} : ${product.availabilitySource}` : '', checkedAt ? `${availabilityFresh ? tr('Vérifié', 'آخر تثبّت') : tr('Dernière vérification', 'آخر تثبّت')} : ${checkedAt}` : ''].filter(Boolean).join(' · ') || tr('Aucune date de vérification disponible', 'تاريخ التثبّت غير متوفر')}</small>
+          </div>
           {product.sizes.length > 0 && <span className="s-select__label">{optionLabel}</span>}
           {product.sizes.length > 0 && (
             <button type="button" className="s-select" data-error={shake || undefined} onClick={() => setDrapeOpen(true)} aria-expanded={drapeOpen}>
@@ -271,7 +283,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <span aria-live="polite">{quantity}</span>
             <button type="button" className="s-iconbtn" aria-label={tr('Augmenter la quantité', 'زيد الكمية')} onClick={() => setQuantity((value) => Math.min(99, value + 1))}><EditorialIcon name="Plus" size={18} /></button>
           </div>
-          <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || !canAdd || !actions?.onAddToBag}>
+          <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || colorMissing || availabilityBlocked || !canAdd || !actions?.onAddToBag}>
             {added ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</> : adding ? tr('Ajout…', 'جارٍ الإضافة…') : tr('Ajouter au panier', 'أضف إلى السلة')}
           </button>
           {onCalculateAnother && <button type="button" className="s-cta s-cta--ghost" onClick={onCalculateAnother}>{tr('Calculer un autre article', 'احسب منتجًا آخر')}</button>}
@@ -284,7 +296,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
           <img src={media[slide].src} alt={media[slide].alt} />
         </div>
       )}
-      <SizeDrape open={drapeOpen} sizes={product.sizes} title={sizeListTitle} availabilityKnown={availabilityKnown} selected={chosen?.value ?? null} scaleLabel={product.sizeScaleLabel} tr={tr} onClose={() => setDrapeOpen(false)} onSelect={pickSize} />
+      <SizeDrape open={drapeOpen} sizes={currentSizes} title={sizeListTitle} selected={chosen?.value ?? null} scaleLabel={product.sizeScaleLabel} tr={tr} onClose={() => setDrapeOpen(false)} onSelect={pickSize} />
     </div>
   );
 };

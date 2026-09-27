@@ -12486,8 +12486,8 @@
     {
       "file": "client/src/ayrovix/types.ts",
       "domain": "lens",
-      "sha256": "0721b0bda19e44f3239be48086304723616fbce31976291c35aa667b3b85c088",
-      "lines": 243,
+      "sha256": "680194908c4295d14e415e3e15fe67b457342b03a1fed686e93939c9c7390333",
+      "lines": 247,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19164,8 +19164,8 @@
     {
       "file": "client/src/shop/adapter.ts",
       "domain": "shell-content",
-      "sha256": "1fd5afa2e74db049908e8c6475e6dd4a384a73bf901dc9bea66e8eae7c5e0386",
-      "lines": 160,
+      "sha256": "b5e570999054bfd4f8498baf2792e427681f6b3746c314c1293a06749e72ff86",
+      "lines": 165,
       "imports": [
         "../ayrovix/types",
         "../ayrovix/services/mediaIsolation",
@@ -19326,8 +19326,8 @@
     {
       "file": "client/src/shop/BagPage.tsx",
       "domain": "shell-content",
-      "sha256": "7ca949f50ff73d13e7963938cb1045766386904a32f907b68e059d3bbb43be68",
-      "lines": 206,
+      "sha256": "dc646d84d00de82cbc3e061480434d80995d5f4086c5733da36b9ed1ef1c13db",
+      "lines": 185,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -19339,7 +19339,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 66,
+          "line": 68,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19349,7 +19349,7 @@
         },
         {
           "tag": "button",
-          "line": 78,
+          "line": 79,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -19359,28 +19359,28 @@
         },
         {
           "tag": "button",
-          "line": 116,
+          "line": 120,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Diminuer', 'إنقاص')}",
+          "ariaLabel": "{tr('Diminuer la quantité', 'إنقاص الكمية')}",
           "onClick": "{() => onChangeQuantity?.(line.id, line.quantity - 1)}",
           "disabled": "{line.quantity <= 1}"
         },
         {
           "tag": "button",
-          "line": 122,
+          "line": 124,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{tr('Augmenter', 'زيادة')}",
+          "ariaLabel": "{tr('Augmenter la quantité', 'زيادة الكمية')}",
           "onClick": "{() => onChangeQuantity?.(line.id, line.quantity + 1)}",
           "disabled": null
         },
         {
           "tag": "button",
-          "line": 127,
-          "className": "\"s-iconbtn\"",
+          "line": 128,
+          "className": "\"s-iconbtn s-bag-line__remove\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Supprimer', 'حذف')}",
@@ -19389,7 +19389,7 @@
         },
         {
           "tag": "button",
-          "line": 159,
+          "line": 147,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -19399,7 +19399,7 @@
         },
         {
           "tag": "summary",
-          "line": 167,
+          "line": 151,
           "className": null,
           "type": null,
           "role": null,
@@ -19409,8 +19409,8 @@
         },
         {
           "tag": "button",
-          "line": 174,
-          "className": "\"s-cta\"",
+          "line": 159,
+          "className": "\"s-cta s-bag-checkout\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
@@ -19483,8 +19483,8 @@
     {
       "file": "client/src/shop/PaymentPage.tsx",
       "domain": "shell-content",
-      "sha256": "7027173b6fd9ee3a2e24549cbf19769d55a9921fd58f22b60f9a1b5a0c2d0235",
-      "lines": 148,
+      "sha256": "aa79fa05a06302fe26ef340b452099c60ae23f542dc74ac81fd342e0a2dba0e8",
+      "lines": 138,
       "imports": [
         "react",
         "../design/editorial/Icon"
@@ -19506,7 +19506,7 @@
         {
           "tag": "button",
           "line": 76,
-          "className": null,
+          "className": "\"s-payment-option\"",
           "type": "\"button\"",
           "role": "\"radio\"",
           "ariaLabel": null,
@@ -19515,7 +19515,7 @@
         },
         {
           "tag": "button",
-          "line": 141,
+          "line": 131,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -19574,8 +19574,8 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "3da14042d934e0a5949a8613e97ea8fa1972878514ac97eb302369dcb8ab9a39",
-      "lines": 291,
+      "sha256": "854bdaead9f8564b3248dcc6bb55020c165c636aa3e0de760236aa5c401d0589",
+      "lines": 303,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -19588,7 +19588,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 60,
+          "line": 73,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19598,7 +19598,7 @@
         },
         {
           "tag": "button",
-          "line": 61,
+          "line": 74,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19608,7 +19608,7 @@
         },
         {
           "tag": "button",
-          "line": 62,
+          "line": 75,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19618,7 +19618,7 @@
         },
         {
           "tag": "button",
-          "line": 126,
+          "line": 139,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19628,7 +19628,7 @@
         },
         {
           "tag": "button",
-          "line": 134,
+          "line": 147,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19638,7 +19638,7 @@
         },
         {
           "tag": "button",
-          "line": 164,
+          "line": 177,
           "className": "\"s-media__open\"",
           "type": "\"button\"",
           "role": null,
@@ -19648,7 +19648,7 @@
         },
         {
           "tag": "button",
-          "line": 194,
+          "line": 207,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -19658,7 +19658,7 @@
         },
         {
           "tag": "button",
-          "line": 204,
+          "line": 217,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19668,7 +19668,7 @@
         },
         {
           "tag": "button",
-          "line": 205,
+          "line": 218,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19678,7 +19678,7 @@
         },
         {
           "tag": "button",
-          "line": 208,
+          "line": 221,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -19688,7 +19688,7 @@
         },
         {
           "tag": "button",
-          "line": 218,
+          "line": 231,
           "className": "\"s-swatch\"",
           "type": "\"button\"",
           "role": null,
@@ -19698,7 +19698,7 @@
         },
         {
           "tag": "summary",
-          "line": 255,
+          "line": 259,
           "className": null,
           "type": null,
           "role": null,
@@ -19708,7 +19708,7 @@
         },
         {
           "tag": "input",
-          "line": 256,
+          "line": 260,
           "className": null,
           "type": null,
           "role": null,
@@ -19718,7 +19718,7 @@
         },
         {
           "tag": "input",
-          "line": 257,
+          "line": 261,
           "className": null,
           "type": null,
           "role": null,
@@ -19728,7 +19728,7 @@
         },
         {
           "tag": "button",
-          "line": 264,
+          "line": 276,
           "className": "\"s-select\"",
           "type": "\"button\"",
           "role": null,
@@ -19738,7 +19738,7 @@
         },
         {
           "tag": "button",
-          "line": 270,
+          "line": 282,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19748,7 +19748,7 @@
         },
         {
           "tag": "button",
-          "line": 272,
+          "line": 284,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19758,17 +19758,17 @@
         },
         {
           "tag": "button",
-          "line": 274,
+          "line": 286,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{add}",
-          "disabled": "{adding || sizeMissing || !canAdd || !actions?.onAddToBag}"
+          "disabled": "{adding || sizeMissing || colorMissing || availabilityBlocked || !canAdd || !actions?.onAddToBag}"
         },
         {
           "tag": "button",
-          "line": 277,
+          "line": 289,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -19778,7 +19778,7 @@
         },
         {
           "tag": "button",
-          "line": 283,
+          "line": 295,
           "className": "\"s-zoom__close s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19799,8 +19799,8 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "7569f76799ff8b2cd2746dc31fb7031088146409045f8bc2d3fd4928614d091c",
-      "lines": 548,
+      "sha256": "400934b20e7e999ddf1d393023ced587952026b1f7de54c6bcaef484777c2879",
+      "lines": 692,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19824,8 +19824,8 @@
     {
       "file": "client/src/shop/ShopBagScreen.tsx",
       "domain": "shell-content",
-      "sha256": "e9a94d7ab1a0b5eda11e6d66f301fe4fd2a2eeb08f73f8b48244667fd1d89f6f",
-      "lines": 136,
+      "sha256": "4cf9fe676dd1b2d0c94927f9b65468dc5d48b4eea232f4d0f629a1fbb7e7b1f5",
+      "lines": 138,
       "imports": [
         "react",
         "../i18n/LocaleContext",
@@ -19843,7 +19843,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 113,
+          "line": 115,
           "className": "\"s-drape__backdrop\"",
           "type": "\"button\"",
           "role": null,
@@ -19861,8 +19861,8 @@
     {
       "file": "client/src/shop/ShopCheckoutScreen.tsx",
       "domain": "commerce",
-      "sha256": "67c838869873fcd92e16c647758f9cfad20dc4bc96c2287435b4e6085db82cfb",
-      "lines": 261,
+      "sha256": "47c22d8db3af3012f1299e94ad1c59520ea140df316c14e4feb27150339431bf",
+      "lines": 259,
       "imports": [
         "react",
         "../i18n/LocaleContext",
@@ -19891,8 +19891,8 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "5b9315405d5ca0120b809e43238ea757012d6df85bcdc91210bdf0e6abe72a95",
-      "lines": 169,
+      "sha256": "694320a50eccbc3d78ab5a37c6236c64b92a5e6126d88e0c181abdff96ab5597",
+      "lines": 173,
       "imports": [
         "react",
         "../i18n/LocaleContext",
@@ -19916,8 +19916,8 @@
     {
       "file": "client/src/shop/SizeDrape.tsx",
       "domain": "shell-content",
-      "sha256": "a4237fad036b86d9cc3bb1d64d0a5bee6da9912485201b5c6632a96fb4bc50d8",
-      "lines": 131,
+      "sha256": "f948d66bcabdd4e351344817861ee6d8b766a99818625e421cad07cd6b50495e",
+      "lines": 130,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -19929,7 +19929,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 55,
+          "line": 53,
           "className": "\"s-drape__backdrop\"",
           "type": "\"button\"",
           "role": null,
@@ -19939,7 +19939,7 @@
         },
         {
           "tag": "button",
-          "line": 62,
+          "line": 60,
           "className": null,
           "type": "\"button\"",
           "role": "\"tab\"",
@@ -19949,7 +19949,7 @@
         },
         {
           "tag": "button",
-          "line": 65,
+          "line": 63,
           "className": null,
           "type": "\"button\"",
           "role": "\"tab\"",
@@ -19959,13 +19959,13 @@
         },
         {
           "tag": "button",
-          "line": 82,
+          "line": 80,
           "className": "\"s-size\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{() => onSelect(size)}",
-          "disabled": null
+          "disabled": "{size.state !== 'available'}"
         }
       ],
       "icons": [],
@@ -19977,8 +19977,8 @@
     {
       "file": "client/src/shop/types.ts",
       "domain": "shell-content",
-      "sha256": "45139a7148fb2902e66d8db29a555e9c19b568a438e99291bdcc6c02266b16d2",
-      "lines": 156,
+      "sha256": "4be32deb9b50efe0ed90949cbf1eae49501f07c2052315e36051e8ae564a1d39",
+      "lines": 140,
       "imports": [],
       "exports": [
         "isOrderable",
@@ -20870,8 +20870,8 @@
     {
       "file": "client/src/types.ts",
       "domain": "shell-content",
-      "sha256": "5531c8d950f846b73d70cbecceb96daeeedfea1d464aa40aa7a4726bce36c5d7",
-      "lines": 398,
+      "sha256": "6d65a59a68b5871aae226dea60a8f12e26ac9416cf13207a575d0c6488feebc4",
+      "lines": 403,
       "imports": [],
       "exports": [],
       "controls": [],

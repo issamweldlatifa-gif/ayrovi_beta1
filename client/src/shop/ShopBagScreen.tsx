@@ -38,10 +38,9 @@ export interface ShopBagScreenProps {
 }
 
 function stockOf(item: CartItem): StockState {
-  const raw = (item as unknown as { availability?: string }).availability;
-  if (raw === 'out_of_stock' || raw === 'unavailable') return 'unavailable';
-  if (raw === 'in_stock' || raw === 'available') return 'available';
-  // Le panier ne devine pas : sans information, la ligne n'est ni bloquée ni promue.
+  const raw = item.availability;
+  if (raw === 'unavailable') return 'unavailable';
+  if (raw === 'available') return 'available';
   return 'unknown';
 }
 
@@ -93,6 +92,9 @@ export const ShopBagScreen: React.FC<ShopBagScreenProps> = ({
       lineTotalTnd: item.lineTotalTND ?? item.priceTND * item.quantity,
       referenceTotalTnd: item.originalLineTotalTND ?? null,
       stock: stockOf(item),
+      availabilitySource: item.availabilitySource || null,
+      availabilityCheckedAt: item.availabilityCheckedAt || null,
+      availabilityReason: item.availabilityReason || null,
     };
   });
 
@@ -104,7 +106,7 @@ export const ShopBagScreen: React.FC<ShopBagScreenProps> = ({
            officiel plutôt qu'une phrase : une bande de paiement se lit d'un
            coup d'œil, elle ne se lit pas mot à mot. */
         glyph: method.mark.kind === 'image' ? undefined : method.glyph,
-        label: tr(method.label, method.labelAr),
+        label: method.id === 'COD' ? tr('À la livraison', 'عند الاستلام') : tr(method.label, method.labelAr),
       }))
     : [];
 

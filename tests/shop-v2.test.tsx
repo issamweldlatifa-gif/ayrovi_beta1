@@ -19,7 +19,8 @@ const view = (over: Partial<ProductView> = {}): ProductView => ({
   media: [{ src: '/a.png', fallbacks: [], alt: 'a' }],
   price: { current: { tnd: 118.9, source: { amount: 35.95, currency: 'EUR' } }, reference: { tnd: 132.1 }, discountPercent: 10, verifiedAtSource: true },
   sizes: [size({ value: 'S', state: 'unknown' }), size({ value: 'M', remaining: 2 }), size({ value: 'XL', state: 'unavailable' })],
-  sizeScaleLabel: 'EU', sizeKind: 'clothing', optionLabel: 'Taille', capacity: null, availabilityKnown: true,
+  sizeScaleLabel: 'EU', sizeKind: 'clothing', optionLabel: 'Taille', capacity: null,
+  availability: 'available', availabilitySource: 'Champion', availabilityCheckedAt: new Date().toISOString(), availabilityExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
   colors: [], flags: [{ kind: 'deal', label: 'Promo' }],
   merchant: { name: 'Champion', url: 'https://x.tn/p' }, ...over,
 });
@@ -98,7 +99,9 @@ describe('boutique v2 — rendu', () => {
     const html = renderToStaticMarkup(<ProductPage product={view()} tr={tr} formatMoney={money} />);
     expect(html).not.toContain('s-scrim');
     expect(html).toContain('s-buybar--product');
-    expect(html).toContain('Disponibilité signalée par la source');
+    expect(html).toContain('Disponibilité à confirmer');
+    expect(html).toContain('Source : Champion');
+    expect(html).toContain('disabled=""');
     expect(html).toContain('Votre taille');
   });
 
@@ -107,7 +110,7 @@ describe('boutique v2 — rendu', () => {
       <SizeDrape open sizes={view().sizes} selected={null} scaleLabel="EU" tr={tr} onClose={() => {}} onSelect={() => {}} />,
     );
     expect(html).toContain('2 disponibles');
-    expect(html).toContain('Stock non confirmé');
+    expect(html).toContain('Disponibilité à confirmer');
     // Sans service d'alerte fourni, aucun bouton « Prévenez-moi » n'est promis.
     expect(html).not.toContain('Prévenez-moi');
   });
@@ -120,7 +123,7 @@ describe('boutique v2 — rendu', () => {
       />,
     );
     expect(html).toContain('disabled');
-    expect(html).toContain('Stock non confirmé par la source.');
+    expect(html).toContain('Disponibilité à confirmer');
   });
 
   it('le paiement dit POURQUOI un moyen est bloqué', () => {
@@ -262,18 +265,19 @@ describe('boutique v2 — panier', () => {
     expect(app).not.toContain("import('./components/CartDrawer')");
   });
 
-  it('une rupture constatée bloque la commande, un stock inconnu ne la bloque pas', () => {
+  it('une rupture ou un stock inconnu bloque la commande jusqu’à confirmation', () => {
     const blocked = renderToStaticMarkup(
       <BagPage lines={[line({ stock: 'unavailable' })]} subtotalTnd={118.9} deliveryTnd={0} totalTnd={118.9}
         tr={tr} formatMoney={money} onCheckout={() => {}} />,
     );
-    expect(blocked).toContain('Retirez la ligne bloquée');
+    expect(blocked).toContain('Retirez-la ou vérifiez-la à la source');
     const unknown = renderToStaticMarkup(
       <BagPage lines={[line({ stock: 'unknown' })]} subtotalTnd={118.9} deliveryTnd={0} totalTnd={118.9}
         tr={tr} formatMoney={money} onCheckout={() => {}} />,
     );
-    expect(unknown).not.toContain('Retirez la ligne bloquée');
-    expect(unknown).toContain('Stock non confirmé par la source.');
+    expect(unknown).toContain('Retirez-la ou vérifiez-la à la source');
+    expect(unknown).toContain('Disponibilité à confirmer');
+    expect(unknown).toContain('disabled=""');
   });
 
   it('sans conditions serveur confirmées, la commande ne part pas', () => {

@@ -72,16 +72,11 @@ export interface ProductView {
   sizeKind: 'shoes' | 'clothing' | 'capacity' | 'storage' | 'generic' | 'none';
   /** Exact merchant-backed name for the option group, when known. */
   optionLabel: string | null;
-  /**
-   * Vrai quand la source publie RÉELLEMENT une disponibilité par variante.
-   *
-   * Sans cette distinction, deux situations très différentes se confondaient :
-   *   • la source suit ses stocks et ne confirme pas cette taille → on bloque ;
-   *   • la source ne publie AUCUNE disponibilité (simple liste de tailles) → on
-   *     ne peut pas bloquer, sinon plus rien n'est commandable nulle part.
-   * Le garde-fou serveur (`POST /api/cart`) reste l'autorité dans les deux cas.
-   */
-  availabilityKnown: boolean;
+  /** Merchant-reported product-level availability; unknown is never orderable. */
+  availability: StockState;
+  availabilitySource: string | null;
+  availabilityCheckedAt: string | null;
+  availabilityExpiresAt: string | null;
   /** Contenance lue sur la fiche (« 10 ml ») quand le produit en a une. */
   capacity: string | null;
   colors: { name: string; media: MediaView | null; selected: boolean }[];
@@ -110,28 +105,17 @@ export interface ProductActions {
 }
 
 /** Vrai si la taille peut être commandée. `unknown` n'est JAMAIS commandable. */
-export const isOrderable = (
-  size: SizeOption | null | undefined,
-  availabilityKnown = true,
-): boolean => {
-  if (!size) return false;
-  if (size.state === 'available') return true;
-  // Source muette sur les stocks : une taille listée reste commandable, et c'est
-  // le serveur qui refusera si besoin. Jamais l'inverse.
-  return !availabilityKnown && size.state === 'unknown';
-};
+export const isOrderable = (size: SizeOption | null | undefined): boolean =>
+  Boolean(size && size.state === 'available');
 
 /**
  * Raison FACTUELLE d'un refus. Retourne `null` quand il n'y a rien à refuser :
   * un message vide vaut mieux qu'un message inventé.
  */
-export function refusalReason(
-  size: SizeOption | null,
-  availabilityKnown = true,
-): 'unavailable' | 'unknown' | null {
+export function refusalReason(size: SizeOption | null): 'unavailable' | 'unknown' | null {
   if (!size) return null;
   if (size.state === 'unavailable') return 'unavailable';
-  if (size.state === 'unknown' && availabilityKnown) return 'unknown';
+  if (size.state === 'unknown') return 'unknown';
   return null;
 }
 

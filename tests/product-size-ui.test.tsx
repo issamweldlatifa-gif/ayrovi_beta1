@@ -42,6 +42,23 @@ describe('source-backed product options on the mobile detail page', () => {
     expect(dialog.textContent).not.toContain('Il en reste 2');
     expect(dialog.textContent).not.toContain('Taille marque');
     await act(async () => button('42').click());
+    expect(button('Ajouter au panier').disabled).toBe(true); // le marchand liste la pointure, pas son stock
+  });
+
+  it('enables a size only when the source-backed contract is fresh and names that exact variant', async () => {
+    const now = new Date().toISOString();
+    await render({
+      ...source,
+      availability: 'in_stock',
+      availabilityCheckedAt: now,
+      availabilityExpiresAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+      variantOptions: ['40.5', '42', '43'].map((size) => ({
+        id: `sku-${size}`, label: 'Pointure', size, color: null, available: true,
+        availability: 'available' as const, price: 30, currency: 'EUR', priceTnd: 100,
+      })),
+    });
+    await act(async () => button('Votre pointure').click());
+    await act(async () => button('42').click());
     expect(button('Ajouter au panier').disabled).toBe(false);
   });
 

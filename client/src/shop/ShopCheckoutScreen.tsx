@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
-import { availableAtCheckout, isPaymentMethodAvailable, CARD_NETWORK_MARKS, type PaymentMethodId } from '../commerce/paymentMethods';
+import { PAYMENT_METHODS, isPaymentMethodAvailable, CARD_NETWORK_MARKS, type PaymentMethodId } from '../commerce/paymentMethods';
 import { getSessionId } from '../utils/session';
 import { customerApi } from '../customer/api';
 import type { CustomerSession, OrderResult } from '../types';
@@ -72,11 +72,9 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
 
   const choices: PaymentChoice[] = useMemo(() => {
     if (!commerce.policy) return [];
-    return availableAtCheckout(commerce.policy).concat(
-      // Les moyens non encaissables restent VISIBLES avec leur raison : le client
-      // doit comprendre pourquoi il ne peut pas les choisir aujourd'hui.
-      [],
-    ).map((definition) => ({
+    // Show the local Tunisian payment methods and their own marks, but only
+    // permit selection when the server policy says the method can be collected.
+    return PAYMENT_METHODS.map((definition) => ({
       id: definition.id,
       label: tr(definition.label, definition.labelAr),
       hint: tr(definition.hint, definition.hintAr),
@@ -246,7 +244,7 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
         methods={choices}
         selected={method}
         totalTnd={totalTND}
-        networks={CARD_NETWORK_MARKS}
+        networks={commerce.policy?.deposit.cardGatewayAvailable ? CARD_NETWORK_MARKS : []}
         tr={tr}
         formatMoney={formatMoney}
         direction={direction === 'rtl' ? 'rtl' : 'ltr'}

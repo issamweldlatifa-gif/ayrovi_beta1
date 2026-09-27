@@ -27,10 +27,8 @@ function toMedia(urls: (string | null | undefined)[], alt: string): MediaView[] 
 /** Le stock d'une taille : le verdict du moteur, jamais une interprétation. */
 function stockOf(options: AyrovixVariantOption[]): StockState {
   if (!options.length) return 'unknown';
-  if (options.some((option) => option.availability === 'available')) return 'available';
-  if (options.every((option) => option.availability === 'unavailable')) return 'unavailable';
-  if (options.every((option) => option.available === false)) return 'unavailable';
-  return 'unknown';
+  const states = new Set(options.map((option) => option.availability === 'available' || option.availability === 'unavailable' ? option.availability : 'unknown'));
+  return states.size === 1 ? [...states][0] : 'unknown';
 }
 
 function priceOf(
@@ -72,7 +70,11 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
     sizeKind: 'none',
     optionLabel: null,
     capacity: null,
-    availabilityKnown: false,
+    // Search snippets have no trustworthy stock timestamp; only the opened source page can confirm availability.
+    availability: 'unknown',
+    availabilitySource: candidate.source || null,
+    availabilityCheckedAt: null,
+    availabilityExpiresAt: null,
     colors: [],
     flags: candidate.promo ? [{ kind: 'deal', label: candidate.promo.label || 'Promo' }] : [],
     merchant: candidate.source ? { name: candidate.source, url: candidate.sourceUrl } : null,
@@ -109,7 +111,7 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
         : storageOptions.length ? 'Stockage' : volumeOptions.length ? 'Volume' : values.length ? 'Option' : null);
 
   const sizes: SizeOption[] = values.map((value) => {
-    const forSize = options.filter((option) => option.size === value);
+    const forSize = options.filter((option) => option.size === value && (!activeColor || !option.color || option.color.toLocaleLowerCase() === activeColor.toLocaleLowerCase()));
     const labels = [...new Set(forSize.map((option) => option.label.trim()).filter((label) => label && label !== value))];
     return {
       value,
@@ -144,7 +146,10 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
       : sourceSaysStorage || (productClass === 'electronics' && storageOptions.length) ? 'storage'
         : values.length ? 'clothing' : 'none',
     optionLabel,
-    availabilityKnown: options.some((option) => option.availability !== undefined || option.available === false),
+    availability: product.availability === 'in_stock' || product.availability === 'limited' ? 'available' : product.availability === 'out_of_stock' ? 'unavailable' : 'unknown',
+    availabilitySource: product.source?.trim() || null,
+    availabilityCheckedAt: product.availabilityCheckedAt || null,
+    availabilityExpiresAt: product.availabilityExpiresAt || null,
     /* Contenance lue dans le titre quand le marchand n'a listé aucune variante :
        « 10 ml » est une information du produit, pas une supposition. */
     capacity: capacityBased && !sizes.length ? extractCapacity(`${product.title} ${product.description || ''}`)?.label ?? null : null,

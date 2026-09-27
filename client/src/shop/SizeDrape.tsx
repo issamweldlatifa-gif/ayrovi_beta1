@@ -20,8 +20,6 @@ export interface SizeDrapeProps {
   sizes: SizeOption[];
   /** Intitulé de la liste : « Pointures disponibles », « Contenances… ». */
   title?: string;
-  /** Faux quand la source ne publie aucune disponibilité : rien n'est grisé. */
-  availabilityKnown?: boolean;
   selected: string | null;
   scaleLabel: string | null;
   /** Traducteur fourni par l'hôte : la boutique ne porte pas son propre i18n. */
@@ -33,7 +31,7 @@ export interface SizeDrapeProps {
 }
 
 export const SizeDrape: React.FC<SizeDrapeProps> = ({
-  open, sizes, title, availabilityKnown = true, selected, scaleLabel, tr, onClose, onSelect, onNotifyRestock,
+  open, sizes, title, selected, scaleLabel, tr, onClose, onSelect, onNotifyRestock,
 }) => {
   const [scale, setScale] = useState<'source' | 'brand'>('source');
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -83,9 +81,10 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
                 key={size.value}
                 type="button"
                 className="s-size"
-                data-state={availabilityKnown ? size.state : 'available'}
+                data-state={size.state}
                 aria-pressed={selected === size.value}
-                aria-disabled={availabilityKnown && size.state !== 'available'}
+                aria-disabled={size.state !== 'available'}
+                disabled={size.state !== 'available'}
                 onClick={() => onSelect(size)}
               >
                 <span>
@@ -99,11 +98,11 @@ export const SizeDrape: React.FC<SizeDrapeProps> = ({
                   </span>
                 )}
 
-                {availabilityKnown && size.state === 'unknown' && (
-                  <span className="s-size__meta">{tr('Stock non confirmé', 'المخزون غير مؤكّد')}</span>
+                {size.state === 'unknown' && (
+                  <span className="s-size__meta">{tr('Disponibilité à confirmer', 'التوفّر غير مؤكّد')}</span>
                 )}
 
-                {availabilityKnown && size.state === 'unavailable' && (
+                {size.state === 'unavailable' && (
                   onNotifyRestock
                     ? <span
                         className="s-size__meta"

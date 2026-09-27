@@ -61,7 +61,7 @@ describe('Quiet Card v2 — cadre studio unifié', () => {
     const cart = read('client/src/shop/ShopBagScreen.tsx');
     // La vignette du panier passe par la MÊME chaîne d'images que la fiche.
     expect(cart).toContain('withIsolation(');
-    expect(read('client/src/shop/BagPage.tsx')).toContain("objectFit: 'contain'");
+    expect(read('client/src/shop/shop.css')).toMatch(/\.s-bag-line__media img\s*\{[^}]*object-fit: contain/);
     const gridCss = read('client/src/ayrovix/components/lens-product-card.css');
     expect(gridCss).toMatch(/\.lens-card-media\s*\{[^}]*background:#fff/);
     expect(gridCss).toMatch(/\.lens-card-media>img\s*\{[^}]*mix-blend-mode:multiply/);

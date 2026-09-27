@@ -93,6 +93,11 @@ export interface CartItem {
   customerNote: string;
   referenceUrl: string;
   priceVerificationStatus: 'VERIFIED' | 'PENDING_MANUAL';
+  /** Status decorated by the server from its current source-backed contract. */
+  availability?: 'available' | 'unavailable' | 'unknown';
+  availabilityCheckedAt?: string | null;
+  availabilitySource?: string | null;
+  availabilityReason?: string | null;
   /** Cargo lourd > 5 kg : fret international soumis à validation finale de l'équipe. */
   requiresWeightValidation?: boolean;
   /** Promo moteur (management 23/09/2026) : remise déjà appliquée au lineTotalTND. */
