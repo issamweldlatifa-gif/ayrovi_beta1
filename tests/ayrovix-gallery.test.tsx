@@ -45,19 +45,16 @@ function renderGallery() {
 }
 
 describe('AYROVIX product gallery rendering', () => {
-  it('renders one unchanged source image in the integrated stage, not small boxes underneath', () => {
+  it('renders a source-backed gallery with image actions and directly linked thumbnails', () => {
     const markup = renderGallery();
-    expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(1);
-    // Quatre photos au plus sont navigables ; les suivantes restent dans la fiche
-    // produit sans être proposées ici.
-    expect(markup).not.toContain(`src="${images[4]}"`);
-    expect(markup).not.toContain(`src="${images[5]}"`);
-    // Et seules la photo visible et sa voisine sont TÉLÉCHARGÉES : le client ne
-    // paie pas sur son forfait trois photos qu'il ne regardera peut-être jamais.
-    expect(markup.match(/<img/g)).toHaveLength(2);
-    expect(markup).toContain('s-media__placeholder');
-    expect(markup).toContain('1 / 4');
-    // Une seule scène intégrée, jamais de bandeau de vignettes rognées.
+    // The lead image appears in the main slide and its matching thumbnail.
+    expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(2);
+    // Every source-backed photo remains navigable, including the last two.
+    for (const image of images) expect(markup).toContain(`src="${image}"`);
+    expect(markup).toContain('s-media__hero');
+    expect(markup).toContain('s-thumbnails');
+    expect(markup).toContain('aria-current="true"');
+    expect(markup).toContain('1 / 6');
     expect(markup).toContain('s-media__slide');
     expect(markup).not.toContain('ayrovix-thumbnail-image');
     expect(markup).toContain('Photo suivante');
@@ -73,11 +70,11 @@ describe('AYROVIX product gallery rendering', () => {
     expect(history).not.toContain('object-cover');
   });
 
-  it('reserves a responsive integrated stage and keeps both source and isolated photos uncut', () => {
+  it('reserves a bounded portrait stage and keeps both source and isolated photos uncut', () => {
     const css = readFileSync('client/src/shop/shop.css', 'utf8');
-    // La scène garde le format portrait de la maquette et ne rogne jamais le produit.
-    expect(css).toMatch(/\.s-media__slide\s*\{[\s\S]*?aspect-ratio:\s*9\s*\/\s*13/);
+    expect(css).toMatch(/\.s-media__slide\s*\{[\s\S]*?height:\s*min\(56dvh,\s*520px\)/);
     expect(css).toMatch(/\.s-media__slide img\s*\{[\s\S]*?object-fit:\s*contain/);
+    expect(css).toContain('.s-media__hero { position: relative; }');
     expect(css).not.toContain('.ayrovix-thumbnail-strip');
     expect(css).not.toContain('object-fit: cover');
   });

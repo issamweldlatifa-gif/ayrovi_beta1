@@ -139,6 +139,7 @@ export interface AyrovixProduct {
   promo?: AyrovixPromo | null;
   colors: string[];
   sizes: string[];
+  optionLabel?: string | null;
   variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   priceVerified?: boolean;

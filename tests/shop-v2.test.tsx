@@ -19,7 +19,7 @@ const view = (over: Partial<ProductView> = {}): ProductView => ({
   media: [{ src: '/a.png', fallbacks: [], alt: 'a' }],
   price: { current: { tnd: 118.9, source: { amount: 35.95, currency: 'EUR' } }, reference: { tnd: 132.1 }, discountPercent: 10, verifiedAtSource: true },
   sizes: [size({ value: 'S', state: 'unknown' }), size({ value: 'M', remaining: 2 }), size({ value: 'XL', state: 'unavailable' })],
-  sizeScaleLabel: 'EU', sizeKind: 'clothing', capacity: null, availabilityKnown: true,
+  sizeScaleLabel: 'EU', sizeKind: 'clothing', optionLabel: 'Taille', capacity: null, availabilityKnown: true,
   colors: [], flags: [{ kind: 'deal', label: 'Promo' }],
   merchant: { name: 'Champion', url: 'https://x.tn/p' }, ...over,
 });
@@ -94,12 +94,12 @@ describe('boutique v2 — rendu', () => {
     expect(html).not.toContain('0.00 DT');
   });
 
-  it('la fiche porte le voile, la barre d’achat et les trois états', () => {
+  it('la fiche garde le prix, les informations de stock source et le choix d’option', () => {
     const html = renderToStaticMarkup(<ProductPage product={view()} tr={tr} formatMoney={money} />);
-    expect(html).toContain('s-scrim');
-    expect(html).toContain('s-buybar');
-    expect(html).toContain('stock non confirmé');
-    expect(html).toContain('rupture constatée');
+    expect(html).not.toContain('s-scrim');
+    expect(html).toContain('s-buybar--product');
+    expect(html).toContain('Disponibilité signalée par la source');
+    expect(html).toContain('Votre taille');
   });
 
   it('le drap affiche la quantité seulement quand la source la donne', () => {
@@ -294,36 +294,24 @@ describe('boutique v2 — panier', () => {
   });
 });
 
-/*
- * DÉFAUTS VUS EN PRODUCTION LE 26/09/2026 (captures du client).
- */
-describe('boutique v2 — corrections du 26/09', () => {
+describe('boutique v2 — grille produit mobile', () => {
   const css = readFileSync('client/src/shop/shop.css', 'utf8');
 
-  it('les actions flottantes passent AU-DESSUS de la feuille, pas dessous', () => {
-    const rail = css.split('.s-rail {')[1].split('}')[0];
-    const sheet = css.split('.s-sheet {')[1].split('}')[0];
-    const railZ = Number(/z-index:\s*(\d+)/.exec(rail)?.[1]);
-    const sheetZ = Number(/z-index:\s*(\d+)/.exec(sheet)?.[1]);
-    expect(railZ).toBeGreaterThan(sheetZ);
-    // Et le média ne doit plus créer de contexte d'empilement qui les enferme.
-    expect(css.split('.s-media {')[1].split('}')[0]).not.toContain('z-index');
-  });
-
-  it('le produit est ENTIER au repos : la feuille ne mord pas sur la photo', () => {
-    expect(css.split('.s-media__slide {')[1].split('}')[0]).toContain('min-height: 62dvh');
-  });
-
-  it('le partage existe et n’apparaît que s’il mène quelque part', () => {
+  it('garde les actions image dans la galerie et place les détails après celle-ci', () => {
     const page = readFileSync('client/src/shop/ProductPage.tsx', 'utf8');
-    const container = readFileSync('client/src/shop/ShopProductScreen.tsx', 'utf8');
-    expect(page).toContain('Partager ce produit');
-    expect(page).toContain('{actions?.onShare && (');
-    expect(container).toContain('navigator.clipboard');
-    expect(container).toContain('product.sourceUrl');
+    expect(page.indexOf('className="s-media"')).toBeLessThan(page.indexOf('className="s-sheet"'));
+    expect(page.indexOf('className="s-sheet"')).toBeLessThan(page.indexOf('className="s-buybar'));
+    expect(page).not.toContain('s-scrim');
+    expect(css).toMatch(/\.s-buybar--product\s*\{[^}]*position: relative/);
   });
 
-  it('les trois actions de la maquette sont rendues quand l’hôte les fournit', () => {
+  it('contient les photos dans une galerie navigable sans étirer ni rogner', () => {
+    const media = css.split('.s-media__slide {')[1].split('}')[0];
+    expect(media).toContain('height: min(56dvh, 520px)');
+    expect(css).toContain('object-fit: contain');
+  });
+
+  it('montre les actions flottantes seulement quand leur hôte les fournit', () => {
     const html = renderToStaticMarkup(
       <ProductPage product={view()} tr={tr} formatMoney={money}
         actions={{ onOpenBag: () => {}, onNotify: () => {}, onFavorite: () => {}, favorite: false }} />,

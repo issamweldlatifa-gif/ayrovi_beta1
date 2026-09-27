@@ -144,7 +144,10 @@ export interface AyrovixProduct {
   /** Promo du jour appliquée par le serveur (prix déjà remisé, original conservé). */
   promo?: AyrovixPromo | null;
   colors: string[];
+  /** Merchant-published option values for the primary variant attribute (size, storage, volume…). */
   sizes: string[];
+  /** Display label for `sizes` when a merchant exposes non-clothing options. */
+  optionLabel?: string | null;
   variantOptions?: AyrovixVariantOption[];
   availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
   priceVerified?: boolean;

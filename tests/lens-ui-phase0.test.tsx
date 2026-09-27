@@ -127,6 +127,6 @@ describe('Lens Phase 0 UI improvements', () => {
     expect(adapter).toContain('presentSizes(productClass, product.title, product.sizes');
     expect(page).not.toContain('Tailles/couleurs non listées');
     // Et la disponibilité affichée reste celle du moteur, jamais une supposition.
-    expect(page).toContain('Disponibilité constatée');
+    expect(page).toContain('Disponibilité signalée par la source');
   });
 });

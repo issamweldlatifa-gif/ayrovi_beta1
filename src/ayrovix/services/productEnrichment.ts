@@ -30,27 +30,29 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { normalizeTitle, titleOverlap } from './lensEnrichment';
+import { buildProductCard } from './productVariants';
 
 export interface EnrichedVariant {
-  /** Valeur telle que la source l'écrit (« M », « 42 », « 10 ml »). */
+  /** Literal value published by the merchant: clothing size, volume, storage, etc. */
   value: string;
-  /** Libellé complet quand la source en donne un autre (échelle marque). */
+  /** Merchant label when it differs from the literal value. */
   label: string | null;
   availability: 'available' | 'unavailable' | 'unknown';
 }
 
 export interface ProductEnrichment {
   images: string[];
+  /** Values from the product's primary, source-backed variant attribute. */
   sizes: EnrichedVariant[];
+  optionLabel: string | null;
   description: string | null;
 }
 
-export const EMPTY_ENRICHMENT: ProductEnrichment = { images: [], sizes: [], description: null };
+export const EMPTY_ENRICHMENT: ProductEnrichment = { images: [], sizes: [], optionLabel: null, description: null };
 
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const DEFAULT_DEADLINE_MS = 4000;
-const MATCH_THRESHOLD = 0.6;
-const MAX_IMAGES = 8;
+const MATCH_THRESHOLD = 0.72;
 
 function enabled(): boolean {
   return process.env.AYROVI_PRODUCT_ENRICH !== 'false' && Boolean(serpApiKey());
@@ -66,16 +68,37 @@ function envInt(name: string, fallback: number, min: number, max: number): numbe
   return Math.min(max, Math.max(min, Math.round(raw)));
 }
 
-function cacheFile(title: string): string {
+function sameMerchantHost(left: string, right: string): boolean {
+  try {
+    const a = new URL(left);
+    const b = new URL(right);
+    return ['http:', 'https:'].includes(a.protocol) && ['http:', 'https:'].includes(b.protocol)
+      && a.hostname.toLowerCase().replace(/^www\./, '') === b.hostname.toLowerCase().replace(/^www\./, '');
+  } catch {
+    return false;
+  }
+}
+
+function canonicalScope(value: string): string {
+  try {
+    const url = new URL(value);
+    return `${url.hostname.toLowerCase().replace(/^www\./, '')}${url.pathname.replace(/\/+$/, '')}`;
+  } catch {
+    return value.trim().toLowerCase();
+  }
+}
+
+function cacheFile(title: string, scope = ''): string {
   const dir = process.env.AYROVI_PRODUCT_ENRICH_CACHE_DIR
     || path.resolve(process.cwd(), 'data', 'product-enrichment');
-  const key = crypto.createHash('sha256').update(normalizeTitle(title)).digest('hex').slice(0, 32);
+  // Item titles are not unique; isolate merchant page data in cache identity.
+  const key = crypto.createHash('sha256').update(`${normalizeTitle(title)}|${scope}`).digest('hex').slice(0, 32);
   return path.join(dir, `${key}.json`);
 }
 
-function readCache(title: string, now: number): ProductEnrichment | null {
+function readCache(title: string, now: number, scope = ''): ProductEnrichment | null {
   try {
-    const entry = JSON.parse(fs.readFileSync(cacheFile(title), 'utf8')) as { at: number; value: ProductEnrichment };
+    const entry = JSON.parse(fs.readFileSync(cacheFile(title, scope), 'utf8')) as { at: number; value: ProductEnrichment };
     const ttl = envInt('AYROVI_PRODUCT_ENRICH_TTL_MS', DEFAULT_TTL_MS, 60_000, 30 * 24 * 60 * 60 * 1000);
     return now - entry.at <= ttl ? entry.value : null;
   } catch {
@@ -83,9 +106,9 @@ function readCache(title: string, now: number): ProductEnrichment | null {
   }
 }
 
-function writeCache(title: string, value: ProductEnrichment, now: number): void {
+function writeCache(title: string, value: ProductEnrichment, now: number, scope = ''): void {
   try {
-    const file = cacheFile(title);
+    const file = cacheFile(title, scope);
     fs.mkdirSync(path.dirname(file), { recursive: true });
     fs.writeFileSync(file, JSON.stringify({ at: now, value }), 'utf8');
   } catch {
@@ -95,84 +118,95 @@ function writeCache(title: string, value: ProductEnrichment, now: number): void 
 
 /* ── Lecture des réponses SerpApi, sans rien deviner ───────────────────────── */
 
-/** Médias du produit : images seulement, dédoublonnées, bornées. */
+/** Read image URLs from the merchant/SerpApi shapes we actually receive. */
 export function readImages(product: any): string[] {
-  const media = Array.isArray(product?.media) ? product.media : [];
-  const urls = media
-    .filter((item: any) => !item?.type || item.type === 'image')
-    .map((item: any) => String(item?.link || '').trim())
-    .filter((url: string) => /^https?:\/\//i.test(url));
-  return [...new Set<string>(urls)].slice(0, MAX_IMAGES);
+  const root = product?.product_results ?? product;
+  const urls: string[] = [];
+  const visit = (value: unknown): void => {
+    if (typeof value === 'string') {
+      const url = value.trim();
+      if (/^https?:\/\//i.test(url)) urls.push(url);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    const item = value as Record<string, unknown>;
+    const type = String(item.type ?? item.media_type ?? '').toLowerCase();
+    if (type && !['image', 'photo', 'product_image'].includes(type)) return;
+    for (const key of ['link', 'url', 'src', 'image_url', 'original', 'original_url', 'high_res', 'high_resolution']) {
+      const candidate = item[key];
+      if (typeof candidate === 'string') visit(candidate);
+    }
+  };
+  for (const key of ['media', 'images', 'image', 'main_image', 'image_url', 'thumbnail', 'thumbnail_url', 'product_images']) {
+    if (root?.[key] != null) visit(root[key]);
+  }
+  return [...new Set(urls)];
 }
 
-/**
- * Variantes de taille. Trois formes possibles selon l'âge de la réponse, et
- * une seule règle : un `available` absent vaut `unknown`, jamais « disponible ».
- */
+/** Read the primary source-backed attribute (size, pointure, volume, storage…). */
+function primaryAttribute(product: unknown) {
+  const payload = product && typeof product === 'object' && 'product_results' in (product as object)
+    ? product : { product_results: product };
+  const { card } = buildProductCard(payload);
+  return card.attributes.find((attribute) => attribute.role === 'primary')
+    ?? (card.attributes.length === 1 && card.attributes[0].kind !== 'color' ? card.attributes[0] : null);
+}
+
 export function readSizes(product: any): EnrichedVariant[] {
-  const out: EnrichedVariant[] = [];
-  const push = (value: unknown, label: unknown, available: unknown) => {
-    const text = String(value || '').trim();
-    if (!text) return;
-    const labelText = String(label || '').trim();
-    out.push({
-      value: text,
-      label: labelText && labelText !== text ? labelText : null,
-      availability: available === true ? 'available' : available === false ? 'unavailable' : 'unknown',
-    });
-  };
-
-  // Forme moderne : variations est un objet dont les clés sont dynamiques.
-  const variations = product?.variations;
-  if (variations && typeof variations === 'object' && !Array.isArray(variations)) {
-    for (const [group, items] of Object.entries(variations)) {
-      if (!/taille|size|pointure|contenance/i.test(group)) continue;
-      for (const item of (Array.isArray(items) ? items : [])) {
-        push((item as any)?.name, (item as any)?.label, (item as any)?.available);
-      }
+  const primary = primaryAttribute(product);
+  if (!primary) return [];
+  const unique = new Map<string, EnrichedVariant>();
+  for (const option of primary.variants) {
+    const key = option.value.trim().toLocaleLowerCase();
+    const existing = unique.get(key);
+    const availability = existing && existing.availability !== option.availability ? 'unknown' : option.availability;
+    if (!existing || availability === 'unknown' || !existing.label) {
+      unique.set(key, {
+        value: existing?.value ?? option.value,
+        label: existing?.label ?? null,
+        availability,
+      });
     }
   }
+  return [...unique.values()];
+}
 
-  // Forme intermédiaire : variants est un tableau de groupes nommés.
-  if (!out.length && Array.isArray(product?.variants)) {
-    for (const group of product.variants) {
-      if (!/taille|size|pointure|contenance/i.test(String(group?.title || ''))) continue;
-      for (const item of (Array.isArray(group?.items) ? group.items : [])) {
-        push(item?.name, item?.label, item?.available);
-      }
-    }
-  }
-
-  // Forme héritée : `sizes` est un objet sans aucune disponibilité.
-  if (!out.length && product?.sizes && typeof product.sizes === 'object') {
-    for (const key of Object.keys(product.sizes)) push(key, null, undefined);
-  }
-
-  return out;
+function readOptionLabel(product: any): string | null {
+  return primaryAttribute(product)?.label ?? null;
 }
 
 /* ── Appels réseau, isolés pour être remplaçables dans les tests ───────────── */
 
 export interface ProductFetchers {
   /** Retrouve la fiche marchande : titre trouvé + identifiant produit. */
-  findProduct: (title: string) => Promise<{ title: string; productId: string } | null>;
+  findProduct: (title: string) => Promise<{ title: string; productId: string; sourceUrl?: string } | null>;
   /** Rend la fiche complète pour cet identifiant. */
   loadProduct: (productId: string) => Promise<any | null>;
 }
 
-async function serpApiFind(title: string): Promise<{ title: string; productId: string } | null> {
+async function serpApiFind(title: string): Promise<{ title: string; productId: string; sourceUrl?: string } | null> {
   const params = new URLSearchParams({ engine: 'google_shopping', q: title.slice(0, 120), api_key: serpApiKey(), num: '5' });
   const response = await fetch(`https://serpapi.com/search.json?${params}`, {
     signal: AbortSignal.timeout(envInt('AYROVI_PRODUCT_ENRICH_TIMEOUT_MS', 3500, 800, 10_000)),
   });
   if (!response.ok) throw new Error(`HTTP_${response.status}`);
   const payload = await response.json() as any;
-  for (const row of (Array.isArray(payload?.shopping_results) ? payload.shopping_results : [])) {
-    const rowTitle = String(row?.title || '').trim();
-    const productId = String(row?.product_id || '').trim();
-    if (rowTitle && productId) return { title: rowTitle, productId };
-  }
-  return null;
+  const matches = (Array.isArray(payload?.shopping_results) ? payload.shopping_results : [])
+    .map((row: any) => ({
+      title: String(row?.title || '').trim(),
+      productId: String(row?.product_id || '').trim(),
+      sourceUrl: String(row?.product_link || row?.merchant?.link || row?.link || '').trim(),
+    }))
+    .filter((row: { title: string; productId: string }) => row.title && row.productId)
+    .map((row: { title: string; productId: string; sourceUrl: string }) => ({ ...row, score: titleOverlap(title, row.title) }))
+    .filter((row: { score: number }) => row.score >= MATCH_THRESHOLD)
+    .sort((a: { score: number }, b: { score: number }) => b.score - a.score);
+  const best = matches[0];
+  return best ? { title: best.title, productId: best.productId, sourceUrl: best.sourceUrl } : null;
 }
 
 async function serpApiLoad(productId: string): Promise<any | null> {
@@ -189,12 +223,13 @@ async function serpApiLoad(productId: string): Promise<any | null> {
 
 export async function enrichProduct(
   title: string,
-  options: { fetchers?: Partial<ProductFetchers>; now?: number } = {},
+  options: { fetchers?: Partial<ProductFetchers>; now?: number; cacheScope?: string } = {},
 ): Promise<ProductEnrichment> {
   if (!title?.trim() || !enabled()) return EMPTY_ENRICHMENT;
 
   const now = options.now ?? Date.now();
-  const cached = readCache(title, now);
+  const cacheScope = canonicalScope(options.cacheScope || '');
+  const cached = readCache(title, now, cacheScope);
   if (cached) return cached;
 
   const findProduct = options.fetchers?.findProduct ?? serpApiFind;
@@ -205,6 +240,9 @@ export async function enrichProduct(
     const found = await findProduct(title);
     // La preuve avant les photos : sans recouvrement fort, c'est un autre produit.
     if (!found || titleOverlap(title, found.title) < MATCH_THRESHOLD) return EMPTY_ENRICHMENT;
+    // Production callers supply the exact opened URL. If SerpApi cannot prove
+    // the same merchant host, skip enrichment rather than borrow another shop's media/options.
+    if (options.cacheScope && (!found.sourceUrl || !sameMerchantHost(found.sourceUrl, options.cacheScope))) return EMPTY_ENRICHMENT;
 
     const product = await loadProduct(found.productId);
     if (!product) return EMPTY_ENRICHMENT;
@@ -212,10 +250,11 @@ export async function enrichProduct(
     const value: ProductEnrichment = {
       images: readImages(product),
       sizes: readSizes(product),
+      optionLabel: readOptionLabel(product),
       description: String(product?.description || '').trim().slice(0, 600) || null,
     };
-    // On ne mémorise que ce qui a réellement apporté quelque chose.
-    if (value.images.length || value.sizes.length || value.description) writeCache(title, value, now);
+    // Cache only useful data and never let same-title pages share product media/options.
+    if (value.images.length || value.sizes.length || value.description) writeCache(title, value, now, cacheScope);
     return value;
   })();
 

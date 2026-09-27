@@ -11,11 +11,10 @@ import { isUnsafeHostname, UnsafeUrlError } from '../../services/safeUrl';
 import { filterDisplayableCandidates, registerTrustedMerchantHost } from './candidatePolicy';
 
 /**
- * AYROVIX product-link layer.
+ * AYROVI product-link layer.
  * URL/QR links use SSRF-safe metadata extraction first, then AI Core web
  * search when merchant metadata is incomplete.
  */
-
 export class ExtractionFailedError extends Error { readonly code = 'EXTRACTION_FAILED'; }
 export class InvalidUrlError extends Error { readonly code = 'INVALID_URL'; }
 
@@ -42,10 +41,9 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
       label: detail.label,
       size: detail.size || null,
       color: detail.color || null,
-      // `available` = éligible à un choix (contrat historique, inchangé).
+      // `available` = eligible for a choice (historical contract, unchanged).
       available: true,
-      // `availability` = stock réellement rapporté par la source. Un drapeau
-      // absent ou contradictoire reste `unknown` : on ne l'invente pas.
+      // `availability` = stock actually reported by source; silence stays unknown.
       availability: (() => {
         const reported = reportedVariantStock(detail);
         return reported === true ? 'available' as const : reported === false ? 'unavailable' as const : 'unknown' as const;
@@ -86,6 +84,36 @@ function toAyrovixProduct(db: QatafoDatabase, scraped: ScrapedProduct): AyrovixP
   };
 }
 
+/** Enriches only the opened page and only with same-merchant, title-matched data. */
+async function enrichSparseProduct(product: AyrovixProduct, url: string): Promise<void> {
+  if (product.images.length >= 4 && product.sizes.length > 0) return;
+  const extra = await enrichProduct(product.title, { cacheScope: url });
+  if (!product.optionLabel && extra.optionLabel) product.optionLabel = extra.optionLabel;
+  if (extra.images.length) {
+    product.images = [...new Set([...product.images, ...extra.images])];
+    if (!product.image) product.image = product.images[0] || '';
+  }
+  if (!product.sizes.length && extra.sizes.length) {
+    product.sizes = extra.sizes.map((size) => size.value);
+    product.variantOptions = [
+      ...(product.variantOptions || []),
+      ...extra.sizes.map((size) => ({
+        id: null,
+        label: size.label || size.value,
+        size: size.value,
+        color: null,
+        available: size.availability !== 'unavailable',
+        availability: size.availability,
+        price: null,
+        // This source has no per-variant prices; never copy the product price.
+        currency: null,
+        priceTnd: null,
+      })),
+    ];
+  }
+  if (!product.description && extra.description) product.description = extra.description;
+}
+
 function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
   try {
     const parsed = new URL(rawUrl);
@@ -95,45 +123,19 @@ function toFallbackProductFromUrl(rawUrl: string): AyrovixProduct {
     const decoded = decodeURIComponent(lastPart).replace(/[-_]+/g, ' ').slice(0, 120);
     const title = decoded.length > 5 ? decoded : `Produit ${host}`;
     return {
-      title: title.charAt(0).toUpperCase() + title.slice(1),
-      brand: null,
-      model: null,
+      title: title.charAt(0).toUpperCase() + title.slice(1), brand: null, model: null,
       description: `Lien partagé depuis ${host} — AYROVI cherchera des alternatives similaires.`,
-      image: '',
-      images: [],
-      source: host,
-      sourceUrl: rawUrl,
-      price: null,
-      currency: null,
-      priceTnd: null,
-      exchangeRate: null,
-      colors: [],
-      sizes: [],
-      availability: 'unknown',
-      priceVerified: false,
-      priceVerificationStatus: 'PENDING_MANUAL',
-      verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
+      image: '', images: [], source: host, sourceUrl: rawUrl, price: null, currency: null,
+      priceTnd: null, exchangeRate: null, colors: [], sizes: [], availability: 'unknown',
+      priceVerified: false, priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
     };
   } catch {
     return {
-      title: `Produit ${rawUrl.slice(0, 50)}`,
-      brand: null,
-      model: null,
-      description: 'Lien partagé — AYROVI cherchera des alternatives.',
-      image: '',
-      images: [],
-      source: 'Web',
-      sourceUrl: rawUrl,
-      price: null,
-      currency: null,
-      priceTnd: null,
-      exchangeRate: null,
-      colors: [],
-      sizes: [],
-      availability: 'unknown',
-      priceVerified: false,
-      priceVerificationStatus: 'PENDING_MANUAL',
-      verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
+      title: `Produit ${rawUrl.slice(0, 50)}`, brand: null, model: null,
+      description: 'Lien partagé — AYROVI cherchera des alternatives.', image: '', images: [],
+      source: 'Web', sourceUrl: rawUrl, price: null, currency: null, priceTnd: null,
+      exchangeRate: null, colors: [], sizes: [], availability: 'unknown', priceVerified: false,
+      priceVerificationStatus: 'PENDING_MANUAL', verificationFailureCode: 'MERCHANT_EXTRACTION_FAILED',
     };
   }
 }
@@ -147,11 +149,7 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
   const url = sanitizeProductUrl(scraper.cleanPastedUrl(rawUrl));
   if (!url) throw new InvalidUrlError('Ce lien ne peut pas être analysé.');
 
-  // PROFIL PRODUIT PERSISTANT (24/09/2026 — «كل الصور وكل المعلومات لكل منتج») :
-  // une fiche crawlée (description complète, TOUTES les photos, images par
-  // couleur, tailles, disponibilité) est stockée par URL et resservie telle
-  // quelle pendant 6 h — le premier scan paie le crawl, TOUS les suivants sont
-  // instantanés et complets, même depuis la grille Lens (enrichissement).
+  // Complete product profiles are retained by URL for six hours.
   const urlHash = createHash('sha256').update(url).digest('hex');
   const profileTtlMs = 6 * 3_600_000;
   try {
@@ -161,88 +159,47 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
     if (cached && Date.now() - Date.parse(cached.fetched_at) < profileTtlMs) {
       const product = JSON.parse(cached.payload) as AyrovixProduct;
       if (product?.title) {
+        await enrichSparseProduct(product, url);
+        try {
+          db.run('UPDATE product_profiles SET payload=?,images_count=?,has_description=? WHERE url_hash=?', JSON.stringify(product), product.images.length, (product.description || '').trim().length >= 40 ? 1 : 0, urlHash);
+        } catch { /* a stale profile remains usable for this response */ }
         const catalog = catalogSearch(db, null, product.title, 4);
         const alternates = filterDisplayableCandidates(
-          catalog.map((candidate) => ({ ...candidate, match: scoreCandidate(null, product.title, candidate) })),
-          8,
+          catalog.map((candidate) => ({ ...candidate, match: scoreCandidate(null, product.title, candidate) })), 8,
         );
         return { product, alternates };
       }
     }
-  } catch { /* profil illisible → recrawl normal */ }
+  } catch { /* unreadable profile → normal recrawl */ }
 
   try {
     const scraped = await scraper.scrapeProduct(url);
     if (scraped?.title) {
       const product = toAyrovixProduct(db, scraped);
-
-      /*
-       * GALERIE ET TAILLES (27/09/2026). Le marchand ne publie pas toujours ses
-       * photos ni ses tailles là où nous savons les lire : la fiche s'ouvrait
-       * alors avec UNE image et aucun choix, quand le même produit en montre
-       * quatre ailleurs. On les demande — uniquement pour la fiche que le client
-       * OUVRE, jamais pour une grille — et uniquement si elles manquent
-       * réellement. Rien de ce qui a été scrapé n'est écrasé : on COMPLÈTE.
-       */
-      if (product.images.length < 4 || product.sizes.length === 0) {
-        const extra = await enrichProduct(product.title);
-        if (extra.images.length) {
-          product.images = [...new Set([...product.images, ...extra.images])].slice(0, 8);
-          if (!product.image) product.image = product.images[0] || '';
-        }
-        if (!product.sizes.length && extra.sizes.length) {
-          product.sizes = extra.sizes.map((size) => size.value);
-          // La disponibilité vient de la source : un silence reste `unknown`.
-          product.variantOptions = [
-            ...(product.variantOptions || []),
-            ...extra.sizes.map((size) => ({
-              id: null,
-              label: size.label || size.value,
-              size: size.value,
-              color: null,
-              available: size.availability !== 'unavailable',
-              availability: size.availability,
-              price: null,
-              // Aucun prix par variante n'est fourni par cette source : on ne
-              // recopie surtout pas celui du produit, il pourrait différer.
-              currency: null,
-              priceTnd: null,
-            })),
-          ];
-        }
-        if (!product.description && extra.description) product.description = extra.description;
-      }
+      await enrichSparseProduct(product, url);
       try {
         db.run(`INSERT INTO product_profiles (id,url_hash,url,payload,images_count,has_description,fetched_at)
           VALUES (?,?,?,?,?,?,?)
           ON CONFLICT(url_hash) DO UPDATE SET payload=excluded.payload,
             images_count=excluded.images_count, has_description=excluded.has_description,
             fetched_at=excluded.fetched_at`,
-          `profile_${urlHash.slice(0, 24)}`, urlHash, url,
-          JSON.stringify(product), product.images.length,
+          `profile_${urlHash.slice(0, 24)}`, urlHash, url, JSON.stringify(product), product.images.length,
           (product.description || '').trim().length >= 40 ? 1 : 0, new Date().toISOString(),
         );
-      } catch { /* persistance best-effort — le produit reste servi */ }
-      // NIVEAUX DE CONFIANCE : un profil PROUVÉ (description + ≥2 photos)
-            // fait de ce marchand un marchand de confiance pour les prochains Lens.
-      if (product.images.length >= 2 && (product.description || '').trim().length >= 40) {
-        registerTrustedMerchantHost(url);
-      }
+      } catch { /* best-effort profile persistence */ }
+      if (product.images.length >= 2 && (product.description || '').trim().length >= 40) registerTrustedMerchantHost(url);
       const catalog = catalogSearch(db, null, scraped.title, 4);
       const external = scraped.sourcePrice > 0 ? [] : await externalProductSearch(scraped.title, 6).catch(() => []);
       const alternates = filterDisplayableCandidates(
-        [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) })),
-        8,
+        [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, scraped.title, candidate) })), 8,
       );
-      // A rendered/direct merchant price avoids a paid text search. If the
-      // price is still absent, return the real page diagnostics plus alternates.
       return { product, alternates };
     }
-  } catch (e) {
-    if (e instanceof UnsafeUrlError || (e as any)?.code === 'UNSAFE_URL') {
-      throw new InvalidUrlError((e as Error).message);
+  } catch (error) {
+    if (error instanceof UnsafeUrlError || (error as any)?.code === 'UNSAFE_URL') {
+      throw new InvalidUrlError((error as Error).message);
     }
-    console.warn(`[AYROVIX scraper] Fallback for ${url} — ${e}`);
+    console.warn(`[AYROVIX scraper] Fallback for ${url} — ${error}`);
   }
 
   console.log(`[AYROVIX] Using catalog + provider search fallback for URL: ${url}`);
@@ -256,10 +213,9 @@ export async function extractProductFromUrl(db: QatafoDatabase, scraper: SmartLi
 
   const catalog = catalogSearch(db, null, query, 4);
   const external = await externalProductSearch(query, 6).catch(() => []);
-  const all = filterDisplayableCandidates(
+  const alternates = filterDisplayableCandidates(
     [...catalog, ...external].map((candidate) => ({ ...candidate, match: scoreCandidate(null, query, candidate) })),
     8,
   );
-
-  return { product: fallbackProduct, alternates: all };
+  return { product: fallbackProduct, alternates };
 }

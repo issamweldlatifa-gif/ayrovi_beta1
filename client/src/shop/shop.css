@@ -139,48 +139,27 @@
 
 .s-iconbtn:active { background: var(--s-surface); }
 
-.s-appbar__title { flex: 1; min-width: 0; text-align: center; font-size: 0.8125rem; font-weight: 700; }
-.s-appbar__title small {
-  display: block;
-  font-weight: 400;
-  color: var(--s-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.s-appbar__title { flex: 1; min-width: 0; text-align: center; font-size: 0.8125rem; font-weight: 700; line-height: 1.25; }
+.s-appbar__title small { display: -webkit-box; overflow: hidden; color: var(--s-muted); font-weight: 400; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.s-appbar__spacer { width: var(--s-target); flex: none; }
 
 .s-stage { position: relative; flex: 1; min-height: 0; }
-
-.s-media { position: sticky; top: 60px; background: var(--s-surface); }
+.s-media { position: relative; background: var(--s-surface); }
+.s-media__hero { position: relative; }
 .s-media__viewport { overflow: hidden; }
 .s-media__track { display: flex; transition: transform var(--s-sheet) var(--s-ease); }
-.s-media__slide {
-  flex: 0 0 100%;
-  aspect-ratio: 9 / 13;
-  /* Plein cadre comme la maquette : le produit est ENTIER au repos. Sans
-     hauteur minimale, la feuille d'information mordait dessus dès l'ouverture
-     et l'on ne voyait qu'une bande de photo. */
-  min-height: 62dvh;
-  max-height: calc(100dvh - 60px);
-}
+.s-media__slide { flex: 0 0 100%; height: min(56dvh, 520px); min-height: 0; }
 .s-media__slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
-/* Le voile : le produit passe en arrière-plan quand la feuille monte. */
-.s-scrim {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  background: #000;
-  opacity: calc(var(--s-reveal, 0) * 0.58);
-  pointer-events: none;
-  transition: opacity 60ms linear;
-}
-
-.s-media__zoom {
-  transform: scale(calc(1 - var(--s-reveal, 0) * 0.04));
-  transform-origin: 50% 40%;
-  transition: transform 60ms linear;
-}
+/* Gallery actions sit on the image only; product information stays below it. */
+.s-media__empty { display: grid; place-items: center; height: min(56dvh, 520px); padding: 24px; color: var(--s-muted); text-align: center; }
+.s-media__zoom { transform: none; }
+.s-product__flags { top: 10px; bottom: auto; inset-inline-start: 10px; z-index: 6; }
+.s-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 10px 12px; scrollbar-width: none; }
+.s-thumbnails::-webkit-scrollbar { display: none; }
+.s-thumbnail { flex: 0 0 56px; width: 56px; height: 64px; border: 1px solid var(--s-line)!important; background: var(--s-canvas)!important; }
+.s-thumbnail[aria-current="true"] { outline: 2px solid var(--s-ink); outline-offset: -2px; }
+.s-thumbnail img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 .s-counter {
   position: absolute;
@@ -193,22 +172,8 @@
   font-weight: 700;
 }
 
-/* Les actions flottantes : au-dessus des contrôles, jamais par-dessus eux. */
-.s-rail {
-  position: absolute;
-  inset-inline-end: 12px;
-  bottom: 12px;
-  /* Au-dessus de la feuille d'information (z-index 10) : ces trois actions
-     restent atteignables même quand le panneau a commencé à monter. */
-  z-index: 12;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  opacity: calc(1 - var(--s-reveal, 0) * 1.6);
-  transition: opacity 60ms linear;
-}
-
-.s-rail[data-hidden="true"] { pointer-events: none; }
+/* Actions that belong to the image; never tied to or layered above details. */
+.s-rail { position: absolute; inset-inline-end: 12px; bottom: 12px; z-index: 7; display: flex; flex-direction: column; gap: 10px; }
 
 .s-rail__btn {
   display: grid;
@@ -224,17 +189,8 @@
 .s-rail__btn[data-solid="true"] { background: var(--s-action); color: var(--s-on-action); }
 .s-rail__btn:active { transform: scale(0.9); }
 
-/* La feuille d'information passe DEVANT le média. */
-.s-sheet {
-  position: relative;
-  z-index: 10;
-  background: var(--s-canvas);
-  border-top: 1px solid var(--s-line);
-  box-shadow: 0 -18px 40px -30px rgb(0 0 0 / 60%);
-  padding: 0 16px 120px;
-}
-
-.s-sheet__grab { width: 44px; height: 3px; background: var(--s-line); margin: 10px auto 6px; }
+/* Product facts are ordinary content after the media, never an overlay. */
+.s-sheet { position: relative; background: var(--s-canvas); border-top: 1px solid var(--s-line); padding: 16px 16px 24px; }
 
 .s-swatches { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
 .s-swatches::-webkit-scrollbar { display: none; }
@@ -251,21 +207,22 @@
 .s-swatch[aria-pressed="true"] { border-color: var(--s-ink); }
 .s-swatch img { width: 100%; height: 100%; object-fit: contain; }
 
-.s-brand { margin-top: 14px; font-size: 1.125rem; font-weight: 700; }
-.s-title { margin: 2px 0 0; font-size: 1.125rem; font-weight: 400; line-height: 1.45; }
-.s-desc { margin: 8px 0 0; font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }
+.s-brand { margin-top: 8px; font-size: 1.125rem; font-weight: 700; }
+.s-title { margin: 2px 0 0; font-size: 1.375rem; font-weight: 500; line-height: 1.28; overflow-wrap: anywhere; }
+.s-merchant { margin: 6px 0 0; font-size: 0.8125rem; color: var(--s-muted); }
+.s-desc { margin: 10px 0 0; font-size: 0.8125rem; line-height: 1.45; color: var(--s-muted); }
+.s-capacity { margin: 8px 0 0; font-size: 0.875rem; font-weight: 600; }
 
 .s-price { margin-top: 14px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
-.s-price strong { font-size: 1.375rem; font-weight: 700; }
+.s-price__label { flex: 0 0 100%; color: var(--s-muted); font-size: 0.6875rem; letter-spacing: .04em; text-transform: uppercase; }
+.s-price strong { font-size: 1.5rem; font-weight: 700; }
 .s-price[data-deal="true"] strong { color: var(--s-danger); }
 .s-price__note { font-size: 0.75rem; color: var(--s-muted); }
 .s-was { margin-top: 3px; font-size: 0.75rem; line-height: 1rem; color: var(--s-muted); }
 .s-was b { color: var(--s-danger); }
 
-.s-stock { margin-top: 16px; border: 1px solid var(--s-line); border-inline-start: 3px solid var(--s-ink); padding: 12px 14px; }
-.s-stock h3 { margin: 0 0 8px; font-size: 0.8125rem; font-weight: 700; }
-.s-stock li { display: flex; align-items: center; gap: 8px; font-size: 0.78125rem; color: var(--s-muted); margin-bottom: 6px; list-style: none; }
-.s-stock ul { margin: 0; padding: 0; }
+.s-stock { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-top: 14px; padding: 10px 0; border-block: 1px solid var(--s-line); font-size: 0.75rem; color: var(--s-muted); }
+.s-stock span:first-child { color: var(--s-ink); font-weight: 700; }
 
 /* Barre d'achat : l'action principale ne demande jamais de remonter la page. */
 .s-buybar {
@@ -276,6 +233,18 @@
   border-top: 1px solid var(--s-line);
   padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px));
 }
+
+/* Product purchase controls are part of the document, after the image/details.
+   Checkout and cart keep their separate sticky action bar above. */
+.s-buybar--product { position: relative; bottom: auto; z-index: 2; display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 12px; border-top: 1px solid var(--s-line); padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.s-buybar--product > .s-select__label, .s-buybar--product > .s-select, .s-buybar--product > .s-refusal, .s-buybar--product > .s-cta--ghost { grid-column: 1 / -1; }
+.s-buybar--product > .s-qty { grid-column: 1; grid-row: 1; margin: 0; }
+.s-buybar--product > .s-cta:not(.s-cta--ghost) { grid-column: 2; grid-row: 1; margin: 0; }
+.s-buybar--product:has(> .s-select) > .s-qty, .s-buybar--product:has(> .s-select) > .s-cta:not(.s-cta--ghost) { grid-row: 3; }
+.s-buybar--product:has(> .s-refusal) > .s-qty, .s-buybar--product:has(> .s-refusal) > .s-cta:not(.s-cta--ghost) { grid-row: 4; }
+.s-buybar--product > .s-cta--ghost { min-height: 40px; margin: 0; border: 0; text-decoration: underline; font-weight: 500; }
+.s-buybar--product .s-select__label { margin: 0; }
+.s-buybar--product .s-refusal { margin: 0; }
 
 .s-select {
   display: flex;
@@ -413,14 +382,9 @@
   font-weight: 700;
 }
 
-.s-cta--ghost {
-  background: var(--s-canvas);
-  color: var(--s-ink);
-  border: 1px solid var(--s-ink);
-}
+.s-cta--ghost { background: var(--s-canvas); color: var(--s-ink); }
 
-/* Agrandissement de la photo : repris de l'ancienne fiche. */
-.s-media__open { display: block; width: 100%; padding: 0; cursor: zoom-in; }
+.s-media__open { display: block; width: 100%; height: 100%; padding: 0; cursor: zoom-in; }
 .s-media__open img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
 .s-zoom {

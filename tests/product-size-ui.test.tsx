@@ -73,4 +73,14 @@ describe('source-backed product options on the mobile detail page', () => {
     expect(host.textContent).not.toContain('Contenance');
     expect(host.textContent).not.toContain('Pointures disponibles');
   });
+
+  it('electronics display only source-provided storage capacities with a storage label', async () => {
+    await render({ ...source, title: 'Smartphone X Pro', optionLabel: 'Stockage', sizes: ['128 GB', '256 GB'] });
+    expect(host.textContent).toContain('Stockage');
+    await act(async () => button('Choisir le stockage').click());
+    const options = host.querySelector('[role="dialog"]')?.textContent || '';
+    expect(options).toContain('128 GB');
+    expect(options).toContain('256 GB');
+    expect(options).not.toContain('512 GB');
+  });
 });

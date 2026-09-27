@@ -1,22 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { EditorialIcon } from '../design/editorial/Icon';
 import { SizeDrape } from './SizeDrape';
 import { refusalReason, type ProductActions, type ProductView, type SizeOption } from './types';
 
 /**
- * FICHE PRODUIT (boutique v2) — la forme validée en maquette, à la lettre.
- *
- *   1. au repos, le produit est ENTIER, plein cadre, sur notre canvas ;
- *   2. les photos défilent latéralement (glissement ou flèches clavier) ;
- *   3. dès que la page remonte, la feuille d'information passe PAR-DESSUS et
- *      l'image s'éteint derrière elle — voile plafonné, recul à échelle unique ;
- *   4. les actions flottantes se posent sur la photo et s'effacent quand la
- *      feuille les recouvre : jamais de bouton à moitié cliquable ;
- *   5. la barre d'achat ne quitte jamais le bas de l'écran.
- *
- * Le composant n'a AUCUNE logique commerciale : il affiche un `ProductView` et
- * appelle les actions de l'hôte. Il ne calcule pas de prix, ne convertit pas de
- * taille, n'invente pas de texte. Ce qui est `null` ne s'affiche pas.
+ * Mobile product page. One native vertical document flow:
+ * app bar → complete image gallery → product facts and price → variant selector
+ * → quantity and purchase action. The image is never dimmed or covered by the
+ * information section; only the image-specific action rail floats over it.
  */
 export interface ProductPageProps {
   product: ProductView;
@@ -24,42 +15,26 @@ export interface ProductPageProps {
   tr: (fr: string, ar: string) => string;
   formatMoney: (tnd: number) => string;
   direction?: 'ltr' | 'rtl';
-  /** Vrai tant que le prix est en cours de vérification à la source. */
   priceChecking?: boolean;
-  /** Repartir sur une autre recherche — action de l'ancienne fiche, conservée. */
   onCalculateAnother?: () => void;
-  /**
-   * Lien marchand déjà connu. Il pré-remplit le champ : ce lien devient l'URL de
-   * la ligne de panier, et un champ vide produirait une ligne sans adresse.
-   */
   defaultLink?: string;
-  /**
-   * Faux tant qu'aucun prix faisant autorité n'est arrivé. On n'ajoute pas au
-   * panier un article dont le montant n'est pas encore établi : le client
-   * découvrirait le prix APRÈS avoir cliqué.
-   */
   canAdd?: boolean;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
-  product, actions, tr, formatMoney, direction = 'ltr', priceChecking = false, onCalculateAnother, defaultLink = '', canAdd = true,
+  product,
+  actions,
+  tr,
+  formatMoney,
+  direction = 'ltr',
+  priceChecking = false,
+  onCalculateAnother,
+  defaultLink = '',
+  canAdd = true,
 }) => {
   const [slide, setSlide] = useState(0);
-  /* La quantité existait dans l'ancienne fiche : la perdre en passant à v2
-     aurait obligé le client à commander une pièce à la fois. */
   const [quantity, setQuantity] = useState(1);
-  /* Agrandissement : la photo produit se lit mal sur 390 px de large, et
-     l'ancienne fiche permettait de l'ouvrir en grand. On ne perd pas ça. */
   const [zoomed, setZoomed] = useState(false);
-  /* Détails de commande : note au vendeur et lien fourni par le client. Ce sont
-     les champs dont l'équipe d'achat se sert ; ils étaient repliés dans
-     l'ancienne fiche, ils le restent ici. */
-  /*
-   * Repli d'image : chaque photo porte sa chaîne (composition → isolation →
-   * image marchand). Si le rendu échoue, on recule d'un cran au lieu de laisser
-   * un cadre vide. Sans cela, une composition momentanément indisponible
-   * effacerait le produit de l'écran.
-   */
   const [mediaStep, setMediaStep] = useState<Record<number, number>>({});
   const [note, setNote] = useState('');
   const [link, setLink] = useState(defaultLink);
@@ -69,45 +44,16 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [shake, setShake] = useState(false);
-
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const mediaRef = useRef<HTMLDivElement | null>(null);
-  const sheetRef = useRef<HTMLDivElement | null>(null);
   const touchStart = useRef<number | null>(null);
 
-  /* Le voile est piloté par le RECOUVREMENT réel de l'image par la feuille,
-     pas par la position de défilement : la fiche reste juste quelle que soit
-     la hauteur de l'écran ou la longueur du texte. */
-  const measure = useCallback(() => {
-    const stage = stageRef.current;
-    const media = mediaRef.current;
-    const sheet = sheetRef.current;
-    if (!stage || !media || !sheet) return;
-    const mediaBox = media.getBoundingClientRect();
-    const overlap = mediaBox.bottom - sheet.getBoundingClientRect().top;
-    const travel = Math.max(1, mediaBox.height * 0.8);
-    const reveal = Math.min(1, Math.max(0, overlap / travel));
-    stage.style.setProperty('--s-reveal', reveal.toFixed(3));
-    stage.dataset.covered = String(reveal > 0.6);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    let frame = 0;
-    const onScroll = () => { if (!frame) frame = window.requestAnimationFrame(() => { frame = 0; measure(); }); };
-    measure();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    window.addEventListener('resize', onScroll);
-    return () => {
-      if (frame) window.cancelAnimationFrame(frame);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onScroll);
-    };
-  }, [measure]);
-
   const media = product.media;
-  const slides = media.length || 1;
-  const go = (next: number) => setSlide(((next % slides) + slides) % slides);
+  const slides = media.length;
+  const availabilityKnown = product.availabilityKnown;
+  const sizeMissing = product.sizes.length > 0 && !chosen;
+  const go = (next: number) => {
+    if (!slides) return;
+    setSlide(((next % slides) + slides) % slides);
+  };
 
   const pickSize = (size: SizeOption) => {
     const reason = refusalReason(size, availabilityKnown);
@@ -124,14 +70,12 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     setDrapeOpen(false);
   };
 
-  /* Tant qu'une taille est proposée et non choisie, l'ajout reste fermé : un
-     bouton actif qui ouvre un tiroir fait croire que la commande est partie. */
-  const sizeMissing = product.sizes.length > 0 && !chosen;
-  const availabilityKnown = product.availabilityKnown;
-
   const add = async () => {
-    if (!actions?.onAddToBag || adding) return;
-    if (sizeMissing) { setDrapeOpen(true); return; }
+    if (!actions?.onAddToBag || adding || !canAdd) return;
+    if (sizeMissing) {
+      setDrapeOpen(true);
+      return;
+    }
     setAdding(true);
     try {
       await actions.onAddToBag(chosen, quantity, { note: note.trim(), link: link.trim() });
@@ -142,92 +86,77 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     }
   };
 
-  const price = product.price;
-  /* Une chaussure n'a pas de taille M, un sérum n'a pas de pointure. Les mots
-     suivent le produit, sinon la fiche parle d'autre chose que ce qu'on vend. */
   const sizeWord = product.sizeKind === 'shoes'
     ? tr('Votre pointure', 'مقاسك')
-    : product.sizeKind === 'capacity'
-      ? tr('Choisir une contenance', 'اختار السعة')
-      : tr('Votre taille', 'اختار مقاسك');
-  const sizeLabel = product.sizeKind === 'shoes'
-    ? tr('Pointure', 'المقاس')
-    : product.sizeKind === 'capacity'
-      ? tr('Contenance', 'السعة')
-      : tr('Taille', 'المقاس');
+    : product.sizeKind === 'clothing'
+      ? tr('Votre taille', 'قياسك')
+      : product.sizeKind === 'capacity'
+        ? tr('Choisir une contenance', 'اختار السعة')
+        : product.sizeKind === 'storage'
+          ? tr('Choisir le stockage', 'اختار سعة التخزين')
+          : tr('Votre option', 'الخيار الذي تريده');
+  const rawOptionLabel = product.optionLabel?.trim() || '';
+  const optionLabel = /^(?:taille|size)$/i.test(rawOptionLabel) ? tr('Taille', 'المقاس')
+    : /^(?:pointure|shoe size)$/i.test(rawOptionLabel) ? tr('Pointure', 'المقاس')
+      : /^(?:stockage|storage|memory|mémoire)$/i.test(rawOptionLabel) ? tr('Stockage', 'التخزين')
+        : /^(?:volume|contenance|capacity)$/i.test(rawOptionLabel) ? tr('Contenance', 'السعة')
+          : rawOptionLabel || (product.sizeKind === 'shoes' ? tr('Pointure', 'المقاس')
+            : product.sizeKind === 'clothing' ? tr('Taille', 'المقاس')
+              : product.sizeKind === 'capacity' ? tr('Contenance', 'السعة')
+                : product.sizeKind === 'storage' ? tr('Stockage', 'التخزين') : tr('Option', 'الخيار'));
   const sizeListTitle = product.sizeKind === 'shoes'
     ? tr('Pointures disponibles', 'المقاسات المتوفرة')
     : product.sizeKind === 'capacity'
       ? tr('Contenances disponibles', 'السعات المتوفرة')
-      : tr('Tailles disponibles', 'المقاسات المتوفرة');
+      : product.sizeKind === 'storage'
+        ? tr('Stockages disponibles', 'سعات التخزين المتوفرة')
+        : tr('Options disponibles', 'الخيارات المتوفرة');
 
   return (
-    <div className="s-root s-page" dir={direction} data-ay-design="editorial">
+    <div className="s-root s-page s-product-page" dir={direction} data-ay-design="editorial">
       <header className="s-appbar">
         <button type="button" className="s-iconbtn" onClick={actions?.onBack} aria-label={tr('Retour', 'رجوع')}>
           <EditorialIcon name="Back" direction={direction} />
         </button>
         <div className="s-appbar__title">
-          <span>{product.brand ?? product.merchant?.name ?? ''}</span>
+          <span>{product.brand || product.merchant?.name || tr('Produit', 'منتج')}</span>
           <small>{product.title}</small>
         </div>
-        {actions?.onShare && (
-          <button type="button" className="s-iconbtn" onClick={actions.onShare} aria-label={tr('Partager ce produit', 'شارك هذا المنتج')}>
-            <EditorialIcon name="Share" />
-          </button>
-        )}
-        {!actions?.onShare && <span style={{ width: 44 }} />}
+        {actions?.onShare
+          ? <button type="button" className="s-iconbtn" onClick={actions.onShare} aria-label={tr('Partager ce produit', 'شارك هذا المنتج')}><EditorialIcon name="Share" /></button>
+          : <span className="s-appbar__spacer" aria-hidden="true" />}
       </header>
 
-      <div className="s-stage" ref={stageRef}>
-        <div className="s-media" ref={mediaRef}>
-          <div className="s-media__zoom">
-            <div
-              className="s-media__viewport"
-              onTouchStart={(event) => { touchStart.current = event.touches[0]?.clientX ?? null; }}
-              onTouchEnd={(event) => {
-                const start = touchStart.current;
-                touchStart.current = null;
-                if (start == null || slides < 2) return;
-                const delta = (event.changedTouches[0]?.clientX ?? start) - start;
-                if (Math.abs(delta) < 40) return;
-                go(slide + (delta < 0 ? 1 : -1) * (direction === 'rtl' ? -1 : 1));
-              }}
-            >
-              <div
-                className="s-media__track"
-                style={{ transform: `translateX(${(direction === 'rtl' ? 1 : -1) * slide * 100}%)` }}
-              >
+      <main className="s-stage">
+        <section className="s-media" aria-label={tr('Photos du produit', 'صور المنتج')}>
+          <div className="s-media__hero">
+          <div
+            className="s-media__viewport"
+            onTouchStart={(event) => { touchStart.current = event.touches[0]?.clientX ?? null; }}
+            onTouchEnd={(event) => {
+              const start = touchStart.current;
+              touchStart.current = null;
+              if (start == null || slides < 2) return;
+              const delta = (event.changedTouches[0]?.clientX ?? start) - start;
+              if (Math.abs(delta) >= 40) go(slide + (delta < 0 ? 1 : -1) * (direction === 'rtl' ? -1 : 1));
+            }}
+          >
+            {slides > 0 ? (
+              <div className="s-media__track" style={{ transform: `translateX(${(direction === 'rtl' ? 1 : -1) * slide * 100}%)` }}>
                 {media.map((item, index) => {
-                  /*
-                   * On ne télécharge que la photo visible et sa voisine immédiate.
-                   * Un carrousel qui charge ses quatre images d'un coup fait payer
-                   * au client, sur son forfait, trois photos qu'il ne regardera
-                   * peut-être jamais — et retarde celle qu'il regarde.
-                   */
-                  const near = Math.abs(index - slide) <= 1;
                   const chain = [item.src, ...item.fallbacks];
                   const step = Math.min(mediaStep[index] ?? 0, chain.length - 1);
                   return (
                     <div className="s-media__slide" key={`${item.src}-${index}`}>
-                      <button
-                        type="button"
-                        className="s-media__open"
-                        onClick={() => setZoomed(true)}
-                        aria-label={tr('Agrandir la photo', 'تكبير الصورة')}
-                      >
-                        {near
+                      <button type="button" className="s-media__open" onClick={() => setZoomed(true)} aria-label={tr('Agrandir la photo', 'كبّر الصورة')}>
+                        {Math.abs(index - slide) <= 1
                           ? <img
                               src={chain[step]}
                               alt={item.alt}
                               decoding="async"
                               referrerPolicy="no-referrer"
                               draggable={false}
-                              data-media-step={step}
-                              onError={() => setMediaStep((current) => ({
-                                ...current,
-                                [index]: Math.min((current[index] ?? 0) + 1, chain.length - 1),
-                              }))}
+                              onError={() => setMediaStep((current) => ({ ...current, [index]: Math.min((current[index] ?? 0) + 1, chain.length - 1) }))}
                             />
                           : <span className="s-media__placeholder" aria-hidden="true" />}
                       </button>
@@ -235,240 +164,111 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                   );
                 })}
               </div>
-            </div>
+            ) : (
+              <div className="s-media__empty" role="status">{tr('Photo du produit indisponible', 'صورة المنتج غير متوفّرة')}</div>
+            )}
           </div>
 
-          <div className="s-scrim" aria-hidden="true" />
-
           {product.flags.length > 0 && (
-            <div className="s-card__flags" style={{ top: 10, bottom: 'auto', insetInlineStart: 10, position: 'absolute', zIndex: 6 }}>
-              {product.flags.map((flag) => (
-                <span key={flag.label} className={`s-flag s-flag--${flag.kind}`}>{flag.label}</span>
-              ))}
+            <div className="s-card__flags s-product__flags">
+              {product.flags.map((flag) => <span key={flag.label} className={`s-flag s-flag--${flag.kind}`}>{flag.label}</span>)}
             </div>
           )}
-
           {slides > 1 && <span className="s-counter">{slide + 1} / {slides}</span>}
-
-          {/* Le glissement ne suffit pas : sur un écran sans tactile, la galerie
-              serait inaccessible. Les deux commandes existent donc aussi. */}
           {slides > 1 && (
             <div className="s-gallery-nav">
-              <button type="button" className="s-rail__btn" onClick={() => go(slide - 1)} aria-label={tr('Photo précédente', 'الصورة السابقة')}>
-                <EditorialIcon name="ChevronLeft" size={18} direction={direction} />
-              </button>
-              <button type="button" className="s-rail__btn" onClick={() => go(slide + 1)} aria-label={tr('Photo suivante', 'الصورة التالية')}>
-                <EditorialIcon name="ChevronRight" size={18} direction={direction} />
-              </button>
+              <button type="button" className="s-rail__btn" onClick={() => go(slide - 1)} aria-label={tr('Photo précédente', 'الصورة السابقة')}><EditorialIcon name="ChevronLeft" size={18} direction={direction} /></button>
+              <button type="button" className="s-rail__btn" onClick={() => go(slide + 1)} aria-label={tr('Photo suivante', 'الصورة التالية')}><EditorialIcon name="ChevronRight" size={18} direction={direction} /></button>
             </div>
           )}
-
-          {/* Les trois actions de la maquette, dans son ordre : alerte, favori,
-              panier. Elles étaient tombées à la bascule — la fiche n'offrait
-              plus que le panier, et le client ne pouvait ni suivre un produit
-              ni le mettre de côté. */}
-          {(actions?.onOpenBag || actions?.onNotify || actions?.onFavorite) && (
-            <div className="s-rail" data-hidden={stageRef.current?.dataset.covered === 'true'}>
-              {actions?.onNotify && (
-                <button type="button" className="s-rail__btn" onClick={actions.onNotify}
-                  aria-label={tr('Me prévenir sur ce produit', 'نبّهني على هذا المنتج')}>
-                  <EditorialIcon name="Bell" size={22} />
-                </button>
-              )}
-              {actions?.onFavorite && (
-                <button type="button" className="s-rail__btn" aria-pressed={Boolean(actions.favorite)}
-                  onClick={actions.onFavorite} aria-label={tr('Ajouter aux favoris', 'أضف للمفضّلة')}>
-                  <EditorialIcon name={actions.favorite ? 'HeartFilled' : 'Heart'} size={22}
-                    fill={actions.favorite ? 'currentColor' : undefined} />
-                </button>
-              )}
-              {actions?.onOpenBag && (
-                <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag}
-                  aria-label={tr('Ouvrir le panier', 'فتح السلة')}>
-                  <EditorialIcon name="Bag" size={22} />
-                </button>
-              )}
+          {(actions?.onNotify || actions?.onFavorite || actions?.onOpenBag) && (
+            <div className="s-rail" aria-label={tr('Actions du produit', 'إجراءات المنتج')}>
+              {actions?.onNotify && <button type="button" className="s-rail__btn" onClick={actions.onNotify} aria-label={tr('Créer une alerte produit', 'أنشئ تنبيهًا للمنتج')}><EditorialIcon name="Bell" size={22} /></button>}
+              {actions?.onFavorite && <button type="button" className="s-rail__btn" aria-pressed={Boolean(actions.favorite)} onClick={actions.onFavorite} aria-label={tr('Ajouter aux favoris', 'أضف للمفضّلة')}><EditorialIcon name={actions.favorite ? 'HeartFilled' : 'Heart'} size={22} fill={actions.favorite ? 'currentColor' : undefined} /></button>}
+              {actions?.onOpenBag && <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag} aria-label={tr('Ouvrir le panier', 'افتح السلة')}><EditorialIcon name="Bag" size={22} /></button>}
             </div>
           )}
-        </div>
+          </div>
+          {slides > 1 && (
+            <div className="s-thumbnails" role="group" aria-label={tr('Choisir une photo', 'اختار صورة')}>
+              {media.map((item, index) => <button key={`${item.src}-thumb-${index}`} type="button" className="s-thumbnail" aria-current={slide === index ? 'true' : undefined} aria-label={tr(`Afficher la photo ${index + 1}`, `اعرض الصورة ${index + 1}`)} onClick={() => go(index)}><img src={item.src} alt="" loading="lazy" /></button>)}
+            </div>
+          )}
+        </section>
 
-        <section className="s-sheet" ref={sheetRef}>
-          <div className="s-sheet__grab" aria-hidden="true" />
-
+        <section className="s-sheet" aria-label={tr('Détails du produit', 'تفاصيل المنتج')}>
           {product.colors.length > 1 && (
             <div className="s-swatches" role="group" aria-label={tr('Couleurs', 'الألوان')}>
-              {product.colors.map((color) => (
-                <button
-                  key={color.name}
-                  type="button"
-                  className="s-swatch"
-                  aria-pressed={color.selected}
-                  aria-label={color.name}
-                  onClick={() => actions?.onSelectColor?.(color.name)}
-                >
-                  {color.media ? <img src={color.media.src} alt="" /> : <span>{color.name.slice(0, 3)}</span>}
-                </button>
-              ))}
+              {product.colors.map((color) => <button key={color.name} type="button" className="s-swatch" aria-pressed={color.selected} aria-label={color.name} onClick={() => actions?.onSelectColor?.(color.name)}>{color.media ? <img src={color.media.src} alt="" /> : <span>{color.name.slice(0, 3)}</span>}</button>)}
             </div>
           )}
-
           {product.brand && <div className="s-brand">{product.brand}</div>}
           <h1 className="s-title">{product.title}</h1>
+          {product.merchant?.name && <p className="s-merchant">{tr('Source : ', 'المصدر: ')}{product.merchant.name}</p>}
           {product.description && <p className="s-desc">{product.description}</p>}
-          {product.capacity && <p className="s-desc">{product.capacity}</p>}
+          {product.capacity && <p className="s-capacity">{product.capacity}</p>}
 
-          {/* Sans prix établi, l'écran le DIT. Une fiche muette sur le montant
-              laisse croire à un oubli d'affichage ; le client doit savoir que
-              le chiffre est en cours d'établissement, pas introuvable. */}
-          {!price && (
-            <p className="s-price s-price--pending" role="status">
-              {priceChecking
-                ? tr('Vérification du prix à la source…', 'نتثبّتو في السعر عند المصدر…')
-                : tr('Prix à confirmer', 'السعر قيد التأكيد')}
-            </p>
+          {!product.price && (
+            <div className="s-price s-price--pending" role="status">
+              <span className="s-price__label">{tr('Prix AYROVI', 'سعر AYROVI')}</span>
+              <span>{priceChecking ? tr('Vérification du prix à la source…', 'نتثبّتو في السعر عند المصدر…') : tr('Prix à confirmer', 'السعر قيد التأكيد')}</span>
+            </div>
+          )}
+          {product.price && (
+            <>
+              <div className="s-price" data-deal={Boolean(product.price.reference)}>
+                <span className="s-price__label">{tr('Prix estimé AYROVI', 'السعر التقديري من AYROVI')}</span>
+                <strong>{formatMoney(product.price.current.tnd)}</strong>
+                {priceChecking && <span className="s-price__note" role="status">{tr('Vérification à la source…', 'نتثبّتو في السعر عند المصدر…')}</span>}
+              </div>
+              {product.price.reference && <p className="s-was">{tr('Prix de référence : ', 'السعر المرجعي: ')}<s>{formatMoney(product.price.reference.tnd)}</s>{product.price.discountPercent != null && <b> −{product.price.discountPercent}%</b>}</p>}
+              {product.price.current.source && <p className="s-was">{product.price.current.source.amount} {product.price.current.source.currency}{product.price.verifiedAtSource ? ` · ${tr('prix vérifié à la source', 'السعر متثبّت عند المصدر')}` : ''}</p>}
+            </>
           )}
 
-          {price && (
-            <>
-              <div className="s-price" data-deal={Boolean(price.reference)}>
-                <strong>{formatMoney(price.current.tnd)}</strong>
-                {priceChecking && (
-                  <span className="s-price__note" role="status">
-                    {tr('Vérification à la source…', 'نتثبّتو عند المصدر…')}
-                  </span>
-                )}
-              </div>
-              {price.reference && (
-                <p className="s-was">
-                  {tr('Prix de référence : ', 'السعر المرجعي: ')}
-                  <s>{formatMoney(price.reference.tnd)}</s>
-                  {price.discountPercent != null && <b> −{price.discountPercent}%</b>}
-                </p>
-              )}
-              {price.current.source && (
-                <p className="s-was">
-                  {price.current.source.amount} {price.current.source.currency}
-                  {price.verifiedAtSource ? ` · ${tr('prix vérifié à la source', 'السعر متثبّت عند المصدر')}` : ''}
-                </p>
-              )}
-            </>
+          {product.sizes.length > 0 && (
+            <div className="s-stock" aria-label={tr('Disponibilité des options', 'توفّر الخيارات')}>
+              <span>{optionLabel}</span>
+              <span>{product.sizes.filter((size) => size.state === 'available').length
+                ? tr('Disponibilité signalée par la source', 'المصدر يذكر توفّر خيارات')
+                : tr('Stock non confirmé par la source', 'المصدر ما أكّدش المخزون')}</span>
+            </div>
           )}
 
           <details className="s-details">
             <summary>{tr('Lien et note (facultatif)', 'الرابط والملاحظة (اختياري)')}</summary>
-            <label>
-              <span>{tr('Lien du produit chez le marchand', 'رابط المنتج عند التاجر')}</span>
-              <input
-                value={link}
-                onChange={(event) => setLink(event.target.value)}
-                inputMode="url"
-                placeholder="https://"
-                aria-invalid={link.trim().length > 0 && !/^https?:\/\/\S+$/i.test(link.trim())}
-              />
-            </label>
-            <label>
-              <span>{tr('Note pour notre équipe', 'ملاحظة لفريقنا')}</span>
-              <input value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} />
-            </label>
+            <label><span>{tr('Lien du produit chez le marchand', 'رابط المنتج عند التاجر')}</span><input value={link} onChange={(event) => setLink(event.target.value)} inputMode="url" placeholder="https://" aria-invalid={link.trim().length > 0 && !/^https?:\/\/\S+$/i.test(link.trim())} /></label>
+            <label><span>{tr('Note pour notre équipe', 'ملاحظة لفريقنا')}</span><input value={note} onChange={(event) => setNote(event.target.value)} maxLength={200} /></label>
           </details>
-
-          {product.sizes.length > 0 && (
-            <div className="s-stock">
-              <h3>{tr('Disponibilité constatée', 'التوفّر المثبّت')}</h3>
-              <ul>
-                {(['available', 'unavailable', 'unknown'] as const).map((state) => {
-                  const values = product.sizes.filter((size) => size.state === state).map((size) => size.value);
-                  if (!values.length) return null;
-                  const label = state === 'available'
-                    ? tr('en stock chez la source', 'متوفّر عند المصدر')
-                    : state === 'unavailable'
-                      ? tr('rupture constatée', 'مفقود عند المصدر')
-                      : tr('stock non confirmé', 'المخزون غير مؤكّد');
-                  const icon = state === 'available' ? 'Success' : state === 'unavailable' ? 'Close' : 'Alert';
-                  return (
-                    <li key={state}>
-                      <EditorialIcon name={icon} size={16} />
-                      <span>{values.join(', ')} — {label}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
         </section>
-      </div>
 
-      <div className="s-buybar">
-        {product.sizes.length > 0 && (
-          <span className="s-select__label">{sizeLabel}</span>
-        )}
-        {product.sizes.length > 0 && (
-          <button
-            type="button"
-            className="s-select"
-            data-error={shake || undefined}
-            onClick={() => setDrapeOpen(true)}
-            aria-expanded={drapeOpen}
-          >
-            <span>{chosen ? `${sizeWord} : ${chosen.value}` : sizeWord}</span>
-            <EditorialIcon name="ChevronDown" size={20} />
+        <section className="s-buybar s-buybar--product" aria-label={tr('Choix et achat', 'الاختيار والشراء')}>
+          {product.sizes.length > 0 && <span className="s-select__label">{optionLabel}</span>}
+          {product.sizes.length > 0 && (
+            <button type="button" className="s-select" data-error={shake || undefined} onClick={() => setDrapeOpen(true)} aria-expanded={drapeOpen}>
+              <span>{chosen ? `${optionLabel} : ${chosen.value}` : sizeWord}</span><EditorialIcon name="ChevronDown" size={20} />
+            </button>
+          )}
+          {refusal && <p className="s-refusal" role="status">{refusal === 'unavailable' ? tr('Cette option est indisponible chez la source. Choisissez-en une autre.', 'الخيار هذا موش متوفّر عند المصدر. اختار غيره.') : tr('La source ne confirme pas le stock de cette option : la commande est bloquée.', 'المصدر ما أكّدش توفّر الخيار هذا: الطلب متوقّف.')}</p>}
+          <div className="s-qty" role="group" aria-label={tr('Quantité', 'الكمية')}>
+            <button type="button" className="s-iconbtn" aria-label={tr('Diminuer la quantité', 'نقّص الكمية')} disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}><EditorialIcon name="Minus" size={18} /></button>
+            <span aria-live="polite">{quantity}</span>
+            <button type="button" className="s-iconbtn" aria-label={tr('Augmenter la quantité', 'زيد الكمية')} onClick={() => setQuantity((value) => Math.min(99, value + 1))}><EditorialIcon name="Plus" size={18} /></button>
+          </div>
+          <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || !canAdd || !actions?.onAddToBag}>
+            {added ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</> : adding ? tr('Ajout…', 'جارٍ الإضافة…') : tr('Ajouter au panier', 'أضف إلى السلة')}
           </button>
-        )}
-
-        {refusal && (
-          <p className="s-refusal" role="status">
-            {refusal === 'unavailable'
-              ? tr('Cette taille est en rupture chez la source. Choisissez-en une autre.', 'هذا المقاس مفقود عند المصدر. اختار مقاس آخر.')
-              : tr('La source ne confirme pas le stock de cette taille : la commande est bloquée.', 'المصدر ما أكّدش توفّر هذا المقاس: الطلب مسدود.')}
-          </p>
-        )}
-
-        <div className="s-qty" role="group" aria-label={tr('Quantité', 'الكمية')}>
-          <button type="button" className="s-iconbtn" aria-label={tr('Diminuer la quantité', 'إنقاص الكمية')}
-            disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}>
-            <EditorialIcon name="Minus" size={18} />
-          </button>
-          <span aria-live="polite">{quantity}</span>
-          <button type="button" className="s-iconbtn" aria-label={tr('Augmenter la quantité', 'زيادة الكمية')}
-            onClick={() => setQuantity((value) => Math.min(99, value + 1))}>
-            <EditorialIcon name="Plus" size={18} />
-          </button>
-        </div>
-
-        <button type="button" className="s-cta" data-done={added || undefined} onClick={add} disabled={adding || sizeMissing || !canAdd || !actions?.onAddToBag}>
-          {added
-            ? <><EditorialIcon name="Check" size={18} />{tr('Ajouté au panier', 'تزاد للسلة')}</>
-            : adding
-              ? tr('Ajout…', 'جارٍ الإضافة…')
-              : tr('Ajouter au panier', 'زيد للسلة')}
-        </button>
-        {onCalculateAnother && (
-          <button type="button" className="s-cta s-cta--ghost" onClick={onCalculateAnother}>
-            {tr('Calculer un autre article', 'احسب منتج آخر')}
-          </button>
-        )}
-      </div>
+          {onCalculateAnother && <button type="button" className="s-cta s-cta--ghost" onClick={onCalculateAnother}>{tr('Calculer un autre article', 'احسب منتجًا آخر')}</button>}
+        </section>
+      </main>
 
       {zoomed && media[slide] && (
         <div className="s-zoom" role="dialog" aria-modal="true" aria-label={tr('Photo agrandie', 'الصورة مكبّرة')}>
-          <button type="button" className="s-zoom__close s-iconbtn" onClick={() => setZoomed(false)} aria-label={tr('Fermer', 'إغلاق')}>
-            <EditorialIcon name="Close" />
-          </button>
+          <button type="button" className="s-zoom__close s-iconbtn" onClick={() => setZoomed(false)} aria-label={tr('Fermer', 'إغلاق')}><EditorialIcon name="Close" /></button>
           <img src={media[slide].src} alt={media[slide].alt} />
         </div>
       )}
-
-      <SizeDrape
-        open={drapeOpen}
-        sizes={product.sizes}
-        title={sizeListTitle}
-        availabilityKnown={availabilityKnown}
-        selected={chosen?.value ?? null}
-        scaleLabel={product.sizeScaleLabel}
-        tr={tr}
-        onClose={() => setDrapeOpen(false)}
-        onSelect={pickSize}
-      />
+      <SizeDrape open={drapeOpen} sizes={product.sizes} title={sizeListTitle} availabilityKnown={availabilityKnown} selected={chosen?.value ?? null} scaleLabel={product.sizeScaleLabel} tr={tr} onClose={() => setDrapeOpen(false)} onSelect={pickSize} />
     </div>
   );
 };

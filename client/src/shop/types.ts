@@ -68,8 +68,10 @@ export interface ProductView {
   sizes: SizeOption[];
   /** Nom de l'échelle principale (« EU », « FR »…) quand la source le précise. */
   sizeScaleLabel: string | null;
-  /** Ce que « taille » veut dire pour CE produit : une chaussure n'a pas de taille M. */
-  sizeKind: 'shoes' | 'clothing' | 'capacity' | 'none';
+  /** Meaning of the merchant's primary option: garment size, storage, volume, etc. */
+  sizeKind: 'shoes' | 'clothing' | 'capacity' | 'storage' | 'generic' | 'none';
+  /** Exact merchant-backed name for the option group, when known. */
+  optionLabel: string | null;
   /**
    * Vrai quand la source publie RÉELLEMENT une disponibilité par variante.
    *

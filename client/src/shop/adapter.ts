@@ -70,6 +70,7 @@ export function candidateToView(candidate: AyrovixCandidate): ProductView {
     sizes: [],
     sizeScaleLabel: null,
     sizeKind: 'none',
+    optionLabel: null,
     capacity: null,
     availabilityKnown: false,
     colors: [],
@@ -90,11 +91,22 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
   const productClass = classifyProduct(product.title, product.description);
   const capacityBased = usesCapacity(productClass);
   const presented = presentSizes(productClass, product.title, product.sizes || []);
-  const values = capacityBased
-    ? presented.options.filter((size) => extractCapacity(size) !== null)
-    : productClass === 'shoes' || productClass === 'clothing' || productClass === 'accessory'
-      ? presented.options
-      : [];
+  const storageOptions = presented.options.filter((value) => /\b\d+(?:[.,]\d+)?\s*(?:gb|go|tb|to)\b/i.test(value));
+  const volumeOptions = presented.options.filter((value) => extractCapacity(value) !== null);
+  const suppliedLabel = product.optionLabel?.trim() || '';
+  const sourceSaysStorage = /stockage|storage|mémoire|memory/i.test(suppliedLabel);
+  const sourceSaysVolume = /volume|contenance|capacity/i.test(suppliedLabel);
+  const values = sourceSaysStorage || (productClass === 'electronics' && storageOptions.length)
+    ? storageOptions
+    : capacityBased || sourceSaysVolume
+      ? volumeOptions
+      : productClass === 'shoes' || productClass === 'clothing' || productClass === 'accessory'
+        ? presented.options
+        : [];
+  const optionLabel = suppliedLabel || (capacityBased ? 'Contenance'
+    : productClass === 'shoes' ? 'Pointure'
+      : productClass === 'clothing' ? 'Taille'
+        : storageOptions.length ? 'Stockage' : volumeOptions.length ? 'Volume' : values.length ? 'Option' : null);
 
   const sizes: SizeOption[] = values.map((value) => {
     const forSize = options.filter((option) => option.size === value);
@@ -118,9 +130,8 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
     brand: product.brand?.trim() || null,
     title: product.title.trim(),
     description: product.description?.trim() || null,
-    /* Quatre photos au plus dans le carrousel : au-delà, le client fait défiler
-       sans rien apprendre de neuf. Les autres restent dans la fiche produit. */
-    media: toMedia(gallery, product.title).slice(0, 4),
+    /* Keep every image supplied by this product's own merchant page. */
+    media: toMedia(gallery, product.title),
     price: priceOf(
       product.priceTnd,
       product.promo ?? null,
@@ -129,11 +140,14 @@ export function productToView(product: AyrovixProduct, activeColor?: string | nu
     ),
     sizes,
     sizeScaleLabel: null,
-    sizeKind: capacityBased ? 'capacity' : productClass === 'shoes' ? 'shoes' : values.length ? 'clothing' : 'none',
+    sizeKind: capacityBased || sourceSaysVolume ? 'capacity' : productClass === 'shoes' ? 'shoes'
+      : sourceSaysStorage || (productClass === 'electronics' && storageOptions.length) ? 'storage'
+        : values.length ? 'clothing' : 'none',
+    optionLabel,
     availabilityKnown: options.some((option) => option.availability !== undefined || option.available === false),
     /* Contenance lue dans le titre quand le marchand n'a listé aucune variante :
        « 10 ml » est une information du produit, pas une supposition. */
-    capacity: capacityBased ? extractCapacity(`${product.title} ${product.description || ''}`)?.label ?? null : null,
+    capacity: capacityBased && !sizes.length ? extractCapacity(`${product.title} ${product.description || ''}`)?.label ?? null : null,
     colors: (product.colors || []).map((name) => ({
       name,
       media: toMedia(colorSets?.[name.toLocaleLowerCase()] || [], name)[0] ?? null,

@@ -46,6 +46,7 @@ export type ProductCategory =
   | 'computer'
   | 'watch'
   | 'bag'
+  | 'accessory'
   | 'unknown';
 
 export interface Evidence {
@@ -271,6 +272,7 @@ const RULES: CategoryRule[] = [
   { category: 'computer', terms: ['laptop', 'notebook', 'macbook', 'ultrabook', 'ordinateur portable', 'pc portable', 'حاسوب', 'لابتوب'] },
   { category: 'watch', terms: ['watch', 'montre', 'smartwatch', 'ساعة'] },
   { category: 'bag', terms: ['handbag', 'backpack', 'sac à main', 'sac', 'cartable', 'tote', 'حقيبة'] },
+  { category: 'accessory', terms: ['belt', 'ceinture', 'wallet', 'portefeuille', 'sunglasses', 'lunettes', 'accessory', 'accessoire', 'حزام', 'محفظة'] },
 ];
 
 /** Poids par provenance : un titre est un signal plus fort qu'une description. */
@@ -336,6 +338,7 @@ const MATRIX: Record<ProductCategory, Compatibility> = {
   computer: { primary: 'storage', secondary: ['color', 'ram'], numericMeans: null },
   watch: { primary: null, secondary: ['color'], numericMeans: null },
   bag: { primary: null, secondary: ['color'], numericMeans: null },
+  accessory: { primary: 'numeric_size', secondary: ['color', 'pack'], numericMeans: 'numeric_size', numericRange: [40, 160] },
   // Catégorie inconnue : on n'accepte QUE les natures qui se décrivent elles-mêmes
   // (une unité est sans ambiguïté). Un nombre nu reste refusé : rien ne permet
   // d'affirmer que c'est une pointure plutôt qu'une taille.

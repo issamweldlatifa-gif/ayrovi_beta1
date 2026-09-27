@@ -28,6 +28,7 @@ import { LensContextHeader, LensMoreMenu } from './LensNavigation';
 import { InteractiveLensResults } from './InteractiveLensResults';
 import { Type, ExternalLink, Barcode, Check, Image as GalleryIcon, Percent, Search, ShieldCheck, Sparkles, ShoppingBag } from '../../components/QatafoIcons';
 import { classifyProduct, productClassLabel } from '../services/productAttributes';
+import { useLensFavorites } from './useLensFavorites';
 
 interface LensLauncherProps {
   isOpen: boolean;
@@ -89,6 +90,32 @@ function candidateToProduct(candidate: AyrovixCandidate): AyrovixProduct {
   };
 }
 
+function productToFavoriteCandidate(product: AyrovixProduct): AyrovixCandidate {
+  return {
+    id: product.sourceUrl || product.title,
+    kind: 'external',
+    title: product.title,
+    brand: product.brand,
+    model: product.model,
+    colors: product.colors || [],
+    sizes: product.sizes || [],
+    source: product.source || 'Web',
+    sourceUrl: product.sourceUrl,
+    image: product.image,
+    images: product.images,
+    price: product.price,
+    currency: product.currency,
+    priceTnd: product.priceTnd,
+    priceToken: product.priceToken,
+    priceVerificationStatus: product.priceVerificationStatus,
+    availability: product.availability,
+    rating: product.rating,
+    ratingCount: product.ratingCount,
+    ratingKind: product.ratingKind === 'merchant' ? 'merchant' : 'match',
+    match: 100,
+  };
+}
+
 const NEW_SCAN_MESSAGE = 'Cadrez le produit dans un bon éclairage, ou collez son lien direct.';
 
 function errorGuidance(code: string, tr: (fr:string, ar:string)=>string): { title:string; hint:string; retryLabel:string } {
@@ -131,6 +158,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
   const [lensAccepted, setLensAccepted] = useState(readLensConsent);
   const navigation = useNavigationHistory();
   const { tr, direction, isArabic } = useLocale();
+  const productFavorites = useLensFavorites(customerSession, onOpenFavorites);
   const cameraCapable = typeof navigator !== 'undefined' && Boolean(navigator.mediaDevices?.getUserMedia);
   const stageLayer = [...navigation.stack].reverse().find((layer) => layer.id.startsWith('lens:') && layer.id !== 'lens:history');
   const stageValue = stageLayer?.id.slice('lens:'.length);
@@ -716,6 +744,9 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
     );
   }
 
+  const favoriteCandidate = product ? productToFavoriteCandidate(product) : null;
+  const productIsFavorite = favoriteCandidate ? productFavorites.isSaved(favoriteCandidate) : false;
+
   return (
     <div className={`ayrovix-theme-scope fixed inset-0 z-[75] flex flex-col ${darkMode ? 'bg-white text-ink' : 'bg-white text-ink'}`} dir={direction} role="dialog" aria-modal="true" aria-label={tr('AYROVIX Lens', 'عدسة AYROVIX')}>
       <div className="ayrovix-sheet flex h-full flex-col bg-white">
@@ -915,6 +946,8 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
                   priceVerified={verifiedPriceUrl}
                   onOrder={handleOrder}
                   onOpenCart={onOpenCart}
+                  onFavorite={favoriteCandidate?.sourceUrl ? () => void productFavorites.toggle(favoriteCandidate) : undefined}
+                  favorite={productIsFavorite}
                   onBack={goBack}
                   onCalculateAnother={reset}
                 />

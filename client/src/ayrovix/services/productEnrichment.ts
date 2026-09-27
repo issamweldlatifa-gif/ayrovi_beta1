@@ -1,24 +1,31 @@
 import type { AyrovixProduct } from '../types';
 
-/** Add source-backed details without mixing two differently signed offers.
- * A candidate's general quote remains intact; a variant's own price/currency/
- * token may be adopted only when the server signed it for that same product,
- * URL and verification status. A different identity still enriches media and
- * description, but keeps variant choices on the clearly labelled general quote.
- */
+/** Only merge a full extraction from the exact merchant page Lens opened. */
+function sameMerchantProduct(left: string, right: string): boolean {
+  try {
+    const a = new URL(left);
+    const b = new URL(right);
+    const normalizePath = (value: string) => value.replace(/\/+$/, '') || '/';
+    return ['http:', 'https:'].includes(a.protocol)
+      && ['http:', 'https:'].includes(b.protocol)
+      && a.hostname.toLowerCase().replace(/^www\./, '') === b.hostname.toLowerCase().replace(/^www\./, '')
+      && normalizePath(a.pathname) === normalizePath(b.pathname);
+  } catch {
+    return false;
+  }
+}
+
 export function mergeProductEnrichment(
   current: AyrovixProduct | null,
   full: AyrovixProduct,
   requestedUrl: string,
 ): AyrovixProduct | null {
-  if (!current || current.sourceUrl !== requestedUrl) return current;
+  if (!current || current.sourceUrl !== requestedUrl || !sameMerchantProduct(full.sourceUrl, requestedUrl)) return current;
 
   const images = [...new Set([...(current.images || []), ...(full.images || [])].filter(Boolean))];
   const colorImages = { ...(full.colorImages || {}) };
-  if (current.colorImages) {
-    for (const [key, set] of Object.entries(current.colorImages)) {
-      colorImages[key] = [...new Set([...(colorImages[key] || []), ...set])];
-    }
+  for (const [key, currentSet] of Object.entries(current.colorImages || {})) {
+    colorImages[key] = [...new Set([...(colorImages[key] || []), ...currentSet])];
   }
   const description = (full.description || '').trim().length > (current.description || '').trim().length
     ? full.description : current.description;
@@ -33,6 +40,7 @@ export function mergeProductEnrichment(
     colorImages: Object.keys(colorImages).length ? colorImages : current.colorImages ?? null,
     image: current.image || full.image || '',
     sizes: current.sizes.length ? current.sizes : full.sizes || [],
+    optionLabel: current.optionLabel || full.optionLabel || null,
     colors: current.colors.length ? current.colors : full.colors || [],
     brand: current.brand || full.brand || null,
     availability: full.availability && full.availability !== 'unknown' ? full.availability : current.availability,
