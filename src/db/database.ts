@@ -28,6 +28,10 @@ export interface CheckoutInput {
   paymentMethod: PaymentMethodCode;
   latitude: number | null;
   longitude: number | null;
+  /** Où le colis doit aller : chez le client, au bureau, ou en point relais. */
+  deliveryMode?: 'home' | 'desk' | 'pickup';
+  /** Identifiant du point choisi. Vide pour une livraison à domicile. */
+  pickupPointId?: string;
   termsAcceptedAt: string;
   locale: 'fr-TN' | 'ar-TN';
 }
@@ -144,6 +148,10 @@ const ORDERS_TABLE_SQL = `CREATE TABLE IF NOT EXISTS orders (
   contact_email TEXT NOT NULL DEFAULT '',
   delivery_latitude REAL,
   delivery_longitude REAL,
+  /* Mode de livraison : sans lui, l'entrepot ne sait pas OU envoyer le colis. */
+  delivery_mode TEXT NOT NULL DEFAULT 'home' CHECK(delivery_mode IN ('home','desk','pickup')),
+  /* Point de retrait choisi (bureau AYROVI ou relais). Vide pour une livraison à domicile. */
+  pickup_point_id TEXT NOT NULL DEFAULT '',
   terms_accepted_at TEXT,
   locale TEXT NOT NULL DEFAULT 'fr-TN',
   notes TEXT NOT NULL DEFAULT '',
@@ -1864,6 +1872,9 @@ export class QatafoDatabase {
     this.ensureColumn('orders', 'contact_email', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'delivery_latitude', 'REAL');
     this.ensureColumn('orders', 'delivery_longitude', 'REAL');
+    // Les bases déjà en service reçoivent les colonnes sans perdre une ligne.
+    this.ensureColumn('orders', 'delivery_mode', "TEXT NOT NULL DEFAULT 'home'");
+    this.ensureColumn('orders', 'pickup_point_id', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'terms_accepted_at', 'TEXT');
     this.ensureColumn('orders', 'locale', "TEXT NOT NULL DEFAULT 'fr-TN'");
     this.ensureColumn('deliveries', 'latitude', 'REAL');
@@ -3213,12 +3224,14 @@ export class QatafoDatabase {
         id,order_number,customer_id,account_id,source,arrival_id,status,payment_status,payment_method,
         deposit_percent,deposit_amount_tnd,deposit_discount_tnd,deposit_status,
         subtotal_tnd,customs_tnd,shipping_tnd,service_tnd,express_tnd,discount_tnd,total_tnd,
-        pricing_snapshot,promo_json,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,terms_accepted_at,locale,notes,created_at,updated_at
-      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        pricing_snapshot,promo_json,governorate,address,phone,contact_email,delivery_latitude,delivery_longitude,
+        delivery_mode,pickup_point_id,terms_accepted_at,locale,notes,created_at,updated_at
+      ) VALUES (?,?,?,?,?,?,'AWAITING_DEPOSIT','PENDING',?,?,?,?,'PENDING',?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       orderId, orderNumber, customer.id, accountId, source, null, input.paymentMethod,
         depositPercent, depositAmount, depositDiscount,
       totals.subtotal, totals.customs, totals.shipping, totals.service, totals.express, totals.discount, totals.total,
       snapshot, promoApplied.length ? JSON.stringify({ resolvedAt: now, items: promoApplied }) : '', input.governorate, input.address, normalizedPhone, input.email, input.latitude, input.longitude,
+      input.deliveryMode || 'home', input.pickupPointId || '',
       input.termsAcceptedAt, input.locale, '', now, now);
 
       for (const { item, price } of breakdowns) {

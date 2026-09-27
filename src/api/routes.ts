@@ -397,6 +397,23 @@ export function createApiRouter(
     const customer = customerFromRequest(req);
     const { name, email, phone, city, address, paymentMethod, latitude, longitude, termsAccepted, locale } = req.body ?? {};
 
+    /*
+     * MODE DE LIVRAISON (27/09/2026). Trois modes, trois exigences différentes :
+     * à domicile il faut une adresse ; au bureau ou en point relais il faut le
+     * POINT, et exiger un numéro de rue n'aurait aucun sens — c'est ce genre de
+     * champ inutile qui fait abandonner une commande.
+     */
+    const deliveryMode = ['home', 'desk', 'pickup'].includes(String(req.body?.deliveryMode || 'home'))
+      ? String(req.body?.deliveryMode || 'home') as 'home' | 'desk' | 'pickup'
+      : null;
+    const pickupPointId = String(req.body?.pickupPointId || '').trim().slice(0, 120);
+    if (!deliveryMode) {
+      return res.status(400).json({ success: false, code: 'DELIVERY_MODE_INVALID', error: 'Mode de livraison inconnu.' });
+    }
+    if (deliveryMode !== 'home' && !pickupPointId) {
+      return res.status(400).json({ success: false, code: 'DELIVERY_POINT_REQUIRED', error: 'Choisissez un point de retrait.' });
+    }
+
     if (
       typeof name !== 'string' || !name.trim() || name.length > 160 ||
       typeof city !== 'string' || !city.trim() || city.length > 100 ||
@@ -496,6 +513,8 @@ export function createApiRouter(
         paymentMethod: normalizedPaymentMethod,
         latitude: parsedLatitude,
         longitude: parsedLongitude,
+        deliveryMode,
+        pickupPointId,
         termsAcceptedAt: new Date().toISOString(),
         locale: checkoutLocale,
       }, customer.id);
