@@ -8,7 +8,7 @@ import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { AddToCartRequest } from '../types';
 import { calculatePrice, orderLocalDelivery } from '../services/pricing';
 import { quoteCartLine } from '../services/cartQuote';
-import { guardVariantOrder, inspectVariantOrder } from '../ayrovix/services/variantAvailability';
+import { inspectVariantOrder } from '../ayrovix/services/variantAvailability';
 import { notifyNewOrder } from '../services/orderNotification';
 import { customerFromRequest, requireCustomer, resolveCustomer } from '../customer/auth';
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
@@ -266,16 +266,12 @@ export function createApiRouter(
     }
 
     // PORTE DE COMMANDE — VARIANTE (25/09/2026, prototype 2 approuvé).
-    // La vérité n'est pas ce que le navigateur envoie : le serveur relit le contrat
-    // qu'il a lui-même établi pour ce produit (variantes réellement publiées et
-    // stock RÉSOLU chez la source). Sans contrat, le parcours historique (demande
-    // manuelle au prix général) continue inchangé. Avec contrat, une variante
-    // indisponible — ou dont le stock n'est pas confirmé — ne peut pas être commandée.
-    const variantGuard = guardVariantOrder(item.url, requestedSize || item.variant, requestedColor);
-    // A manual product may still be saved as an unverified request. It remains
-    // UNKNOWN in the bag and cannot pass the final checkout guard until the
-    // server has a fresh source contract.
-    if (!variantGuard.allowed && variantGuard.code !== 'NO_CONTRACT') {
+    // The browser cannot assert availability. A size/color choice requires a
+    // fresh source contract before it can enter the cart; manual no-variant
+    // requests retain the historical review path but cannot claim stock.
+    const variantGuard = inspectVariantOrder(item.url, requestedSize || item.variant, requestedColor);
+    const hasVariantRequest = Boolean(requestedSize || requestedColor || item.variant?.trim());
+    if (!variantGuard.allowed && (variantGuard.code !== 'NO_CONTRACT' || hasVariantRequest)) {
       return res.status(409).json({ success: false, code: variantGuard.code, error: variantGuard.message });
     }
 
@@ -508,10 +504,16 @@ export function createApiRouter(
     }
 
     // Re-lire le contrat source à la confirmation finale : une ancienne ligne
-    // de panier ne peut pas contourner l'expiration ou une rupture constatée.
+    // de panier ne peut pas contourner l'expiration, une rupture constatée ou
+    // l'absence de preuve. NO_CONTRACT reste toléré uniquement au dépôt manuel
+    // dans le panier ; une vraie commande exige une disponibilité confirmée.
     for (const item of items) {
-      const availability = guardVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
-      if (!availability.allowed) {
+      const requestedVariant = Boolean(item.requestedSize?.trim() || item.requestedColor?.trim() || item.variant?.trim());
+      const availability = inspectVariantOrder(item.sourceUrl, item.requestedSize || item.variant, item.requestedColor);
+      // Preserve the historical manual request path only when no size/color
+      // was selected. A requested variant with no source contract is not safe
+      // to turn into an order (for example, a Lens/photo result still unknown).
+      if (!availability.allowed && (availability.code !== 'NO_CONTRACT' || requestedVariant)) {
         return res.status(409).json({
           success: false,
           code: availability.code,

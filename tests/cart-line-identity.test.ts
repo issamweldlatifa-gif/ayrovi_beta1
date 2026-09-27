@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { app, db } from '../src/server';
 import { tunisIsoDay } from '../src/services/promotions';
+import { recordVariantContract } from '../src/ayrovix/services/variantAvailability';
 
 const session = `price-flow-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const sessionHeaders = { 'x-session-id': session };
@@ -31,8 +32,13 @@ describe('the product quote is exactly the cart line and checkout pricing source
     expect(quote.status).toBe(200);
     expect(quote.body.data.lineTotalTND).toBeGreaterThan(0);
     // The cart consumes the source price. Client priceTND is not trusted.
+    const url = `https://shop.example/item/${encodeURIComponent(title)}`;
+    if ('variant' in product) recordVariantContract(url, {
+      attribute: 'option', productAvailability: 'available', source: 'Test merchant',
+      variants: [{ value: product.variant, availability: 'available', reason: 'test source confirms this option' }],
+    });
     const added = await request(app).post('/api/cart/items').set(sessionHeaders).send({
-      store: 'generic', externalId: null, url: `https://shop.example/item/${encodeURIComponent(title)}`,
+      store: 'generic', externalId: null, url,
       title, imageUrl: '', sourcePrice, sourceCurrency, priceTND: 1, quantity: 1,
       variant: 'variant' in product ? product.variant : undefined,
     });

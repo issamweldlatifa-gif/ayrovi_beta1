@@ -23,7 +23,6 @@ const createCartItem = (title = 'Muchica Matching Set') => ({
   sourcePrice: 21.99,
   sourceCurrency: 'EUR',
   priceTND: 103.61,
-  variant: 'Taille: M',
   quantity: 1,
 });
 
@@ -391,9 +390,9 @@ describe('AYSONIC platform', () => {
     expect(response.body.success).toBe(false);
   });
 
-  test('Lens order keeps the mandatory manual link and request fields, while signed estimate tampering is rejected', async () => {
+  test('Lens manual/photo requests stay in the cart but cannot become orders without source stock', async () => {
     const sessionId = uniqueSession('lens-manual-order');
-    const accountId = `account_lens_manual_${Date.now()}`;
+    let cartItemId = '';
     const title = 'Article Lens à acheter manuellement';
     const referenceUrl = 'https://www.google.com/shopping/product/reference';
     const quote = {
@@ -413,12 +412,20 @@ describe('AYSONIC platform', () => {
     };
     try {
       const added = await request(app).post('/api/cart/items').set('x-session-id', sessionId).send(payload);
-      expect(added.status, JSON.stringify(added.body)).toBe(201);
-      expect(added.body.cartItem).toMatchObject({
-        sourceUrl: payload.url, requestedSize: 'XXL', requestedColor: 'Noir', customerNote: payload.customerNote,
-        referenceUrl, priceVerificationStatus: 'PENDING_MANUAL', quantity: 2,
+      expect(added.status, JSON.stringify(added.body)).toBe(409);
+      expect(added.body.code).toBe('NO_CONTRACT');
+
+      // Simulate a pre-existing cart row from before the source-stock guard.
+      // Checkout must re-read its contract and refuse the old size-bearing line.
+      const legacyQuote = quoteEur(payload.sourcePrice, { title, quantity: payload.quantity });
+      const legacyItem = db.addItem(sessionId, {
+        store: payload.store, externalId: payload.externalId, url: payload.url, title,
+        imageUrl: payload.imageUrl, sourcePrice: payload.sourcePrice, sourceCurrency: payload.sourceCurrency,
+        priceTND: legacyQuote.totalTND, variant: payload.variant, requestedSize: payload.requestedSize,
+        requestedColor: payload.requestedColor, customerNote: payload.customerNote, referenceUrl,
+        priceVerificationStatus: payload.priceVerificationStatus, quantity: payload.quantity,
       });
-      expect(added.body.cartItem.priceTND).not.toBe(1); // toujours recalculé côté serveur
+      cartItemId = legacyItem.id;
 
       const tampered = await request(app).post('/api/cart/items').set('x-session-id', `${sessionId}-tampered`).send({ ...payload, sourcePrice: 5.75 });
       expect(tampered.status).toBe(400);
@@ -428,21 +435,26 @@ describe('AYSONIC platform', () => {
       expect(noManualLink.status).toBe(400);
       expect(noManualLink.body.code).toBe('MANUAL_PRODUCT_URL_REQUIRED');
 
-      const now = new Date().toISOString();
-      db.run("INSERT INTO customer_accounts (id,display_name,status,created_at,updated_at) VALUES (?,?,'ACTIVE',?,?)", accountId, 'Client Lens', now, now);
-      expect(db.attachCartToAccount(sessionId, accountId)).toBe(1);
-      const order = db.createOrderFromCart(sessionId, {
-        name: 'Client Lens', email: 'lens@example.com', phone: '+216 98 765 432', governorate: 'Tunis', address: 'Avenue de Tunis', paymentMethod: 'BANK_TRANSFER',
-        latitude: null, longitude: null, termsAcceptedAt: now, locale: 'fr-TN',
-      }, accountId);
-      expect(order.deposit.percent).toBe(20);
-      const snapshot = db.get<any>('SELECT * FROM order_items WHERE order_id=?', order.orderId);
-      expect(snapshot).toMatchObject({
-        source_url: payload.url, requested_size: 'XXL', requested_color: 'Noir', customer_note: payload.customerNote,
-        reference_url: referenceUrl, price_verification_status: 'PENDING_MANUAL', quantity: 2,
+      const cart = await request(app).get('/api/cart/items').set('x-session-id', sessionId);
+      expect(cart.status).toBe(200);
+      expect(cart.body.items[0]).toMatchObject({
+        id: cartItemId, sourceUrl: payload.url, requestedSize: 'XXL', requestedColor: 'Noir',
+        customerNote: payload.customerNote, referenceUrl, availability: 'unknown',
       });
+
+      // A manual/photo-derived item may be saved for review, but cannot become
+      // an order until the source has a fresh stock contract.
+      const checkoutAgent = request.agent(app);
+      const phone = `55${String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0')}`;
+      const authenticated = await otpLogin(checkoutAgent, phone, sessionId);
+      const checkout = await checkoutAgent.post('/api/checkout').set('x-session-id', sessionId).set('x-csrf-token', authenticated.csrfToken).send({
+        email: `lens-stock-${phone}@example.com`, termsAccepted: true, locale: 'fr-TN',
+        name: 'Client Lens', phone: `+216 ${phone}`, city: 'Tunis', address: 'Avenue de Tunis', paymentMethod: 'BANK_TRANSFER',
+      });
+      expect(checkout.status).toBe(409);
+      expect(checkout.body.code).toBe('NO_CONTRACT');
     } finally {
-      db.run('DELETE FROM customer_accounts WHERE id=?', accountId);
+      if (cartItemId) db.run('DELETE FROM cart_items WHERE id=?', cartItemId);
       db.clearCart(sessionId);
       db.clearCart(`${sessionId}-tampered`);
       db.clearCart(`${sessionId}-link`);
