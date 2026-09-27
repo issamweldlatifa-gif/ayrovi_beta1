@@ -45,3 +45,33 @@
 
 ## قاعدة الفسخ
 الشاشة القديمة تتفسخ **كي** تولّي ما عندها حتّى مستورد، واختباراتها تتهاجر للجديد. الفسخ من غير هجرة الاختبار = ضياع ضمانة، وهذا ممنوع.
+
+
+## المرحلة 14 — أنماط التوصيل في السيرفر (آخر شرط قبل بدالة الكاس)
+
+الشاشة `AddressPage` جاهزة بالأنماط الثلاثة، والحاوي `ShopCheckoutScreen` يبعث `deliveryMode`.
+الناقص هو **العمود الخلفي**. الخطوات بالترتيب، مع المراسي في الكود:
+
+1. **المخطّط** — `src/db/database.ts`:
+   - في `ORDERS_TABLE_SQL` (سطر ~110) زيد:
+     `delivery_mode TEXT NOT NULL DEFAULT 'home' CHECK(delivery_mode IN ('home','desk','pickup'))`
+     و`pickup_point_id TEXT`.
+   - وفي بلاصة `ensureColumn('orders','delivery_latitude','REAL')` (سطر ~1865) زيد نفس العمودين
+     بـ`ensureColumn` — القواعد الموجودة تتهاجر وحدها، بلا فقدان بيانات.
+
+2. **الإنشاء** — `createOrderFromCart` (سطر ~3143): يقبل `deliveryMode` و`pickupPointId`
+   ويسجّلهم مع الطلب. بلا هذا، **المخزن ما يعرفش وين يبعث**.
+
+3. **التحقّق** — `POST /api/checkout` (`src/api/routes.ts` سطر ~392):
+   - `home` → العنوان إجباري؛
+   - `desk` / `pickup` → **نقطة الاستلام إجبارية** والعنوان ما يتطلبش
+     (نقطة استلام ما عندهاش رقم شارع — طلبو يخلّي الحريف يخرج).
+   - رمز رفض واضح: `DELIVERY_POINT_REQUIRED`.
+
+4. **النقاط المتاحة** — تعرض من الأدمين (جدول نقاط + endpoint عمومي)، والحاوي
+   يمرّرها في `points`. **ما نخترعوش نقاط**: قائمة فارغة = النمط ما يظهرش.
+
+5. **البدالة** — `App.tsx`: `CheckoutModal` → `ShopCheckoutScreen`، ثم هجرة اختبارات
+   `checkout-flow-responsive` و`checkout-renders` للشاشة الجديدة، ثم **فسخ** `CheckoutModal`.
+
+**قاعدة الفسخ تبقى هي هي**: ما يتفسخش حتى تتهاجر ضماناتو.
