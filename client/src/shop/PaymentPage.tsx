@@ -43,9 +43,33 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
         <button type="button" className="s-iconbtn" onClick={onBack} aria-label={tr('Retour', 'رجوع')}>
           <EditorialIcon name="Back" direction={direction} />
         </button>
-        <div className="s-appbar__title"><span>{tr('Moyen de paiement', 'وسيلة الخلاص')}</span></div>
+        <div className="s-appbar__title">
+          <span>{tr('Moyen de paiement', 'وسيلة الخلاص')}</span>
+          <small>{tr('Paiement sécurisé et crypté', 'دفع آمن ومشفّر')}</small>
+        </div>
         <span style={{ width: 44 }} />
       </header>
+
+      {/* Zalando Step Progress Bar */}
+      <nav className="s-stepper" aria-label={tr('Progression de la commande', 'مراحل الطلب')}>
+        <div className="s-stepper__line" aria-hidden="true" />
+        <div className="s-stepper__item" data-done="true">
+          <span className="s-stepper__circle"><EditorialIcon name="Check" size={14} /></span>
+          <span className="s-stepper__label">{tr('Panier', 'السلة')}</span>
+        </div>
+        <div className="s-stepper__item" data-done="true">
+          <span className="s-stepper__circle"><EditorialIcon name="Check" size={14} /></span>
+          <span className="s-stepper__label">{tr('Livraison', 'التوصيل')}</span>
+        </div>
+        <div className="s-stepper__item" data-active="true">
+          <span className="s-stepper__circle">3</span>
+          <span className="s-stepper__label">{tr('Paiement', 'الخلاص')}</span>
+        </div>
+        <div className="s-stepper__item">
+          <span className="s-stepper__circle">4</span>
+          <span className="s-stepper__label">{tr('Confirmé', 'التأكيد')}</span>
+        </div>
+      </nav>
 
       <div style={{ flex: 1 }} role="radiogroup" aria-label={tr('Moyens de paiement', 'وسائل الدفع')}>
         {methods.map((method) => (
@@ -109,6 +133,10 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
       <div className="s-buybar">
         <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.0625rem', marginBottom: 8 }}>
           <span>{tr('Total', 'المجموع')}</span><span>{formatMoney(totalTnd)}</span>
+        </div>
+        <div className="s-trust-banner">
+          <EditorialIcon name="Shield" size={16} />
+          <span>{tr('Tous les paiements sont cryptés et sécurisés', 'جميع وسائل الدفع مشفرة وآمنة')}</span>
         </div>
         <button type="button" className="s-cta" onClick={onConfirm} disabled={!selected || !onConfirm}>
           {tr('Confirmer et payer', 'أكّد وخلّص')}

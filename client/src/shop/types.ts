@@ -146,7 +146,7 @@ export function hasBrandScale(sizes: SizeOption[]): boolean {
 export interface AyrovixOrderSelection {
   size: string;
   color: string;
-  option: unknown;
+  option: { id?: string | null; label?: string | null } | any;
   quantity: number;
   customerNote: string;
   manualUrl: string;

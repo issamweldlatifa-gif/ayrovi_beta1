@@ -69,9 +69,33 @@ export const AddressPage: React.FC<AddressPageProps> = ({
         <button type="button" className="s-iconbtn" onClick={onBack} aria-label={tr('Retour', 'رجوع')}>
           <EditorialIcon name="Back" direction={direction} />
         </button>
-        <div className="s-appbar__title"><span>{tr('Adresse de livraison', 'عنوان التوصيل')}</span></div>
+        <div className="s-appbar__title">
+          <span>{tr('Adresse de livraison', 'عنوان التوصيل')}</span>
+          <small>{tr('Livraison à domicile ou en point relais en Tunisie', 'توصيل للمنزل أو نقطة استلام في تونس')}</small>
+        </div>
         <span style={{ width: 44 }} />
       </header>
+
+      {/* Zalando Step Progress Bar */}
+      <nav className="s-stepper" aria-label={tr('Progression de la commande', 'مراحل الطلب')}>
+        <div className="s-stepper__line" aria-hidden="true" />
+        <div className="s-stepper__item" data-done="true">
+          <span className="s-stepper__circle"><EditorialIcon name="Check" size={14} /></span>
+          <span className="s-stepper__label">{tr('Panier', 'السلة')}</span>
+        </div>
+        <div className="s-stepper__item" data-active="true">
+          <span className="s-stepper__circle">2</span>
+          <span className="s-stepper__label">{tr('Livraison', 'التوصيل')}</span>
+        </div>
+        <div className="s-stepper__item">
+          <span className="s-stepper__circle">3</span>
+          <span className="s-stepper__label">{tr('Paiement', 'الخلاص')}</span>
+        </div>
+        <div className="s-stepper__item">
+          <span className="s-stepper__circle">4</span>
+          <span className="s-stepper__label">{tr('Confirmé', 'التأكيد')}</span>
+        </div>
+      </nav>
 
       <div style={{ flex: 1, padding: '0 16px 120px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${modes.length}, 1fr)`, gap: 8, padding: '16px 0' }} role="radiogroup" aria-label={tr('Mode de livraison', 'طريقة التوصيل')}>

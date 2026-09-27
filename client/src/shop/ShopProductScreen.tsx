@@ -29,7 +29,7 @@ export interface ShopProductScreenProps {
   onOrder: (selection: {
     size: string;
     color: string;
-    option: unknown;
+    option: any;
     quantity: number;
     customerNote: string;
     /** Nom exact du contrat de commande existant : `manualUrl`, pas autre chose. */

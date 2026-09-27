@@ -30,7 +30,7 @@ const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((modu
 const LensLauncher = lazy(() => import('./ayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
 const AiAssistantDrawer = lazy(() => import('./components/assistant/AiAssistantDrawer').then((module) => ({ default: module.AiAssistantDrawer })));
 const ShopBagScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopBagScreen })));
-const CheckoutModal = lazy(() => import('./components/CheckoutModal').then((module) => ({ default: module.CheckoutModal })));
+const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopCheckoutScreen })));
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
 
@@ -592,15 +592,14 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Checkout Modal */}
+      {/* Checkout Screen v2 (Zalando parity) */}
       {isCheckoutOpen && (
         <Suspense fallback={null}>
-          <CheckoutModal
+          <ShopCheckoutScreen
             isOpen
             onClose={closeAppView}
             totalTND={totalCartTND}
             itemCount={totalCartCount}
-            breakdown={cartBreakdown}
             customerSession={customerSession}
             onRequireAuthentication={() => {
               resumeCheckoutDepthRef.current = Math.max(0, navigation.entry.depth - 1);
@@ -610,6 +609,7 @@ export const App: React.FC = () => {
               openAppView('app:account', true);
             }}
             onOrderSuccess={handleOrderSuccess}
+            modes={['home', 'desk', 'pickup']}
           />
         </Suspense>
       )}
