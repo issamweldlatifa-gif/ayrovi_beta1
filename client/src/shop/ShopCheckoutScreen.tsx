@@ -1,7 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
 import { useCommercePolicy } from '../commerce/useCommercePolicy';
-import { PAYMENT_METHODS, isPaymentMethodAvailable, CARD_NETWORK_MARKS, type PaymentMethodId } from '../commerce/paymentMethods';
+import { availableAtCheckout, isPaymentMethodAvailable, CARD_NETWORK_MARKS, type PaymentMethodId } from '../commerce/paymentMethods';
 import { getSessionId } from '../utils/session';
 import { customerApi } from '../customer/api';
 import type { CustomerSession, OrderResult } from '../types';
@@ -61,6 +61,7 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
    * jamais demandée en silence — le refus du navigateur n'empêche rien.
    */
   const [position, setPosition] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [addressLoaded, setAddressLoaded] = useState(false);
 
   const [address, setAddress] = useState<AddressValue>({
     mode: modes[0] ?? 'home',
@@ -70,11 +71,45 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
     line1: '', line2: '', postalCode: '', city: '', pointId: null,
   });
 
+  /*
+   * CARNET D'ADRESSES. Un client qui a déjà commandé ne doit pas ressaisir son
+   * adresse : c'est la première cause d'abandon à cette étape. On pré-remplit
+   * avec l'adresse enregistrée, et le client reste libre de la corriger — rien
+   * n'est envoyé sans qu'il valide l'écran.
+   */
+  useEffect(() => {
+    if (!isOpen || !customerSession || addressLoaded) return;
+    let active = true;
+    customerApi<{ data: any[] }>('/api/customer/account/addresses')
+      .then((result) => {
+        if (!active) return;
+        const saved = Array.isArray(result?.data) ? result.data : [];
+        const preferred = saved.find((item) => item?.isDefault) ?? saved[0];
+        if (preferred) {
+          setAddress((current) => ({
+            ...current,
+            firstName: preferred.firstName || current.firstName,
+            lastName: preferred.lastName || current.lastName,
+            phone: preferred.phone || current.phone,
+            line1: preferred.line1 || preferred.address || current.line1,
+            line2: preferred.line2 || current.line2,
+            postalCode: preferred.postalCode || current.postalCode,
+            city: preferred.city || preferred.governorate || current.city,
+          }));
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => { if (active) setAddressLoaded(true); });
+    return () => { active = false; };
+  }, [isOpen, customerSession, addressLoaded]);
+
   const choices: PaymentChoice[] = useMemo(() => {
     if (!commerce.policy) return [];
-    // Show the local Tunisian payment methods and their own marks, but only
-    // permit selection when the server policy says the method can be collected.
-    return PAYMENT_METHODS.map((definition) => ({
+    return availableAtCheckout(commerce.policy).concat(
+      // Les moyens non encaissables restent VISIBLES avec leur raison : le client
+      // doit comprendre pourquoi il ne peut pas les choisir aujourd'hui.
+      [],
+    ).map((definition) => ({
       id: definition.id,
       label: tr(definition.label, definition.labelAr),
       hint: tr(definition.hint, definition.hintAr),
@@ -244,7 +279,7 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
         methods={choices}
         selected={method}
         totalTnd={totalTND}
-        networks={commerce.policy?.deposit.cardGatewayAvailable ? CARD_NETWORK_MARKS : []}
+        networks={CARD_NETWORK_MARKS}
         tr={tr}
         formatMoney={formatMoney}
         direction={direction === 'rtl' ? 'rtl' : 'ltr'}

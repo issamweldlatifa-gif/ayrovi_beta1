@@ -103,3 +103,20 @@ describe('caisse v2 — position et paiement par carte', () => {
     expect(block).toContain('onOrderSuccess(result)');
   });
 });
+
+describe('caisse v2 — carnet d’adresses', () => {
+  it('pré-remplit l’adresse enregistrée : ressaisir fait abandonner', () => {
+    expect(source).toContain("customerApi<{ data: any[] }>('/api/customer/account/addresses')");
+    expect(source).toContain('item?.isDefault');
+  });
+
+  it('un carnet indisponible ne bloque pas la commande', () => {
+    const block = source.split('/api/customer/account/addresses')[1].split('const choices')[0];
+    expect(block).toContain('.catch(() => undefined)');
+  });
+
+  it('rien n’est envoyé sans que le client valide l’écran', () => {
+    // Le pré-remplissage alimente l'état ; la soumission reste manuelle.
+    expect(source).toContain('onSubmit={submitAddress}');
+  });
+});
