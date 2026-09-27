@@ -939,7 +939,7 @@ export const LensLauncher: React.FC<LensLauncherProps> = ({
 
           {stage === 'product' && product && (
             <div className="flex flex-1 flex-col min-h-0 overflow-y-auto bg-white">
-              <div className="mx-auto w-full max-w-5xl px-3 sm:px-4 py-3 pb-8">
+              <div className="mx-auto w-full max-w-5xl px-0 sm:px-4 py-0 sm:py-3 pb-8">
                 <ShopProductScreen
                   product={product}
                   ordering={ordering}

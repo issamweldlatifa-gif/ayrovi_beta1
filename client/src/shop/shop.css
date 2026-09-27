@@ -24,6 +24,7 @@
   --s-success: var(--ay-e-success, #236044);
   --s-target: 44px;
   --s-control: 48px;
+  --s-appbar-height: 64px;
   --s-fast: 120ms;
   --s-standard: 180ms;
   --s-sheet: 240ms;
@@ -124,6 +125,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: var(--s-appbar-height);
   padding: 8px 10px;
   background: var(--s-canvas);
   border-bottom: 1px solid var(--s-line);
@@ -143,33 +145,35 @@
 .s-appbar__title small { display: -webkit-box; overflow: hidden; color: var(--s-muted); font-weight: 400; white-space: normal; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .s-appbar__spacer { width: var(--s-target); flex: none; }
 
-.s-stage { position: relative; flex: 1; min-height: 0; }
-.s-media { position: relative; background: var(--s-surface); }
-.s-media__hero { position: relative; }
-.s-media__viewport { overflow: hidden; }
-.s-media__track { display: flex; transition: transform var(--s-sheet) var(--s-ease); }
-.s-media__slide { flex: 0 0 100%; height: min(56dvh, 520px); min-height: 0; }
+.s-stage { position: relative; flex: 0 0 auto; min-height: 0; }
+/* The full-height photo is the first mobile screen. It sticks under the app bar;
+   the ordinary product sheet scrolls above it and casts the transition shadow. */
+.s-media { position: sticky; top: var(--s-appbar-height); z-index: 1; height: calc(100dvh - var(--s-appbar-height) - env(safe-area-inset-bottom, 0px)); min-height: 420px; background: var(--s-surface); }
+.s-media__viewport { position: relative; width: 100%; height: 100%; overflow: hidden; }
+.s-media__track { display: flex; height: 100%; transition: transform var(--s-sheet) var(--s-ease); }
+.s-media__slide { flex: 0 0 100%; height: 100%; min-height: 0; }
 .s-media__slide img { display: block; width: 100%; height: 100%; object-fit: contain; }
 
-/* Gallery actions sit on the image only; product information stays below it. */
-.s-media__empty { display: grid; place-items: center; height: min(56dvh, 520px); padding: 24px; color: var(--s-muted); text-align: center; }
+/* Image actions stay anchored to the photo while the sheet moves over it. */
+.s-media__empty { display: grid; place-items: center; height: 100%; padding: 24px; color: var(--s-muted); text-align: center; }
 .s-media__zoom { transform: none; }
 .s-product__flags { top: 10px; bottom: auto; inset-inline-start: 10px; z-index: 6; }
-.s-thumbnails { display: flex; gap: 8px; overflow-x: auto; padding: 10px 12px; scrollbar-width: none; }
-.s-thumbnails::-webkit-scrollbar { display: none; }
-.s-thumbnail { flex: 0 0 56px; width: 56px; height: 64px; border: 1px solid var(--s-line)!important; background: var(--s-canvas)!important; }
-.s-thumbnail[aria-current="true"] { outline: 2px solid var(--s-ink); outline-offset: -2px; }
-.s-thumbnail img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.s-gallery-progress { position: absolute; inset-inline: 12px; bottom: 12px; z-index: 6; display: flex; gap: 5px; }
+.s-gallery-progress button { display: flex; flex: 1 1 0; align-items: center; min-width: 0; min-height: 24px; padding: 8px 0; }
+.s-gallery-progress button span { display: block; width: 100%; height: 3px; border-radius: 99px; background: rgb(0 0 0 / 24%); }
+.s-gallery-progress button[aria-current="true"] span { background: var(--s-ink); }
+.s-gallery-desktop-only { display: none; }
 
-.s-counter {
-  position: absolute;
-  inset-inline-start: 12px;
-  bottom: 12px;
-  z-index: 6;
-  padding: 3px 8px;
-  background: var(--s-canvas);
-  font-size: 0.6875rem;
-  font-weight: 700;
+@media (min-width: 768px) {
+  .s-gallery-progress { display: none; }
+  .s-gallery-desktop-only { display: block; }
+  .s-counter { position: absolute; inset-inline-start: 12px; bottom: 12px; z-index: 6; padding: 3px 8px; background: var(--s-canvas); font-size: 0.6875rem; font-weight: 700; }
+  .s-gallery-nav { position: absolute; inset-inline-start: 12px; bottom: 56px; z-index: 7; display: flex; gap: 8px; }
+  .s-gallery-nav .s-rail__btn { width: 40px; height: 40px; }
+  .s-gallery-thumbs { position: absolute; inset-inline: 0; bottom: 16px; z-index: 7; display: flex; gap: 8px; overflow-x: auto; padding: 0 12px; scrollbar-width: none; }
+  .s-gallery-thumbs button { flex: 0 0 56px; width: 56px; height: 64px; border: 1px solid var(--s-line)!important; background: var(--s-canvas)!important; }
+  .s-gallery-thumbs button[aria-current="true"] { outline: 2px solid var(--s-ink); outline-offset: -2px; }
+  .s-gallery-thumbs img { display: block; width: 100%; height: 100%; object-fit: contain; }
 }
 
 /* Actions that belong to the image; never tied to or layered above details. */
@@ -189,8 +193,9 @@
 .s-rail__btn[data-solid="true"] { background: var(--s-action); color: var(--s-on-action); }
 .s-rail__btn:active { transform: scale(0.9); }
 
-/* Product facts are ordinary content after the media, never an overlay. */
-.s-sheet { position: relative; background: var(--s-canvas); border-top: 1px solid var(--s-line); padding: 16px 16px 24px; }
+/* The sheet remains in normal document flow but stacks above the sticky image.
+   Its shadow makes the photo-to-details handoff visible during vertical scrolling. */
+.s-sheet { position: relative; z-index: 4; background: var(--s-canvas); border: 0; border-radius: 18px 18px 0 0; box-shadow: 0 -12px 30px rgb(0 0 0 / 16%); padding: 16px 16px 24px; }
 
 .s-swatches { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 2px; scrollbar-width: none; }
 .s-swatches::-webkit-scrollbar { display: none; }
@@ -419,19 +424,6 @@
 }
 
 .s-price--pending { font-size: 0.9375rem; color: var(--s-muted); font-weight: 400; }
-
-/* Commandes de galerie : placées à gauche pour ne jamais recouvrir le rail
-   d'actions, qui occupe le côté opposé. */
-.s-gallery-nav {
-  position: absolute;
-  inset-inline-start: 12px;
-  bottom: 56px;
-  z-index: 7;
-  display: flex;
-  gap: 8px;
-}
-
-.s-gallery-nav .s-rail__btn { width: 40px; height: 40px; }
 
 .s-media__placeholder { display: block; width: 100%; height: 100%; background: var(--s-surface); }
 

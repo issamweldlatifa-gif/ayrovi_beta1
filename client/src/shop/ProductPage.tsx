@@ -4,10 +4,9 @@ import { SizeDrape } from './SizeDrape';
 import { refusalReason, type ProductActions, type ProductView, type SizeOption } from './types';
 
 /**
- * Mobile product page. One native vertical document flow:
- * app bar → complete image gallery → product facts and price → variant selector
- * → quantity and purchase action. The image is never dimmed or covered by the
- * information section; only the image-specific action rail floats over it.
+ * Mobile product page: a full-bleed, full-height source gallery stays under the
+ * app bar. Its source photos are swipeable in place; the details sheet remains
+ * in document flow and rises over the gallery with a soft shadow on scroll.
  */
 export interface ProductPageProps {
   product: ProductView;
@@ -129,7 +128,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
 
       <main className="s-stage">
         <section className="s-media" aria-label={tr('Photos du produit', 'صور المنتج')}>
-          <div className="s-media__hero">
           <div
             className="s-media__viewport"
             onTouchStart={(event) => { touchStart.current = event.touches[0]?.clientX ?? null; }}
@@ -174,13 +172,6 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               {product.flags.map((flag) => <span key={flag.label} className={`s-flag s-flag--${flag.kind}`}>{flag.label}</span>)}
             </div>
           )}
-          {slides > 1 && <span className="s-counter">{slide + 1} / {slides}</span>}
-          {slides > 1 && (
-            <div className="s-gallery-nav">
-              <button type="button" className="s-rail__btn" onClick={() => go(slide - 1)} aria-label={tr('Photo précédente', 'الصورة السابقة')}><EditorialIcon name="ChevronLeft" size={18} direction={direction} /></button>
-              <button type="button" className="s-rail__btn" onClick={() => go(slide + 1)} aria-label={tr('Photo suivante', 'الصورة التالية')}><EditorialIcon name="ChevronRight" size={18} direction={direction} /></button>
-            </div>
-          )}
           {(actions?.onNotify || actions?.onFavorite || actions?.onOpenBag) && (
             <div className="s-rail" aria-label={tr('Actions du produit', 'إجراءات المنتج')}>
               {actions?.onNotify && <button type="button" className="s-rail__btn" onClick={actions.onNotify} aria-label={tr('Créer une alerte produit', 'أنشئ تنبيهًا للمنتج')}><EditorialIcon name="Bell" size={22} /></button>}
@@ -188,11 +179,26 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               {actions?.onOpenBag && <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag} aria-label={tr('Ouvrir le panier', 'افتح السلة')}><EditorialIcon name="Bag" size={22} /></button>}
             </div>
           )}
-          </div>
           {slides > 1 && (
-            <div className="s-thumbnails" role="group" aria-label={tr('Choisir une photo', 'اختار صورة')}>
-              {media.map((item, index) => <button key={`${item.src}-thumb-${index}`} type="button" className="s-thumbnail" aria-current={slide === index ? 'true' : undefined} aria-label={tr(`Afficher la photo ${index + 1}`, `اعرض الصورة ${index + 1}`)} onClick={() => go(index)}><img src={item.src} alt="" loading="lazy" /></button>)}
-            </div>
+            <nav className="s-gallery-progress" aria-label={tr('Photos du produit', 'صور المنتج')}>
+              {media.map((item, index) => (
+                <button key={`${item.src}-progress-${index}`} type="button" aria-current={slide === index ? 'true' : undefined} aria-label={tr(`Afficher la photo ${index + 1}`, `اعرض الصورة ${index + 1}`)} onClick={() => go(index)}>
+                  <span aria-hidden="true" />
+                </button>
+              ))}
+            </nav>
+          )}
+          {slides > 1 && (
+            <>
+              <span className="s-counter s-gallery-desktop-only">{slide + 1} / {slides}</span>
+              <div className="s-gallery-nav s-gallery-desktop-only">
+                <button type="button" className="s-rail__btn" onClick={() => go(slide - 1)} aria-label={tr('Photo précédente', 'الصورة السابقة')}><EditorialIcon name="ChevronLeft" size={18} direction={direction} /></button>
+                <button type="button" className="s-rail__btn" onClick={() => go(slide + 1)} aria-label={tr('Photo suivante', 'الصورة التالية')}><EditorialIcon name="ChevronRight" size={18} direction={direction} /></button>
+              </div>
+              <div className="s-gallery-thumbs s-gallery-desktop-only" role="group" aria-label={tr('Choisir une photo', 'اختار صورة')}>
+                {media.map((item, index) => <button key={`${item.src}-desktop-thumb-${index}`} type="button" aria-current={slide === index ? 'true' : undefined} aria-label={tr(`Afficher la photo ${index + 1}`, `اعرض الصورة ${index + 1}`)} onClick={() => go(index)}><img src={item.src} alt="" loading="lazy" /></button>)}
+              </div>
+            </>
           )}
         </section>
 

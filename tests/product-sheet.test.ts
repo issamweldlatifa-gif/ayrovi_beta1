@@ -17,19 +17,23 @@ describe('mobile product page: image, details, then purchase', () => {
     expect(component).not.toContain("setProperty('--s-reveal'");
   });
 
-  it('does not make the product image sticky or use a cover sheet', () => {
-    expect(css).toMatch(/\.s-media\s*\{[^}]*position: relative/);
-    expect(css).not.toMatch(/\.s-media\s*\{[^}]*position: sticky/);
-    expect(css).toMatch(/\.s-sheet\s*\{[^}]*position: relative/);
-    expect(css).not.toMatch(/\.s-sheet\s*\{[^}]*z-index: 10/);
+  it('keeps a full-height sticky photo and lets the natural-flow details sheet slide over it', () => {
+    expect(css).toMatch(/\.s-media\s*\{[^}]*position: sticky/);
+    expect(css).toContain('height: calc(100dvh - var(--s-appbar-height)');
+    expect(css).toMatch(/\.s-sheet\s*\{[^}]*z-index: 4/);
+    expect(css).toContain('box-shadow: 0 -12px 30px');
     expect(css).toContain('object-fit: contain');
   });
 
-  it('shows photo thumbnails and keeps carousel controls reachable', () => {
-    expect(component).toContain('s-thumbnails');
+  it('keeps every source photo in the swipe gallery and exposes a progress control for each one', () => {
+    expect(component).toContain('className="s-media"');
+    expect(component).toContain('className="s-gallery-progress"');
+    expect(component.indexOf('className="s-gallery-progress"')).toBeLessThan(component.indexOf('className="s-sheet"'));
     expect(component).toContain('aria-current={slide === index');
-    expect(component).toContain('Photo précédente');
-    expect(css).toContain('.s-thumbnail[aria-current="true"]');
+    expect(component).toContain('onTouchEnd=');
+    expect(css).toMatch(/\.s-gallery-progress\s*\{[^}]*position: absolute/);
+    expect(css).toContain('.s-gallery-progress button[aria-current="true"] span');
+    expect(component).not.toContain('s-thumbnails');
   });
 
   it('keeps product purchase controls in normal flow after facts and variants', () => {

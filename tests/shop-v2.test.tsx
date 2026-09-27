@@ -305,9 +305,12 @@ describe('boutique v2 — grille produit mobile', () => {
     expect(css).toMatch(/\.s-buybar--product\s*\{[^}]*position: relative/);
   });
 
-  it('contient les photos dans une galerie navigable sans étirer ni rogner', () => {
-    const media = css.split('.s-media__slide {')[1].split('}')[0];
-    expect(media).toContain('height: min(56dvh, 520px)');
+  it('remplit le premier écran par la photo puis laisse le panneau la recouvrir au défilement', () => {
+    expect(css).toMatch(/\.s-media\s*\{[^}]*position: sticky/);
+    expect(css).toContain('height: calc(100dvh - var(--s-appbar-height)');
+    expect(css).toContain('height: 100%; min-height: 0;');
+    expect(css).toMatch(/\.s-sheet\s*\{[^}]*z-index: 4/);
+    expect(css).toContain('box-shadow: 0 -12px 30px');
     expect(css).toContain('object-fit: contain');
   });
 

@@ -45,19 +45,16 @@ function renderGallery() {
 }
 
 describe('AYROVIX product gallery rendering', () => {
-  it('renders a source-backed gallery with image actions and directly linked thumbnails', () => {
+  it('renders every source photo as an integrated swipe slide with a matching progress segment', () => {
     const markup = renderGallery();
-    // The lead image appears in the main slide and its matching thumbnail.
-    expect(markup.match(/src="\/fixtures\/square-1x1\.jpg"/g)).toHaveLength(2);
-    // Every source-backed photo remains navigable, including the last two.
-    for (const image of images) expect(markup).toContain(`src="${image}"`);
-    expect(markup).toContain('s-media__hero');
-    expect(markup).toContain('s-thumbnails');
+    expect(markup).toContain('class="s-media"');
+    expect(markup).toContain('s-gallery-progress');
+    const progress = markup.split('class="s-gallery-progress"')[1]?.split('</nav>')[0] ?? '';
+    expect(progress.match(/aria-label="Afficher la photo/g)).toHaveLength(images.length);
     expect(markup).toContain('aria-current="true"');
-    expect(markup).toContain('1 / 6');
     expect(markup).toContain('s-media__slide');
+    expect(markup).not.toContain('s-thumbnails');
     expect(markup).not.toContain('ayrovix-thumbnail-image');
-    expect(markup).toContain('Photo suivante');
   });
 
   it('does not introduce a second cropped thumbnail stage in other product surfaces', () => {
@@ -70,11 +67,16 @@ describe('AYROVIX product gallery rendering', () => {
     expect(history).not.toContain('object-cover');
   });
 
-  it('reserves a bounded portrait stage and keeps both source and isolated photos uncut', () => {
+  it('fills the first mobile view with a sticky full-width gallery and layers the sheet above it', () => {
     const css = readFileSync('client/src/shop/shop.css', 'utf8');
-    expect(css).toMatch(/\.s-media__slide\s*\{[\s\S]*?height:\s*min\(56dvh,\s*520px\)/);
-    expect(css).toMatch(/\.s-media__slide img\s*\{[\s\S]*?object-fit:\s*contain/);
-    expect(css).toContain('.s-media__hero { position: relative; }');
+    expect(css).toMatch(/\.s-media\s*\{[^}]*position: sticky/);
+    expect(css).toMatch(/\.s-media\s*\{[^}]*height: calc\(100dvh - var\(--s-appbar-height\)/);
+    expect(css).toMatch(/\.s-media__slide\s*\{[^}]*height: 100%/);
+    expect(css).toMatch(/\.s-media__slide img\s*\{[^}]*object-fit: contain/);
+    const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
+    expect(launcher).toContain('px-0 sm:px-4 py-0 sm:py-3 pb-8');
+    expect(css).toMatch(/\.s-sheet\s*\{[^}]*z-index: 4/);
+    expect(css).toContain('box-shadow: 0 -12px 30px');
     expect(css).not.toContain('.ayrovix-thumbnail-strip');
     expect(css).not.toContain('object-fit: cover');
   });
