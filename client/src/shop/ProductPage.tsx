@@ -45,7 +45,9 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const [shake, setShake] = useState(false);
   const touchStart = useRef<number | null>(null);
 
-  const media = product.media;
+  // A source product contributes at most four canonical gallery frames. Keep
+  // the full ProductView intact; this screen shows the merchant's primary four.
+  const media = product.media.slice(0, 4);
   const slides = media.length;
   const availabilityKnown = product.availabilityKnown;
   const sizeMissing = product.sizes.length > 0 && !chosen;
@@ -53,6 +55,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     if (!slides) return;
     setSlide(((next % slides) + slides) % slides);
   };
+  const renderRail = (className: string) => (actions?.onNotify || actions?.onFavorite || actions?.onOpenBag) ? (
+    <div className={className} aria-label={tr('Actions du produit', 'إجراءات المنتج')}>
+      {actions?.onNotify && <button type="button" className="s-rail__btn" onClick={actions.onNotify} aria-label={tr('Créer une alerte produit', 'أنشئ تنبيهًا للمنتج')}><EditorialIcon name="Bell" size={22} /></button>}
+      {actions?.onFavorite && <button type="button" className="s-rail__btn" aria-pressed={Boolean(actions.favorite)} onClick={actions.onFavorite} aria-label={tr('Ajouter aux favoris', 'أضف للمفضّلة')}><EditorialIcon name={actions.favorite ? 'HeartFilled' : 'Heart'} size={22} fill={actions.favorite ? 'currentColor' : undefined} /></button>}
+      {actions?.onOpenBag && <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag} aria-label={tr('Ouvrir le panier', 'افتح السلة')}><EditorialIcon name="Bag" size={22} /></button>}
+    </div>
+  ) : null;
 
   const pickSize = (size: SizeOption) => {
     const reason = refusalReason(size, availabilityKnown);
@@ -143,18 +152,24 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               <div className="s-media__track" style={{ transform: `translateX(${(direction === 'rtl' ? 1 : -1) * slide * 100}%)` }}>
                 {media.map((item, index) => {
                   const chain = [item.src, ...item.fallbacks];
-                  const step = Math.min(mediaStep[index] ?? 0, chain.length - 1);
+                  const isolated = chain.find((src) => src.startsWith('/api/public/media/isolated?'));
+                  // Full-screen hero uses the trimmed transparent cutout first,
+                  // not the 9:13 catalogue composition that leaves extra margins.
+                  const heroChain = isolated && item.src.startsWith('/api/public/media/card?')
+                    ? [isolated, ...chain.filter((src) => src !== isolated)]
+                    : chain;
+                  const step = Math.min(mediaStep[index] ?? 0, heroChain.length - 1);
                   return (
                     <div className="s-media__slide" key={`${item.src}-${index}`}>
                       <button type="button" className="s-media__open" onClick={() => setZoomed(true)} aria-label={tr('Agrandir la photo', 'كبّر الصورة')}>
                         {Math.abs(index - slide) <= 1
                           ? <img
-                              src={chain[step]}
+                              src={heroChain[step]}
                               alt={item.alt}
                               decoding="async"
                               referrerPolicy="no-referrer"
                               draggable={false}
-                              onError={() => setMediaStep((current) => ({ ...current, [index]: Math.min((current[index] ?? 0) + 1, chain.length - 1) }))}
+                              onError={() => setMediaStep((current) => ({ ...current, [index]: Math.min((current[index] ?? 0) + 1, heroChain.length - 1) }))}
                             />
                           : <span className="s-media__placeholder" aria-hidden="true" />}
                       </button>
@@ -172,13 +187,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
               {product.flags.map((flag) => <span key={flag.label} className={`s-flag s-flag--${flag.kind}`}>{flag.label}</span>)}
             </div>
           )}
-          {(actions?.onNotify || actions?.onFavorite || actions?.onOpenBag) && (
-            <div className="s-rail" aria-label={tr('Actions du produit', 'إجراءات المنتج')}>
-              {actions?.onNotify && <button type="button" className="s-rail__btn" onClick={actions.onNotify} aria-label={tr('Créer une alerte produit', 'أنشئ تنبيهًا للمنتج')}><EditorialIcon name="Bell" size={22} /></button>}
-              {actions?.onFavorite && <button type="button" className="s-rail__btn" aria-pressed={Boolean(actions.favorite)} onClick={actions.onFavorite} aria-label={tr('Ajouter aux favoris', 'أضف للمفضّلة')}><EditorialIcon name={actions.favorite ? 'HeartFilled' : 'Heart'} size={22} fill={actions.favorite ? 'currentColor' : undefined} /></button>}
-              {actions?.onOpenBag && <button type="button" className="s-rail__btn" data-solid="true" onClick={actions.onOpenBag} aria-label={tr('Ouvrir le panier', 'افتح السلة')}><EditorialIcon name="Bag" size={22} /></button>}
-            </div>
-          )}
+          {renderRail('s-rail s-rail--desktop')}
           {slides > 1 && (
             <nav className="s-gallery-progress" aria-label={tr('Photos du produit', 'صور المنتج')}>
               {media.map((item, index) => (
@@ -203,6 +212,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
         </section>
 
         <section className="s-sheet" aria-label={tr('Détails du produit', 'تفاصيل المنتج')}>
+          {renderRail('s-rail s-rail--sheet')}
           {product.colors.length > 1 && (
             <div className="s-swatches" role="group" aria-label={tr('Couleurs', 'الألوان')}>
               {product.colors.map((color) => <button key={color.name} type="button" className="s-swatch" aria-pressed={color.selected} aria-label={color.name} onClick={() => actions?.onSelectColor?.(color.name)}>{color.media ? <img src={color.media.src} alt="" /> : <span>{color.name.slice(0, 3)}</span>}</button>)}

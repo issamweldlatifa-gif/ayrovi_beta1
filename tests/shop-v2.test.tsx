@@ -310,7 +310,7 @@ describe('boutique v2 — grille produit mobile', () => {
     expect(css).toContain('height: calc(100dvh - var(--s-appbar-height)');
     expect(css).toContain('height: 100%; min-height: 0;');
     expect(css).toMatch(/\.s-sheet\s*\{[^}]*z-index: 4/);
-    expect(css).toContain('box-shadow: 0 -12px 30px');
+    expect(css).toContain('box-shadow: 0 -18px 44px rgb(0 0 0 / 24%)');
     expect(css).toContain('object-fit: contain');
   });
 

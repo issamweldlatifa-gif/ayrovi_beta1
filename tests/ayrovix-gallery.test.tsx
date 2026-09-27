@@ -45,12 +45,14 @@ function renderGallery() {
 }
 
 describe('AYROVIX product gallery rendering', () => {
-  it('renders every source photo as an integrated swipe slide with a matching progress segment', () => {
+  it('renders the first four source photos as integrated swipe slides with matching progress segments', () => {
     const markup = renderGallery();
     expect(markup).toContain('class="s-media"');
     expect(markup).toContain('s-gallery-progress');
     const progress = markup.split('class="s-gallery-progress"')[1]?.split('</nav>')[0] ?? '';
-    expect(progress.match(/aria-label="Afficher la photo/g)).toHaveLength(images.length);
+    expect(progress.match(/aria-label="Afficher la photo/g)).toHaveLength(Math.min(images.length, 4));
+    for (const image of images.slice(0, 4)) expect(markup).toContain(image);
+    for (const image of images.slice(4)) expect(markup).not.toContain(image);
     expect(markup).toContain('aria-current="true"');
     expect(markup).toContain('s-media__slide');
     expect(markup).not.toContain('s-thumbnails');
@@ -76,7 +78,7 @@ describe('AYROVIX product gallery rendering', () => {
     const launcher = readFileSync('client/src/ayrovix/components/LensLauncher.tsx', 'utf8');
     expect(launcher).toContain('px-0 sm:px-4 py-0 sm:py-3 pb-8');
     expect(css).toMatch(/\.s-sheet\s*\{[^}]*z-index: 4/);
-    expect(css).toContain('box-shadow: 0 -12px 30px');
+    expect(css).toContain('box-shadow: 0 -18px 44px rgb(0 0 0 / 24%)');
     expect(css).not.toContain('.ayrovix-thumbnail-strip');
     expect(css).not.toContain('object-fit: cover');
   });
