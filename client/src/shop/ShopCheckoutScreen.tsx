@@ -261,7 +261,9 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
           value={address}
           modes={modes}
           points={points}
-          governorate={address.city || tr('À préciser', 'يتحدّد')}
+          governorate={address.city}
+          governorates={commerce.policy?.governorates ?? []}
+          onGovernorateChange={(name) => setAddress((current) => ({ ...current, city: name }))}
           tr={tr}
           direction={direction === 'rtl' ? 'rtl' : 'ltr'}
           onBack={onClose}

@@ -120,3 +120,21 @@ describe('caisse v2 — carnet d’adresses', () => {
     expect(source).toContain('onSubmit={submitAddress}');
   });
 });
+
+describe('caisse v2 — gouvernorat', () => {
+  const address = readFileSync('client/src/shop/AddressPage.tsx', 'utf8');
+
+  it('se choisit dans la liste RÉELLEMENT servie, il ne se devine pas', () => {
+    expect(source).toContain('governorates={commerce.policy?.governorates ?? []}');
+    expect(address).toContain('<select');
+    expect(address).toContain('Choisir un gouvernorat');
+  });
+
+  it('sans gouvernorat, la livraison n’a pas de tarif : l’étape ne passe pas', () => {
+    expect(address).toContain("governorates.length > 0 && !governorate.trim()");
+  });
+
+  it('liste vide = champ informatif, jamais un menu vide', () => {
+    expect(address).toContain('governorates.length > 0 ? (');
+  });
+});

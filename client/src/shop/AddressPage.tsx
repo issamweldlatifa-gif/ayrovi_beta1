@@ -32,6 +32,9 @@ export interface AddressPageProps {
   /** Points disponibles pour le mode courant (bureaux AYROVI ou relais). */
   points?: { id: string; name: string; detail: string }[];
   governorate: string;
+  /** Gouvernorats RÉELLEMENT servis, publiés par l'Admin. Vide = champ libre. */
+  governorates?: string[];
+  onGovernorateChange?: (value: string) => void;
   tr: (fr: string, ar: string) => string;
   direction?: 'ltr' | 'rtl';
   onBack?: () => void;
@@ -42,7 +45,8 @@ export interface AddressPageProps {
 const MODE_ICON = { home: 'Home', desk: 'Cube', pickup: 'Pin' } as const;
 
 export const AddressPage: React.FC<AddressPageProps> = ({
-  value, modes, points = [], governorate, tr, direction = 'ltr', onBack, onChange, onSubmit,
+  value, modes, points = [], governorate, governorates = [], onGovernorateChange,
+  tr, direction = 'ltr', onBack, onChange, onSubmit,
 }) => {
   const [touched, setTouched] = useState(false);
   const set = (patch: Partial<AddressValue>) => onChange({ ...value, ...patch });
@@ -58,6 +62,8 @@ export const AddressPage: React.FC<AddressPageProps> = ({
   if (needsStreet && !/^[0-9]{4}$/.test(value.postalCode.trim())) missing.push(tr('Code postal', 'الترقيم البريدي'));
   if (needsStreet && !value.city.trim()) missing.push(tr('Ville', 'المدينة'));
   if (needsPoint && !value.pointId) missing.push(tr('Point de retrait', 'نقطة الاستلام'));
+  // Sans gouvernorat, la livraison n'a pas de tarif : on ne laisse pas passer.
+  if (governorates.length > 0 && !governorate.trim()) missing.push(tr('Gouvernorat', 'الولاية'));
 
   const label = (mode: DeliveryMode) => mode === 'home'
     ? tr('Mon adresse', 'عنواني')
@@ -69,33 +75,9 @@ export const AddressPage: React.FC<AddressPageProps> = ({
         <button type="button" className="s-iconbtn" onClick={onBack} aria-label={tr('Retour', 'رجوع')}>
           <EditorialIcon name="Back" direction={direction} />
         </button>
-        <div className="s-appbar__title">
-          <span>{tr('Adresse de livraison', 'عنوان التوصيل')}</span>
-          <small>{tr('Livraison à domicile ou en point relais en Tunisie', 'توصيل للمنزل أو نقطة استلام في تونس')}</small>
-        </div>
+        <div className="s-appbar__title"><span>{tr('Adresse de livraison', 'عنوان التوصيل')}</span></div>
         <span style={{ width: 44 }} />
       </header>
-
-      {/* Zalando Step Progress Bar */}
-      <nav className="s-stepper" aria-label={tr('Progression de la commande', 'مراحل الطلب')}>
-        <div className="s-stepper__line" aria-hidden="true" />
-        <div className="s-stepper__item" data-done="true">
-          <span className="s-stepper__circle"><EditorialIcon name="Check" size={14} /></span>
-          <span className="s-stepper__label">{tr('Panier', 'السلة')}</span>
-        </div>
-        <div className="s-stepper__item" data-active="true">
-          <span className="s-stepper__circle">2</span>
-          <span className="s-stepper__label">{tr('Livraison', 'التوصيل')}</span>
-        </div>
-        <div className="s-stepper__item">
-          <span className="s-stepper__circle">3</span>
-          <span className="s-stepper__label">{tr('Paiement', 'الخلاص')}</span>
-        </div>
-        <div className="s-stepper__item">
-          <span className="s-stepper__circle">4</span>
-          <span className="s-stepper__label">{tr('Confirmé', 'التأكيد')}</span>
-        </div>
-      </nav>
 
       <div style={{ flex: 1, padding: '0 16px 120px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${modes.length}, 1fr)`, gap: 8, padding: '16px 0' }} role="radiogroup" aria-label={tr('Mode de livraison', 'طريقة التوصيل')}>
@@ -166,7 +148,26 @@ export const AddressPage: React.FC<AddressPageProps> = ({
           </fieldset>
         )}
 
-        <p className="s-card__desc" style={{ whiteSpace: 'normal' }}>{tr('Gouvernorat', 'الولاية')} : <b>{governorate}</b></p>
+        {/* Le gouvernorat décide du tarif de livraison : il se CHOISIT dans la
+            liste réellement servie, il ne se devine pas depuis la ville. */}
+        {governorates.length > 0 ? (
+          <label style={{ display: 'block', marginBottom: 14 }}>
+            <span style={{ display: 'block', fontSize: '0.84375rem', marginBottom: 6 }}>{tr('Gouvernorat', 'الولاية')}</span>
+            <select
+              value={governorate}
+              onChange={(event) => onGovernorateChange?.(event.target.value)}
+              style={{
+                width: '100%', minHeight: 48, padding: '0 14px', font: 'inherit', fontSize: '0.9375rem',
+                border: '1px solid var(--s-ink)', borderRadius: 0, background: 'var(--s-canvas)',
+              }}
+            >
+              <option value="">{tr('Choisir un gouvernorat', 'اختار ولاية')}</option>
+              {governorates.map((name) => <option key={name} value={name}>{name}</option>)}
+            </select>
+          </label>
+        ) : (
+          <p className="s-card__desc" style={{ whiteSpace: 'normal' }}>{tr('Gouvernorat', 'الولاية')} : <b>{governorate}</b></p>
+        )}
       </div>
 
       <div className="s-buybar">
