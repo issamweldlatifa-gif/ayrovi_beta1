@@ -181,10 +181,17 @@ export const BagPage: React.FC<BagPageProps> = ({
           {paymentMarks.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
               {paymentMarks.map((mark) => (
-                <span key={mark.id} style={{ display: 'grid', placeItems: 'center', minWidth: 46, height: 30, padding: '0 7px', border: '1px solid var(--s-line)' }}>
+                <span
+                  key={mark.id}
+                  title={mark.label}
+                  style={{
+                    display: 'grid', placeItems: 'center', minWidth: 52, height: 34,
+                    padding: '0 8px', border: '1px solid var(--s-line)', background: 'var(--s-canvas)',
+                  }}
+                >
                   {mark.src
-                    ? <img src={mark.src} alt={mark.label} style={{ maxHeight: 16, maxWidth: 42, objectFit: 'contain' }} />
-                    : <span style={{ fontSize: '0.625rem', fontWeight: 700 }}>{mark.label}</span>}
+                    ? <img src={mark.src} alt={mark.label} style={{ maxHeight: 20, maxWidth: 46, objectFit: 'contain' }} />
+                    : <span style={{ fontSize: '0.625rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{mark.label}</span>}
                 </span>
               ))}
             </div>

@@ -44,7 +44,7 @@ describe('moyens de paiement du pied de page — la vérité, pas la vitrine', (
     const live = policy(LIVE_TODAY);
     expect(availablePaymentMethods(live)).toEqual([]);
     const html = panel(LIVE_TODAY);
-    for (const label of ['Carte bancaire', 'Flouci', 'D17', 'Virement bancaire', 'Transfert postal']) {
+    for (const label of ['Carte bancaire', 'Flouci', 'D17', 'Pré-paiement (virement bancaire)', 'Transfert postal']) {
       expect(html).not.toContain(label);
     }
     expect(html).toContain('Aucun encaissement en ligne n’est ouvert aujourd’hui.');
@@ -58,7 +58,7 @@ describe('moyens de paiement du pied de page — la vérité, pas la vitrine', (
     expect(isPaymentMethodAvailable(configured, 'FLOUCI')).toBe(false);
     const html = panel(FULLY_CONFIGURED);
     expect(html.match(/class="public-footer-payment"/g)).toHaveLength(3);
-    for (const label of ['Carte bancaire', 'Virement bancaire', 'Transfert postal']) expect(html).toContain(label);
+    for (const label of ['Carte bancaire', 'Pré-paiement (virement bancaire)', 'Transfert postal']) expect(html).toContain(label);
     expect(html).not.toContain('Flouci');
     expect(html).not.toContain('Aucun encaissement en ligne');
     // La remise carte n'apparaît que si la carte est réellement encaissable.
