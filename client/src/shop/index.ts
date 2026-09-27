@@ -8,5 +8,6 @@ export { BagPage } from './BagPage';
 export { ShopBagScreen } from './ShopBagScreen';
 export { AddressPage } from './AddressPage';
 export { PaymentPage } from './PaymentPage';
+export { ShopCheckoutScreen } from './ShopCheckoutScreen';
 export * from './types';
 export * from './adapter';
