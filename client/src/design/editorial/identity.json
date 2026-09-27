@@ -1,5 +1,5 @@
 {
-  "version": "3.0.0",
+  "version": "3.1.0",
   "name": "AYROVI A — Official Identity",
   "orangeAreaLimit": 0.03,
   "orangeAreaExclusions": [
@@ -13,6 +13,8 @@
     "actionHover": "#262626",
     "onAction": "#FFFFFF",
     "muted": "#595959",
+    "info": "#595959",
+    "infoSoft": "#F5F5F5",
     "line": "#D9D9D9",
     "accent": "#FF7900",
     "accentText": "#A74700",
@@ -29,6 +31,8 @@
     "actionHover": "#E5E5E5",
     "onAction": "#000000",
     "muted": "#BDBDBD",
+    "info": "#BDBDBD",
+    "infoSoft": "#171717",
     "line": "#525252",
     "accent": "#FF7900",
     "accentText": "#FFAE69",
@@ -59,8 +63,10 @@
     }
   ],
   "geometry": {
-    "controlRadius": 0,
-    "cardRadius": 0,
+    "ctaRadius": 999,
+    "controlRadius": 12,
+    "cardRadius": 16,
+    "sheetRadius": 32,
     "mediaRadius": 0,
     "minTarget": 44,
     "controlHeight": 48,
@@ -95,13 +101,15 @@
   "typography": {
     "preset": "ayrovi-a",
     "stack": "'Zalando Sans', 'Noto Sans Arabic', sans-serif",
-    "headingWidth": "112.5%",
-    "bodyWeight": 400,
-    "headingWeight": 500,
+    "headingWidth": "100%",
+    "bodyWeight": 500,
+    "headingWeight": 650,
     "labelWeight": 700,
-    "priceWeight": 400,
-    "bodyLineHeight": 1.5,
-    "arabicLineHeight": 1.8,
+    "priceWeight": 600,
+    "bodyLineHeight": 1.4,
+    "arabicLineHeight": 1.55,
+    "headingLineHeight": 1.18,
+    "arabicHeadingLineHeight": 1.42,
     "letterSpacing": "0em"
   }
 }

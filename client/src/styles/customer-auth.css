@@ -23,7 +23,6 @@
 }
 
 .ay-auth {
-  --ayrovi-radius-control: 0px;
   color-scheme: light;
   color: var(--ayrovi-text-primary);
   background: var(--ayrovi-bg-main);
@@ -51,7 +50,8 @@
 .ay-auth__logo { width: 32px; height: 32px; padding: 5px; object-fit: contain; background: var(--ayrovi-bg-main); border-radius: 0; flex-shrink: 0; }
 .ay-auth__logo--wordmark { width: auto; height: 22px; padding: 0; background: none; }
 .ay-auth__intro { text-align: center; margin-block-start: var(--ayrovi-space-4); }
-.ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-family: var(--ayrovi-font-display); font-size: 32px; line-height: 1.5; font-weight: 400; font-synthesis: none; letter-spacing: 0; }
+.ay-auth__intro h1 { max-width: 280px; margin-inline: auto; font-family: var(--ayrovi-font-display); font-size: 32px; line-height: var(--ayrovi-heading-line-height, 1.18); font-weight: var(--ayrovi-heading-weight, 650); font-synthesis: none; letter-spacing: 0; }
+.ay-auth:lang(ar) .ay-auth__intro h1 { line-height: var(--ayrovi-arabic-heading-line-height, 1.42); }
 .ay-auth__intro p { font-size: var(--text-small); line-height: 1.5; margin-block-start: var(--ayrovi-space-2); }
 .ay-auth__card { position: relative; margin-block-start: 0; border-radius: var(--ayrovi-radius-sheet) var(--ayrovi-radius-sheet) 0 0; padding: var(--ayrovi-space-8) max(var(--ayrovi-space-6), env(safe-area-inset-right)) max(var(--ayrovi-space-6), env(safe-area-inset-bottom)) max(var(--ayrovi-space-6), env(safe-area-inset-left)); background: var(--ayrovi-bg-main); }
 .ay-auth__social { display: flex; flex-wrap: wrap; gap: var(--ayrovi-space-2); }
@@ -61,7 +61,7 @@
 .ay-auth__divider::before, .ay-auth__divider::after { content: ''; flex: 1; height: 1px; background: var(--ayrovi-border-soft); }
 .ay-auth__fields { display: flex; flex-direction: column; gap: var(--ayrovi-space-4); border: 0; padding: 0; margin: 0; min-width: 0; }
 .ay-auth__fields label { color: var(--ayrovi-text-primary); font-size: var(--text-small); font-weight: 600; }
-.ay-auth__fields input { padding-inline: var(--ayrovi-space-5); min-height: var(--ayrovi-control-height); font-size: var(--text-body); font-weight: 400; background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
+.ay-auth__fields input { padding-inline: var(--ayrovi-space-5); min-height: var(--ayrovi-control-height); font-size: var(--text-body); font-weight: var(--ayrovi-body-weight, 500); background: var(--ayrovi-bg-surface); color: var(--ayrovi-text-primary); }
 .ay-auth__fields input::placeholder { color: var(--ayrovi-text-secondary); opacity: 1; }
 /* Do not disable password managers. Only normalize the browser's autofill paint. */
 .ay-auth input:autofill {
@@ -78,13 +78,13 @@
 .ay-auth__password { position: relative; }
 .ay-auth__fields .ay-auth__password input { padding-inline: 44px 48px; }
 .ay-auth__lock { position: absolute; inset-inline-start: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--ayrovi-text-secondary); }
-.ay-auth__password-toggle { position: absolute; inset-inline-end: 2px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: var(--ayrovi-touch-target); height: var(--ayrovi-touch-target); color: var(--ayrovi-text-secondary); border-radius: var(--ayrovi-radius-control); }
+.ay-auth__password-toggle { position: absolute; inset-inline-end: 2px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: var(--ayrovi-touch-target); height: var(--ayrovi-touch-target); padding: 0; color: var(--ayrovi-text-secondary); border: 0; border-radius: 50%; background: transparent; }
 .ay-auth__password-toggle:hover { color: var(--ayrovi-text-primary); }
 .ay-auth__recovery-link { align-self: center; min-height: var(--ayrovi-touch-target); margin-block: -8px; font-size: var(--text-small); text-decoration: underline; text-underline-offset: 3px; }
 .ay-auth__hint { margin-block-start: var(--ayrovi-space-2); font-size: var(--text-caption); color: var(--ayrovi-text-secondary); }
 .ay-auth__submit { width: 100%; font-size: var(--text-body); box-shadow: var(--ayrovi-shadow-xs); }
 .ay-auth__phone { width: 100%; margin-block-start: var(--ayrovi-space-4); box-shadow: none; }
-.ay-auth__message { padding: var(--ayrovi-space-4); border: 1px solid var(--ayrovi-border-soft); border-radius: var(--ayrovi-radius-card); background: var(--ayrovi-bg-surface); font-size: var(--text-small); line-height: 1.6; overflow-wrap: anywhere; }
+.ay-auth__message { padding: var(--ayrovi-space-4); border: 1px solid var(--ayrovi-border-soft); border-radius: var(--ayrovi-radius-card); background: var(--ayrovi-info-soft); color: var(--ayrovi-info); font-size: var(--text-small); line-height: var(--ayrovi-body-line-height, 1.4); overflow-wrap: anywhere; }
 .ay-auth__message p { margin-block: var(--ayrovi-space-2); }
 .ay-auth__message a { display: inline-flex; align-items: center; min-height: var(--ayrovi-touch-target); font-weight: 600; text-decoration: underline; }
 .ay-auth__message--error { border-color: var(--ayrovi-danger); color: var(--ayrovi-danger); background: var(--ayrovi-danger-soft); }

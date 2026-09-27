@@ -19,6 +19,14 @@ describe('customer identity integration, not a reference-only kit', () => {
     expect(style['--ayrovi-color-brand-orange']).toBe(identity.colors.accent);
     expect(style['--ayrovi-cta']).toBe(identity.colors.action);
     expect(style['--ayrovi-cta-ink']).toBe(identity.colors.onAction);
+    expect(style['--ayrovi-radius-cta']).toBe('999px');
+    expect(style['--ayrovi-radius-control']).toBe('12px');
+    expect(style['--ayrovi-radius-card']).toBe('16px');
+    expect(style['--ayrovi-radius-sheet']).toBe('32px');
+    expect(style['--ayrovi-info']).toBe(identity.colors.info);
+    expect(style['--ayrovi-info-soft']).toBe(identity.colors.infoSoft);
+    expect(style['--ayrovi-body-weight']).toBe('500');
+    expect(style['--ayrovi-body-line-height']).toBe('1.55');
     expect(style['--font-primary']).toBe(CUSTOMER_FONTS.ar);
     expect(style['--ayrovi-content-max']).toBe('1100px');
     expect(JSON.stringify(config)).toBe(before);

@@ -74,20 +74,17 @@
 .ay-icon-action {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 2.75rem;
+  height: 2.75rem;
   flex: 0 0 auto;
-  border: 1px solid var(--ayrovi-border-soft);
-  border-radius: var(--ayrovi-radius-chip);
+  border: 0;
+  border-radius: 50%;
   background: transparent;
   color: var(--ayrovi-text-primary);
-  transition: border-color var(--ayrovi-motion-fast) ease, background-color var(--ayrovi-motion-fast) ease, transform var(--ayrovi-motion-fast) ease;
+  transition: color var(--ayrovi-motion-fast) ease, transform var(--ayrovi-motion-fast) ease;
 }
 
-.ay-icon-action:hover {
-  border-color: var(--ayrovi-text-primary);
-  background: var(--ayrovi-bg-surface);
-}
+.ay-icon-action:hover { color: var(--ayrovi-text-secondary); }
 
 .ay-icon-action:active {
   transform: scale(0.94);
@@ -98,14 +95,7 @@
   cursor: not-allowed;
 }
 
-/* Variante carrée (listes denses) */
-.ay-icon-action--square {
-  border-radius: 0.625rem;
-}
-
-/* ── 4. CTA principal — un seul par écran ────────────────────────────────────
-   Orange plein, texte blanc, gras 700. Si un second bouton orange apparaît sur
-   le même écran, le moins important doit passer en `ay-btn-secondary`. */
+/* ── 4. CTA principal — capsule d’action issue des tokens de l’interface ───── */
 .ay-cta-primary,
 .ay-btn-cta {
   min-height: var(--ayrovi-button-height, 44px);
@@ -114,10 +104,9 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.25rem;
-  border: 1px solid var(--ayrovi-color-brand-orange);
-  border-radius: var(--ayrovi-radius-control);
-  background: var(--ayrovi-color-brand-orange);
-  /* Texte SUR orange : encre #111111 — 6.54:1, WCAG AAA (le blanc ne passe qu'à 2.89:1). */
+  border: 1px solid var(--ayrovi-cta);
+  border-radius: var(--ayrovi-radius-cta, var(--ayrovi-radius-control));
+  background: var(--ayrovi-cta);
   color: var(--ayrovi-cta-ink);
   font-weight: 700;
   transition: background-color var(--ayrovi-motion-fast) ease, border-color var(--ayrovi-motion-fast) ease, transform var(--ayrovi-motion-fast) ease;

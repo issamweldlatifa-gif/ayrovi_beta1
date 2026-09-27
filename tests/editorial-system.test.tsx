@@ -32,19 +32,27 @@ describe('editorial identity, generated from one versioned source', () => {
     // 98 = 96 concepts d'origine + Bank (virement) + Mail (transfert postal), ajoutés et exportés.
     expect(names).toHaveLength(98);
   });
-  it('defines the area budget, not alpha opacity, and square geometry', () => {
+  it('defines the area budget, semantic customer geometry, and touch target', () => {
     expect(identity.orangeAreaLimit).toBe(.03);
     expect(identity.orangeAreaExclusions).toEqual(['product-images']);
-    expect(identity.geometry.controlRadius).toBe(0);
+    expect(identity.geometry.ctaRadius).toBe(999);
+    expect(identity.geometry.controlRadius).toBe(12);
+    expect(identity.geometry.cardRadius).toBe(16);
+    expect(identity.geometry.sheetRadius).toBe(32);
+    expect(identity.geometry.mediaRadius).toBe(0);
     expect(identity.geometry.minTarget).toBeGreaterThanOrEqual(44);
     expect(identity.geometry.iconStroke).toBe(1.5);
+    expect(identity.typography.bodyWeight).toBeGreaterThanOrEqual(500);
+    expect(identity.typography.headingWeight).toBeGreaterThan(600);
+    expect(identity.typography.arabicLineHeight).toBeLessThan(1.8);
   });
   for (const tone of ['colors', 'darkColors'] as const) {
     it(`has readable semantic text pairs in ${tone}`, () => {
       const c = identity[tone];
       for (const bg of [c.canvas, c.surface]) {
-        for (const text of [c.ink, c.muted, c.accentText, c.success, c.danger]) expect(contrast(text, bg)).toBeGreaterThanOrEqual(4.5);
+        for (const text of [c.ink, c.muted, c.info, c.accentText, c.success, c.danger]) expect(contrast(text, bg)).toBeGreaterThanOrEqual(4.5);
       }
+      expect(contrast(c.info, c.infoSoft)).toBeGreaterThanOrEqual(4.5);
       expect(contrast(c.action, c.onAction)).toBeGreaterThan(7);
     });
   }

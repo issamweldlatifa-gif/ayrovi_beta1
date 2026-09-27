@@ -6,10 +6,15 @@
   --font-primary: var(--ay-font-stack);
   --ayrovi-font-body: var(--ay-font-stack);
   --ayrovi-font-display: var(--ay-font-stack);
-  --ay-font-heading-width: 112.5%;
-  --ay-font-heading-weight: 500;
+  --ay-font-heading-width: 100%;
+  --ay-font-heading-weight: 650;
   --ay-font-label-weight: 700;
-  --ay-font-price-weight: 400;
+  --ay-font-price-weight: 600;
+  --ay-font-body-weight: 500;
+  --ay-font-body-line-height: 1.4;
+  --ay-font-arabic-line-height: 1.55;
+  --ay-font-heading-line-height: 1.18;
+  --ay-font-arabic-heading-line-height: 1.42;
 }
 :root, [data-ay-design="editorial"] {
   --ay-e-canvas: #FFFFFF;
@@ -19,6 +24,8 @@
   --ay-e-action-hover: #262626;
   --ay-e-on-action: #FFFFFF;
   --ay-e-muted: #595959;
+  --ay-e-info: #595959;
+  --ay-e-info-soft: #F5F5F5;
   --ay-e-line: #D9D9D9;
   --ay-e-accent: #FF7900;
   --ay-e-accent-text: #A74700;
@@ -26,8 +33,10 @@
   --ay-e-danger: #A52D2D;
   --ay-e-focus: #000000;
   --ay-e-secondary: #333333;
-  --ay-e-control-radius: 0px;
-  --ay-e-card-radius: 0px;
+  --ay-e-cta-radius: 999px;
+  --ay-e-control-radius: 12px;
+  --ay-e-card-radius: 16px;
+  --ay-e-sheet-radius: 32px;
   --ay-e-media-radius: 0px;
   --ay-e-min-target: 44px;
   --ay-e-control-height: 48px;
@@ -41,6 +50,8 @@
   --ay-e-action-hover: #E5E5E5;
   --ay-e-on-action: #000000;
   --ay-e-muted: #BDBDBD;
+  --ay-e-info: #BDBDBD;
+  --ay-e-info-soft: #171717;
   --ay-e-line: #525252;
   --ay-e-accent: #FF7900;
   --ay-e-accent-text: #FFAE69;

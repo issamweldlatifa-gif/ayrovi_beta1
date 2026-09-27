@@ -193,9 +193,11 @@ describe('surfaces — l’orange n’est plus un papier peint', () => {
     expect(rule).not.toMatch(/var\(--ayrovi-color-brand-orange\)/);
   });
 
-  test('le CTA principal « Ouvrir LENS » reste le seul orange plein de la section', () => {
+  test('le CTA client « Ouvrir LENS » reprend l’action capsule du système', () => {
     const rule = css().match(/\.lens2__cta\s*\{[^}]*\}/)?.[0] ?? '';
-    expect(rule).toMatch(/background:\s*var\(--ayrovi-color-brand-orange\)/);
+    expect(rule).toMatch(/background:\s*var\(--ayrovi-cta\)/);
+    expect(rule).toMatch(/color:\s*var\(--ayrovi-cta-ink\)/);
+    expect(rule).toMatch(/border-radius:\s*var\(--ayrovi-radius-cta/);
   });
 
   test('les flèches des prix marchands sont des cercles transparents à filet fin', () => {
@@ -273,7 +275,7 @@ describe("DS v1.0 — verrous d\'échelle (2026-09-18)", () => {
     expect(offenders.join(' | ')).toBe('');
   });
 
-  test('le CTA principal porte le texte ENCRE (6.54:1, AAA) — jamais de blanc', () => {
+  test('le CTA utilise le token sémantique de contraste, jamais une couleur fixe', () => {
     const primitives = withoutComments(read(PRIMITIVES));
     const rule = primitives.match(/\.ay-btn-cta\s*\{[^}]*\}/)?.[0] ?? '';
     expect(rule).toMatch(/color:\s*var\(--ayrovi-cta-ink\)/);

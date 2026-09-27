@@ -1,7 +1,9 @@
 # AYROVI DESIGN SYSTEM v1.1
 
-**Charte : « Monochrome Premium × Orange d'action »**
-Date : 2026-09-18 · Statut : appliquée à la vitrine, verrouillée par tests.
+**Charte historique : « Monochrome Premium × Orange d'action »**
+Date : 2026-09-18 · Statut : compatibilité héritée hors du scope client courant.
+
+> Mise à jour 2026-09-27 : pour toutes les interfaces client (boutique, Lens, panier, paiement, compte, connexion et récupération), la référence courante est `docs/CUSTOMER_DESIGN_SYSTEM.md` et sa source générée `client/src/design/editorial/identity.json` (v3.1). Elle remplace les choix orange-CTA/rayon-zéro de cette documentation dans le scope client. L’admin reste sur les tokens de compatibilité décrits ici.
 Documents liés : `docs/DESIGN_AUDIT_2026-09-18.md` (audit) · `tests/design-zalando.test.ts` + `tests/design-tokens.test.ts` (verrous) · `verify/zalando-audit.mjs` (audit pixel).
 
 ---

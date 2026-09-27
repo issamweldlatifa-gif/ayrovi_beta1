@@ -1,5 +1,8 @@
-/* AYROVI DESIGN SYSTEM v1.1 — the ONLY source of brand, semantic, spacing,
-   shape and motion values. Charte : « Monochrome Premium × Orange d'action ».
+/* AYROVI DESIGN SYSTEM v1.1 — legacy compatibility tokens for screens outside
+   CustomerIdentity (notably the admin). Customer-facing v3.1 values are authored
+   in editorial/identity.json and injected by customerTheme.ts. The legacy aliases
+   below must not override that customer-scoped identity.
+   Charte legacy : « Monochrome Premium × Orange d'action ».
 
    1. UNE SEULE ÉCHELLE NEUTRE (P0 de P4/T2, exécuté) :
       #FFFFFF canvas · #F8F9FA surface · #EAEAEA filet · #111111 encre ·
@@ -36,6 +39,8 @@
   --color-accent-deep: var(--ayrovi-accent-deep);
   --color-success: var(--ayrovi-success);
   --color-success-soft: var(--ayrovi-success-soft);
+  --color-info: var(--ayrovi-info);
+  --color-info-soft: var(--ayrovi-info-soft);
   --color-danger: var(--ayrovi-danger);
   --color-danger-soft: var(--ayrovi-danger-soft);
   --color-whatsapp: var(--ayrovi-whatsapp);
@@ -81,6 +86,7 @@
   --text-6xl--line-height: 1.167;
   --text-7xl: 2.25rem;
   --text-7xl--line-height: 1.167;
+  --radius-cta: var(--ayrovi-radius-cta);
   --radius-control: var(--ayrovi-radius-control);
   --radius-card: var(--ayrovi-radius-card);
   --shadow-card: var(--ayrovi-shadow-card);
@@ -150,6 +156,8 @@ html[data-theme='dark'] {
     /* — états : succès / erreur uniquement ; le kهرماني est retiré (0 usage UI) — */
     --ayrovi-success: #15803d;
     --ayrovi-success-soft: #e6f5ec;
+    --ayrovi-info: var(--ay-e-info, #595959);
+    --ayrovi-info-soft: var(--ay-e-info-soft, #f5f5f5);
     --ayrovi-danger: #dc2626;
     --ayrovi-danger-soft: #fdecec;
 
@@ -206,7 +214,8 @@ html[data-theme='dark'] {
     --ayrovi-font-display: var(--font-primary);
     --ayrovi-font-body: var(--font-primary);
     /* — forme : 3 rayons, c'est tout (contrôle / carte / chip) — */
-    --ayrovi-radius-control: 0.75rem;      /* boutons, champs, tuiles  */
+    --ayrovi-radius-cta: var(--ay-e-cta-radius, 999px); /* capsule d’action client */
+    --ayrovi-radius-control: 0.75rem;      /* legacy controls */
     --ayrovi-radius-card: 1rem;            /* cartes, panneaux, modales */
     --ayrovi-radius-chip: 999px;           /* badges, pills, pastilles  */
     --ayrovi-radius-icon: 0.625rem;        /* boutons-icônes carrés     */

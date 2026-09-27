@@ -17,6 +17,11 @@ css+=`:root {
   --ay-font-heading-weight: ${identity.typography.headingWeight};
   --ay-font-label-weight: ${identity.typography.labelWeight};
   --ay-font-price-weight: ${identity.typography.priceWeight};
+  --ay-font-body-weight: ${identity.typography.bodyWeight};
+  --ay-font-body-line-height: ${identity.typography.bodyLineHeight};
+  --ay-font-arabic-line-height: ${identity.typography.arabicLineHeight};
+  --ay-font-heading-line-height: ${identity.typography.headingLineHeight};
+  --ay-font-arabic-heading-line-height: ${identity.typography.arabicHeadingLineHeight};
 }
 :root, [data-ay-design="editorial"] {\n${colors(identity.colors)}\n${Object.entries(identity.geometry).filter(([k])=>!k.startsWith('icon')).map(([k,v])=>`  --ay-e-${kebab(k)}: ${v}px;`).join('\n')}\n}\n[data-ay-design="editorial"][data-tone="dark"] {\n${colors(identity.darkColors)}\n}\n`;
 css+=`html { font-family: var(--ay-font-stack); font-synthesis: none; }

@@ -11,7 +11,7 @@ export type ToastTone = 'success' | 'danger' | 'info';
 const TONES: Record<ToastTone, string> = {
   success: 'border-success/30 bg-success-soft text-success',
   danger: 'border-danger/30 bg-danger-soft text-danger',
-  info: 'border-line bg-white text-ink',
+  info: 'border-info/20 bg-info-soft text-info',
 };
 
 export const Toast: React.FC<{ tone?: ToastTone; children: React.ReactNode; className?: string }> = ({ tone = 'info', children, className }) => (
