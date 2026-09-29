@@ -1697,8 +1697,8 @@
       "label": "fr/320x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288
+        "width": 320,
+        "scroll": 320
       }
     },
     {
@@ -1711,9 +1711,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -1721,11 +1721,7 @@
       }
     },
     {
-      "label": "fr/320x480/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "fr/320x480/light: exact integer quantity is sent",
+      "label": "fr/320x480/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -5080,7 +5076,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 156.828125,
+        "top": 163.671875,
         "bottom": 844
       }
     },
@@ -5116,8 +5112,8 @@
       "label": "fr/320x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288
+        "width": 320,
+        "scroll": 320
       }
     },
     {
@@ -5130,9 +5126,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -5140,11 +5136,7 @@
       }
     },
     {
-      "label": "fr/320x844/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "fr/320x844/light: exact integer quantity is sent",
+      "label": "fr/320x844/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -6807,7 +6799,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 156.828125,
+        "top": 163.671875,
         "bottom": 844
       }
     },
@@ -8535,8 +8527,8 @@
       "label": "fr/390x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 358,
-        "scroll": 358
+        "width": 390,
+        "scroll": 390
       }
     },
     {
@@ -8549,9 +8541,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -8559,11 +8551,7 @@
       }
     },
     {
-      "label": "fr/390x480/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "fr/390x480/light: exact integer quantity is sent",
+      "label": "fr/390x480/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -11918,7 +11906,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 208.828125,
+        "top": 233.859375,
         "bottom": 844
       }
     },
@@ -11954,8 +11942,8 @@
       "label": "fr/390x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 358,
-        "scroll": 358
+        "width": 390,
+        "scroll": 390
       }
     },
     {
@@ -11968,9 +11956,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -11978,11 +11966,7 @@
       }
     },
     {
-      "label": "fr/390x844/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "fr/390x844/light: exact integer quantity is sent",
+      "label": "fr/390x844/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -13645,7 +13629,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 208.828125,
+        "top": 233.859375,
         "bottom": 844
       }
     },
@@ -15373,8 +15357,8 @@
       "label": "fr/768x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 736,
-        "scroll": 736
+        "width": 768,
+        "scroll": 768
       }
     },
     {
@@ -15387,9 +15371,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -15397,11 +15381,7 @@
       }
     },
     {
-      "label": "fr/768x480/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "fr/768x480/light: exact integer quantity is sent",
+      "label": "fr/768x480/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -18756,7 +18736,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 232.21875,
+        "top": 252.046875,
         "bottom": 844
       }
     },
@@ -18792,8 +18772,8 @@
       "label": "fr/768x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 736,
-        "scroll": 736
+        "width": 768,
+        "scroll": 768
       }
     },
     {
@@ -18806,9 +18786,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -18816,11 +18796,7 @@
       }
     },
     {
-      "label": "fr/768x844/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "fr/768x844/light: exact integer quantity is sent",
+      "label": "fr/768x844/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -20483,7 +20459,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 232.21875,
+        "top": 252.046875,
         "bottom": 844
       }
     },
@@ -22211,8 +22187,8 @@
       "label": "ar/320x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288
+        "width": 320,
+        "scroll": 320
       }
     },
     {
@@ -22225,9 +22201,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -22235,11 +22211,7 @@
       }
     },
     {
-      "label": "ar/320x480/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "ar/320x480/light: exact integer quantity is sent",
+      "label": "ar/320x480/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -25594,7 +25566,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 149.875,
+        "top": 181.859375,
         "bottom": 844
       }
     },
@@ -25644,9 +25616,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -25654,11 +25626,7 @@
       }
     },
     {
-      "label": "ar/320x844/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "ar/320x844/light: exact integer quantity is sent",
+      "label": "ar/320x844/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -27321,7 +27289,7 @@
       "details": {
         "width": 318,
         "scroll": 318,
-        "top": 149.875,
+        "top": 181.859375,
         "bottom": 844
       }
     },
@@ -29049,8 +29017,8 @@
       "label": "ar/390x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 358,
-        "scroll": 358
+        "width": 390,
+        "scroll": 390
       }
     },
     {
@@ -29063,9 +29031,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -29073,11 +29041,7 @@
       }
     },
     {
-      "label": "ar/390x480/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "ar/390x480/light: exact integer quantity is sent",
+      "label": "ar/390x480/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -32432,7 +32396,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 201.875,
+        "top": 233.859375,
         "bottom": 844
       }
     },
@@ -32468,8 +32432,8 @@
       "label": "ar/390x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 358,
-        "scroll": 358
+        "width": 390,
+        "scroll": 390
       }
     },
     {
@@ -32482,9 +32446,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -32492,11 +32456,7 @@
       }
     },
     {
-      "label": "ar/390x844/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "ar/390x844/light: exact integer quantity is sent",
+      "label": "ar/390x844/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -34159,7 +34119,7 @@
       "details": {
         "width": 388,
         "scroll": 388,
-        "top": 201.875,
+        "top": 233.859375,
         "bottom": 844
       }
     },
@@ -35887,8 +35847,8 @@
       "label": "ar/768x480/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 736,
-        "scroll": 736
+        "width": 768,
+        "scroll": 768
       }
     },
     {
@@ -35901,9 +35861,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -35911,11 +35871,7 @@
       }
     },
     {
-      "label": "ar/768x480/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "ar/768x480/light: exact integer quantity is sent",
+      "label": "ar/768x480/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -39270,7 +39226,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 225.265625,
+        "top": 254,
         "bottom": 844
       }
     },
@@ -39306,8 +39262,8 @@
       "label": "ar/768x844/light: product has no horizontal overflow",
       "pass": true,
       "details": {
-        "width": 736,
-        "scroll": 736
+        "width": 768,
+        "scroll": 768
       }
     },
     {
@@ -39320,9 +39276,9 @@
       "details": {
         "count": 6,
         "names": [
-          "Image",
-          "ArrowUpRight",
-          "Hourglass",
+          "Back",
+          "Share",
+          "Bag",
           "Minus",
           "Plus"
         ],
@@ -39330,11 +39286,7 @@
       }
     },
     {
-      "label": "ar/768x844/light: fractional quantity cannot be submitted",
-      "pass": true
-    },
-    {
-      "label": "ar/768x844/light: exact integer quantity is sent",
+      "label": "ar/768x844/light: integer quantity is sent",
       "pass": true
     },
     {
@@ -40997,7 +40949,7 @@
       "details": {
         "width": 558,
         "scroll": 558,
-        "top": 225.265625,
+        "top": 254,
         "bottom": 844
       }
     },
@@ -41099,19 +41051,27 @@
       }
     },
     {
-      "label": "commerce-social/fr/320: payment confirmation stays blocked without configuration",
+      "label": "commerce-social/fr/320: missing policy blocks payment confirmation",
       "pass": true
     },
     {
-      "label": "commerce-social/fr/320: handler also rejects bypassing the disabled button",
+      "label": "commerce-social/fr/320: failed policy is not presented as zero configured methods",
       "pass": true
     },
     {
-      "label": "commerce-social/fr/320: missing config is not treated as no configured payment methods",
+      "label": "commerce-social/fr/320: failed checkout policy never submits an order",
       "pass": true
     },
     {
-      "label": "commerce-social/fr/320: confirmed no-provider policy still supports unpaid order creation",
+      "label": "commerce-social/fr/320: retry loads the real available cash-on-delivery method",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/fr/320: confirmed policy enables checkout",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/fr/320: checkout remains unsubmitted in the fixture",
       "pass": true
     },
     {
@@ -41192,19 +41152,27 @@
       }
     },
     {
-      "label": "commerce-social/fr/390: payment confirmation stays blocked without configuration",
+      "label": "commerce-social/fr/390: missing policy blocks payment confirmation",
       "pass": true
     },
     {
-      "label": "commerce-social/fr/390: handler also rejects bypassing the disabled button",
+      "label": "commerce-social/fr/390: failed policy is not presented as zero configured methods",
       "pass": true
     },
     {
-      "label": "commerce-social/fr/390: missing config is not treated as no configured payment methods",
+      "label": "commerce-social/fr/390: failed checkout policy never submits an order",
       "pass": true
     },
     {
-      "label": "commerce-social/fr/390: confirmed no-provider policy still supports unpaid order creation",
+      "label": "commerce-social/fr/390: retry loads the real available cash-on-delivery method",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/fr/390: confirmed policy enables checkout",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/fr/390: checkout remains unsubmitted in the fixture",
       "pass": true
     },
     {
@@ -41285,19 +41253,27 @@
       }
     },
     {
-      "label": "commerce-social/ar/320: payment confirmation stays blocked without configuration",
+      "label": "commerce-social/ar/320: missing policy blocks payment confirmation",
       "pass": true
     },
     {
-      "label": "commerce-social/ar/320: handler also rejects bypassing the disabled button",
+      "label": "commerce-social/ar/320: failed policy is not presented as zero configured methods",
       "pass": true
     },
     {
-      "label": "commerce-social/ar/320: missing config is not treated as no configured payment methods",
+      "label": "commerce-social/ar/320: failed checkout policy never submits an order",
       "pass": true
     },
     {
-      "label": "commerce-social/ar/320: confirmed no-provider policy still supports unpaid order creation",
+      "label": "commerce-social/ar/320: retry loads the real available cash-on-delivery method",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/ar/320: confirmed policy enables checkout",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/ar/320: checkout remains unsubmitted in the fixture",
       "pass": true
     },
     {
@@ -41378,19 +41354,27 @@
       }
     },
     {
-      "label": "commerce-social/ar/390: payment confirmation stays blocked without configuration",
+      "label": "commerce-social/ar/390: missing policy blocks payment confirmation",
       "pass": true
     },
     {
-      "label": "commerce-social/ar/390: handler also rejects bypassing the disabled button",
+      "label": "commerce-social/ar/390: failed policy is not presented as zero configured methods",
       "pass": true
     },
     {
-      "label": "commerce-social/ar/390: missing config is not treated as no configured payment methods",
+      "label": "commerce-social/ar/390: failed checkout policy never submits an order",
       "pass": true
     },
     {
-      "label": "commerce-social/ar/390: confirmed no-provider policy still supports unpaid order creation",
+      "label": "commerce-social/ar/390: retry loads the real available cash-on-delivery method",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/ar/390: confirmed policy enables checkout",
+      "pass": true
+    },
+    {
+      "label": "commerce-social/ar/390: checkout remains unsubmitted in the fixture",
       "pass": true
     },
     {
@@ -41531,8 +41515,8 @@
       "label": "content/ar/320/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 288,
-        "scroll": 288,
+        "width": 320,
+        "scroll": 320,
         "clipped": []
       }
     },
@@ -41615,8 +41599,8 @@
       "label": "content/ar/768/normal: no horizontal overflow or clamped content",
       "pass": true,
       "details": {
-        "width": 768,
-        "scroll": 768,
+        "width": 736,
+        "scroll": 736,
         "clipped": []
       }
     },
@@ -41654,10 +41638,10 @@
       "pass": true
     },
     {
-      "label": "99 public icon imports match reference drawings",
+      "label": "101 public icon imports match reference drawings",
       "pass": true,
       "details": {
-        "count": 99,
+        "count": 101,
         "names": [
           "Alert",
           "ArrowDown",
@@ -41666,6 +41650,7 @@
           "Swap",
           "ArrowUp",
           "ArrowUpRight",
+          "Bank",
           "Barcode",
           "Bell",
           "Bookmark",
@@ -41703,6 +41688,7 @@
           "Locate",
           "Lock",
           "Logout",
+          "Mail",
           "Pin",
           "Menu",
           "Chat",
@@ -41760,15 +41746,11 @@
       }
     },
     {
-      "label": "failed config never invents a payment percentage",
+      "label": "failed quote never invents a payment percentage",
       "pass": true
     },
     {
-      "label": "failed config disables ordering",
-      "pass": true
-    },
-    {
-      "label": "retry loads actual server conditions",
+      "label": "failed quote disables addition",
       "pass": true
     },
     {

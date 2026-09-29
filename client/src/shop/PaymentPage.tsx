@@ -31,10 +31,13 @@ export interface PaymentPageProps {
   onBack?: () => void;
   onSelect: (id: string) => void;
   onConfirm?: () => void;
+  policyStatus?: 'loading' | 'error' | 'ready';
+  onRetryPolicy?: () => void;
 }
 
 export const PaymentPage: React.FC<PaymentPageProps> = ({
   methods, selected, totalTnd, networks = [], tr, formatMoney, direction = 'ltr', onBack, onSelect, onConfirm,
+  policyStatus = 'ready', onRetryPolicy,
 }) => {
   const anyAvailable = methods.some((method) => method.available);
   return (
@@ -112,7 +115,18 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
           </div>
         )}
 
-        {!anyAvailable && (
+        {policyStatus === 'loading' && (
+          <p className="s-card__desc" role="status" style={{ margin: 16 }}>
+            {tr('Chargement des conditions de paiement…', 'جارٍ تحميل شروط الخلاص…')}
+          </p>
+        )}
+        {policyStatus === 'error' && (
+          <div className="s-refusal" role="alert" style={{ margin: 16 }}>
+            <p>{tr('Les conditions de paiement sont indisponibles. Réessayez avant de continuer.', 'شروط الخلاص غير متاحة. عاود المحاولة قبل المواصلة.')}</p>
+            {onRetryPolicy && <button type="button" className="s-cta s-cta--ghost" onClick={onRetryPolicy}>{tr('Réessayer', 'أعد المحاولة')}</button>}
+          </div>
+        )}
+        {policyStatus === 'ready' && !anyAvailable && (
           <p className="s-refusal s-payment-empty" style={{ margin: 16 }}>
             {tr("Aucun moyen n'est encaissable pour l'instant : la commande peut être créée, le paiement restera en attente.",
                 'ما فماش وسيلة تخلّص توّا: الطلب ينجّم يتعمل والخلاص يبقى في الانتظار.')}
@@ -128,7 +142,7 @@ export const PaymentPage: React.FC<PaymentPageProps> = ({
           <EditorialIcon name="Shield" size={16} />
           <span>{tr('Tous les paiements sont cryptés et sécurisés', 'جميع وسائل الدفع مشفرة وآمنة')}</span>
         </div>
-        <button type="button" className="s-cta" onClick={onConfirm} disabled={!selected || !onConfirm}>
+        <button type="button" className="s-cta" onClick={onConfirm} disabled={!selected || !onConfirm || policyStatus !== 'ready'}>
           {tr('Confirmer et payer', 'أكّد وخلّص')}
         </button>
       </div>

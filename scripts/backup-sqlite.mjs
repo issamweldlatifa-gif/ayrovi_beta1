@@ -28,9 +28,19 @@ try {
   source.close();
 }
 
-const copy = new Database(destination, { readonly: true, fileMustExist: true });
+const copy = new Database(destination, { fileMustExist: true });
 let integrity = '';
 try {
+  // Lens result cache is disposable and can contain OCR-derived text. Keep it
+  // out of longer-lived backups; it is recomputed on demand after restoration.
+  const hasLensCache = copy.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name='lens_analysis_cache'").get();
+  if (hasLensCache) {
+    copy.pragma('secure_delete = ON');
+    copy.prepare('DELETE FROM lens_analysis_cache').run();
+  }
+  if (String(copy.pragma('journal_mode', { simple: true }) || '').toLowerCase() === 'wal') {
+    copy.pragma('wal_checkpoint(TRUNCATE)');
+  }
   integrity = String(copy.pragma('quick_check', { simple: true }) || '');
 } finally {
   copy.close();

@@ -19,7 +19,7 @@
 @import "./styles/interface-runtime.css";
 @import "./styles/zalando-ui.css";
 @import "./styles/ayrovix-theme.css";
-@import "./styles/checkout-flow.css";
+@import "./styles/order-confirmation.css";
 /* Boutique v2 : chargee avec la feuille principale, jamais en morceau differe —
    un ecran d'achat sans sa CSS est un ecran de texte nu. */
 @import "./shop/shop.css" layer(ayrovi-shop);

@@ -16,6 +16,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
+import { fetchSafeRemote, parsePublicHttpUrl, readLimitedBuffer } from './safeUrl';
+import { pruneDiskCache } from './diskCache';
 import { segmentBuffer } from './segmentation';
 
 const MAX_DIMENSION = 900;
@@ -339,13 +341,7 @@ export async function isolateBuffer(buffer: Buffer, options: IsolationOptions = 
 /* ── 4. Téléchargement protégé (SSRF) ───────────────────────────── */
 export function isPublicHttpUrl(rawUrl: string): boolean {
   try {
-    const url = new URL(rawUrl);
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') return false;
-    const host = url.hostname.toLowerCase();
-    if (host === 'localhost' || host.endsWith('.local') || host.endsWith('.internal')) return false;
-    if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.)/.test(host)) return false;
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(host)) return false;
-    if (host === '::1' || host === '[::1]') return false;
+    parsePublicHttpUrl(rawUrl);
     return true;
   } catch {
     return false;
@@ -353,17 +349,20 @@ export function isPublicHttpUrl(rawUrl: string): boolean {
 }
 
 export async function fetchRemoteImage(rawUrl: string): Promise<Buffer> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    const response = await fetch(rawUrl, { signal: controller.signal, redirect: 'follow', headers: { 'user-agent': 'AyroviBot/1.0 (+https://ayrovi.com)' } });
-    if (!response.ok) throw new Error(`HTTP_${response.status}`);
-    const array = new Uint8Array(await response.arrayBuffer());
-    if (array.byteLength > MAX_BYTES) throw new Error('IMAGE_TOO_LARGE');
-    return Buffer.from(array);
-  } finally {
-    clearTimeout(timeout);
+  const response = await fetchSafeRemote(rawUrl, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: { 'user-agent': 'AyroviBot/1.0 (+https://ayrovi.com)', accept: 'image/avif,image/webp,image/png,image/jpeg,image/*;q=0.8' },
+  });
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error(`IMAGE_HTTP_${response.status}`);
   }
+  const contentType = String(response.headers.get('content-type') || '').split(';', 1)[0].trim().toLowerCase();
+  if (!contentType.startsWith('image/') || contentType === 'image/svg+xml') {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error('REMOTE_NOT_RASTER_IMAGE');
+  }
+  return readLimitedBuffer(response, MAX_BYTES);
 }
 
 /* ── 5. Cache disque — un URL, un travail ───────────────────────── */
@@ -383,8 +382,12 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
   const pngPath = path.join(dir, `${key}.png`);
   try {
     const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as CachedIsolation;
-    if (meta.file && fs.existsSync(path.join(dir, meta.file))) return meta;
-    return meta;
+    if (!meta.file) return meta; // known negative result, no external file required
+    const cachedFile = path.join(dir, path.basename(meta.file));
+    if (fs.existsSync(cachedFile)) return { ...meta, file: path.basename(meta.file) };
+    // A bounded-cache eviction may remove the PNG before its metadata partner.
+    // Drop the stale pointer and recompute instead of serving a permanent 502.
+    fs.unlinkSync(metaPath);
   } catch { /* pas encore en cache */ }
   const buffer = await fetchRemoteImage(rawUrl);
   let result = await isolateBuffer(buffer);
@@ -405,6 +408,7 @@ export async function getIsolatedImage(rawUrl: string): Promise<CachedIsolation>
   }
   fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(metaPath, JSON.stringify(meta));
+  pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 4_000 });
   return meta;
 }
 

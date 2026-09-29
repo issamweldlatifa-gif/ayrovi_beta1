@@ -22,6 +22,7 @@
 import type { QatafoDatabase } from '../db/database';
 import { writeAuditEvent } from '../erp-core/audit';
 import type { AdminAuditActor } from '../admin/audit';
+import { fetchSafeRemote, parsePublicHttpUrl, readLimitedText } from './safeUrl';
 
 export interface FxSnapshot {
   rateEUR: number;
@@ -95,11 +96,24 @@ export function fxIntervalMs(): number {
   return hours * 3_600_000;
 }
 
+function safeFxUrl(): string {
+  const parsed = parsePublicHttpUrl(fxUrl());
+  if (parsed.protocol !== 'https:') throw new Error('FX_URL_MUST_USE_HTTPS');
+  return parsed.toString();
+}
+
+function fxProviderLabel(): string {
+  try { return new URL(safeFxUrl()).origin; } catch { return 'invalid configured endpoint'; }
+}
+
 async function defaultFetcher(): Promise<unknown> {
   const timeoutMs = Math.max(2_000, Number(process.env.FX_RATES_TIMEOUT_MS) || 10_000);
-  const response = await fetch(fxUrl(), { signal: AbortSignal.timeout(timeoutMs) });
-  if (!response.ok) throw new Error(`FX_HTTP_${response.status}`);
-  return response.json();
+  const response = await fetchSafeRemote(safeFxUrl(), { signal: AbortSignal.timeout(timeoutMs) });
+  if (!response.ok) {
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error(`FX_HTTP_${response.status}`);
+  }
+  return JSON.parse(await readLimitedText(response, 512 * 1024));
 }
 
 const SYSTEM_ACTOR: AdminAuditActor = { id: null, name: 'FX Live (auto)', ipAddress: null };
@@ -174,5 +188,5 @@ export function startFxRatesScheduler(db: QatafoDatabase): void {
   boot.unref?.();
   const timer = setInterval(tick, 6 * 3_600_000);
   timer.unref?.();
-  console.log(`[FX Rates] synchronisation active — ${fxUrl()} (vérification toutes les 6 h, rafraîchissement ≥ ${fxIntervalMs() / 3_600_000} h).`);
+  console.log(`[FX Rates] synchronisation active — ${fxProviderLabel()} (vérification toutes les 6 h, rafraîchissement ≥ ${fxIntervalMs() / 3_600_000} h).`);
 }

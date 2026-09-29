@@ -184,8 +184,7 @@ Trois éléments de l'écran de connexion sont **vivants** (et vérifiables) :
 2. l'œil du mot de passe porte un **état accessible** (`aria-pressed`) et une infobulle, pas seulement
    un mot ;
 3. l'erreur de connexion est annoncée (`role="alert"`), et le bloc « mot de passe perdu » décrit la
-   **procédure réelle du serveur** (`ADMIN_EMAIL`/`ADMIN_PASSWORD`, puis `ADMIN_BOOTSTRAP_RESET=yes`)
-   au lieu de renvoyer vers une commande qui n'existe pas.
+   **procédure réelle du serveur** (`ADMIN_EMAIL`/`ADMIN_PASSWORD` et un jeton ponctuel `ADMIN_BOOTSTRAP_RESET` aléatoire de 32 octets). Le jeton est consommé une fois et doit être retiré après redémarrage.
 
 Titre d'onglet : `AYROVI · Console d'exploitation` (la console ne s'annonce plus avec le titre
 marketing du site public).

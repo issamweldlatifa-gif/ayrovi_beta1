@@ -45,6 +45,8 @@ describe('cache de reconnaissance Lens', () => {
     expect(later.hit).toBe('identification');
     expect(later.matches).toBeNull();
     expect(later.identification).toEqual(ident);
+    const persisted = JSON.parse(fs.readFileSync(path.join(dir, `${'v1'}-${key}.json`), 'utf8'));
+    expect(persisted.matches).toBeNull(); // expired merchant data is scrubbed from disk too
   });
 
   it('une liste vide n’est pas mémorisée — un incident passager ne se sert pas 30 minutes', () => {

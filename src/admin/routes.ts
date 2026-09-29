@@ -212,6 +212,12 @@ const deliveryStatuses = ['PENDING','PREPARING','SHIPPED','IN_TRANSIT','OUT_FOR_
 const adminRoles: AdminRole[] = ['SUPER_ADMIN','ADMIN','CONTENT_MANAGER','ORDER_MANAGER'];
 const ayrovixReviewStatuses: AyrovixReviewStatus[] = ['PENDING','IN_REVIEW','QUOTED','REJECTED','CANCELLED'];
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
+const MAX_LOGIN_ATTEMPT_BUCKETS = 50_000;
+const loginAttemptSweeper = setInterval(() => {
+  const now = Date.now();
+  for (const [key, attempt] of loginAttempts) if (attempt.resetAt <= now) loginAttempts.delete(key);
+}, 5 * 60_000);
+loginAttemptSweeper.unref?.();
 const magazineGenerationInFlight = new Set<string>();
 
 function parsePositiveInteger(value: unknown, fallback: number, max: number): number {
@@ -411,13 +417,20 @@ export function createAdminRouter(
   router.post('/auth/login', (req, res) => {
     const key = req.ip || 'unknown';
     const nowTime = Date.now();
-    const attempt = loginAttempts.get(key);
+    let attempt = loginAttempts.get(key);
     if (attempt && attempt.resetAt > nowTime && attempt.count >= 8) {
       return res.status(429).json({ success: false, error: 'Trop de tentatives. Réessayez dans 15 minutes.' });
     }
-    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
-    const password = typeof req.body?.password === 'string' ? req.body.password : '';
-    const user = db.get<any>('SELECT * FROM admin_users WHERE email=? AND active=1', email);
+    if (!attempt && loginAttempts.size >= MAX_LOGIN_ATTEMPT_BUCKETS) {
+      for (const [storedKey, storedAttempt] of loginAttempts) if (storedAttempt.resetAt <= nowTime) loginAttempts.delete(storedKey);
+      if (loginAttempts.size >= MAX_LOGIN_ATTEMPT_BUCKETS) {
+        return res.status(503).json({ success: false, error: 'Service momentanément occupé.' });
+      }
+    }
+    const rawEmail = typeof req.body?.email === 'string' ? req.body.email : '';
+    const email = rawEmail.length <= 254 ? rawEmail.trim().toLowerCase() : '';
+    const password = typeof req.body?.password === 'string' && req.body.password.length <= 1024 ? req.body.password : '';
+    const user = email && password ? db.get<any>('SELECT * FROM admin_users WHERE email=? AND active=1', email) : null;
     if (!user || !verifyPassword(password, user.password_hash)) {
       const current = attempt && attempt.resetAt > nowTime ? attempt : { count: 0, resetAt: nowTime + 15 * 60 * 1000 };
       current.count += 1;

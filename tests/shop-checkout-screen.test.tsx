@@ -14,6 +14,7 @@ import { LocaleProvider } from '../client/src/i18n/LocaleContext';
 import { ShopCheckoutScreen } from '../client/src/shop';
 
 const source = readFileSync('client/src/shop/ShopCheckoutScreen.tsx', 'utf8');
+const paymentPageSource = readFileSync('client/src/shop/PaymentPage.tsx', 'utf8');
 
 describe('caisse v2 — le contrat', () => {
   it('la commande est créée AVANT le paiement', () => {
@@ -73,6 +74,18 @@ describe('caisse v2 — rendu', () => {
       </LocaleProvider>,
     );
     expect(html).toBe('');
+  });
+});
+
+describe('caisse v2 — récupération des conditions de paiement', () => {
+  it('distingue une erreur de chargement d’une boutique sans moyen encaissable', () => {
+    expect(source).toContain('policyStatus={commerce.status}');
+    expect(source).toContain('onRetryPolicy={commerce.retry}');
+    expect(paymentPageSource).toContain("policyStatus?: 'loading' | 'error' | 'ready'");
+    expect(paymentPageSource).toContain("policyStatus === 'error'");
+    expect(paymentPageSource).toContain('onRetryPolicy &&');
+    expect(paymentPageSource).toContain("policyStatus === 'ready' && !anyAvailable");
+    expect(paymentPageSource).toContain('policyStatus !== \'ready\'');
   });
 });
 

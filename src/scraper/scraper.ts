@@ -2,6 +2,7 @@ import { ScrapedProduct, StoreType, ProductVariants } from '../types';
 import { fetchSafeRemote, readLimitedText, resolveSafeHttpUrl } from '../services/safeUrl';
 import { parseProductPageHtml, type ParsedProductPage } from './productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
+import { detectMerchantStore } from './merchantDomains';
 
 interface MerchantScrapeResult {
   data: ParsedProductPage | null;
@@ -290,18 +291,7 @@ export class SmartLinkScraper {
   }
 
   private detectStore(url: string): StoreType {
-    try {
-      const hostname = new URL(url).hostname.toLowerCase();
-      if (hostname.includes('amazon.')) return 'amazon';
-      if (hostname.includes('shein.')) return 'shein';
-      if (hostname.includes('temu.')) return 'temu';
-      if (hostname.includes('aliexpress.')) return 'aliexpress';
-    } catch {
-      if (/amazon\./i.test(url)) return 'amazon';
-      if (/shein\./i.test(url)) return 'shein';
-      if (/temu\./i.test(url)) return 'temu';
-    }
-    return 'generic';
+    return detectMerchantStore(url);
   }
 
   private getStoreDisplayName(store: StoreType, url: string): string {

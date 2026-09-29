@@ -11,6 +11,7 @@ import { filterDisplayableCandidates } from '../src/ayrovix/services/candidatePo
 import { extractProductFromUrl } from '../src/ayrovix/services/product';
 import { parseProductPageHtml } from '../src/scraper/productPageParser';
 import { fetchRenderedProductPage, RenderedPageError } from '../src/scraper/renderedPageFetcher';
+import { detectMerchantStore, isTrustedRenderTarget } from '../src/scraper/merchantDomains';
 import { createAyrovixPriceToken, verifyAyrovixPriceToken } from '../src/ayrovix/priceQuote';
 import { recordAyrovixHistory } from '../src/ayrovix/history';
 import { getAyrovixStats } from '../src/ayrovix/events';
@@ -327,6 +328,22 @@ describe('AYROVIX Lens', () => {
     }
   });
 
+  test('les domaines marchands sont appariés par suffixe exact et seuls les sites HTTPS fiables atteignent le renderer', async () => {
+    expect(detectMerchantStore('https://www.amazon.fr/dp/TEST')).toBe('amazon');
+    expect(detectMerchantStore('https://amazon.evil.example/dp/TEST')).toBe('generic');
+    expect(detectMerchantStore('https://notamazon.com/dp/TEST')).toBe('generic');
+    expect(isTrustedRenderTarget('https://fr.shein.com/robe')).toBe(true);
+    expect(isTrustedRenderTarget('http://www.amazon.fr/dp/TEST')).toBe(false);
+    expect(isTrustedRenderTarget('https://amazon.fr:8443/dp/TEST')).toBe(false);
+    expect(isTrustedRenderTarget('https://amazon.evil.example/dp/TEST')).toBe(false);
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(fetchRenderedProductPage('https://amazon.evil.example/dp/TEST')).rejects.toMatchObject({
+      name: 'RenderedPageError', code: 'RENDER_TARGET_NOT_ALLOWED',
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   test('rendu headless : ScraperAPI reçoit render=true et les erreurs conservent fournisseur et cause', async () => {
     const previous = {
       scraperApi: process.env.SCRAPERAPI_KEY,
@@ -348,7 +365,7 @@ describe('AYROVIX Lens', () => {
         return new Response('<html><body><span>Prix : 44,90 EUR</span></body></html>', { status: 200 });
       });
       vi.stubGlobal('fetch', fetchMock);
-      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST')).resolves.toMatchObject({ provider: 'scraperapi' });
+      await expect(fetchRenderedProductPage('https://www.amazon.fr/dp/TEST#client-only-secret')).resolves.toMatchObject({ provider: 'scraperapi' });
 
       vi.stubGlobal('fetch', vi.fn(async () => new Response('Forbidden', { status: 403 })));
       await expect(fetchRenderedProductPage('https://fr.shein.com/test')).rejects.toMatchObject({

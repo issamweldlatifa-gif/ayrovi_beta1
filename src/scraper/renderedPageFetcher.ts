@@ -1,7 +1,9 @@
 import { readLimitedText } from '../services/safeUrl';
+import { isTrustedRenderTarget } from './merchantDomains';
 
 export type RenderProvider = 'scraperapi' | 'scrapingbee' | 'brightdata';
 export type RenderFailureCode =
+  | 'RENDER_TARGET_NOT_ALLOWED'
   | 'RENDER_PROVIDER_NOT_CONFIGURED'
   | 'RENDER_TIMEOUT'
   | 'RENDER_RATE_LIMITED'
@@ -112,13 +114,17 @@ export function renderedProviderReady(): boolean {
   return providerOrder().length > 0;
 }
 
-/** Target URL is resolved and SSRF-validated by SmartLinkScraper before this function is called. */
+/** Defense in depth: external rendering is limited to HTTPS merchant domains we explicitly recognize. */
 export async function fetchRenderedProductPage(targetUrl: string): Promise<RenderedPageResult> {
+  if (!isTrustedRenderTarget(targetUrl)) throw new RenderedPageError('RENDER_TARGET_NOT_ALLOWED');
+  const normalizedTarget = new URL(targetUrl);
+  normalizedTarget.hash = ''; // fragments are never sent to the origin and may contain client-only secrets
+  const renderTarget = normalizedTarget.toString();
   const providers = providerOrder();
   if (!providers.length) throw new RenderedPageError('RENDER_PROVIDER_NOT_CONFIGURED');
   let lastError: RenderedPageError | null = null;
   for (const provider of providers) {
-    const request = requestFor(provider, targetUrl);
+    const request = requestFor(provider, renderTarget);
     try {
       const response = await fetch(request.url, { ...request.init, signal: AbortSignal.timeout(timeoutMs()) });
       if (!response.ok) {

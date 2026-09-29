@@ -4,7 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import path from 'path';
 import fs from 'fs';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
@@ -14,25 +14,28 @@ import { createApiRouter } from './api/routes';
 import { createAyrovixRouter } from './ayrovix/routes';
 import { createAdminRouter } from './admin/routes';
 import { createPublicRouter } from './public/routes';
-import { createCustomerRouter, facebookOAuthAvailable, googleOAuthAvailable } from './customer/routes';
-import { phoneOtpAvailable } from './customer/otp';
-import { mailerReady } from './services/mailer';
+import { createCustomerRouter } from './customer/routes';
 import { processCustomerAuthMail } from './customer/accountMail';
 import { startFxRatesScheduler } from './services/fxRates';
 import { startPriceWatchScheduler } from './ayrovix/services/priceWatch';
-import { customerAuthReady } from './customer/auth';
 import { createAssistantRouter } from './assistant/routes';
-import { cardGatewayAvailable } from './services/paymentGateway';
-import { getAyroviAiCore } from './ai-core/core';
 import { ERP_MODULES } from './erp-core/modules';
 import { bootstrapErpCore } from './erp-core/bootstrap';
 import { isPublicUploadPath } from './erp-core/storage';
+import { assertProductionConfiguration } from './config/productionConfig';
+import { pruneCanonicalLensCache } from './ayrovix/services/lensCache';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+assertProductionConfiguration();
+
 app.disable('x-powered-by');
-if (process.env.NODE_ENV === 'production' || process.env.RENDER) app.set('trust proxy', 1);
+const configuredProxyHops = Number(process.env.TRUST_PROXY_HOPS);
+const trustProxyHops = Number.isInteger(configuredProxyHops) && configuredProxyHops >= 0 && configuredProxyHops <= 5
+  ? configuredProxyHops
+  : (process.env.RENDER ? 1 : 0);
+app.set('trust proxy', trustProxyHops);
 app.use((req, res, next) => {
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.RENDER;
   // La console d'exploitation ne doit JAMAIS être affichée dans un cadre : une page du site
@@ -89,16 +92,30 @@ app.use(compression({ threshold: 1024 }));
 
 // ===== Limitation de débit (endpoints sensibles) — en mémoire, sans dépendance =====
 const rateBuckets = new Map<string, { count: number; resetAt: number }>();
+const MAX_RATE_BUCKETS = 50_000;
 const rateSweeper = setInterval(() => {
   const now = Date.now();
   for (const [key, bucket] of rateBuckets) if (bucket.resetAt <= now) rateBuckets.delete(key);
 }, 5 * 60_000);
 rateSweeper.unref?.();
-function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: Request) => string) {
+export function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: Request) => string) {
   return (req: Request, res: Response, next: NextFunction) => {
     const key = `${name}:${keyFn ? keyFn(req) : req.ip || 'unknown'}`;
     const now = Date.now();
-    const bucket = rateBuckets.get(key) ?? { count: 0, resetAt: now + windowMs };
+    let bucket = rateBuckets.get(key);
+    if (!bucket && rateBuckets.size >= MAX_RATE_BUCKETS) {
+      // Expire old entries on demand. Never evict a live authentication bucket
+      // to make room: under key-flood pressure, fail closed until a window expires.
+      for (const [storedKey, storedBucket] of rateBuckets) {
+        if (storedBucket.resetAt <= now) rateBuckets.delete(storedKey);
+      }
+      if (rateBuckets.size >= MAX_RATE_BUCKETS) {
+        res.setHeader('Retry-After', '60');
+        return res.status(503).json({ success: false, code: 'RATE_LIMIT_CAPACITY', error: 'Service momentanément occupé.' });
+      }
+      bucket = { count: 0, resetAt: now + windowMs };
+    }
+    bucket ||= { count: 0, resetAt: now + windowMs };
     if (bucket.resetAt <= now) { bucket.count = 0; bucket.resetAt = now + windowMs; }
     bucket.count += 1;
     rateBuckets.set(key, bucket);
@@ -110,7 +127,10 @@ function rateLimit(name: string, limit: number, windowMs: number, keyFn?: (req: 
   };
 }
 // Authentification & endpoints coûteux — plafonds volontairement généreux pour l'usage réel
-app.use('/api/admin/auth/login', rateLimit('admin-login', 10, 5 * 60_000));
+app.use('/api/admin/auth/login',
+  rateLimit('admin-login-global', process.env.NODE_ENV === 'test' ? 10_000 : 120, 5 * 60_000, () => 'process'),
+  rateLimit('admin-login', process.env.NODE_ENV === 'test' ? 1_000 : 10, 5 * 60_000),
+);
 app.use('/api/admin/magazine-agent/generate', rateLimit('magazine-agent', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
 app.use('/api/admin/arrival-ingestion/sources', (req, res, next) => {
   if (req.method === 'POST' && req.path.endsWith('/extractions')) {
@@ -118,7 +138,15 @@ app.use('/api/admin/arrival-ingestion/sources', (req, res, next) => {
   }
   return next();
 });
-app.use('/api/customer/auth/otp/request', rateLimit('otp-request', 5, 60_000, (req) => `${req.ip}:${String(req.body?.phone || '').slice(0, 24)}`));
+app.use('/api/customer/auth/otp/request', rateLimit('otp-request-ip', process.env.NODE_ENV === 'test' ? 1_000 : 20, 60_000));
+export function otpRateLimitKey(req: Pick<Request, 'ip' | 'body'>): string {
+  let digits = String(req.body?.phone || '').replace(/\D/g, '').slice(0, 20);
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.length === 8) digits = `216${digits}`; // local Tunisian notation → E.164 digits
+  const phoneHash = createHash('sha256').update(digits).digest('hex').slice(0, 16);
+  return `${req.ip || 'unknown'}:${phoneHash}`;
+}
+const otpRequestTargetRateLimit = rateLimit('otp-request-target', process.env.NODE_ENV === 'test' ? 1_000 : 5, 60_000, otpRateLimitKey);
 app.use('/api/customer/auth/otp/verify', rateLimit('otp-verify', 12, 5 * 60_000));
 app.use('/api/customer/auth/google', rateLimit('google-oauth', 30, 10 * 60_000));
 app.use('/api/customer/auth/facebook', rateLimit('facebook-oauth', 30, 10 * 60_000));
@@ -132,28 +160,43 @@ app.use('/api/scrape', rateLimit('scrape', 30, 10 * 60_000));
 app.use('/api/public/assistant-feedback', rateLimit('assistant-feedback', process.env.NODE_ENV === 'test' ? 1_000 : 40, 10 * 60_000));
 app.use('/api/assistant/chat', rateLimit('assistant-chat', process.env.NODE_ENV === 'test' ? 1_000 : 25, 10 * 60_000));
 app.use('/api/assistant/transcribe', rateLimit('assistant-voice', process.env.NODE_ENV === 'test' ? 1_000 : 20, 10 * 60_000));
+app.use('/api/public/media', rateLimit('public-media-proxy', process.env.NODE_ENV === 'test' ? 1_000 : 300, 10 * 60_000));
 const ayrovixRateLimit = rateLimit('ayrovix', process.env.NODE_ENV === 'test' ? 1_000 : 12, 10 * 60_000);
+const configuredLensDailyLimit = Number(process.env.AYROVIX_LENS_IP_DAILY_LIMIT);
+const lensDailyLimit = process.env.NODE_ENV === 'test' ? 1_000
+  : Number.isInteger(configuredLensDailyLimit) ? Math.max(5, Math.min(200, configuredLensDailyLimit)) : 40;
+const ayrovixDailyCostLimit = rateLimit('ayrovix-daily-cost', lensDailyLimit, 24 * 60 * 60_000);
+const costlyAyrovixPaths = new Set(['/analyze-image', '/analyze-url', '/analyze-code', '/analyze-barcode', '/analyze-text']);
 app.use('/api/ayrovix', (req, res, next) => {
-  // Reading compact history is free; do not consume the paid-analysis quota.
+  // Reading compact history is free. Costly analyses also have a daily IP
+  // ceiling so a long rolling 10-minute series cannot create unbounded vendor spend.
   if (req.method === 'GET' && req.path === '/history') return next();
+  if (costlyAyrovixPaths.has(req.path)) {
+    return ayrovixDailyCostLimit(req, res, () => ayrovixRateLimit(req, res, next));
+  }
   return ayrovixRateLimit(req, res, next);
 });
 
 // Les lectures sociales restent publiques; toutes les mutations partagent une
 // limite par IP + session navigateur. Ce middleware doit précéder PublicRouter.
+const socialMutationIpRateLimit = rateLimit('social-mutation-ip', process.env.NODE_ENV === 'test' ? 1_000 : 180, 10 * 60_000);
 const socialMutationRateLimit = rateLimit(
   'social-mutation',
   process.env.NODE_ENV === 'test' ? 12 : 120,
   10 * 60_000,
   (req) => {
     const rawSession = String(req.headers['x-session-id'] || '').trim();
-    const session = /^[A-Za-z0-9._:-]{8,160}$/.test(rawSession) ? rawSession : 'no-session';
+    const session = /^[A-Za-z0-9._:-]{8,160}$/.test(rawSession)
+      ? createHash('sha256').update(rawSession).digest('hex').slice(0, 24)
+      : 'no-session';
     return `${req.ip || 'unknown'}:${session}`;
   },
 );
 app.use('/api/public/social', (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  return socialMutationRateLimit(req, res, next);
+  // First enforce an IP-only ceiling, then the lower session bucket. The
+  // caller-controlled x-session-id can no longer multiply the IP allowance.
+  return socialMutationIpRateLimit(req, res, () => socialMutationRateLimit(req, res, next));
 });
 
 const allowedOrigins = new Set((process.env.CORS_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
@@ -165,11 +208,19 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+// Phone target is in the parsed body: enforce this second factor only after parsing,
+// while the independent IP ceiling above still runs before the request body is read.
+app.use('/api/customer/auth/otp/request', otpRequestTargetRateLimit);
 
 // Database, Scraper & Vision Engine
 // Tests must always be hermetic: never let a local .env DATABASE_PATH hijack the test run.
 const databasePath = process.env.NODE_ENV === 'test' ? ':memory:' : (process.env.DATABASE_PATH || undefined);
 const db = new AyroviDatabase(databasePath);
+try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] startup prune failed:', error?.message || 'unknown'); }
+const lensCacheCleanupTimer = setInterval(() => {
+  try { pruneCanonicalLensCache(db); } catch (error: any) { console.warn('[Lens cache] scheduled prune failed:', error?.message || 'unknown'); }
+}, 60 * 60_000);
+lensCacheCleanupTimer.unref?.();
 // Persistence guardrail: in production a relative DATABASE_PATH usually means the
 // SQLite file sits on the ephemeral container filesystem — every deploy/restart
 // would then boot a fresh database and orders/CMS content would appear "lost".
@@ -256,33 +307,10 @@ app.get('/api/ready', (_req, res) => {
     db.get('SELECT 1 AS ready');
     const arrivalMultistoreMigration = db.arrivalMultistoreMigrationReadiness();
     if (!arrivalMultistoreMigration.ready) throw new Error('Arrival multi-store migration is incomplete.');
-    const aiCore = getAyroviAiCore();
-    const responsesProviderReady = aiCore.responses().isConfigured();
-    const legacyVoice = aiCore.legacyVoiceReadiness();
-    res.json({
-      status: 'ready',
-      database: 'ok',
-      migrations: {
-        arrivalMultistore: arrivalMultistoreMigration,
-      },
-      capabilities: {
-        assistant: responsesProviderReady,
-        magazineAgent: responsesProviderReady,
-        magazineImageSearch: Boolean(process.env.SERPAPI_KEY),
-        magazineStockVideo: Boolean(process.env.PEXELS_API_KEY || process.env.PIXABAY_API_KEY || responsesProviderReady),
-        visualSearch: Boolean(process.env.SERPAPI_KEY),
-        voice: legacyVoice.available,
-        voiceInput: legacyVoice.input,
-        voiceOutput: legacyVoice.output,
-        googleLogin: customerAuthReady() && googleOAuthAvailable(),
-        facebookLogin: customerAuthReady() && facebookOAuthAvailable(),
-        sms: phoneOtpAvailable(),
-        mail: mailerReady(),
-        cardGateway: cardGatewayAvailable(),
-      },
-    });
+    res.json({ status: 'ready', database: 'ok' });
   } catch (error: any) {
-    res.status(503).json({ status: 'not_ready', database: 'error', error: String(error?.message || 'Database unavailable') });
+    console.error(`[ready] request=${( _req as any).requestId || 'unknown'}`, error?.message || 'dependency unavailable');
+    res.status(503).json({ status: 'not_ready', database: 'error', code: 'SERVICE_NOT_READY', requestId: ( _req as any).requestId || null });
   }
 });
 

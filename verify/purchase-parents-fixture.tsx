@@ -7,7 +7,7 @@ import { CustomerIdentity } from '../client/src/design/editorial/CustomerIdentit
 import { NavigationHistoryProvider, useNavigationHistory } from '../client/src/navigation/NavigationHistory';
 import { LensLauncher } from '../client/src/ayrovix/components/LensLauncher';
 import { AiAssistantDrawer } from '../client/src/components/assistant/AiAssistantDrawer';
-import { CartDrawer } from '../client/src/components/CartDrawer';
+import { ShopBagScreen } from '../client/src/shop/ShopBagScreen';
 import type { AyrovixOrderPayload } from '../client/src/ayrovix/types';
 import type { CartItem } from '../client/src/types';
 import { getSessionId } from '../client/src/utils/session';
@@ -42,7 +42,7 @@ function PurchaseParents() {
     {!lens && nav.has('app:assistant') && <AiAssistantDrawer isOpen onClose={() => nav.back()}
       onOpenLens={() => {}} onOpenOrders={() => {}} onOpenAccount={() => {}}
       onOrder={onOrder} onOpenCart={onOpenCart}/>}
-    {cartOpen && <CartDrawer isOpen onClose={() => setCartOpen(false)} items={items} totalTND={totalTND}
+    {cartOpen && <ShopBagScreen isOpen onClose={() => setCartOpen(false)} items={items} totalTND={totalTND}
       deliveryTND={deliveryTND} onRetry={() => void refresh()}
       onUpdateQuantity={() => {}} onRemoveItem={() => {}}
       onProceedToCheckout={() => {}} onCalculateAnotherProduct={() => setCartOpen(false)}/>}

@@ -1,6 +1,6 @@
-/* Browser-only signed fixture: candidate discovery -> source enrichment ->
- * variant-specific USD quote -> actual cart endpoint. SerpAPI remains the
- * production discovery provider; no live provider credentials are used here. */
+/* Browser-only fixture: candidate discovery -> source enrichment -> current shared product UI.
+ * The fake merchant does not provide a server-verifiable stock contract, so the test checks
+ * that source details are enriched but the unknown sizes remain deliberately non-orderable. */
 import { chromium } from 'playwright';
 import { buildSync } from 'esbuild';
 import { createRequire } from 'node:module';
@@ -10,7 +10,6 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 buildSync({ entryPoints: ['src/ayrovix/priceQuote.ts'], outfile: '.cache/lens-enrichment-quote.cjs', bundle: true, platform: 'node', format: 'cjs' });
 const { createAyrovixPriceToken } = createRequire(import.meta.url)(path.resolve('.cache/lens-enrichment-quote.cjs'));
 const origin = process.env.AYROVI_BASE_URL;
-const api = process.env.AYROVI_API_URL || 'http://127.0.0.1:3000';
 const output = '.cache/lens-enrichment-check';
 mkdirSync(output, { recursive: true });
 const checks = [];
@@ -33,9 +32,10 @@ const candidate = {
 const full = {
   ...candidate, description: 'Description détaillée publiée sur la vraie page du marchand.',
   images: [], exchangeRate: null, sizes: ['43', '42'], colors: [],
+  availability: 'unknown',
   variantOptions: [
-    { id: 'sku-42', label: 'Pointure 42', size: '42', color: null, available: true, price: 32, currency: 'USD', priceTnd: null, priceToken: signed(32, 'USD') },
-    { id: 'sku-43', label: 'Pointure 43', size: '43', color: null, available: true, price: 38, currency: 'USD', priceTnd: null, priceToken: signed(38, 'USD') },
+    { id: 'sku-42', label: 'Pointure 42', size: '42', color: null, available: true, availability: 'unknown', price: 32, currency: 'USD', priceTnd: null, priceToken: signed(32, 'USD') },
+    { id: 'sku-43', label: 'Pointure 43', size: '43', color: null, available: true, availability: 'unknown', price: 38, currency: 'USD', priceTnd: null, priceToken: signed(38, 'USD') },
   ],
 };
 const browser = await chromium.launch({ headless: true });
@@ -48,7 +48,6 @@ try {
   });
   page = await context.newPage();
   const errors = [];
-  const writes = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.route('**/api/**', async route => {
     const request = route.request();
@@ -56,15 +55,9 @@ try {
     if (resource === '/api/ayrovix/analyze-text') return route.fulfill({ json: { success: true, data: { query: title, candidates: [candidate], eventId: '' } } });
     if (resource === '/api/ayrovix/analyze-url') return route.fulfill({ json: { success: true, data: { product: full, alternates: [], eventId: '' } } });
     if (resource === '/api/ayrovix/history') return route.fulfill({ json: { success: true, data: [] } });
-    if (request.method() === 'POST' && resource === '/api/cart/items') writes.push(request.postDataJSON());
-    const headers = { ...request.headers() };
-    delete headers.host;
-    const response = await fetch(api + resource, {
-      method: request.method(), headers,
-      body: ['POST', 'PUT', 'PATCH'].includes(request.method()) ? request.postData() : undefined,
-    });
-    return route.fulfill({ status: response.status, contentType: response.headers.get('content-type') || 'application/json', body: await response.text() });
+    return route.fulfill({ status: 503, json: { success: false, error: 'Fixture endpoint not required' } });
   });
+
   await page.goto(origin + '/__verify/sonim?mode=lens');
   await page.locator('[data-open]').click();
   await page.locator('.lens-access, #ayrovix-text-input').first().waitFor();
@@ -75,33 +68,22 @@ try {
   await page.locator('#ayrovix-text-input').fill(title);
   await page.getByRole('button', { name: 'Rechercher', exact: true }).click();
   await page.getByRole('button', { name: `Voir le produit : ${title}` }).click();
-  const card = page.locator('.flow-product');
-  await card.getByRole('button', { name: 'Votre taille' }).waitFor();
-  await card.getByRole('button', { name: 'Votre taille' }).click();
-  check('Enrichment exposes only sourced sizes', await page.locator('[role="dialog"] button strong').allTextContents(), ['42', '43']);
-  await page.locator('[role="dialog"] button').filter({ has: page.locator('strong').getByText('43', { exact: true }) }).click();
-  await card.locator('[data-product-price-tnd]').waitFor();
-  const quote43 = Number(await card.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd'));
-  await card.getByRole('button', { name: '43' }).click();
-  await page.locator('[role="dialog"] button').filter({ has: page.locator('strong').getByText('42', { exact: true }) }).click();
-  await card.locator('[data-product-price-tnd]').waitFor();
-  const quote42 = Number(await card.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd'));
-  check('Each source variant changes its actual quoted price', quote42 !== quote43);
-  check('Selected variant keeps USD rather than EUR base currency', (await card.innerText()).includes('32.00 USD'));
-  await card.getByRole('button', { name: 'Ajouter au panier' }).click();
-  await card.getByText('Produit ajouté', { exact: true }).waitFor();
-  check('No automatic cart navigation', await page.getByRole('heading', { name: /Mon panier/ }).count(), 0);
-  check('Whole variant identity is sent to the cart', writes.map(({ sourcePrice, sourceCurrency, priceToken, externalId, priceVerificationStatus }) =>
-    ({ sourcePrice, sourceCurrency, signed: priceToken === full.variantOptions[0].priceToken, externalId, priceVerificationStatus })),
-  [{ sourcePrice: 32, sourceCurrency: 'USD', signed: true, externalId: 'sku-42', priceVerificationStatus: status }]);
-  await card.getByRole('button', { name: 'Ouvrir le panier' }).click();
-  await page.getByRole('heading', { name: /Mon panier/ }).waitFor();
-  check('Enriched variant quote equals real cart line', Number(await page.locator('[data-cart-line-tnd]').first().getAttribute('data-cart-line-tnd')), quote42);
+  const screen = page.locator('.s-product-page');
+  await screen.getByRole('button', { name: 'Votre pointure', exact: true }).waitFor();
+  await screen.getByRole('button', { name: 'Votre pointure', exact: true }).click();
+  const dialog = page.locator('.s-drape[role="dialog"]');
+  const sizes = await dialog.locator('.s-size strong').allTextContents();
+  check('Enrichment exposes only source-listed sizes', [...sizes].sort(), ['42', '43']);
+  check('Unconfirmed source stock is labelled unknown', await dialog.locator('.s-size').evaluateAll(items => items.every(item => item.getAttribute('data-state') === 'unknown')));
+  check('Unknown sizes cannot be selected', await dialog.locator('.s-size').evaluateAll(items => items.every(item => item.disabled)));
+  await dialog.getByRole('button', { name: 'Fermer', exact: true }).click();
+  check('Unknown stock blocks add-to-bag', await screen.getByRole('button', { name: 'Ajouter au panier', exact: true }).isDisabled());
+  check('Enrichment replaces the search snippet with the merchant description', (await screen.locator('.s-desc').innerText()).includes('Description détaillée publiée sur la vraie page du marchand.'));
   check('No browser errors', errors, []);
-  await page.screenshot({ path: `${output}/signed-variant-cart.png` });
+  await page.screenshot({ path: `${output}/enriched-unknown-stock.png` });
   await context.close();
-  writeFileSync(`${output}/checks.json`, JSON.stringify({ checks }, null, 2));
-  console.log(`${checks.length}/${checks.length} candidate-enrichment purchase assertions passed`);
+  writeFileSync(`${output}/checks.json`, JSON.stringify({ scope: 'Test-only discovery/enrichment fixture; unavailable source contract prevents ordering.', checks }, null, 2));
+  console.log(`${checks.length}/${checks.length} candidate-enrichment assertions passed`);
 } catch (error) {
   if (page && !page.isClosed()) await page.screenshot({ path: `${output}/failure.png` });
   writeFileSync(`${output}/checks.json`, JSON.stringify({ checks, error: String(error) }, null, 2));

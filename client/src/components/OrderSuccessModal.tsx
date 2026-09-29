@@ -6,7 +6,7 @@ import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { OrderResult } from '../types';
 import { JourneyProgress } from './JourneyProgress';
 import { useLocale } from '../i18n/LocaleContext';
-import { CheckoutFlowShell } from './CheckoutFlowShell';
+import { OrderConfirmationShell } from './OrderConfirmationShell';
 
 interface OrderSuccessModalProps {
   result: OrderResult | null;
@@ -63,10 +63,10 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
   };
 
   return (
-    <CheckoutFlowShell direction={direction} size="confirmation" ariaLabelledBy="order-success-title">
+    <OrderConfirmationShell direction={direction} ariaLabelledBy="order-success-title">
         <AppHeader title={tr('Commande enregistrée', 'تم تسجيل الطلب')} subtitle={tr('Confirmation AYROVI', 'تأكيد AYROVI')} onClose={onClose} actionLabel={tr('Retour à l’accueil', 'العودة إلى الصفحة الرئيسية')} />
         <JourneyProgress active={4} />
-        <div className="checkout-flow-content ay-safe-bottom space-y-5 text-center">
+        <div className="order-confirmation-content ay-safe-bottom space-y-5 text-center">
         {/* Celebration Icon */}
         <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-card bg-surface border border-line flex items-center justify-center text-ink mx-auto shadow-xs">
           <PackageCheck className="w-8 h-8 sm:w-10 sm:h-10" />
@@ -185,6 +185,6 @@ export const OrderSuccessModal: React.FC<OrderSuccessModalProps> = ({ result, on
         </button>
 
         </div>
-    </CheckoutFlowShell>
+    </OrderConfirmationShell>
   );
 };

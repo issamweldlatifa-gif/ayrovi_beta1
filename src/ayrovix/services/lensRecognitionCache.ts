@@ -29,6 +29,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pruneDiskCache } from '../../services/diskCache';
 
 /** Version du format : la changer invalide tout le cache d'un coup. */
 const FORMAT = 'v1';
@@ -93,22 +94,76 @@ function entryFile(key: string): string {
   return path.join(cacheDir(), `${FORMAT}-${key}.json`);
 }
 
+function sweepExpiredLensCache(now = Date.now()): void {
+  const dir = cacheDir();
+  try {
+    for (const name of fs.readdirSync(dir)) {
+      if (!name.startsWith(`${FORMAT}-`) || !name.endsWith('.json')) continue;
+      const file = path.join(dir, name);
+      try {
+        const entry = JSON.parse(fs.readFileSync(file, 'utf8')) as LensCacheEntry<unknown, unknown, unknown>;
+        const identificationFresh = Boolean(entry.identification || entry.signals)
+          && now - Number(entry.identificationAt) <= ttl('RECOGNITION');
+        const matchesFresh = Boolean(entry.matches?.length)
+          && now - Number(entry.matchesAt) <= ttl('MATCHES');
+        if (!identificationFresh && !matchesFresh) {
+          fs.unlinkSync(file);
+          continue;
+        }
+        if (!identificationFresh || !matchesFresh) {
+          const sanitized = {
+            ...entry,
+            identification: identificationFresh ? entry.identification : null,
+            signals: identificationFresh ? entry.signals : null,
+            identificationAt: identificationFresh ? entry.identificationAt : 0,
+            matches: matchesFresh ? entry.matches : null,
+            matchesAt: matchesFresh ? entry.matchesAt : 0,
+          };
+          fs.writeFileSync(file, JSON.stringify(sanitized), 'utf8');
+        }
+      } catch { try { fs.unlinkSync(file); } catch { /* best effort */ } }
+    }
+  } catch { /* cache cleanup must never break Lens */ }
+}
+
+let lastLensCacheSweepAt = 0;
+function sweepLensCacheIfDue(now: number): void {
+  if (now - lastLensCacheSweepAt < 5 * 60_000) return;
+  lastLensCacheSweepAt = now;
+  sweepExpiredLensCache(now);
+}
+const lensCacheSweepTimer = setInterval(() => sweepLensCacheIfDue(Date.now()), 15 * 60_000);
+lensCacheSweepTimer.unref?.();
+
 export function readLensCache<I, M, S = unknown>(key: string, now = Date.now()): LensCacheRead<I, M, S> {
   const empty: LensCacheRead<I, M, S> = { identification: null, matches: null, signals: null, hit: 'none' };
   if (!cacheEnabled()) return empty;
+  sweepLensCacheIfDue(now);
+  const file = entryFile(key);
   try {
-    const raw = fs.readFileSync(entryFile(key), 'utf8');
-    const entry = JSON.parse(raw) as LensCacheEntry<I, M, S>;
-    const fresh = now - entry.identificationAt <= ttl('RECOGNITION');
-    const identification = entry.identification && fresh ? entry.identification : null;
-    const signals = entry.signals && fresh ? entry.signals : null;
-    const matches = entry.matches && now - entry.matchesAt <= ttl('MATCHES')
-      ? entry.matches
-      : null;
+    const entry = JSON.parse(fs.readFileSync(file, 'utf8')) as LensCacheEntry<I, M, S>;
+    const identificationFresh = Boolean(entry.identification || entry.signals)
+      && now - Number(entry.identificationAt) <= ttl('RECOGNITION');
+    const matchesFresh = Boolean(entry.matches?.length)
+      && now - Number(entry.matchesAt) <= ttl('MATCHES');
+    const identification = identificationFresh ? entry.identification : null;
+    const signals = identificationFresh ? entry.signals : null;
+    const matches = matchesFresh ? entry.matches : null;
+    if (!identificationFresh || !matchesFresh) {
+      if (!identificationFresh && !matchesFresh) fs.unlinkSync(file);
+      else fs.writeFileSync(file, JSON.stringify({
+        ...entry,
+        identification,
+        signals,
+        identificationAt: identificationFresh ? entry.identificationAt : 0,
+        matches,
+        matchesAt: matchesFresh ? entry.matchesAt : 0,
+      }), 'utf8');
+    }
     const hit = identification && matches ? 'both' : identification ? 'identification' : matches ? 'matches' : 'none';
     return { identification, matches, signals, hit };
   } catch {
-    // Absente, illisible ou corrompue : on recalcule, on n'échoue pas.
+    // Absente, illisible, corrompue ou expirée : on recalcule, on n'échoue pas.
     return empty;
   }
 }
@@ -143,6 +198,7 @@ export function writeLensCache<I, M, S = unknown>(
 
     fs.mkdirSync(cacheDir(), { recursive: true });
     fs.writeFileSync(file, JSON.stringify(next), 'utf8');
+    pruneDiskCache(cacheDir(), { maxBytes: 128 * 1024 * 1024, maxFiles: 5_000 });
   } catch {
     // Un cache qui ne sait pas écrire reste un cache : la requête continue.
   }

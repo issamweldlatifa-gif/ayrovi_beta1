@@ -247,7 +247,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             <>
               <div className="s-price" data-deal={Boolean(product.price.reference)}>
                 <span className="s-price__label">{tr('Prix estimé AYROVI', 'السعر التقديري من AYROVI')}</span>
-                <strong>{formatMoney(product.price.current.tnd)}</strong>
+                <strong data-product-price-tnd={product.price.current.tnd}>{formatMoney(product.price.current.tnd)}</strong>
                 {priceChecking && <span className="s-price__note" role="status">{tr('Vérification à la source…', 'نتثبّتو في السعر عند المصدر…')}</span>}
               </div>
               {product.price.reference && <p className="s-was">{tr('Prix de référence : ', 'السعر المرجعي: ')}<s>{formatMoney(product.price.reference.tnd)}</s>{product.price.discountPercent != null && <b> −{product.price.discountPercent}%</b>}</p>}

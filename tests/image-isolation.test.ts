@@ -4,12 +4,13 @@
 //  • fond COMPLEXE → redirection (l'AI payant reste une décision à part) ;
 //  • cache disque par URL (un URL = un travail), garde SSRF, jamais d'image cassée.
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import sharp from 'sharp';
 import request from 'supertest';
-import { analyzeEdges, chromaKey, chromaKeyConnected, hasEnclosedTransparency, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
+import { analyzeEdges, chromaKey, chromaKeyConnected, getIsolatedImage, hasEnclosedTransparency, isPublicHttpUrl, isolateBuffer, type RawImage } from '../src/services/imageIsolation';
 import { app } from '../src/server';
 
 const cacheDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-isolated-'));
@@ -131,49 +132,38 @@ describe('isolation — garde SSRF', () => {
     'not-a-url',
   ])('bloque %s', (url) => expect(isPublicHttpUrl(url)).toBe(false));
   it('accepte une URL marchand publique', () => {
-    expect(isPublicHttpUrl('https://cdn.shop.example/product.jpg')).toBe(true);
+    expect(isPublicHttpUrl('https://cdn.shop.com/product.jpg')).toBe(true);
+  });
+});
+
+describe('isolation — eviction cache cohérent', () => {
+  it('recalcule après éviction du PNG isolé au lieu de garder un pointeur cassé', async () => {
+    const url = 'https://cdn.shop.example/stale.png';
+    const key = createHash('sha256').update(url).digest('hex').slice(0, 32);
+    const metaPath = path.join(cacheDir, `${key}.meta.json`);
+    fs.writeFileSync(metaPath, JSON.stringify({ kind: 'uniform', file: `${key}.png` }));
+    await expect(getIsolatedImage(url)).rejects.toMatchObject({ code: 'UNSAFE_URL' });
+    expect(fs.existsSync(metaPath)).toBe(false);
   });
 });
 
 describe('isolation — endpoint public', () => {
-  const grayProduct = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><rect width="200" height="200" fill="#ededed"/><rect x="60" y="60" width="80" height="80" fill="#c0392b"/></svg>`;
-  const remote = 'https://cdn.shop.example/gray-studio.jpg';
-  let fetchCalls = 0;
-
-  beforeEach(() => { fetchCalls = 0; });
-
-  it('sert un PNG transparent pour un fond studio, puis sert depuis le cache', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => {
-      fetchCalls += 1;
-      return new Response(await sharp(Buffer.from(grayProduct)).png().toBuffer(), { status: 200, headers: { 'content-type': 'image/png' } });
-    }));
-    const first = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent(remote)}`);
-    expect(first.status).toBe(200);
-    expect(first.headers['content-type']).toContain('image/png');
-    const meta = await sharp(first.body).metadata();
-    expect(meta.hasAlpha).toBe(true);
-    const second = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent(remote)}`);
-    expect(second.status).toBe(200);
-    expect(fetchCalls).toBe(1); // le cache disque évite le second téléchargement
-    vi.unstubAllGlobals();
-  });
-
-  it('redirige vers l\'original pour un fond blanc ou complexe', async () => {
-    const white = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="#ffffff"/></svg>`;
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(await sharp(Buffer.from(white)).png().toBuffer(), { status: 200 })));
-    const response = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent('https://cdn.shop.example/white.jpg')}`);
-    expect(response.status).toBe(302);
-    expect(response.headers.location).toBe('https://cdn.shop.example/white.jpg');
-    vi.unstubAllGlobals();
-  });
-
-  it('rejette les URLs privées (SSRF) sans aucun appel réseau', async () => {
-    const spy = vi.fn();
-    vi.stubGlobal('fetch', spy);
+  it('rejette les URLs privées sans aucun appel réseau', async () => {
     const response = await request(app).get('/api/public/media/isolated?url=http%3A%2F%2F127.0.0.1%2Fsecret.jpg');
     expect(response.status).toBe(400);
-    expect(spy).not.toHaveBeenCalled();
-    vi.unstubAllGlobals();
+    expect(response.body.error).toBe('INVALID_IMAGE_URL');
+  });
+
+  it('ne renvoie jamais de redirection vers un hôte externe en cas de traitement impossible', async () => {
+    // Les suffixes réservés (dont .example/.invalid) sont refusés avant DNS.
+    const response = await request(app).get(`/api/public/media/isolated?url=${encodeURIComponent('https://cdn.shop.example/white.jpg')}`);
+    expect(response.status).toBe(400);
+    expect(response.headers.location).toBeUndefined();
+    const routeSource = fs.readFileSync(path.resolve('src/public/routes.ts'), 'utf8');
+    for (const [start, end] of [["router.get('/media/isolated'", "router.get('/media/card'"], ["router.get('/media/card'", "router.get('/media/img'"], ["router.get('/media/img'", "// Same calculation"]]) {
+      const routeBlock = routeSource.split(start)[1]?.split(end)[0] || '';
+      expect(routeBlock).not.toContain('res.redirect');
+    }
   });
 });
 

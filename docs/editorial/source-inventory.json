@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 234,
-    "customerAndSharedFiles": 182,
-    "controls": 448,
+    "files": 233,
+    "customerAndSharedFiles": 181,
+    "controls": 434,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -10696,8 +10696,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "16f694567d54bd09a10dc458a0813475c947a6fd142a90c65e8307e7b8d633b9",
-      "lines": 652,
+      "sha256": "46ba99fd91d4c523b92ee6553a982405a0aade19f32d4cdade14ef2794eaaced",
+      "lines": 654,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -10772,7 +10772,7 @@
         },
         {
           "tag": "ShopCheckoutScreen",
-          "line": 598,
+          "line": 599,
           "className": null,
           "type": null,
           "role": null,
@@ -10782,7 +10782,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 640,
+          "line": 642,
           "className": null,
           "type": null,
           "role": null,
@@ -11039,8 +11039,8 @@
     {
       "file": "client/src/ayrovix/components/LensHelp.tsx",
       "domain": "lens",
-      "sha256": "cb7cab5e8fcbd34f4c7a60563094106a60d9e3674ccbdfaa1338f20a20773a61",
-      "lines": 63,
+      "sha256": "a606cdf595834cf8ef7325cef44d189886c00524243e6f815fd67504ac5381ec",
+      "lines": 66,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -11059,7 +11059,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 24,
+          "line": 25,
           "className": "\"lens-panel-icon\"",
           "type": "\"button\"",
           "role": null,
@@ -11069,7 +11069,7 @@
         },
         {
           "tag": "summary",
-          "line": 34,
+          "line": 35,
           "className": null,
           "type": null,
           "role": null,
@@ -11079,7 +11079,7 @@
         },
         {
           "tag": "summary",
-          "line": 40,
+          "line": 41,
           "className": null,
           "type": null,
           "role": null,
@@ -11089,7 +11089,7 @@
         },
         {
           "tag": "summary",
-          "line": 46,
+          "line": 47,
           "className": null,
           "type": null,
           "role": null,
@@ -11099,7 +11099,17 @@
         },
         {
           "tag": "a",
-          "line": 46,
+          "line": 47,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "a",
+          "line": 57,
           "className": null,
           "type": null,
           "role": null,
@@ -11109,7 +11119,7 @@
         },
         {
           "tag": "input",
-          "line": 56,
+          "line": 59,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -11119,7 +11129,17 @@
         },
         {
           "tag": "input",
-          "line": 56,
+          "line": 59,
+          "className": null,
+          "type": "\"checkbox\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 59,
           "className": null,
           "type": "\"checkbox\"",
           "role": null,
@@ -11129,17 +11149,17 @@
         },
         {
           "tag": "button",
-          "line": 58,
+          "line": 61,
           "className": "\"lens-panel-primary\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{onAccept}",
-          "disabled": "{!adult || !agreed}"
+          "disabled": "{!adult || !agreed || !privacyAccepted}"
         },
         {
           "tag": "button",
-          "line": 59,
+          "line": 62,
           "className": "\"lens-panel-secondary\"",
           "type": "\"button\"",
           "role": null,
@@ -12518,8 +12538,8 @@
     {
       "file": "client/src/commerce/paymentMethods.ts",
       "domain": "shell-content",
-      "sha256": "0dd6b538dd7f0887322c8ca65af2c680ff286668d416978811dffa695dd061f3",
-      "lines": 239,
+      "sha256": "dc2aa77df48b168deb6afe79a2ffa886a4089260154dd2c9432d5ea90a317513",
+      "lines": 237,
       "imports": [
         "./policy"
       ],
@@ -14553,235 +14573,6 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/components/CheckoutFlowShell.tsx",
-      "domain": "commerce",
-      "sha256": "18b08076da2f9cfd68ccc4090cde77ff19107a483d6b7e364fd04f2ea10049e4",
-      "lines": 35,
-      "imports": [
-        "react"
-      ],
-      "exports": [
-        "CheckoutFlowShell"
-      ],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
-      "file": "client/src/components/CheckoutModal.tsx",
-      "domain": "commerce",
-      "sha256": "f66e2b8942cc9de91fc111c7bd404928eca263aad756a40d6a956b46e2e0f9b0",
-      "lines": 674,
-      "imports": [
-        "react",
-        "./QatafoIcons",
-        "../design/AppHeader",
-        "../hooks/useBodyScrollLock",
-        "../types",
-        "../utils/session",
-        "../customer/api",
-        "../commerce/useCommercePolicy",
-        "../commerce/paymentMethods",
-        "../shop/checkoutOrder",
-        "./JourneyProgress",
-        "../i18n/LocaleContext",
-        "../navigation/NavigationHistory",
-        "./CheckoutFlowShell"
-      ],
-      "exports": [
-        "CheckoutModal"
-      ],
-      "controls": [
-        {
-          "tag": "AppHeader",
-          "line": 425,
-          "className": null,
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "form",
-          "line": 438,
-          "className": "\"checkout-flow-content ay-safe-bottom space-y-4\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 441,
-          "className": "\"ay-btn-secondary mt-2 w-full\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{commerce.retry}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 467,
-          "className": "{`min-w-[160px] border p-3 text-left text-xs transition ${selectedAddressId === address.id ? 'border-line bg-surface text-ink' : 'border-line bg-white text-muted'}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => chooseAddress(address)}",
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 482,
-          "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15\"",
-          "type": "\"text\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 498,
-          "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 read-only:bg-surface/60\"",
-          "type": "\"email\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 518,
-          "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 ay-number\"",
-          "type": "\"tel\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "select",
-          "line": 539,
-          "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "textarea",
-          "line": 557,
-          "className": "\"w-full min-h-11 rounded-control border border-line bg-surface px-3.5 py-2.5 text-sm font-semibold text-ink transition-[border-color,box-shadow] placeholder:text-muted/80 focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15 resize-none py-2\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 567,
-          "className": "\"ay-btn-secondary w-full text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{locateDelivery}",
-          "disabled": "{locating}"
-        },
-        {
-          "tag": "button",
-          "line": 574,
-          "className": "\"ay-btn-secondary min-w-0 px-2 text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{onClose}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 575,
-          "className": "\"ay-btn-cta min-w-0 px-2 text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{handleDeliveryContinue}",
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 612,
-          "className": "{`checkout-payment-option rounded-card border transition-all ${selected ? 'border-line bg-surface text-ink' : available ? 'border-line bg-surface text-muted hover:border-line/50' : 'border-line bg-surface text-muted'}`}",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => {\n                  if (!available) {\n                    setPaymentAvailabilityNotice(method === 'FLOUCI'\n                      ? tr('Flouci / D17 reste visible mais désactivé : aucune transaction ne sera simulée sans passerelle réelle.', 'Flouci / D17 ظاهرة لكنها معطلة: لن يتم إنشاء دفع وهمي دون بوابة حقيقية.')\n                      : tr('Ce moyen sera activé dès que sa configuration officielle sera disponible.', 'ستُفعّل هذه الوسيلة عند توفر إعداداتها الرسمية.'));\n                    return;\n                  }\n                  setPaymentAvailabilityNotice(''); setError(null);\n                  setFormData({ ...formData, paymentMethod: method.toLowerCase() });\n                }}",
-          "disabled": null
-        },
-        {
-          "tag": "input",
-          "line": 660,
-          "className": "\"mt-0.5 h-5 w-5 shrink-0 accent-brand\"",
-          "type": "\"checkbox\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "a",
-          "line": 661,
-          "className": "\"font-black text-ink underline\"",
-          "type": null,
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": null
-        },
-        {
-          "tag": "button",
-          "line": 664,
-          "className": "\"ay-btn-secondary min-w-0 px-2 text-xs\"",
-          "type": "\"button\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": "{() => navigation.back()}",
-          "disabled": "{isLoading}"
-        },
-        {
-          "tag": "button",
-          "line": 665,
-          "className": "\"ay-btn-cta min-w-0 px-2 text-xs sm:text-sm\"",
-          "type": "\"submit\"",
-          "role": null,
-          "ariaLabel": null,
-          "onClick": null,
-          "disabled": "{commerce.status !== 'ready' || isLoading || !formData.termsAccepted || (hasAvailablePaymentMethod&&!isPaymentMethodAvailable(formData.paymentMethod.toUpperCase() as CheckoutPaymentMethod)) || !(customerSession?.account.emailVerified || customerSession?.account.phoneVerified)}"
-        }
-      ],
-      "icons": [
-        {
-          "module": "./QatafoIcons",
-          "bindings": "{ AlertCircle, CheckCircle2, Loader2, LocateFixed, ArrowRightLeft }",
-          "line": 2
-        }
-      ],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": [
-        "/api/customer/account/addresses",
-        "/api/checkout"
-      ]
-    },
-    {
       "file": "client/src/components/CustomerAccountPage.tsx",
       "domain": "account-auth",
       "sha256": "dab061986f22a0f5adbd76d5f431b6bc61381a231a3213c5797d2fe75828ce71",
@@ -16533,9 +16324,27 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/components/OrderConfirmationShell.tsx",
+      "domain": "shell-content",
+      "sha256": "f02f67e44219d42e3c013fac559c6ddc31e00789758981b2ca56302a5adfad0e",
+      "lines": 28,
+      "imports": [
+        "react"
+      ],
+      "exports": [
+        "OrderConfirmationShell"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/components/OrderSuccessModal.tsx",
       "domain": "commerce",
-      "sha256": "19e3e77bfc17c11a1cf6033146bd8259c9e6e5fb2423c6b248628af7e3ce1167",
+      "sha256": "7479d7dd8c9b4fd72db29625def575418514edebb8611976ad948b3ac1f200a8",
       "lines": 191,
       "imports": [
         "react",
@@ -16546,7 +16355,7 @@
         "../types",
         "./JourneyProgress",
         "../i18n/LocaleContext",
-        "./CheckoutFlowShell"
+        "./OrderConfirmationShell"
       ],
       "exports": [
         "OrderSuccessModal"
@@ -19047,7 +18856,7 @@
     {
       "file": "client/src/index.css",
       "domain": "shell-content",
-      "sha256": "c0ead53ed98ca6b3af3051d10963edca30a333d6fdb6c793fbc8631fb4652871",
+      "sha256": "827b7f3f0a8c3e6324cbec5633ba34170968c58fd12e572743753e82edb2c77a",
       "lines": 1244,
       "imports": [],
       "exports": [],
@@ -19326,7 +19135,7 @@
     {
       "file": "client/src/shop/BagPage.tsx",
       "domain": "shell-content",
-      "sha256": "dc646d84d00de82cbc3e061480434d80995d5f4086c5733da36b9ed1ef1c13db",
+      "sha256": "d9a8a6fd7231d1e855e037f4dd5d0dadb096a8fb981b546e030e6c79f0d77efc",
       "lines": 185,
       "imports": [
         "react",
@@ -19483,8 +19292,8 @@
     {
       "file": "client/src/shop/PaymentPage.tsx",
       "domain": "shell-content",
-      "sha256": "aa79fa05a06302fe26ef340b452099c60ae23f542dc74ac81fd342e0a2dba0e8",
-      "lines": 138,
+      "sha256": "63a8c2b4708df412db850d3754f9dbf8ca7da3b984ab9853eafd5f9584742dee",
+      "lines": 152,
       "imports": [
         "react",
         "../design/editorial/Icon"
@@ -19495,7 +19304,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 43,
+          "line": 46,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19505,7 +19314,7 @@
         },
         {
           "tag": "button",
-          "line": 76,
+          "line": 79,
           "className": "\"s-payment-option\"",
           "type": "\"button\"",
           "role": "\"radio\"",
@@ -19515,13 +19324,23 @@
         },
         {
           "tag": "button",
-          "line": 131,
+          "line": 126,
+          "className": "\"s-cta s-cta--ghost\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onRetryPolicy}",
+          "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 145,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": null,
           "onClick": "{onConfirm}",
-          "disabled": "{!selected || !onConfirm}"
+          "disabled": "{!selected || !onConfirm || policyStatus !== 'ready'}"
         }
       ],
       "icons": [],
@@ -19574,7 +19393,7 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "854bdaead9f8564b3248dcc6bb55020c165c636aa3e0de760236aa5c401d0589",
+      "sha256": "6770f39bca754797fe2acbdb5a1839b3cd5fa290d94eb2e186c565a2bbd4e795",
       "lines": 303,
       "imports": [
         "react",
@@ -19799,8 +19618,8 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "400934b20e7e999ddf1d393023ced587952026b1f7de54c6bcaef484777c2879",
-      "lines": 692,
+      "sha256": "09fb39f878cb56c6c82856333ac1b13da02c5972adced3e4457671f5609bfce3",
+      "lines": 711,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19861,8 +19680,8 @@
     {
       "file": "client/src/shop/ShopCheckoutScreen.tsx",
       "domain": "commerce",
-      "sha256": "47c22d8db3af3012f1299e94ad1c59520ea140df316c14e4feb27150339431bf",
-      "lines": 259,
+      "sha256": "273cf96911da5bed5841e81b6bbfd15c50da011b665d0c6f54bbedf8d8404530",
+      "lines": 261,
       "imports": [
         "react",
         "../i18n/LocaleContext",
@@ -20669,20 +20488,6 @@
       "apiReferences": []
     },
     {
-      "file": "client/src/styles/checkout-flow.css",
-      "domain": "shell-content",
-      "sha256": "94b4431fc8e220d39847d723ee63590bc5c48b508126630bff30a64f40cd85f6",
-      "lines": 207,
-      "imports": [],
-      "exports": [],
-      "controls": [],
-      "icons": [],
-      "inlineSvg": [],
-      "colors": [],
-      "fontDeclarations": [],
-      "apiReferences": []
-    },
-    {
       "file": "client/src/styles/customer-account.css",
       "domain": "account-auth",
       "sha256": "75cf72a73490d660203dd074e57430a1c075e61ea464e979554b0e08603a40f9",
@@ -20794,6 +20599,20 @@
       "domain": "shell-content",
       "sha256": "66a983e4007d960dcea8a22b4224caed122e3c96bcb1240577ae0d8714eaea3a",
       "lines": 3,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/styles/order-confirmation.css",
+      "domain": "shell-content",
+      "sha256": "97c191c35294bd9147f0136a04c316846f832fe2d2e2b2bbfd5efe6c659f9da2",
+      "lines": 100,
       "imports": [],
       "exports": [],
       "controls": [],

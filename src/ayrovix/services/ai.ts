@@ -6,6 +6,8 @@ import { AiProviderError } from '../../ai-core/errors';
 
 // D1-6: Vision inFlight dedup — prevents 3.2s duplicate on double tap / rapid Circle
 const visionInFlight = new Map<string, Promise<AyrovixIdentification>>();
+const MAX_ACTIVE_VISION_REQUESTS = 6;
+let activeVisionRequests = 0;
 
 /**
  * AYROVIX Vision keeps ownership of identification and validation. Provider
@@ -372,12 +374,16 @@ export async function identifyProduct(image: Buffer, mime: string): Promise<Ayro
     const key = `${createHash('sha256').update(image).digest('hex')}|${mime}`;
     const existing = visionInFlight.get(key);
     if (existing) return existing.then((r) => ({ ...r, products: [...r.products] } as AyrovixIdentification));
+    if (activeVisionRequests >= MAX_ACTIVE_VISION_REQUESTS) {
+      throw new AyrovixUnavailableError('Vision provider is at its concurrency limit');
+    }
+    activeVisionRequests += 1;
     const task = identifyProductInner(image, mime);
     visionInFlight.set(key, task);
     try {
-      const result = await task;
-      return result;
+      return await task;
     } finally {
+      activeVisionRequests = Math.max(0, activeVisionRequests - 1);
       // keep for 1.5s to coalesce rapid taps, then clear
       setTimeout(() => visionInFlight.delete(key), 1500);
     }

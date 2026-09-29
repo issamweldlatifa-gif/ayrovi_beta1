@@ -251,6 +251,8 @@ export const ShopCheckoutScreen: React.FC<ShopCheckoutScreenProps> = ({
         onBack={() => setStep('address')}
         onSelect={setMethod}
         onConfirm={confirm}
+        policyStatus={commerce.status}
+        onRetryPolicy={commerce.retry}
       />
       {error && <p className="s-refusal" role="alert" style={{ margin: 16 }}>{error}</p>}
     </>

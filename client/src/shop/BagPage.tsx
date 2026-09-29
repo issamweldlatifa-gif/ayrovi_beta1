@@ -103,7 +103,7 @@ export const BagPage: React.FC<BagPageProps> = ({
                 </div>
 
                 {line.variant && <div className="s-bag-line__variant">{line.variant}</div>}
-                <div className="s-bag-line__price" data-deal={Boolean(line.referenceTotalTnd)}>{formatMoney(line.lineTotalTnd)}</div>
+                <div className="s-bag-line__price" data-cart-line-tnd={line.lineTotalTnd} data-deal={Boolean(line.referenceTotalTnd)}>{formatMoney(line.lineTotalTnd)}</div>
                 {line.referenceTotalTnd != null && <div className="s-card__was"><s>{formatMoney(line.referenceTotalTnd)}</s></div>}
 
                 <div className="s-bag-stock" data-state={line.stock}>

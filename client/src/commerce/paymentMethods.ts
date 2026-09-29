@@ -2,10 +2,8 @@
  * Moyens de paiement — SOURCE UNIQUE de la disponibilité.
  *
  * Pourquoi ce fichier existe : jusqu'ici la règle « ce moyen est-il réellement utilisable ? »
- * était écrite dans `CheckoutModal.tsx` et écrite une deuxième fois nulle part. Le pied de page
- * devait maintenant afficher des moyens de paiement : s'il avait recopié la règle, les deux
- * copies auraient divergé au premier changement de configuration, et le site aurait fini par
- * annoncer au visiteur un moyen de paiement que la caisse refuse.
+ * était dupliquée dans plusieurs écrans : au premier changement de configuration,
+ * la caisse et le pied de page auraient pu annoncer des moyens de paiement différents.
  *
  * Ici, une seule fonction répond : `availablePaymentMethods(policy)`. Elle est consommée par la
  * caisse, par le pied de page et par les tests. La règle est la même que celle du serveur :

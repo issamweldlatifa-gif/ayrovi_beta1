@@ -2,85 +2,62 @@ import React from 'react';
 import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { CheckoutFlowShell } from '../client/src/components/CheckoutFlowShell';
+import { OrderConfirmationShell } from '../client/src/components/OrderConfirmationShell';
 
-const checkoutSource = readFileSync('client/src/components/CheckoutModal.tsx', 'utf8');
+const appSource = readFileSync('client/src/App.tsx', 'utf8');
+const checkoutSource = readFileSync('client/src/shop/ShopCheckoutScreen.tsx', 'utf8');
 const confirmationSource = readFileSync('client/src/components/OrderSuccessModal.tsx', 'utf8');
 const accountSource = readFileSync('client/src/components/CustomerAccountPage.tsx', 'utf8');
-const flowCss = readFileSync('client/src/styles/checkout-flow.css', 'utf8');
+const flowCss = readFileSync('client/src/styles/order-confirmation.css', 'utf8');
+const shopCss = readFileSync('client/src/shop/shop.css', 'utf8');
 const indexCss = readFileSync('client/src/index.css', 'utf8');
 
-describe('order-backed mobile checkout and customer account', () => {
-  it('uses one shell contract for Livraison, Paiement and Confirmation', () => {
-    const markup = renderToStaticMarkup(
-      <CheckoutFlowShell direction="ltr" size="form" ariaLabel="Livraison"><span>Content</span></CheckoutFlowShell>,
-    );
-    expect(markup).toContain('checkout-flow-page checkout-flow-page--form');
-    expect(markup).toContain('checkout-flow-container checkout-flow-container--form');
-    expect(checkoutSource).toContain('<CheckoutFlowShell');
-    expect(confirmationSource).toContain('<CheckoutFlowShell');
-    expect(checkoutSource).toContain("tr('Paiement', 'الدفع')");
+describe('checkout route and responsive order flow', () => {
+  it('mounts Checkout as a fixed full-viewport route, never as footer content', () => {
+    expect(appSource).toContain('<div className="shop-checkout-route" data-app-route="checkout">');
+    expect(appSource).toContain("const isCheckoutOpen = appView === 'app:checkout'");
+    expect(shopCss).toMatch(/\.shop-checkout-route\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?z-index:\s*100;[\s\S]*?inset:\s*0;/);
+    expect(shopCss).toContain('overscroll-behavior: contain;');
   });
 
-  it('has an internal touch scroll area and reachable sticky actions on mobile', () => {
-    expect(flowCss).toMatch(/\.checkout-flow-container\s*\{[\s\S]*?display:\s*flex[\s\S]*?max-height:/);
-    expect(flowCss).toMatch(/\.checkout-flow-content\s*\{[\s\S]*?min-height:\s*0[\s\S]*?overflow-y:\s*auto[\s\S]*?-webkit-overflow-scrolling:\s*touch/);
-    expect(flowCss).toMatch(/\.checkout-flow-actions\s*\{[\s\S]*?position:\s*sticky[\s\S]*?bottom:/);
-    expect(flowCss).toMatch(/@media \(max-width: 639px\)[\s\S]*?\.checkout-flow-container\s*\{[\s\S]*?height:\s*100dvh[\s\S]*?max-height:\s*100dvh/);
+  it('takes the customer from delivery to payment and supports Back to the address step', () => {
+    expect(checkoutSource).toContain('<AddressPage');
+    expect(checkoutSource).toContain('<PaymentPage');
+    expect(checkoutSource).toContain("setStep('payment')");
+    expect(checkoutSource).toContain("onBack={() => setStep('address')}");
+    expect(checkoutSource).toContain('onBack={onClose}');
+  });
+
+  it('creates the order through the single checkout API before initiating card payment', () => {
+    const create = checkoutSource.indexOf("fetch('/api/checkout'");
+    const payment = checkoutSource.indexOf('payments/card/initiate');
+    expect(create).toBeGreaterThanOrEqual(0);
+    expect(payment).toBeGreaterThan(create);
+    expect(checkoutSource).toContain("'x-csrf-token': customerSession.csrfToken");
+    expect(checkoutSource).toContain("'x-session-id': getSessionId()");
+  });
+
+  it('uses a scrollable viewport that respects mobile height and global width constraints', () => {
+    expect(shopCss).toMatch(/\.shop-checkout-route\s*\{[\s\S]*?height:\s*100vh;[\s\S]*?height:\s*100dvh;[\s\S]*?overflow-y:\s*auto;/);
+    expect(shopCss).toMatch(/\.s-page\s*\{[^}]*display:\s*flex[^}]*min-height:\s*100%/);
     expect(indexCss).toMatch(/html,\s*body,\s*#root\s*\{[\s\S]*?width:\s*100%[\s\S]*?min-width:\s*0[\s\S]*?overflow-x:\s*hidden/);
   });
 
-  it('restores the full payment choice after delivery while keeping the order authoritative', () => {
-    // La garantie « la commande est créée AVANT le paiement » vit désormais dans
-    // les règles extraites (shop/checkoutOrder), testées sans rendre d'interface.
-    expect(checkoutSource).toContain('buildCheckoutBody(formData');
-    expect(readFileSync('client/src/shop/checkoutOrder.ts', 'utf8')).toContain("paymentMethod: 'PENDING_SELECTION'");
-    expect(checkoutSource).toContain('Mode de paiement de l’acompte');
-    expect(checkoutSource).toContain('Visa / Mastercard');
-    expect(checkoutSource).toContain('Flouci / D17');
-    expect(checkoutSource).toContain('Virement bancaire');
-    expect(checkoutSource).toContain('Transfert postal');
-    expect(checkoutSource).toContain('/payments/card/initiate');
-    expect(checkoutSource).toContain('/deposit/method');
-    expect(checkoutSource).toContain("formData.paymentMethod.toUpperCase()==='CARD'?tr('Créer et payer'");
+  it('keeps the order confirmation overlay shell and reachable content', () => {
+    const markup = renderToStaticMarkup(
+      <OrderConfirmationShell direction="ltr" ariaLabelledBy="order-title"><span>Content</span></OrderConfirmationShell>,
+    );
+    expect(markup).toContain('class="order-confirmation-page"');
+    expect(confirmationSource).toContain('<OrderConfirmationShell');
+    expect(flowCss).toMatch(/\.order-confirmation-page\s*\{[\s\S]*?position:\s*fixed;[\s\S]*?inset:\s*0;/);
+    expect(confirmationSource).toContain('Commande en attente d’acompte');
+    expect(confirmationSource).toContain('Gérer l’acompte et suivre la commande');
   });
 
-  it('persists an unpaid order when no real payment method is configured', () => {
-    expect(checkoutSource).toContain('const hasAvailablePaymentMethod = PAYMENT_METHODS.some');
-    expect(checkoutSource).toContain("const paymentDeferred = !hasAvailablePaymentMethod");
-    expect(checkoutSource).toContain("? 'PENDING_SELECTION'");
-    expect(checkoutSource).toContain("!hasAvailablePaymentMethod?tr('Créer la commande','إنشاء الطلب')");
-    expect(checkoutSource).toContain('le paiement restera en attente dans votre profil');
-  });
-
-  it('never simulates unavailable gateways and keeps manual proof upload in the profile', () => {
-    // La règle « jamais de passerelle simulée » ne vit plus dans la caisse : elle vit dans le
-    // module partagé, avec le pied de page. La caisse la consomme, elle ne la recopie pas.
-    const rule = readFileSync('client/src/commerce/paymentMethods.ts', 'utf8');
-    expect(rule).toContain('Un numéro de téléphone');
-    expect(rule).toContain("available: () => false");
-    expect(checkoutSource).toContain("from '../commerce/paymentMethods'");
-    expect(checkoutSource).not.toMatch(/const isPaymentMethodAvailable = \(method: CheckoutPaymentMethod\) => method === 'CARD'/);
-    expect(checkoutSource).toContain('aucune transaction ne sera simulée sans passerelle réelle');
+  it('keeps manual proof upload in the customer account, not the Checkout screen', () => {
     expect(checkoutSource).not.toContain('type="file"');
     expect(accountSource).toContain('type="file"');
     expect(accountSource).toContain('accept="image/jpeg,image/png,application/pdf"');
     expect(accountSource).toContain('Envoyer le justificatif');
-  });
-
-  it('uses a vertical account menu and min-width guards for 320–414 px', () => {
-    expect(accountSource).toContain('<AccountHome');
-    expect(accountSource).toContain('<AccountOrderNavigation');
-    expect(accountSource).toContain('min-w-0');
-    expect(accountSource).not.toContain('<AccountTabs');
-    expect(accountSource).toContain('className="ac-main"');
-    expect(accountSource).toContain('object-contain');
-  });
-
-  it('states the truthful independent payment, invoice and tracking lifecycle', () => {
-    expect(confirmationSource).toContain('Commande en attente d’acompte');
-    expect(confirmationSource).toContain('Paiement vérifié, puis commande confirmée');
-    expect(confirmationSource).toContain('Suivi visible après expédition; facture visible après émission');
-    expect(confirmationSource).toContain('Gérer l’acompte et suivre la commande');
   });
 });

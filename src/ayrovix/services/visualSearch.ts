@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 import type { AyrovixCandidate } from '../types';
-import { parsePublicHttpUrl } from '../../services/safeUrl';
+import { parsePublicHttpUrl, readLimitedText } from '../../services/safeUrl';
+import { fetchRemoteImage } from '../../services/imageIsolation';
 
 /**
  * Google Lens product discovery through SerpApi.
@@ -12,8 +13,25 @@ import { parsePublicHttpUrl } from '../../services/safeUrl';
 
 const SERPAPI_IMAGE_LIMIT_BYTES = 500 * 1024;
 const CACHE_TTL_MS = 10 * 60_000;
+const MAX_CACHE_ENTRIES = 100;
+const MAX_IN_FLIGHT = 12;
 const cache = new Map<string, { at: number; results: AyrovixCandidate[] }>();
 const inFlight = new Map<string, Promise<AyrovixCandidate[]>>();
+
+function boundedLimit(value: number): number {
+  return Number.isFinite(value) ? Math.max(1, Math.min(20, Math.floor(value))) : 8;
+}
+
+function cacheResults(key: string, results: AyrovixCandidate[]): void {
+  cache.delete(key);
+  cache.set(key, { at: Date.now(), results });
+  while (cache.size > MAX_CACHE_ENTRIES) cache.delete(cache.keys().next().value as string);
+}
+
+async function responseJson(response: Response, maxBytes = 2_000_000): Promise<any> {
+  const text = await readLimitedText(response, maxBytes);
+  try { return JSON.parse(text); } catch { throw new Error('SERPAPI_INVALID_JSON'); }
+}
 
 function serpApiKey(): string | null {
   return process.env.SERPAPI_KEY?.trim() || null;
@@ -45,6 +63,7 @@ function normalizeCurrency(raw: unknown): string | null {
 }
 
 async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
+  if (!image.length || image.length > 8 * 1024 * 1024) throw new Error('SERPAPI_INPUT_TOO_LARGE');
   // D1-3: 2 attempts only — 1000→700 saves ~100ms (first ≤500KB succeeds in >85% cases)
   const attempts = [
     { edge: 1_000, quality: 78 },
@@ -52,7 +71,7 @@ async function prepareImageForSerpApi(image: Buffer): Promise<Buffer> {
   ];
   let last = Buffer.alloc(0);
   for (const attempt of attempts) {
-    last = await sharp(image, { failOn: 'warning', sequentialRead: true })
+    last = await sharp(image, { failOn: 'warning', sequentialRead: true, limitInputPixels: 40_000_000 })
       .rotate()
       .resize({ width: attempt.edge, height: attempt.edge, fit: 'inside', withoutEnlargement: true })
       .flatten({ background: '#ffffff' })
@@ -164,7 +183,7 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       console.warn(`[AYROVIX serpapi-lens] image upload HTTP ${upload.status}`);
       return [];
     }
-    const uploadPayload: any = await upload.json();
+    const uploadPayload: any = await responseJson(upload, 256 * 1024);
     const imageId = String(uploadPayload?.image_id || '').trim();
     if (!imageId || deadline - Date.now() < 500) {
       console.warn('[AYROVIX serpapi-lens] image upload returned no usable image_id');
@@ -188,7 +207,7 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
       console.warn(`[AYROVIX serpapi-lens] search HTTP ${response.status}`);
       return [];
     }
-    const payload: any = await response.json();
+    const payload: any = await responseJson(response);
     if (payload?.error) {
       console.warn('[AYROVIX serpapi-lens] search returned an API error');
       return [];
@@ -205,53 +224,26 @@ async function runSerpApiVisualSearch(image: Buffer, limit: number): Promise<Ayr
   }
 }
 
-async function runSerpApiVisualSearchUrl(imageUrl: string, limit: number): Promise<AyrovixCandidate[]> {
-  const key = serpApiKey();
-  if (!key) return [];
-  try {
-    const safeUrl = parsePublicHttpUrl(imageUrl).toString();
-    const configuredCountry = (process.env.AYROVIX_LENS_COUNTRY || '').trim().toLowerCase();
-    const country = /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'fr';
-    const params = new URLSearchParams({
-      engine: 'google_lens',
-      type: 'products',
-      url: safeUrl,
-      hl: 'fr',
-      country,
-      api_key: key,
-    });
-    const response = await fetch(`https://serpapi.com/search.json?${params.toString()}`, {
-      signal: AbortSignal.timeout(timeoutMs()),
-    });
-    if (!response.ok) {
-      console.warn(`[AYROVIX serpapi-lens] URL search HTTP ${response.status}`);
-      return [];
-    }
-    const payload: any = await response.json();
-    if (payload?.error) return [];
-    const results = toCandidates(payload, limit);
-    console.log(`[AYROVIX serpapi-lens] ${results.length} visual URL product matches`);
-    return results;
-  } catch (error: any) {
-    console.warn(`[AYROVIX serpapi-lens] URL ${error?.name === 'TimeoutError' ? 'timeout' : 'unavailable'}`);
-    return [];
-  }
-}
-
 export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promise<AyrovixCandidate[]> {
   if (!serpApiVisualReady()) return [];
   let normalized: string;
   try { normalized = parsePublicHttpUrl(imageUrl).toString(); } catch { return []; }
-  const cacheKey = `url:${createHash('sha256').update(normalized).digest('hex')}|${limit}`;
+  const safeLimit = boundedLimit(limit);
+  const cacheKey = `url:${createHash('sha256').update(normalized).digest('hex')}|${safeLimit}`;
   const cached = cache.get(cacheKey);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
+  if (cached) cache.delete(cacheKey);
   const existing = inFlight.get(cacheKey);
   if (existing) return (await existing).map((item) => ({ ...item }));
-  const task = runSerpApiVisualSearchUrl(normalized, limit);
+  if (inFlight.size >= MAX_IN_FLIGHT) return [];
+
+  // Never ask SerpApi to resolve a user-controlled URL itself. Fetch and validate
+  // the public raster image here (DNS pinned locally), then upload only bytes.
+  const task = fetchRemoteImage(normalized).then((image) => runSerpApiVisualSearch(image, safeLimit));
   inFlight.set(cacheKey, task);
   try {
     const results = await task;
-    if (results.length) cache.set(cacheKey, { at: Date.now(), results });
+    if (results.length) cacheResults(cacheKey, results);
     return results.map((item) => ({ ...item }));
   } finally {
     inFlight.delete(cacheKey);
@@ -259,23 +251,21 @@ export async function serpApiVisualSearchUrl(imageUrl: string, limit = 8): Promi
 }
 
 export async function serpApiVisualSearch(image: Buffer, limit = 8): Promise<AyrovixCandidate[]> {
-  if (!serpApiVisualReady() || !image.length) return [];
-  const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${limit}`;
+  if (!serpApiVisualReady() || !image.length || image.length > 8 * 1024 * 1024) return [];
+  const safeLimit = boundedLimit(limit);
+  const cacheKey = `${createHash('sha256').update(image).digest('hex')}|${safeLimit}`;
   const cached = cache.get(cacheKey);
-  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
-    return cached.results.map((item) => ({ ...item }));
-  }
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.results.map((item) => ({ ...item }));
+  if (cached) cache.delete(cacheKey);
   const existing = inFlight.get(cacheKey);
   if (existing) return (await existing).map((item) => ({ ...item }));
+  if (inFlight.size >= MAX_IN_FLIGHT) return [];
 
-  const task = runSerpApiVisualSearch(image, limit);
+  const task = runSerpApiVisualSearch(image, safeLimit);
   inFlight.set(cacheKey, task);
   try {
     const results = await task;
-    if (results.length) {
-      cache.set(cacheKey, { at: Date.now(), results });
-      if (cache.size > 100) cache.delete(cache.keys().next().value as string);
-    }
+    if (results.length) cacheResults(cacheKey, results);
     return results.map((item) => ({ ...item }));
   } finally {
     inFlight.delete(cacheKey);

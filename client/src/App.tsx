@@ -592,25 +592,27 @@ export const App: React.FC = () => {
         </Suspense>
       )}
 
-      {/* Checkout Screen v2 (Zalando parity) */}
+      {/* Checkout is a full-screen app route, not normal-flow content appended below the site. */}
       {isCheckoutOpen && (
         <Suspense fallback={null}>
-          <ShopCheckoutScreen
-            isOpen
-            onClose={closeAppView}
-            totalTND={totalCartTND}
-            itemCount={totalCartCount}
-            customerSession={customerSession}
-            onRequireAuthentication={() => {
-              resumeCheckoutDepthRef.current = Math.max(0, navigation.entry.depth - 1);
-              setResumeCheckoutAfterAuth(true);
-              setAccountInitialSection('home');
-              setAccountMessage(tr('Connectez-vous pour confirmer la commande.', 'سجّل الدخول لتأكيد الطلب.'));
-              openAppView('app:account', true);
-            }}
-            onOrderSuccess={handleOrderSuccess}
-            modes={['home', 'desk', 'pickup']}
-          />
+          <div className="shop-checkout-route" data-app-route="checkout">
+            <ShopCheckoutScreen
+              isOpen
+              onClose={closeAppView}
+              totalTND={totalCartTND}
+              itemCount={totalCartCount}
+              customerSession={customerSession}
+              onRequireAuthentication={() => {
+                resumeCheckoutDepthRef.current = Math.max(0, navigation.entry.depth - 1);
+                setResumeCheckoutAfterAuth(true);
+                setAccountInitialSection('home');
+                setAccountMessage(tr('Connectez-vous pour confirmer la commande.', 'سجّل الدخول لتأكيد الطلب.'));
+                openAppView('app:account', true);
+              }}
+              onOrderSuccess={handleOrderSuccess}
+              modes={['home', 'desk', 'pickup']}
+            />
+          </div>
         </Suspense>
       )}
 

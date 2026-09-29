@@ -4,6 +4,12 @@ import type { QatafoDatabase } from '../../db/database';
 
 export const LENS_CACHE_TTL_MS = 24 * 3600_000;
 
+/** Delete expired image-derived Lens results from the live database. */
+export function pruneCanonicalLensCache(db: QatafoDatabase, now = Date.now()): number {
+  return db.run('DELETE FROM lens_analysis_cache WHERE created_at < ?',
+    new Date(now - LENS_CACHE_TTL_MS).toISOString()).changes;
+}
+
 /**
  * The canonical Lens cache exists only in the active lane. Non-canonical lanes
  * never read it (which could bias comparisons) and never write or evict it.

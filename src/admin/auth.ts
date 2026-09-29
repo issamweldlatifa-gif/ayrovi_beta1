@@ -22,14 +22,18 @@ function hashToken(token: string): string {
 }
 
 export function hashPassword(password: string): string {
+  if (typeof password !== 'string' || password.length < 12 || password.length > 1024) {
+    throw new Error('Password must contain between 12 and 1024 characters');
+  }
   const salt = randomBytes(16).toString('hex');
   const hash = scryptSync(password, salt, 64).toString('hex');
   return `scrypt$${salt}$${hash}`;
 }
 
 export function verifyPassword(password: string, encoded: string): boolean {
-  const [scheme, salt, storedHex] = encoded.split('$');
-  if (scheme !== 'scrypt' || !salt || !storedHex) return false;
+  if (typeof password !== 'string' || password.length > 1024 || typeof encoded !== 'string' || encoded.length > 180) return false;
+  const [scheme, salt, storedHex, extra] = encoded.split('$');
+  if (extra !== undefined || scheme !== 'scrypt' || !/^[0-9a-f]{32}$/i.test(salt || '') || !/^[0-9a-f]{128}$/i.test(storedHex || '')) return false;
   const candidate = scryptSync(password, salt, 64);
   const stored = Buffer.from(storedHex, 'hex');
   return candidate.length === stored.length && timingSafeEqual(candidate, stored);
@@ -39,7 +43,9 @@ function parseCookie(header: string | undefined, name: string): string {
   if (!header) return '';
   for (const item of header.split(';')) {
     const [key, ...value] = item.trim().split('=');
-    if (key === name) return decodeURIComponent(value.join('='));
+    if (key === name) {
+      try { return decodeURIComponent(value.join('=')); } catch { return ''; }
+    }
   }
   return '';
 }
@@ -52,7 +58,8 @@ function cookieValue(token: string, maxAgeSeconds: number): string {
 export function ensureBootstrapAdmin(db: QatafoDatabase) {
   const email = (process.env.ADMIN_EMAIL || 'admin@ayrovi.tn').trim().toLowerCase();
   const configuredPassword = process.env.ADMIN_PASSWORD;
-  const forceReset = /^(1|true|yes|oui)$/i.test(String(process.env.ADMIN_BOOTSTRAP_RESET || '').trim());
+  const resetToken = String(process.env.ADMIN_BOOTSTRAP_RESET || '').trim();
+  const forceReset = resetToken.length > 0;
   const existing = db.get<{ count: number }>('SELECT COUNT(*) AS count FROM admin_users');
   const hasAdmins = (existing?.count ?? 0) > 0;
 
@@ -70,19 +77,50 @@ export function ensureBootstrapAdmin(db: QatafoDatabase) {
   // Mode réinitialisation d'urgence (ADMIN_BOOTSTRAP_RESET=yes) : ré-applique le couple
   // ADMIN_EMAIL/ADMIN_PASSWORD sur le compte existant (ou le crée s'il n'existe pas).
   // Utile quand la base persistante contient déjà un administrateur dont le mot de passe est inconnu.
+  if (forceReset && process.env.NODE_ENV === 'production' && resetToken.length < 32) {
+    throw new Error('ADMIN_BOOTSTRAP_RESET must be a unique one-time token of at least 32 characters in production.');
+  }
   if (hasAdmins && forceReset) {
+    db.run(`CREATE TABLE IF NOT EXISTS admin_bootstrap_reset_usage (
+      token_hash TEXT PRIMARY KEY,
+      used_at TEXT NOT NULL
+    )`);
+    const tokenHash = hashToken(resetToken);
+    const previouslyUsed = db.get<{ token_hash: string }>(
+      'SELECT token_hash FROM admin_bootstrap_reset_usage WHERE token_hash=?', tokenHash,
+    );
+    if (previouslyUsed) {
+      console.warn('[Admin] ADMIN_BOOTSTRAP_RESET token already consumed; no reset repeated. Remove the variable.');
+      return;
+    }
     const target = db.get<{ id: string }>('SELECT id FROM admin_users WHERE email=? LIMIT 1', email)
       || db.get<{ id: string }>('SELECT id FROM admin_users ORDER BY created_at ASC LIMIT 1');
     if (target) {
-      db.run('UPDATE admin_users SET email=?, password_hash=?, active=1, updated_at=? WHERE id=?',
-        email, hashPassword(password), now, target.id);
-      console.info(`[Admin] Mot de passe réinitialisé via ADMIN_BOOTSTRAP_RESET pour ${email}. Retirez cette variable après connexion.`);
+      db.transaction(() => {
+        const claimed = db.run('INSERT OR IGNORE INTO admin_bootstrap_reset_usage (token_hash,used_at) VALUES (?,?)', tokenHash, now);
+        if (!claimed.changes) throw new Error('ADMIN_BOOTSTRAP_RESET token already consumed.');
+        db.run('UPDATE admin_users SET email=?, password_hash=?, active=1, updated_at=? WHERE id=?',
+          email, hashPassword(password), now, target.id);
+      });
+      console.info(`[Admin] Mot de passe réinitialisé une seule fois pour ${email}. Retirez ADMIN_BOOTSTRAP_RESET immédiatement.`);
       return;
     }
   }
 
-  db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
-    VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
+  if (forceReset) {
+    db.run(`CREATE TABLE IF NOT EXISTS admin_bootstrap_reset_usage (
+      token_hash TEXT PRIMARY KEY,
+      used_at TEXT NOT NULL
+    )`);
+  }
+  db.transaction(() => {
+    if (forceReset) {
+      const claimed = db.run('INSERT OR IGNORE INTO admin_bootstrap_reset_usage (token_hash,used_at) VALUES (?,?)', hashToken(resetToken), now);
+      if (!claimed.changes) throw new Error('ADMIN_BOOTSTRAP_RESET token already consumed.');
+    }
+    db.run(`INSERT INTO admin_users (id,email,name,password_hash,role,active,created_at,updated_at)
+      VALUES (?,?,?,?, 'SUPER_ADMIN',1,?,?)`, `admin_${randomUUID()}`, email, 'AYROVI Admin', hashPassword(password), now, now);
+  });
   // Every login credential gets an employee identity immediately, so audit rows
   // written by the very first session already carry an EMP- code.
   try {

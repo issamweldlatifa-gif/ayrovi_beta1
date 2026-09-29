@@ -27,12 +27,13 @@ describe('AYROVI production hardening', () => {
     expect(invalidJson.body.code).toBe('INVALID_JSON');
   });
 
-  test('readiness checks SQLite without pretending optional providers are ready', async () => {
+  test('readiness checks SQLite without exposing optional-provider configuration publicly', async () => {
     const ready = await request(app).get('/api/ready');
     expect(ready.status).toBe(200);
     expect(ready.body.status).toBe('ready');
     expect(ready.body.database).toBe('ok');
-    expect(ready.body.capabilities.assistant).toBe(false);
+    expect(ready.body).not.toHaveProperty('capabilities');
+    expect(ready.body).not.toHaveProperty('migrations');
   });
 
   test('public social payloads expose only public fields', async () => {

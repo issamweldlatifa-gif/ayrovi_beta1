@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe,it,expect,afterEach,vi } from 'vitest';
 import { LensProductCard, lensCardCopy } from '../client/src/ayrovix/components/LensProductCard';
 import { LocaleProvider } from '../client/src/i18n/LocaleContext';
-import { serpApiVisualSearchUrl } from '../src/ayrovix/services/visualSearch';
+import { serpApiVisualSearch } from '../src/ayrovix/services/visualSearch';
 import { displayRating } from '../client/src/ayrovix/services/resultPolicy';
 import type { AyrovixCandidate } from '../client/src/ayrovix/types';
 const candidate: AyrovixCandidate={id:'jacket',kind:'external',title:'K-Way LIL — Veste mi-saison',brand:'K-Way',model:null,colors:[],sizes:[],source:'Example',sourceUrl:'https://shop.example/item',image:'/jacket.jpg',price:179.95,currency:'EUR',priceTnd:650,match:94,rating:4.3,ratingCount:27,ratingKind:'merchant'};
@@ -36,12 +36,15 @@ describe('reference Lens product card',()=>{
  });
  it('preserves SerpApi reviews from both supported rating fields and never uses match as a rating',async()=>{
   vi.stubEnv('SERPAPI_KEY','fixture-key-not-a-secret');
-  vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({visual_matches:[
-   {title:'K-Way LIL jacket',brand:'K-Way',description:'Merchant description',link:'https://shop.example/a',price:{extracted_value:179.95,currency:'EUR'},rating:4.6,reviews:137},
-   {title:'Black jacket',link:'https://shop.example/b',price:{extracted_value:100,currency:'EUR'},product_rating:4.2,reviews_count:26},
-   {title:'No rating jacket',link:'https://shop.example/c',price:{extracted_value:90,currency:'EUR'},exact_matches:true},
-  ]}),{status:200})));
-  const list=await serpApiVisualSearchUrl('https://example.com/card-rating-fixture.jpg');
+  vi.stubGlobal('fetch',vi.fn(async(url:string)=>{
+   if(new URL(url).pathname==='/image')return new Response(JSON.stringify({image_id:'temporary-image-id'}),{status:200});
+   return new Response(JSON.stringify({visual_matches:[
+    {title:'K-Way LIL jacket',brand:'K-Way',description:'Merchant description',link:'https://shop.example/a',price:{extracted_value:179.95,currency:'EUR'},rating:4.6,reviews:137},
+    {title:'Black jacket',link:'https://shop.example/b',price:{extracted_value:100,currency:'EUR'},product_rating:4.2,reviews_count:26},
+    {title:'No rating jacket',link:'https://shop.example/c',price:{extracted_value:90,currency:'EUR'},exact_matches:true},
+   ]}),{status:200});
+  }));
+  const list=await serpApiVisualSearch(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==','base64'));
   expect(list).toHaveLength(3);expect(list[0]).toMatchObject({rating:4.6,ratingCount:137,ratingKind:'merchant',brand:'K-Way',description:'Merchant description'});
   expect(list[1]).toMatchObject({rating:4.2,ratingCount:26,ratingKind:'merchant'});
   expect(displayRating(list[2])).toBeNull();expect(list[2].match).toBe(99);

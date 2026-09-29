@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, test } from 'vitest';
+import { afterAll, describe, expect, test, vi } from 'vitest';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -92,6 +92,25 @@ describe('FX live rates service', () => {
     expect(second.applied).toBe(false);
     expect(second.reason).toBe('fresh');
     expect(calls).toBe(0); // pas même un appel réseau : la garde est avant le fetch
+  });
+
+  test('the configurable FX endpoint cannot target a private host or send keys over HTTP', async () => {
+    const db = freshDb();
+    vi.stubEnv('FX_RATES_URL', 'http://127.0.0.1:3000/metadata?key=secret');
+    try {
+      const privateHost = await refreshFxRates(db, { force: true });
+      expect(privateHost.applied).toBe(false);
+      expect(privateHost.reason).toBe('error');
+      expect(privateHost.error).not.toContain('secret');
+
+      vi.stubEnv('FX_RATES_URL', 'http://rates.example.com/latest');
+      const insecureTransport = await refreshFxRates(db, { force: true });
+      expect(insecureTransport.applied).toBe(false);
+      expect(insecureTransport.reason).toBe('error');
+      expect(insecureTransport.error).toContain('FX_URL_MUST_USE_HTTPS');
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 
   test('an insane API response keeps the current rates in place', async () => {

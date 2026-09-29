@@ -27,7 +27,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import sharp from 'sharp';
 import { fetchRemoteImage, isolateBuffer } from './imageIsolation';
+import { UnsafeUrlError } from './safeUrl';
 import { segmentBuffer } from './segmentation';
+import { pruneDiskCache } from './diskCache';
 
 /* ── Contrat visuel AYROVI — miroir de client/src/ayrovix/components/lens-product-card.css ──
  * .lens-card-media { aspect-ratio: 9/13; border-radius: 16..18px; background: #F0F2F2 }
@@ -416,7 +418,11 @@ export async function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_W
   const metaPath = path.join(dir, `${key}.meta.json`);
   const pngPath = path.join(dir, `${key}.png`);
   try {
-    return JSON.parse(fs.readFileSync(metaPath, 'utf8')) as { file: string | null };
+    const cached = JSON.parse(fs.readFileSync(metaPath, 'utf8')) as { file: string | null; checks?: Record<string, boolean> };
+    if (cached.file == null) return cached;
+    if (cached.file === `${key}.png` && fs.existsSync(pngPath)) return cached;
+    // Bounded disk-cache cleanup can evict the PNG and leave its metadata file.
+    fs.unlinkSync(metaPath);
   } catch { /* pas encore en cache */ }
 
   let meta: { file: string | null; checks?: Record<string, boolean> } = { file: null };
@@ -441,12 +447,14 @@ export async function getComposedCard(rawUrl: string, idealWidth = IDEAL_FRAME_W
         }
       }
     }
-  } catch {
+  } catch (error) {
+    if (error instanceof UnsafeUrlError || (error as any)?.code === 'UNSAFE_URL') throw error;
     meta = { file: null };
   }
   try {
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(metaPath, JSON.stringify(meta));
+    pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 4_000 });
   } catch { /* cache best-effort */ }
   return meta;
 }

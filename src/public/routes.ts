@@ -15,6 +15,8 @@ import sharp from 'sharp';
 import { customerFromRequest, optionalCustomer } from '../customer/auth';
 import { ownerHashOf, recordLearningEvent } from '../assistant/learning';
 import { resolveActiveHeroVisual } from '../services/heroVisual';
+import { UnsafeUrlError } from '../services/safeUrl';
+import { pruneDiskCache } from '../services/diskCache';
 
 function parseJson(value: string, fallback: any = []) {
   try { return JSON.parse(value); } catch { return fallback; }
@@ -127,9 +129,9 @@ export function createPublicRouter(db: QatafoDatabase): Router {
     res.json({ success: true, data: commerceConfig(), serverTime: new Date().toISOString() });
   });
 
-  // ISOLATION D'ARRIÈRE-PLAN (24/09/2026) : fond studio uniforme (gris, couleur)
-  // → PNG transparent ; fond blanc ou complexe → redirection vers l'original.
-  // Jamais d'erreur bloquante : en cas d'échec on redirige, l'<img> vit sa vie.
+  // ISOLATION D'ARRIÈRE-PLAN : fond studio uniforme → PNG transparent.
+  // Les échecs ne redirigent jamais vers l'hôte externe : DNS/routage côté client
+  // pourrait changer après la validation côté serveur (DNS rebinding).
   router.get('/media/isolated', async (req, res) => {
     const url = String(req.query.url || '');
     if (!isPublicHttpUrl(url)) { res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' }); return; }
@@ -142,11 +144,13 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         res.send(png);
         return;
       }
-    } catch {
-      // réseau indisponible, format exotique… on rend l'original.
+    } catch (error: any) {
+      if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
+        return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
+      }
+      // réseau/format unavailable: do not hand the URL back to the browser.
     }
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.redirect(302, url);
+    return res.status(502).json({ success: false, error: 'IMAGE_UNAVAILABLE' });
   });
 
 
@@ -154,8 +158,8 @@ export function createPublicRouter(db: QatafoDatabase): Router {
   // COMPOSITION D'IMAGE PRODUIT (phase 2, 25/09/2026) : le produit est détouré puis
   // POSÉ sur le mockup AYROVI (9/13, #F0F2F2) avec une échelle UNIFORME et un
   // centrage sur son barycentre — ratio conservé, aucun rognage, aucune règle
-  // spécifique à une image. Contrat d'acceptation vérifié AVANT mise en cache :
-  // si une seule garantie n'est pas tenue, on redirige vers l'original.
+  // spécifique à une image. Contrat d'acceptation vérifié AVANT mise en cache.
+  // Aucun échec de traitement ne redirige vers un hôte externe.
   const COMPOSED_WIDTHS = new Set([600, 760, 900, 1080]);
   router.get('/media/card', async (req, res) => {
     const url = String(req.query.u || req.query.url || '');
@@ -170,14 +174,17 @@ export function createPublicRouter(db: QatafoDatabase): Router {
         res.send(readComposedPng(meta.file));
         return;
       }
-    } catch {
-      // réseau, format exotique, produit non détourable → repli ci-dessous.
+    } catch (error: any) {
+      if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
+        return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
+      }
+      // réseau, format exotique, produit non détourable → cadrage local ci-dessous.
     }
 
     /*
      * REPLI SUR NOTRE CANVAS (25/09/2026) — défaut constaté en production par le
      * client : quand la composition décline (produit non détourable), on
-     * redirigeait vers l'image marchand telle quelle. Résultat dans une grille :
+     * renvoyait l'image marchand via le navigateur. Résultat dans une grille :
      * trois cartes sur notre gris studio et une quatrième avec un rectangle
      * BLANC au milieu — la photo du marchand avec son propre fond. L'œil ne voit
      * que celle-là.
@@ -206,18 +213,20 @@ export function createPublicRouter(db: QatafoDatabase): Router {
       res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
       res.send(letterboxed);
       return;
-    } catch {
+    } catch (error: any) {
+      if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
+        return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
+      }
       // même le cadrage a échoué : l'original reste le dernier repli.
     }
 
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.redirect(302, url);
+    return res.status(502).json({ success: false, error: 'IMAGE_UNAVAILABLE' });
   });
 
   // PROXY IMAGES PROPRE AU SITE (24/09/2026) : l'image marchand est redimensionnée
   // (WebP) et servie depuis notre domaine — pas de hotlink fragile, des octets
   // divisés, et un cache disque par (URL, largeur). Le rendu reste chaîné côté
-  // client : isolé → proxy → original.
+  // client : isolated cache → proxy cache; failures never expose original-host redirects.
   const PROXY_WIDTHS = new Set([156, 320, 480, 760, 1000]);
   router.get('/media/img', async (req, res) => {
     const url = String(req.query.u || '');
@@ -238,15 +247,18 @@ export function createPublicRouter(db: QatafoDatabase): Router {
           .toBuffer();
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(file, resized);
+        pruneDiskCache(dir, { maxBytes: 256 * 1024 * 1024, maxFiles: 5_000 });
       }
       res.setHeader('Content-Type', 'image/webp');
       res.setHeader('Cache-Control', 'public, max-age=604800, stale-while-revalidate=2592000');
       res.send(fs.readFileSync(file));
       return;
-    } catch {
-      // réseau/format — l'original reste le repli naturel du client.
-      res.setHeader('Cache-Control', 'public, max-age=600');
-      res.redirect(302, url);
+    } catch (error: any) {
+      if (error instanceof UnsafeUrlError || error?.code === 'UNSAFE_URL') {
+        return res.status(400).json({ success: false, error: 'INVALID_IMAGE_URL' });
+      }
+      // Do not let a client resolve an unchecked (potentially rebound) origin.
+      return res.status(502).json({ success: false, error: 'IMAGE_UNAVAILABLE' });
     }
   });
 

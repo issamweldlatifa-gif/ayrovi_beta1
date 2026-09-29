@@ -22,7 +22,7 @@ import { filterDisplayableCandidates, filterWithFallback, withDisplayRating } fr
 import { startTrace, mark, endTrace } from './services/lensPerformanceTrace';
 import { warmIsolation } from '../services/imageIsolation';
 import { warmComposition } from '../services/imageComposition';
-import { addPriceWatcher, listPriceWatchers, removePriceWatcher } from './services/priceWatch';
+import { addPriceWatcher, listPriceWatchers, priceWatcherLimitReached, removePriceWatcher } from './services/priceWatch';
 import { createHash } from 'node:crypto';
 import sharp from 'sharp';
 
@@ -38,11 +38,14 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX
 // GOOGLE LENS LEVEL: pipeline cache for 1000+ users — instant repeat
 const pipelineCache = new Map<string, { at: number; data: any }>();
 const PIPELINE_TTL_MS = 6 * 60_000;
-function pipelineKey(buf: Buffer, intent: string | null): string {
-  // lightweight hash: first/last 2k + intent + len
-  const head = buf.subarray(0, 2048).toString('base64url').slice(0, 48);
-  const tail = buf.subarray(Math.max(0, buf.length - 2048)).toString('base64url').slice(0, 48);
-  return `${head}|${tail}|${buf.length}|${intent||''}`;
+export function pipelineKey(buf: Buffer, intent: string | null): string {
+  // Full content digest prevents same-size images with different middle bytes
+  // from sharing analysis results. Intent is a separate, length-delimited input.
+  return createHash('sha256')
+    .update(buf)
+    .update(Buffer.from([0]))
+    .update(intent || '')
+    .digest('hex');
 }
 // D1-9: pricing rules cache 5min — avoids 7× DB read per Lens request (disabled in tests: VITEST uses fresh DB per test)
 let pricingCache: { at: number; rules: ReturnType<QatafoDatabase['getPricingRules']> | null } = { at: 0, rules: null };
@@ -653,6 +656,9 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
   router.post('/watch', (req: Request, res: Response) => {
     const account = resolveCustomer(db, req);
     if (!account) return res.status(401).json({ success: false, error: 'Connectez-vous pour surveiller un prix.' });
+    if (priceWatcherLimitReached(db, account.id, req.body?.url)) {
+      return res.status(429).json({ success: false, code: 'PRICE_WATCH_LIMIT', error: 'Limite de 50 veilles actives atteinte. Supprimez-en une avant d’en ajouter.' });
+    }
     const created = addPriceWatcher(db, account.id, {
       url: String(req.body?.url || ''),
       title: String(req.body?.title || ''),

@@ -21,6 +21,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import { pruneDiskCache } from '../../services/diskCache';
 import { buildProductCard, type Availability, type ProductCard } from './productVariants';
 
 export interface ResolvableVariant {
@@ -87,6 +88,7 @@ function writeCache(productId: string, entry: CacheEntry): void {
     const dir = cacheDir();
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, `${cacheKey(productId)}.json`), JSON.stringify(entry));
+    pruneDiskCache(dir, { maxBytes: 64 * 1024 * 1024, maxFiles: 10_000 });
   } catch { /* cache best-effort — jamais bloquant */ }
 }
 
@@ -251,6 +253,7 @@ export function recordVariantContract(productKey: string, contract: Omit<Variant
     const at = Number.isFinite(parsedAt) && parsedAt > 0 ? parsedAt : Date.now();
     fs.mkdirSync(cacheDir(), { recursive: true });
     fs.writeFileSync(contractFile(variantContractKey(productKey)), JSON.stringify({ ...contract, at } satisfies VariantContract));
+    pruneDiskCache(cacheDir(), { maxBytes: 64 * 1024 * 1024, maxFiles: 10_000 });
   } catch { /* best-effort */ }
 }
 

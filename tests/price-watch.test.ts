@@ -8,7 +8,7 @@ import path from 'node:path';
 import request from 'supertest';
 import { QatafoDatabase } from '../src/db/database';
 import { SmartLinkScraper } from '../src/scraper/scraper';
-import { addPriceWatcher, checkDueWatchers, listPriceWatchers, removePriceWatcher } from '../src/ayrovix/services/priceWatch';
+import { addPriceWatcher, checkDueWatchers, listPriceWatchers, removePriceWatcher, MAX_PRICE_WATCHERS_PER_ACCOUNT } from '../src/ayrovix/services/priceWatch';
 import { app } from '../src/server';
 
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ayrovi-watch-'));
@@ -23,7 +23,7 @@ function createAccount(db: QatafoDatabase, id: string, email: string): void {
 
 describe('veille prix — CRUD par compte', () => {
   it('ajoute, liste, met à jour (upsert) et supprime une veille', () => {
-    const db = new QatafoDatabase();
+    const db = new QatafoDatabase(':memory:');
     createAccount(db, 'acc_1', 'a@test.tn');
     createAccount(db, 'acc_2', 'b@test.tn');
     const first = addPriceWatcher(db, 'acc_1', { url: 'https://shop.example.org/p/1', title: 'Jogging gris', source: 'Example' });
@@ -40,11 +40,23 @@ describe('veille prix — CRUD par compte', () => {
     expect(listPriceWatchers(db, 'acc_1')).toHaveLength(0);
     db.close?.();
   });
+
+  it('borne à 50 veilles actives par compte et autorise les upserts existants', () => {
+    const db = new QatafoDatabase(':memory:');
+    createAccount(db, 'acc_cap', 'cap@test.tn');
+    for (let i = 0; i < MAX_PRICE_WATCHERS_PER_ACCOUNT; i += 1) {
+      expect(addPriceWatcher(db, 'acc_cap', { url: `https://shop.example.org/p/${i}`, title: `Produit ${i}` })).not.toBeNull();
+    }
+    expect(addPriceWatcher(db, 'acc_cap', { url: 'https://shop.example.org/p/50', title: 'Produit 50' })).toBeNull();
+    expect(addPriceWatcher(db, 'acc_cap', { url: 'https://shop.example.org/p/0', title: 'Produit modifié' })).not.toBeNull();
+    expect(listPriceWatchers(db, 'acc_cap')).toHaveLength(MAX_PRICE_WATCHERS_PER_ACCOUNT);
+    db.close?.();
+  });
 });
 
 describe('veille prix — relecture et notifications', () => {
   it('notifie à la baisse RÉELLE du prix marchand et tolère les échecs (mort après 8)', async () => {
-    const db = new QatafoDatabase();
+    const db = new QatafoDatabase(':memory:');
     createAccount(db, 'acc_x', 'x2@test.tn');
     addPriceWatcher(db, 'acc_x', { url: 'https://shop.example.org/down', title: 'Sweat gris' });
     addPriceWatcher(db, 'acc_x', { url: 'https://shop.example.org/dead', title: 'Pièce introuvable' });

@@ -11,6 +11,8 @@ import type { SmartLinkScraper } from '../../scraper/scraper';
 import { estimateWithDb } from './currency';
 import { sanitizeProductUrl } from './product';
 
+export const MAX_PRICE_WATCHERS_PER_ACCOUNT = 50;
+
 export interface PriceWatcherInput {
   url: string;
   title: string;
@@ -29,10 +31,19 @@ function nowIso(): string {
   return new Date().toISOString();
 }
 
+export function priceWatcherLimitReached(db: QatafoDatabase, accountId: string, rawUrl: unknown): boolean {
+  const url = sanitizeProductUrl(String(rawUrl || ''));
+  if (!url) return false;
+  const existing = db.get<{ id: string }>('SELECT id FROM price_watchers WHERE account_id=? AND url=?', accountId, url);
+  if (existing) return false;
+  const count = db.get<{ count: number }>("SELECT COUNT(*) AS count FROM price_watchers WHERE account_id=? AND status='ACTIVE'", accountId);
+  return Number(count?.count || 0) >= MAX_PRICE_WATCHERS_PER_ACCOUNT;
+}
+
 export function addPriceWatcher(db: QatafoDatabase, accountId: string, input: PriceWatcherInput): { id: string } | null {
   const url = sanitizeProductUrl(String(input.url || ''));
   const title = String(input.title || '').trim().slice(0, 180);
-  if (!url || title.length < 3) return null;
+  if (!url || title.length < 3 || priceWatcherLimitReached(db, accountId, url)) return null;
   const target = Number(input.targetPriceTnd);
   const id = `watch_${createWatcherHash(accountId, url)}`;
   db.run(`INSERT INTO price_watchers (id,account_id,url,title,image_url,source,target_price_tnd,created_at)
@@ -64,10 +75,12 @@ export function listPriceWatchers(db: QatafoDatabase, accountId: string): Array<
 
 /** Relit AU PLUS `limit` watchers arrivés à échéance. Retourne le nombre relus. */
 export async function checkDueWatchers(db: QatafoDatabase, scraper: SmartLinkScraper, limit = 8): Promise<number> {
+  const safeLimit = Number.isInteger(limit) ? Math.max(0, Math.min(32, limit)) : 8;
+  if (!safeLimit) return 0;
   const due = db.all<{ id: string; account_id: string; url: string; title: string; last_price_tnd: number | null; failure_count: number }>(
     `SELECT id,account_id,url,title,last_price_tnd,failure_count FROM price_watchers
      WHERE status='ACTIVE' AND (last_checked_at IS NULL OR last_checked_at < ?)
-     ORDER BY last_checked_at ASC LIMIT ?`, new Date(Date.now() - watcherIntervalMs()).toISOString(), limit,
+     ORDER BY last_checked_at ASC LIMIT ?`, new Date(Date.now() - watcherIntervalMs()).toISOString(), safeLimit,
   );
   let checked = 0;
   for (const watcher of due) {

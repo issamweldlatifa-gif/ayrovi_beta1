@@ -1,1421 +1,1786 @@
 {
   "checks": [
     {
-      "label": "fr/320/unknown: production-parser evidence reaches the stock badge",
-      "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
-    },
-    {
-      "label": "fr/320/unknown: manual choice is preserved without inventing stock",
-      "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
-    },
-    {
-      "label": "fr/320/negative: production-parser evidence reaches the stock badge",
-      "pass": true,
-      "details": {
-        "availability": "out_of_stock"
-      }
-    },
-    {
-      "label": "fr/320/negative: manual choice is preserved without inventing stock",
-      "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
-    },
-    {
-      "label": "fr/320/conflict: production-parser evidence reaches the stock badge",
-      "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
-    },
-    {
-      "label": "fr/320/conflict: manual choice is preserved without inventing stock",
-      "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
-    },
-    {
-      "label": "fr/320/limited: production-parser evidence reaches the stock badge",
-      "pass": true,
-      "details": {
-        "availability": "limited"
-      }
-    },
-    {
-      "label": "fr/320/limited: manual choice is preserved without inventing stock",
-      "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "name": "fr/320/unknown: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/unknown: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/unknown: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/unknown: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/negative: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/negative: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/negative: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/negative: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/conflict: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/conflict: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/conflict: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/conflict: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/limited: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/limited: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/limited: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/limited: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/positive: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/positive: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/320/positive: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/positive: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/false-string: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/false-string: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/false-string: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/false-string: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/false-string: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/true-string: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/true-string: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/true-string: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/true-string: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/true-string: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/missing: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/missing: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/missing: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/missing: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/missing: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/null: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/null: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/null: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/null: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/null: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/zero: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/zero: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/zero: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/zero: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/zero: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/object: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/object: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/object: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/object: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/object: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/array: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/array: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/array: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/array: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/array: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/known-false: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/320/known-false: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/320/known-false: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/known-false: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320/known-false: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320: explicit variant stock evidence is selectable",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/320: sourced variant reaches the current order callback",
+      "pass": true,
+      "actual": [
+        "M",
+        "Bleu",
+        1
+      ],
+      "expected": [
+        "M",
+        "Bleu",
+        1
+      ]
+    },
+    {
+      "name": "fr/390/unknown: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/unknown: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/unknown: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/unknown: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/negative: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/negative: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/negative: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/negative: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/conflict: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/conflict: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/conflict: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/conflict: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/limited: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/limited: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/limited: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/limited: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/positive: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/positive: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "fr/390/positive: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/positive: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/false-string: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/390/false-string: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/390/false-string: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/false-string: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/false-string: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/true-string: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
+    },
+    {
+      "name": "fr/390/true-string: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/390/true-string: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/positive: production-parser evidence reaches the stock badge",
+      "name": "fr/390/true-string: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "availability": "in_stock"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/positive: manual choice is preserved without inventing stock",
+      "name": "fr/390/true-string: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/false-string: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/missing: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/320/false-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/missing: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
+    },
+    {
+      "name": "fr/390/missing: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "fr/390/missing: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/false-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/missing: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/true-string: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/null: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/320/true-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/null: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/320/true-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/null: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/missing: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/null: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/missing: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/null: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/missing: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/zero: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/320/null: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/zero: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/320/null: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/zero: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/null: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/zero: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/zero: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/zero: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/zero: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/object: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/320/zero: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/object: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/320/object: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/object: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/object: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/object: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/object: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/object: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/array: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/array: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/320/array: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/array: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/320/array: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/array: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/known-false: invalid history cannot select a variant-specific quote",
+      "name": "fr/390/array: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/known-false: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "fr/390/array: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320/known-false: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "fr/390/known-false: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/320: genuine boolean eligibility survives history",
-      "pass": true
+      "name": "fr/390/known-false: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/320: live result also rejects a malformed eligibility flag",
-      "pass": true
+      "name": "fr/390/known-false: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320: shared UI explains selection versus stock",
-      "pass": true
+      "name": "fr/390/known-false: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320: stock explanation stays complete at 200% root font",
+      "name": "fr/390/known-false: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "width": 288,
-        "scroll": 288,
-        "height": 117,
-        "content": 117,
-        "overflow": "visible",
-        "textBottom": 475.890625,
-        "nextTop": 512.890625,
-        "docWidth": 320,
-        "docScroll": 320
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320: enlarged two-digit quantity has room and keeps 44px step controls",
+      "name": "fr/390: explicit variant stock evidence is selectable",
       "pass": true,
-      "details": {
-        "width": 90,
-        "textWidth": 22,
-        "height": 88,
-        "buttons": [
-          44,
-          44
-        ]
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/320: enlarged decrement retains the exact quantity",
-      "pass": true
+      "name": "fr/390: sourced variant reaches the current order callback",
+      "pass": true,
+      "actual": [
+        "M",
+        "Bleu",
+        1
+      ],
+      "expected": [
+        "M",
+        "Bleu",
+        1
+      ]
     },
     {
-      "label": "fr/320: enlarged increment preserves the 99-item boundary",
-      "pass": true
+      "name": "ar/320/unknown: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/unknown: production-parser evidence reaches the stock badge",
+      "name": "ar/320/unknown: source variant remains visible",
       "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/unknown: manual choice is preserved without inventing stock",
+      "name": "ar/320/unknown: unconfirmed or unavailable size cannot be selected",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/negative: production-parser evidence reaches the stock badge",
+      "name": "ar/320/unknown: unavailable evidence blocks add-to-bag",
       "pass": true,
-      "details": {
-        "availability": "out_of_stock"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/negative: manual choice is preserved without inventing stock",
+      "name": "ar/320/negative: current product page shows source availability",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/conflict: production-parser evidence reaches the stock badge",
+      "name": "ar/320/negative: source variant remains visible",
       "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/conflict: manual choice is preserved without inventing stock",
+      "name": "ar/320/negative: unconfirmed or unavailable size cannot be selected",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/limited: production-parser evidence reaches the stock badge",
+      "name": "ar/320/negative: unavailable evidence blocks add-to-bag",
       "pass": true,
-      "details": {
-        "availability": "limited"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/limited: manual choice is preserved without inventing stock",
+      "name": "ar/320/conflict: current product page shows source availability",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/positive: production-parser evidence reaches the stock badge",
+      "name": "ar/320/conflict: source variant remains visible",
       "pass": true,
-      "details": {
-        "availability": "in_stock"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/positive: manual choice is preserved without inventing stock",
+      "name": "ar/320/conflict: unconfirmed or unavailable size cannot be selected",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/false-string: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/conflict: unavailable evidence blocks add-to-bag",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/false-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/limited: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/false-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/limited: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/true-string: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/limited: unconfirmed or unavailable size cannot be selected",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/true-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/limited: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/true-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/positive: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/missing: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/positive: source variant remains visible",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "fr/390/missing: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/positive: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/missing: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/positive: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/null: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/false-string: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/390/null: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/false-string: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/390/null: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/false-string: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/zero: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/false-string: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/zero: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/false-string: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/zero: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/true-string: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/390/object: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/true-string: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/390/object: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/true-string: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/object: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/true-string: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/array: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/true-string: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/array: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/missing: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/390/array: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/missing: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/390/known-false: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/missing: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/known-false: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/missing: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390/known-false: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/missing: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390: genuine boolean eligibility survives history",
-      "pass": true
+      "name": "ar/320/null: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/390: live result also rejects a malformed eligibility flag",
-      "pass": true
+      "name": "ar/320/null: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "fr/390: shared UI explains selection versus stock",
-      "pass": true
+      "name": "ar/320/null: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390: stock explanation stays complete at 200% root font",
+      "name": "ar/320/null: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "width": 358,
-        "scroll": 358,
-        "height": 78,
-        "content": 78,
-        "overflow": "visible",
-        "textBottom": 455.921875,
-        "nextTop": 492.921875,
-        "docWidth": 390,
-        "docScroll": 390
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390: enlarged two-digit quantity has room and keeps 44px step controls",
+      "name": "ar/320/null: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "width": 90,
-        "textWidth": 22,
-        "height": 88,
-        "buttons": [
-          44,
-          44
-        ]
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "fr/390: enlarged decrement retains the exact quantity",
-      "pass": true
+      "name": "ar/320/zero: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "fr/390: enlarged increment preserves the 99-item boundary",
-      "pass": true
+      "name": "ar/320/zero: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/320/unknown: production-parser evidence reaches the stock badge",
+      "name": "ar/320/zero: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/unknown: manual choice is preserved without inventing stock",
+      "name": "ar/320/zero: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/negative: production-parser evidence reaches the stock badge",
+      "name": "ar/320/zero: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "availability": "out_of_stock"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/negative: manual choice is preserved without inventing stock",
+      "name": "ar/320/object: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/320/conflict: production-parser evidence reaches the stock badge",
+      "name": "ar/320/object: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/320/conflict: manual choice is preserved without inventing stock",
+      "name": "ar/320/object: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/limited: production-parser evidence reaches the stock badge",
+      "name": "ar/320/object: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "availability": "limited"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/limited: manual choice is preserved without inventing stock",
+      "name": "ar/320/object: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/positive: production-parser evidence reaches the stock badge",
+      "name": "ar/320/array: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "availability": "in_stock"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/320/positive: manual choice is preserved without inventing stock",
+      "name": "ar/320/array: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/320/false-string: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/array: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/false-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/array: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/false-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/array: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/true-string: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/known-false: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/320/true-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/known-false: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/320/true-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320/known-false: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/missing: invalid history cannot select a variant-specific quote",
+      "name": "ar/320/known-false: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/missing: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/320/known-false: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/missing: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/320: explicit variant stock evidence is selectable",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/null: invalid history cannot select a variant-specific quote",
+      "name": "ar/320: sourced variant reaches the current order callback",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "M",
+        "Bleu",
+        1
+      ],
+      "expected": [
+        "M",
+        "Bleu",
+        1
+      ]
     },
     {
-      "label": "ar/320/null: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/unknown: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/null: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/unknown: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/zero: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/unknown: unconfirmed or unavailable size cannot be selected",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/zero: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/unknown: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/zero: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/negative: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/object: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/negative: source variant remains visible",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/object: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/negative: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/object: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/negative: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/array: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/conflict: current product page shows source availability",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/array: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/conflict: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/array: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/conflict: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/known-false: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/conflict: unavailable evidence blocks add-to-bag",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320/known-false: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/limited: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320/known-false: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/limited: source variant remains visible",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320: genuine boolean eligibility survives history",
-      "pass": true
+      "name": "ar/390/limited: unconfirmed or unavailable size cannot be selected",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320: live result also rejects a malformed eligibility flag",
-      "pass": true
+      "name": "ar/390/limited: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320: shared UI explains selection versus stock",
-      "pass": true
+      "name": "ar/390/positive: current product page shows source availability",
+      "pass": true,
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320: stock explanation stays complete at 200% root font",
+      "name": "ar/390/positive: source variant remains visible",
       "pass": true,
-      "details": {
-        "width": 288,
-        "scroll": 288,
-        "height": 78,
-        "content": 78,
-        "overflow": "visible",
-        "textBottom": 455.546875,
-        "nextTop": 492.546875,
-        "docWidth": 320,
-        "docScroll": 320
-      }
+      "actual": 1,
+      "expected": 1
     },
     {
-      "label": "ar/320: enlarged two-digit quantity has room and keeps 44px step controls",
+      "name": "ar/390/positive: unconfirmed or unavailable size cannot be selected",
       "pass": true,
-      "details": {
-        "width": 90,
-        "textWidth": 22,
-        "height": 88,
-        "buttons": [
-          44,
-          44
-        ]
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320: enlarged decrement retains the exact quantity",
-      "pass": true
+      "name": "ar/390/positive: unavailable evidence blocks add-to-bag",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/320: enlarged increment preserves the 99-item boundary",
-      "pass": true
+      "name": "ar/390/false-string: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/unknown: production-parser evidence reaches the stock badge",
+      "name": "ar/390/false-string: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/unknown: manual choice is preserved without inventing stock",
+      "name": "ar/390/false-string: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/negative: production-parser evidence reaches the stock badge",
+      "name": "ar/390/false-string: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "availability": "out_of_stock"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/negative: manual choice is preserved without inventing stock",
+      "name": "ar/390/false-string: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/conflict: production-parser evidence reaches the stock badge",
+      "name": "ar/390/true-string: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "availability": "unknown"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/conflict: manual choice is preserved without inventing stock",
+      "name": "ar/390/true-string: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/limited: production-parser evidence reaches the stock badge",
+      "name": "ar/390/true-string: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "availability": "limited"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/limited: manual choice is preserved without inventing stock",
+      "name": "ar/390/true-string: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/positive: production-parser evidence reaches the stock badge",
+      "name": "ar/390/true-string: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "availability": "in_stock"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/positive: manual choice is preserved without inventing stock",
+      "name": "ar/390/missing: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": {
-          "id": "variant-M-blue",
-          "label": "M · Bleu",
-          "size": "M",
-          "color": "Bleu",
-          "available": true,
-          "price": 27,
-          "currency": "EUR",
-          "priceTnd": 108,
-          "priceToken": "VARIANT_QUOTE_FIXTURE"
-        },
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/false-string: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/missing: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/false-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/missing: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/false-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/missing: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/true-string: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/missing: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/true-string: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/null: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/true-string: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/null: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/missing: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/null: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/missing: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/null: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/missing: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/null: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/null: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/zero: history keeps original message and quote",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/null: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/zero: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/null: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/zero: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/zero: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/zero: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/zero: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/zero: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/zero: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/object: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/object: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/object: malformed eligibility normalizes to non-selectable",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/object: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/object: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/object: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/object: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/array: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/object: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/array: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/array: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390/array: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/array: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390/known-false: invalid history cannot select a variant-specific quote",
+      "name": "ar/390/array: history read does not mutate its stored source",
       "pass": true,
-      "details": {
-        "size": "M",
-        "color": "Bleu",
-        "option": null,
-        "quantity": 1,
-        "customerNote": "",
-        "manualUrl": "https://example.org/product"
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/known-false: message and complete variant metadata survive normalization",
-      "pass": true
+      "name": "ar/390/array: invalid variant remains disabled in the current size picker",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390/known-false: reading history never rewrites stored evidence",
-      "pass": true
+      "name": "ar/390/array: invalid variant cannot enable purchase",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390: genuine boolean eligibility survives history",
-      "pass": true
+      "name": "ar/390/known-false: history keeps original message and quote",
+      "pass": true,
+      "actual": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ],
+      "expected": [
+        "ready",
+        "PRESERVED_TEXT / نص محفوظ بالكامل",
+        27
+      ]
     },
     {
-      "label": "ar/390: live result also rejects a malformed eligibility flag",
-      "pass": true
+      "name": "ar/390/known-false: malformed eligibility normalizes to non-selectable",
+      "pass": true,
+      "actual": false,
+      "expected": false
     },
     {
-      "label": "ar/390: shared UI explains selection versus stock",
-      "pass": true
+      "name": "ar/390/known-false: history read does not mutate its stored source",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390: stock explanation stays complete at 200% root font",
+      "name": "ar/390/known-false: invalid variant remains disabled in the current size picker",
       "pass": true,
-      "details": {
-        "width": 358,
-        "scroll": 358,
-        "height": 78,
-        "content": 78,
-        "overflow": "visible",
-        "textBottom": 456.296875,
-        "nextTop": 493.296875,
-        "docWidth": 390,
-        "docScroll": 390
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390: enlarged two-digit quantity has room and keeps 44px step controls",
+      "name": "ar/390/known-false: invalid variant cannot enable purchase",
       "pass": true,
-      "details": {
-        "width": 90,
-        "textWidth": 22,
-        "height": 88,
-        "buttons": [
-          44,
-          44
-        ]
-      }
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390: enlarged decrement retains the exact quantity",
-      "pass": true
+      "name": "ar/390: explicit variant stock evidence is selectable",
+      "pass": true,
+      "actual": true,
+      "expected": true
     },
     {
-      "label": "ar/390: enlarged increment preserves the 99-item boundary",
-      "pass": true
+      "name": "ar/390: sourced variant reaches the current order callback",
+      "pass": true,
+      "actual": [
+        "M",
+        "Bleu",
+        1
+      ],
+      "expected": [
+        "M",
+        "Bleu",
+        1
+      ]
     },
     {
-      "label": "No uncaught browser errors",
+      "name": "No uncaught browser errors",
       "pass": true,
-      "details": []
+      "actual": 0,
+      "expected": 0
     }
   ],
   "errors": []

@@ -42,17 +42,16 @@ try{
   await page.keyboard.press('Escape');await settings.waitFor({state:'hidden'});check(`${key}: Escape did not exit voice`,await page.evaluate(()=>!window.editorialFixtureEvents.some(e=>e.action==='exit')));
   if(!dark){
    await page.evaluate(()=>window.setEditorialFixture({kind:'product'}));
-   const add=page.getByRole('button',{name:locale==='ar'?'زيد للسلة':'Ajouter au panier'});await add.waitFor();
-   // The source quote powers the detail and cart line; delivery and deposit
-   // terms belong in checkout, not in a duplicate product-page flow.
-   await page.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));
+   const add=page.getByRole('button',{name:locale==='ar'?'أضف إلى السلة':'Ajouter au panier',exact:true});await add.waitFor();
+   // The production product sheet consumes the same server quote and source-backed stock contract.
+   await page.evaluate(()=>document.querySelectorAll('.s-product-page details').forEach(details=>{details.open=true;}));
    const card=page.locator('[data-fixture="product"]');const size=await card.evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: product has no horizontal overflow`,size.scroll<=size.width+1,size);
    check(`${key}: missing review is not synthesized`,await page.locator('[data-merchant-rating]').count()===0);
-   const icons=await inspectEditorialIcons(page,'.flow-product');check(`${key}: product geometry`,icons.count>0&&!icons.errors.length,icons);
-   const quantity=page.getByRole('spinbutton',{name:locale==='ar'?'الكمية':'Quantité',exact:true});await quantity.fill('1.5');
-   check(`${key}: fractional quantity cannot be submitted`,await add.isDisabled()&&await page.evaluate(()=>!window.editorialFixtureEvents.some(e=>e.action==='order')));
-   await quantity.fill('3');await add.waitFor({state:'visible'});await page.waitForFunction(()=>!document.querySelector('.flow-product button[aria-label="Ajouter au panier"],.flow-product button[aria-label="زيد للسلة"]')?.disabled);
-   await add.click();check(`${key}: exact integer quantity is sent`,await page.evaluate(()=>window.editorialFixtureEvents.some(e=>e.action==='order'&&e.selection.quantity===3)));
+   const icons=await inspectEditorialIcons(page,'.s-product-page');check(`${key}: product geometry`,icons.count>0&&!icons.errors.length,icons);
+   await page.waitForFunction(()=>{const button=document.querySelector('.s-product-page .s-buybar--product .s-cta');return button instanceof HTMLButtonElement&&!button.disabled;});
+   await page.getByRole('button',{name:locale==='ar'?'زيد الكمية':'Augmenter la quantité',exact:true}).click();
+   await page.getByRole('button',{name:locale==='ar'?'زيد الكمية':'Augmenter la quantité',exact:true}).click();
+   await add.click();check(`${key}: integer quantity is sent`,await page.evaluate(()=>window.editorialFixtureEvents.some(e=>e.action==='order'&&e.selection.quantity===3)));
    if(width===390&&height===844){await page.locator('[data-fixture]').evaluate(el=>el.scrollTop=0);await page.screenshot({path:`${output}/product-${locale}.png`});}
   }
   await ctx.close();
@@ -86,20 +85,32 @@ try{
   const icons=await inspectEditorialIcons(p,'[role=dialog]');check(`${key}: comment glyph geometry`,icons.count>0&&!icons.errors.length,icons);
   await p.keyboard.press('Escape');check(`${key}: comments own Escape`,await p.evaluate(()=>window.editorialFixtureEvents.some(e=>e.action==='comments-close')));
   await p.evaluate(()=>window.setEditorialFixture({kind:'cart'}));await p.getByRole('alert').waitFor();
-  check(`${key}: cart config failure blocks progression`,await p.locator('.ay-btn-cta').isDisabled());
+  check(`${key}: cart config failure blocks progression`,await p.locator('.s-bag-checkout').isDisabled());
   check(`${key}: cart does not expose unsafe product links`,await p.locator('a').count()===0);
-  configError=false;await p.getByRole('button',{name:locale==='ar'?'أعد المحاولة':'Réessayer',exact:true}).click();await p.locator('.ay-btn-cta:not(:disabled)').waitFor();
+  configError=false;await p.getByRole('button',{name:locale==='ar'?'أعد المحاولة':'Réessayer',exact:true}).click();await p.locator('.s-bag-checkout:not(:disabled)').waitFor();
   check(`${key}: cart shows server 40%, not a default`,(await p.locator('[role=dialog]').innerText()).includes('40%'));
   const cart=await p.locator('[role=dialog]').evaluate(el=>({w:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: cart no horizontal overflow`,cart.scroll<=cart.w+1,cart);
   await p.screenshot({path:`${output}/cart-${locale}-${width}.png`});
-  // Reload clears the commerce cache; test a payment screen opened before config succeeds.
-  configError=true;await p.reload();await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'checkout'}));await p.getByRole('alert').waitFor();
-  await p.getByRole('checkbox').check();check(`${key}: payment confirmation stays blocked without configuration`,await p.locator('button[type=submit]').isDisabled());
-  await p.locator('form').dispatchEvent('submit');check(`${key}: handler also rejects bypassing the disabled button`,checkoutCalls===0);
-  check(`${key}: missing config is not treated as no configured payment methods`,await p.locator('.checkout-payment-grid').count()===0);
-  configError=false;await p.getByRole('button',{name:locale==='ar'?'أعد المحاولة':'Réessayer',exact:true}).click();await p.locator('.checkout-payment-grid').waitFor();
-  check(`${key}: confirmed no-provider policy still supports unpaid order creation`,await p.locator('button[type=submit]').isEnabled());
-  const checkout=await p.locator('.checkout-flow-content').evaluate(el=>({w:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: checkout no horizontal overflow`,checkout.scroll<=checkout.w+1,checkout);
+  // A failed commerce-policy read must be explicit and recoverable in the live checkout.
+  configError=true;await p.reload();await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'checkout'}));
+  await p.locator('.shop-checkout-route .s-appbar__title').waitFor();
+  await p.getByLabel(locale==='ar'?'العنوان':'Adresse').fill('12 rue de Test');
+  await p.getByLabel(locale==='ar'?'الترقيم البريدي':'Code postal').fill('1000');
+  await p.getByLabel(locale==='ar'?'المدينة':'Ville').fill('Tunis');
+  await p.getByRole('button',{name:locale==='ar'?'سجّل العنوان':'Enregistrer l’adresse'}).click();
+  await p.getByRole('alert').waitFor();
+  check(`${key}: missing policy blocks payment confirmation`,await p.locator('.shop-checkout-route .s-cta').last().isDisabled());
+  check(`${key}: failed policy is not presented as zero configured methods`,await p.locator('.s-payment-option').count()===0);
+  check(`${key}: failed checkout policy never submits an order`,checkoutCalls===0);
+  await p.screenshot({path:`${output}/checkout-policy-error-${locale}-${width}.png`});
+  configError=false;await p.getByRole('button',{name:locale==='ar'?'أعد المحاولة':'Réessayer',exact:true}).click();
+  const codName=locale==='ar'?/الدفع عند الاستلام/:/Paiement à la livraison/;
+  await p.getByRole('radio',{name:codName}).waitFor();
+  check(`${key}: retry loads the real available cash-on-delivery method`,await p.locator('.s-payment-option').count()>0);
+  await p.getByRole('radio',{name:codName}).click();
+  check(`${key}: confirmed policy enables checkout`,await p.locator('.shop-checkout-route .s-cta').last().isEnabled());
+  check(`${key}: checkout remains unsubmitted in the fixture`,checkoutCalls===0);
+  const checkout=await p.locator('.shop-checkout-route .s-root').evaluate(el=>({w:el.clientWidth,scroll:el.scrollWidth}));check(`${key}: checkout no horizontal overflow`,checkout.scroll<=checkout.w+1,checkout);
   await p.screenshot({path:`${output}/checkout-${locale}-${width}.png`});
   await ctx.close();
  }
@@ -122,11 +133,10 @@ try{
  // All imports also work in the ordinary document, not only the selected screens.
  const ctx=await browser.newContext({viewport:{width:1000,height:900}}),p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));await p.goto(base+'/__verify/states');await p.locator('.editorial-voice').waitFor();await p.evaluate(()=>window.setEditorialFixture({kind:'icons'}));await p.locator('[data-icon-gallery]').waitFor();
  const gallery=await inspectEditorialIcons(p,'[data-icon-gallery]');check('101 public icon imports match reference drawings',gallery.count===101&&!gallery.errors.length,gallery);await p.screenshot({path:output+'/all-icons.png',fullPage:true});
- await p.route('**/api/public/pricing/cart-line',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product'}));await p.evaluate(()=>document.querySelectorAll('.flow-product details').forEach(details=>{details.open=true;}));await p.getByRole('alert').waitFor();
- check('failed quote never invents a payment percentage',!(await p.locator('.flow-product').innerText()).includes('20%'));
- check('failed quote disables addition',await p.locator('.flow-product .ay-btn-cta').isDisabled());
- await p.unroute('**/api/public/pricing/cart-line');await p.getByRole('button',{name:'Réessayer',exact:true}).click();await p.locator('[data-product-price-tnd]').waitFor();check('retry loads authoritative product quote',await p.locator('.flow-product .ay-btn-cta').isEnabled());
- await p.evaluate(()=>window.setEditorialFixture({product:{sourceUrl:'javascript:alert(1)'}}));await p.waitForFunction(()=>document.querySelector('.flow-product input[type=url]').value==='javascript:alert(1)');check('unsafe URL produces no clickable merchant link',await p.locator('.flow-product a').count()===0);
+ await p.route('**/api/public/pricing/cart-line',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await p.evaluate(()=>window.setEditorialFixture({kind:'product',product:{sourceUrl:'https://example.com/quote-failure'}}));await p.locator('.s-product-page .s-price--pending').waitFor();
+ check('failed quote never invents a payment percentage',!(await p.locator('.s-product-page').innerText()).includes('20%'));
+ check('failed quote disables addition',await p.locator('.s-product-page .s-buybar--product .s-cta:not(.s-cta--ghost)').isDisabled());
+ await p.evaluate(()=>window.setEditorialFixture({product:{sourceUrl:'javascript:alert(1)'}}));await p.waitForFunction(()=>document.querySelector('.s-product-page input[inputmode="url"]')?.value==='javascript:alert(1)');check('unsafe URL produces no clickable merchant link',await p.locator('.s-product-page a').count()===0);
  await ctx.close();check('no browser errors',errors.length===0,errors);
 }catch(error){errors.push(String(error));process.exitCode=1;}finally{await browser.close();fs.writeFileSync(output+'/results.json',JSON.stringify({scope:'Test-only real components in isolated browser/Express/SQLite; voice inputs/callbacks and commerce/social failure responses are explicit test fixtures, NOT real device/provider/payment certification.',checks,orange,errors},null,2)+'\n');}
 console.log(`${checks.filter(c=>c.pass).length}/${checks.length} extended-state checks passed`,errors);

@@ -163,7 +163,7 @@ describe('boutique v2 — indépendance', () => {
     const css = raw.replace(/\/\*[\s\S]*?\*\//g, '');
     expect(css).not.toMatch(/#ff6900|#FF7900|orange/i);
     const selectors = css.match(/^\.[a-z-]+/gm) || [];
-    expect(selectors.every((selector) => selector.startsWith('.s-'))).toBe(true);
+    expect(selectors.every((selector) => selector.startsWith('.s-') || selector === '.shop-checkout-route')).toBe(true);
   });
 });
 

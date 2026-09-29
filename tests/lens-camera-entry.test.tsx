@@ -34,9 +34,10 @@ describe('Lens entry — real controls, lifecycle and explicit policy',()=>{
  it('requires both declarations, never treats a single checkbox as agreement',async()=>{
   const accept=vi.fn();await render(<LensAccess onAccept={accept} onClose={()=>{}}/>);
   const button=host.querySelector<HTMLButtonElement>('.lens-panel-primary')!;expect(button.disabled).toBe(true);
-  const inputs=host.querySelectorAll<HTMLInputElement>('.lens-consent input');
+  const inputs=host.querySelectorAll<HTMLInputElement>('.lens-consent input');expect(inputs).toHaveLength(3);
   await act(async()=>inputs[0].click());expect(button.disabled).toBe(true);
-  await act(async()=>inputs[1].click());expect(button.disabled).toBe(false);
+  await act(async()=>inputs[1].click());expect(button.disabled).toBe(true);
+  await act(async()=>inputs[2].click());expect(button.disabled).toBe(false);
   await act(async()=>button.click());expect(accept).toHaveBeenCalledTimes(1);expect(host.textContent).toContain('Ce n’est pas une vérification');
  });
  it('session declaration is versioned and survives blocked storage without crashing',()=>{
