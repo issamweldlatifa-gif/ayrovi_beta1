@@ -9,6 +9,10 @@ jobs:
   typecheck-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +73,22 @@ jobs:
 
       - name: Verify real customer screens (isolated providers and SQLite)
         id: editorial_customer
-        run: npm run verify:editorial-customer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          npm run verify:editorial-customer > /tmp/customer-check.log 2>&1
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Customer screen check failed:'
+              echo '```'
+              tail -c 6000 /tmp/customer-check.log
+              echo '```'
+            } > /tmp/customer-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/customer-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify additive homepage, standalone pages and footer
         run: |
