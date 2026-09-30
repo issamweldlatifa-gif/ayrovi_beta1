@@ -84,20 +84,20 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
         <nav className="mx-auto grid max-w-lg grid-cols-4 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
-            {config.showLabels && <span>{config.lensLabel}</span>}
+            {config.showLabels && <span className="max-w-full truncate">{config.lensLabel}</span>}
           </button>
           <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'AYROVI", 'SONIM — المساعد الذكي لـ AYROVI')} aria-pressed={isAiDrawerOpen}>
             <Sonim className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />
-            {config.showLabels && <span className={isAiDrawerOpen ? 'text-cta' : undefined}>{config.aiLabel}</span>}
+            {config.showLabels && <span className={`max-w-full truncate ${isAiDrawerOpen ? 'text-cta' : ''}`}>{config.aiLabel}</span>}
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
             <Vision className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
-            {config.showLabels && <span className={isVisionOpen ? 'text-cta' : undefined}>{config.visionLabel}</span>}
+            {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}}
             <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-cta" aria-hidden="true" />
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:ocerex' }])} className={NAV_ITEM} aria-label={tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')} aria-current={isOcerexOpen ? 'page' : undefined}>
             <ScanSearch className="interface-runtime-icon" style={iconStyle(isOcerexOpen)} />
-            {config.showLabels && <span className={isOcerexOpen ? 'text-cta' : undefined}>{config.ocerexLabel || 'OCEREX'}</span>}
+            {config.showLabels && <span className={`max-w-full truncate ${isOcerexOpen ? 'text-cta' : ''}`}>{config.ocerexLabel || 'OCEREX'}</span>}}
           </button>
         </nav>
       </div>
