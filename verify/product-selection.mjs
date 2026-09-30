@@ -87,7 +87,7 @@ try {
       } else {
         await page.getByRole('button', { name: ar ? 'تحديث المنتج وفتحه' : 'Actualiser et ouvrir le produit', exact: true }).click();
       }
-      const card = page.locator('.flow-product');
+      const card = page.locator('.s-product-page');
       await card.getByRole('heading', { name: base.title }).waitFor();
       const add = card.getByRole('button', { name: ar ? 'زيد للسلة' : 'Ajouter au panier' });
       if (scenario.size === 'XXL') {

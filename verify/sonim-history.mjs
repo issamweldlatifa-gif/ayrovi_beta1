@@ -100,26 +100,26 @@ try {
     resolutionMode = 'error'; await refresh.click();
     await page.getByRole('status').filter({ hasText: ar ? 'تعذّر التحديث' : 'Actualisation impossible' }).waitFor();
     check(`${key}: failed refresh preserves full stored product and allows retry`, await refresh.isEnabled() && JSON.parse(await persisted())[0].selectedProduct.product.priceToken === 'OLD_TEST_QUOTE');
-    resolutionMode = 'success'; await refresh.click(); await page.locator('.flow-product').waitFor();
+    resolutionMode = 'success'; await refresh.click(); await page.locator('.s-product-page').waitFor();
     await page.locator('[data-product-price-tnd]').waitFor();
     check(`${key}: refresh adopts authoritative current title and price together`,
-      (await page.locator('.flow-product').innerText()).includes(freshProduct.title)
+      (await page.locator('.s-product-page').innerText()).includes(freshProduct.title)
       && Number(await page.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')) === 140);
     await page.waitForFunction(key => JSON.parse(localStorage.getItem(key))[0].selectedProduct.product.priceToken === 'FRESH_TEST_QUOTE', storageKey);
     await page.reload(); await open();
-    check(`${key}: reload with a product navigation layer still requires fresh verification`, await page.locator('.flow-product').count() === 0 && await refresh.isVisible());
-    await refresh.click(); await page.locator('.flow-product').waitFor();
-    check(`${key}: refreshing restored product layer opens without duplicating navigation`, await page.locator('.flow-product').count() === 1);
+    check(`${key}: reload with a product navigation layer still requires fresh verification`, await page.locator('.s-product-page').count() === 0 && await refresh.isVisible());
+    await refresh.click(); await page.locator('.s-product-page').waitFor();
+    check(`${key}: refreshing restored product layer opens without duplicating navigation`, await page.locator('.s-product-page').count() === 1);
     const quote = JSON.parse(await persisted())[0].selectedProduct.product;
     check(`${key}: quote-bound fields are never overwritten by stale candidate data`, quote.price === 40 && quote.currency === 'EUR' && quote.priceToken === 'FRESH_TEST_QUOTE' && quote.title === freshProduct.title && quote.sourceUrl === freshProduct.sourceUrl);
-    await page.keyboard.press('Escape'); await page.locator('.flow-product').waitFor({ state: 'hidden' });
+    await page.keyboard.press('Escape'); await page.locator('.s-product-page').waitFor({ state: 'hidden' });
     // Normal candidate selection must obey the same fresh-quote contract.
-    await page.getByRole('button', { name: ar ? 'اختيار' : 'Choisir', exact: true }).click(); await page.locator('.flow-product').waitFor();
+    await page.getByRole('button', { name: ar ? 'اختيار' : 'Choisir', exact: true }).click(); await page.locator('.s-product-page').waitFor();
     await page.locator('[data-product-price-tnd]').waitFor();
     check(`${key}: candidate resolution does not restore its stale price/title`,
-      (await page.locator('.flow-product').innerText()).includes(freshProduct.title)
+      (await page.locator('.s-product-page').innerText()).includes(freshProduct.title)
       && Number(await page.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')) === 140);
-    await page.keyboard.press('Escape'); await page.locator('.flow-product').waitFor({ state: 'hidden' });
+    await page.keyboard.press('Escape'); await page.locator('.s-product-page').waitFor({ state: 'hidden' });
 
     await page.evaluate(() => window.historyWriteFailure = true);
     const beforeFailure = await persisted(); await send('UNSAVED_REQUEST');
@@ -140,7 +140,7 @@ try {
     await page.locator('[data-restored-product]').waitFor({ state: 'hidden' });
     if (!heldRoute) throw new Error('Expected held product request');
     await heldRoute.fulfill({ json: { success: true, data: { product: freshProduct, eventId: '', alternates: [] } } }).catch(() => {});
-    check(`${key}: old product result cannot reopen in new conversation`, await page.locator('.flow-product').count() === 0 && await page.locator('[data-restored-product]').count() === 0);
+    check(`${key}: old product result cannot reopen in new conversation`, await page.locator('.s-product-page').count() === 0 && await page.locator('[data-restored-product]').count() === 0);
     await menuButton().click(); await menu().getByText(title, { exact: true }).click(); await menu().waitFor({ state: 'hidden' });
     check(`${key}: selecting saved conversation restores full text`, await prose.textContent() === longText);
     const snapshotBeforeSelect = JSON.parse(await persisted())[0].updatedAt;
