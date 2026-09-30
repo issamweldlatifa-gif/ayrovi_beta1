@@ -1,7 +1,7 @@
 import {chromium,firefox} from 'playwright';
 import fs from 'node:fs';
 const output='docs/lens-phase1/evidence';fs.mkdirSync(output,{recursive:true});
-const checks=[],errors=[],fonts=[];const check=(name,value,details)=>{checks.push({name,pass:!!value,details});if(!value)throw Error(name+': '+JSON.stringify(details));};
+const checks=[],errors=[],fonts=[],failures=[];const check=(name,value,details)=>{checks.push({name,pass:!!value,details});if(!value)failures.push(name+': '+JSON.stringify(details??null));};
 try {
 for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
  const browser=await type.launch({headless:true});
@@ -11,7 +11,7 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
   const p=await context.newPage();p.on('pageerror',e=>errors.push(e.message));
   await p.route('**/*',r=>{const u=r.request().url();return /^https?:/.test(u)&&!u.startsWith(process.env.AYROVI_BASE_URL+'/')?r.abort():r.continue();});
   await p.route('**/api/ayrovix/**',r=>r.fulfill({status:503,json:{success:false,error:'Verification: external analysis disabled'}}));
-  await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.locator('[data-open]').click();await p.locator('.lens-consent').waitFor();
+  await p.goto(process.env.AYROVI_BASE_URL+'/__verify/sonim');await p.locator('[data-open]').click();await p.locator('.lens-consent .lens-panel-primary').waitFor();
   check(`${engine}/${locale}: no media request before agreement`,await p.evaluate(()=>lensEntryTest.mediaRequests===0));
   check('agreement disabled by default',await p.locator('.lens-consent .lens-panel-primary').isDisabled());
   await p.screenshot({path:`${output}/${engine}-${locale}-consent.png`});
@@ -79,5 +79,6 @@ for(const [engine,type] of [['chromium',chromium],['firefox',firefox]]){
  }}finally{await browser.close();}
 }
 check('no uncaught browser errors',!errors.length,errors);
-}finally{fs.writeFileSync(output+'/browser.json',JSON.stringify({checks,errors,fonts,scope:'Actual components, synthetic media stream. External analysis disabled; not a physical-device performance benchmark.'},null,2));}
+}finally{fs.writeFileSync(output+'/browser.json',JSON.stringify({checks,errors,fonts,failures,scope:'Actual components, synthetic media stream. External analysis disabled; not a physical-device performance benchmark.'},null,2));if(failures.length){console.log('FAILED CHECKS');for(const failure of failures)console.log(failure);}}
+if(failures.length)process.exitCode=1;
 console.log(`${checks.filter(x=>x.pass).length}/${checks.length} Lens entry browser assertions passed`);
