@@ -19895,8 +19895,8 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "6770f39bca754797fe2acbdb5a1839b3cd5fa290d94eb2e186c565a2bbd4e795",
-      "lines": 303,
+      "sha256": "b07b098cd8878ba410ab1095a18dc609e28234eb224ad45deaf31a263c06a251",
+      "lines": 315,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -19909,7 +19909,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 73,
+          "line": 78,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19919,7 +19919,7 @@
         },
         {
           "tag": "button",
-          "line": 74,
+          "line": 79,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19929,7 +19929,7 @@
         },
         {
           "tag": "button",
-          "line": 75,
+          "line": 80,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19939,7 +19939,7 @@
         },
         {
           "tag": "button",
-          "line": 139,
+          "line": 149,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19949,7 +19949,7 @@
         },
         {
           "tag": "button",
-          "line": 147,
+          "line": 157,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19959,7 +19959,7 @@
         },
         {
           "tag": "button",
-          "line": 177,
+          "line": 187,
           "className": "\"s-media__open\"",
           "type": "\"button\"",
           "role": null,
@@ -19969,7 +19969,7 @@
         },
         {
           "tag": "button",
-          "line": 207,
+          "line": 217,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -19979,7 +19979,7 @@
         },
         {
           "tag": "button",
-          "line": 217,
+          "line": 227,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19989,7 +19989,7 @@
         },
         {
           "tag": "button",
-          "line": 218,
+          "line": 228,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19999,7 +19999,7 @@
         },
         {
           "tag": "button",
-          "line": 221,
+          "line": 231,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -20009,7 +20009,7 @@
         },
         {
           "tag": "button",
-          "line": 231,
+          "line": 241,
           "className": "\"s-swatch\"",
           "type": "\"button\"",
           "role": null,
@@ -20019,7 +20019,7 @@
         },
         {
           "tag": "summary",
-          "line": 259,
+          "line": 269,
           "className": null,
           "type": null,
           "role": null,
@@ -20029,7 +20029,7 @@
         },
         {
           "tag": "input",
-          "line": 260,
+          "line": 270,
           "className": null,
           "type": null,
           "role": null,
@@ -20039,7 +20039,7 @@
         },
         {
           "tag": "input",
-          "line": 261,
+          "line": 271,
           "className": null,
           "type": null,
           "role": null,
@@ -20049,7 +20049,7 @@
         },
         {
           "tag": "button",
-          "line": 276,
+          "line": 286,
           "className": "\"s-select\"",
           "type": "\"button\"",
           "role": null,
@@ -20059,7 +20059,7 @@
         },
         {
           "tag": "button",
-          "line": 282,
+          "line": 294,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20069,7 +20069,7 @@
         },
         {
           "tag": "button",
-          "line": 284,
+          "line": 296,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20079,7 +20079,7 @@
         },
         {
           "tag": "button",
-          "line": 286,
+          "line": 298,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -20089,7 +20089,7 @@
         },
         {
           "tag": "button",
-          "line": 289,
+          "line": 301,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -20099,7 +20099,7 @@
         },
         {
           "tag": "button",
-          "line": 295,
+          "line": 307,
           "className": "\"s-zoom__close s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -20120,8 +20120,8 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "09fb39f878cb56c6c82856333ac1b13da02c5972adced3e4457671f5609bfce3",
-      "lines": 711,
+      "sha256": "7c171977a30c401b5d63b1af46b0db1c7c29b5096015a6451baf33a2407ebe7f",
+      "lines": 712,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -20212,12 +20212,13 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "694320a50eccbc3d78ab5a37c6236c64b92a5e6126d88e0c181abdff96ab5597",
-      "lines": 173,
+      "sha256": "a14212b1caa1a9642ee0fbc1e977dac4df35d0746e2c0780159978ddafbd1486",
+      "lines": 190,
       "imports": [
         "react",
         "../i18n/LocaleContext",
         "../ayrovix/types",
+        "../ayrovix/services/productSelection",
         "./ProductPage",
         "./adapter",
         "./types"
