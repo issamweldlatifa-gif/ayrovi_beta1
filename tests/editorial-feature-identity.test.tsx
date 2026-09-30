@@ -20,7 +20,7 @@ describe('feature identity is consistent, not a brand exception',()=>{
  });
  it('preserves the navigation destinations/callbacks while using the three feature icons',async()=>{
   const lens=vi.fn(),sonim=vi.fn();await act(async()=>root.render(<LocaleProvider><NavigationHistoryProvider><BottomNavBar isAiDrawerOpen={false} onOpenLens={lens} onToggleAiDrawer={sonim} config={DEFAULT_INTERFACE_CONFIG.navigation} iconConfig={DEFAULT_INTERFACE_CONFIG.icons}/></NavigationHistoryProvider></LocaleProvider>));
-  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Sonim','Vision']);
+  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Sonim','Vision','Scan']);
   const buttons=host.querySelectorAll<HTMLButtonElement>('nav button');await act(async()=>{buttons[0].click();buttons[1].click();});expect(lens).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();
   await act(async()=>buttons[2].click());expect(host.querySelector('[role="dialog"] [data-editorial-icon="Vision"]')).not.toBeNull();
   expect(host.textContent).toContain('Bientôt disponible'); // No fictional new backend capability.

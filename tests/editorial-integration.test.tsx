@@ -58,7 +58,7 @@ describe('customer identity integration, not a reference-only kit', () => {
   });
   it('protects preserved navigation source and existing destinations', () => {
     const bottom=readFileSync('client/src/components/BottomNavBar.tsx','utf8');
-    expect(bottom).toContain('grid-cols-3');expect(bottom).toContain('onOpenLens');expect(bottom).toContain('onToggleAiDrawer');expect(bottom).toContain('app:vision');
+    expect(bottom).toContain('grid-cols-4');expect(bottom).toContain('onOpenLens');expect(bottom).toContain('onToggleAiDrawer');expect(bottom).toContain('app:vision');expect(bottom).toContain('app:ocerex');
   });
 });
 

@@ -1837,6 +1837,7 @@ export class QatafoDatabase {
     this.ensureColumn('cart_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('cart_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
+    this.ensureColumn('cart_items', 'ocerex_extraction_id', "TEXT NOT NULL DEFAULT ''");
     // دفتر الشروط Stories : قنوات الناشرين (Ayrovi Official / Style / Promos / Actus).
     this.ensureColumn('stories', 'category', "TEXT NOT NULL DEFAULT 'ARRIVAGE'");
     this.ensureColumn('stories', 'secondary_images', "TEXT NOT NULL DEFAULT '[]'");
@@ -1866,6 +1867,7 @@ export class QatafoDatabase {
     this.ensureColumn('order_items', 'customer_note', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'reference_url', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('order_items', 'price_verification_status', "TEXT NOT NULL DEFAULT 'VERIFIED'");
+    this.ensureColumn('order_items', 'ocerex_extraction_id', "TEXT NOT NULL DEFAULT ''");
     this.ensureColumn('orders', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.ensureColumn('customer_oauth_states', 'account_id', 'TEXT REFERENCES customer_accounts(id) ON DELETE SET NULL');
     this.migrateOrdersToAccountLifecycle();

@@ -96,6 +96,7 @@ export interface PublicInterfaceConfig {
     cartLabel: string;
     accountLabel: string;
     visionLabel: string;
+    ocerexLabel: string;
   };
   slider: {
     autoplay: boolean;
@@ -163,7 +164,7 @@ export const DEFAULT_INTERFACE_CONFIG: PublicInterfaceConfig = {
   icons: { library: 'ayrovi', color: '#000000', activeColor: '#ff6900', size: 28, style: 'outline' },
   navigation: {
     background: '#ffffff', color: '#000000', activeBackground: '#000000', showLabels: true, height: 56,
-    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision',
+    homeLabel: 'Accueil', lensLabel: 'Lens', aiLabel: 'SONIM', cartLabel: 'Panier', accountLabel: 'Compte', visionLabel: 'Vision', ocerexLabel: 'OCEREX',
   },
   slider: { autoplay: true, duration: 5200, transition: 1200, showArrows: true, showDots: true },
   layout: { sectionGap: 0, maxWidth: 1280, pagePadding: 16, cardRadius: 16, cardBorderWidth: 1, shadow: 'soft' },
@@ -279,6 +280,7 @@ export function normalizeInterfaceConfig(input: unknown): PublicInterfaceConfig 
       cartLabel: safeText(navigation.cartLabel, 'Panier', 24),
       accountLabel: safeText(navigation.accountLabel, 'Compte', 24),
       visionLabel: safeText(navigation.visionLabel, 'Vision', 24),
+      ocerexLabel: safeText(navigation.ocerexLabel, 'OCEREX', 24),
     },
     slider: {
       autoplay: slider.autoplay !== false,

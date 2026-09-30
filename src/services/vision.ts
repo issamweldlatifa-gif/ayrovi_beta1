@@ -20,21 +20,49 @@ async function getOcrWorker() {
   return ocrWorkerPromise;
 }
 
-/** OCR public pour la Lens pipeline (deuxième opinion + petit texte). */
-export async function ocrRecognize(imageBuffer: Buffer): Promise<string> {
-  return recognizeText(imageBuffer);
+export interface OcrWordBox {
+  text: string;
+  confidence: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
-async function recognizeText(imageBuffer: Buffer): Promise<string> {
+function mapOcrWords(data: { text?: string; words?: Array<any> } | undefined): { text: string; words: OcrWordBox[] } {
+  const words = Array.isArray(data?.words) ? data.words : [];
+  return {
+    text: String(data?.text || ''),
+    words: words.flatMap((word) => {
+      const text = String(word?.text || '').trim();
+      if (!text) return [];
+      const bbox = word?.bbox || {};
+      const x0 = Number(bbox.x0 ?? 0);
+      const y0 = Number(bbox.y0 ?? 0);
+      const x1 = Number(bbox.x1 ?? x0);
+      const y1 = Number(bbox.y1 ?? y0);
+      const confidence = Number(word?.confidence ?? 0);
+      return [{
+        text,
+        confidence: Math.max(0, Math.min(1, confidence > 1 ? confidence / 100 : confidence)),
+        x: Number.isFinite(x0) ? x0 : 0,
+        y: Number.isFinite(y0) ? y0 : 0,
+        width: Math.max(0, (Number.isFinite(x1) ? x1 : x0) - (Number.isFinite(x0) ? x0 : 0)),
+        height: Math.max(0, (Number.isFinite(y1) ? y1 : y0) - (Number.isFinite(y0) ? y0 : 0)),
+      }];
+    }),
+  };
+}
+
+async function recognizeDocument(imageBuffer: Buffer) {
   // Tests use the self-terminating helper so the suite never retains a worker thread.
   if (process.env.NODE_ENV === 'test') {
-    const result = await Tesseract.recognize(imageBuffer, 'eng+fra', {
+    return Tesseract.recognize(imageBuffer, 'eng+fra', {
       logger: () => {},
       errorHandler: () => {},
       tessedit_pageseg_mode: '11' as any,
       preserve_interword_spaces: '1' as any,
     } as any);
-    return result.data.text;
   }
   if (pendingOcrJobs >= MAX_QUEUED_OCR_JOBS) throw new Error('OCR_BUSY');
   pendingOcrJobs += 1;
@@ -52,7 +80,7 @@ async function recognizeText(imageBuffer: Buffer): Promise<string> {
           timeout = setTimeout(() => reject(new Error('OCR_TIMEOUT')), timeoutMs);
         }),
       ]);
-      return result.data.text;
+      return result;
     } catch (error) {
       await worker.terminate().catch(() => undefined);
       ocrWorkerPromise = null;
@@ -69,6 +97,18 @@ async function recognizeText(imageBuffer: Buffer): Promise<string> {
   }
 }
 
+/** OCR public pour la Lens pipeline (deuxième opinion + petit texte). */
+export async function ocrRecognize(imageBuffer: Buffer): Promise<string> {
+  const result = await recognizeDocument(imageBuffer);
+  return result.data.text;
+}
+
+/** Même moteur, avec boîtes. OCEREX s'en sert pour lier un montant à sa position. */
+export async function ocrRecognizeDetailed(imageBuffer: Buffer): Promise<{ text: string; words: OcrWordBox[] }> {
+  const result = await recognizeDocument(imageBuffer);
+  return mapOcrWords(result.data);
+}
+
 export class VisualProductExtractor {
   public static readonly RATES_TO_TND: Record<string, number> = {
     EUR: 4.00,
@@ -83,7 +123,7 @@ export class VisualProductExtractor {
   public async extractFromImage(imageBuffer: Buffer, _originalFilename?: string): Promise<ScrapedProduct> {
     // The image is decoded and normalized before reaching this method. OCR runs
     // directly from memory: Lens images are never written to the public uploads directory.
-    const text = await recognizeText(imageBuffer);
+    const text = await ocrRecognize(imageBuffer);
 
     const store = this.detectStoreFromText(text);
     const storeName = this.getStoreDisplayName(store);

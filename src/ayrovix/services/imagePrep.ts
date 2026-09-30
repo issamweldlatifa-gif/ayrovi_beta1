@@ -18,16 +18,17 @@ const LONG_RATIO = 2.2;
 const MAX_SEGMENTS = 3;
 
 /** Copie optimisée pour l'OCR : niveaux normalisés, contraste, netteté, upscale si petit. */
-export async function enhanceForOcr(image: Buffer): Promise<Buffer> {
+export async function enhanceForOcr(image: Buffer, options: { allowUpscale?: boolean } = {}): Promise<Buffer> {
   const pipeline = sharp(image, { failOn: 'warning', sequentialRead: true, limitInputPixels: 40_000_000 })
     .rotate()
     .greyscale()
     .normalize()
     .linear(1.15, -(0.05 * 255))
     .sharpen({ sigma: 1.2 });
+  const allowUpscale = options.allowUpscale !== false;
   const meta = await sharp(image, { limitInputPixels: 40_000_000 }).metadata();
   const shortEdge = Math.min(meta.width || 0, meta.height || 0);
-  if (shortEdge > 0 && shortEdge < 900) {
+  if (allowUpscale && shortEdge > 0 && shortEdge < 900) {
     pipeline.resize({ width: (meta.width || 0) * 2, height: (meta.height || 0) * 2, fit: 'inside' });
   }
   return pipeline.png({ compressionLevel: 6 }).toBuffer();

@@ -53,15 +53,16 @@ describe('homepage close, sticky header and scroll-aware navigation', () => {
     foregroundMarkers.forEach(([path, marker]) => expect(readFileSync(path, 'utf8')).toContain(marker));
   });
 
-  it('offers the three Lens entry points and keeps the three-tool bottom bar', () => {
+  it('offers the three Lens entry points and keeps the existing tools plus OCEREX', () => {
     // بوابات الدخول الثلاث انتقلت إلى الصفحة الأولى لـ Lens (صورة / استيراد / رابط)
     expect(lensCameraSource).toContain('Prendre une photo');
     expect(lensUploadSource).toContain('Importer une image');
     expect(lensLauncherSource).toContain('ayrovix-url');
     expect(navbarSource).toContain('onClick={onGoHome}');
     expect(navbarSource).toContain('onOpenCart');
-    expect(bottomNavSource).toContain('grid-cols-3');
+    expect(bottomNavSource).toContain('grid-cols-4');
     expect(bottomNavSource).toContain('app:vision');
+    expect(bottomNavSource).toContain('app:ocerex');
     expect(bottomNavSource).not.toContain('grid-cols-5');
   });
 
