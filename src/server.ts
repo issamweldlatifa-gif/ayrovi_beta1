@@ -9,6 +9,7 @@ import type { Server } from 'node:http';
 import { spawn } from 'node:child_process';
 import { QatafoDatabase as AyroviDatabase } from './db/database';
 import { SmartLinkScraper } from './scraper/scraper';
+import { createOcerexRouter } from './ocerex/routes';
 import { VisualProductExtractor } from './services/vision';
 import { createApiRouter } from './api/routes';
 import { createAyrovixRouter } from './ayrovix/routes';
@@ -284,6 +285,7 @@ app.use('/api', (_req, res, next) => {
 });
 app.use('/api/admin', createAdminRouter(db));
 app.use('/api/ayrovix', createAyrovixRouter(db, scraper));
+app.use('/api/ocerex', createOcerexRouter(db));
 app.use('/api/customer', createCustomerRouter(db));
 app.use('/api/assistant', createAssistantRouter(db, scraper));
 app.use('/api/voice', createAssistantRouter(db, scraper));

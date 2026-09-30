@@ -18,11 +18,11 @@ describe('feature identity is consistent, not a brand exception',()=>{
   expect(new Set([glyphs.Lens,glyphs.Vision,glyphs.Sonim].map(x=>JSON.stringify(x))).size).toBe(3);
   expect([glyphs.Lens,glyphs.Vision,glyphs.Sonim].every(g=>!g.mirrorRtl)).toBe(true);
  });
- it('preserves the navigation destinations/callbacks while using the three feature icons',async()=>{
-  const lens=vi.fn(),sonim=vi.fn();await act(async()=>root.render(<LocaleProvider><NavigationHistoryProvider><BottomNavBar isAiDrawerOpen={false} onOpenLens={lens} onToggleAiDrawer={sonim} config={DEFAULT_INTERFACE_CONFIG.navigation} iconConfig={DEFAULT_INTERFACE_CONFIG.icons}/></NavigationHistoryProvider></LocaleProvider>));
-  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Sonim','Vision']);
-  const buttons=host.querySelectorAll<HTMLButtonElement>('nav button');await act(async()=>{buttons[0].click();buttons[1].click();});expect(lens).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();
-  await act(async()=>buttons[2].click());expect(host.querySelector('[role="dialog"] [data-editorial-icon="Vision"]')).not.toBeNull();
+ it('preserves navigation callbacks and adds the native OCEREX tool item',async()=>{
+  const lens=vi.fn(),ocerex=vi.fn(),sonim=vi.fn();await act(async()=>root.render(<LocaleProvider><NavigationHistoryProvider><BottomNavBar isAiDrawerOpen={false} onOpenLens={lens} onOpenOcerex={ocerex} onToggleAiDrawer={sonim} config={DEFAULT_INTERFACE_CONFIG.navigation} iconConfig={DEFAULT_INTERFACE_CONFIG.icons}/></NavigationHistoryProvider></LocaleProvider>));
+  expect([...host.querySelectorAll('nav [data-editorial-icon]')].map(el=>el.getAttribute('data-editorial-icon'))).toEqual(['Lens','Scan','Sonim','Vision']);
+  const buttons=host.querySelectorAll<HTMLButtonElement>('nav button');await act(async()=>{buttons[0].click();buttons[1].click();buttons[2].click();});expect(lens).toHaveBeenCalledOnce();expect(ocerex).toHaveBeenCalledOnce();expect(sonim).toHaveBeenCalledOnce();
+  await act(async()=>buttons[3].click());expect(host.querySelector('[role="dialog"] [data-editorial-icon="Vision"]')).not.toBeNull();
   expect(host.textContent).toContain('Bientôt disponible'); // No fictional new backend capability.
  });
  it('uses SONIM in every activity state, settles and cleans up without old geometry',async()=>{

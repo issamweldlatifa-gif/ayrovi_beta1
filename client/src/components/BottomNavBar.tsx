@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Vision, LensBox, Sonim } from './QatafoIcons';
+import { Vision, LensBox, Sonim, ScanSearch } from './QatafoIcons';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useNavigationHistory } from '../navigation/NavigationHistory';
 import { useLocale } from '../i18n/LocaleContext';
@@ -10,16 +10,18 @@ interface BottomNavBarProps {
   isAiDrawerOpen: boolean;
   onToggleAiDrawer: () => void;
   onOpenLens: () => void;
+  onOpenOcerex: () => void;
   config: PublicInterfaceConfig['navigation'];
   iconConfig: PublicInterfaceConfig['icons'];
 }
 
 const NAV_ITEM = 'relative flex min-w-0 flex-col items-center justify-center gap-2.5 rounded-control text-xs font-extrabold text-ink transition duration-200 hover:bg-ink-deep/5 active:scale-[0.96]';
 
-export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, config, iconConfig }) => {
+export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onToggleAiDrawer, onOpenLens, onOpenOcerex, config, iconConfig }) => {
   const navigation = useNavigationHistory();
   const { tr, direction } = useLocale();
   const isVisionOpen = navigation.stack[0]?.id === 'app:vision';
+  const isOcerexOpen = navigation.stack[0]?.id === 'app:ocerex';
   const [isVisible, setIsVisible] = useState(true);
   const lastScrollY = useRef(0);
   const frame = useRef<number | null>(null);
@@ -29,12 +31,13 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
     color: active ? (iconConfig.activeColor || '#ff6900') : (iconConfig.color || '#000000'),
     fill: 'none',
   });
-  useBodyScrollLock(isVisionOpen);
+  useBodyScrollLock(isVisionOpen || isOcerexOpen);
 
   useEffect(() => {
     lastScrollY.current = Math.max(0, window.scrollY);
     const updateVisibility = () => {
       frame.current = null;
+      if (isOcerexOpen) { setIsVisible(true); lastScrollY.current = Math.max(0, window.scrollY); return; }
       const current = Math.max(0, window.scrollY);
       const delta = current - lastScrollY.current;
       if (current <= 24) setIsVisible(true);
@@ -50,14 +53,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
       window.removeEventListener('scroll', onScroll);
       if (frame.current !== null) window.cancelAnimationFrame(frame.current);
     };
-  }, []);
+  }, [isOcerexOpen]);
 
   useEffect(() => {
-    if (!isVisionOpen) return;
+    if (!isVisionOpen && !isOcerexOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === 'Escape') navigation.back(); };
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [isVisionOpen, navigation]);
+  }, [isVisionOpen, isOcerexOpen, navigation]);
 
   return (
     <>
@@ -80,10 +83,14 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
         aria-hidden={!isVisible}
         inert={isVisible ? undefined : true}
       >
-        <nav className="mx-auto grid max-w-md grid-cols-3 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
+        <nav className="mx-auto grid max-w-md grid-cols-4 gap-1" style={{ minHeight: Math.min(config.height, 56) }} aria-label={tr('Navigation principale', 'التنقل الرئيسي')} dir={direction}>
           <button type="button" onClick={onOpenLens} className={NAV_ITEM} aria-label={tr('Lens — recherche par image', 'Lens — البحث بالصورة')}>
             <LensBox className="interface-runtime-icon" style={iconStyle(false)} />
             {config.showLabels && <span>{config.lensLabel}</span>}
+          </button>
+          <button type="button" onClick={onOpenOcerex} className={NAV_ITEM} aria-label="OCEREX — قراءة السعر من صورة" aria-current={isOcerexOpen ? 'page' : undefined} data-ocerex-nav>
+            <ScanSearch className="interface-runtime-icon" style={iconStyle(isOcerexOpen)} />
+            {config.showLabels && <span className={isOcerexOpen ? 'text-cta' : undefined}>OCEREX</span>}
           </button>
           <button type="button" onClick={onToggleAiDrawer} className={NAV_ITEM} aria-label={tr("SONIM — l'assistant IA d'AYROVI", 'SONIM — المساعد الذكي لـ AYROVI')} aria-pressed={isAiDrawerOpen}>
             <Sonim className="interface-runtime-icon" style={iconStyle(isAiDrawerOpen)} />

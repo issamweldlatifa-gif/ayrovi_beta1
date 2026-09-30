@@ -186,7 +186,7 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
   });
 
   // أحداث Live مجهولة (analytics منتج): لا صورة/لا IP/لا بيانات شخصية.
-  const LIVE_EVENTS = new Set(['live_opened', 'object_detected', 'object_locked', 'tracking_lost', 'ai_unavailable', 'match_requested', 'match_returned']);
+  const LIVE_EVENTS = new Set(['live_opened', 'object_detected', 'object_locked', 'tracking_lost', 'ai_unavailable', 'match_requested', 'match_returned', 'ocerex_opened', 'ocerex_first_use_completed', 'ocerex_image_uploaded', 'ocerex_camera_used', 'ocerex_ocr_started', 'ocerex_ocr_success', 'ocerex_ocr_failed', 'ocerex_product_detected', 'ocerex_cart_detected', 'ocerex_reference_price_detected', 'ocerex_low_confidence', 'ocerex_link_submitted', 'ocerex_price_calculated', 'ocerex_order_started', 'ocerex_order_completed']);
   router.post('/live-events', (req: Request, res: Response) => {
     const type = String(req.body?.type || '');
     if (!LIVE_EVENTS.has(type)) return res.status(400).json({ success: false, error: 'Type invalide.' });

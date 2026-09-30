@@ -28,6 +28,7 @@ const AboutPage = lazy(() => import('./components/AboutPage').then(module => ({ 
 const MenuDrawer = lazy(() => import('./components/MenuDrawer').then((module) => ({ default: module.MenuDrawer })));
 const ProductDrawer = lazy(() => import('./components/ProductDrawer').then((module) => ({ default: module.ProductDrawer })));
 const LensLauncher = lazy(() => import('./ayrovix/components/LensLauncher').then((module) => ({ default: module.LensLauncher })));
+const OcerexScreen = lazy(() => import('./ocerex/OcerexScreen').then((module) => ({ default: module.OcerexScreen })));
 const AiAssistantDrawer = lazy(() => import('./components/assistant/AiAssistantDrawer').then((module) => ({ default: module.AiAssistantDrawer })));
 const ShopBagScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopBagScreen })));
 const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopCheckoutScreen })));
@@ -73,6 +74,7 @@ export const App: React.FC = () => {
   const appView = navigation.stack[0]?.id || 'home';
   const isProductDrawerOpen = appView === 'app:product';
   const isLensOpen = appView === 'app:lens';
+  const isOcerexOpen = appView === 'app:ocerex';
   const isAiDrawerOpen = appView === 'app:assistant';
   const isMenuDrawerOpen = appView === 'app:menu';
   const isCartOpen = appView === 'app:cart';
@@ -509,10 +511,22 @@ export const App: React.FC = () => {
         isAiDrawerOpen={isAiDrawerOpen}
         onToggleAiDrawer={handleToggleAiDrawer}
         onOpenLens={handleOpenLens}
+        onOpenOcerex={() => openAppView('app:ocerex')}
         config={interfaceConfig.navigation}
         iconConfig={interfaceConfig.icons}
       />
       </div>
+
+      {isOcerexOpen && (
+        <Suspense fallback={null}>
+          <OcerexScreen
+            onClose={closeAppView}
+            onOpenLens={handleOpenLens}
+            onOrder={handleAyrovixOrder}
+            onOpenCart={() => openAppView('app:cart')}
+          />
+        </Suspense>
+      )}
 
       {/* DRAWER 1: Complete 100% Height Product Flow Drawer (Lens Button) */}
       {isProductDrawerOpen && (

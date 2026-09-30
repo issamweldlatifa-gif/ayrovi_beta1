@@ -25,6 +25,47 @@ export async function ocrRecognize(imageBuffer: Buffer): Promise<string> {
   return recognizeText(imageBuffer);
 }
 
+/** OCR mots + positions, partagé avec OCEREX pour une sélection qui respecte le contexte. */
+export async function ocrRecognizeDetailed(imageBuffer: Buffer): Promise<{ text: string; words: Array<{ text: string; confidence: number; x: number; y: number; width: number; height: number }> }> {
+  const read = async (worker: any) => {
+    const result = await worker.recognize(imageBuffer);
+    const words = (result.data.words || []).map((word: any) => ({
+      text: String(word.text || ''),
+      confidence: Math.max(0, Math.min(1, Number(word.confidence || 0) / 100)),
+      x: Number(word.bbox?.x0 || 0), y: Number(word.bbox?.y0 || 0),
+      width: Math.max(0, Number(word.bbox?.x1 || 0) - Number(word.bbox?.x0 || 0)),
+      height: Math.max(0, Number(word.bbox?.y1 || 0) - Number(word.bbox?.y0 || 0)),
+    }));
+    return { text: result.data.text || '', words };
+  };
+  if (process.env.NODE_ENV === 'test') {
+    const result = await Tesseract.recognize(imageBuffer, 'eng+fra', { logger: () => {}, errorHandler: () => {}, tessedit_pageseg_mode: '11' as any } as any);
+    return { text: result.data.text || '', words: (result.data.words || []).map((word: any) => ({
+      text: String(word.text || ''), confidence: Math.max(0, Math.min(1, Number(word.confidence || 0) / 100)),
+      x: Number(word.bbox?.x0 || 0), y: Number(word.bbox?.y0 || 0),
+      width: Math.max(0, Number(word.bbox?.x1 || 0) - Number(word.bbox?.x0 || 0)),
+      height: Math.max(0, Number(word.bbox?.y1 || 0) - Number(word.bbox?.y0 || 0)),
+    })) };
+  }
+  if (pendingOcrJobs >= MAX_QUEUED_OCR_JOBS) throw new Error('OCR_BUSY');
+  pendingOcrJobs += 1;
+  const job = ocrQueue.then(async () => {
+    const worker = await getOcrWorker();
+    const configuredTimeout = Number(process.env.AYROVIX_OCR_TIMEOUT_MS);
+    const timeoutMs = Number.isFinite(configuredTimeout) ? Math.min(15_000, Math.max(2_000, configuredTimeout)) : 7_000;
+    let timeout: NodeJS.Timeout | undefined;
+    try {
+      return await Promise.race([read(worker), new Promise<never>((_resolve, reject) => { timeout = setTimeout(() => reject(new Error('OCR_TIMEOUT')), timeoutMs); })]);
+    } catch (error) {
+      await worker.terminate().catch(() => undefined);
+      ocrWorkerPromise = null;
+      throw error;
+    } finally { if (timeout) clearTimeout(timeout); }
+  });
+  ocrQueue = job.then(() => undefined, () => undefined);
+  try { return await job; } finally { pendingOcrJobs -= 1; }
+}
+
 async function recognizeText(imageBuffer: Buffer): Promise<string> {
   // Tests use the self-terminating helper so the suite never retains a worker thread.
   if (process.env.NODE_ENV === 'test') {

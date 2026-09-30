@@ -1,0 +1,4 @@
+.ocerex-upload { box-shadow: 0 8px 28px rgb(0 0 0 / .025); }
+@media (prefers-reduced-motion: reduce) {
+  .ocerex-upload { transition: none; }
+}
