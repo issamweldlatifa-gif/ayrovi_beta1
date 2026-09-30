@@ -14531,7 +14531,7 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "5b88b0073b9e9b1e88f1cb798f8c9fe7c4a60d311931b7dd4b3ce2c1b391ff2a",
+      "sha256": "01ea7ec6801514dea0f27063a4e8badbf1394ea60964745dd4b2f6826e12ce08",
       "lines": 107,
       "imports": [
         "react",

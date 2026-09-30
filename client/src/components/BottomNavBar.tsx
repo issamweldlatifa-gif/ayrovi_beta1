@@ -92,12 +92,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({ isAiDrawerOpen, onTo
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:vision' }])} className={NAV_ITEM} aria-label={tr('Vision — bientôt disponible', 'Vision — قريبًا')} aria-current={isVisionOpen ? 'page' : undefined}>
             <Vision className="interface-runtime-icon" style={iconStyle(isVisionOpen)} />
-            {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}}
+            {config.showLabels && <span className={`max-w-full truncate ${isVisionOpen ? 'text-cta' : ''}`}>{config.visionLabel}</span>}
             <span className="absolute end-2 top-1.5 h-1.5 w-1.5 rounded-full bg-cta" aria-hidden="true" />
           </button>
           <button type="button" onClick={() => navigation.navigate([{ id: 'app:ocerex' }])} className={NAV_ITEM} aria-label={tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')} aria-current={isOcerexOpen ? 'page' : undefined}>
             <ScanSearch className="interface-runtime-icon" style={iconStyle(isOcerexOpen)} />
-            {config.showLabels && <span className={`max-w-full truncate ${isOcerexOpen ? 'text-cta' : ''}`}>{config.ocerexLabel || 'OCEREX'}</span>}}
+            {config.showLabels && <span className={`max-w-full truncate ${isOcerexOpen ? 'text-cta' : ''}`}>{config.ocerexLabel || 'OCEREX'}</span>}
           </button>
         </nav>
       </div>
