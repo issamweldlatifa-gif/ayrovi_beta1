@@ -41,7 +41,7 @@ const scenarios = [
   { name: 'missing-total', options: [{ ...blue, priceTnd: null }], size: 'M', color: 'Bleu', id: 'blue-M', price: 27 },
   { name: 'missing-token', options: [{ ...blue, priceToken: null }], size: 'M', color: 'Bleu', disabled: true, incomplete: true },
   { name: 'missing-currency', options: [{ ...blue, currency: null }], size: 'M', color: 'Bleu', disabled: true, incomplete: true },
-  { name: 'missing-general-token', options: [], size: 'M', color: 'Bleu', price: 20, rejectUnsigned: true, notice: 'general' },
+  { name: 'missing-general-token', options: [{ id: 'unpriced-M', label: 'M · Bleu', size: 'M', color: 'Bleu', price: null, currency: null, priceTnd: null, priceToken: null, available: true, availability: 'available' }], size: 'M', color: 'Bleu', price: 20, rejectUnsigned: true, notice: 'general' },
 ];
 const browser = await chromium.launch({ headless: true });
 let page;
@@ -73,7 +73,7 @@ try {
     let fresh = base;
     await page.route('**/api/ayrovix/analyze-url', route => route.fulfill({ json: { success: true, data: { product: fresh, alternates: [], eventId: '' } } }));
     for (const scenario of scenarios) {
-      fresh = { ...base, variantOptions: scenario.options, priceToken: scenario.rejectUnsigned ? null : base.priceToken };
+      fresh = { ...base, variantOptions: scenario.options, availability: 'in_stock', availabilityCheckedAt: new Date().toISOString(), availabilityExpiresAt: new Date(Date.now() + 3_600_000).toISOString(), priceToken: scenario.rejectUnsigned ? null : base.priceToken };
       await page.goto(process.env.AYROVI_BASE_URL + `/__verify/sonim?mode=${mode}&case=${scenario.name}`);
       await page.locator('[data-open]').click();
       if (mode === 'lens') {
