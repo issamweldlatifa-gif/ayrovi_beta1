@@ -20212,8 +20212,8 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "a14212b1caa1a9642ee0fbc1e977dac4df35d0746e2c0780159978ddafbd1486",
-      "lines": 190,
+      "sha256": "6d68c4a0a3ac43eec86058876398b5ba2d29246d502dd90dc29ebf6d9a629a7b",
+      "lines": 191,
       "imports": [
         "react",
         "../i18n/LocaleContext",

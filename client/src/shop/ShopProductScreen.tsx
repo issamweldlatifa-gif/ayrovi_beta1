@@ -83,15 +83,16 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
    * qui n'a pas eu lieu.
    */
   useEffect(() => {
-    const price = selectedSource?.amount ?? null;
-    if (!selectedSource || !Number.isFinite(price) || price <= 0) return;
+    const source = selectedSource;
+    if (!source || !Number.isFinite(source.amount) || source.amount <= 0) return;
+    const price = source.amount;
     const controller = new AbortController();
     setQuote(null);
     setQuoteLoading(true);
     fetch('/api/public/pricing/cart-line', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: product.title, sourcePrice: price, sourceCurrency: selectedSource.currency, quantity: 1 }),
+      body: JSON.stringify({ title: product.title, sourcePrice: price, sourceCurrency: source.currency, quantity: 1 }),
       signal: controller.signal,
     })
       .then(async (response) => {
