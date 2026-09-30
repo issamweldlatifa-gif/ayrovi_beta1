@@ -20212,7 +20212,7 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "6d68c4a0a3ac43eec86058876398b5ba2d29246d502dd90dc29ebf6d9a629a7b",
+      "sha256": "9d369626271f5416ee77174b0297ae825d678283b38b04007270783479fab00e",
       "lines": 191,
       "imports": [
         "react",

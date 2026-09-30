@@ -108,8 +108,11 @@ try {
           : (scenario.notice === 'ambiguous' ? 'Plusieurs variantes' : 'Estimation générale')));
       }
       if (scenario.incomplete) {
-        check(`${key}/${scenario.name}: incomplete variant never borrows a token`, await add.isDisabled());
         check(`${key}/${scenario.name}: incomplete quote is explained`, (await card.locator('[data-variant-selection-notice][role="alert"]').count()) > 0);
+        await add.click();
+        await card.getByText(ar ? /عرض سعر هذا الاختيار غير مكتمل/ : /Le devis de cette sélection est incomplet/).waitFor();
+        check(`${key}/${scenario.name}: incomplete variant never borrows a token`, await page.evaluate(() => selectionTestOrders.length), 0);
+        check(`${key}/${scenario.name}: incomplete quote is not acknowledged`, await card.getByText(added, { exact: true }).count(), 0);
         continue;
       }
       if (scenario.disabled) {

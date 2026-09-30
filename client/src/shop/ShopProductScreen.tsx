@@ -74,7 +74,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
     setChosenSize('');
   }, [product.sourceUrl]);
 
-  const quoteKey = `${product.sourceUrl}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}|${chosenSize}|${activeColor ?? ''}`;
+  const quoteKey = `${product.sourceUrl}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}`;
 
   /*
    * Le prix affiché vient du serveur, jamais d'un calcul dans l'écran : droits,
@@ -158,7 +158,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       formatMoney={formatMoney}
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
       priceChecking={quoteLoading}
-      canAdd={!awaitingQuote && !selectionBlocked}
+      canAdd={!awaitingQuote}
       onChosenSize={setChosenSize}
       selectionNotice={selectionNotice}
       onCalculateAnother={onCalculateAnother}
