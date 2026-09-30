@@ -104,6 +104,8 @@ jobs:
 
       - name: Verify Lens camera entry, help, consent and navigation
         id: lens_camera
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Local evidence is versioned for review; never upload it as this run's output.
           rm -rf docs/lens-phase1/evidence/
