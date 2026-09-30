@@ -5,7 +5,7 @@ import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
 const base=process.env.AYROVI_BASE_URL || 'http://127.0.0.1:3000';
 const output='screenshots/editorial/customer';fs.mkdirSync(output,{recursive:true});
 const checks=[], errors=[], orange=[];
-function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass){const detail=JSON.stringify(details).slice(0,700);console.log(`::error title=${label.replaceAll('%','%25').replaceAll('\n','%0A')}::${detail.replaceAll('%','%25').replaceAll('\n','%0A')}`);throw new Error(label+': '+detail);}}
+function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass)throw new Error(label+': '+JSON.stringify(details??null));}
 async function orangeRatio(buffer){const {data,info}=await sharp(buffer).removeAlpha().raw().toBuffer({resolveWithObject:true});let count=0;for(let i=0;i<data.length;i+=info.channels){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255,max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;if(!delta||max<.4||delta/max<.55)continue;let hue=max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4;hue=(hue*60+360)%360;if(hue>=14&&hue<=45)count++;}return count/(info.width*info.height);}
 const browser=await chromium.launch({headless:true});
 try{
