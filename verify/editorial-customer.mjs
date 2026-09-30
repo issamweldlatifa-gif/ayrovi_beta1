@@ -37,7 +37,7 @@ try{
    check(`${locale}/${width}: empty credential fields`,(await p.locator('.ay-auth input[type=email]').inputValue())===''&&(await p.locator('.ay-auth input[type=password]').inputValue())==='');
    check(`${locale}/${width}: auth uses new glyphs`,await p.locator('.ay-auth [data-editorial-icon]').count()>0);
    const inputRadius=await p.locator('.ay-auth input[type=email]').evaluate(e=>getComputedStyle(e).borderRadius);
-   check(`${locale}/${width}: square input controls`,inputRadius==='0px',{inputRadius});
+   check(`${locale}/${width}: auth inputs use the editorial control radius`,inputRadius==='12px',{inputRadius});
    await p.goBack();await p.locator('.ay-auth').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'فتح القائمة':'Ouvrir le menu',exact:true}).click();
    const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة AYROVI':'Menu AYROVI',exact:true});
