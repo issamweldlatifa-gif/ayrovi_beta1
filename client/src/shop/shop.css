@@ -336,6 +336,7 @@
   font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--s-ink);
+  overflow-wrap: anywhere;
 }
 
 /* ── Drap (tailles) : il MONTE, il n'apparaît pas ────────────────────────── */
@@ -390,7 +391,7 @@
 .s-size:active { background: var(--s-surface); }
 .s-size strong { font-size: 1rem; font-weight: 700; }
 .s-size small { display: block; font-size: 0.75rem; font-weight: 400; color: var(--s-muted); }
-.s-size__meta { font-size: 0.78125rem; color: var(--s-muted); }
+.s-size__meta { font-size: 0.78125rem; colo-size__meta { font-size: 0.78125rem; color: var(--s-muted); }
 .s-size__meta[data-low="true"] { color: var(--s-danger); font-weight: 700; }
 .s-size[data-state="unavailable"] { color: #a6a6a6; }
 .s-size[data-state="unavailable"] strong,

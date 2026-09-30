@@ -24,7 +24,7 @@ const base = {
 };
 const token = (price, currency = 'EUR') => createAyrovixPriceToken({ price, currency, title: base.title, referenceUrl: base.sourceUrl, status: 'VERIFIED' });
 base.priceToken = token(20);
-const variant = (id, size, color, price) => ({ id, label: `${size} · ${color}`, size, color, price, currency: 'EUR', priceTnd: null, priceToken: token(price), available: true });
+const variant = (id, size, color, price) => ({ id, label: `${size} · ${color}`, size, color, price, currency: 'EUR', priceTnd: null, priceToken: token(price), available: true, availability: 'available' });
 const blue = variant('blue-M', 'M', 'Bleu', 27);
 const red = variant('red-M', 'M', 'Rouge', 35);
 const large = variant('blue-L', 'L', 'Bleu', 40);
@@ -89,17 +89,19 @@ try {
       }
       const card = page.locator('.s-product-page');
       await card.getByRole('heading', { name: base.title }).waitFor();
-      const add = card.getByRole('button', { name: ar ? 'زيد للسلة' : 'Ajouter au panier' });
+      const add = card.getByRole('button', { name: ar ? 'أضف إلى السلة' : 'Ajouter au panier' });
+      const added = ar ? 'تزاد للسلة' : 'Ajouté au panier';
       if (scenario.size === 'XXL') {
-        await card.getByRole('button', { name: ar ? 'اختر مقاسك' : 'Votre taille' }).click();
+        await card.getByRole('button', { name: ar ? 'قياسك' : 'Votre taille', exact: true }).click();
         check(`${key}/${scenario.name}: no size outside sourced options`, await page.getByRole('dialog').last().getByRole('button', { name: 'XXL' }).count(), 0);
         await page.getByRole('dialog').last().getByRole('button', { name: ar ? 'إغلاق' : 'Fermer' }).click();
       } else if (scenario.size) {
-        await card.getByRole('button', { name: ar ? 'اختر مقاسك' : 'Votre taille' }).click();
+        await card.getByRole('button', { name: ar ? 'قياسك' : 'Votre taille', exact: true }).click();
         await page.locator('[role="dialog"] button').filter({ has: page.locator('strong:text-is("M")') }).last().click();
       }
-      if (scenario.color) await card.getByRole('radio', { name: ar ? `اللون ${scenario.color}` : `Couleur ${scenario.color}` }).click();
+      if (scenario.color) await card.getByRole('button', { name: scenario.color, exact: true }).click();
       if (scenario.notice) {
+        await card.locator('[data-variant-selection-notice]').waitFor();
         const notice = await card.locator('[data-variant-selection-notice]').innerText();
         check(`${key}/${scenario.name}: estimate or ambiguity is explicitly labelled`, notice.includes(ar
           ? (scenario.notice === 'ambiguous' ? 'توجد عدة خيارات' : 'تقدير عام')
@@ -121,16 +123,18 @@ try {
         }
         continue;
       }
-      await card.locator('[data-product-price-tnd]').waitFor();
-      check(`${key}/${scenario.name}: quote comes from the selected source amount`, Number(await card.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')), cannedLineQuotes.get(scenario.price));
+      const expectedQuote = cannedLineQuotes.get(scenario.price);
+      await page.waitForFunction(expected => Number(document.querySelector('[data-product-price-tnd]')?.getAttribute('data-product-price-tnd')) === expected, expectedQuote);
+      check(`${key}/${scenario.name}: quote comes from the selected source amount`, Number(await card.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')), expectedQuote);
       check(`${key}/${scenario.name}: source currency is displayed`, (await card.innerText()).includes(`${scenario.price.toFixed(2)} EUR`));
       await add.click();
       if (scenario.rejectUnsigned) {
         await card.getByText(ar ? /عرض سعر هذا الاختيار غير مكتمل/ : /Le devis de cette sélection est incomplet/).waitFor();
-        check(`${key}/${scenario.name}: unsigned quote cannot acknowledge an order`, await card.getByText(ar ? 'تمت إضافة المنتج' : 'Produit ajouté').count(), 0);
+        check(`${key}/${scenario.name}: unsigned quote cannot acknowledge an order`, await card.getByText(added, { exact: true }).count(), 0);
         continue;
       }
       await page.waitForFunction(() => selectionTestOrders.length === 1);
+      await card.getByText(added, { exact: true }).waitFor();
       const sent = await page.evaluate(() => selectionTestOrders[0]);
       check(`${key}/${scenario.name}: only the exact source variant is passed`, sent.externalId, scenario.id);
       check(`${key}/${scenario.name}: selected monetary offer stays coherent`, [sent.sourcePrice, sent.sourceCurrency, sent.priceTND], [scenario.price, 'EUR', 0]);
@@ -138,7 +142,7 @@ try {
         price: sent.sourcePrice, currency: sent.sourceCurrency, title: sent.title,
         referenceUrl: sent.referenceUrl, status: sent.priceVerificationStatus,
       }));
-      check(`${key}/${scenario.name}: acknowledgement remains on product page`, await card.getByText(ar ? 'تمت إضافة المنتج' : 'Produit ajouté').count(), 1);
+      check(`${key}/${scenario.name}: acknowledgement remains on product page`, await card.getByText(added, { exact: true }).count(), 1);
       if (scenario.name === 'exact') await page.screenshot({ path: `${output}/selection-${mode}-${locale}-${width}.png` });
     }
     await context.close();

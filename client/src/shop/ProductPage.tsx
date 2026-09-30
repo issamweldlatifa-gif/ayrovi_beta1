@@ -18,6 +18,8 @@ export interface ProductPageProps {
   onCalculateAnother?: () => void;
   defaultLink?: string;
   canAdd?: boolean;
+  onChosenSize?: (value: string) => void;
+  selectionNotice?: { text: string; alert: boolean } | null;
 }
 
 export const ProductPage: React.FC<ProductPageProps> = ({
@@ -30,6 +32,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   onCalculateAnother,
   defaultLink = '',
   canAdd = true,
+  onChosenSize,
+  selectionNotice = null,
 }) => {
   const [slide, setSlide] = useState(0);
   const [quantity, setQuantity] = useState(1);
@@ -42,6 +46,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
   const [refusal, setRefusal] = useState<'unavailable' | 'unknown' | null>(null);
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [orderError, setOrderError] = useState('');
   const [shake, setShake] = useState(false);
   const touchStart = useRef<number | null>(null);
 
@@ -81,6 +86,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     if (reason) {
       setRefusal(reason);
       setChosen(null);
+      onChosenSize?.('');
       setDrapeOpen(false);
       setShake(true);
       window.setTimeout(() => setShake(false), 300);
@@ -88,6 +94,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
     }
     setRefusal(null);
     setChosen(size);
+    onChosenSize?.(size.value);
     setDrapeOpen(false);
   };
 
@@ -98,10 +105,13 @@ export const ProductPage: React.FC<ProductPageProps> = ({
       return;
     }
     setAdding(true);
+    setOrderError('');
     try {
       await actions.onAddToBag(chosen, quantity, { note: note.trim(), link: link.trim() });
       setAdded(true);
       window.setTimeout(() => setAdded(false), 1800);
+    } catch (error) {
+      setOrderError(error instanceof Error ? error.message : tr('Le devis de cette sélection est incomplet.', 'عرض سعر هذا الاختيار غير مكتمل.'));
     } finally {
       setAdding(false);
     }
@@ -251,7 +261,7 @@ export const ProductPage: React.FC<ProductPageProps> = ({
                 {priceChecking && <span className="s-price__note" role="status">{tr('Vérification à la source…', 'نتثبّتو في السعر عند المصدر…')}</span>}
               </div>
               {product.price.reference && <p className="s-was">{tr('Prix de référence : ', 'السعر المرجعي: ')}<s>{formatMoney(product.price.reference.tnd)}</s>{product.price.discountPercent != null && <b> −{product.price.discountPercent}%</b>}</p>}
-              {product.price.current.source && <p className="s-was">{product.price.current.source.amount} {product.price.current.source.currency}{product.price.verifiedAtSource ? ` · ${tr('prix vérifié à la source', 'السعر متثبّت عند المصدر')}` : ''}</p>}
+              {product.price.current.source && <p className="s-was">{Number(product.price.current.source.amount).toFixed(2)} {product.price.current.source.currency}{product.price.verifiedAtSource ? ` · ${tr('prix vérifié à la source', 'السعر متثبّت عند المصدر')}` : ''}</p>}
             </>
           )}
 
@@ -278,6 +288,8 @@ export const ProductPage: React.FC<ProductPageProps> = ({
             </button>
           )}
           {refusal && <p className="s-refusal" role="status">{refusal === 'unavailable' ? tr('Cette option est indisponible chez la source. Choisissez-en une autre.', 'الخيار هذا موش متوفّر عند المصدر. اختار غيره.') : tr('La source ne confirme pas le stock de cette option : la commande est bloquée.', 'المصدر ما أكّدش توفّر الخيار هذا: الطلب متوقّف.')}</p>}
+          {selectionNotice && <p className="s-refusal" data-variant-selection-notice role={selectionNotice.alert ? 'alert' : 'status'}>{selectionNotice.text}</p>}
+          {orderError && <p className="s-refusal" role="alert">{orderError}</p>}
           <div className="s-qty" role="group" aria-label={tr('Quantité', 'الكمية')}>
             <button type="button" className="s-iconbtn" aria-label={tr('Diminuer la quantité', 'نقّص الكمية')} disabled={quantity <= 1} onClick={() => setQuantity((value) => Math.max(1, value - 1))}><EditorialIcon name="Minus" size={18} /></button>
             <span aria-live="polite">{quantity}</span>
