@@ -107,7 +107,20 @@ jobs:
         run: |
           # Local evidence is versioned for review; never upload it as this run's output.
           rm -rf docs/lens-phase1/evidence/
-          npm run verify:lens-camera
+          set +e
+          npm run verify:lens-camera > /tmp/lens-camera.log 2>&1
+          code=$?
+          cat /tmp/lens-camera.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Lens camera check failed:'
+              echo '```'
+              tail -c 6000 /tmp/lens-camera.log
+              echo '```'
+            } > /tmp/lens-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/lens-comment.md || true
+          fi
+          exit "$code"
 
       - name: Upload Lens entry evidence
         if: ${{ !cancelled() && (steps.lens_camera.outcome == 'success' || steps.lens_camera.outcome == 'failure') }}
