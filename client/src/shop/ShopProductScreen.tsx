@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocale } from '../i18n/LocaleContext';
 import type { AyrovixProduct } from '../ayrovix/types';
+import { completeProductOffer, productSelectionLabels, resolveProductSelection } from '../ayrovix/services/productSelection';
 import { ProductPage } from './ProductPage';
 import { productToView } from './adapter';
 import type { SizeOption } from './types';
@@ -52,14 +53,28 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
 }) => {
   const { tr, direction, formatMoney } = useLocale();
   const [activeColor, setActiveColor] = useState<string | null>(() => product.colors.length === 1 ? product.colors[0] : null);
+  const [chosenSize, setChosenSize] = useState('');
   const [quote, setQuote] = useState<CartLineQuote | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
+  const selection = useMemo(() => resolveProductSelection(product, chosenSize, activeColor ?? ''), [product, chosenSize, activeColor]);
+  const selectedSource = selection.kind === 'matched' && selection.offer.fromVariant && selection.offer.price && selection.offer.currency
+    ? { amount: selection.offer.price, currency: selection.offer.currency }
+    : Number.isFinite(product.price as number) && (product.price as number) > 0 && product.currency
+      ? { amount: product.price as number, currency: product.currency }
+      : null;
+  const selectionBlocked = selection.kind === 'matched' && selection.offer.fromVariant && !completeProductOffer(selection.offer);
+  const selectionNotice = !(chosenSize || activeColor) ? null
+    : selection.kind === 'ambiguous' ? { text: tr(...productSelectionLabels.ambiguous), alert: false }
+    : selectionBlocked ? { text: tr(...productSelectionLabels.incomplete), alert: true }
+    : selection.generalEstimate ? { text: tr(...productSelectionLabels.general), alert: false }
+    : null;
 
   useEffect(() => {
     setActiveColor(product.colors.length === 1 ? product.colors[0] : null);
+    setChosenSize('');
   }, [product.sourceUrl]);
 
-  const quoteKey = `${product.sourceUrl}|${product.price ?? ''}|${product.currency ?? ''}`;
+  const quoteKey = `${product.sourceUrl}|${selectedSource?.amount ?? ''}|${selectedSource?.currency ?? ''}`;
 
   /*
    * Le prix affiché vient du serveur, jamais d'un calcul dans l'écran : droits,
@@ -68,15 +83,16 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
    * qui n'a pas eu lieu.
    */
   useEffect(() => {
-    const price = product.price;
-    if (!Number.isFinite(price as number) || (price as number) <= 0 || !product.currency) return;
+    const source = selectedSource;
+    if (!source || !Number.isFinite(source.amount) || source.amount <= 0) return;
+    const price = source.amount;
     const controller = new AbortController();
     setQuote(null);
     setQuoteLoading(true);
     fetch('/api/public/pricing/cart-line', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: product.title, sourcePrice: price, sourceCurrency: product.currency, quantity: 1 }),
+      body: JSON.stringify({ title: product.title, sourcePrice: price, sourceCurrency: source.currency, quantity: 1 }),
       signal: controller.signal,
     })
       .then(async (response) => {
@@ -90,13 +106,13 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       .catch(() => { /* l'écran affichera « prix à confirmer » — jamais un montant inventé */ })
       .finally(() => { if (!controller.signal.aborted) setQuoteLoading(false); });
     return () => controller.abort();
-  }, [quoteKey, product.title, product.price, product.currency]);
+  }, [quoteKey, product.title]);
 
   /* Un prix marchand brut n'est pas un prix de vente : il ignore droits, TVA et
      frais. Tant que le devis serveur n'est pas là, l'écran n'affiche AUCUN
      montant — « prix à confirmer » — et l'ajout au panier reste fermé. Afficher
      un chiffre puis le corriger après le clic serait une promesse trahie. */
-  const quotable = Number.isFinite(product.price as number) && (product.price as number) > 0 && Boolean(product.currency);
+  const quotable = Boolean(selectedSource);
   const awaitingQuote = quotable && !quote;
 
   const view = useMemo(() => {
@@ -108,7 +124,7 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       price: {
         current: {
           tnd: quote.lineTotalTND,
-          source: product.price && product.currency ? { amount: product.price, currency: product.currency } : null,
+          source: selectedSource,
         },
         reference: quote.originalLineTotalTND && quote.originalLineTotalTND > quote.lineTotalTND
           ? { tnd: quote.originalLineTotalTND }
@@ -143,6 +159,8 @@ export const ShopProductScreen: React.FC<ShopProductScreenProps> = ({
       direction={direction === 'rtl' ? 'rtl' : 'ltr'}
       priceChecking={quoteLoading}
       canAdd={!awaitingQuote}
+      onChosenSize={setChosenSize}
+      selectionNotice={selectionNotice}
       onCalculateAnother={onCalculateAnother}
       defaultLink={product.sourceUrl || ''}
       actions={{

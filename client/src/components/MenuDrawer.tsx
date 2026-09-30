@@ -97,6 +97,7 @@ export const MenuDrawer: React.FC<MenuDrawerProps> = ({ isOpen, onClose, session
             <MenuGroup title={tr('Suite IA', 'مجموعة الذكاء الاصطناعي')}>
               <MenuItem label="AYROVI AI" onClick={onOpenAssistant} />
               <MenuItem label="AYROVIX Lens" onClick={onOpenLens} />
+              <MenuItem label="OCEREX" onClick={() => { onClose(); navigation.navigate([{ id: 'app:ocerex' }]); }} />
               <MenuItem label="AYVISI Vision" badge={tr('Bientôt', 'قريبًا')} onClick={() => navigation.navigate([{ id: 'app:vision' }])} />
             </MenuGroup>
 

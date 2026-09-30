@@ -2,9 +2,9 @@
   "schemaVersion": 1,
   "scope": "Recursive static inventory of all client TypeScript/TSX/CSS; manual review tracked separately",
   "totals": {
-    "files": 233,
-    "customerAndSharedFiles": 181,
-    "controls": 434,
+    "files": 244,
+    "customerAndSharedFiles": 192,
+    "controls": 454,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -7047,7 +7047,7 @@
     {
       "file": "client/src/admin/InterfaceStudio.tsx",
       "domain": "admin",
-      "sha256": "df2a2aaa35ea3c41689a49cfbb4ca25c16dfebc93da5f8efca30077dd83bacdd",
+      "sha256": "0d3eb0c86f6b95672defe889fa46671e761b6e30309cbc5f47c62ad7f146a0a8",
       "lines": 254,
       "imports": [
         "react",
@@ -7565,6 +7565,26 @@
           "tag": "input",
           "line": 240,
           "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": "{!canWrite}"
+        },
+        {
+          "tag": "Field",
+          "line": 240,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "input",
+          "line": 240,
+          "className": null,
           "type": "\"range\"",
           "role": null,
           "ariaLabel": null,
@@ -7755,7 +7775,7 @@
       "icons": [
         {
           "module": "../components/QatafoIcons",
-          "bindings": "{\n  ArrowDown, ArrowUp, Eye as AyroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,\n  LensBox, Menu, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save,\n  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,\n}",
+          "bindings": "{\n  ArrowDown, ArrowUp, Eye as AyroviEye, EyeOff, Heart, Home, Image as ImageIcon, LayoutGrid,\n  LensBox, Menu, Monitor, MousePointer2, Navigation, Palette, RotateCcw, Save, ScanSearch,\n  ShoppingBag, SlidersHorizontal, Sparkles, Type, User,\n}",
           "line": 2
         }
       ],
@@ -10696,8 +10716,8 @@
     {
       "file": "client/src/App.tsx",
       "domain": "shell-content",
-      "sha256": "46ba99fd91d4c523b92ee6553a982405a0aade19f32d4cdade14ef2794eaaced",
-      "lines": 654,
+      "sha256": "a09dd816f000439c4aac72a0a22337bdaebf0a8b1e92b836b48127b2bdc63652",
+      "lines": 669,
       "imports": [
         "./design/editorial/customerTheme",
         "react",
@@ -10732,7 +10752,7 @@
       "controls": [
         {
           "tag": "MenuDrawer",
-          "line": 473,
+          "line": 475,
           "className": null,
           "type": null,
           "role": null,
@@ -10742,7 +10762,7 @@
         },
         {
           "tag": "ProductDrawer",
-          "line": 520,
+          "line": 522,
           "className": null,
           "type": null,
           "role": null,
@@ -10752,7 +10772,17 @@
         },
         {
           "tag": "AiAssistantDrawer",
-          "line": 535,
+          "line": 537,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "OcerexScreen",
+          "line": 563,
           "className": null,
           "type": null,
           "role": null,
@@ -10762,7 +10792,7 @@
         },
         {
           "tag": "ShopBagScreen",
-          "line": 579,
+          "line": 594,
           "className": null,
           "type": null,
           "role": null,
@@ -10772,7 +10802,7 @@
         },
         {
           "tag": "ShopCheckoutScreen",
-          "line": 599,
+          "line": 614,
           "className": null,
           "type": null,
           "role": null,
@@ -10782,7 +10812,7 @@
         },
         {
           "tag": "OrderSuccessModal",
-          "line": 642,
+          "line": 657,
           "className": null,
           "type": null,
           "role": null,
@@ -14501,8 +14531,8 @@
     {
       "file": "client/src/components/BottomNavBar.tsx",
       "domain": "shell-content",
-      "sha256": "c1b61743471c6b235a9616f16d87bc55972fe903e8cba18ca900c23c9fdc78cc",
-      "lines": 102,
+      "sha256": "01ea7ec6801514dea0f27063a4e8badbf1394ea60964745dd4b2f6826e12ce08",
+      "lines": 107,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -14518,7 +14548,7 @@
       "controls": [
         {
           "tag": "AppHeader",
-          "line": 66,
+          "line": 67,
           "className": null,
           "type": null,
           "role": null,
@@ -14528,7 +14558,7 @@
         },
         {
           "tag": "button",
-          "line": 84,
+          "line": 85,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
@@ -14538,7 +14568,7 @@
         },
         {
           "tag": "button",
-          "line": 88,
+          "line": 89,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
@@ -14548,19 +14578,29 @@
         },
         {
           "tag": "button",
-          "line": 92,
+          "line": 93,
           "className": "{NAV_ITEM}",
           "type": "\"button\"",
           "role": null,
           "ariaLabel": "{tr('Vision — bientôt disponible', 'Vision — قريبًا')}",
           "onClick": "{() => navigation.navigate([{ id: 'app:vision' }])}",
           "disabled": null
+        },
+        {
+          "tag": "button",
+          "line": 98,
+          "className": "{NAV_ITEM}",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('OCEREX — prix depuis une image', 'OCEREX — السعر من صورة')}",
+          "onClick": "{() => navigation.navigate([{ id: 'app:ocerex' }])}",
+          "disabled": null
         }
       ],
       "icons": [
         {
           "module": "./QatafoIcons",
-          "bindings": "{ Vision, LensBox, Sonim }",
+          "bindings": "{ Vision, LensBox, Sonim, ScanSearch }",
           "line": 2
         }
       ],
@@ -16133,8 +16173,8 @@
     {
       "file": "client/src/components/MenuDrawer.tsx",
       "domain": "shell-content",
-      "sha256": "2c33beacab976ada42804c38b0af60459db7b2c1382746418ffe8e1e8c4ddd04",
-      "lines": 131,
+      "sha256": "f8f80d2cdc5993a973f908bd99b40ac618d597ac862d29a7131be4a9bbb84a54",
+      "lines": 132,
       "imports": [
         "react",
         "./QatafoIcons",
@@ -16204,7 +16244,7 @@
         },
         {
           "tag": "a",
-          "line": 116,
+          "line": 117,
           "className": "\"flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-surface\"",
           "type": null,
           "role": null,
@@ -16214,7 +16254,7 @@
         },
         {
           "tag": "a",
-          "line": 119,
+          "line": 120,
           "className": "\"flex min-h-11 items-center gap-3 rounded-control px-3 py-2.5 text-sm font-bold text-ink transition hover:bg-surface\"",
           "type": null,
           "role": null,
@@ -16224,7 +16264,7 @@
         },
         {
           "tag": "button",
-          "line": 121,
+          "line": 122,
           "className": "{buttonClasses(locale === 'fr' ? 'primary' : 'ghost', 'sm', 'flex-1')}",
           "type": "\"button\"",
           "role": null,
@@ -16234,7 +16274,7 @@
         },
         {
           "tag": "button",
-          "line": 122,
+          "line": 123,
           "className": "{buttonClasses(locale === 'ar' ? 'primary' : 'ghost', 'sm', 'flex-1')}",
           "type": "\"button\"",
           "role": null,
@@ -17080,8 +17120,8 @@
     {
       "file": "client/src/config/interfaceConfig.ts",
       "domain": "shell-content",
-      "sha256": "ffd6234744d4f6e30842cc14b334c7889c5c0c6692623f320fa1471c6eddf27f",
-      "lines": 300,
+      "sha256": "e20c1196824c1c07ec7461e08e785324ef45e3d0e91e8ec4b7e3d8e96ff7ac4f",
+      "lines": 302,
       "imports": [
         "../../../shared/brand.generated",
         "../../../shared/identityPolicy"
@@ -18780,6 +18820,468 @@
       "apiReferences": []
     },
     {
+      "file": "client/src/features/ocerex/hooks/useOcerexOnboarding.ts",
+      "domain": "shell-content",
+      "sha256": "b0c2f6369acbe64c11f0993504107e0a40ad57dcad8b0c20e35b62e8a40a59ca",
+      "lines": 15,
+      "imports": [
+        "react",
+        "../utils/preferences"
+      ],
+      "exports": [
+        "useOcerexOnboarding"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/OcerexScreen.tsx",
+      "domain": "shell-content",
+      "sha256": "bc56ff3b29100a55b5818e649b103becb436c4e71c15859e13d2287ea25f6854",
+      "lines": 167,
+      "imports": [
+        "react",
+        "../../components/QatafoIcons",
+        "../../design/Button",
+        "../../i18n/LocaleContext",
+        "../../types",
+        "./hooks/useOcerexOnboarding",
+        "./screens/OcerexError",
+        "./screens/OcerexHome",
+        "./screens/OcerexOnboarding",
+        "./screens/OcerexProcessing",
+        "./screens/OcerexResult",
+        "./screens/OcerexSummary",
+        "./services/ocerexApi",
+        "./types"
+      ],
+      "exports": [
+        "OcerexScreen"
+      ],
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 142,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Aide OCEREX', 'مساعدة OCEREX')}",
+          "onClick": "{onboarding.openHelp}",
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 143,
+          "className": null,
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Fermer', 'إغلاق')}",
+          "onClick": "{onClose}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 150,
+          "className": "\"mx-auto w-full max-w-md px-5 py-8\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "select",
+          "line": 154,
+          "className": "\"mt-4 w-full min-h-11 rounded-control border border-line bg-white px-3 font-bold text-ink\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 157,
+          "className": "\"mt-4 w-full\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../components/QatafoIcons",
+          "bindings": "{ Info, X }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/screens/OcerexError.tsx",
+      "domain": "shell-content",
+      "sha256": "e41d0a6b3fe9dd9629db34ba96774532d935bb258a8f7ce9800db3189b146ecd",
+      "lines": 48,
+      "imports": [
+        "react",
+        "../../../design/Button",
+        "../../../design/ui/Field",
+        "../../../i18n/LocaleContext",
+        "../types"
+      ],
+      "exports": [
+        "OcerexError"
+      ],
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 36,
+          "className": "\"mt-6 w-full\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{primary}",
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 39,
+          "className": "\"mt-4\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 42,
+          "className": "\"mt-3 w-full\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/screens/OcerexHome.tsx",
+      "domain": "shell-content",
+      "sha256": "51f37150ea9f49f5d4d66966d586a63319289fa50586fd4cf2175fcce649e7a4",
+      "lines": 39,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../design/Button",
+        "../../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "OcerexHome"
+      ],
+      "controls": [
+        {
+          "tag": "button",
+          "line": 17,
+          "className": "\"mt-6 grid min-h-52 place-items-center rounded-card border-2 border-dashed border-line bg-white px-6 text-center transition hover:border-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr('Importer une image', 'رفع صورة')}",
+          "onClick": "{() => uploadRef.current?.click()}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "input",
+          "line": 29,
+          "className": "\"sr-only\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 30,
+          "className": "\"mt-4 w-full\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Prendre une photo', 'التقاط صورة')}",
+          "onClick": "{() => cameraRef.current?.click()}",
+          "disabled": "{busy}"
+        },
+        {
+          "tag": "input",
+          "line": 34,
+          "className": "\"sr-only\"",
+          "type": "\"file\"",
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{ Camera, Plus }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/screens/OcerexOnboarding.tsx",
+      "domain": "shell-content",
+      "sha256": "43da2f7919e016861c535ae541358606e6bd407cc486d40ae7bd0124e3e024bb",
+      "lines": 51,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../design/Button",
+        "../../../i18n/LocaleContext"
+      ],
+      "exports": [
+        "OcerexOnboarding"
+      ],
+      "controls": [
+        {
+          "tag": "Button",
+          "line": 46,
+          "className": "\"mt-8 w-full\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": "{onStart}",
+          "disabled": null
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{ ArrowRight, Calculator, Image, ReceiptText, ScanSearch }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/screens/OcerexProcessing.tsx",
+      "domain": "shell-content",
+      "sha256": "6326bd2f04fab322c81b70d1dfa4c73ea86f458e9c13e26a404e0186177d0df5",
+      "lines": 36,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../i18n/LocaleContext",
+        "../types"
+      ],
+      "exports": [
+        "OcerexProcessing"
+      ],
+      "controls": [],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{ Check, Loader2 }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/screens/OcerexResult.tsx",
+      "domain": "shell-content",
+      "sha256": "829cc113d1755c1e533188bb44f00687e9944da56e645d32431507cda7c81af8",
+      "lines": 51,
+      "imports": [
+        "react",
+        "../../../components/QatafoIcons",
+        "../../../design/Button",
+        "../../../design/ui/Field",
+        "../../../design/ui/Price",
+        "../../../i18n/LocaleContext",
+        "../types"
+      ],
+      "exports": [
+        "OcerexResult"
+      ],
+      "controls": [
+        {
+          "tag": "Price",
+          "line": 40,
+          "className": "\"mt-1 items-start text-cta [&_bdi]:text-cta\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "form",
+          "line": 41,
+          "className": "\"mt-8\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 44,
+          "className": "\"mt-4 w-full\"",
+          "type": "\"submit\"",
+          "role": null,
+          "ariaLabel": "{tr('Continuer la commande', 'متابعة الطلب')}",
+          "onClick": null,
+          "disabled": "{busy}"
+        }
+      ],
+      "icons": [
+        {
+          "module": "../../../components/QatafoIcons",
+          "bindings": "{ Check }",
+          "line": 2
+        }
+      ],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/screens/OcerexSummary.tsx",
+      "domain": "shell-content",
+      "sha256": "142bf7c06bc9b396779bee534324556e4ae4d28d02eec1e310069b7e31f70b51",
+      "lines": 42,
+      "imports": [
+        "react",
+        "../../../design/Button",
+        "../../../design/ui/Price",
+        "../../../i18n/LocaleContext",
+        "../types"
+      ],
+      "exports": [
+        "OcerexSummary"
+      ],
+      "controls": [
+        {
+          "tag": "Price",
+          "line": 28,
+          "className": "\"items-start\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": null,
+          "onClick": null,
+          "disabled": null
+        },
+        {
+          "tag": "Button",
+          "line": 36,
+          "className": "\"mt-6 w-full\"",
+          "type": null,
+          "role": null,
+          "ariaLabel": "{tr('Acheter / continuer la commande', 'شراء / متابعة الطلب')}",
+          "onClick": "{onConfirm}",
+          "disabled": "{busy}"
+        }
+      ],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/services/ocerexApi.ts",
+      "domain": "shell-content",
+      "sha256": "a10264d918c69a5bf1fd6e8f65e84b503a2277dcaba9a4ca67d5deda1e35afa5",
+      "lines": 111,
+      "imports": [
+        "../../../utils/session",
+        "../../../types",
+        "../types"
+      ],
+      "exports": [
+        "OcerexRequestError",
+        "trackOcerex",
+        "analyzeOcerexImage",
+        "calculateOcerexPrice",
+        "resolveOcerexLink",
+        "commitOcerexOrder",
+        "scrapeExistingProduct",
+        "readImageFile"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": [
+        "/api/ocerex/events",
+        "/api/ocerex/analyze",
+        "/api/ocerex/calculate",
+        "/api/ocerex/resolve",
+        "/api/ocerex/commit",
+        "/api/scrape"
+      ]
+    },
+    {
+      "file": "client/src/features/ocerex/types.ts",
+      "domain": "shell-content",
+      "sha256": "a7b90f85ca0188a9abe1725a0d5f4103b8ae2b7d7aa0e639cfb945657d9843e7",
+      "lines": 42,
+      "imports": [],
+      "exports": [],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
+      "file": "client/src/features/ocerex/utils/preferences.ts",
+      "domain": "shell-content",
+      "sha256": "c8ff41bfe63d1e2cb383564c5e93aa971030faff6c8135adb454e7a8173ec37f",
+      "lines": 33,
+      "imports": [],
+      "exports": [
+        "ocerexOnboardingComplete",
+        "markOcerexOnboardingComplete"
+      ],
+      "controls": [],
+      "icons": [],
+      "inlineSvg": [],
+      "colors": [],
+      "fontDeclarations": [],
+      "apiReferences": []
+    },
+    {
       "file": "client/src/hooks/useBodyScrollLock.ts",
       "domain": "shell-content",
       "sha256": "d5f52b73fb923a22451fb7c2d60b2af86902c4b10391eb69ed3718cc7dc31cf8",
@@ -19393,8 +19895,8 @@
     {
       "file": "client/src/shop/ProductPage.tsx",
       "domain": "shell-content",
-      "sha256": "6770f39bca754797fe2acbdb5a1839b3cd5fa290d94eb2e186c565a2bbd4e795",
-      "lines": 303,
+      "sha256": "b07b098cd8878ba410ab1095a18dc609e28234eb224ad45deaf31a263c06a251",
+      "lines": 315,
       "imports": [
         "react",
         "../design/editorial/Icon",
@@ -19407,7 +19909,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 73,
+          "line": 78,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19417,7 +19919,7 @@
         },
         {
           "tag": "button",
-          "line": 74,
+          "line": 79,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19427,7 +19929,7 @@
         },
         {
           "tag": "button",
-          "line": 75,
+          "line": 80,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19437,7 +19939,7 @@
         },
         {
           "tag": "button",
-          "line": 139,
+          "line": 149,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19447,7 +19949,7 @@
         },
         {
           "tag": "button",
-          "line": 147,
+          "line": 157,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19457,7 +19959,7 @@
         },
         {
           "tag": "button",
-          "line": 177,
+          "line": 187,
           "className": "\"s-media__open\"",
           "type": "\"button\"",
           "role": null,
@@ -19467,7 +19969,7 @@
         },
         {
           "tag": "button",
-          "line": 207,
+          "line": 217,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -19477,7 +19979,7 @@
         },
         {
           "tag": "button",
-          "line": 217,
+          "line": 227,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19487,7 +19989,7 @@
         },
         {
           "tag": "button",
-          "line": 218,
+          "line": 228,
           "className": "\"s-rail__btn\"",
           "type": "\"button\"",
           "role": null,
@@ -19497,7 +19999,7 @@
         },
         {
           "tag": "button",
-          "line": 221,
+          "line": 231,
           "className": null,
           "type": "\"button\"",
           "role": null,
@@ -19507,7 +20009,7 @@
         },
         {
           "tag": "button",
-          "line": 231,
+          "line": 241,
           "className": "\"s-swatch\"",
           "type": "\"button\"",
           "role": null,
@@ -19517,7 +20019,7 @@
         },
         {
           "tag": "summary",
-          "line": 259,
+          "line": 269,
           "className": null,
           "type": null,
           "role": null,
@@ -19527,7 +20029,7 @@
         },
         {
           "tag": "input",
-          "line": 260,
+          "line": 270,
           "className": null,
           "type": null,
           "role": null,
@@ -19537,7 +20039,7 @@
         },
         {
           "tag": "input",
-          "line": 261,
+          "line": 271,
           "className": null,
           "type": null,
           "role": null,
@@ -19547,7 +20049,7 @@
         },
         {
           "tag": "button",
-          "line": 276,
+          "line": 286,
           "className": "\"s-select\"",
           "type": "\"button\"",
           "role": null,
@@ -19557,7 +20059,7 @@
         },
         {
           "tag": "button",
-          "line": 282,
+          "line": 294,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19567,7 +20069,7 @@
         },
         {
           "tag": "button",
-          "line": 284,
+          "line": 296,
           "className": "\"s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19577,7 +20079,7 @@
         },
         {
           "tag": "button",
-          "line": 286,
+          "line": 298,
           "className": "\"s-cta\"",
           "type": "\"button\"",
           "role": null,
@@ -19587,7 +20089,7 @@
         },
         {
           "tag": "button",
-          "line": 289,
+          "line": 301,
           "className": "\"s-cta s-cta--ghost\"",
           "type": "\"button\"",
           "role": null,
@@ -19597,7 +20099,7 @@
         },
         {
           "tag": "button",
-          "line": 295,
+          "line": 307,
           "className": "\"s-zoom__close s-iconbtn\"",
           "type": "\"button\"",
           "role": null,
@@ -19618,8 +20120,8 @@
     {
       "file": "client/src/shop/shop.css",
       "domain": "shell-content",
-      "sha256": "09fb39f878cb56c6c82856333ac1b13da02c5972adced3e4457671f5609bfce3",
-      "lines": 711,
+      "sha256": "7c171977a30c401b5d63b1af46b0db1c7c29b5096015a6451baf33a2407ebe7f",
+      "lines": 712,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -19710,12 +20212,13 @@
     {
       "file": "client/src/shop/ShopProductScreen.tsx",
       "domain": "shell-content",
-      "sha256": "694320a50eccbc3d78ab5a37c6236c64b92a5e6126d88e0c181abdff96ab5597",
-      "lines": 173,
+      "sha256": "9d369626271f5416ee77174b0297ae825d678283b38b04007270783479fab00e",
+      "lines": 191,
       "imports": [
         "react",
         "../i18n/LocaleContext",
         "../ayrovix/types",
+        "../ayrovix/services/productSelection",
         "./ProductPage",
         "./adapter",
         "./types"

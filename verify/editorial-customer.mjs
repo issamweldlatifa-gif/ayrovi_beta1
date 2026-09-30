@@ -4,8 +4,8 @@ import fs from 'node:fs';
 import { inspectEditorialIcons } from './editorial-icon-contract.mjs';
 const base=process.env.AYROVI_BASE_URL || 'http://127.0.0.1:3000';
 const output='screenshots/editorial/customer';fs.mkdirSync(output,{recursive:true});
-const checks=[], errors=[], orange=[];
-function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass)throw new Error(label+': '+JSON.stringify(details));}
+const checks=[], errors=[], failures=[], orange=[];
+function check(label,pass,details){checks.push({label,pass:Boolean(pass),...(details===undefined?{}:{details})});if(!pass)failures.push(label+': '+JSON.stringify(details??null));}
 async function orangeRatio(buffer){const {data,info}=await sharp(buffer).removeAlpha().raw().toBuffer({resolveWithObject:true});let count=0;for(let i=0;i<data.length;i+=info.channels){const r=data[i]/255,g=data[i+1]/255,b=data[i+2]/255,max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;if(!delta||max<.4||delta/max<.55)continue;let hue=max===r?((g-b)/delta)%6:max===g?(b-r)/delta+2:(r-g)/delta+4;hue=(hue*60+360)%360;if(hue>=14&&hue<=45)count++;}return count/(info.width*info.height);}
 const browser=await chromium.launch({headless:true});
 try{
@@ -26,8 +26,9 @@ try{
    };
    await inspect('home','.ayrovi-app-shell');
    check(`${locale}/${width}: actual logo source preserved`,(await p.locator('.public-site-header img').getAttribute('src')).includes('logo-ayrovi'));
-   check(`${locale}/${width}: three navigation destinations preserved`,await p.locator('.ayrovi-glass-bottom-nav nav>button').count()===3);
-   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sonim','Vision']]]){
+   const navCount=await p.locator('.ayrovi-glass-bottom-nav nav>button').count();
+   check(`${locale}/${width}: four navigation destinations preserved`,navCount===4,{navCount});
+   for(const [area,selector,names] of [['header','.public-site-header',['Menu','User']],['navigation','.ayrovi-glass-bottom-nav',['Lens','Sonim','Vision','Scan']]]){
     const icons=await inspectEditorialIcons(p,selector);
     check(`${locale}/${width}: ${area} matches editorial geometry and stroke`,icons.errors.length===0 && names.every(name=>icons.names.includes(name)),icons);
    }
@@ -35,7 +36,8 @@ try{
    await inspect('auth','.ay-auth');
    check(`${locale}/${width}: empty credential fields`,(await p.locator('.ay-auth input[type=email]').inputValue())===''&&(await p.locator('.ay-auth input[type=password]').inputValue())==='');
    check(`${locale}/${width}: auth uses new glyphs`,await p.locator('.ay-auth [data-editorial-icon]').count()>0);
-   check(`${locale}/${width}: square input controls`,await p.locator('.ay-auth input[type=email]').evaluate(e=>getComputedStyle(e).borderRadius)==='0px');
+   const inputRadius=await p.locator('.ay-auth input[type=email]').evaluate(e=>getComputedStyle(e).borderRadius);
+   check(`${locale}/${width}: auth inputs use the editorial control radius`,inputRadius==='12px',{inputRadius});
    await p.goBack();await p.locator('.ay-auth').waitFor({state:'hidden'});
    await p.getByRole('button',{name:locale==='ar'?'فتح القائمة':'Ouvrir le menu',exact:true}).click();
    const menu=p.getByRole('dialog',{name:locale==='ar'?'قائمة AYROVI':'Menu AYROVI',exact:true});
@@ -76,5 +78,6 @@ try{
  const restricted=await browser.newContext();await restricted.addInitScript(()=>Object.defineProperty(window,'localStorage',{get(){throw new DOMException('Blocked','SecurityError');}}));
  const rp=await restricted.newPage();rp.on('pageerror',e=>errors.push(e.message));await rp.goto(base,{waitUntil:'domcontentloaded'});await rp.locator('.editorial-hero__title').waitFor();check('restricted browser storage does not crash the customer shell',await rp.locator('.public-site-header').isVisible());await restricted.close();
  check('no page errors',errors.length===0,errors);
-}catch(error){errors.push(String(error));process.exitCode=1;}finally{await browser.close();fs.writeFileSync(`${output}/results.json`,JSON.stringify({scope:'Actual locally served app, default CMS content, anonymous navigation; no external AI/OAuth/payment exercised',checks,orange,errors},null,2)+'\n');}
+}catch(error){errors.push(String(error));process.exitCode=1;}finally{await browser.close();fs.writeFileSync(`${output}/results.json`,JSON.stringify({scope:'Actual locally served app, default CMS content, anonymous navigation; no external AI/OAuth/payment exercised',checks,orange,errors,failures},null,2)+'\n');}
+if(failures.length){console.log('FAILED CHECKS');for(const failure of failures)console.log(failure);process.exitCode=1;}
 console.log(`${checks.filter(c=>c.pass).length}/${checks.length} customer checks passed`,errors);

@@ -9,6 +9,12 @@ jobs:
   typecheck-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +75,22 @@ jobs:
 
       - name: Verify real customer screens (isolated providers and SQLite)
         id: editorial_customer
-        run: npm run verify:editorial-customer
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set +e
+          npm run verify:editorial-customer > /tmp/customer-check.log 2>&1
+          code=$?
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Customer screen check failed:'
+              echo '```'
+              tail -c 6000 /tmp/customer-check.log
+              echo '```'
+            } > /tmp/customer-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/customer-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify additive homepage, standalone pages and footer
         run: |
@@ -85,10 +106,25 @@ jobs:
 
       - name: Verify Lens camera entry, help, consent and navigation
         id: lens_camera
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           # Local evidence is versioned for review; never upload it as this run's output.
           rm -rf docs/lens-phase1/evidence/
-          npm run verify:lens-camera
+          set +e
+          npm run verify:lens-camera > /tmp/lens-camera.log 2>&1
+          code=$?
+          cat /tmp/lens-camera.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Lens camera check failed:'
+              echo '```'
+              tail -c 6000 /tmp/lens-camera.log
+              echo '```'
+            } > /tmp/lens-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/lens-comment.md || true
+          fi
+          exit "$code"
 
       - name: Upload Lens entry evidence
         if: ${{ !cancelled() && (steps.lens_camera.outcome == 'success' || steps.lens_camera.outcome == 'failure') }}
@@ -130,25 +166,123 @@ jobs:
         run: npm run verify:sonim-actions
 
       - name: Verify SONIM history persistence and quote freshness
-        run: npm run verify:sonim-history
+        run: |
+          set +e
+          npm run verify:sonim-history > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify SONIM history persistence and quote freshness failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify SONIM media ownership and cancellation
-        run: npm run verify:sonim-media
+        run: |
+          set +e
+          npm run verify:sonim-media > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify SONIM media ownership and cancellation failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify SONIM output cancellation and truthful settings
-        run: npm run verify:sonim-playback
+        run: |
+          set +e
+          npm run verify:sonim-playback > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify SONIM output cancellation and truthful settings failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify SONIM hands-free capture isolation
-        run: npm run verify:sonim-handsfree
+        run: |
+          set +e
+          npm run verify:sonim-handsfree > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify SONIM hands-free capture isolation failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify merchant availability and variant eligibility
-        run: npm run verify:variant-availability
+        run: |
+          set +e
+          npm run verify:variant-availability > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify merchant availability and variant eligibility failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify product selection and quote coherence
-        run: npm run verify:product-selection
+        run: |
+          set +e
+          npm run verify:product-selection > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify product selection and quote coherence failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Verify signed mobile purchase flow against real pricing and cart endpoints
-        run: npm run verify:purchase-flow
+        run: |
+          set +e
+          npm run verify:purchase-flow > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify signed mobile purchase flow against real pricing and cart endpoints failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Upload mobile purchase evidence
         if: always()
@@ -173,7 +307,21 @@ jobs:
           path: screenshots/image-composition/
 
       - name: Verify authenticated account and icon geometry
-        run: npm run verify:editorial-account
+        run: |
+          set +e
+          npm run verify:editorial-account > /tmp/verify-step.log 2>&1
+          code=$?
+          cat /tmp/verify-step.log
+          if [ "$code" -ne 0 ]; then
+            {
+              echo 'Verify authenticated account and icon geometry failed:'
+              echo '```'
+              tail -c 6000 /tmp/verify-step.log
+              echo '```'
+            } > /tmp/verify-comment.md
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file /tmp/verify-comment.md || true
+          fi
+          exit "$code"
 
       - name: Upload customer-screen evidence
         if: ${{ !cancelled() && (steps.editorial_customer.outcome == 'success' || steps.editorial_customer.outcome == 'failure') }}

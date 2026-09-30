@@ -14,6 +14,8 @@ import { customerFromRequest, requireCustomer, resolveCustomer } from '../custom
 import { InvalidImageError, normalizeUploadedImage } from '../services/imageValidation';
 import { isUnsafeHostname, parsePublicHttpUrl, UnsafeUrlError } from '../services/safeUrl';
 import { verifyAyrovixPriceToken } from '../ayrovix/priceQuote';
+import { attachOcerexExtractionsToOrder } from '../ocerex/store';
+import { recordOcerexEvent } from '../ocerex/analytics';
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_SIZE, files: 1 } });
@@ -540,6 +542,12 @@ export function createApiRouter(
         termsAcceptedAt: new Date().toISOString(),
         locale: checkoutLocale,
       }, customer.id);
+      try {
+        const linked = attachOcerexExtractionsToOrder(db, sessionId, customer.id, String(result.orderId));
+        if (linked > 0) recordOcerexEvent(db, 'ocerex_order_completed', { sessionId, extractionType: null, confidenceLevel: null });
+      } catch (ocerexError) {
+        console.warn('[OCEREX attach]', ocerexError instanceof Error ? ocerexError.message : 'failed');
+      }
       try {
         recordLearningEvent(db, { executionLane: 'active', type: 'ORDER_CONVERSION', ownerHash: ownerHashOf((req as any).customer?.id || null, sessionId), success: true });
       } catch (learningError) {

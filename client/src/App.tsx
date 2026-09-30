@@ -33,6 +33,7 @@ const ShopBagScreen = lazy(() => import('./shop').then((module) => ({ default: m
 const ShopCheckoutScreen = lazy(() => import('./shop').then((module) => ({ default: module.ShopCheckoutScreen })));
 const OrderSuccessModal = lazy(() => import('./components/OrderSuccessModal').then((module) => ({ default: module.OrderSuccessModal })));
 const CustomerAccountPage = lazy(() => import('./components/CustomerAccountPage').then((module) => ({ default: module.CustomerAccountPage })));
+const OcerexScreen = lazy(() => import('./features/ocerex/OcerexScreen').then((module) => ({ default: module.OcerexScreen })));
 
 /** كتل الصفحة الرئيسية — الترتيب الافتراضي حتى وصول إعداد الـ Dashboard */
 /**
@@ -79,6 +80,7 @@ export const App: React.FC = () => {
   const isCheckoutOpen = appView === 'app:checkout';
   const isAccountOpen = appView === 'app:account';
   const isOrderSuccessOpen = appView === 'app:order-success';
+  const isOcerexOpen = appView === 'app:ocerex';
   const openAppView = (id: string, replace = false) => navigation.navigate([{ id }], { replace });
   const closeAppView = () => navigation.back();
 
@@ -552,6 +554,19 @@ export const App: React.FC = () => {
               setAccountMessage('');
               openAppView('app:account');
             }}
+          />
+        </Suspense>
+      )}
+
+      {isOcerexOpen && (
+        <Suspense fallback={null}>
+          <OcerexScreen
+            accountId={customerSession?.account.id || null}
+            csrfToken={customerSession?.csrfToken || ''}
+            onClose={closeAppView}
+            onContinueCheckout={handleProceedToCheckout}
+            onCartChanged={() => { void fetchCart(); }}
+            onExtracted={handleExtracted}
           />
         </Suspense>
       )}

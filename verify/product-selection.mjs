@@ -24,7 +24,7 @@ const base = {
 };
 const token = (price, currency = 'EUR') => createAyrovixPriceToken({ price, currency, title: base.title, referenceUrl: base.sourceUrl, status: 'VERIFIED' });
 base.priceToken = token(20);
-const variant = (id, size, color, price) => ({ id, label: `${size} · ${color}`, size, color, price, currency: 'EUR', priceTnd: null, priceToken: token(price), available: true });
+const variant = (id, size, color, price) => ({ id, label: `${size} · ${color}`, size, color, price, currency: 'EUR', priceTnd: null, priceToken: token(price), available: true, availability: 'available' });
 const blue = variant('blue-M', 'M', 'Bleu', 27);
 const red = variant('red-M', 'M', 'Rouge', 35);
 const large = variant('blue-L', 'L', 'Bleu', 40);
@@ -41,7 +41,7 @@ const scenarios = [
   { name: 'missing-total', options: [{ ...blue, priceTnd: null }], size: 'M', color: 'Bleu', id: 'blue-M', price: 27 },
   { name: 'missing-token', options: [{ ...blue, priceToken: null }], size: 'M', color: 'Bleu', disabled: true, incomplete: true },
   { name: 'missing-currency', options: [{ ...blue, currency: null }], size: 'M', color: 'Bleu', disabled: true, incomplete: true },
-  { name: 'missing-general-token', options: [], size: 'M', color: 'Bleu', price: 20, rejectUnsigned: true, notice: 'general' },
+  { name: 'missing-general-token', options: [{ id: 'unpriced-M', label: 'M · Bleu', size: 'M', color: 'Bleu', price: null, currency: null, priceTnd: null, priceToken: null, available: true, availability: 'available' }], size: 'M', color: 'Bleu', price: 20, rejectUnsigned: true, notice: 'general' },
 ];
 const browser = await chromium.launch({ headless: true });
 let page;
@@ -73,7 +73,7 @@ try {
     let fresh = base;
     await page.route('**/api/ayrovix/analyze-url', route => route.fulfill({ json: { success: true, data: { product: fresh, alternates: [], eventId: '' } } }));
     for (const scenario of scenarios) {
-      fresh = { ...base, variantOptions: scenario.options, priceToken: scenario.rejectUnsigned ? null : base.priceToken };
+      fresh = { ...base, variantOptions: scenario.options, availability: 'in_stock', availabilityCheckedAt: new Date().toISOString(), availabilityExpiresAt: new Date(Date.now() + 3_600_000).toISOString(), priceToken: scenario.rejectUnsigned ? null : base.priceToken };
       await page.goto(process.env.AYROVI_BASE_URL + `/__verify/sonim?mode=${mode}&case=${scenario.name}`);
       await page.locator('[data-open]').click();
       if (mode === 'lens') {
@@ -87,27 +87,32 @@ try {
       } else {
         await page.getByRole('button', { name: ar ? 'تحديث المنتج وفتحه' : 'Actualiser et ouvrir le produit', exact: true }).click();
       }
-      const card = page.locator('.flow-product');
+      const card = page.locator('.s-product-page');
       await card.getByRole('heading', { name: base.title }).waitFor();
-      const add = card.getByRole('button', { name: ar ? 'زيد للسلة' : 'Ajouter au panier' });
+      const add = card.getByRole('button', { name: ar ? 'أضف إلى السلة' : 'Ajouter au panier' });
+      const added = ar ? 'تزاد للسلة' : 'Ajouté au panier';
       if (scenario.size === 'XXL') {
-        await card.getByRole('button', { name: ar ? 'اختر مقاسك' : 'Votre taille' }).click();
+        await card.getByRole('button', { name: ar ? 'قياسك' : 'Votre taille', exact: true }).click();
         check(`${key}/${scenario.name}: no size outside sourced options`, await page.getByRole('dialog').last().getByRole('button', { name: 'XXL' }).count(), 0);
         await page.getByRole('dialog').last().getByRole('button', { name: ar ? 'إغلاق' : 'Fermer' }).click();
       } else if (scenario.size) {
-        await card.getByRole('button', { name: ar ? 'اختر مقاسك' : 'Votre taille' }).click();
+        await card.getByRole('button', { name: ar ? 'قياسك' : 'Votre taille', exact: true }).click();
         await page.locator('[role="dialog"] button').filter({ has: page.locator('strong:text-is("M")') }).last().click();
       }
-      if (scenario.color) await card.getByRole('radio', { name: ar ? `اللون ${scenario.color}` : `Couleur ${scenario.color}` }).click();
+      if (scenario.color) await card.getByRole('button', { name: scenario.color, exact: true }).click();
       if (scenario.notice) {
+        await card.locator('[data-variant-selection-notice]').waitFor();
         const notice = await card.locator('[data-variant-selection-notice]').innerText();
         check(`${key}/${scenario.name}: estimate or ambiguity is explicitly labelled`, notice.includes(ar
           ? (scenario.notice === 'ambiguous' ? 'توجد عدة خيارات' : 'تقدير عام')
           : (scenario.notice === 'ambiguous' ? 'Plusieurs variantes' : 'Estimation générale')));
       }
       if (scenario.incomplete) {
-        check(`${key}/${scenario.name}: incomplete variant never borrows a token`, await add.isDisabled());
         check(`${key}/${scenario.name}: incomplete quote is explained`, (await card.locator('[data-variant-selection-notice][role="alert"]').count()) > 0);
+        await add.click();
+        await card.getByText(ar ? /عرض سعر هذا الاختيار غير مكتمل/ : /Le devis de cette sélection est incomplet/).waitFor();
+        check(`${key}/${scenario.name}: incomplete variant never borrows a token`, await page.evaluate(() => selectionTestOrders.length), 0);
+        check(`${key}/${scenario.name}: incomplete quote is not acknowledged`, await card.getByText(added, { exact: true }).count(), 0);
         continue;
       }
       if (scenario.disabled) {
@@ -121,16 +126,18 @@ try {
         }
         continue;
       }
-      await card.locator('[data-product-price-tnd]').waitFor();
-      check(`${key}/${scenario.name}: quote comes from the selected source amount`, Number(await card.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')), cannedLineQuotes.get(scenario.price));
+      const expectedQuote = cannedLineQuotes.get(scenario.price);
+      await page.waitForFunction(expected => Number(document.querySelector('[data-product-price-tnd]')?.getAttribute('data-product-price-tnd')) === expected, expectedQuote);
+      check(`${key}/${scenario.name}: quote comes from the selected source amount`, Number(await card.locator('[data-product-price-tnd]').getAttribute('data-product-price-tnd')), expectedQuote);
       check(`${key}/${scenario.name}: source currency is displayed`, (await card.innerText()).includes(`${scenario.price.toFixed(2)} EUR`));
       await add.click();
       if (scenario.rejectUnsigned) {
         await card.getByText(ar ? /عرض سعر هذا الاختيار غير مكتمل/ : /Le devis de cette sélection est incomplet/).waitFor();
-        check(`${key}/${scenario.name}: unsigned quote cannot acknowledge an order`, await card.getByText(ar ? 'تمت إضافة المنتج' : 'Produit ajouté').count(), 0);
+        check(`${key}/${scenario.name}: unsigned quote cannot acknowledge an order`, await card.getByText(added, { exact: true }).count(), 0);
         continue;
       }
       await page.waitForFunction(() => selectionTestOrders.length === 1);
+      await card.getByText(added, { exact: true }).waitFor();
       const sent = await page.evaluate(() => selectionTestOrders[0]);
       check(`${key}/${scenario.name}: only the exact source variant is passed`, sent.externalId, scenario.id);
       check(`${key}/${scenario.name}: selected monetary offer stays coherent`, [sent.sourcePrice, sent.sourceCurrency, sent.priceTND], [scenario.price, 'EUR', 0]);
@@ -138,7 +145,7 @@ try {
         price: sent.sourcePrice, currency: sent.sourceCurrency, title: sent.title,
         referenceUrl: sent.referenceUrl, status: sent.priceVerificationStatus,
       }));
-      check(`${key}/${scenario.name}: acknowledgement remains on product page`, await card.getByText(ar ? 'تمت إضافة المنتج' : 'Produit ajouté').count(), 1);
+      check(`${key}/${scenario.name}: acknowledgement remains on product page`, await card.getByText(added, { exact: true }).count(), 1);
       if (scenario.name === 'exact') await page.screenshot({ path: `${output}/selection-${mode}-${locale}-${width}.png` });
     }
     await context.close();
