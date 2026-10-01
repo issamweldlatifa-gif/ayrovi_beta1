@@ -33,6 +33,11 @@ export interface LensTrace {
   searchCandidatesMs?: number;
   anthropicRelevanceMs?: number;
   dedupMs?: number;
+  /** Lecture des pages produit derrière les liens SerpApi (stock/tailles). */
+  liveStockMs?: number;
+  liveStockFetched?: number;
+  liveStockCacheHits?: number;
+  liveStockApplied?: number;
   pricingMs?: number;
   totalBackendMs?: number;
   // Frontend render (يُقاس في LensLauncher بعد setCandidatesView)

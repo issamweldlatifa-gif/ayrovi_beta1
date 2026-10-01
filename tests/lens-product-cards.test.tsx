@@ -31,8 +31,10 @@ describe('reference Lens product card',()=>{
  it('does not substitute the uploaded image for a missing merchant product image',()=>{
   const html=render({image:'',images:[]});expect(html).toContain('lens-card-placeholder');expect(html).not.toContain('<img');
  });
- it('keeps favorite and product as separate buttons with accessible names',()=>{
-  const html=render();expect(html.match(/<button/g)).toHaveLength(2);expect(html).toContain('Ajouter aux favoris');expect(html).toContain('aria-pressed="false"');expect(html).toContain('aria-describedby=');
+ it('keeps favorite, stock check and product as separate buttons with accessible names',()=>{
+  // 3 boutons depuis 01/10/2026 : fiche, favoris, vérification du stock — tous
+  // frères (aucun imbriqué), chacun avec son nom accessible.
+  const html=render();expect(html.match(/<button/g)).toHaveLength(3);expect(html).toContain('Ajouter aux favoris');expect(html).toContain('Vérifier le stock');expect(html).toContain('aria-pressed="false"');expect(html).toContain('aria-describedby=');
  });
  it('preserves SerpApi reviews from both supported rating fields and never uses match as a rating',async()=>{
   vi.stubEnv('SERPAPI_KEY','fixture-key-not-a-secret');

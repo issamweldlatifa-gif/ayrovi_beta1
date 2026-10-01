@@ -4,7 +4,7 @@
   "totals": {
     "files": 246,
     "customerAndSharedFiles": 194,
-    "controls": 455,
+    "controls": 456,
     "iconAliases": 101,
     "uniqueGlyphs": 98
   },
@@ -10976,8 +10976,8 @@
     {
       "file": "client/src/ayrovix/components/lens-product-card.css",
       "domain": "lens",
-      "sha256": "0905fa7d599a9f9c49a88d1ad89fa48f7130f4a397fc100a756773d17da7817c",
-      "lines": 34,
+      "sha256": "8054eb59e63d8402af02cdbb11ff718969afe1929d814296db8670e4282c8f72",
+      "lines": 57,
       "imports": [],
       "exports": [],
       "controls": [],
@@ -10985,16 +10985,30 @@
       "inlineSvg": [],
       "colors": [
         "#000",
+        "#12683a",
         "#595959",
+        "#8a5300",
+        "#a01b1b",
+        "#bcdcc7",
         "#d9d9d9",
         "#dc2626",
         "#e5b400",
+        "#e6c9c9",
+        "#e7f6ec",
         "#f0f2f2",
+        "#f4fbf6",
         "#f6f6f6",
+        "#faf3f3",
+        "#fdeaea",
+        "#fdf1dd",
         "#fff",
         "#ffffff"
       ],
       "fontDeclarations": [
+        "font-family:var(--ay-font-stack)",
+        "font-family:var(--ay-font-stack)",
+        "font-family:var(--ay-font-stack)",
+        "font-family:var(--ay-font-stack)",
         "font-family:var(--ay-font-stack)",
         "font-family:var(--ay-font-stack)",
         "font-family:var(--ay-font-stack)",
@@ -11696,8 +11710,8 @@
     {
       "file": "client/src/ayrovix/components/LensProductCard.tsx",
       "domain": "lens",
-      "sha256": "4d8ace398ada6fb56e00af21071ea31a70b5ae8c76c642bc74cdebede33ca228",
-      "lines": 62,
+      "sha256": "2a4f377bcc645bfcf4b4c0254b4d100489f8fbc6e19b8028cf97d4ef3db24f9d",
+      "lines": 167,
       "imports": [
         "react",
         "../../components/QatafoIcons",
@@ -11706,6 +11720,7 @@
         "./MerchantRating",
         "./quiet-card",
         "../services/mediaIsolation",
+        "../services/lensApi",
         "./lens-product-card.css"
       ],
       "exports": [
@@ -11715,7 +11730,7 @@
       "controls": [
         {
           "tag": "button",
-          "line": 42,
+          "line": 126,
           "className": "\"lens-card-open\"",
           "type": "\"button\"",
           "role": null,
@@ -11725,19 +11740,29 @@
         },
         {
           "tag": "button",
-          "line": 57,
+          "line": 143,
           "className": "\"lens-card-favorite\"",
           "type": "\"button\"",
           "role": null,
-          "ariaLabel": "{saved ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`) : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}",
+          "ariaLabel": "{saved\n        ? tr(`Retirer des favoris : ${candidate.title}`, `إزالة من المفضلة: ${candidate.title}`)\n        : tr(`Ajouter aux favoris : ${candidate.title}`, `إضافة إلى المفضلة: ${candidate.title}`)}",
           "onClick": "{() => onFavorite(candidate)}",
           "disabled": "{busy}"
+        },
+        {
+          "tag": "button",
+          "line": 149,
+          "className": "\"lens-card-verify\"",
+          "type": "\"button\"",
+          "role": null,
+          "ariaLabel": "{tr(`Vérifier le stock : ${candidate.title}`, `تحقّق من التوفر: ${candidate.title}`)}",
+          "onClick": "{verify}",
+          "disabled": "{verifying}"
         }
       ],
       "icons": [
         {
           "module": "../../components/QatafoIcons",
-          "bindings": "{ Heart, HeartFilled, Image as ImageIcon }",
+          "bindings": "{ Heart, HeartFilled, Image as ImageIcon, RefreshCw }",
           "line": 2
         }
       ],
@@ -12295,8 +12320,8 @@
     {
       "file": "client/src/ayrovix/services/lensApi.ts",
       "domain": "lens",
-      "sha256": "3f01fae2620d5d1eb06b3ba9adf00bc7b816cd1adadb8c80e634e0b5962ed3ce",
-      "lines": 116,
+      "sha256": "50802d0afcd89d888854289a2db239c9b17e16ec77e04fe86edb54d6ed7ecf9c",
+      "lines": 146,
       "imports": [
         "../types",
         "../../utils/session"
@@ -12307,6 +12332,7 @@
         "analyzeUrl",
         "requestManualReview",
         "getManualReview",
+        "refreshLiveStock",
         "markChosen",
         "analyzeCode",
         "analyzeBarcode",
@@ -12321,6 +12347,7 @@
         "/api/ayrovix/analyze-image",
         "/api/ayrovix/analyze-url",
         "/api/ayrovix/review-request",
+        "/api/ayrovix/live-stock",
         "/api/ayrovix/choose",
         "/api/ayrovix/analyze-code",
         "/api/ayrovix/analyze-barcode",

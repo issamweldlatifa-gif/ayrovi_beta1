@@ -267,6 +267,9 @@ function variantsFromProduct(product: any): ProductVariantDetail[] {
       size,
       color,
       available: true,
+      // Le drapeau de stock PUBLIÉ, lu tel quel (booleén uniquement) : il
+      // alimentera le contrat de commande. Un silence reste null.
+      stock: reportedVariantStock(variant),
       price: price || null,
     });
   }

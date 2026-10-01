@@ -336,6 +336,18 @@ describe('AYROVIX Lens', () => {
     expect(isTrustedRenderTarget('http://www.amazon.fr/dp/TEST')).toBe(false);
     expect(isTrustedRenderTarget('https://amazon.fr:8443/dp/TEST')).toBe(false);
     expect(isTrustedRenderTarget('https://amazon.evil.example/dp/TEST')).toBe(false);
+    // Rendu étendu par l'exploitant (01/10/2026) : sans cette liste, un lien Lens
+    // vers sportsdirect.fr retombait sur le fetch direct seul et échouait.
+    expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(false);
+    vi.stubEnv('AYROVI_TRUSTED_RENDER_HOSTS', 'sportsdirect.fr, zalando.fr');
+    expect(isTrustedRenderTarget('https://www.sportsdirect.fr/hoody-991631')).toBe(true);
+    expect(isTrustedRenderTarget('https://fr.zalando.fr/robe')).toBe(true);
+    // Une allowlist ne doit jamais devenir une porte ouverte : ni http, ni port
+    // exotique, ni hôte qui se contente de CONTENIR le nom autorisé.
+    expect(isTrustedRenderTarget('http://www.sportsdirect.fr/hoody')).toBe(false);
+    expect(isTrustedRenderTarget('https://www.sportsdirect.fr:8443/hoody')).toBe(false);
+    expect(isTrustedRenderTarget('https://sportsdirect.fr.evil.example/hoody')).toBe(false);
+    vi.unstubAllEnvs();
     const fetchMock = vi.fn();
     vi.stubGlobal('fetch', fetchMock);
     await expect(fetchRenderedProductPage('https://amazon.evil.example/dp/TEST')).rejects.toMatchObject({

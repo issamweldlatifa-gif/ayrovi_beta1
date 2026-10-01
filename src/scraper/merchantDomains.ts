@@ -34,12 +34,28 @@ export function detectMerchantStore(input: string): StoreType {
   return 'generic';
 }
 
+/**
+ * Hôtes de rendu ajoutés par l'exploitant (01/10/2026) — séparés par des
+ * virgules, ex. `AYROVI_TRUSTED_RENDER_HOSTS=sportsdirect.fr,zalando.fr`.
+ * Sans cette liste, seuls les quatre marchands connus ci-dessus passent au
+ * rendu payant : un lien Lens vers une autre boutique retombait alors sur le
+ * fetch direct seul, et échouait devant un bot-wall.
+ */
+function extraRenderRoots(): string[] {
+  return String(process.env.AYROVI_TRUSTED_RENDER_HOSTS || '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase().replace(/^www\./, ''))
+    .filter((value) => /^[a-z0-9.-]+\.[a-z]{2,}$/.test(value));
+}
+
 /** Only send HTTPS pages on verified merchant domains to a third-party renderer. */
 export function isTrustedRenderTarget(input: string): boolean {
   try {
     const url = new URL(input);
     if (url.protocol !== 'https:' || url.username || url.password || (url.port && url.port !== '443')) return false;
-    return detectMerchantStore(url.toString()) !== 'generic';
+    if (detectMerchantStore(url.toString()) !== 'generic') return true;
+    const hostname = url.hostname.toLowerCase().replace(/\.+$/, '');
+    return extraRenderRoots().some((root) => hostname === root || hostname.endsWith(`.${root}`));
   } catch {
     return false;
   }

@@ -14,6 +14,12 @@ export interface ProductVariantDetail {
   color?: string | null;
   /** Eligible for a variant-specific choice; not a live stock guarantee. */
   available: boolean;
+  /**
+   * Live stock flag AS THE MERCHANT PUBLISHES IT (true/false), or null when the
+   * source says nothing. Separate from `available` (a choice eligibility) on
+   * purpose: a silence is not a stock, here as everywhere else.
+   */
+  stock?: boolean | null;
   price?: number | null;
 }
 

@@ -4,7 +4,7 @@ import { parseProductPageHtml, type ParsedProductPage } from './productPageParse
 import { fetchRenderedProductPage, RenderedPageError } from './renderedPageFetcher';
 import { detectMerchantStore } from './merchantDomains';
 
-interface MerchantScrapeResult {
+export interface MerchantScrapeResult {
   data: ParsedProductPage | null;
   verified: boolean;
   provider: 'direct' | 'none' | 'scraperapi' | 'scrapingbee' | 'brightdata';
@@ -111,6 +111,21 @@ export class SmartLinkScraper {
       verificationFailureCode: merchantResult.failureCode,
       scrapedAt: new Date().toISOString()
     };
+  }
+
+  /**
+   * LECTURE BRUTE D'UNE FICHE (01/10/2026) — exposée pour l'enrichissement des
+   * résultats Lens. `scrapeProduct` fabrique un panier complet (conversion,
+   * frais, livraison) ; une grille de résultats n'a besoin que de la fiche
+   * elle-même : disponibilité, tailles, couleurs, images. On expose donc la
+   * MÊME chaîne de confiance — URL assainie, direct 7 s, puis rendu chez le
+   * fournisseur — sans la dupliquer ni la contourner.
+   */
+  public async scrapeParsedPage(rawUrl: string): Promise<MerchantScrapeResult> {
+    const cleaned = this.cleanPastedUrl(rawUrl);
+    const safeTarget = await resolveSafeHttpUrl(cleaned);
+    const url = safeTarget.url.toString();
+    return this.scrapeWithHttp(url, this.detectStore(url));
   }
 
   private isBotBlocked(title: string): boolean {
