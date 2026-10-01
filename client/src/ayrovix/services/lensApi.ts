@@ -71,6 +71,36 @@ export async function getManualReview(id: string, signal?: AbortSignal): Promise
   return parseResponse<AyrovixReviewRequest>(response);
 }
 
+/** Stock frais d'un lien produit — la page marchande est relue sans cache. */
+export interface LiveStockResult {
+  url: string;
+  availability: 'in_stock' | 'limited' | 'out_of_stock' | 'unknown';
+  sizes: string[];
+  colors: string[];
+  images: string[];
+  variants: Array<{ value: string; color: string | null; availability: 'available' | 'unavailable' | 'unknown' }>;
+  /** Horodatage ISO de la lecture qui fonde ce résultat. */
+  checkedAt: string;
+  reason: string;
+}
+
+/**
+ * Relit la page produit pour obtenir stock et tailles FRAIS. Volontairement
+ * explicite : le client appuie sur « vérifier », donc la lecture est réelle et
+ * le résultat porte sa date. Une page illisible rend `unknown` — jamais une
+ * disponibilité inventée.
+ */
+export async function refreshLiveStock(urls: string[], signal?: AbortSignal): Promise<LiveStockResult[]> {
+  const response = await fetch('/api/ayrovix/live-stock', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ urls: urls.slice(0, 8) }),
+    signal,
+  });
+  const data = await parseResponse<{ results: LiveStockResult[] }>(response);
+  return Array.isArray(data?.results) ? data.results : [];
+}
+
 export function markChosen(eventId: string): void {
   if (!eventId) return;
   fetch('/api/ayrovix/choose', {

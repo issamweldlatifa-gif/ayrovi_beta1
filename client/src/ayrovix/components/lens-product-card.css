@@ -31,3 +31,26 @@
 .lens-results-list .lens-card-open .lens-card-media{background:#fff;background:var(--ayrovi-card-canvas,#f0f2f2)}
 @media(min-width:768px){.lens-card-media{border-radius:18px}.lens-results-list .lens-result-grid{column-gap:20px}}
 @media(prefers-reduced-motion:reduce){.lens-product-card *{scroll-behavior:auto}}
+
+/* ═══════════════════════ STOCK VIVANT SUR LA CARTE (01/10/2026) ═══════════════════
+   Ce que la source affirme, et rien de plus : un silence n'a pas de badge, une
+   rupture est barrée plutôt que cachée. Couleurs lisibles sur le canvas clair. */
+.lens-card-stock{display:inline-flex;align-items:center;margin-top:6px;padding:2px 8px;border-radius:999px;font-size:.6875rem;font-weight:700;line-height:1.4;letter-spacing:.01em;font-family:var(--ay-font-stack)}
+.lens-card-stock[data-stock="in_stock"]{background:#e7f6ec;color:#12683a}
+.lens-card-stock[data-stock="limited"]{background:#fdf1dd;color:#8a5300}
+.lens-card-stock[data-stock="out_of_stock"]{background:#fdeaea;color:#a01b1b}
+.lens-card-sizes{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.lens-card-size{display:inline-flex;align-items:center;justify-content:center;min-width:26px;padding:2px 6px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;color:#000;font-size:.6875rem;font-weight:600;line-height:1.5;font-family:var(--ay-font-stack)}
+.lens-card-size[data-state="out"]{border-color:#e6c9c9;background:#faf3f3;color:#a01b1b;text-decoration:line-through}
+.lens-card-size[data-state="in"]{border-color:#bcdcc7;background:#f4fbf6;color:#12683a}
+/* Le bouton de vérification vit HORS du bouton d'ouverture (boutons imbriqués
+   interdits) : même placement discret que le cœur, mais en bas de carte. */
+.lens-card-verify{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:4px 9px;border:1px solid #d9d9d9;border-radius:999px;background:#fff;color:#000;font-size:.6875rem;font-weight:700;line-height:1.4;font-family:var(--ay-font-stack);cursor:pointer;transition:border-color .15s ease,background .15s ease}
+.lens-card-verify:hover{border-color:#000}
+.lens-card-verify:disabled{cursor:wait;opacity:.6}
+.lens-card-verify svg{flex:none}
+.lens-card-verify[aria-busy="true"] svg{animation:lens-card-spin 1s linear infinite}
+@keyframes lens-card-spin{to{transform:rotate(360deg)}}
+.lens-card-verified-at{margin:5px 0 0;font-size:.625rem;line-height:1.4;font-weight:500;color:#595959;font-family:var(--ay-font-stack)}
+.lens-card-verified-at[data-failed="true"]{color:#8a5300}
+@media(prefers-reduced-motion:reduce){.lens-card-verify[aria-busy="true"] svg{animation:none}}

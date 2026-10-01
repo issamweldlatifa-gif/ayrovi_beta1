@@ -8,6 +8,7 @@ import { catalogSearch, externalProductSearch, groupOffers, scoreCandidate, sear
 import { serpApiVisualReady, serpApiVisualSearch } from './services/visualSearch';
 import { recognizeImage } from './services/lensEngine';
 import { enrichCandidateDescriptions } from './services/lensEnrichment';
+import { enrichCandidatesLiveStock, refreshLiveStock } from './services/lensLiveStock';
 import { generateOptimizedSearch, analyzeResultRelevance, deduplicateCandidates, understandCustomerIntent } from './services/aiLensIntelligence';
 import { extractProductFromUrl, ExtractionFailedError, InvalidUrlError, sanitizeProductUrl } from './services/product';
 import { markAyrovixChosen, recordAyrovixEvent } from './events';
@@ -437,8 +438,22 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
        * réponse, et un texte n'est retenu que s'il décrit BIEN ce produit-là.
        */
       const candidates = await enrichCandidateDescriptions(deduped);
+      /*
+       * STOCK ET TAILLES VIVANTS (01/10/2026) — le lien SerpApi est la meilleure
+       * source du catalogue : on lit la page produit derrière les premiers liens,
+       * pour les premières fiches seulement, sans JAMAIS retarder la réponse
+       * (budget + échéance + cache, comme l'enrichissement descriptif).
+       */
+      const tLiveStock = Date.now();
+      const { candidates: liveCandidates, report: liveStock } = await enrichCandidatesLiveStock(candidates, {
+        fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
+      });
+      mark(trace, 'liveStockMs', Date.now() - tLiveStock);
+      mark(trace, 'liveStockFetched', liveStock.fetched);
+      mark(trace, 'liveStockCacheHits', liveStock.cacheHits);
+      mark(trace, 'liveStockApplied', liveStock.applied);
       const query = effectiveQuery;
-      const securedCandidates = tokenizedCandidates(candidates);
+      const securedCandidates = tokenizedCandidates(liveCandidates);
       // Chauffe le cache d'isolation/redimensionnement pendant que le client lit la grille.
       const candidateMedia = [...securedCandidates.map((item) => item.image), ...securedCandidates.flatMap((item) => item.images || [])];
       warmIsolation(candidateMedia, 8);
@@ -730,6 +745,30 @@ export function createAyrovixRouter(db: QatafoDatabase, scraper: SmartLinkScrape
     const row = getAyrovixReviewForOwner(db, id, sessionId, customer?.id || null);
     if (!row) return res.status(404).json({ success: false, code: 'NOT_FOUND', error: 'Demande introuvable.' });
     return res.json({ success: true, data: publicReview(row) });
+  });
+
+  /*
+   * STOCK FRAIS À LA DEMANDE (01/10/2026) — le bouton « vérifier le stock » de la
+   * carte produit. Contrairement à la grille (budget + cache + échéance), cette
+   * lecture ne sert JAMAIS le cache : c'est la preuve fraîche qu'une commande
+   * attend. Elle alimente aussi le contrat de variantes, seul document qui
+   * autorise « ajouter au panier » (le navigateur ne peut pas l'affirmer).
+   */
+  router.post('/live-stock', async (req: Request, res: Response) => {
+    const raw = Array.isArray(req.body?.urls) ? req.body.urls : [];
+    const urls = raw.filter((value: unknown): value is string => typeof value === 'string').slice(0, 8);
+    if (!urls.length) {
+      return res.status(400).json({ success: false, code: 'INVALID_REQUEST', error: 'Au moins un lien produit est requis.' });
+    }
+    try {
+      const { results } = await refreshLiveStock(urls, {
+        fetcher: (url) => scraper.scrapeParsedPage(url).then((result) => result.data),
+      });
+      return res.json({ success: true, data: { results } });
+    } catch (error: any) {
+      console.warn(`[AYROVIX live-stock] ${String(error?.message || error).slice(0, 120)}`);
+      return res.status(502).json({ success: false, code: 'LIVE_STOCK_FAILED', error: 'Vérification du stock impossible pour le moment.' });
+    }
   });
 
   router.post('/choose', (req: Request, res: Response) => {
